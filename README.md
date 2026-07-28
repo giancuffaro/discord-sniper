@@ -172,7 +172,35 @@ to react to something that was posted before you sat down.
 
 ---
 
-## The three buttons
+## Setting it up on a different computer
+
+Everything except your keys is in GitHub, so a new PC is one file:
+
+Download the repo (or clone it), then double-click **📥 SET UP ON THIS PC.bat**.
+It checks you have git and Python, pulls the latest code, installs what the
+bridge needs, and then tells you the only two things it can't do for you: run
+`KEYS.bat` to type your Webull key in, and load the `extension` folder into
+Chrome at `chrome://extensions`.
+
+Your keys are deliberately **not** in GitHub, so every machine needs them typed
+once. That's the price of them not being in a public-ish place, and it's worth
+paying.
+
+---
+
+## The four buttons
+
+- **LIVE / DRY RUN** — the money switch. It lives on the bridge, not in the
+  browser, because the bridge is the only thing that can actually place an
+  order. Flipping to LIVE takes two clicks — one to ask, one to mean it — and
+  it's written to `settings.json`, so restarting the bridge doesn't quietly put
+  you somewhere you didn't expect. Flipping back to DRY RUN is one click and
+  instant, because the safe direction should never make you confirm anything.
+  If your keys aren't saved yet it says so instead of pretending.
+
+  Note this is a **separate lock from ARM**. LIVE means the bridge *would* place
+  a real order; ARMED means the extension *would* send one. Both have to be on.
+  Turning LIVE on doesn't arm anything.
 
 - **ARM / SAFE** — SAFE reads and logs, ARMED spends money. Nothing else.
 - **STOP** — the panic button. Survives closing the popup, closing the tab, and

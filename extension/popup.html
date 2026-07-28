@@ -18,6 +18,12 @@
   button.safe { background: #14532d; border-color: #166534; color: #fff; }
   button.stop { background: #b91c1c; border-color: #ef4444; color: #fff;
                 font-weight: 700; }
+  button.live { background: #7c2d12; border-color: #ea580c; color: #fff;
+                font-weight: 700; }
+  button.dry { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+  button.confirm { background: #b45309; border-color: #f59e0b; color: #fff;
+                   font-weight: 700; }
+  .bar { border-top: 1px solid #1c212c; margin-top: 10px; padding-top: 10px; }
   .state { font-size: 12px; color: #9aa3b5; }
   label { display: block; font-size: 11px; color: #9aa3b5; margin: 8px 0 3px;
           text-transform: uppercase; letter-spacing: .05em; }
@@ -48,6 +54,11 @@
     <button id="stop" class="stop">STOP</button>
   </div>
   <div class="state" id="state">Loading…</div>
+
+  <div class="bar">
+    <button id="mode" class="grow dry" style="width:100%">Checking the bridge…</button>
+    <div class="state" id="modestate" style="margin-top:6px">&nbsp;</div>
+  </div>
 
   <details>
     <summary>Settings</summary>

@@ -97,3 +97,20 @@ Open:
 - Untested against the live Webull API — the SDK field names are hunted for by
   name in `webull_options.py` because they drift. First live connect may need a
   fix there.
+
+## Update — live/dry-run toggle
+
+The popup now has a LIVE / DRY RUN button above the settings. It talks to
+`GET|POST /mode` on the bridge; the bridge owns the mode because the bridge is
+the only thing that can place an order. Going live is two clicks and writes
+`execution.mode` into `settings.json`, then reconnects Webull and reports the
+account. Going back to dry run is one click. It is a *separate* lock from ARM —
+both must be on for anything to fire.
+
+`📥 SET UP ON THIS PC.bat` handles a fresh machine: checks git and Python, pulls
+from GitHub, installs deps, then tells him to run KEYS.bat and load the
+extension. Keys are never in the repo, so every PC needs them typed once.
+
+Note: this sandbox is blocked from authenticated pushes to GitHub. The loop is
+zip -> he unzips over his folder -> he runs `⬆️ PUSH CHANGES.bat`. Don't promise
+him direct pushes; it's been tried and refused at the environment level.
