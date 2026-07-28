@@ -55,3 +55,150 @@ Use $336.50 as risk if you are still holding! There is a lot of gamma at $340
 Mike (Admin) — 10:24 AM NVDA read was spot on. NFLX 20% and sold runners in the green. Overall great session from the team @here
 @Unraveller (Admin)🔮 trimming SPY @everyone @ 110%
 @Unraveller (Admin)🔮 all out of SPY @everyone
+
+# ---------------------------------------------------------------------------
+# 7/23. Different day, and the admins are posting straight into the room
+# instead of going through the scribe - so the grammar is different too. No
+# "trimming SPY @ 38%" here; they just post the number. Note that Unraveller's
+# SPY entry was never in this paste, so his trims have nothing to close and get
+# refused. That's the right answer, not a bug: the bot will not sell something
+# it never bought.
+# ---------------------------------------------------------------------------
+Unraveller (Admin) — 9:52 AM 25% @here i will hold runners as long as 736 holds
+Unraveller (Admin) — 9:58 AM Spy holding beautiful
+Unraveller (Admin) — 10:04 AM 30% on SPY @here
+Unraveller (Admin) — 10:09 AM Trimmed more on spy 35% @here
+Unraveller (Admin) — 10:12 AM Moving trail stop on spy to 736.5 now
+Unraveller (Admin) — 10:18 AM 40% in spy now. Down to runners
+Unraveller (Admin) — 10:26 AM 43% on spy
+Unraveller (Admin) — 10:35 AM 55% on spy @here
+Unraveller (Admin) — 10:41 AM 58%. Feel free to trim more or hold runners
+Unraveller (Admin) — 10:58 AM Spy holding our 738 trail stop level. Still holding runners
+Brett (Admin) — 11:02 AM In NVDA $210C to July 29th. Stop below $206. Not a swing- but lotto sized.
+Brett (Admin) — 11:04 AM My avg is $3.05
+Brett (Admin) — 11:19 AM Trimming @here
+Brett (Admin) — 11:23 AM 20%
+Brett (Admin) — 11:31 AM 28% @here half out
+Brett (Admin) — 11:37 AM 34%
+Brett (Admin) — 11:44 AM Out of 80% of my position. Stops moved to $208.30
+Brett (Admin) — 11:52 AM Tapped 40% there into $210. Stop moved to $208.70
+Brett (Admin) — 12:06 PM 50% @here
+Brett (Admin) — 12:14 PM 210 broke Please self manage.
+Brett (Admin) — 12:29 PM Still holding my 20% of cons as runners
+
+# ---------------------------------------------------------------------------
+# 7/22, back through the scribe. Three admins in three different tickers at
+# once, which is what makes the position tracker earn its keep. New shapes in
+# here: an entry with no date on it (line "in SPY 747C @ 3.00" - the room's
+# rules say weekly unless they spell it out), "added to" with a new average,
+# a trim measured in dollars instead of percent, and a long victory-lap
+# paragraph stuffed with percentages that must not touch anything.
+# ---------------------------------------------------------------------------
+@Unraveller (Admin)🔮 loading MSFT 7/24 400C @here
+@Unraveller (Admin)🔮 loading NVDA 7/24 205C @here
+@Mike (Admin) loading AMZN 7/24 245P @here
+@Unraveller (Admin)🔮 in NVDA 7/24 205C @ 3.77 @everyone
+@Unraveller (Admin)🔮 trimming NVDA @ 12% @everyone
+@Unraveller (Admin)🔮 trimming NVDA @ 18% @everyone
+@Unraveller (Admin)🔮 trimming NVDA @ 24% @everyone
+@Unraveller (Admin)🔮 all out of NVDA @everyone
+@Unraveller (Admin)🔮 loading NVDA 7/24 205C @here
+@Unraveller (Admin)🔮 in NVDA 7/24 205C @everyone
+@Unraveller (Admin)🔮 trimming NVDA @everyone
+@Mike (Admin) loading AMZN 7/24 245P @here
+@Unraveller (Admin)🔮 all out of NVDA @everyone
+@Mike (Admin) in AMZN 7/24 245P @ 3.57 @everyone
+@Unraveller (Admin)🔮 in NVDA 7/24 205C @ 3.85 @everyone
+@Brett (Admin) in SPY 747C @ 3.00 @everyone
+@Unraveller (Admin)🔮 trimming NVDA @ 11% @everyone
+@Mike (Admin) all out of AMZN @everyone
+Mike (Admin) — 10:37 AM This could still work but it's too slow and I don't like slow action. Can become trappy fast. I just sold at break even @here
+@Unraveller (Admin)🔮 trimming NVDA @ 25% @everyone
+@Brett (Admin) added to SPY @everyone new avg is 2.8
+@Brett (Admin) trimming SPY @everyone
+@Unraveller (Admin)🔮 trimming NVDA @ 30% @everyone
+@Unraveller (Admin)🔮 trimming NVDA @ 43% @everyone
+@Brett (Admin) trimming SPY @ 13% @everyone
+@Brett (Admin) trimming SPY @ 19% @everyone
+@Unraveller (Admin)🔮 trimming NVDA @ 65% @everyone
+Unraveller (Admin) — 11:06 AM Wish I told u guys NVDA would squeeze. Who caught this with me? Gave u several entries and conviction? @everyone
+Brett (Admin) — 11:07 AM 27% on SPY @here
+Unraveller (Admin) — 11:07 AM 80% on NVDA longs @here
+@Mike (Admin) in AMZN 7/24 245P @ 3.55 @everyone
+@Unraveller (Admin)🔮 trimming NVDA @ 100% @everyone
+Brett (Admin) — 11:11 AM 40% on SPY @here
+@Unraveller (Admin)🔮 all out of NVDA @ 125% @everyone
+@Mike (Admin) trimming AMZN @everyone +20 dollar per con
+Unraveller (Admin) — 11:18 AM I took the same setup yesterday at 204 and 206 and took same setup at 206 today. Made 35% and 25% yesterday and today several hundred percent. Never switched bias or altered my conviction or speak in riddles. Literally told you all it will squeeze before it happened and executed it on live today three times. Win lose or draw you just have to trust the tape read and setup. I keep having to say this but I will execute my setups with 10% stops any day if I can win big like I did today. @everyone
+Have a nice day! See you all tomorrow
+Mike (Admin) — 11:20 AM 10% on AMZN lol it moved 70 cents from my entry but cons barely moving @here
+@Brett (Admin) all out of SPY @ 50% @everyone
+@Mike (Admin) all out of AMZN @everyone
+
+# ---------------------------------------------------------------------------
+# 7/21. Posted straight into the room again, and this is the day the entry
+# arrives as TWO messages: "Loading 205 calls Friday expiration on NVDA" names
+# the contract, then six lines later "Filled 3.95 starters" gives the price and
+# names nothing. Neither one is an order on its own. Also in here: the contract
+# written back to front ("205 calls ... on NVDA"), "5-6% risk." which looks
+# exactly like a trim and means the opposite, and a long tail of commentary
+# with levels and percentages in it that must not touch anything.
+# ---------------------------------------------------------------------------
+Unraveller (Admin)🔮 — 11:59 AM Turned out to be a good session. Got reads right and several trending entries on spy for 30%+ and nvda full size entries at lows for 30%+ . Big earnings week so not a lot of contract movement but we are doing well keeping risk tight and executing well. See you all later tonight for stock tuesday @everyone
+Mentioned on live 746.8 trail on spy and 205.5 is trail on nvda. @everyone
+Unraveller (Admin)🔮 — 12:06 PM Spy green box are our entries @here
+Unraveller (Admin)🔮 — 12:16 PM 43% on SPY @here
+Brett (Admin) — 12:39 PM SPY executed shorts- arrows are chart on my entries. $1 minimum move is needed to catch a decent trade- ideally $2+ for 30-35%. Reversion trades, my target is almost always VWAP. Win rate is high and risk was only 10%. On these setups, 0dte is valid but just understand you will be risking more. Both longs + shorts can win on sessions like today, but it required good entries. See you all tomorrow @here
+Unraveller (Admin)🔮 — 12:45 PM Spy still up 40%. Nvda holding 205 hut i sold my runners green. If nvda breaks highs later in day we can get another reentry and I'll signal it @here
+50% on spy 1dte @here
+Unraveller (Admin)🔮 — 1:09 PM Like that nvda held 205. Obviously our lod entry at 204 is green still but I will reenter if it can take highs. Watching 206.5. Not going to enter unless we can take that. Most longs are stopped out so next time it takes it high probability it squeezes. @here
+Yep its gonna happen. If you are already in from our lows entry keep holding @here
+Will signal a reentry
+Need 206.50+
+only then
+Loading 205 calls Friday expiration on NVDA
+Loading does not mean enter
+Bruh lol
+Staying patient
+Filled 3.95 starters @here
+Unraveller (Admin)🔮 — 1:16 PM 205.7 risk @here
+Unraveller (Admin)🔮 — 1:29 PM This level is where the algo is and we are wicking @here
+5-6% risk.
+If you still have lod entry u are good
+But this trade it must hold wick low and we are good
+Lets go
+Boom
+Lets squeeze
+206.5 need to clear now
+Are u guys entertained? Who gives u algo levels beforr it happens? @here
+Trimmed to cover risk. @here
+@here green box entries tdy
+Need 207 then 208 now
+12%+ @here
+Just ema this one now @here
+Unraveller (Admin)🔮 — 1:44 PM Algos running amok
+Finally volume coming in
+206.5 level i mentioned did u guys see that reaction? @here just needs to keep going now
+207 then 208. Just use emas for runners
+Unraveller (Admin)🔮 — 1:54 PM 207 still flagging. 206 us now trail stop. We need to build over 207 for continuation @here
+Nice hold. Now need 207 and its done @here
+Unraveller (Admin)🔮 — 2:22 PM 206 still holding and cons back to breakeven.Going to hold runners as long as levels hold @here
+Lets use vwap or wick low as trail stop for runners
+Its risk free
+Okay i likey
+Just break 207 baby
+This pos got me trading at 2 pm just make it worth my time
+Unraveller (Admin)🔮 — 2:37 PM Come on baby almost there
+Love it when my levels hold. Just needs to clear now @here
+Back up 12+ again. U guys know the 206 stop loss on runners. Take trims if u didn't before and hold as long as levels hold. @here
+207 @here
+We had 204 entry at open and now reentry also up.
+Im giving my commentary so u guys know what im thinking. I cant control stock movements @here
+If this is legit it should keep going.
+16% @here
+Friday cons move slow but our entry from lows are up a lot
+Hope you guys are making money. I could have easily been done after signaling spy longs and nvda longs at open. Doing this to help you all grow accounts. All these gains add up @everyone
+Unraveller (Admin)🔮 — 2:54 PM Manage runners on your own. See you at 7 pm est for stock tuesday @everyone
+Unraveller (Admin)🔮 — 3:53 PM Nvda is a day trade not a swing. Take ur profits. Any swing adventure you go on its on you @everyone
+Squeezing into close @here choppy day but we nailed the read and entries today on spy and nvda
+Full sold nvda close to 25% on weeklies. We are at 208 sqz level now @here

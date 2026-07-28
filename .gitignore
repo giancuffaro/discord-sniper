@@ -10,3 +10,5 @@ __pycache__/
 *.log
 webull_trade_sdk.log
 trades.log
+
+bridge.log

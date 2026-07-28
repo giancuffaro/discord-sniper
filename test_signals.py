@@ -5,7 +5,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import signals as sigmod
 from guards import Guards
 
-CFG = {"allowed_symbols": ["SPY", "AAPL", "AMD", "NVDA", "NFLX", "QQQ"]}
+CFG = {"allowed_symbols": ["SPY", "AAPL", "AMD", "NVDA", "NFLX", "QQQ",
+                           "AMZN", "MSFT"]}
 NOSTOP = "/tmp/__no_stop_here__"
 fails = []
 
@@ -68,18 +69,22 @@ ok(r.reenter_limit == 2.84,
 ok(not sigmod.parse("all out of AAPL", cfg=CFG).reenter,
    "'all out' must not re-enter")
 
-# --- trims: a percentage is never mistaken for a price ----------------------
+# --- trims ------------------------------------------------------------------
+# The default is now "get out on their first trim, whatever the number is", so
+# every one of these is a full exit. The percentage still has to be read as a
+# percentage and never as a limit price.
 t = check("@Unraveller (Admin)🔮 trimming SPY @everyone @ 45%",
-          action="TRIM", fire=False, symbol="SPY", pct=45.0)
+          action="CLOSE", fire=True, symbol="SPY", pct=45.0)
 ok(t.limit is None, "'@ 45%%' must not be read as a limit price, got %r" % t.limit)
-check("@Brett (Admin) trimming AAPL @ 9% @everyone", action="TRIM", fire=False,
+check("@Brett (Admin) trimming AAPL @ 9% @everyone", action="CLOSE", fire=True,
       pct=9.0)
-check("@Unraveller (Admin)🔮 trimming AMD @everyone", action="TRIM", fire=False,
+check("@Unraveller (Admin)🔮 trimming AMD @everyone", action="CLOSE", fire=True,
       symbol="AMD", pct=None)
 
-CLOSER = dict(CFG, trim_action="close")
-ok(sigmod.parse("@Brett (Admin) trimming SPY @ 12% @everyone", cfg=CLOSER).fire,
-   "trim_action=close should fire on the first trim")
+IGNORER = dict(CFG, trim_action="ignore")
+i = sigmod.parse("@Brett (Admin) trimming SPY @ 12% @everyone", cfg=IGNORER)
+ok(not i.fire and i.action == "TRIM",
+   "trim_action=ignore should hold and wait for 'all out', got %s" % i.why)
 
 ATPCT = dict(CFG, trim_action="at_pct", close_at_trim_pct=50)
 ok(not sigmod.parse("trimming SPY @everyone @ 45%", cfg=ATPCT).fire,
@@ -88,6 +93,278 @@ ok(sigmod.parse("trimming SPY @everyone @ 50%", cfg=ATPCT).fire,
    "50% meets a 50% target — should close")
 ok(not sigmod.parse("trimming AMD @everyone", cfg=ATPCT).fire,
    "a trim with no percentage should hold, not guess")
+
+# --- the other room's grammar, verbatim from 7/23 ---------------------------
+# These two admins post straight into the channel instead of going through the
+# scribe, and they write trades completely differently: no "trimming SPY @ 38%",
+# just the bare number. A percentage with no full contract in the line can only
+# be a trim — nobody opens a position by posting "34%".
+b = check("Brett (Admin) — 11:02 AM In NVDA $210C to July 29th. Stop below $206. "
+          "Not a swing- but lotto sized.",
+          action="OPEN", fire=True, symbol="NVDA", side="CALLS", strike=210.0,
+          expiry="7/29")
+ok(b.caller == "Brett", "the header names the caller, got %r" % b.caller)
+ok(b.warn, "no price was posted, so it should warn that the chase limit can't help")
+
+# The fill price arrives as its own message a minute later. Nothing to do.
+check("Brett (Admin) — 11:04 AM My avg is $3.05", fire=False, action=None)
+
+# Bare trims. No ticker anywhere, so the parser hands off to the guards.
+for line in ["Brett (Admin) — 11:19 AM Trimming @here",
+             "Brett (Admin) — 11:23 AM 20%",
+             "Brett (Admin) — 11:31 AM 28% @here half out",
+             "Brett (Admin) — 11:44 AM Out of 80% of my position. Stops moved to $208.30",
+             "Brett (Admin) — 11:52 AM Tapped 40% there into $210. Stop moved to $208.70",
+             "Brett (Admin) — 12:06 PM 50% @here"]:
+    n = check(line, action="CLOSE", fire=False)
+    ok(n.needs_position, "%r should ask the guards which position it means" % line[-24:])
+
+# Lowercase tickers only count because they're on the allowed list.
+check("Unraveller (Admin) — 10:04 AM 30% on SPY @here",
+      action="CLOSE", fire=True, symbol="SPY", pct=30.0)
+check("Unraveller (Admin) — 10:18 AM 40% in spy now. Down to runners",
+      action="CLOSE", fire=True, symbol="SPY", pct=40.0)
+check("Unraveller (Admin) — 10:09 AM Trimmed more on spy 35% @here",
+      action="CLOSE", fire=True, symbol="SPY", pct=35.0)
+
+# Talk about the trade is not the trade.
+for line in ["Unraveller (Admin) — 9:58 AM Spy holding beautiful",
+             "Unraveller (Admin) — 10:12 AM Moving trail stop on spy to 736.5 now",
+             "Unraveller (Admin) — 10:58 AM Spy holding our 738 trail stop level. "
+             "Still holding runners",
+             "Brett (Admin) — 12:14 PM 210 broke Please self manage.",
+             "Brett (Admin) — 12:29 PM Still holding my 20% of cons as runners"]:
+    check(line, fire=False)
+
+# --- 7/22: three admins, three tickers, and some new shapes -----------------
+# An entry with no date on it. The room's own rules say weekly unless they
+# spell out 0DTE or a date, so the parser leaves it blank and the bridge fills
+# in that week's Friday — one calendar, in one place.
+n = check("@Brett (Admin) in SPY 747C @ 3.00 @everyone",
+          action="OPEN", fire=True, symbol="SPY", side="CALLS", strike=747.0,
+          limit=3.0)
+ok(n.expiry is None, "no date in the call means no date invented, got %r" % n.expiry)
+
+import webull_options as wo
+import datetime as _dt
+for day, want in ((_dt.date(2026, 7, 22), "2026-07-24"),    # a Wednesday
+                  (_dt.date(2026, 7, 24), "2026-07-24"),    # Friday itself
+                  (_dt.date(2026, 7, 25), "2026-07-31"),    # Saturday rolls on
+                  (_dt.date(2026, 6, 29), "2026-07-02")):   # 7/3 is a holiday
+    got = wo.weekly_expiry(day)
+    ok(got == want, "weekly expiry from %s should be %s, got %s" % (day, want, got))
+
+# "added to SPY, new avg is 2.8" — they doubled up. The parser marks it and
+# stops: whether you follow them in depends on three things it can't see, so it
+# hands the decision to guards.resolve_add and fires nothing on its own.
+a = check("@Brett (Admin) added to SPY @everyone new avg is 2.8",
+          fire=False, action="ADD", symbol="SPY", limit=2.8)
+ok(a.needs_add, "an add must be flagged for the guards, got %s" % a.why)
+
+# The one that would ruin a day if it were treated as an add. The room posts
+# "my avg is 3.05" straight after every single entry. There's no add verb in
+# it, so it stays a non-order — otherwise every position doubles itself the
+# moment it's opened.
+avg = check("@Brett (Admin) my avg is 3.05 @everyone", fire=False)
+ok(avg.action != "ADD" and not avg.needs_add,
+   "a bare average with no add verb must not read as an add, got %s" % avg.action)
+
+# A trim priced in dollars instead of percent still exits on the first one.
+check("@Mike (Admin) trimming AMZN @everyone +20 dollar per con",
+      action="CLOSE", fire=True, symbol="AMZN", pct=None)
+check("@Unraveller (Admin)🔮 all out of NVDA @ 125% @everyone",
+      action="CLOSE", fire=True, symbol="NVDA", pct=125.0)
+
+# The victory lap. Percentages, prices and a ticker, and not one order in it.
+for line in [
+    "Unraveller (Admin) — 11:18 AM I took the same setup yesterday at 204 and "
+    "206 and took same setup at 206 today. Made 35% and 25% yesterday and today "
+    "several hundred percent. Never switched bias or altered my conviction.",
+    "Unraveller (Admin) — 11:06 AM Wish I told u guys NVDA would squeeze. Who "
+    "caught this with me? Gave u several entries and conviction? @everyone",
+    "Have a nice day! See you all tomorrow",
+    "Mike (Admin) — 10:37 AM This could still work but it's too slow and I don't "
+    "like slow action. Can become trappy fast. I just sold at break even @here",
+]:
+    check(line, fire=False)
+
+# --- working out which position a bare trim meant ---------------------------
+RES = {"guards": {"regular_hours_only": False, "max_message_age_seconds": 0,
+                  "cooldown_seconds": 0, "max_trades_per_day": 9}}
+rg = Guards(RES, here=NOSTOP)
+nv = sigmod.parse("Brett (Admin) — 11:02 AM In NVDA 7/29 210C", cfg=CFG)
+rg.record(nv, "Brett")
+
+bare = sigmod.parse("Brett (Admin) — 11:19 AM Trimming @here", cfg=CFG)
+rg.resolve_symbol(bare, "Brett")
+ok(bare.fire and bare.symbol == "NVDA",
+   "Brett's bare trim should close Brett's NVDA, got %r (%s)" % (bare.symbol, bare.why))
+
+# The dangerous case: somebody ELSE trims and you're only in Brett's trade.
+# Taking it would close a position that admin never put you in.
+other = sigmod.parse("Unraveller (Admin) — 11:20 AM 25% @here", cfg=CFG)
+rg.resolve_symbol(other, "Unraveller")
+ok(not other.fire and not other.symbol,
+   "a trim from an admin whose trade you're not in must not close somebody "
+   "else's position, got %r" % other.symbol)
+
+empty = Guards(RES, here=NOSTOP)
+lone = sigmod.parse("Brett (Admin) — 11:19 AM Trimming @here", cfg=CFG)
+empty.resolve_symbol(lone, "Brett")
+ok(not lone.fire and "not in anything" in lone.why,
+   "a bare trim with nothing open should say so, got %s" % lone.why)
+
+# --- 7/21: the entry that arrives as two messages ---------------------------
+# "Loading 205 calls Friday expiration on NVDA" names the contract and buys
+# nothing. Six lines later "Filled 3.95 starters" is the actual order and names
+# nothing. Neither half is a trade on its own; together they are one.
+check("Loading 205 calls Friday expiration on NVDA", fire=False, action="PREPARE",
+      symbol="NVDA", side="CALLS", strike=205.0, expiry="WEEKLY")
+half = sigmod.parse("Filled 3.95 starters @here", cfg=CFG)
+ok(half.action == "OPEN" and not half.fire and half.needs_loaded
+   and half.limit == 3.95 and not half.symbol,
+   "a bare fill price should be held back, not fired or dropped: %s" % half.why)
+
+lg = Guards(dict(RES, allowed_symbols=CFG["allowed_symbols"]), here=NOSTOP)
+lg.remember_loading(sigmod.parse("Loading 205 calls Friday expiration on NVDA",
+                                 cfg=CFG), "Unraveller")
+got = lg.resolve_loaded(sigmod.parse("Filled 3.95 starters @here", cfg=CFG),
+                        "Unraveller")
+ok(got.fire and got.symbol == "NVDA" and got.strike == 205.0
+   and got.side == "CALLS" and got.expiry == "WEEKLY" and got.limit == 3.95,
+   "the fill should take the contract from the loading call, got %r (%s)"
+   % (got.human(), got.why))
+
+# Used up. The next bare price from the same admin is them averaging in, and
+# you only ever hold the one contract.
+again = lg.resolve_loaded(sigmod.parse("Filled 4.20 more", cfg=CFG), "Unraveller")
+ok(not again.fire, "a second bare fill must not re-open the same trade: %s" % again.why)
+
+# --- averaging in -----------------------------------------------------------
+# Switched off is the safe default, and it stays a no-op: written in the log,
+# nothing sent, still in the trade.
+AVOFF = {"guards": dict(RES["guards"], average_in=False)}
+off = Guards(AVOFF, here=NOSTOP)
+off.record(sigmod.parse("in SPY 7/31 745C @ 2.40", cfg=CFG), "Brett")
+r = off.resolve_add(sigmod.parse("Brett (Admin) added to SPY, new avg is 2.8",
+                                 cfg=CFG), "Brett")
+ok(not r.fire and "switched off" in r.why,
+   "with averaging off an add must send nothing: %s" % r.why)
+
+AVON = {"allowed_symbols": CFG["allowed_symbols"],
+        "guards": dict(RES["guards"], average_in=True, max_adds_per_position=2)}
+on = Guards(AVON, here=NOSTOP)
+first = sigmod.parse("in SPY 7/31 745C @ 2.40", cfg=CFG)
+on.record(first, "Brett")
+add1 = on.resolve_add(sigmod.parse("Brett (Admin) added to SPY, new avg is 2.8",
+                                   cfg=CFG), "Brett")
+ok(add1.fire and add1.action == "ADD", "averaging in should fire: %s" % add1.why)
+# The contract comes from what you hold, never from their message — "added to
+# SPY" doesn't name a strike, and a different strike isn't averaging.
+ok(add1.strike == 745.0 and add1.side == "CALLS" and add1.expiry == "7/31",
+   "an add must buy the contract you're holding, got %r %r %r"
+   % (add1.strike, add1.side, add1.expiry))
+# 2.8 is their blended average across both contracts, not the price of the one
+# they just bought — it is not a price you can buy at, so it must not survive as
+# the limit on this order.
+ok(add1.limit is None,
+   "their blended average must not become the limit, got %r" % add1.limit)
+on.record(add1, "Brett")
+ok(on.open_pos["SPY"]["qty"] == 2 and on.open_pos["SPY"]["adds"] == 1,
+   "after one add you hold two contracts, got %r" % on.open_pos["SPY"])
+
+# Second add allowed, third refused — that's the ceiling doing its job, and the
+# reason a $240 trade can't quietly become a $960 one.
+add2 = on.resolve_add(sigmod.parse("Brett (Admin) adding to SPY @ 2.5", cfg=CFG), "Brett")
+ok(add2.fire, "the second add is within the limit of 2: %s" % add2.why)
+on.record(add2, "Brett")
+add3 = on.resolve_add(sigmod.parse("Brett (Admin) adding to SPY @ 2.2", cfg=CFG), "Brett")
+ok(not add3.fire and "your limit" in add3.why,
+   "a third add must be refused: %s" % add3.why)
+
+# And the exit sells all three, not one. Selling one would leave you holding
+# two contracts while the log says you're flat.
+out = sigmod.parse("Brett (Admin) all out of SPY", cfg=CFG)
+on.fill_from_position(out)
+ok(out.qty == 3, "an exit must sell everything you averaged into, got %r" % out.qty)
+ok(on.clamp_qty(out.qty, "CLOSE") == 3,
+   "max_qty caps what you buy, never what you sell, got %r"
+   % on.clamp_qty(out.qty, "CLOSE"))
+
+# Adding to something you're not in has nothing to average into.
+notin = Guards(AVON, here=NOSTOP)
+nope = notin.resolve_add(sigmod.parse("Brett (Admin) added to QQQ, new avg 1.9",
+                                      cfg=CFG), "Brett")
+ok(not nope.fire and "you're not in it" in nope.why,
+   "an add on a trade you don't hold must send nothing: %s" % nope.why)
+
+# An unnamed add when that admin has TWO of their own open: it can't tell which
+# one they meant, so it does nothing rather than guess. (One of their own is
+# fine and does fire — that's the case just above.)
+amb = Guards(AVON, here=NOSTOP)
+amb.record(sigmod.parse("in SPY 7/31 745C @ 2.40", cfg=CFG), "Brett")
+amb.record(sigmod.parse("in NVDA 7/31 210C @ 3.10", cfg=CFG), "Brett")
+vague = amb.resolve_add(sigmod.parse("Brett (Admin) adding more, new avg 2.6",
+                                     cfg=CFG), "Brett")
+ok(not vague.fire, "an unnamed add with two of their positions open must not "
+   "guess: %s" % vague.why)
+
+# And an unnamed add from an admin whose trade you're not in must never land on
+# somebody else's position — same rule as a bare trim.
+theirs = Guards(AVON, here=NOSTOP)
+theirs.record(sigmod.parse("in SPY 7/31 745C @ 2.40", cfg=CFG), "Brett")
+wrong = theirs.resolve_add(sigmod.parse("Mike (Admin) adding more, new avg 2.6",
+                                        cfg=CFG), "Mike")
+ok(not wrong.fire, "one admin's add must not average into another's position: "
+   "%s" % wrong.why)
+
+# No daily limit means no daily limit. 0 is the setting he runs.
+NOCAP = Guards({"guards": dict(RES["guards"], max_trades_per_day=0)}, here=NOSTOP)
+NOCAP._count = 500
+ok(NOCAP.check(sigmod.parse("in AMD 7/31 480P", cfg=CFG), 1, 2, "bob",
+               msg_epoch=time.time())[0],
+   "max_trades_per_day 0 must not cap anything")
+
+# Nobody loaded anything. This is the case that would otherwise buy blind.
+nolo = Guards(RES, here=NOSTOP)
+orphan = nolo.resolve_loaded(sigmod.parse("Filled 3.95 starters", cfg=CFG), "Brett")
+ok(not orphan.fire and "can't find the LOADING call" in orphan.why,
+   "a fill price with no loading call must not fire: %s" % orphan.why)
+
+# Stale: they loaded before lunch and posted a price at the close. Not the same
+# trade, and nothing is sent.
+old = Guards(dict(RES, allowed_symbols=CFG["allowed_symbols"]), here=NOSTOP)
+old.remember_loading(sigmod.parse("Loading 205 calls Friday expiration on NVDA",
+                                  cfg=CFG), "Unraveller")
+old.loaded["unraveller"]["ts"] -= 7200
+stale_fill = old.resolve_loaded(sigmod.parse("Filled 3.95 starters", cfg=CFG),
+                                "Unraveller")
+ok(not stale_fill.fire and "too long ago" in stale_fill.why,
+   "a fill two hours after the loading call must not fire: %s" % stale_fill.why)
+
+# "Loading does not mean enter" is a loading line with no contract in it, so
+# there is nothing to pin a later price to.
+blank = Guards(RES, here=NOSTOP)
+blank.remember_loading(sigmod.parse("Loading does not mean enter", cfg=CFG), "Unraveller")
+ok(not blank.loaded, "a loading line with no contract should not be remembered")
+
+# The lines from that day that must stay quiet.
+for line in [
+    "5-6% risk.",                 # position sizing, not a gain
+    "205.7 risk @here",
+    "206.5 need to clear now",    # must not become a strike of 5
+    "Loading does not mean enter",
+    "Staying patient",
+    "Finally volume coming in",   # has "in" in it and nothing else
+    "Will signal a reentry",
+    "207 then 208. Just use emas for runners",
+    "Squeezing into close @here choppy day but we nailed the read and entries "
+    "today on spy and nvda",
+]:
+    check(line, fire=False)
+
+check("Full sold nvda close to 25% on weeklies. We are at 208 sqz level now @here",
+      fire=True, action="CLOSE", symbol="NVDA")
 
 # --- chatter, verbatim from the room ----------------------------------------
 for line in [

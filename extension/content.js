@@ -11,10 +11,24 @@
  * and the id="chat-messages-..." / id="message-content-..." pattern.
  */
 
+/* Everything below is inside a function on purpose. When the extension updates
+ * itself it puts a fresh copy of this file into a page that already has one, and
+ * a plain top-level `const` would blow up on the second copy with "already been
+ * declared" — the update would look like it worked and the tab would quietly
+ * stop reading. Wrapped like this, each copy gets its own scope, and the line
+ * below shuts the old one down before the new one starts. */
+(function () {
+"use strict";
+
+if (typeof window.__SNIPER_STOP__ === "function") {
+  try { window.__SNIPER_STOP__(); } catch (e) { /* old copy already gone */ }
+}
+
 const SEEN = new Set();
 const STARTED = Date.now();
 let observer = null;
 let watching = null;
+let timer = null;
 
 function channelId() {
   const m = location.pathname.match(/\/channels\/[^/]+\/(\d+)/);
@@ -95,7 +109,23 @@ function attach() {
     .catch(() => {});
 }
 
+window.__SNIPER_STOP__ = function () {
+  if (observer) observer.disconnect();
+  if (timer) clearInterval(timer);
+  observer = null;
+  watching = null;
+};
+
 // Discord is a single-page app: switching channels swaps the whole list out
 // from under us, so re-check for it rather than attaching once and hoping.
 attach();
-setInterval(attach, 1500);
+timer = setInterval(function () {
+  // After an update the old copy of this file is still running but is no longer
+  // connected to anything — chrome.runtime.id goes undefined. Stand down rather
+  // than sitting there looking busy.
+  let alive = false;
+  try { alive = !!(chrome.runtime && chrome.runtime.id); } catch (e) { alive = false; }
+  if (!alive) { window.__SNIPER_STOP__(); return; }
+  attach();
+}, 1500);
+})();

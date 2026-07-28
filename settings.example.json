@@ -14,27 +14,41 @@
                       "TSLA", "META", "MSFT", "AMZN", "GOOGL"],
   "extra_veto_words": [],
 
-  "_trim_action": "ignore = hold until they say 'all out'. close = exit on their first trim. at_pct = exit the first time they trim at or above close_at_trim_pct.",
-  "trim_action": "ignore",
+  "_trim_action": "close = get out the first time they trim, whatever the number is. ignore = hold until they say 'all out'. at_pct = get out the first time they trim at or above close_at_trim_pct.",
+  "trim_action": "close",
   "close_at_trim_pct": 50,
 
   "guards": {
     "max_qty": 1,
-    "max_trades_per_day": 6,
+    "_max_trades_per_day": "How many entries it will take in one day. 0 means no limit - it follows every call they make.",
+    "max_trades_per_day": 0,
+    "_average_in": "They add to a position and post a new average. true = follow them in with another contract; false = write it in the log and send nothing. An add is only ever allowed on a trade you are already in, and it always buys the contract you are holding, never the one in their message.",
+    "average_in": true,
+    "_max_adds_per_position": "How many times you will average into the SAME position. 2 means you can end up holding three contracts of it and no more.",
+    "max_adds_per_position": 2,
     "cooldown_seconds": 5,
     "dedupe_seconds": 120,
+    "_hours": "The window for NEW trades only. Exits are always allowed whatever the clock says - you never want to be stuck in something because it's one minute past.",
     "regular_hours_only": true,
     "open_time": "09:30",
-    "close_time": "15:45",
+    "close_time": "16:00",
+    "_auto_safe_after_close": "Once entries are done for the day AND you're flat, go back to SAFE without being asked. It will not do this while you're still holding something.",
+    "auto_safe_after_close": true,
     "max_message_age_seconds": 20
   },
 
-  "_execution": "dryrun = log it, send nothing. webull = real options orders in your Webull account. Use KEYS.bat rather than editing this by hand.",
+  "_execution": "dryrun = log it, send nothing. webull = real options orders in your Webull account. Use START HERE number 2 rather than editing this by hand.",
   "execution": {
     "mode": "dryrun",
     "webhook_url": "",
     "headers": {},
     "timeout_seconds": 4,
+
+    "_dry_run_buying_power": "Pretend account size, dollars, used ONLY in dry run so you can see which entries you couldn't have afforded. One contract is 100 shares, so a $2.80 call costs $280. Set it to what is actually in the account. 0 or null = don't check in dry run. Live mode ignores this and asks Webull for the real number.",
+    "dry_run_buying_power": 4000,
+
+    "_assume_weekly_expiry": "Their pinned rules say contracts are weekly unless they spell out 0DTE or a date, so a call like 'in SPY 747C @ 3.00' with no date on it means this Friday. true = fill that in. false = refuse those calls instead. Only ever used on an entry that already named a strike - an exit always uses the contract you are actually holding, never a guess.",
+    "assume_weekly_expiry": true,
 
     "webull": {
       "app_key": "",
@@ -42,8 +56,18 @@
       "_account_id": "Blank means pick the options account automatically. It will never use a futures account.",
       "account_id": "",
       "futures_account_suffixes": ["3T0B"],
+      "_entry_price": "Where your buy order sits. Webull takes no market orders on options, so this is always a limit. bid = sit on the bid and wait for a seller to come down to you - cheapest, and on a call that runs straight from the message you will not get filled at all. mid = halfway between bid and ask. ask = pay the offer plus marketable_buffer_pct, which is what fills nearly every time.",
+      "entry_price": "bid",
+      "_entry_fill_seconds": "How long your bid is allowed to sit there before it gets pulled. An entry left resting all day can fill at 3:55pm into a trade they called at 9:40 and were out of by 10:05 - you would be buying their exit.",
+      "entry_fill_seconds": 90,
+      "_stop_loss_pct": "The stop, as a % off what YOU actually paid - not off the price they posted. 20 means a fill at 2.80 gets a stop at 2.24. It is held two ways: a real stop order resting at Webull, and a watchdog in bridge.py checking the bid. Whichever sees it first sells, and only one of them is allowed to. On options premium 20% is tight - it is a normal amount of movement on a slow morning.",
+      "stop_loss_pct": 20,
+      "_fill_poll_seconds": "How often the bridge asks whether your bid filled, and how often the stop watchdog checks the bid. 5 is fine. Lower is faster and asks Webull for more quotes.",
+      "fill_poll_seconds": 5,
       "_max_chase_pct": "If the ask is more than this % above the price they got in at, skip rather than chase.",
       "max_chase_pct": 15,
+      "_keep_cash_buffer": "Dollars to never touch, in a live account. 0 spends everything available. 50 means an entry is skipped once it would leave you under $50.",
+      "keep_cash_buffer": 0,
       "marketable_buffer_pct": 2
     }
   }

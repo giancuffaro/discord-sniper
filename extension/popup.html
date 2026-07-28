@@ -14,10 +14,20 @@
   button { font: inherit; border: 1px solid #2a2f3c; background: #161a24;
            color: #e6e8ee; padding: 7px 10px; border-radius: 6px; cursor: pointer; }
   button:hover { background: #1e2431; }
-  button.armed { background: #7f1d1d; border-color: #b91c1c; color: #fff; }
-  button.safe { background: #14532d; border-color: #166534; color: #fff; }
-  button.stop { background: #b91c1c; border-color: #ef4444; color: #fff;
-                font-weight: 700; }
+  /* Green means it's running, grey means it's asleep. Red is kept for one
+     thing only — the button that spends real money — so that if there is
+     anything red on this screen, it's the money. These two used to be the
+     other way round, which read as "green, everything's fine" on the screen
+     where nothing was switched on. */
+  button.armed { background: #14532d; border-color: #166534; color: #fff; }
+  button.safe { background: #1f2229; border-color: #33384a; color: #c5cad6; }
+  /* The two switches are the only buttons that spend money, so they're the
+     only ones written big enough to read at a glance. The small grey line
+     inside each says what a click will do — the big word says what it IS. */
+  button.big { font-size: 15px; font-weight: 700; padding: 10px;
+               line-height: 1.25; }
+  button.big small { display: block; font-size: 11px; font-weight: 400;
+                     opacity: .85; margin-top: 2px; }
   button.live { background: #7c2d12; border-color: #ea580c; color: #fff;
                 font-weight: 700; }
   button.dry { background: #1e293b; border-color: #334155; color: #cbd5e1; }
@@ -40,25 +50,53 @@
   .e b { display: block; font-size: 12px; }
   .e span { color: #7d8697; font-size: 11px; }
   .fired b { color: #4ade80; }
+  /* A bid that's gone out but hasn't been taken is amber, not green. Green is
+     kept for contracts you actually own. */
+  .sent b { color: #fbbf24; }
+  .stopped b { color: #fb923c; }
   .failed b { color: #f87171; }
   .skipped b { color: #fbbf24; }
   .ignored b { color: #6b7383; }
+  .update b { color: #60a5fa; }
+  .holding { font-size: 12px; color: #9aa4b5; background: #10151d;
+             border: 1px solid #1c2331; border-radius: 6px;
+             padding: 7px 9px; margin: 8px 0 2px; line-height: 1.45; }
+  .holding b { color: #e6edf6; }
+  .holding .in { color: #4ade80; }
+  /* Amber for a bid that's still resting. Green only ever means you own it. */
+  .holding .in.wait { color: #fbbf24; }
   .note { font-size: 11px; color: #7d8697; margin-top: 8px; }
+  /* The pretend account. Same box as "what you're holding" because it answers
+     the other half of the same question. Dry run only — it hides itself in
+     live mode rather than showing a number Webull would disagree with. */
+  .purse { font-size: 12px; color: #9aa4b5; background: #10151d;
+           border: 1px solid #1c2331; border-radius: 6px;
+           padding: 7px 9px; margin: 8px 0 2px; line-height: 1.5; }
+  .purse b { color: #e6edf6; font-size: 13px; }
+  .purse .sub { color: #7d8697; font-size: 11px; }
+  .purse .up { color: #4ade80; }
+  .purse .down { color: #f87171; }
 </style>
 </head>
 <body>
   <h1>Discord Sniper</h1>
 
   <div class="row">
-    <button id="arm" class="grow safe">SAFE — click to ARM</button>
-    <button id="stop" class="stop">STOP</button>
+    <button id="arm" class="grow safe big">OFF</button>
   </div>
   <div class="state" id="state">Loading…</div>
 
   <div class="bar">
-    <button id="mode" class="grow dry" style="width:100%">Checking the bridge…</button>
+    <button id="mode" class="grow dry big" style="width:100%">Checking the bridge…</button>
     <div class="state" id="modestate" style="margin-top:6px">&nbsp;</div>
   </div>
+
+  <div class="note" id="bothnote">Both switches have to be on before any real
+    money moves. The top one turns the bot on; the bottom one decides whether
+    it's pretending or buying.</div>
+
+  <div class="holding" id="holding">Flat.</div>
+  <div class="purse" id="purse" style="display:none"></div>
 
   <details>
     <summary>Settings</summary>
@@ -89,14 +127,31 @@
 
     <div class="half">
       <div>
-        <label>Max contracts</label>
+        <label>Contracts per trade</label>
         <input id="maxqty" type="number" min="1" max="50" value="1">
       </div>
       <div>
-        <label>Max trades/day</label>
-        <input id="maxday" type="number" min="1" max="50" value="6">
+        <label>Trades per day (0 = no limit)</label>
+        <input id="maxday" type="number" min="0" max="50" value="0">
       </div>
     </div>
+
+    <div class="half">
+      <div>
+        <label>When they add to a trade</label>
+        <select id="avgin">
+          <option value="0">do nothing, just log it</option>
+          <option value="1">buy another one too</option>
+        </select>
+      </div>
+      <div>
+        <label>Max times to add</label>
+        <input id="maxadds" type="number" min="0" max="10" value="2">
+      </div>
+    </div>
+    <div class="note">"Buy another one too" only ever applies to a trade you're
+      already in, and it always buys the same contract you're holding. 2 adds
+      means you can end up holding three of it and no more.</div>
 
     <label>Bridge on your PC</label>
     <input id="bridge" placeholder="http://127.0.0.1:8787/order">
@@ -109,6 +164,13 @@
       seen, as a text file. Send it to me and I'll tune the reader to your
       room's exact wording.</div>
   </details>
+
+  <!-- The log is a scrolling box, and you cannot select text out of a popup
+       that closes the moment you click away from it. That's why the whole day
+       had to be sent as a search URL once. This copies it as plain text. -->
+  <div class="row" style="margin-top:10px; margin-bottom:0">
+    <button id="copylog" class="grow">Copy log</button>
+  </div>
 
   <div id="log"></div>
 

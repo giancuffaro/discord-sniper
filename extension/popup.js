@@ -1,10 +1,19 @@
 /* popup.js — the dashboard. Nothing here decides a trade; it only shows you
  * what happened and lets you change the settings the worker reads.
  *
- * ARMED vs SAFE is the switch you'll actually use. STOP is the one you'll be
- * glad exists: it survives closing the popup, closing the tab, and Chrome
- * putting the extension to sleep, because it's written to storage, not held
- * in a variable.
+ * There are two switches and they answer two different questions:
+ *
+ *   ON / OFF          is the bot working at all?      (lives in the browser)
+ *   TEST / REAL       fake money or your money?       (lives on the bridge)
+ *
+ * Both have to be on before a dollar moves, which is what lets you leave it
+ * running all day on TEST and watch what it would have done.
+ *
+ * There used to be a third button called STOP. It set a separate flag that did
+ * exactly what OFF does — same door, second lock — so it's gone. OFF is the
+ * stop button. It survives closing the popup, closing the tab and Chrome
+ * putting the extension to sleep, because it's written to storage rather than
+ * held in a variable.
  */
 
 const $ = id => document.getElementById(id);
@@ -14,9 +23,13 @@ const DEFAULTS = {
   bridge_url: "http://127.0.0.1:8787/order",
   channel_ids: [], follow_admins: [], allowed_symbols: [],
   trim_action: "ignore", close_at_trim_pct: 50,
-  guards: { max_qty: 1, max_trades_per_day: 6, cooldown_seconds: 5,
+  // max_trades_per_day 0 means no daily limit — it follows every call they
+  // make. average_in true means when they add to a trade you're already in and
+  // post a new average, you buy another one, up to max_adds_per_position times.
+  guards: { max_qty: 1, max_trades_per_day: 0, cooldown_seconds: 5,
             dedupe_seconds: 120, regular_hours_only: true,
             open_time: "09:30", close_time: "15:45",
+            average_in: true, max_adds_per_position: 2,
             max_message_age_seconds: 20 }
 };
 
@@ -36,6 +49,13 @@ function ago(t) {
   if (s < 60) return s + "s ago";
   if (s < 3600) return Math.round(s / 60) + "m ago";
   return Math.round(s / 3600) + "h ago";
+}
+
+/* Market time, not your PC's time. If you ever run this from a different time
+ * zone, "since 09:41" should still mean 09:41 in New York. */
+function clock(t) {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "America/New_York",
+    hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(t));
 }
 
 /* ---- the live / dry-run switch -------------------------------------------
@@ -66,34 +86,34 @@ async function askBridge(path, body) {
 function paintMode() {
   const btn = $("mode"), sub = $("modestate");
 
+  btn.style.width = "100%";
+
   if (armLive) {
-    btn.className = "grow confirm";
-    btn.style.width = "100%";
-    btn.textContent = "Click again to go LIVE";
-    sub.textContent = "real money, no paper mode for options";
+    btn.className = "grow confirm big";
+    btn.innerHTML = "CLICK AGAIN FOR REAL MONEY" +
+                    "<small>this one really buys. options have no practice " +
+                    "mode.</small>";
+    sub.textContent = "or wait a few seconds and it forgets you asked";
     return;
   }
   if (!modeStatus) {
-    btn.className = "grow dry";
-    btn.style.width = "100%";
-    btn.textContent = "Bridge not running";
-    sub.textContent = "start BRIDGE.bat on your PC and leave it open";
+    btn.className = "grow dry big";
+    btn.innerHTML = "CAN'T REACH YOUR PC<small>the bridge isn't running</small>";
+    sub.textContent = "on your PC: open START HERE and press 5";
     return;
   }
   if (modeStatus.live) {
-    btn.className = "grow live";
-    btn.style.width = "100%";
-    btn.textContent = "LIVE — click for DRY RUN";
+    btn.className = "grow live big";
+    btn.innerHTML = "REAL MONEY<small>click to go back to test mode</small>";
     sub.textContent = modeStatus.connected
-      ? ("real orders · Webull account " + (modeStatus.account || "?"))
-      : ("LIVE but not connected: " + (modeStatus.error || "unknown"));
+      ? ("orders go to your Webull account " + (modeStatus.account || "?"))
+      : ("REAL MONEY but not connected: " + (modeStatus.error || "unknown"));
   } else {
-    btn.className = "grow dry";
-    btn.style.width = "100%";
-    btn.textContent = "DRY RUN — click to go LIVE";
+    btn.className = "grow dry big";
+    btn.innerHTML = "TEST MODE<small>click to switch to real money</small>";
     sub.textContent = modeStatus.has_keys
-      ? "orders are logged on your PC, nothing is sent"
-      : "no Webull keys saved yet — run KEYS.bat first";
+      ? "nothing is really bought — trades are written down on your PC"
+      : "no Webull keys saved yet — START HERE, press 2";
   }
 }
 
@@ -116,7 +136,7 @@ $("mode").onclick = async () => {
   if (!modeStatus) return refreshMode();
   if (!modeStatus.has_keys) {
     $("modestate").textContent =
-      "there are no Webull keys saved yet — run KEYS.bat, then come back";
+      "there are no Webull keys saved yet — START HERE, press 2, then come back";
     return;
   }
   if (!armLive) {                              // first click: ask, don't act
@@ -141,27 +161,117 @@ $("mode").onclick = async () => {
 
 async function render() {
   const s = await getSettings();
-  const { guardState: gs, log } = await chrome.storage.local.get(["guardState", "log"]);
+  const { guardState: gs, log, wallet } =
+    await chrome.storage.local.get(["guardState", "log", "wallet"]);
 
+  // The big word is what it IS right now. The small line is what a click does.
+  // Getting those two the wrong way round is how somebody turns a bot on while
+  // trying to turn it off.
   const arm = $("arm");
   if (s.armed) {
-    arm.textContent = "ARMED — click to go SAFE";
-    arm.className = "grow armed";
+    arm.innerHTML = "ON<small>click to turn it off</small>";
+    arm.className = "grow armed big";
   } else {
-    arm.textContent = "SAFE — click to ARM";
-    arm.className = "grow safe";
+    arm.innerHTML = "OFF<small>click to turn it on</small>";
+    arm.className = "grow safe big";
   }
 
   const held = Object.keys((gs && gs.positions) || {});
+  const cap = parseInt(s.guards.max_trades_per_day, 10) || 0;
+  const done = (gs && gs.count) || 0;
   const bits = [];
-  bits.push(s.stopped ? "STOPPED — nothing will fire until you clear it"
-                      : (s.armed ? "watching" : "reading only, not trading"));
-  bits.push(((gs && gs.count) || 0) + " of " + s.guards.max_trades_per_day +
-            " trades used today");
-  bits.push(held.length ? "holding " + held.join(", ") : "flat");
+  bits.push(s.armed ? "following their calls" : "watching only, not trading");
+  // 0 means you took the limit off on purpose, so say that rather than counting
+  // down from a number that doesn't exist.
+  bits.push(cap > 0 ? done + " of " + cap + " trades used today"
+                    : done + (done === 1 ? " trade" : " trades") +
+                      " today, no limit set");
+  // "holding" and "bid in" are not the same thing any more. An entry rests on
+  // the bid, so a symbol can be on this list with nobody having sold to you
+  // yet — saying "holding SPY" then would be a lie you'd act on.
+  const posAll = (gs && gs.positions) || {};
+  const owned = held.filter(sym => !posAll[sym].pending);
+  const waiting = held.filter(sym => posAll[sym].pending);
+  const where = [];
+  if (owned.length) where.push("holding " + owned.join(", "));
+  if (waiting.length) where.push("bid in on " + waiting.join(", "));
+  bits.push(where.length ? where.join(" · ") : "flat");
   $("state").textContent = bits.join(" · ");
 
-  $("stop").textContent = s.stopped ? "CLEAR STOP" : "STOP";
+  // What you're in right now, spelled out as a contract rather than a ticker.
+  // The tracker already knows this — it has to, or it couldn't turn "all out of
+  // AMD" into an order. This just puts it on screen.
+  const pos = (gs && gs.positions) || {};
+  if (!held.length) {
+    $("holding").innerHTML = "<b>Flat.</b> Not in anything.";
+  } else {
+    const rows = held.map(sym => {
+      const p = pos[sym] || {};
+      const contract = [sym,
+                        p.expiry || "",
+                        (p.strike != null ? p.strike : "") +
+                        (p.side === "PUTS" ? "P" : p.side === "CALLS" ? "C" : "")]
+                       .filter(Boolean).join(" ");
+      // How many you're holding matters now that it can average in. One is the
+      // normal case and saying "x1" every time is noise, so it only shows up
+      // once there's more than one.
+      const n = parseInt(p.qty || 1, 10) || 1;
+      if (p.pending) {
+        // The order is out and nobody has taken it. You own nothing here yet,
+        // and on the fast ones you never will — that's the trade-off of sitting
+        // on the bid, and it should look different on screen.
+        return '<span class="in wait">BID IN</span> <b>' + contract + "</b>" +
+               (p.ts ? " — since " + clock(p.ts) : "") +
+               " · nobody has sold to you yet";
+      }
+      return '<span class="in">IN</span> <b>' + contract + "</b>" +
+             (n > 1 ? " <b>x" + n + "</b>" : "") +
+             (p.ts ? " — since " + clock(p.ts) : "") +
+             (p.fill ? " · paid " + Number(p.fill).toFixed(2) : "") +
+             (p.stop ? " · stop " + Number(p.stop).toFixed(2) : "") +
+             (n > 1 ? " (averaged in " + (p.adds || n - 1) + "x)" : "");
+    });
+    $("holding").innerHTML = rows.join("<br>");
+  }
+
+  // The pretend account. It only exists on a dry run — in live mode Webull
+  // knows what you've got, and printing a second number here that disagrees
+  // with your real balance would be worse than printing nothing.
+  //
+  // Money leaves when a bid fills, comes back at whatever it sold for, and
+  // what's left is what the next entry has to fit inside. Without this on
+  // screen there was no way to tell whether the starting balance was doing
+  // anything at all, and it wasn't.
+  const purse = $("purse");
+  if (!wallet) {
+    purse.style.display = "none";
+  } else {
+    purse.style.display = "";
+    const money = n => (n < 0 ? "-$" : "$") + Math.abs(n).toFixed(0);
+    const day = wallet.equity - wallet.start;
+    const rows = [];
+    rows.push('<b>' + money(wallet.equity) + "</b> account · " +
+              '<span class="' + (day >= 0 ? "up" : "down") + '">' +
+              (day >= 0 ? "+" : "") + money(day) + " today</span>" +
+              " · started " + money(wallet.start));
+    const bits = [money(wallet.cash) + " cash"];
+    if (wallet.reserved) bits.push(money(wallet.reserved) + " tied up in bids");
+    if (wallet.open_cost) {
+      bits.push(money(wallet.open_cost) + " in open trades" +
+                (wallet.open_worth != null
+                 ? " (worth " + money(wallet.open_worth) + " now)" : ""));
+    }
+    rows.push('<span class="sub">' + bits.join(" · ") + "</span>");
+    const done = wallet.wins + wallet.losses;
+    if (done) {
+      rows.push('<span class="sub">' + done +
+                (done === 1 ? " trade closed" : " trades closed") + " · " +
+                wallet.wins + " up, " + wallet.losses + " down · " +
+                (wallet.realised >= 0 ? "+" : "") + money(wallet.realised) +
+                " banked</span>");
+    }
+    purse.innerHTML = rows.join("<br>");
+  }
 
   $("channels").value = listToText(s.channel_ids);
   $("admins").value = listToText(s.follow_admins);
@@ -170,6 +280,8 @@ async function render() {
   $("trimpct").value = s.close_at_trim_pct;
   $("maxqty").value = s.guards.max_qty;
   $("maxday").value = s.guards.max_trades_per_day;
+  $("avgin").value = s.guards.average_in ? "1" : "0";
+  $("maxadds").value = s.guards.max_adds_per_position;
   $("bridge").value = s.bridge_url;
 
   const box = $("log");
@@ -184,8 +296,20 @@ async function render() {
   for (const e of entries) {
     const d = document.createElement("div");
     d.className = "e " + e.kind;
-    const head = { fired: "FIRED", failed: "FAILED", skipped: "SKIPPED",
-                   ignored: "not a trade" }[e.kind] || e.kind;
+    // "SENT" and "FILLED" are two different lines on purpose. Your entry goes
+    // in as a bid, so the order going out and somebody actually selling to you
+    // are separate events, sometimes minutes apart and sometimes only one of
+    // them happens at all.
+    // "BID IN" is only ever true of an entry. A sell doesn't rest on the bid
+    // waiting for somebody to come to it, so labelling an exit that way made
+    // finished trades read like open ones — the log said "BID IN · CLOSE SPY
+    // (+45%)" on a trade that was over.
+    const isExit = e.action === "CLOSE" ||
+                   /^CLOSE\b/.test(String(e.what || ""));
+    const head = { sent: isExit ? "SOLD" : "BID IN",
+                   fired: "FILLED", failed: "FAILED",
+                   skipped: "SKIPPED", stopped: "STOPPED OUT",
+                   ignored: "not a trade", update: "UPDATED" }[e.kind] || e.kind;
     d.innerHTML = "<b>" + head + (e.what ? " · " + e.what : "") + "</b>" +
                   "<span>" + (e.why || "") + "</span>" +
                   '<span style="display:block">' + ago(e.t) + " · " +
@@ -204,14 +328,10 @@ async function patch(changes) {
 
 $("arm").onclick = async () => {
   const s = await getSettings();
-  // Arming while STOPped would be a lie — clear the stop as part of arming, so
-  // the button always means what it says.
-  await patch({ armed: !s.armed, stopped: s.armed ? s.stopped : false });
-};
-
-$("stop").onclick = async () => {
-  const s = await getSettings();
-  await patch({ stopped: !s.stopped, armed: false });
+  // stopped:false always. The old STOP button is gone, but an installation that
+  // was left stopped would otherwise sit there refusing everything with no
+  // button on screen to clear it. Turning it ON clears it.
+  await patch({ armed: !s.armed, stopped: false });
 };
 
 $("save").onclick = () => patch({
@@ -223,9 +343,51 @@ $("save").onclick = () => patch({
   bridge_url: $("bridge").value.trim() || DEFAULTS.bridge_url,
   guards: Object.assign({}, DEFAULTS.guards, {
     max_qty: parseInt($("maxqty").value, 10) || 1,
-    max_trades_per_day: parseInt($("maxday").value, 10) || 6
+    // No "|| 0" fallback needed and none wanted: 0 is a real setting here, it
+    // means no daily limit, and "|| 6" would have quietly overruled it.
+    max_trades_per_day: Math.max(0, parseInt($("maxday").value, 10) || 0),
+    average_in: $("avgin").value === "1",
+    max_adds_per_position: Math.max(0, parseInt($("maxadds").value, 10) || 0)
   })
 });
+
+/* You can't select text out of this popup — it closes the moment you click
+ * anywhere else, which is why a whole day's log once had to be sent as a
+ * search URL. This puts it on the clipboard as plain text, oldest first so it
+ * reads like a morning rather than backwards. */
+$("copylog").onclick = async () => {
+  const { log, wallet } = await chrome.storage.local.get(["log", "wallet"]);
+  const head = { sent: "BID IN", fired: "FILLED", failed: "FAILED",
+                 skipped: "SKIPPED", stopped: "STOPPED OUT",
+                 ignored: "not a trade", update: "UPDATED" };
+  const lines = (log || []).slice().reverse().map(e => {
+    const isExit = e.action === "CLOSE" || /^CLOSE\b/.test(String(e.what || ""));
+    const h = (e.kind === "sent" && isExit) ? "SOLD" : (head[e.kind] || e.kind);
+    return [clock(e.t), h + (e.what ? " · " + e.what : ""),
+            e.why || "", e.text ? (e.author || "?") + ": " + e.text : ""]
+           .filter(Boolean).join("  |  ");
+  });
+  if (wallet) {
+    lines.unshift("account $" + wallet.equity.toFixed(0) + " (started $" +
+                  wallet.start.toFixed(0) + ", " + wallet.wins + " up / " +
+                  wallet.losses + " down, banked $" +
+                  wallet.realised.toFixed(0) + ")", "");
+  }
+  const text = lines.join("\n") || "nothing logged yet";
+  const btn = $("copylog");
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = "Copied — paste it anywhere";
+  } catch (e) {
+    // Clipboard blocked. Rather than fail quietly, hand it over as a file,
+    // which is the same thing one step further away.
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    chrome.downloads.download({ url, filename: "sniper-log.txt", saveAs: true })
+      .catch(() => chrome.tabs.create({ url }));
+    btn.textContent = "Saved it as a file instead";
+  }
+  setTimeout(() => { btn.textContent = "Copy log"; }, 2500);
+};
 
 $("export").onclick = async () => {
   const { captured } = await chrome.storage.local.get("captured");

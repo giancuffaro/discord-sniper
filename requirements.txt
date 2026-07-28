@@ -1,2 +1,8 @@
 discord.py>=2.3
 requests>=2.31
+
+# Windows does not ship the world's timezone database, so Python can't look up
+# "America/New_York" without this. Everything here runs on market time, so
+# without it the bridge won't start. eastern.py has a fallback if this is ever
+# missing, but installing it is the tidier fix.
+tzdata>=2024.1

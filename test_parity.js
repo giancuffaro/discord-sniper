@@ -15,8 +15,16 @@ const CFG = JSON.parse(fs.readFileSync(
   path.join(__dirname, "settings.example.json"), "utf8"));
 const py = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 
+// needs_position, needs_loaded, needs_add and caller are in here because that's
+// how a symbol-less trim, a two-message entry and an average-in get resolved.
+// If Python flags "work out which position they meant" and the extension
+// doesn't, the browser silently drops an exit that the listener takes — which
+// is the exact class of bug this file exists to catch. needs_add is the same
+// hazard pointed the other way: miss it in one language and that side buys a
+// second contract the other side never touched.
 const FIELDS = ["fire", "action", "symbol", "side", "strike", "expiry",
-                "limit", "pct", "qty", "reenter", "reenter_limit"];
+                "limit", "pct", "qty", "reenter", "reenter_limit",
+                "needs_position", "needs_loaded", "needs_add", "caller"];
 let bad = 0;
 
 for (const row of py) {

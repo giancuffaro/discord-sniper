@@ -10,9 +10,10 @@ money right now?
 import os
 import time
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-ET = ZoneInfo("America/New_York")
+# See eastern.py — Windows has no timezone database and the plain zoneinfo
+# import kills this on a fresh PC.
+from eastern import ET
 KILL_FILE = "STOP"          # create a file called STOP next to the bot to halt it
 
 
@@ -23,12 +24,25 @@ class Guards:
         self.authors = set(str(a) for a in cfg.get("author_ids", []))
         self.author_names = set(str(a).lower() for a in cfg.get("author_names", []))
         self.max_qty = int(g.get("max_qty", 1))
+        # 0, or anything below it, means no daily limit at all. Written this way
+        # rather than as a huge number so the log can say "no daily limit" and
+        # mean it, instead of "you've hit your limit of 999999 trades".
         self.max_trades_per_day = int(g.get("max_trades_per_day", 10))
+        # Averaging in. When they add to a position and post a new average, this
+        # is what decides whether you follow them in with a second contract. Off
+        # means the add is logged and nothing is sent, which is the old behaviour.
+        self.average_in = bool(g.get("average_in", False))
+        # And a ceiling on it, because "adding" three more times on the way down
+        # is how a $400 trade quietly becomes a $1,600 one.
+        self.max_adds = int(g.get("max_adds_per_position", 2))
         self.cooldown_s = float(g.get("cooldown_seconds", 5))
         self.dedupe_s = float(g.get("dedupe_seconds", 120))
         self.session_only = bool(g.get("regular_hours_only", True))
         self.open_hm = tuple(int(x) for x in g.get("open_time", "09:30").split(":"))
-        self.close_hm = tuple(int(x) for x in g.get("close_time", "15:45").split(":"))
+        # Entries only. Exits are never time-boxed — see check(), which only
+        # applies this to OPEN. 16:00 is the closing bell, so this is now "any
+        # call they make during the session", not "mornings only".
+        self.close_hm = tuple(int(x) for x in g.get("close_time", "16:00").split(":"))
         self.max_age_s = float(g.get("max_message_age_seconds", 20))
         self.kill_path = os.path.join(here, KILL_FILE)
 
@@ -40,6 +54,16 @@ class Guards:
         # trade five minutes apart is the normal case in a signal room, and
         # without this you'd buy it twice.
         self.open_pos = {}      # symbol -> {side, strike, expiry, ts}
+        # The last LOADING notice each admin posted. Their entry is two messages
+        # — the contract, then the price — and this is what holds the first one
+        # until the second one turns up. Per author, because both admins load
+        # different things within minutes of each other.
+        self.loaded = {}        # author (lowercased) -> {symbol, side, ...}
+        self.loaded_window_s = float(g.get("loading_window_seconds", 1800))
+        # Checked again at resolve time: the LOADING rule doesn't check the
+        # allowed list, so without this a two-message entry would be the one way
+        # round it.
+        self.allowed = set(str(a).upper() for a in cfg.get("allowed_symbols", []))
 
     # -- helpers --------------------------------------------------------------
     def _roll_day(self):
@@ -49,6 +73,8 @@ class Guards:
 
     def trades_left(self):
         self._roll_day()
+        if self.max_trades_per_day <= 0:
+            return 9999             # no daily limit set
         return max(0, self.max_trades_per_day - self._count)
 
     def killed(self):
@@ -80,7 +106,7 @@ class Guards:
             return False, ("that call is %.0f seconds old — too stale to chase"
                            % (now - msg_epoch))
 
-        if self.session_only and sig.action == "OPEN":
+        if self.session_only and sig.action in ("OPEN", "ADD"):
             t = datetime.now(ET)
             if t.weekday() > 4:
                 return False, "it's the weekend — the market is shut"
@@ -111,15 +137,217 @@ class Guards:
             return False, ("already acted on that exact call %.0fs ago"
                            % (now - last))
 
-        if sig.action == "OPEN":
+        if sig.action in ("OPEN", "ADD"):
             if (now - self._last_fire) < self.cooldown_s:
                 return False, ("still in the %.0fs cooldown after the last fire"
                                % self.cooldown_s)
-            if self._count >= self.max_trades_per_day:
+            # 0 means you took the daily limit off on purpose.
+            if 0 < self.max_trades_per_day <= self._count:
                 return False, ("you've hit your limit of %d trades for today"
                                % self.max_trades_per_day)
 
         return True, "allowed"
+
+    def resolve_symbol(self, sig, author_name=""):
+        """A bare "Trimming @here", or a lone "20%", names no ticker. Everyone
+        in the room knows which position they mean; a broker does not.
+
+        Two admins run that room and they are usually in different things, so
+        the first question is who said it — a trim from Brett means Brett's
+        position. If that's not enough and you only hold one thing, it's that
+        one. If it's still ambiguous, nothing is sent and you're told why,
+        because guessing which position to close is how you end up flat on the
+        wrong ticker and still holding the loser."""
+        if sig.symbol or not getattr(sig, "needs_position", False):
+            return sig
+
+        who = str(getattr(sig, "caller", "") or author_name or "").lower()
+        held = self.open_pos
+        if not held:
+            sig.why = ("a trim with no ticker in it, and you're not in "
+                       "anything — nothing to close")
+            return sig
+
+        theirs = [s for s, p in held.items()
+                  if who and str(p.get("author", "")).lower() == who]
+        pick = None
+        if len(theirs) == 1:
+            pick = theirs[0]
+        elif not theirs and len(held) == 1:
+            # Only one thing open, so it's tempting to just take it. But if that
+            # position was opened by a different admin, a trim from this one is
+            # about something you never got into — closing the other guy's trade
+            # on it is exactly the mistake this whole method exists to avoid.
+            only = next(iter(held))
+            owner = str(held[only].get("author", "")).lower()
+            if not who or not owner or owner == who:
+                pick = only
+
+        if not pick:
+            what = ", ".join("%s%s" % (s, (" (%s's call)" % held[s]["author"])
+                                       if held[s].get("author") else "")
+                             for s in sorted(held))
+            sig.why = ("a trim with no ticker in it. You're in %s, and this came "
+                       "from %s — I can't tell which one they meant, so nothing "
+                       "was sent. Close it in the Webull app if you want out."
+                       % (what, getattr(sig, "caller", "") or author_name
+                          or "somebody I couldn't name"))
+            return sig
+
+        sig.symbol = pick
+        sig.fire = True
+        sig.why = ("closing %s on their first trim — they didn't name it, but "
+                   "it's the position %s put you in"
+                   % (pick, getattr(sig, "caller", "") or author_name or "they"))
+        return sig
+
+    def _pick_held(self, who):
+        """Which of your open positions did this admin mean? Their own first,
+        and the only one open second — but never somebody else's. Returns None
+        when it can't be sure, and being sure is the whole point."""
+        held = self.open_pos
+        if not held:
+            return None
+        theirs = [s for s, p in held.items()
+                  if who and str(p.get("author", "")).lower() == who]
+        if len(theirs) == 1:
+            return theirs[0]
+        if not theirs and len(held) == 1:
+            only = next(iter(held))
+            owner = str(held[only].get("author", "")).lower()
+            if not who or not owner or owner == who:
+                return only
+        return None
+
+    def resolve_add(self, sig, author_name=""):
+        """"added to SPY, new avg is 2.8" — they bought more of what they're
+        already in. Following them means a second contract at today's price, so
+        this is the one place in the file that spends money on purpose rather
+        than because a call came in.
+
+        Four ways it says no: averaging is switched off, you're not in that
+        trade, you've already added as many times as you allowed, or it can't
+        tell which position they meant.
+        """
+        if not getattr(sig, "needs_add", False):
+            return sig
+        who = str(getattr(sig, "caller", "") or author_name or "").lower()
+
+        if not self.average_in:
+            sig.why = ("they added to their %s and their average moved — "
+                       "averaging in is switched off, so nothing was sent. "
+                       "You're still in it." % (sig.symbol or "position"))
+            return sig
+
+        if not sig.symbol:
+            sig.symbol = self._pick_held(who)
+        if not sig.symbol:
+            sig.why = ("they added to a position and didn't name it, and I "
+                       "can't tell which one they meant — nothing was sent")
+            return sig
+
+        pos = self.open_pos.get(sig.symbol)
+        if not pos:
+            sig.why = ("they added to their %s, but you're not in it — there's "
+                       "nothing to average into" % sig.symbol)
+            return sig
+        if self.allowed and sig.symbol not in self.allowed:
+            sig.why = "%s isn't on your allowed-symbols list" % sig.symbol
+            return sig
+
+        adds = int(pos.get("adds", 0))
+        if self.max_adds >= 0 and adds >= self.max_adds:
+            sig.why = ("they added to %s again, but you've already averaged in "
+                       "%d time%s on it — that's your limit, so nothing was sent"
+                       % (sig.symbol, adds, "" if adds == 1 else "s"))
+            return sig
+
+        # The contract comes from what you're holding, never from the add
+        # message — "added to SPY" doesn't say which strike, and buying a
+        # different one isn't averaging, it's a second trade.
+        sig.side = pos.get("side")
+        sig.strike = pos.get("strike")
+        sig.expiry = pos.get("expiry")
+        sig.qty = 1
+        sig.fire = True
+        # 2.8 in "new avg is 2.8" is their BLENDED average across both
+        # contracts, not what the second one cost. Their first fill was on one
+        # side of it and the one they just bought was on the other, so it is
+        # not a price anything can be bought at and it must never become the
+        # limit on this order. It's kept for the log line and dropped here.
+        their_avg = sig.limit
+        sig.limit = None
+        sig.why = ("averaging into %s — that's your %s add on it%s"
+                   % (sig.symbol, "first" if adds == 0 else "next",
+                      "" if their_avg is None
+                      else ", their average across both is now %.2f" % their_avg))
+        return sig
+
+    def remember_loading(self, sig, author_name=""):
+        """A LOADING notice never buys anything — that's the room's own rule.
+        But it is the only place the contract gets named when their entry comes
+        in two messages, so it gets kept here until the price turns up."""
+        if getattr(sig, "action", None) != "PREPARE" or not sig.symbol:
+            return
+        who = str(getattr(sig, "caller", "") or author_name or "").lower()
+        self.loaded[who] = {"symbol": sig.symbol, "side": sig.side,
+                            "strike": sig.strike, "expiry": sig.expiry,
+                            "ts": time.time()}
+
+    def resolve_loaded(self, sig, author_name=""):
+        """"Filled 3.95 starters" is an order with the contract missing. It was
+        in the "Loading 205 calls Friday expiration on NVDA" the same admin
+        posted a few minutes before, so that's where it comes from.
+
+        Same rule as everywhere else in this file: if it can't be worked out for
+        certain, nothing is sent and you're told why in a sentence. A price with
+        no contract behind it is the single easiest way to buy the wrong thing.
+        """
+        if sig.symbol or not getattr(sig, "needs_loaded", False):
+            return sig
+        who = str(getattr(sig, "caller", "") or author_name or "").lower()
+        cand = self.loaded.get(who)
+        if cand is None and len(self.loaded) == 1:
+            # Nobody else has loaded anything, so there's only one call it could
+            # possibly be. Still refused below if it's stale or incomplete.
+            only_who, only = next(iter(self.loaded.items()))
+            if not who or not only_who:
+                cand = only
+        if not cand:
+            sig.why = ("they posted a fill price on its own and I can't find the "
+                       "LOADING call that goes with it — nothing was sent")
+            return sig
+        age = time.time() - cand["ts"]
+        if self.loaded_window_s and age > self.loaded_window_s:
+            sig.why = ("they posted a fill price on its own, but the last LOADING "
+                       "call was %.0f minutes ago — too long ago to assume it's "
+                       "the same trade, so nothing was sent" % (age / 60.0))
+            return sig
+        if not (cand.get("symbol") and cand.get("strike") and cand.get("side")):
+            sig.why = ("they posted a fill price on its own, and the LOADING call "
+                       "before it didn't name a full contract either — nothing "
+                       "was sent")
+            return sig
+        if self.allowed and cand["symbol"] not in self.allowed:
+            sig.why = ("%s isn't on your allowed-symbols list" % cand["symbol"])
+            return sig
+        if cand.get("used"):
+            # A second price on the same loading call is them averaging into the
+            # trade they already put you in — "Filled 4.20 more" after "Filled
+            # 3.95 starters". Sent down the averaging path, which refuses it
+            # outright unless you switched averaging on.
+            sig.action, sig.needs_add = "ADD", True
+            sig.symbol = cand["symbol"]
+            return self.resolve_add(sig, author_name)
+        cand["used"] = 1
+        sig.symbol, sig.side = cand["symbol"], cand["side"]
+        sig.strike, sig.expiry = cand["strike"], cand.get("expiry")
+        sig.fire = True
+        sig.why = ("entry: %s — they posted the price on its own, and that's the "
+                   "contract %s loaded"
+                   % (sig.human(), getattr(sig, "caller", "") or author_name
+                      or "they"))
+        return sig
 
     def fill_from_position(self, sig):
         """"all out of AMD" never says which contract, and neither does "exited
@@ -134,11 +362,17 @@ class Guards:
             sig.side = p.get("side")
         if sig.expiry is None:
             sig.expiry = p.get("expiry")
+        # If you averaged in, you hold more than one contract, and "all out"
+        # means all of them. Selling the one the parser assumed would leave you
+        # holding the rest without knowing it.
+        if sig.action == "CLOSE":
+            sig.qty = max(1, int(p.get("qty", 1)))
         return sig
 
-    def record(self, sig):
+    def record(self, sig, author_name=""):
         """Call this the moment an order actually goes out."""
         now = time.time()
+        who = str(getattr(sig, "caller", "") or author_name or "")
         # Anything older about this ticker is history now. Without this, the
         # room getting out of SPY and straight back in ten seconds later would
         # look like a duplicate call and you'd sit out the rest of the move.
@@ -149,8 +383,25 @@ class Guards:
                             if k[1] != sig.symbol}
         self._recent[sig.key()] = now
         if sig.action == "OPEN":
+            # The author is kept so a later symbol-less trim from the same
+            # admin can be pinned to the position they actually opened.
+            # "pending" means the order has gone out and nobody has sold to you
+            # yet. Entries rest on the bid, so that is the normal state for a
+            # while and sometimes the only one it ever reaches. Only the bridge
+            # can clear it, because only the bridge sees the fill.
             self.open_pos[sig.symbol] = {"side": sig.side, "strike": sig.strike,
-                                         "expiry": sig.expiry, "ts": now}
+                                         "expiry": sig.expiry, "ts": now,
+                                         "author": who, "qty": int(sig.qty or 1),
+                                         "adds": 0, "pending": True}
+        elif sig.action == "ADD":
+            # One more contract of the same thing. The count is what an exit
+            # sells, and the add count is what stops it happening all day.
+            p = self.open_pos.get(sig.symbol)
+            if p is not None:
+                p["qty"] = int(p.get("qty", 1)) + int(sig.qty or 1)
+                p["adds"] = int(p.get("adds", 0)) + 1
+                p["ts"] = now
+                p["pending"] = True     # the extra contract isn't yours yet
         elif sig.action == "CLOSE":
             held = self.open_pos.pop(sig.symbol, None)
             if getattr(sig, "reenter", False):
@@ -162,15 +413,25 @@ class Guards:
                     "side": sig.side or base.get("side"),
                     "strike": sig.strike if sig.strike is not None
                               else base.get("strike"),
-                    "expiry": sig.expiry or base.get("expiry"), "ts": now}
+                    "expiry": sig.expiry or base.get("expiry"), "ts": now,
+                    "author": who or base.get("author", ""),
+                    # Straight back in on the same size you just sold — as a
+                    # bid, so pending until the bridge says it filled.
+                    "qty": int(base.get("qty", 1) or 1), "adds": 0,
+                    "pending": True}
         # keep the dedupe table from growing all day
         if len(self._recent) > 400:
             cut = now - max(self.dedupe_s, 300)
             self._recent = {k: v for k, v in self._recent.items() if v > cut}
-        if sig.action == "OPEN":
+        if sig.action in ("OPEN", "ADD"):
             self._last_fire = now
             self._roll_day()
             self._count += 1
 
-    def clamp_qty(self, wanted):
+    def clamp_qty(self, wanted, action="OPEN"):
+        """max_qty is a cap on what you BUY. An exit has to be allowed to sell
+        everything you're holding — capping that at one contract after you've
+        averaged in would leave you quietly still in the trade."""
+        if str(action).upper() == "CLOSE":
+            return max(1, int(wanted or 1))
         return max(1, min(int(wanted or 1), self.max_qty))

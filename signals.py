@@ -25,22 +25,69 @@ from typing import Optional
 RE_CALLER = re.compile(r"@\s*([A-Za-z0-9_.\-]{2,24})\s*\((admin|mod|analyst|scribe)\)",
                        re.IGNORECASE)
 RE_PING = re.compile(r"@(everyone|here)\b", re.IGNORECASE)
-RE_HDR = re.compile(r"^[A-Za-z0-9_.\- ]{2,24}\s*\((scribe|admin|mod)\)\s*[—\-]+\s*"
-                    r"\d{1,2}:\d{2}\s*(AM|PM)\s*", re.IGNORECASE)
+RE_HDR = re.compile(r"^(?P<who>[A-Za-z0-9_.\- ]{2,24})\s*\((scribe|admin|mod)\)"
+                    r"\s*[—\-]+\s*\d{1,2}:\d{2}\s*(AM|PM)\s*", re.IGNORECASE)
 RE_EMOJI = re.compile("[\U0001F000-\U0001FAFF←-⯿️]")
 
 # --- the pieces of a call ----------------------------------------------------
+# The $ before the strike is Brett's habit: "In NVDA $210C to July 29th".
+# The lookbehind is load-bearing. Without it the symbol group happily matches
+# the TAIL of a longer word — "Loading 205 calls" gave a ticker of ADING, which
+# then failed the allowed-list check for reasons that had nothing to do with
+# what the line said.
 RE_CONTRACT = re.compile(
-    r"\$?(?P<symbol>[A-Za-z]{1,5})\s+"
+    r"(?<![A-Za-z])\$?(?P<symbol>[A-Za-z]{1,5})\s+"
     r"(?:(?P<expiry>\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d*dte)\s+)?"
-    r"(?P<strike>\d{1,5}(?:\.\d{1,2})?)\s*"
+    r"\$?(?P<strike>\d{1,5}(?:\.\d{1,2})?)\s*"
     r"(?P<kind>calls?|puts?|c|p)\b", re.IGNORECASE)
 
+# The same contract written back to front: "205 calls Friday expiration on
+# NVDA". Requires the word "on" before the ticker — that's what keeps it from
+# reading "10% on SPY" as a contract, and it's how they actually write it.
+RE_CONTRACT_REV = re.compile(
+    r"(?<![A-Za-z\d.])\$?(?P<strike>\d{1,5}(?:\.\d{1,2})?)\s*"
+    r"(?P<kind>calls?|puts?)\b"
+    r"(?P<mid>[^.!?]{0,40}?)"
+    r"\bon\s+\$?(?P<symbol>[A-Za-z]{1,5})\b", re.IGNORECASE)
+
+# "Friday expiration" is not a missing date — it's the same weekly the room's
+# pinned rules already default to, said out loud. Kept as the token WEEKLY so
+# the log can say "this Friday" and so turning assume_weekly_expiry off doesn't
+# also refuse the calls where they actually told you.
+RE_FRI_EXP = re.compile(r"\bfri(?:day)?\s*exp\w*", re.IGNORECASE)
+
+# Expiries that turn up somewhere other than in front of the strike — "to July
+# 29th" trails the contract instead of leading it. Only consulted when the
+# contract itself didn't carry one.
+MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+          "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+RE_MONTH_DAY = re.compile(r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
+                          r"[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b", re.IGNORECASE)
+RE_DTE_ANY = re.compile(r"\b(\d*dte)\b", re.IGNORECASE)
+RE_DATE_ANY = re.compile(r"\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b")
+
 RE_PCT = re.compile(r"@\s*(\d{1,3}(?:\.\d+)?)\s*%")
+# A percentage anywhere at all. The second room writes trims as a bare number:
+# "20%", "50% @here", "40% in spy now". No verb, no ticker, just the number.
+RE_PCT_ANY = re.compile(r"(\d{1,3}(?:\.\d+)?)\s*%")
+# "5-6% risk." and "risk was only 10%" are position sizing, not a gain. Same
+# shape as a bare trim and the exact opposite meaning — read as a trim it sells
+# you out of a trade on a sentence about how much they're willing to lose.
+# Only consulted when the line has no exit verb in it, so "trimming SPY @ 45%,
+# risk free now" is untouched.
+RE_PCT_RISK = re.compile(
+    r"\d{1,3}(?:\.\d+)?\s*%\s*(?:of\s+)?(?:risk|stop|trail)\b"
+    r"|\b(?:risk|risking|risked|stop|trail)\b[^.!?]{0,20}?\d{1,3}(?:\.\d+)?\s*%",
+    re.IGNORECASE)
+# "My avg is $3.05" — posted a minute after the entry, as its own message.
+RE_AVG = re.compile(r"\bavg|\baverage\b", re.IGNORECASE)
 # a price, but never a percentage: "@ 3.4" is a fill, "@ 38%" is a gain
 RE_LIMIT = re.compile(r"@\s*\$?(\d+(?:\.\d{1,4})?)(?![\d.]*\s*%)")
 RE_QTY = re.compile(r"\b(\d{1,3})\s*(?:x|contracts?|lots?)\b", re.IGNORECASE)
-RE_BARE = re.compile(r"\b([A-Z]{1,5})\b")
+# Case-insensitive on purpose — the second room types "on spy", not "on SPY".
+# Lowercase only counts when you have an allowed-symbols list to check it
+# against; see _bare_symbol for why.
+RE_BARE = re.compile(r"\b([A-Za-z]{1,5})\b")
 
 # --- the five things the room says -------------------------------------------
 RE_LOADING = re.compile(r"\bloading\b", re.IGNORECASE)
@@ -49,8 +96,34 @@ RE_TRIM = re.compile(r"\btrim(?:ming|med|s)?\b", re.IGNORECASE)
 RE_BACKIN = re.compile(r"\bback\s+in\b", re.IGNORECASE)
 RE_ENTRY = re.compile(r"\b(?:in|entered|entering|filled|bto|bought|buying)\b",
                       re.IGNORECASE)
+# "added to SPY @everyone new avg is 2.8" — they doubled up and their average
+# moved. Whether that buys you a second contract is a setting, not a parser
+# decision: the parser only says "this is an add", and guards.resolve_add has
+# the final word, because only the guards know whether you're even in it.
+RE_ADD = re.compile(r"\badd(?:ed|ing|s)?\s+(?:to|more)\b|\badding\b"
+                    r"|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b"
+                    r"|\b(?:new|updated)\s+(?:avg|average)\b", re.IGNORECASE)
+# The price out of "new avg is 2.8", "avg 3.05", "average: $2.90". Their new
+# average is what you'd be paying up to, so it becomes the limit. Never a
+# percentage — "avg gain 30%" is a result, not a price.
+RE_AVG_PRICE = re.compile(
+    r"\b(?:avg|average)\w*\s*(?:is|of|at|around|near|:|=|@)?\s*"
+    r"\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)", re.IGNORECASE)
 RE_EXIT = re.compile(r"\b(?:exited|exiting|closed|closing|stc|sold|selling|out)\b",
                      re.IGNORECASE)
+# "Filled 3.95 starters" — their entry arrives as TWO messages. The contract was
+# named minutes earlier in a "Loading 205 calls Friday expiration on NVDA"
+# notice, and this line carries nothing but the price. On its own it is not an
+# order; guards.resolve_loaded pins it to that notice, or nothing is sent.
+#
+# Only a line that STARTS with the fill verb counts. "trimmed at 3.95" and
+# "their avg was 3.95" are the same numbers meaning the opposite thing, and both
+# of them lose the word "filled" at the front.
+RE_BARE_FILL = re.compile(
+    r"^(?:just\s+|we\s+|i\s+|i've\s+|ive\s+|we've\s+)*"
+    r"(?:filled|fills|filling|fill|bought|bto|entered)\b"
+    r"[^\d%]{0,14}\$?(\d{1,3}\.\d{1,2})\b(?!\s*%)",
+    re.IGNORECASE)
 
 # Lines that must never fire no matter what else is in them.
 VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
@@ -58,12 +131,21 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               "waiting", "wait for", "heads up", "scanner", "idea", "consider",
               "recap", "example", "congrats", "missed", "sorry", "pissed",
               "sets the tone", "session", "overall", "read was", "look at that",
-              "still holding", "use $", "as risk", "anyone", "lmk", "great job")
+              "still holding", "use $", "as risk", "anyone", "lmk", "great job",
+              # The victory-lap paragraph. It's full of percentages and prices
+              # and it is not a call — none of these words ever appear in one.
+              "yesterday", "tomorrow", "nice day", "conviction", "wish i")
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
                "DO", "NOT", "BUY", "SELL", "IE", "ADMIN", "HERE", "EOD", "CPI",
-               "FOMC", "PT", "SL", "TP", "AVG", "GO", "UP", "WE", "US", "NO"}
+               "FOMC", "PT", "SL", "TP", "AVG", "GO", "UP", "WE", "US", "NO",
+               # The verbs themselves. "sold 205 calls on nvda" read SOLD as the
+               # ticker, because a word directly in front of a strike looks
+               # exactly like a symbol. None of these is ever a ticker he trades.
+               "SOLD", "TRIM", "HOLD", "GOT", "ADD", "FULL", "TOOK", "LOAD",
+               "FILL", "CALL", "CALLS", "PUT", "PUTS", "LONG", "SHORT", "SIZE",
+               "RISK", "NEW", "JUST", "NOW", "OVER", "UNDER", "NEAR", "ABOVE"}
 
 
 @dataclass
@@ -87,6 +169,20 @@ class Signal:
     # already holding — the line never names it, and it doesn't need to.
     reenter: bool = False
     reenter_limit: Optional[float] = None
+    # A bare "Trimming @here" or a lone "20%" names no ticker — the room knows
+    # which one, you don't. This flag says "work it out from what I'm holding",
+    # and guards.resolve_symbol does exactly that. Nothing fires until it does.
+    needs_position: bool = False
+    # "Filled 3.95 starters" is an order with the contract missing, because the
+    # contract was in the LOADING message before it. This flag says "go and find
+    # the loading call that goes with this"; guards.resolve_loaded does it, and
+    # nothing fires until it succeeds.
+    needs_loaded: bool = False
+    # "added to SPY, new avg 2.8" — a second contract on a trade you're already
+    # in. Nothing about that can be decided from the line alone: it depends on
+    # whether averaging is switched on, whether you're actually in it, and how
+    # many times you've already added. guards.resolve_add answers all three.
+    needs_add: bool = False
     warn: str = ""
     raw: str = ""
     clean: str = ""
@@ -125,8 +221,28 @@ def clean_text(raw):
     t = RE_PING.sub(" ", t)
     t = RE_CALLER.sub(" ", t)
     t = RE_EMOJI.sub(" ", t)
-    t = re.sub(r"^\s*\d{1,3}\.\s*", "", t)      # numbered paste lines
+    # Numbered paste lines ("14. Loading 205 calls..."). The space after the dot
+    # is required: without it "206.5 need to clear now" gets shortened to "5 need
+    # to clear now", and a line like "747.5 calls on SPY" would turn into a
+    # contract at a strike of 5.
+    t = re.sub(r"^\s*\d{1,3}\.\s+", "", t)
     return re.sub(r"\s+", " ", t).strip()
+
+
+def _expiry_anywhere(text):
+    """"to July 29th" -> "7/29". Only used when the contract itself didn't
+    carry an expiry, so it can't override anything they actually wrote."""
+    m = RE_MONTH_DAY.search(text)
+    if m:
+        return "%d/%d" % (MONTHS[m.group(1).lower()[:3]], int(m.group(2)))
+    m = RE_DTE_ANY.search(text)
+    if m:
+        return m.group(1).upper()
+    m = RE_DATE_ANY.search(text)
+    if m:
+        return "%d/%d%s" % (int(m.group(1)), int(m.group(2)),
+                            "/" + m.group(3) if m.group(3) else "")
+    return None
 
 
 def _contract(text):
@@ -135,24 +251,46 @@ def _contract(text):
         if sym in NOT_TICKERS:
             continue
         k = m.group("kind").lower()
+        expiry = (m.group("expiry") or "").upper() or None
+        if not expiry:
+            expiry = _expiry_anywhere(text[m.end():])
         return {"symbol": sym, "strike": float(m.group("strike")),
                 "side": "CALLS" if k.startswith("c") else "PUTS",
-                "expiry": (m.group("expiry") or "").upper() or None}
+                "expiry": expiry}
+
+    # Written back to front. Tried second so a normally-written contract in the
+    # same line always wins.
+    for m in RE_CONTRACT_REV.finditer(text):
+        sym = m.group("symbol").upper()
+        if sym in NOT_TICKERS:
+            continue
+        mid = m.group("mid") or ""
+        expiry = "WEEKLY" if RE_FRI_EXP.search(mid) else _expiry_anywhere(mid)
+        return {"symbol": sym, "strike": float(m.group("strike")),
+                "side": "CALLS" if m.group("kind").lower().startswith("c") else "PUTS",
+                "expiry": expiry}
     return None
 
 
 def _bare_symbol(text, allowed):
     """For 'trimming AMD' and 'all out of SPY' there's no strike to anchor on,
     so only tickers you've explicitly allowed count. Without that rule 'all out
-    of AAPL as well but made it up' starts looking like an order."""
+    of AAPL as well but made it up' starts looking like an order.
+
+    Lowercase ("30% on spy") only counts when you have an allowed list. With no
+    list there is nothing to check a lowercase word against, and every third
+    word in a sentence would start looking like a ticker."""
     for m in RE_BARE.finditer(text):
-        s = m.group(1).upper()
+        raw = m.group(1)
+        s = raw.upper()
         if s in NOT_TICKERS:
             continue
-        if allowed and s not in allowed:
-            continue
-        if not allowed and len(s) < 2:
-            continue
+        if allowed:
+            if s not in allowed:
+                continue
+        else:
+            if raw != s or len(s) < 2:
+                continue
         return s
     return None
 
@@ -170,6 +308,13 @@ def parse(text, author="", channel="", cfg=None):
     sig.clean = t
     low = t.lower()
 
+    # Who said it. Two shapes: the scribe relaying somebody ("@Brett (Admin)
+    # ..."), and the admin posting straight into the room ("Brett (Admin) —
+    # 10:20 AM ..."). The relay wins when both are there, because that's the
+    # one naming the actual caller.
+    mh = RE_HDR.match(raw)
+    if mh:
+        sig.caller = mh.group("who").strip()
     mc = RE_CALLER.search(raw)
     if mc:
         sig.caller = mc.group(1)
@@ -238,24 +383,72 @@ def parse(text, author="", channel="", cfg=None):
                       "" if sig.limit is None else " @ %.2f" % sig.limit))
         return sig
 
-    # 4. TRIMMING — a partial. You hold one contract, so you can't trim; what
-    #    you can do is decide at which of their trims you take your money.
-    if RE_TRIM.search(low):
+    # 3b. ADDED TO — they doubled up and posted their new average.
+    #     This is a second buy on a trade you're already in. The parser stops
+    #     short of firing it, because the three things that decide it are all
+    #     state: is averaging switched on, are you actually in that position,
+    #     and how many times have you added already. guards.resolve_add.
+    if RE_ADD.search(low):
+        c = _contract(t)
+        sig.symbol = c["symbol"] if c else _bare_symbol(t, allowed)
+        if c:
+            sig.strike, sig.side, sig.expiry = c["strike"], c["side"], c["expiry"]
+        sig.action, sig.matched = "ADD", "added to their position"
+        sig.needs_add = True
+        m = RE_LIMIT.search(t) or RE_AVG_PRICE.search(t)
+        if m:
+            sig.limit = float(m.group(1))
+        mq = RE_QTY.search(t)
+        if mq:
+            sig.qty = int(mq.group(1))
+        sig.why = ("they added to their %s and their average moved — checking "
+                   "whether you can follow them in"
+                   % (sig.symbol or "position"))
+        return sig
+
+    # 4. TRIMMING — a partial.
+    #
+    #    Two grammars. One room writes the word: "trimming SPY @ 38%". The
+    #    other just posts the number: "20%", "50% @here", "40% in spy now".
+    #    A bare percentage with no contract in the line is a trim — nobody
+    #    opens a position by posting "34%". The no-contract test is what keeps
+    #    a real entry from being swallowed here.
+    pct_m = RE_PCT.search(t) or RE_PCT_ANY.search(t)
+    if pct_m and not RE_TRIM.search(low) and RE_PCT_RISK.search(t):
+        sig.why = ("that percentage is their risk, not a gain — nothing to act "
+                   "on")
+        return sig
+    if RE_TRIM.search(low) or (pct_m and not _contract(t)):
         sig.symbol = _bare_symbol(t, allowed)
         sig.action, sig.matched = "TRIM", "trim"
-        m = RE_PCT.search(t)
-        if m:
-            sig.pct = float(m.group(1))
+        if pct_m:
+            sig.pct = float(pct_m.group(1))
+
+        mode = (cfg.get("trim_action") or "close").lower()
+        will_close = False
+        target = float(cfg.get("close_at_trim_pct", 50))
+        if mode == "close":
+            will_close = True
+        elif mode == "at_pct":
+            will_close = sig.pct is not None and sig.pct >= target
+
         if not sig.symbol:
-            sig.why = "a trim, but I couldn't tell which ticker"
+            if will_close:
+                # Held back rather than dropped. guards.resolve_symbol works out
+                # which position they meant from what you're holding and who
+                # said it; if it can't, nothing is sent.
+                sig.action, sig.needs_position = "CLOSE", True
+                sig.why = ("a trim with no ticker in it — working out which "
+                           "position they meant")
+            else:
+                sig.why = "a trim, but I couldn't tell which ticker"
             return sig
-        mode = (cfg.get("trim_action") or "ignore").lower()
+
         if mode == "close":
             sig.action, sig.fire = "CLOSE", True
             sig.why = "closing %s on their first trim" % sig.symbol
         elif mode == "at_pct":
-            target = float(cfg.get("close_at_trim_pct", 50))
-            if sig.pct is not None and sig.pct >= target:
+            if will_close:
                 sig.action, sig.fire = "CLOSE", True
                 sig.why = ("closing %s — they're trimming at %g%%, your target is "
                            "%g%%" % (sig.symbol, sig.pct, target))
@@ -273,6 +466,23 @@ def parse(text, author="", channel="", cfg=None):
     if RE_ENTRY.search(low):
         c = _contract(t)
         if not c:
+            # The two-message entry: "Loading 205 calls Friday expiration on
+            # NVDA", then a minute later "Filled 3.95 starters". This second line
+            # really is the order — it's just that the contract is in the message
+            # before it. Held back rather than dropped, the same way a bare trim
+            # is: guards.resolve_loaded finds the loading call, and if it can't,
+            # nothing is sent.
+            mf = RE_BARE_FILL.match(t)
+            if mf and not _bare_symbol(t, allowed):
+                sig.action, sig.matched = "OPEN", "fill on a loaded contract"
+                sig.needs_loaded = True
+                sig.limit = float(mf.group(1))
+                mq = RE_QTY.search(t)
+                if mq:
+                    sig.qty = int(mq.group(1))
+                sig.why = ("a fill price with no contract in it — looking for the "
+                           "LOADING call it belongs to")
+                return sig
             sig.why = "sounds like an entry but there's no full contract in it"
             return sig
         sig.symbol, sig.strike = c["symbol"], c["strike"]
@@ -287,6 +497,12 @@ def parse(text, author="", channel="", cfg=None):
         if allowed and sig.symbol not in allowed:
             sig.why = "%s isn't on your allowed-symbols list" % sig.symbol
             return sig
+        if sig.limit is None:
+            # No price in the message means nothing to measure the ask against,
+            # so the chase limit has nothing to do and it buys at whatever the
+            # ask is. Worth saying out loud rather than discovering on the fill.
+            sig.warn = ("they didn't post a fill price on this one, so your "
+                        "chase limit can't protect you — it pays the ask.")
         sig.fire = True
         sig.why = "entry: %s" % sig.human()
         return sig
@@ -303,6 +519,16 @@ def parse(text, author="", channel="", cfg=None):
         sig.action, sig.matched = "CLOSE", "exit"
         sig.fire = True
         sig.why = "exit on %s" % sig.symbol
+        return sig
+
+    # 7. "My avg is $3.05" — the fill price, posted a minute after the entry as
+    #    its own message. Nothing to do with it: the order is long gone by then
+    #    and the chase check happens at entry or not at all. Named here only so
+    #    the log says something useful instead of "nothing in it".
+    if RE_AVG.search(low):
+        sig.matched = "their fill price"
+        sig.why = ("that's their average fill on a trade they already called — "
+                   "nothing to do with it")
         return sig
 
     sig.why = "nothing in it that means buy or sell"
