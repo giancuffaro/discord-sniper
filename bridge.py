@@ -48,6 +48,54 @@ EXEC = CFG.get("execution", {})
 MODE = str(EXEC.get("mode", "dryrun")).lower()
 ALLOWED = set(str(s).upper() for s in CFG.get("allowed_symbols", []))
 
+WB = None           # the Webull connection, made once at startup
+WB_ERROR = ""
+WB_ACCOUNT = ""
+
+
+def reload_settings():
+    """Pick up KEYS.bat having been run while this window was open, so you don't
+    have to restart the bridge to see that your keys are in."""
+    global CFG, EXEC, ALLOWED
+    CFG = load_settings()
+    EXEC = CFG.get("execution", {})
+    ALLOWED = set(str(s).upper() for s in CFG.get("allowed_symbols", []))
+    EXEC["mode"] = MODE          # the running mode wins; the file may be behind
+
+
+def save_mode(new_mode):
+    """Flip live/dry-run and write it down, so restarting the bridge doesn't
+    quietly put you back where you were an hour ago.
+
+    Only settings.json is touched, and only the one field. Your keys are left
+    exactly as they are — this switch is about whether they get used, not about
+    what they are."""
+    global MODE
+    path = os.path.join(HERE, "settings.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        # No settings.json yet, or it's unreadable. Flip in memory so the button
+        # still does something, but say plainly that it won't survive a restart.
+        MODE = new_mode
+        CFG.setdefault("execution", {})["mode"] = new_mode
+        return False, ("switched to %s for now, but there's no readable "
+                       "settings.json to write it to — run KEYS.bat and it "
+                       "will stick next time." % new_mode.upper())
+
+    data.setdefault("execution", {})["mode"] = new_mode
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.chmod(path, 0o600)
+    except OSError as e:
+        return False, "couldn't write settings.json: %s" % e
+
+    MODE = new_mode
+    CFG.setdefault("execution", {})["mode"] = new_mode
+    return True, "saved"
+
 
 def note(line):
     stamp = datetime.now(ET).strftime("%H:%M:%S")
@@ -68,6 +116,8 @@ def describe(o):
     bits.append("x%s" % o.get("qty", 1))
     if o.get("limit"):
         bits.append("@ %.2f" % float(o["limit"]))
+    if o.get("reenter"):
+        bits.append("(and straight back in)")
     return " ".join(bits)
 
 
@@ -78,6 +128,10 @@ def place(order):
 
     if MODE == "dryrun":
         note("DRY RUN  %s   (nothing was sent to a broker)" % what)
+        if order.get("reenter"):
+            note("DRY RUN  then straight back in on the same contract%s"
+                 % ("" if not order.get("reenter_limit")
+                    else " around %.2f" % float(order["reenter_limit"])))
         return True, "dry run — logged, not sent"
 
     if MODE == "webhook":
@@ -96,10 +150,58 @@ def place(order):
             note("FAILED  %s  ->  %s" % (what, e))
             return False, "the webhook didn't answer: %s" % e
 
-    # Room for a real broker backend. Tell me which broker and this is where it
-    # goes — credentials read from settings.json, which is gitignored.
-    return False, ("execution mode '%s' isn't wired up yet. Leave it on "
-                   "'dryrun' until it is." % MODE)
+    if MODE == "webull":
+        if WB is None:
+            return False, ("not connected to Webull: %s" % (WB_ERROR or "unknown"))
+        from webull_options import Refused
+        qty = int(order.get("qty") or 1)
+        try:
+            if order.get("action") == "OPEN":
+                msg = WB.buy(order["symbol"], order.get("side"),
+                             order.get("strike"), order.get("expiry"), qty,
+                             their_price=order.get("limit"))
+                note("BOUGHT   %s" % msg)
+                return True, msg
+
+            if order.get("action") == "CLOSE":
+                msg = WB.sell(order["symbol"], order.get("side"),
+                              order.get("strike"), order.get("expiry"), qty)
+                note("SOLD     %s" % msg)
+
+                # "exited SPY, and back in @ 2.84" — they sold and bought the
+                # same contract straight back. Both legs happen here rather
+                # than as two round-trips from the browser, so the gap between
+                # them is as small as it can be.
+                if order.get("reenter"):
+                    try:
+                        back = WB.buy(order["symbol"], order.get("side"),
+                                      order.get("strike"), order.get("expiry"),
+                                      qty,
+                                      their_price=order.get("reenter_limit"))
+                        note("RE-BOUGHT %s" % back)
+                        return True, msg + "  ||  back in: " + back
+                    except Refused as e:
+                        # The sell already went through. Say so plainly, because
+                        # "failed" here would read as if you were still holding.
+                        note("SOLD but could NOT get back in: %s" % e)
+                        return False, ("the exit went through, but getting back "
+                                       "in did not: %s  You are FLAT on %s."
+                                       % (e, order["symbol"]))
+                return True, msg
+
+            return False, "nothing to do for action '%s'" % order.get("action")
+
+        except Refused as e:
+            note("REFUSED  %s  ->  %s" % (what, e))
+            return False, str(e)
+        except Exception as e:                          # noqa: BLE001
+            note("ERROR    %s  ->  %s" % (what, e))
+            return False, ("something went wrong talking to Webull: %s. The "
+                           "order may not have gone out — check the Webull app."
+                           % str(e)[:160])
+
+    return False, ("execution mode '%s' isn't a thing. Use dryrun, webull or "
+                   "webhook." % MODE)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -115,13 +217,75 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _json(self, code, obj):
+        self._reply(code, json.dumps(obj))
+
     def do_OPTIONS(self):
         self._reply(204, "")
 
+    def _status(self):
+        reload_settings()
+        keys_in = bool((EXEC.get("webull") or {}).get("app_key"))
+        return {"mode": MODE,
+                "live": MODE == "webull",
+                "connected": WB is not None,
+                "account": WB_ACCOUNT,
+                "error": WB_ERROR,
+                "has_keys": keys_in,
+                "stopped": os.path.exists(os.path.join(HERE, "STOP")) or
+                           os.path.exists(os.path.join(HERE, "STOP.txt"))}
+
     def do_GET(self):
+        if self.path.startswith("/mode"):
+            return self._json(200, self._status())
         self._reply(200, "bridge is up, mode=%s" % MODE)
 
+    def _set_mode(self):
+        """The live / dry-run switch, driven from the popup so you don't have to
+        find this window and restart it."""
+        global WB_ERROR
+        reload_settings()
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:
+            return self._json(400, {"ok": False, "message": "unreadable request"})
+
+        want = "webull" if body.get("live") else "dryrun"
+        if want == MODE:
+            return self._json(200, dict(self._status(), ok=True,
+                                        message="already there"))
+
+        if want == "webull":
+            if not (EXEC.get("webull") or {}).get("app_key"):
+                return self._json(400, dict(self._status(), ok=False,
+                    message="there are no Webull keys saved yet. Run KEYS.bat "
+                            "first, then flip this."))
+
+        ok, msg = save_mode(want)
+        if want == "webull":
+            connect_broker(quiet=True)
+            if WB is None:
+                # It's on, but it can't reach the broker. Better to say so now
+                # than to let you find out on the first call of the day.
+                note("LIVE MODE ON but Webull isn't connected — %s" % WB_ERROR)
+                return self._json(200, dict(self._status(), ok=False,
+                    message="live mode is on, but it couldn't connect: %s"
+                            % WB_ERROR))
+            note("LIVE MODE ON — real orders, account %s" % WB_ACCOUNT)
+            return self._json(200, dict(self._status(), ok=True,
+                message="LIVE. Real orders, account %s.%s"
+                        % (WB_ACCOUNT, "" if ok else "  (" + msg + ")")))
+
+        WB_ERROR = ""       # a stale connection error is noise once you're safe
+        note("DRY RUN — nothing real will be sent")
+        return self._json(200, dict(self._status(), ok=True,
+            message="dry run. Orders are logged, nothing is sent."))
+
     def do_POST(self):
+        if self.path.startswith("/mode"):
+            return self._set_mode()
+
         if os.path.exists(os.path.join(HERE, "STOP")) or \
            os.path.exists(os.path.join(HERE, "STOP.txt")):
             note("BLOCKED  the STOP file is here, so nothing goes out")
@@ -146,11 +310,47 @@ class Handler(BaseHTTPRequestHandler):
             qty = 1
         order["qty"] = qty
 
+        # A broker needs the exact contract. The room's "all out of AMD" doesn't
+        # have one, so the extension fills it in from what you're holding — if
+        # it arrives here empty, something upstream lost track and the right
+        # answer is to send nothing.
+        if MODE != "dryrun" and not (order.get("strike") and order.get("expiry")):
+            note("BLOCKED  %s %s arrived with no strike/expiry" %
+                 (order.get("action"), sym))
+            return self._reply(400,
+                "that order didn't say which contract (no strike or expiry), so "
+                "nothing was sent. Close it in the Webull app if you're in it.")
+
         ok, msg = place(order)
         self._reply(200 if ok else 502, msg)
 
     def log_message(self, *a):
         pass    # the default logger prints a line per request; note() is enough
+
+
+def connect_broker(quiet=False):
+    """Done at startup, and again whenever you flip to live, so the first call
+    of the day doesn't spend three seconds logging in while the move happens."""
+    global WB, WB_ERROR, WB_ACCOUNT
+    if MODE != "webull":
+        return
+    try:
+        from webull_options import WebullOptions
+        wb = WebullOptions(CFG)
+        acct = wb.connect()
+        WB, WB_ACCOUNT, WB_ERROR = wb, str(acct), ""
+        if not quiet:
+            print("  Webull: connected, options account %s" % acct)
+        else:
+            note("Webull connected, options account %s" % acct)
+    except Exception as e:                              # noqa: BLE001
+        WB, WB_ACCOUNT = None, ""
+        WB_ERROR = str(e)
+        if not quiet:
+            print("  Webull: NOT CONNECTED — %s" % WB_ERROR)
+            print("          nothing will fire until this is fixed.")
+        else:
+            note("Webull NOT connected — %s" % WB_ERROR)
 
 
 def main():
@@ -161,6 +361,7 @@ def main():
                             if MODE == "dryrun" else "   <- REAL ORDERS"))
     print("  allowed symbols: %s" % (", ".join(sorted(ALLOWED)) or "any"))
     print("  panic button: make a file called STOP in this folder")
+    connect_broker()
     print("=" * 62)
     print("Leave this window open. Close it and the extension can't trade.")
     try:

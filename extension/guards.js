@@ -123,6 +123,19 @@ async function guardCheck(sig, ctx, cfg) {
   return { allowed: true, reason: "allowed" };
 }
 
+/* "all out of AMD" never says which contract, and neither does "exited and
+ * back in" — the room already knows which one. A broker doesn't, so the
+ * missing pieces come from what you're actually holding. */
+async function fillFromPosition(sig) {
+  const st = await guardState();
+  const p = st.positions[sig.symbol];
+  if (!p) return sig;
+  if (sig.strike === null || sig.strike === undefined) sig.strike = p.strike;
+  if (!sig.side) sig.side = p.side;
+  if (!sig.expiry) sig.expiry = p.expiry;
+  return sig;
+}
+
 async function guardRecord(sig, cfg) {
   const g = Object.assign({}, GUARD_DEFAULTS, cfg.guards || {});
   const now = Date.now();
@@ -145,7 +158,18 @@ async function guardRecord(sig, cfg) {
     st.lastFire = now;
     st.count += 1;
   } else if (sig.action === "CLOSE") {
+    const held = st.positions[sig.symbol] || {};
     delete st.positions[sig.symbol];
+    if (sig.reenter) {
+      // Sold and bought straight back into the same contract. The tracker has
+      // to know you're still in it, or the room's next "all out" gets refused
+      // for having nothing to sell.
+      st.positions[sig.symbol] = {
+        side: sig.side || held.side,
+        strike: (sig.strike === null || sig.strike === undefined)
+                ? held.strike : sig.strike,
+        expiry: sig.expiry || held.expiry, ts: now };
+    }
   }
   await saveGuardState(st);
   return st;

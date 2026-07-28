@@ -29,10 +29,22 @@
     "max_message_age_seconds": 20
   },
 
+  "_execution": "dryrun = log it, send nothing. webull = real options orders in your Webull account. Use KEYS.bat rather than editing this by hand.",
   "execution": {
     "mode": "dryrun",
     "webhook_url": "",
     "headers": {},
-    "timeout_seconds": 4
+    "timeout_seconds": 4,
+
+    "webull": {
+      "app_key": "",
+      "app_secret": "",
+      "_account_id": "Blank means pick the options account automatically. It will never use a futures account.",
+      "account_id": "",
+      "futures_account_suffixes": ["3T0B"],
+      "_max_chase_pct": "If the ask is more than this % above the price they got in at, skip rather than chase.",
+      "max_chase_pct": 15,
+      "marketable_buffer_pct": 2
+    }
   }
 }

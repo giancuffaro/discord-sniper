@@ -81,14 +81,25 @@ class Signal:
     pct: Optional[float] = None      # the gain they reported on a trim
     qty: Optional[int] = None
     caller: str = ""                 # which admin the scribe was relaying
+    # "exited SPY, and back in @ 2.84" is one line but two trades: they closed
+    # and immediately re-bought THE SAME contract at a new price. So this
+    # closes you and puts you straight back in, on the contract you were
+    # already holding — the line never names it, and it doesn't need to.
+    reenter: bool = False
+    reenter_limit: Optional[float] = None
     warn: str = ""
     raw: str = ""
     clean: str = ""
     matched: str = ""
 
     def key(self):
+        # reenter belongs in the identity. "exited SPY, and back in" and a
+        # later plain "all out of SPY" are both CLOSE SPY on the same contract,
+        # but they're two different calls minutes apart — without this the real
+        # exit is thrown away as a duplicate of the re-entry and you ride the
+        # position into the close.
         return (self.action, self.symbol, self.side, self.strike, self.expiry,
-                self.pct)
+                self.pct, bool(self.reenter))
 
     def human(self):
         if not self.action:
@@ -202,8 +213,14 @@ def parse(text, author="", channel="", cfg=None):
         return sig
 
     # 3. EXITED ... AND BACK IN — one line, two trades.
+    #    They sold and immediately re-bought the SAME contract at a new price.
+    #    The line doesn't name the contract because everyone in the room already
+    #    knows which one, so the re-entry is filled in from what you're holding.
     if RE_BACKIN.search(low) and RE_EXIT.search(low):
-        sig.symbol = _bare_symbol(t, allowed)
+        c = _contract(t)
+        sig.symbol = c["symbol"] if c else _bare_symbol(t, allowed)
+        if c:
+            sig.strike, sig.side, sig.expiry = c["strike"], c["side"], c["expiry"]
         sig.action, sig.matched = "CLOSE", "exit and re-entry"
         m = RE_LIMIT.search(t)
         if m:
@@ -212,9 +229,13 @@ def parse(text, author="", channel="", cfg=None):
             sig.why = "they exited and re-entered but I couldn't tell which ticker"
             return sig
         sig.fire = True
-        sig.warn = ("they got out and straight back in. This closes you and "
-                    "leaves you flat — re-enter by hand if you want to follow.")
-        sig.why = "exit on %s (they re-entered; you will be flat)" % sig.symbol
+        sig.reenter = True
+        sig.reenter_limit = sig.limit
+        sig.warn = ("two orders off one line: it sells, then buys the same "
+                    "contract straight back.")
+        sig.why = ("out and back into %s%s — same contract, sold and re-bought"
+                   % (sig.symbol,
+                      "" if sig.limit is None else " @ %.2f" % sig.limit))
         return sig
 
     # 4. TRIMMING — a partial. You hold one contract, so you can't trim; what

@@ -123,6 +123,11 @@ def main():
             return
 
         qty = guards.clamp_qty(sig.qty or 1)
+        # "all out of AMD" names no strike and no expiry, because everyone in
+        # the room already knows which contract. A broker doesn't, so fill it
+        # in from what you're actually holding before the order goes out.
+        if sig.action == "CLOSE":
+            guards.fill_from_position(sig)
         guards.record(sig)               # record BEFORE sending, so a crash
                                          # mid-order can't double-fire
         t0 = time.time()

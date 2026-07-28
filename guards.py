@@ -121,6 +121,21 @@ class Guards:
 
         return True, "allowed"
 
+    def fill_from_position(self, sig):
+        """"all out of AMD" never says which contract, and neither does "exited
+        and back in" — everyone in the room already knows which one. A broker
+        doesn't, so the missing pieces come from what you're actually holding."""
+        p = self.open_pos.get(sig.symbol)
+        if not p:
+            return sig
+        if sig.strike is None:
+            sig.strike = p.get("strike")
+        if sig.side is None:
+            sig.side = p.get("side")
+        if sig.expiry is None:
+            sig.expiry = p.get("expiry")
+        return sig
+
     def record(self, sig):
         """Call this the moment an order actually goes out."""
         now = time.time()
@@ -137,7 +152,17 @@ class Guards:
             self.open_pos[sig.symbol] = {"side": sig.side, "strike": sig.strike,
                                          "expiry": sig.expiry, "ts": now}
         elif sig.action == "CLOSE":
-            self.open_pos.pop(sig.symbol, None)
+            held = self.open_pos.pop(sig.symbol, None)
+            if getattr(sig, "reenter", False):
+                # Sold and bought straight back into the same contract. The
+                # tracker has to know you're still in it, or the room's next
+                # "all out" gets refused for having nothing to sell.
+                base = held or {}
+                self.open_pos[sig.symbol] = {
+                    "side": sig.side or base.get("side"),
+                    "strike": sig.strike if sig.strike is not None
+                              else base.get("strike"),
+                    "expiry": sig.expiry or base.get("expiry"), "ts": now}
         # keep the dedupe table from growing all day
         if len(self._recent) > 400:
             cut = now - max(self.dedupe_s, 300)
