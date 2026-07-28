@@ -1,7 +1,12 @@
 settings.json
-trades.log
 STOP
 STOP.txt
 __pycache__/
 *.pyc
 .venv/
+
+# Log files, including the one the Webull SDK writes on its own. These are
+# noise in a repo and they can quietly contain account ids, so they stay local.
+*.log
+webull_trade_sdk.log
+trades.log

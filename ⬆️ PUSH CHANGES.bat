@@ -42,8 +42,9 @@ if errorlevel 1 (
   echo     - GitHub asked you to sign in and you closed the window.
   echo       Run this again and finish the sign-in.
   echo.
-  echo     - Something changed on GitHub that isn't on this PC. Run
-  echo       "UPDATE.bat" first to pull it down, then run this again.
+  echo     - It says "rejected" or "non-fast-forward". GitHub has a
+  echo       version this PC doesn't recognise. Run "FIX THE PUSH.bat"
+  echo       once - it sorts that out and keeps your files.
   echo.
   echo     - No internet.
   echo.
