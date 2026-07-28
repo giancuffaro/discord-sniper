@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root { color-scheme: dark; }
+  body { width: 360px; margin: 0; padding: 12px 14px 16px;
+         font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+         background: #0b0d12; color: #e6e8ee; }
+  h1 { font-size: 14px; margin: 0 0 10px; letter-spacing: .08em;
+       text-transform: uppercase; color: #f5b342; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .grow { flex: 1; }
+  button { font: inherit; border: 1px solid #2a2f3c; background: #161a24;
+           color: #e6e8ee; padding: 7px 10px; border-radius: 6px; cursor: pointer; }
+  button:hover { background: #1e2431; }
+  button.armed { background: #7f1d1d; border-color: #b91c1c; color: #fff; }
+  button.safe { background: #14532d; border-color: #166534; color: #fff; }
+  button.stop { background: #b91c1c; border-color: #ef4444; color: #fff;
+                font-weight: 700; }
+  .state { font-size: 12px; color: #9aa3b5; }
+  label { display: block; font-size: 11px; color: #9aa3b5; margin: 8px 0 3px;
+          text-transform: uppercase; letter-spacing: .05em; }
+  input, select { width: 100%; box-sizing: border-box; font: inherit;
+                  background: #0f131b; color: #e6e8ee; border: 1px solid #2a2f3c;
+                  border-radius: 6px; padding: 6px 8px; }
+  .half { display: flex; gap: 8px; }
+  .half > div { flex: 1; }
+  details { margin-top: 10px; border-top: 1px solid #1c212c; padding-top: 8px; }
+  summary { cursor: pointer; color: #9aa3b5; font-size: 12px; }
+  #log { margin-top: 10px; border-top: 1px solid #1c212c; padding-top: 8px;
+         max-height: 210px; overflow-y: auto; }
+  .e { padding: 5px 0; border-bottom: 1px solid #141922; }
+  .e b { display: block; font-size: 12px; }
+  .e span { color: #7d8697; font-size: 11px; }
+  .fired b { color: #4ade80; }
+  .failed b { color: #f87171; }
+  .skipped b { color: #fbbf24; }
+  .ignored b { color: #6b7383; }
+  .note { font-size: 11px; color: #7d8697; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>Discord Sniper</h1>
+
+  <div class="row">
+    <button id="arm" class="grow safe">SAFE — click to ARM</button>
+    <button id="stop" class="stop">STOP</button>
+  </div>
+  <div class="state" id="state">Loading…</div>
+
+  <details>
+    <summary>Settings</summary>
+
+    <label>Channel IDs to watch (comma separated)</label>
+    <input id="channels" placeholder="829754942817828884">
+
+    <label>Only follow these callers (blank = anyone)</label>
+    <input id="admins" placeholder="Brett, HoneyDrip">
+
+    <label>Symbols you'll allow</label>
+    <input id="symbols" placeholder="SPY, QQQ, AAPL, AMD, NVDA">
+
+    <div class="half">
+      <div>
+        <label>On their trims</label>
+        <select id="trim">
+          <option value="ignore">hold until "all out"</option>
+          <option value="close">exit on the first trim</option>
+          <option value="at_pct">exit at or above…</option>
+        </select>
+      </div>
+      <div>
+        <label>…this %</label>
+        <input id="trimpct" type="number" min="1" max="500" value="50">
+      </div>
+    </div>
+
+    <div class="half">
+      <div>
+        <label>Max contracts</label>
+        <input id="maxqty" type="number" min="1" max="50" value="1">
+      </div>
+      <div>
+        <label>Max trades/day</label>
+        <input id="maxday" type="number" min="1" max="50" value="6">
+      </div>
+    </div>
+
+    <label>Bridge on your PC</label>
+    <input id="bridge" placeholder="http://127.0.0.1:8787/order">
+
+    <div class="row" style="margin-top:10px">
+      <button id="save" class="grow">Save settings</button>
+      <button id="export">Export chat</button>
+    </div>
+    <div class="note">"Export chat" downloads every message this extension has
+      seen, as a text file. Send it to me and I'll tune the reader to your
+      room's exact wording.</div>
+  </details>
+
+  <div id="log"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

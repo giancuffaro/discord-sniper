@@ -1,0 +1,7 @@
+settings.json
+trades.log
+STOP
+STOP.txt
+__pycache__/
+*.pyc
+.venv/

@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Discord Sniper",
+  "version": "1.0.0",
+  "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
+  "permissions": ["storage", "notifications", "downloads"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://discord.com/channels/*", "https://*.discord.com/channels/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Discord Sniper",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+}

@@ -1,0 +1,38 @@
+{
+  "_read_me": "Copy this file to settings.json and fill it in. settings.json is ignored by git so your token never leaves your PC.",
+
+  "bot_token": "PASTE_YOUR_BOT_TOKEN_HERE",
+
+  "channel_ids": ["829754942817828884"],
+  "author_ids": [],
+  "author_names": [],
+
+  "_follow_admins": "Empty means follow every admin the scribe relays. Put names in to follow only some, e.g. [\"Unraveller\", \"Brett\"].",
+  "follow_admins": [],
+
+  "allowed_symbols": ["SPY", "QQQ", "IWM", "AAPL", "AMD", "NVDA", "NFLX",
+                      "TSLA", "META", "MSFT", "AMZN", "GOOGL"],
+  "extra_veto_words": [],
+
+  "_trim_action": "ignore = hold until they say 'all out'. close = exit on their first trim. at_pct = exit the first time they trim at or above close_at_trim_pct.",
+  "trim_action": "ignore",
+  "close_at_trim_pct": 50,
+
+  "guards": {
+    "max_qty": 1,
+    "max_trades_per_day": 6,
+    "cooldown_seconds": 5,
+    "dedupe_seconds": 120,
+    "regular_hours_only": true,
+    "open_time": "09:30",
+    "close_time": "15:45",
+    "max_message_age_seconds": 20
+  },
+
+  "execution": {
+    "mode": "dryrun",
+    "webhook_url": "",
+    "headers": {},
+    "timeout_seconds": 4
+  }
+}

@@ -1,0 +1,37 @@
+/* test_parity.js — prove the browser reads your room exactly like Python does.
+ *
+ * Two copies of the same logic in two languages is how a bot ends up buying in
+ * the extension and not in the listener, on a Tuesday, for no visible reason.
+ * This runs every line of samples.txt through the JS parser and compares it to
+ * a JSON dump from the Python one.
+ *
+ *   python3 dump_parse.py > /tmp/py.json && node test_parity.js /tmp/py.json
+ */
+const fs = require("fs");
+const path = require("path");
+const { parseSignal } = require("./extension/parser.js");
+
+const CFG = JSON.parse(fs.readFileSync(
+  path.join(__dirname, "settings.example.json"), "utf8"));
+const py = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+
+const FIELDS = ["fire", "action", "symbol", "side", "strike", "expiry",
+                "limit", "pct", "qty"];
+let bad = 0;
+
+for (const row of py) {
+  const js = parseSignal(row.raw, CFG);
+  for (const f of FIELDS) {
+    const a = row[f] === undefined ? null : row[f];
+    const b = js[f] === undefined ? null : js[f];
+    if (JSON.stringify(a) !== JSON.stringify(b)) {
+      bad++;
+      console.log("MISMATCH on " + f + ": python=" + JSON.stringify(a) +
+                  " js=" + JSON.stringify(b) + "\n   " + row.raw.slice(0, 80));
+    }
+  }
+}
+
+if (bad) { console.log("\n" + bad + " field(s) disagree."); process.exit(1); }
+console.log("Python and the extension read all " + py.length +
+            " lines identically.");
