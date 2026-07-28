@@ -48,6 +48,9 @@ EXEC = CFG.get("execution", {})
 MODE = str(EXEC.get("mode", "dryrun")).lower()
 ALLOWED = set(str(s).upper() for s in CFG.get("allowed_symbols", []))
 
+WB = None           # the Webull connection, made once at startup
+WB_ERROR = ""
+
 
 def note(line):
     stamp = datetime.now(ET).strftime("%H:%M:%S")
@@ -68,6 +71,8 @@ def describe(o):
     bits.append("x%s" % o.get("qty", 1))
     if o.get("limit"):
         bits.append("@ %.2f" % float(o["limit"]))
+    if o.get("reenter"):
+        bits.append("(and straight back in)")
     return " ".join(bits)
 
 
@@ -78,6 +83,10 @@ def place(order):
 
     if MODE == "dryrun":
         note("DRY RUN  %s   (nothing was sent to a broker)" % what)
+        if order.get("reenter"):
+            note("DRY RUN  then straight back in on the same contract%s"
+                 % ("" if not order.get("reenter_limit")
+                    else " around %.2f" % float(order["reenter_limit"])))
         return True, "dry run — logged, not sent"
 
     if MODE == "webhook":
@@ -96,10 +105,58 @@ def place(order):
             note("FAILED  %s  ->  %s" % (what, e))
             return False, "the webhook didn't answer: %s" % e
 
-    # Room for a real broker backend. Tell me which broker and this is where it
-    # goes — credentials read from settings.json, which is gitignored.
-    return False, ("execution mode '%s' isn't wired up yet. Leave it on "
-                   "'dryrun' until it is." % MODE)
+    if MODE == "webull":
+        if WB is None:
+            return False, ("not connected to Webull: %s" % (WB_ERROR or "unknown"))
+        from webull_options import Refused
+        qty = int(order.get("qty") or 1)
+        try:
+            if order.get("action") == "OPEN":
+                msg = WB.buy(order["symbol"], order.get("side"),
+                             order.get("strike"), order.get("expiry"), qty,
+                             their_price=order.get("limit"))
+                note("BOUGHT   %s" % msg)
+                return True, msg
+
+            if order.get("action") == "CLOSE":
+                msg = WB.sell(order["symbol"], order.get("side"),
+                              order.get("strike"), order.get("expiry"), qty)
+                note("SOLD     %s" % msg)
+
+                # "exited SPY, and back in @ 2.84" — they sold and bought the
+                # same contract straight back. Both legs happen here rather
+                # than as two round-trips from the browser, so the gap between
+                # them is as small as it can be.
+                if order.get("reenter"):
+                    try:
+                        back = WB.buy(order["symbol"], order.get("side"),
+                                      order.get("strike"), order.get("expiry"),
+                                      qty,
+                                      their_price=order.get("reenter_limit"))
+                        note("RE-BOUGHT %s" % back)
+                        return True, msg + "  ||  back in: " + back
+                    except Refused as e:
+                        # The sell already went through. Say so plainly, because
+                        # "failed" here would read as if you were still holding.
+                        note("SOLD but could NOT get back in: %s" % e)
+                        return False, ("the exit went through, but getting back "
+                                       "in did not: %s  You are FLAT on %s."
+                                       % (e, order["symbol"]))
+                return True, msg
+
+            return False, "nothing to do for action '%s'" % order.get("action")
+
+        except Refused as e:
+            note("REFUSED  %s  ->  %s" % (what, e))
+            return False, str(e)
+        except Exception as e:                          # noqa: BLE001
+            note("ERROR    %s  ->  %s" % (what, e))
+            return False, ("something went wrong talking to Webull: %s. The "
+                           "order may not have gone out — check the Webull app."
+                           % str(e)[:160])
+
+    return False, ("execution mode '%s' isn't a thing. Use dryrun, webull or "
+                   "webhook." % MODE)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -146,11 +203,40 @@ class Handler(BaseHTTPRequestHandler):
             qty = 1
         order["qty"] = qty
 
+        # A broker needs the exact contract. The room's "all out of AMD" doesn't
+        # have one, so the extension fills it in from what you're holding — if
+        # it arrives here empty, something upstream lost track and the right
+        # answer is to send nothing.
+        if MODE != "dryrun" and not (order.get("strike") and order.get("expiry")):
+            note("BLOCKED  %s %s arrived with no strike/expiry" %
+                 (order.get("action"), sym))
+            return self._reply(400,
+                "that order didn't say which contract (no strike or expiry), so "
+                "nothing was sent. Close it in the Webull app if you're in it.")
+
         ok, msg = place(order)
         self._reply(200 if ok else 502, msg)
 
     def log_message(self, *a):
         pass    # the default logger prints a line per request; note() is enough
+
+
+def connect_broker():
+    """Done once, at startup, so the first call of the day doesn't spend three
+    seconds logging in while the move happens."""
+    global WB, WB_ERROR
+    if MODE != "webull":
+        return
+    try:
+        from webull_options import WebullOptions, Refused
+        wb = WebullOptions(CFG)
+        acct = wb.connect()
+        WB = wb
+        print("  Webull: connected, options account %s" % acct)
+    except Exception as e:                              # noqa: BLE001
+        WB_ERROR = str(e)
+        print("  Webull: NOT CONNECTED — %s" % WB_ERROR)
+        print("          nothing will fire until this is fixed.")
 
 
 def main():
@@ -161,6 +247,7 @@ def main():
                             if MODE == "dryrun" else "   <- REAL ORDERS"))
     print("  allowed symbols: %s" % (", ".join(sorted(ALLOWED)) or "any"))
     print("  panic button: make a file called STOP in this folder")
+    connect_broker()
     print("=" * 62)
     print("Leave this window open. Close it and the extension can't trade.")
     try:

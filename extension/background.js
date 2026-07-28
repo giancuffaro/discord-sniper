@@ -60,6 +60,10 @@ async function sendOrder(sig, qty, c) {
   const order = {
     action: sig.action, symbol: sig.symbol, side: sig.side, qty,
     strike: sig.strike, expiry: sig.expiry, limit: sig.limit,
+    // "exited SPY, and back in @ 2.84" is one message and two orders: sell the
+    // contract, then buy the same one back. The bridge does both legs so the
+    // gap between them is as small as it can be.
+    reenter: !!sig.reenter, reenter_limit: sig.reenter_limit || null,
     source: "discord-extension", raw: sig.raw, ts: Date.now()
   };
   const t0 = performance.now();
@@ -107,6 +111,10 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     }
 
     const qty = clampQty(sig.qty || 1, c);
+    // The room says "all out of AMD" — no strike, no expiry, because everyone
+    // there knows which contract. A broker doesn't, so fill it in from the
+    // position before this leaves the browser.
+    if (sig.action === "CLOSE") await fillFromPosition(sig);
     // Recorded before the order goes out, so a crash mid-send can't double-fire.
     await guardRecord(sig, c);
     const res = await sendOrder(sig, qty, c);

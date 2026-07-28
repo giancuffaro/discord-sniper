@@ -58,8 +58,15 @@ check("@Brett (Admin) all out AAPL @ 30% @everyone", action="CLOSE", fire=True,
       symbol="AAPL", pct=30.0)
 check("@Unraveller (Admin)🔮 exited SPY, and back in @ 2.84 @everyone",
       action="CLOSE", fire=True, symbol="SPY", limit=2.84)
-ok(sigmod.parse("@Unraveller (Admin)🔮 exited SPY, and back in @ 2.84", cfg=CFG).warn,
-   "the exit-and-back-in line should carry a warning")
+r = sigmod.parse("@Unraveller (Admin)🔮 exited SPY, and back in @ 2.84", cfg=CFG)
+ok(r.warn, "the exit-and-back-in line should carry a warning")
+ok(r.reenter, "'exited and back in' has to buy the same contract straight back")
+ok(r.reenter_limit == 2.84,
+   "2.84 is the price they got back in at, got %r" % r.reenter_limit)
+# A plain exit is NOT a re-entry — getting this wrong buys you back into
+# something the room just told you to be out of.
+ok(not sigmod.parse("all out of AAPL", cfg=CFG).reenter,
+   "'all out' must not re-enter")
 
 # --- trims: a percentage is never mistaken for a price ----------------------
 t = check("@Unraveller (Admin)🔮 trimming SPY @everyone @ 45%",
@@ -117,15 +124,38 @@ a, why = g.check(ghost, 1, 2, "bob", msg_epoch=now())
 ok(not a and "nothing to close" in why,
    "closing something you don't hold must be refused (it would open a short): %s" % why)
 
-# out and straight back in must not be swallowed as a duplicate
+# "exited SPY, and back in @ 2.84" — sold and bought the SAME contract right
+# back. The line never names the contract, so the guards have to supply it from
+# what's being held, and you have to still be holding it afterwards.
 spy_in = sigmod.parse("in SPY 7/28 745P @ 2.76", cfg=CFG)
 ok(g.check(spy_in, 1, 2, "bob", msg_epoch=now())[0], "SPY entry should pass")
 g.record(spy_in)
+
 spy_out = sigmod.parse("exited SPY, and back in @ 2.84", cfg=CFG)
 ok(g.check(spy_out, 1, 2, "bob", msg_epoch=now())[0], "the exit should pass")
+ok(spy_out.strike is None and spy_out.expiry is None,
+   "the room's line names no contract, so the parser must not invent one")
+g.fill_from_position(spy_out)
+ok(spy_out.strike == 745 and spy_out.side == "PUTS" and spy_out.expiry == "7/28",
+   "the contract should be filled in from the open position, got %r %r %r"
+   % (spy_out.strike, spy_out.side, spy_out.expiry))
 g.record(spy_out)
+ok("SPY" in g.open_pos,
+   "after out-and-straight-back-in you are still holding SPY, not flat")
+ok(g.open_pos["SPY"]["strike"] == 745 and g.open_pos["SPY"]["expiry"] == "7/28",
+   "the re-entry is the same contract, so the tracker keeps 7/28 745P")
 a, why = g.check(spy_in, 1, 2, "bob", msg_epoch=now())
-ok(a, "re-entry right after an exit must NOT be treated as a duplicate: %s" % why)
+ok(not a and "already in SPY" in why,
+   "you're back in already — a further 'in SPY' would double you up: %s" % why)
+
+# A plain exit with no re-entry does leave you flat, and the dedupe must not
+# then swallow a genuine fresh entry on the same ticker.
+flat = sigmod.parse("all out of SPY", cfg=CFG)
+ok(g.check(flat, 1, 2, "bob", msg_epoch=now())[0], "the plain exit should pass")
+g.record(flat)
+ok("SPY" not in g.open_pos, "a plain 'all out' leaves you flat")
+a, why = g.check(spy_in, 1, 2, "bob", msg_epoch=now())
+ok(a, "a fresh entry after a plain exit must NOT read as a duplicate: %s" % why)
 
 ok(g.clamp_qty(50) == 1, "qty should clamp to max_qty")
 

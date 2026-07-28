@@ -16,7 +16,7 @@ const CFG = JSON.parse(fs.readFileSync(
 const py = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 
 const FIELDS = ["fire", "action", "symbol", "side", "strike", "expiry",
-                "limit", "pct", "qty"];
+                "limit", "pct", "qty", "reenter", "reenter_limit"];
 let bad = 0;
 
 for (const row of py) {

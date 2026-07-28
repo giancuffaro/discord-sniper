@@ -86,8 +86,14 @@ function human(s) {
   return bits.join(" ");
 }
 
+// reenter belongs in the identity. "exited SPY, and back in" and a later plain
+// "all out of SPY" are both CLOSE SPY on the same contract, but they're two
+// different calls minutes apart — without this the real exit is thrown away as
+// a duplicate of the re-entry and you ride the position into the close.
+// Symbol stays at index 1: guardRecord's purge splits on "|" and reads it.
 function signalKey(s) {
-  return [s.action, s.symbol, s.side, s.strike, s.expiry, s.pct].join("|");
+  return [s.action, s.symbol, s.side, s.strike, s.expiry, s.pct,
+          s.reenter ? 1 : 0].join("|");
 }
 
 function parseSignal(text, cfg) {
@@ -96,7 +102,8 @@ function parseSignal(text, cfg) {
   const raw = String(text || "").trim();
   const s = { fire: false, why: "", action: null, symbol: null, side: null,
               strike: null, expiry: null, limit: null, pct: null, qty: null,
-              caller: "", warn: "", raw, clean: "", matched: "" };
+              caller: "", reenter: false, reenter_limit: null,
+              warn: "", raw, clean: "", matched: "" };
   if (!raw) { s.why = "empty message"; return s; }
 
   const t = cleanText(raw);
@@ -140,17 +147,26 @@ function parseSignal(text, cfg) {
     return s;
   }
 
-  // 3. EXITED ... AND BACK IN — one line, two trades.
+  // 3. EXITED ... AND BACK IN — one line, two trades. They sold and immediately
+  //    re-bought THE SAME contract at a new price. The line doesn't name the
+  //    contract because everyone in the room already knows which one, so the
+  //    re-entry is filled in from the position you're holding.
   if (RE_BACKIN.test(low) && RE_EXIT.test(low)) {
-    s.symbol = bareSymbol(t, allowed);
+    const c = findContract(t);
+    s.symbol = c ? c.symbol : bareSymbol(t, allowed);
+    if (c) { s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
     s.action = "CLOSE"; s.matched = "exit and re-entry";
     const m = RE_LIMIT.exec(t);
     if (m) s.limit = parseFloat(m[1]);
     if (!s.symbol) { s.why = "they exited and re-entered but I couldn't tell which ticker"; return s; }
     s.fire = true;
-    s.warn = "they got out and straight back in. This closes you and leaves you " +
-             "flat — re-enter by hand if you want to follow.";
-    s.why = "exit on " + s.symbol + " (they re-entered; you will be flat)";
+    s.reenter = true;
+    s.reenter_limit = s.limit;
+    s.warn = "two orders off one line: it sells, then buys the same contract " +
+             "straight back.";
+    s.why = "out and back into " + s.symbol +
+            (s.limit === null ? "" : " @ " + s.limit.toFixed(2)) +
+            " — same contract, sold and re-bought";
     return s;
   }
 
