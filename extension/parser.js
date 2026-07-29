@@ -96,8 +96,16 @@ const RE_IN_CUE = /\d+\.\d{1,2}|\bstarters?\b|\bcons?\b|\b[01]\s*d(?:ays?|tes?)\
 const RE_IN_PRICE = /(?:\bat|@)\s*\$?(\d{1,2}\.\d{1,2})\b/i;
 // "All positions closed" / "Out of all trades" — everything this trader
 // holds goes, whatever the tickers are.
+// Midas confirms his entry three ways after a Loaded: a bare "Filled
+// @here", a bare price with the word fill/avg ("1.97 fill", "Avg 1.61"),
+// or "Taking more cons". All of them mean HE IS IN — fire on his last PREP.
+const RE_FILL_CONF = /^(?:filled)\b(?:\s+(?:light\s+size|lightly|starters?))*[\s.!]*$|^\$?(\d{1,2}\.\d{1,2})\s+(?:is\s+my\s+)?(?:final\s+)?(?:fill|avg)\b[\s.!]*$|^avg\s+\$?(\d{1,2}\.\d{1,2})\b[\s.!]*$|^tak(?:e|ing)\s+(?:first|more|some)?\s*(?:size|cons?)\b/i;
 const RE_CLOSE_ALL = /\ball\s+positions?\s+(?:are\s+)?closed\b|\bclos(?:ed|ing)\s+all\s+positions?\b|\bout\s+of\s+all\s+trades\b|\bsold\s+everything\b/i;
 const RE_HALF = /\b(?:out\s+of|sold)\s+half\b/i;
+// "Stopped out of half my position" / "Stopping out of 2nd entry" — their
+// stop fired. Half or a numbered entry = partial; otherwise the trade's done.
+const RE_STOPPED_OUT = /\bstopp?(?:ed|ing)\s+out\b/i;
+const RE_PARTIAL = /\bhalf\b|\b(?:2nd|second|1st|first)\s+entry\b|\bpart\b|\bsome\b/i;
 // Entry-line filler that isn't information: sizing talk and hype words.
 const RE_FILLER = /\b(?:lightly|light|super|very|small|starters?|lottos?|lotto|these|some|size|zero|for|high|risk|deg[ea]n|accts?|account|starter)\b|[()!,]|\.(?!\d)/gi;
 
@@ -166,10 +174,13 @@ function cleanText(raw) {
 /* "to July 29th" -> "7/29". Only used when the contract itself didn't carry an
  * expiry, so it can never override one they actually wrote. */
 const RE_DAYS_ANY = /\b(\d{1,2})\s*days?\b/i;
-// "tomorrow exp" is Midas's and Aristotle's way of writing 1DTE.
+// "tomorrow exp" is Midas's and Aristotle's way of writing 1DTE, and
+// "today exp" is 0DTE said out loud.
 const RE_TMRW_EXP = /\btomorrow\s+exp\w*/i;
+const RE_TODAY_EXP = /\btoday\s+exp\w*|\bexpiring\s+today\b/i;
 function expiryAnywhere(text) {
   if (RE_TMRW_EXP.test(text)) return "1DTE";
+  if (RE_TODAY_EXP.test(text)) return "0DTE";
   let m = RE_MONTH_DAY.exec(text);
   if (m) return MONTHS[m[1].toLowerCase().slice(0, 3)] + "/" + parseInt(m[2], 10);
   m = RE_DTE_ANY.exec(text);
@@ -357,6 +368,21 @@ function parseSignal(text, cfg) {
   //     Resolved by whose position it is, exactly like a bare trim. The
   //     anchored regex is what keeps "Damn it actually worked out" from
   //     reading as an exit — a bare out IS the whole message, or it's chatter.
+  if (RE_STOPPED_OUT.test(low)) {
+    s.symbol = bareSymbol(t, allowed);
+    s.action = RE_PARTIAL.test(low) ? "TRIM" : "CLOSE";
+    s.matched = "stopped out";
+    if (!s.symbol) {
+      s.needs_position = true;
+      s.why = "their stop fired — working out which position they meant";
+      return s;
+    }
+    s.fire = s.action === "CLOSE";
+    s.why = (s.action === "CLOSE" ? "stopped out of " : "partial stop on ") +
+            s.symbol;
+    return s;
+  }
+
   if (RE_BARE_OUT.test(t)) {
     s.action = RE_HALF.test(t) ? "TRIM" : "CLOSE";
     s.needs_position = true;
@@ -385,6 +411,24 @@ function parseSignal(text, cfg) {
     s.why = "out and back into " + s.symbol +
             (s.limit === null ? "" : " @ " + s.limit.toFixed(2)) +
             " — same contract, sold and re-bought";
+    return s;
+  }
+
+  // 2c. Midas's fill confirmations — "Filled @here", "1.97 fill",
+  //     "Avg 1.61", "Taking more cons at 748.50". He is IN (or adding);
+  //     fires on his last Loaded, and a second one on the same PREP goes
+  //     down the averaging path like any other add.
+  const mfc = RE_FILL_CONF.exec(t);
+  if (mfc) {
+    s.action = "OPEN"; s.matched = "fill confirmation on a loaded contract";
+    s.needs_loaded = true;
+    const p0 = mfc[1] || mfc[2];
+    if (p0) s.limit = parseFloat(p0);
+    else {
+      const mp0 = RE_IN_PRICE.exec(t);
+      if (mp0) s.limit = parseFloat(mp0[1]);
+    }
+    s.why = "their fill confirmation — looking for the PREP it belongs to";
     return s;
   }
 

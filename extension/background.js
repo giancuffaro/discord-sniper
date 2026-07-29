@@ -25,14 +25,11 @@ const RECORD_ONLY = new Set([
   // gated separately by platform until its reader is precise)
 ]);
 
-/* Aristotle TRADES in test mode now — his call: "actually dont put him in
- * shadow mode, go ahead and test him out, im not going to go live until next
- * week anyway." Midas takes the shadow slot instead: his grammar just got
- * built from a month of his room, so the log shows what it WOULD have done
- * with his calls, and nothing fires until a clean shadow day proves it. */
-const SHADOW = new Set([
-  "1144369893760831489"     // Midas room
-]);
+/* Nobody is in shadow — his call: "dont shadow, go ahead and put everyone
+ * testing." Every graduated room fires PRETEND trades; not one real dollar
+ * moves until he flips the REAL MONEY switch himself. The set stays here
+ * for the next new room that needs a proving day. */
+const SHADOW = new Set([]);
 
 async function cfg() {
   const { settings } = await chrome.storage.local.get("settings");
@@ -63,7 +60,8 @@ async function cfg() {
   c.channel_ids = Array.from(new Set(
     [].concat((settings || {}).channel_ids || [],
               ["829754942817828884",     // main room
-               "987515353670221834"])    // Aristotle — live in TEST, his word
+               "987515353670221834",     // Aristotle — testing, his word
+               "1144369893760831489"])   // Midas — testing, his word
       .map(String)));
   return c;
 }

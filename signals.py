@@ -174,6 +174,12 @@ RE_BARE_OUT = re.compile(
     r"^(?:i'?m\s+)?(?:fully\s+|all\s+)?out\b(?:\s+(?:of\s+)?half)?[\s!.]{0,4}$",
     re.IGNORECASE)
 RE_HALF = re.compile(r"\b(?:out\s+of|sold)\s+half\b", re.IGNORECASE)
+# "Stopped out of half my position" / "Stopping out of 2nd entry" — their
+# stop fired. Half or a numbered entry = partial; otherwise the trade's done.
+RE_STOPPED_OUT = re.compile(r"\bstopp?(?:ed|ing)\s+out\b", re.IGNORECASE)
+RE_PARTIAL = re.compile(
+    r"\bhalf\b|\b(?:2nd|second|1st|first)\s+entry\b|\bpart\b|\bsome\b",
+    re.IGNORECASE)
 # Midas's "In @here my add level will be 744.30" / "In 0days at 1.97" — an
 # IN at the start, not leading into prose, with a trading cue somewhere in
 # the line. The blocklist is what keeps "In no rush to lose money today"
@@ -186,6 +192,16 @@ RE_IN_CUE = re.compile(
     r"\d+\.\d{1,2}|\bstarters?\b|\bcons?\b|\b[01]\s*d(?:ays?|tes?)\b"
     r"|\blightly\b|\bfill\b|\badd\s+level\b", re.IGNORECASE)
 RE_IN_PRICE = re.compile(r"(?:\bat|@)\s*\$?(\d{1,2}\.\d{1,2})\b", re.IGNORECASE)
+# Midas confirms his entry three ways after a Loaded: a bare "Filled
+# @here", a bare price with the word fill/avg ("1.97 fill", "Avg 1.61"),
+# or "Taking more cons". All of them mean HE IS IN — fire on his last PREP.
+RE_FILL_CONF = re.compile(
+    r"^(?:filled)\b(?:\s+(?:light\s+size|lightly|starters?))*[\s.!]*$"
+    r"|^\$?(\d{1,2}\.\d{1,2})\s+(?:is\s+my\s+)?(?:final\s+)?"
+    r"(?:fill|avg)\b[\s.!]*$"
+    r"|^avg\s+\$?(\d{1,2}\.\d{1,2})\b[\s.!]*$"
+    r"|^tak(?:e|ing)\s+(?:first|more|some)?\s*(?:size|cons?)\b",
+    re.IGNORECASE)
 # "All positions closed" / "Out of all trades" — everything this trader
 # holds goes, whatever the tickers are.
 RE_CLOSE_ALL = re.compile(
@@ -334,14 +350,19 @@ def clean_text(raw):
 
 
 RE_TMRW_EXP = re.compile(r"\btomorrow\s+exp\w*", re.IGNORECASE)
+RE_TODAY_EXP = re.compile(r"\btoday\s+exp\w*|\bexpiring\s+today\b",
+                          re.IGNORECASE)
 
 
 def _expiry_anywhere(text):
     """"to July 29th" -> "7/29". Only used when the contract itself didn't
     carry an expiry, so it can't override anything they actually wrote."""
-    # "tomorrow exp" is Midas's and Aristotle's way of writing 1DTE.
+    # "tomorrow exp" is Midas's and Aristotle's way of writing 1DTE, and
+    # "today exp" is 0DTE said out loud.
     if RE_TMRW_EXP.search(text):
         return "1DTE"
+    if RE_TODAY_EXP.search(text):
+        return "0DTE"
     m = RE_MONTH_DAY.search(text)
     if m:
         return "%d/%d" % (MONTHS[m.group(1).lower()[:3]], int(m.group(2)))
@@ -514,6 +535,20 @@ def parse(text, author="", channel="", cfg=None):
     #     Resolved by whose position it is, exactly like a bare trim. The
     #     anchored regex is what keeps "Damn it actually worked out" from
     #     reading as an exit — a bare out IS the whole message, or it's chatter.
+    if RE_STOPPED_OUT.search(low):
+        sig.symbol = _bare_symbol(t, allowed)
+        sig.action = "TRIM" if RE_PARTIAL.search(low) else "CLOSE"
+        sig.matched = "stopped out"
+        if not sig.symbol:
+            sig.needs_position = True
+            sig.why = ("their stop fired — working out which position they "
+                       "meant")
+            return sig
+        sig.fire = sig.action == "CLOSE"
+        sig.why = (("stopped out of %s" if sig.action == "CLOSE"
+                    else "partial stop on %s") % sig.symbol)
+        return sig
+
     if RE_BARE_OUT.match(t):
         sig.action = "TRIM" if RE_HALF.search(t) else "CLOSE"
         sig.needs_position = True
@@ -546,6 +581,25 @@ def parse(text, author="", channel="", cfg=None):
         sig.why = ("out and back into %s%s — same contract, sold and re-bought"
                    % (sig.symbol,
                       "" if sig.limit is None else " @ %.2f" % sig.limit))
+        return sig
+
+    # 2c. Midas's fill confirmations — "Filled @here", "1.97 fill",
+    #     "Avg 1.61", "Taking more cons at 748.50". He is IN (or adding);
+    #     fires on his last Loaded, and a second one on the same PREP goes
+    #     down the averaging path like any other add.
+    mfc = RE_FILL_CONF.match(t)
+    if mfc:
+        sig.action = "OPEN"
+        sig.matched = "fill confirmation on a loaded contract"
+        sig.needs_loaded = True
+        p0 = mfc.group(1) or mfc.group(2)
+        if p0:
+            sig.limit = float(p0)
+        else:
+            mp0 = RE_IN_PRICE.search(t)
+            if mp0:
+                sig.limit = float(mp0.group(1))
+        sig.why = "their fill confirmation — looking for the PREP it belongs to"
         return sig
 
     # 3a2. "1.26 new avg" on its own — that's their bookkeeping after an add

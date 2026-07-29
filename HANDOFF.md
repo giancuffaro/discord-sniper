@@ -902,3 +902,22 @@ Still known-thin for Midas: his corpus is entry-rich and exit-poor; asked
 him for July 16-29 and for losing days (stop-outs). His add levels are
 underlying prices — we don't act on them (no underlying feed), we buy once
 at signal.
+
+## Update — everyone testing; Midas fill-confirmations learned
+
+His words: "dont shadow, go ahead and put everyone testing. not sure what
+you meant by 'real test money' hope its only test mode for everyone." It is:
+test mode = the pretend account, nothing reaches Webull until HE flips REAL
+MONEY (two-click). SHADOW set is now empty; main + Aristotle + Midas all
+fire pretend trades; all three channels baked into cfg().channel_ids.
+
+Second Midas batch (Jul 17-27) added: RE_FILL_CONF — "1.97 fill @here",
+"Filled @here", "Avg 1.61", "Taking more/first size|cons" all mean HE IS IN
+and fire on his last Loaded (a second confirmation on the same PREP walks
+the averaging path). "today exp"/"expiring today" = 0DTE. RE_STOPPED_OUT —
+"Stopped out of half my position" = TRIM, plain "stopped out" = CLOSE,
+resolved by trader when no ticker. Parity at 241 lines.
+
+He can supply corpus going back much further if needed. Still thin: Midas
+losing days. Whop re-export still pending (needs logged-in tab since the
+all_frames fix).

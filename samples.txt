@@ -260,3 +260,17 @@ Break even for my runners on spy
 Under 743.5 for puts @everyone
 Watching SPY 751c @everyone
 1.77 is my fill
+# --- Midas, second batch (July 17-27) ----------------------------------------
+$SPY 742p @everyone loaded
+1.97 fill @here
+1.73 final avg @here
+Avg 1.61 @here
+Filled @here
+Taking more cons @here at 748.50
+Taking first size @here at this 746 level
+Stopped out of half my position
+Stopping out of 2nd entry ; don't want to get caught on the wrong side of a candle
+In $AAPL 336.5c 7/29 @everyone 0dtes at 1.56 add point is 337.15
+End of day play on $AAPL @everyone set and forget $AAPL 325p ITM expiring today. It's 1.61 right now.
+Caught 40% on this last one
+My runners sold at 80%. I'm all out and waiting to see what happens with 742 level @here on $SPY
