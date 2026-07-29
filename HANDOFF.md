@@ -718,3 +718,17 @@ studied and the reader made precise. Capture tags Whop rooms as
 "whop:/path", so several Whop rooms stay separate lexicons in the export.
 Next step is entirely material-driven: he opens the Whop room, scrolls back,
 Exports chat, and the reader + parser get built on real sentences.
+
+## Heads up from him — Felony's room (Whop, "High Risk")
+
+Screenshots reviewed. Felony (@felonytrades) posts clean grammar: "Entered
+AMD 520C 7/20 @ 1.75, Target 524, Stop 505". Decisions from him, verbatim
+intent: "we can use his tps and stops of course" — so when this room
+graduates, HIS posted stop/target replace the flat 20% stop for his trades.
+Also: "i will at some point very soon include futures. i know i have to
+subscribe to webull special data for this but as soon as i see money coming
+in thats okay" — futures (NQ/ES shorts) are PARKED until then; note the
+current code deliberately refuses futures accounts (suffix 3T0B), so futures
+support is a real project, not a flag. His room also does two contracts in
+one message (SPY 742P and QQQ 696P) and swings overnight — needs the
+multi-day upgrades (catch-up read, disk-persisted book) before live.
