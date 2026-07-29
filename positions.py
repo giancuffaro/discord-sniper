@@ -252,6 +252,10 @@ class Book:
             "strike": p.get("strike"),
             "expiry": p.get("expiry"),
             "state": p.get("state"),
+            "kind": p.get("kind") or "option",
+            "direction": int(p.get("direction") or 1),
+            "their_stop": p.get("their_stop"),
+            "their_target": p.get("their_target"),
             "qty": int(p.get("qty") or 0),
             "avg": p.get("fill"),
             "adds": int(p.get("adds") or 0),
@@ -355,6 +359,22 @@ class Book:
                 "key": key,
                 "who": who if not adding else (prev.get("who") or who),
                 "symbol": sym,
+                # Futures support. An options contract is 100 shares; NQ is
+                # $20 a point, ES $50 — the multiplier is what turns a price
+                # move into dollars, and getting it wrong is a 5x lie. A
+                # short's profit runs the other way, so direction is -1 for
+                # short, +1 for long, and every P/L line multiplies by it.
+                "kind": order.get("kind") or "option",
+                "mult": float(order.get("mult") or 100),
+                "direction": -1 if str(order.get("direction") or ""
+                                       ).upper() == "SHORT" else 1,
+                # THEIR levels, when they posted them. The plan of record for
+                # Felony's room: his stop and target run the trade, not the
+                # flat 20%.
+                "their_stop": (prev.get("their_stop") if adding
+                               else order.get("their_stop")),
+                "their_target": (prev.get("their_target") if adding
+                                 else order.get("their_target")),
                 "state": WORKING,
                 "order_id": ticket.get("order_id"),
                 "occ": ticket.get("occ"),
@@ -388,9 +408,13 @@ class Book:
                 "watching": prev.get("watching", False),
             }
         # Money out of the door the moment the bid is out, not when it fills.
-        # It isn't spent yet, but it is promised, and it can't be promised twice.
-        self._reserve(key, self._dollars(ticket.get("limit"),
-                                         ticket.get("qty") or 1))
+        # It isn't spent yet, but it is promised, and it can't be promised
+        # twice. Futures reserve nothing here — there's no premium paid up
+        # front, margin is the broker's ledger, and pretending premium math
+        # applies would poison the peak-needed number.
+        if (order.get("kind") or "option") != "future":
+            self._reserve(key, self._dollars(ticket.get("limit"),
+                                             ticket.get("qty") or 1))
         self._event(key, "working",
                     "%s — %s's call, bid is in at %.2f for %d, waiting for a "
                     "seller (%.0fs)"
@@ -457,11 +481,12 @@ class Book:
     def _probe(self, oid, occ, limit):
         """(state, filled_qty, avg_price) — from the broker for real, or from
         the live quote in a dry run."""
-        if self.wb is None:
-            # No broker at all. Nothing can be checked, so a dry run treats the
-            # entry as filled at the price it would have bid, and the log says
-            # so. This is the one place the dry run flatters itself, and it's
-            # marked every time it happens.
+        if self.wb is None or not occ:
+            # No broker, or no quotable contract — futures have no OCC symbol
+            # and no quote feed yet. Nothing can be checked, so a dry run
+            # treats the entry as filled at the price it would have bid, and
+            # the log says so. This is the one place the dry run flatters
+            # itself, and it's marked every time it happens.
             return FILLED, None, limit
         if self.simulated:
             # Keys are present and quotes are real, so a dry run can answer the
@@ -499,11 +524,15 @@ class Book:
             side, strike, expiry = p["side"], p["strike"], p["expiry"]
         # Promised money becomes spent money. The debit is what you actually
         # paid, which is not always what you bid — a seller can come down
-        # further than your price.
-        paid = self._dollars(price, qty or 1)
+        # further than your price. Futures pay no premium; their money story
+        # is all in the exit.
+        with self._lock:
+            p0 = self._pos.get(key)
+            is_fut = bool(p0 and p0.get("kind") == "future")
+        paid = 0.0 if is_fut else self._dollars(price, qty or 1)
         self._unreserve(key)
         with self._lock:
-            if self.cash is not None:
+            if self.cash is not None and not is_fut:
                 self.cash -= paid
                 p = self._pos.get(key)
                 if p:
@@ -520,6 +549,8 @@ class Book:
                  " — cost $%.0f, $%.0f left to trade with" % (paid, left))
         if left is None and self.unlimited:
             money = " — cost $%.0f" % paid
+        if is_fut:
+            money = " — futures: no premium out, the money moves at the exit"
         self._event(key, "filled",
                     "%s — filled %s at %.2f%s%s%s" % (sym, qty, float(price),
                                                       "" if first else
@@ -561,6 +592,21 @@ class Book:
         that survives this program dying; the watchdog second, because that's
         the one that works when Webull won't take the resting order."""
         sym = key.split("|")[-1]
+        with self._lock:
+            pf = self._pos.get(key)
+            if pf and pf.get("kind") == "future":
+                # A futures trade runs on THEIR stop, written on the record.
+                # There's no options-style resting stop to place and, until
+                # the futures data subscription exists, no quote feed for a
+                # watchdog to poll — so the book says plainly what's guarding
+                # it: his level, acted on when the room says so.
+                pf["stop"] = pf.get("their_stop")
+                self._event(key, "stop-set",
+                            "%s — running their stop%s; exits fire on their "
+                            "calls" % (sym,
+                                       "" if not pf.get("their_stop")
+                                       else " at %g" % float(pf["their_stop"])))
+                return
         stop_price = max(0.01, round(float(fill) * (1 - self.stop_pct / 100), 2))
         oid = None
         if self.wb is not None and not self.simulated:
@@ -682,9 +728,15 @@ class Book:
                 return 0
             price = float(price)
             fill = float(p.get("fill") or price)
-            chunk_cost = fill * 100 * n
-            got = price * 100 * n
-            pl = got - chunk_cost
+            # Futures: dollars = points moved x the contract multiplier, and
+            # a short profits on the way DOWN — direction flips the sign.
+            # Options keep the old premium arithmetic.
+            mult = float(p.get("mult") or 100)
+            dirn = int(p.get("direction") or 1)
+            fut = p.get("kind") == "future"
+            chunk_cost = 0.0 if fut else fill * mult * n
+            pl = (price - fill) * mult * n * dirn
+            got = pl if fut else price * mult * n
             p["qty"] = held - n
             p["cost"] = max(0.0, float(p.get("cost") or 0) - chunk_cost)
             p.setdefault("exits", []).append(
@@ -798,6 +850,9 @@ class Book:
             qty = int(p.get("qty") or 0)
             cost = float(p.get("cost") or 0)
             entry = p.get("fill")
+            mult = float(p.get("mult") or 100)
+            dirn = int(p.get("direction") or 1)
+            fut = p.get("kind") == "future"
             sym = p.get("symbol") or key.split("|")[-1]
             who = p.get("who") or key.split("|")[0]
             if price is None:
@@ -808,8 +863,14 @@ class Book:
 
         money = ""
         if settle and self.cash is not None and qty and price is not None:
-            got = self._dollars(price, qty)
-            pl = got - cost
+            if fut:
+                # Points times multiplier times direction. No premium came
+                # back because none went out.
+                pl = (float(price) - float(entry or price)) * mult * qty * dirn
+                got = pl
+            else:
+                got = self._dollars(price, qty)
+                pl = got - cost
             with self._lock:
                 self.cash += got
                 self.realised += pl

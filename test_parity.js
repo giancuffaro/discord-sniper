@@ -24,7 +24,11 @@ const py = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 // second contract the other side never touched.
 const FIELDS = ["fire", "action", "symbol", "side", "strike", "expiry",
                 "limit", "pct", "qty", "reenter", "reenter_limit",
-                "needs_position", "needs_loaded", "needs_add", "caller"];
+                "needs_position", "needs_loaded", "needs_add", "caller",
+                // Futures and his-levels: one language reading "Short NQ @
+                // 28660" as a trade while the other calls it chatter is the
+                // exact disagreement this file exists to catch.
+                "kind", "direction", "their_stop", "their_target", "usd"];
 let bad = 0;
 
 for (const row of py) {

@@ -60,6 +60,28 @@ DRY_ENTRY_QTY = 5
 DRY_ADD_QTY = 5
 DRY_TRIM_QTY = 3
 
+# Futures sizing runs smaller on purpose: one NQ point is $20 and Felony's
+# trades swing hundreds of points, so 3 contracts trimmed one at a time
+# mirrors his trim / 2nd trim / runner pattern without pretending a $4k
+# account trades 5 NQ.
+DRY_FUT_QTY = 3
+DRY_FUT_TRIM_QTY = 1
+
+# What one point of price movement is worth, per contract. THIS is the number
+# that makes futures money real: get it wrong and the whole day is off by 5x.
+FUT_MULT = {"NQ": 20.0, "MNQ": 2.0, "ES": 50.0, "MES": 5.0,
+            "YM": 5.0, "MYM": 0.5, "RTY": 50.0, "M2K": 5.0,
+            "CL": 1000.0, "MCL": 100.0, "GC": 100.0, "MGC": 10.0,
+            "SI": 5000.0, "SIL": 1000.0, "NG": 10000.0}
+
+
+def futures_on():
+    """THE switch. execution.futures_enabled in settings.json, off by
+    default. Until it's true, a live futures order is refused at the door —
+    everything else (parser, book, dry run) already works, which is the whole
+    point: flipping this is the only thing left to do."""
+    return bool(EXEC.get("futures_enabled", False))
+
 
 def build_stamp():
     """A short fingerprint of the extension folder.
@@ -276,6 +298,19 @@ def dry_entry(order):
         return
     limit = order.get("limit")
     occ = bid = ask = None
+    # A futures entry has no OCC symbol and, until the data subscription
+    # exists, no quote to check against. It tracks at the price they posted,
+    # with the multiplier that makes its points worth real dollars.
+    if order.get("kind") == "future":
+        if not limit:
+            note("DRY RUN  %s futures call came with no price — not tracked"
+                 % order.get("symbol"))
+            return
+        order["mult"] = FUT_MULT.get(str(order.get("symbol", "")).upper(), 1.0)
+        BOOK.entry_sent(order, {"order_id": None, "occ": None,
+                                "limit": float(limit), "bid": None, "ask": None,
+                                "qty": int(order.get("qty") or 1)})
+        return
     if WB is not None:
         try:
             from webull_options import occ_symbol, expiry_to_date
@@ -316,6 +351,19 @@ def exit_price(order, key):
     if BOOK is None:
         return None, ""
     p = BOOK.info(key) or {}
+    # Futures exits are priced off THEIR dollars: "Target hit $1700 a
+    # contract" means the market moved 1700/mult points your way from your
+    # entry. No quote feed exists yet, so his number is the honest one — and
+    # with no number, the trade stays unsettled rather than guessed at.
+    if p.get("kind") == "future":
+        fill = p.get("fill") or p.get("their_price")
+        usd = order.get("usd")
+        if usd not in (None, "") and fill is not None:
+            mult = float(p.get("mult") or 1.0)
+            dirn = int(p.get("direction") or 1)
+            return (round(float(fill) + dirn * float(usd) / mult, 4),
+                    " at their $%.0f a contract" % float(usd))
+        return None, ""
     # Ask right now, at the moment they called it. This is the whole answer to
     # "how much did that actually make" — not their percentage, not the last
     # thing the watchdog happened to see five seconds ago, but what the contract
@@ -467,7 +515,12 @@ def place(order):
         if not held:
             return False, ("you're not in %s, so there was nothing to trim"
                            % sym)
-        want = min(int(order.get("qty") or DRY_TRIM_QTY), held)
+        # The trim size is decided HERE, by what kind of trade it is — 3 of 5
+        # on options, 1 at a time on futures (his trim / 2nd trim / runner
+        # pattern) — not by whatever number the browser guessed.
+        pos_k = BOOK.info(key) or {}
+        fut = pos_k.get("kind") == "future" or order.get("kind") == "future"
+        want = min(DRY_FUT_TRIM_QTY if fut else DRY_TRIM_QTY, held)
         got, how = exit_price(order, key)
         sold = BOOK.trim(key, want, got, "their trim" + how + " —")
         if not sold:
@@ -482,9 +535,12 @@ def place(order):
         # "how much would I need" — and every entry goes through at the
         # standard test size.
         if action in ("OPEN", "ADD"):
-            order["qty"] = int(order.get("qty")
-                               or (DRY_ADD_QTY if action == "ADD"
-                                   else DRY_ENTRY_QTY))
+            if order.get("kind") == "future":
+                order["qty"] = DRY_FUT_QTY
+            else:
+                order["qty"] = int(order.get("qty")
+                                   or (DRY_ADD_QTY if action == "ADD"
+                                       else DRY_ENTRY_QTY))
         note("DRY RUN  %s   (nothing was sent to a broker)" % what)
         if action in ("OPEN", "ADD"):
             dry_entry(order)
@@ -521,6 +577,35 @@ def place(order):
     if MODE == "webull":
         if WB is None:
             return False, ("not connected to Webull: %s" % (WB_ERROR or "unknown"))
+
+        # Futures, real money. Two locks on this door: the futures switch in
+        # settings (off until he flips it), and webull_futures itself, which
+        # sizes at ONE contract and refuses loudly rather than guessing at an
+        # endpoint. The first live futures order is a supervised event, not a
+        # surprise.
+        if order.get("kind") == "future" or \
+                (BOOK is not None and (BOOK.info(key) or {}).get("kind") == "future"):
+            if not futures_on():
+                if claimed:
+                    BOOK.release(key)
+                note("FUTURES  %s refused — the switch is off" % what)
+                return False, ("his futures call was read and logged, but the "
+                               "futures switch is off. Flip it in the popup's "
+                               "Settings once your Webull futures data "
+                               "subscription is live.")
+            try:
+                import webull_futures
+                ok, msg = webull_futures.execute(WB, BOOK, order, key, note)
+                if not ok and claimed:
+                    BOOK.release(key)
+                return ok, msg
+            except Exception as e:                      # noqa: BLE001
+                if claimed:
+                    BOOK.release(key)
+                note("FUTURES  ERROR %s -> %s" % (what, e))
+                return False, ("the futures order did not go out: %s. Check "
+                               "the Webull app." % str(e)[:160])
+
         from webull_options import Refused
         qty = int(order.get("qty") or 1)
         try:
@@ -650,6 +735,8 @@ class Handler(BaseHTTPRequestHandler):
                 # seconds and the broker doesn't need to hear from us that
                 # often. None whenever there's nothing honest to say.
                 "buying_power": real_buying_power(),
+                # The futures switch, so the popup can show which side it's on.
+                "futures": futures_on(),
                 "stopped": os.path.exists(os.path.join(HERE, "STOP")) or
                            os.path.exists(os.path.join(HERE, "STOP.txt"))}
 
@@ -838,6 +925,42 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, dict(self._status(), ok=WB is not None,
                                     message=msg))
 
+    def _set_config(self):
+        """The futures switch, flipped from the popup. One field, written to
+        settings.json so it survives restarts, effective immediately."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:                                   # noqa: BLE001
+            return self._json(400, {"ok": False, "message": "unreadable"})
+        if "futures_enabled" not in body:
+            return self._json(400, {"ok": False, "message": "nothing to set"})
+        want = bool(body["futures_enabled"])
+        path = os.path.join(HERE, "settings.json")
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            data = {}
+        data.setdefault("execution", {})["futures_enabled"] = want
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            os.chmod(path, 0o600)
+        except OSError as e:
+            return self._json(200, {"ok": False,
+                                    "message": "couldn't save it: %s" % e})
+        reload_settings()
+        note("FUTURES  switch %s from the popup"
+             % ("ON — real futures orders are now allowed when live"
+                if want else "OFF"))
+        return self._json(200, dict(self._status(), ok=True,
+                                    message=("futures ON — his futures calls "
+                                             "can now place real orders in "
+                                             "live mode" if want else
+                                             "futures OFF — futures calls are "
+                                             "logged, never sent")))
+
     def do_POST(self):
         if self.path.startswith("/mode"):
             return self._set_mode()
@@ -845,6 +968,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._mark()
         if self.path.startswith("/keys"):
             return self._set_keys()
+        if self.path.startswith("/config"):
+            return self._set_config()
 
         if os.path.exists(os.path.join(HERE, "STOP")) or \
            os.path.exists(os.path.join(HERE, "STOP.txt")):
@@ -860,7 +985,16 @@ class Handler(BaseHTTPRequestHandler):
         sym = str(order.get("symbol", "")).upper()
         if not sym:
             return self._reply(400, "no symbol in that order")
-        if ALLOWED and sym not in ALLOWED:
+        # The allowed list is about options tickers. A futures root has its
+        # own list — the multiplier table — because being IN that table is
+        # what makes its money math real.
+        if order.get("kind") == "future":
+            if sym not in FUT_MULT:
+                note("BLOCKED  %s isn't a futures contract I know the "
+                     "multiplier for" % sym)
+                return self._reply(403, "%s isn't a futures product I know — "
+                                        "not sent" % sym)
+        elif ALLOWED and sym not in ALLOWED:
             note("BLOCKED  %s isn't on the allowed list in settings.json" % sym)
             return self._reply(403, "%s isn't on your allowed-symbols list" % sym)
 
@@ -897,6 +1031,7 @@ class Handler(BaseHTTPRequestHandler):
                 pass
 
         if MODE != "dryrun" and order.get("action") != "TRIM" \
+                and order.get("kind") != "future" \
                 and not (order.get("strike") and order.get("expiry")):
             note("BLOCKED  %s %s arrived with no strike/expiry" %
                  (order.get("action"), sym))

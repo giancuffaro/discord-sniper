@@ -23,6 +23,9 @@ const DEFAULTS = {
   bridge_url: "http://127.0.0.1:8787/order",
   channel_ids: [], follow_admins: [], allowed_symbols: [],
   trim_action: "ignore", close_at_trim_pct: 50,
+  // THE futures switch. Off = his NQ/ES calls are read and logged, nothing
+  // fires. Deliberately off out of the box.
+  futures_enabled: false,
   // max_trades_per_day 0 means no daily limit — it follows every call they
   // make. average_in true means when they add to a trade you're already in and
   // post a new average, you buy another one, up to max_adds_per_position times.
@@ -246,7 +249,9 @@ function renderTable(rows, el) {
     if (outs) bits.push("out " + outs);
     if (r.all_out && r.state !== "nofill") bits.push(money(r.pl));
     else if ((r.exits || []).length) bits.push(money(r.pl) + " so far");
-    return '<div class="trow"><b>' + contractStr(r) + "</b> · " +
+    const dirTag = r.kind === "future"
+      ? (r.direction < 0 ? "SHORT " : "LONG ") : "";
+    return '<div class="trow"><b>' + dirTag + contractStr(r) + "</b> · " +
            (r.who || "?") + ' · <span class="tag ' + cls + '">' + state +
            "</span><span class=\"sub\">" +
            (bits.join(" · ") || "nothing has happened yet") + "</span></div>";
@@ -425,6 +430,7 @@ async function render() {
   $("channels").value = listToText(s.channel_ids);
   $("admins").value = listToText(s.follow_admins);
   $("symbols").value = listToText(s.allowed_symbols);
+  $("futures").value = s.futures_enabled ? "1" : "0";
   $("trim").value = s.trim_action;
   $("trimpct").value = s.close_at_trim_pct;
   $("maxqty").value = s.guards.max_qty;
@@ -483,7 +489,15 @@ $("arm").onclick = async () => {
   await patch({ armed: !s.armed, stopped: false });
 };
 
-$("save").onclick = () => patch({
+$("save").onclick = async () => {
+  const fut = $("futures").value === "1";
+  // The switch lives in TWO places on purpose: the extension (gates whether
+  // a futures call fires at all) and the bridge's settings.json (second lock
+  // on real orders). Saving sets both so they can't drift apart.
+  try { await askBridge("/config", { futures_enabled: fut }); }
+  catch (e) { /* bridge down — the extension-side gate still holds */ }
+  return patch({
+  futures_enabled: fut,
   channel_ids: textToList($("channels").value),
   follow_admins: textToList($("admins").value),
   allowed_symbols: textToList($("symbols").value).map(x => x.toUpperCase()),
@@ -498,7 +512,8 @@ $("save").onclick = () => patch({
     average_in: $("avgin").value === "1",
     max_adds_per_position: Math.max(0, parseInt($("maxadds").value, 10) || 0)
   })
-});
+  });
+};
 
 /* You can't select text out of this popup — it closes the moment you click
  * anywhere else, which is why a whole day's log once had to be sent as a

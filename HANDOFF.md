@@ -732,3 +732,34 @@ current code deliberately refuses futures accounts (suffix 3T0B), so futures
 support is a real project, not a flag. His room also does two contracts in
 one message (SPY 742P and QQQ 696P) and swings overnight — needs the
 multi-day upgrades (catch-up read, disk-persisted book) before live.
+
+## Update — futures, built and parked behind THE switch
+
+His ask: *"start working on that so the only thing i hqve to do later is just
+flip a switch"*. Done. The switch is `execution.futures_enabled` in
+settings.json + `futures_enabled` in the extension settings — the popup's
+"Futures calls (NQ / ES)" select sets BOTH (POST /config keeps the bridge
+side in step). Off by default, and off means: his futures calls are parsed,
+priced and logged, and nothing fires in either mode.
+
+What's live behind it:
+- **Parser** (both languages, parity at 183 lines): "Short NQ @ 28660 Stop
+  29700 Target 28550" → OPEN, kind=future, direction, THEIR stop/target
+  captured. Futures trims speak dollars ("$1,100 a contract") → sig.usd.
+  Options entries also capture their Target/Stop levels now (recorded only).
+- **Book**: kind/mult/direction on every position. Futures P/L = points ×
+  multiplier × direction (FUT_MULT table in bridge.py — NQ $20, ES $50...).
+  No premium out, nothing reserved, peak untouched. Their stop sits on the
+  record; no watchdog (no quote feed yet), exits fire on their calls.
+- **Dry run**: sized 3 contracts, trims sell 1 (his trim/2nd trim/runner
+  pattern). Exit price back-solved from his $-per-contract. Smoke-tested on
+  his real NQ day: +$1,100 / +$1,700 / +$2,200 = +$5,000, exits landing
+  exactly on his posted levels.
+- **Live**: webull_futures.py — front-month resolution + order placement via
+  the _try_calls probing idiom, ONE contract hard-pinned, refuses loudly when
+  endpoints don't answer. Cannot be exercised until the data subscription
+  exists: THE FIRST LIVE FUTURES ORDER IS A SUPERVISED EVENT. Expect to tune
+  endpoint names against the real SDK that day.
+
+Known wart: replay.py treats futures prices as premium (a "skipped, cost
+$748500" line) — replay is options-math only for now.

@@ -366,3 +366,54 @@ if bad:
 print("An order is not a fill, two traders in one ticker are two trades, a "
       "trim sells 3 and keeps the stop on the rest, and only one thing is "
       "ever allowed to sell.")
+
+# --- futures: points times multiplier, shorts profit downwards ---------------
+# Felony's day: Short NQ @ 28660, 3 contracts. NQ is $20 a point. A trim at
+# his "$1,100 a contract" means the market fell 55 points to 28605.
+FUT = {"symbol": "NQ", "side": None, "strike": None, "expiry": None,
+       "limit": 28660.0, "trader": "Felony", "kind": "future", "mult": 20,
+       "direction": "SHORT", "their_stop": 29700.0, "their_target": 28550.0}
+FK = positions.key_of("Felony", "NQ")
+b = book(FakeWB(fills=True), unlimited=True)
+b.entry_sent(FUT, {"order_id": None, "occ": None, "limit": 28660.0,
+                   "bid": None, "ask": None, "qty": 3})
+settle(b, FK)
+ok(b.qty_of(FK) == 3, "in with 3 futures contracts, got %s" % b.qty_of(FK))
+w = b.wallet()
+ok(w["peak"] == 0 and w["open_cost"] == 0,
+   "futures pay no premium, so nothing is tied up: peak %s cost %s"
+   % (w["peak"], w["open_cost"]))
+snap = b.snapshot()["positions"][FK]
+ok(snap["stop"] == 29700.0, "the stop on record is THEIR level, got %s" % snap["stop"])
+sold = b.trim(FK, 1, 28605.0, "their trim —")
+ok(sold == 1, "futures trim sells one, got %s" % sold)
+w = b.wallet()
+ok(abs(w["realised"] - 1100) < 0.5,
+   "55 points x $20 on a short is +$1,100, got %s" % w["realised"])
+b.claim(FK)
+b.finish(FK, positions.CLOSED, "all out", price=28575.0)
+w = b.wallet()
+ok(abs(w["realised"] - (1100 + 2 * 85 * 20)) < 0.5,
+   "2 left at 85 points x $20 is +$3,400 more, total +$4,500, got %s"
+   % w["realised"])
+ok(w["wins"] == 1, "one finished futures trade, one win")
+
+# A LONG loses when the price falls — direction has to flip the sign.
+b = book(FakeWB(fills=True), unlimited=True)
+b.entry_sent(dict(FUT, direction="LONG", limit=7500.0, symbol="ES", mult=50),
+             {"order_id": None, "occ": None, "limit": 7500.0,
+              "bid": None, "ask": None, "qty": 1})
+EK = positions.key_of("Felony", "ES")
+settle(b, EK)
+b.claim(EK)
+b.finish(EK, positions.CLOSED, "stopped", price=7480.0)
+ok(abs(b.wallet()["realised"] - (-1000)) < 0.5,
+   "long ES down 20 points x $50 is -$1,000, got %s" % b.wallet()["realised"])
+ok(b.wallet()["losses"] == 1, "and it counts as a loss")
+
+# The futures block above ran after the first verdict, so check again.
+if bad:
+    print("\n%d futures check(s) failed." % bad)
+    raise SystemExit(1)
+print("Futures: points times multiplier, shorts profit downwards, their stop "
+      "on the record, no premium tied up.")

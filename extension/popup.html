@@ -182,6 +182,21 @@
       already in, and it always buys the same contract you're holding. 2 adds
       means you can end up holding three of it and no more.</div>
 
+    <div class="half">
+      <div>
+        <label>Futures calls (NQ / ES)</label>
+        <select id="futures">
+          <option value="0">off — read and log only</option>
+          <option value="1">ON — trade them</option>
+        </select>
+      </div>
+      <div></div>
+    </div>
+    <div class="note">This is the futures switch. Off: his NQ/ES calls are
+      read, priced and logged, nothing fires. On: they trade — pretend money
+      in TEST, one real contract at a time in REAL. Flip it once your Webull
+      futures data subscription is live.</div>
+
     <label>Webull App Key</label>
     <input id="wbkey" type="password" autocomplete="off"
            placeholder="paste your App Key">

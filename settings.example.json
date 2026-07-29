@@ -47,6 +47,9 @@
     "_dry_run_buying_power": "Pretend account size, dollars, used ONLY in dry run so you can see which entries you couldn't have afforded. One contract is 100 shares, so a $2.80 call costs $280. Set it to what is actually in the account. 0 or null = don't check in dry run. Live mode ignores this and asks Webull for the real number.",
     "dry_run_buying_power": 4000,
 
+    "_futures_enabled": "THE futures switch. false = his NQ/ES calls are read, priced and logged, and nothing ever fires. true = they trade: pretend money in dry run, ONE real contract at a time in live. Leave false until the Webull futures data subscription is live. The popup's Settings flips this for you.",
+    "futures_enabled": false,
+
     "_assume_weekly_expiry": "Their pinned rules say contracts are weekly unless they spell out 0DTE or a date, so a call like 'in SPY 747C @ 3.00' with no date on it means this Friday. true = fill that in. false = refuse those calls instead. Only ever used on an entry that already named a strike - an exit always uses the contract you are actually holding, never a guess.",
     "assume_weekly_expiry": true,
 

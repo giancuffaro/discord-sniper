@@ -125,6 +125,32 @@ RE_BARE_FILL = re.compile(
     r"[^\d%]{0,14}\$?(\d{1,3}\.\d{1,2})\b(?!\s*%)",
     re.IGNORECASE)
 
+# ---- futures ----------------------------------------------------------------
+# Felony's grammar, from his real posts: "Short NQ @ 28660  Stop 29700
+# Target 28550". A futures call names no strike and no expiry — the symbol,
+# the direction and the price ARE the contract. The stop and target are his
+# own numbers in index points, captured because the plan is to use HIS levels
+# instead of the flat 20% rule when his room trades.
+FUT_SYMS = {"NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K",
+            "CL", "MCL", "GC", "MGC", "SI", "SIL", "NG"}
+RE_FUT_ENTRY = re.compile(
+    r"\b(short|long)\s+\$?([A-Za-z0-9]{1,4})\s*@\s*\$?(\d[\d,]*(?:\.\d{1,2})?)",
+    re.IGNORECASE)
+RE_THEIR_STOP = re.compile(
+    r"\bstop\s*(?:loss)?\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b", re.IGNORECASE)
+RE_THEIR_TARGET = re.compile(
+    r"\b(?:target|tp|pt)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b", re.IGNORECASE)
+# "Target hit $1700 a contract - 2nd trim" / "$1,100 a contract on NQ short".
+# His futures trims speak in dollars per contract, and on a dry run that
+# number is the only honest exit price there is.
+RE_USD_CONTRACT = re.compile(
+    r"\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|/)\s*contract", re.IGNORECASE)
+
+
+def _num(s):
+    return float(str(s).replace(",", ""))
+
+
 # Lines that must never fire no matter what else is in them.
 VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               "looking at", "thinking", "maybe", "might", "if it", "if you",
@@ -183,6 +209,15 @@ class Signal:
     # whether averaging is switched on, whether you're actually in it, and how
     # many times you've already added. guards.resolve_add answers all three.
     needs_add: bool = False
+    # Futures and his-levels support. kind is "future" on a futures call and
+    # "" otherwise; direction is LONG/SHORT; their_stop and their_target are
+    # the levels HE posted; usd is "$1,100 a contract" off a trim — the only
+    # honest futures exit price a dry run has.
+    kind: str = ""
+    direction: Optional[str] = None
+    their_stop: Optional[float] = None
+    their_target: Optional[float] = None
+    usd: Optional[float] = None
     warn: str = ""
     raw: str = ""
     clean: str = ""
@@ -291,6 +326,11 @@ def _bare_symbol(text, allowed):
         s = raw.upper()
         if s in NOT_TICKERS:
             continue
+        # A futures symbol written in capitals is recognisable on its own —
+        # "on NQ short - Trimmed" has to resolve whether or not NQ is on the
+        # options allowed-list, because that list is about options.
+        if s in FUT_SYMS and raw == s:
+            return s
         if allowed:
             if s not in allowed:
                 continue
@@ -353,6 +393,11 @@ def parse(text, author="", channel="", cfg=None):
         if c:
             sig.strike, sig.side, sig.expiry = c["strike"], c["side"], c["expiry"]
         sig.action, sig.matched = "CLOSE", "all out"
+        if sig.symbol and sig.symbol in FUT_SYMS:
+            sig.kind = "future"
+        mu0 = RE_USD_CONTRACT.search(t)
+        if mu0:
+            sig.usd = _num(mu0.group(1))
         m = RE_PCT.search(t)
         if m:
             sig.pct = float(m.group(1))
@@ -412,6 +457,35 @@ def parse(text, author="", channel="", cfg=None):
                    % (sig.symbol or "position"))
         return sig
 
+    # 3c. FUTURES — "Short NQ @ 28660  Stop 29700  Target 28550".
+    #     No strike, no expiry: the symbol, the direction and the price are
+    #     the whole contract. His stop and target ride along as THEIR levels —
+    #     the plan of record is to run his numbers, not the flat 20%, when
+    #     this grammar goes live. Which side of the switch that happens on is
+    #     not the parser's decision; it reads, the guards and bridge decide.
+    mfut = RE_FUT_ENTRY.search(t)
+    if mfut and mfut.group(2).upper() in FUT_SYMS:
+        sig.symbol = mfut.group(2).upper()
+        sig.kind = "future"
+        sig.direction = mfut.group(1).upper()
+        sig.limit = _num(mfut.group(3))
+        sig.action, sig.matched = "OPEN", "futures entry"
+        rest = t[mfut.end():]
+        ms = RE_THEIR_STOP.search(rest)
+        if ms:
+            sig.their_stop = _num(ms.group(1))
+        mt = RE_THEIR_TARGET.search(rest)
+        if mt:
+            sig.their_target = _num(mt.group(1))
+        sig.fire = True
+        sig.why = ("futures entry: %s %s @ %g%s%s"
+                   % (sig.direction, sig.symbol, sig.limit,
+                      "" if sig.their_stop is None
+                      else ", their stop %g" % sig.their_stop,
+                      "" if sig.their_target is None
+                      else ", their target %g" % sig.their_target))
+        return sig
+
     # 4. TRIMMING — a partial.
     #
     #    Two grammars. One room writes the word: "trimming SPY @ 38%". The
@@ -429,6 +503,14 @@ def parse(text, author="", channel="", cfg=None):
         sig.action, sig.matched = "TRIM", "trim"
         if pct_m:
             sig.pct = float(pct_m.group(1))
+        # Futures trims speak in dollars, not percent: "$1,100 a contract on
+        # NQ short - Trimmed". The dollars are the exit price a dry run
+        # settles at.
+        if sig.symbol and sig.symbol in FUT_SYMS:
+            sig.kind = "future"
+        mu = RE_USD_CONTRACT.search(t)
+        if mu:
+            sig.usd = _num(mu.group(1))
 
         mode = (cfg.get("trim_action") or "close").lower()
         will_close = False
@@ -500,6 +582,15 @@ def parse(text, author="", channel="", cfg=None):
         mq = RE_QTY.search(t)
         if mq:
             sig.qty = int(mq.group(1))
+        # "Entered AMD 520C 7/20 @ 1.75  Target 524  Stop 505" — HIS levels,
+        # on the underlying. Written down for the day his numbers replace the
+        # flat 20% rule; nothing acts on them yet.
+        ms_o = RE_THEIR_STOP.search(t)
+        if ms_o and float(ms_o.group(1).replace(",", "")) != (sig.strike or -1):
+            sig.their_stop = _num(ms_o.group(1))
+        mt_o = RE_THEIR_TARGET.search(t)
+        if mt_o and float(mt_o.group(1).replace(",", "")) != (sig.strike or -1):
+            sig.their_target = _num(mt_o.group(1))
         if allowed and sig.symbol not in allowed:
             sig.why = "%s isn't on your allowed-symbols list" % sig.symbol
             return sig

@@ -61,6 +61,24 @@ const RE_QTY = /\b(\d{1,3})\s*(?:x|contracts?|lots?)\b/i;
 // Lowercase only counts when there's an allowed list; see bareSymbol.
 const RE_BARE = /\b([A-Za-z]{1,5})\b/g;
 
+/* ---- futures ---------------------------------------------------------------
+ * Felony's grammar, from his real posts: "Short NQ @ 28660  Stop 29700
+ * Target 28550". A futures call names no strike and no expiry — the symbol,
+ * the direction and the price ARE the contract. The stop and target are his
+ * own numbers in index points, and they're captured because the plan is to
+ * use HIS levels instead of the flat 20% rule when his room trades. */
+const FUT_SYMS = new Set(["NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K",
+                          "CL", "MCL", "GC", "MGC", "SI", "SIL", "NG"]);
+const RE_FUT_ENTRY = /\b(short|long)\s+\$?([A-Za-z0-9]{1,4})\s*@\s*\$?(\d[\d,]*(?:\.\d{1,2})?)/i;
+const RE_THEIR_STOP = /\bstop\s*(?:loss)?\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
+const RE_THEIR_TARGET = /\b(?:target|tp|pt)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
+// "Target hit $1700 a contract - 2nd trim" / "$1,100 a contract on NQ short".
+// His futures trims speak in dollars per contract, and on a dry run that
+// number is the only honest exit price there is.
+const RE_USD_CONTRACT = /\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|\/)\s*contract/i;
+
+function num(s) { return parseFloat(String(s).replace(/,/g, "")); }
+
 const RE_LOADING = /\bloading\b/i;
 const RE_ALLOUT = /\ball\s+out\b/i;
 const RE_TRIM = /\btrim(?:ming|med|s)?\b/i;
@@ -164,6 +182,10 @@ function bareSymbol(text, allowed) {
     const raw = m[1];
     const s = raw.toUpperCase();
     if (NOT_TICKERS.has(s)) continue;
+    // A futures symbol written in capitals is recognisable on its own —
+    // "on NQ short - Trimmed" has to resolve whether or not NQ is on the
+    // options allowed-list, because that list is about options.
+    if (FUT_SYMS.has(s) && raw === s) return s;
     if (allowed.length) {
       if (!allowed.includes(s)) continue;
     } else {
@@ -206,6 +228,13 @@ function parseSignal(text, cfg) {
               strike: null, expiry: null, limit: null, pct: null, qty: null,
               caller: "", reenter: false, reenter_limit: null,
               needs_position: false, needs_loaded: false, needs_add: false,
+              // Futures and his-levels support. kind is "future" on a futures
+              // call and "" otherwise; direction is LONG/SHORT; their_stop and
+              // their_target are the levels HE posted; usd is "$1,100 a
+              // contract" off a trim, the only honest futures exit price a
+              // dry run has.
+              kind: "", direction: null, their_stop: null, their_target: null,
+              usd: null,
               warn: "", raw, clean: "", matched: "" };
   if (!raw) { s.why = "empty message"; return s; }
 
@@ -247,6 +276,9 @@ function parseSignal(text, cfg) {
     s.symbol = c ? c.symbol : bareSymbol(t, allowed);
     if (c) { s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
     s.action = "CLOSE"; s.matched = "all out";
+    if (s.symbol && FUT_SYMS.has(s.symbol)) s.kind = "future";
+    const mu0 = RE_USD_CONTRACT.exec(t);
+    if (mu0) s.usd = num(mu0[1]);
     const m = RE_PCT.exec(t);
     if (m) s.pct = parseFloat(m[1]);
     if (!s.symbol) { s.why = "they called an exit but I couldn't tell which ticker"; return s; }
@@ -298,6 +330,31 @@ function parseSignal(text, cfg) {
     return s;
   }
 
+  // 3c. FUTURES — "Short NQ @ 28660  Stop 29700  Target 28550".
+  //     No strike, no expiry: the symbol, the direction and the price are the
+  //     whole contract. His stop and target ride along as THEIR levels — the
+  //     plan of record is to run his numbers, not the flat 20%, when this
+  //     grammar goes live. Which side of the switch that happens on is not
+  //     the parser's decision; it reads, the guards and the bridge decide.
+  const mf = RE_FUT_ENTRY.exec(t);
+  if (mf && FUT_SYMS.has(mf[2].toUpperCase())) {
+    s.symbol = mf[2].toUpperCase();
+    s.kind = "future";
+    s.direction = mf[1].toUpperCase();
+    s.limit = num(mf[3]);
+    s.action = "OPEN"; s.matched = "futures entry";
+    const rest = t.slice((mf.index || 0) + mf[0].length);
+    const ms = RE_THEIR_STOP.exec(rest);
+    if (ms) s.their_stop = num(ms[1]);
+    const mt = RE_THEIR_TARGET.exec(rest);
+    if (mt) s.their_target = num(mt[1]);
+    s.fire = true;
+    s.why = "futures entry: " + s.direction + " " + s.symbol + " @ " +
+            s.limit + (s.their_stop !== null ? ", their stop " + s.their_stop : "") +
+            (s.their_target !== null ? ", their target " + s.their_target : "");
+    return s;
+  }
+
   // 4. TRIMMING — a partial.
   //
   //    Two grammars. One room writes the word: "trimming SPY @ 38%". The other
@@ -314,6 +371,11 @@ function parseSignal(text, cfg) {
     s.symbol = bareSymbol(t, allowed);
     s.action = "TRIM"; s.matched = "trim";
     if (pctM) s.pct = parseFloat(pctM[1]);
+    // Futures trims speak in dollars, not percent: "$1,100 a contract on NQ
+    // short - Trimmed". The dollars are the exit price a dry run settles at.
+    if (s.symbol && FUT_SYMS.has(s.symbol)) s.kind = "future";
+    const mu = RE_USD_CONTRACT.exec(t);
+    if (mu) s.usd = num(mu[1]);
 
     const mode = String(cfg.trim_action || "close").toLowerCase();
     const target = parseFloat(cfg.close_at_trim_pct != null ? cfg.close_at_trim_pct : 50);
@@ -379,6 +441,13 @@ function parseSignal(text, cfg) {
     if (m) s.limit = parseFloat(m[1]);
     const mq = RE_QTY.exec(t);
     if (mq) s.qty = parseInt(mq[1], 10);
+    // "Entered AMD 520C 7/20 @ 1.75  Target 524  Stop 505" — HIS levels, on
+    // the underlying. Written down for the day his numbers replace the flat
+    // 20% rule; nothing acts on them yet.
+    const msO = RE_THEIR_STOP.exec(t);
+    if (msO && num(msO[1]) !== s.strike) s.their_stop = num(msO[1]);
+    const mtO = RE_THEIR_TARGET.exec(t);
+    if (mtO && num(mtO[1]) !== s.strike) s.their_target = num(mtO[1]);
     if (allowed.length && !allowed.includes(s.symbol)) {
       s.why = s.symbol + " isn't on your allowed-symbols list";
       return s;

@@ -100,6 +100,14 @@ async function sendOrder(sig, qty, c, author) {
     // percentage, applied to their entry price. Without it a closed trade has
     // to say "sold at a price I never saw" and the pretend account can't move.
     pct: (sig.pct === 0 || sig.pct) ? sig.pct : null,
+    // Futures: what it is, which way, and THEIR levels — the plan of record
+    // is his stop and target run his trades, not the flat 20%. usd is
+    // "$1,100 a contract" off a trim, the only honest futures exit price a
+    // dry run has.
+    kind: sig.kind || "", direction: sig.direction || null,
+    their_stop: (sig.their_stop === 0 || sig.their_stop) ? sig.their_stop : null,
+    their_target: (sig.their_target === 0 || sig.their_target) ? sig.their_target : null,
+    usd: (sig.usd === 0 || sig.usd) ? sig.usd : null,
     source: "discord-extension", raw: sig.raw, ts: Date.now()
   };
   const t0 = performance.now();
@@ -557,6 +565,18 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       return;
     }
 
+    // THE futures switch. Until it's on, his NQ/ES calls are read, priced and
+    // logged — and nothing fires, in either mode. Flipping it in Settings is
+    // the one thing left to do when the data subscription is live.
+    if (sig.fire && sig.kind === "future" && !c.futures_enabled) {
+      await addLog({ kind: "skipped", what: human(sig),
+                     why: "futures switch is off — read and logged, nothing " +
+                          "sent. Flip it in Settings when you're ready.",
+                     text: msg.text, author: msg.author });
+      reply({ ok: true });
+      return;
+    }
+
     const chk = await guardCheck(sig, msg, c);
     if (!chk.allowed) {
       await addLog({ kind: "skipped", why: chk.reason, what: human(sig),
@@ -573,7 +593,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // Test mode's sizes are the pattern, not the settings: 5 on the way in,
     // 3 out on a trim, the rest on "all out". Real mode keeps the caps.
     const qty = testing && (sig.action === "OPEN" || sig.action === "ADD")
-      ? (sig.qty || 5)
+      ? (sig.kind === "future" ? 3 : (sig.qty || 5))
       : clampQty(sig.qty || 1, c, sig.action);
     // Recorded before the order goes out, so a crash mid-send can't double-fire.
     await guardRecord(sig, c, msg.author);
