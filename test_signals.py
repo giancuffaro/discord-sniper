@@ -283,16 +283,16 @@ nope = notin.resolve_add(sigmod.parse("Brett (Admin) added to QQQ, new avg 1.9",
 ok(not nope.fire and "you're not in it" in nope.why,
    "an add on a trade you don't hold must send nothing: %s" % nope.why)
 
-# An unnamed add when that admin has TWO of their own open: it can't tell which
-# one they meant, so it does nothing rather than guess. (One of their own is
-# fine and does fire — that's the case just above.)
+# An unnamed add when that admin has TWO of their own open picks the NEWEST —
+# Aristotle runs a swing and a scalp at once, and his bare "Added a lil" is
+# always about the trade he just opened, not the swing from Tuesday.
 amb = Guards(AVON, here=NOSTOP)
 amb.record(sigmod.parse("in SPY 7/31 745C @ 2.40", cfg=CFG), "Brett")
 amb.record(sigmod.parse("in NVDA 7/31 210C @ 3.10", cfg=CFG), "Brett")
 vague = amb.resolve_add(sigmod.parse("Brett (Admin) adding more, new avg 2.6",
                                      cfg=CFG), "Brett")
-ok(not vague.fire, "an unnamed add with two of their positions open must not "
-   "guess: %s" % vague.why)
+ok(vague.fire and vague.symbol == "NVDA",
+   "an unnamed add lands on their newest position: %s" % vague.why)
 
 # And an unnamed add from an admin whose trade you're not in must never land on
 # somebody else's position — same rule as a bare trim.

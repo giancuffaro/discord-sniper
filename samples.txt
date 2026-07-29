@@ -219,3 +219,23 @@ Loaded 342.5c cons has to be 7/31 cons @here
 Prepare to stop
 QQQ 668 0 day puts @here lightly
 Take profits leave runners @here
+# --- Aristotle's full corpus, second batch ----------------------------------
+Prep QQQ 702 C 7/20 @everyone
+In @here starters
+I'm in @here @1.31
+Took some SPY 740 C @here
+Took some small NBIS 270 C 7/31 lottos @everyone high risk
+In QQQ 682 P 0 day @here
+Out @here
+Fully out
+Fully out of NBIS @here
+Out of JNJ -33% @here
+20% out of half @here
+Way to close the day: AAPL 25% / SPY 63% / JNJ -33% / JNJ 20%+ @everyone
+Trailing stop 15% @here
+Damn it actually worked out
+Cutting the rest of IBM @here moving on
+12% @here
+15% stop loss @here
+I added to SNDK @here 1.83
+Prepare to stop @here

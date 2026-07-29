@@ -172,13 +172,18 @@ function ok(cond, label) { if (!cond) { bad++; console.log("  - " + label); } }
   ok(!s.fire && /not in it/.test(s.why),
      "an add on a trade you don't hold must send nothing: " + s.why);
 
-  // Unnamed add, two of their own positions open — it must not guess.
+  // Unnamed add, two of their own positions open — it lands on the NEWEST.
+  // Aristotle runs a swing and a scalp at once, and a bare "Added a lil" is
+  // always about the trade he just opened, not the swing from Tuesday.
   store = { guardState: { day: today, count: 0, lastFire: 0, recent: {}, loaded: {},
-    positions: { SPY: { author: "brett", qty: 1, adds: 0 },
-                 NVDA: { author: "brett", qty: 1, adds: 0 } } } };
+    positions: { "brett|SPY": { author: "brett", qty: 1, adds: 0, ts: 1,
+                                side: "CALLS", strike: 745, expiry: "7/31" },
+                 "brett|NVDA": { author: "brett", qty: 1, adds: 0, ts: 2,
+                                 side: "CALLS", strike: 210, expiry: "7/31" } } } };
   const vague = add(); vague.symbol = null;
   s = await G.resolveAdd(vague, "Brett", AVON);
-  ok(!s.fire, "an unnamed add with two of their positions open must not guess: " + s.why);
+  ok(s.fire && s.symbol === "NVDA",
+     "an unnamed add lands on their newest position, got " + s.symbol + " (" + s.why + ")");
 
   if (bad) { console.log("\n" + bad + " check(s) failed."); process.exit(1); }
   console.log("The extension picks the same position Python does, pins a "

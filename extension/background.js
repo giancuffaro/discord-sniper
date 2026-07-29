@@ -21,8 +21,17 @@ const LOG_MAX = 120;
  * say. Hard-coded on purpose so a wiped settings box can't accidentally arm
  * them. When a room graduates, its line comes out of this set. */
 const RECORD_ONLY = new Set([
-  "987515353670221834",     // Aristotle's room
-  "1144369893760831489"     // Midas room
+  "1144369893760831489"     // Midas room — prose and underlying levels;
+                            // needs context-tracking before it's readable
+]);
+
+/* Aristotle's room graduated from recording to SHADOW: his grammar is built
+ * (PREP / bare "In" / bare percents / "Fully out", learned from his real
+ * corpus), so the parser now reads every message and the log says what it
+ * WOULD have done — and nothing fires. One clean shadow day against his
+ * actual calls is the graduation exam; then this set loses its line too. */
+const SHADOW = new Set([
+  "987515353670221834"      // Aristotle's room
 ]);
 
 async function cfg() {
@@ -452,6 +461,24 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // somebody's exit from last Tuesday — reading the past is for tuning,
     // never for trading.
     if (msg.history) {
+      reply({ ok: true });
+      return;
+    }
+
+    // Shadow rooms get read for real — parsed with the same brain as the
+    // main room — and the log shows the verdict, but nothing ever fires.
+    // This is the graduation exam: a day of "would have" lines to hold up
+    // against what Aristotle actually did.
+    if (SHADOW.has(String(msg.channelId || ""))) {
+      const sv = parseSignal(msg.text, c);
+      if (sv.action) {
+        await addLog({ kind: "ignored",
+                       what: "shadow · " + (sv.caller || msg.author || "?"),
+                       why: "would have read this as: " +
+                            (sv.fire ? human(sv)
+                             : (sv.action + " — " + sv.why)),
+                       text: msg.text, author: msg.author });
+      }
       reply({ ok: true });
       return;
     }

@@ -836,3 +836,36 @@ author+text within 60s of the last few entries is skipped), RE_LOADING now
 also matches loaded/prep/prepping/prepped (all GET READY, never buy), and
 new veto words "chance of"/"probability"/"odds of" — Brett's "71.7% chance
 of no cut" was one step from reading as a trim. Samples at 189, parity green.
+
+## Update — Aristotle's grammar built from his full corpus; room moved to SHADOW
+
+He sent two weeks of KingBeeAri's chat and confirmed the reading: "@here"
+means HE IS ALREADY IN — fire immediately, his separately-posted price is
+the benchmark, not a limit. New grammar, in both parsers (parity at 208):
+- PREP = loading (already in). Bare "In @here [starters/lightly...]" fires
+  on that admin's last PREP via needs_loaded, at the market; a trailing
+  "@1.31" becomes the limit. RE_BARE_IN is ANCHORED — the bare in is the
+  whole message or it's chatter.
+- "QQQ 668 0 day puts @here lightly" = bare-contract entry: fires only when
+  stripping contract + sizing filler (RE_FILLER) leaves NOTHING. "N day"
+  parses as NDTE, including between strike and kind (RE_CONTRACT_DTE).
+- "Out" / "Fully out" (anchored, RE_BARE_OUT) = exit resolved by trader;
+  "out of half" = TRIM. "Out of JNJ -33%" = full exit WITH pct (percents can
+  be negative now). "Cutting" is an exit verb. took some/take a/grabbed are
+  entry verbs.
+- Recap guard: >=3 percentages in one line = scoreboard, not a call.
+  New vetoes: "supposed to". New NOT_TICKERS: OPEX ORB HOD LOD EMA VWAP ATH
+  RSI FIB PREP LOL SMH LFG PDT.
+- UPPERCASE tickers always resolve now (NBIS, JNJ); the vocabulary list only
+  unlocks lowercase.
+- pickHeld/_pick_held: several positions from the same trader -> the NEWEST
+  wins. His bare "12%"/"Out"/"Added a lil" is always the active scalp, never
+  the swing from Tuesday. Tests updated to this rule.
+Aristotle is out of RECORD_ONLY into SHADOW (background.js): parsed for
+real, logged as "would have read this as: ...", never trades. One clean
+shadow day = graduation. Midas stays RECORD_ONLY (prose + underlying
+levels, ticker implied from earlier messages — needs context-carry).
+Known gaps, deliberate: "Prep SPY 744 C tomorrow exp" dies on the
+"tomorrow" veto (PREP-only loss); two-ticker trim lines ("15% CRWV / 40%
+JNJ") only act the first; his percent-stream (93/107/132/146%) would trim
+on each until the position runs out.

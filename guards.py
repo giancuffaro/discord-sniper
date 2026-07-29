@@ -209,9 +209,13 @@ class Guards:
         if not held:
             return None
         theirs = [k for k in held if who and _key_who(k) == who]
-        if len(theirs) == 1:
+        # Their own, and when they hold several, the NEWEST — Aristotle runs
+        # a swing and a scalp at once, and his bare "12%" / "Out" is always
+        # about the trade he just opened, not the swing from Tuesday.
+        if theirs:
+            theirs.sort(key=lambda k: held[k].get("ts", 0), reverse=True)
             return theirs[0]
-        if not theirs and len(held) == 1:
+        if len(held) == 1:
             only = next(iter(held))
             owner = _key_who(only)
             if not who or owner == "?" or owner == who:

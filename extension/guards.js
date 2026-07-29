@@ -214,8 +214,14 @@ function pickHeld(held, who) {
   const keys = Object.keys(held || {});
   if (!keys.length) return null;
   const theirs = keys.filter(k => who && keyWho(k) === who);
-  if (theirs.length === 1) return theirs[0];
-  if (!theirs.length && keys.length === 1) {
+  // Their own, and when they hold several, the NEWEST — Aristotle runs a
+  // swing and a scalp at once, and his bare "12%" / "Out" is always about
+  // the trade he just opened, not the swing from Tuesday.
+  if (theirs.length >= 1) {
+    theirs.sort((a, b) => ((held[b] || {}).ts || 0) - ((held[a] || {}).ts || 0));
+    return theirs[0];
+  }
+  if (keys.length === 1) {
     const owner = keyWho(keys[0]);
     if (!who || owner === "?" || owner === who) return keys[0];
   }

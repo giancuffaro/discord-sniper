@@ -43,10 +43,10 @@ const RE_MONTH_DAY = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\
 const RE_DTE_ANY = /\b(\d*dte)\b/i;
 const RE_DATE_ANY = /\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/;
 
-const RE_PCT = /@\s*(\d{1,3}(?:\.\d+)?)\s*%/;
+const RE_PCT = /@\s*(-?\d{1,3}(?:\.\d+)?)\s*%/;
 // A percentage anywhere at all. The second room writes trims as a bare number:
 // "20%", "50% @here", "40% in spy now". No verb, no ticker, just the number.
-const RE_PCT_ANY = /(\d{1,3}(?:\.\d+)?)\s*%/;
+const RE_PCT_ANY = /(-?\d{1,3}(?:\.\d+)?)\s*%/;
 // "5-6% risk." and "risk was only 10%" are position sizing, not a gain. Same
 // shape as a bare trim and the exact opposite meaning — read as a trim it sells
 // you out of a trade on a sentence about how much they're willing to lose. Only
@@ -79,6 +79,18 @@ const RE_USD_CONTRACT = /\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|\/)\s*contract
 
 function num(s) { return parseFloat(String(s).replace(/,/g, "")); }
 
+/* ---- Aristotle's grammar, from his real corpus -----------------------------
+ * PREP names the contract, then "In @here" is the trigger — HIS fill already
+ * happened, the price arrives as its own message afterwards. So a bare "In"
+ * fires on the last PREP, at the market. "Out" / "Fully out" close the same
+ * way: no ticker, resolved by whose position it is. "QQQ 668 0 day puts
+ * @here lightly" is a whole entry in five words. */
+const RE_BARE_IN = /^(?:i'?m\s+|i\s+|we\s+)?in\b(?:\s+(?:here|everyone|starters?|lightly|light|small|super\s+light|very\s+light|these|again|now))*\s*(?:@?\s*\$?(\d{1,3}(?:\.\d{1,2})?))?\s*[.!]?$/i;
+const RE_BARE_OUT = /^(?:i'?m\s+)?(?:fully\s+|all\s+)?out\b(?:\s+(?:of\s+)?half)?[\s!.]{0,4}$/i;
+const RE_HALF = /\b(?:out\s+of|sold)\s+half\b/i;
+// Entry-line filler that isn't information: sizing talk and hype words.
+const RE_FILLER = /\b(?:lightly|light|super|very|small|starters?|lottos?|lotto|these|some|size|zero|for|high|risk|deg[ea]n)\b|[().!]/gi;
+
 // "loading" is the main room; "PREP AAPL 350 C 7/31" is Aristotle's word for
 // the same thing, and Midas says "Loaded ... cons" — all of them mean GET
 // READY, none of them buys.
@@ -86,8 +98,8 @@ const RE_LOADING = /\b(?:loading|loaded|prep(?:ping|ped)?)\b/i;
 const RE_ALLOUT = /\ball\s+out\b/i;
 const RE_TRIM = /\btrim(?:ming|med|s)?\b/i;
 const RE_BACKIN = /\bback\s+in\b/i;
-const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying)\b/i;
-const RE_EXIT = /\b(?:exited|exiting|closed|closing|stc|sold|selling|out)\b/i;
+const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a)\b/i;
+const RE_EXIT = /\b(?:exited|exiting|closed|closing|stc|sold|selling|out|cutting)\b/i;
 // "Filled 3.95 starters" — their entry arrives as TWO messages. The contract was
 // named minutes earlier in a "Loading 205 calls Friday expiration on NVDA"
 // notice, and this line carries nothing but the price. On its own it is not an
@@ -115,7 +127,7 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   "yesterday", "tomorrow", "nice day", "conviction", "wish i",
   // "71.7% chance of no cut" on FOMC day — a percentage that is about the
   // Fed, not about a trade. Nearly parsed as a trim.
-  "chance of", "probability", "odds of"];
+  "chance of", "probability", "odds of", "supposed to"];
 
 const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
@@ -126,7 +138,10 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // None of these is ever a ticker he trades.
   "SOLD", "TRIM", "HOLD", "GOT", "ADD", "FULL", "TOOK", "LOAD", "FILL",
   "CALL", "CALLS", "PUT", "PUTS", "LONG", "SHORT", "SIZE", "RISK", "NEW",
-  "JUST", "NOW", "OVER", "UNDER", "NEAR", "ABOVE"]);
+  "JUST", "NOW", "OVER", "UNDER", "NEAR", "ABOVE",
+  // Trader shorthand that looks exactly like a ticker once uppercase counts.
+  "OPEX", "ORB", "HOD", "LOD", "EMA", "VWAP", "ATH", "RSI", "FIB", "PREP",
+  "OK", "LOL", "SMH", "LFG", "BE", "PDT"]);
 
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_HDR, "");
@@ -140,11 +155,15 @@ function cleanText(raw) {
 
 /* "to July 29th" -> "7/29". Only used when the contract itself didn't carry an
  * expiry, so it can never override one they actually wrote. */
+const RE_DAYS_ANY = /\b(\d{1,2})\s*days?\b/i;
 function expiryAnywhere(text) {
   let m = RE_MONTH_DAY.exec(text);
   if (m) return MONTHS[m[1].toLowerCase().slice(0, 3)] + "/" + parseInt(m[2], 10);
   m = RE_DTE_ANY.exec(text);
   if (m) return m[1].toUpperCase();
+  // Aristotle writes "0 day" where the main room writes 0DTE. Same thing.
+  m = RE_DAYS_ANY.exec(text);
+  if (m) return parseInt(m[1], 10) + "DTE";
   m = RE_DATE_ANY.exec(text);
   if (m) return parseInt(m[1], 10) + "/" + parseInt(m[2], 10) + (m[3] ? "/" + m[3] : "");
   return null;
@@ -175,6 +194,15 @@ function findContract(text) {
              side: m[2].toLowerCase().startsWith("c") ? "CALLS" : "PUTS",
              expiry: RE_FRI_EXP.test(mid) ? "WEEKLY" : expiryAnywhere(mid) };
   }
+
+  // "QQQ 668 0 day puts" — the expiry sits BETWEEN strike and kind, which
+  // neither shape above allows. Aristotle's habit.
+  const md = /(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+\$?(\d{1,5}(?:\.\d{1,2})?)\s+(\d{1,2})\s*days?\s+(calls?|puts?)\b/i.exec(text);
+  if (md && !NOT_TICKERS.has(md[1].toUpperCase())) {
+    return { symbol: md[1].toUpperCase(), strike: parseFloat(md[2]),
+             side: md[4].toLowerCase().startsWith("c") ? "CALLS" : "PUTS",
+             expiry: parseInt(md[3], 10) + "DTE" };
+  }
   return null;
 }
 
@@ -192,12 +220,12 @@ function bareSymbol(text, allowed) {
     // "on NQ short - Trimmed" has to resolve whether or not NQ is on the
     // options allowed-list, because that list is about options.
     if (FUT_SYMS.has(s) && raw === s) return s;
-    if (allowed.length) {
-      if (!allowed.includes(s)) continue;
-    } else {
-      if (raw !== s || s.length < 2) continue;
-    }
-    return s;
+    // Written in CAPITALS = a ticker, whoever's list it is or isn't on —
+    // "Fully out of NBIS" has to resolve without NBIS being pre-listed.
+    // The vocabulary list only unlocks lowercase ("40% in spy now").
+    if (raw === s && s.length >= 2) return s;
+    if (allowed.length && allowed.includes(s)) return s;
+    continue;
   }
   return null;
 }
@@ -266,6 +294,14 @@ function parseSignal(text, cfg) {
     }
   }
 
+  // 0. The recap line. "Way to close the day: AAPL 25% / SPY 63% / JNJ -33%"
+  //    — three or more percentages in one message is a scoreboard, not a
+  //    call, and reading it as a trim would sell on a summary.
+  if ((t.match(/-?\d{1,3}(?:\.\d+)?\s*%/g) || []).length >= 3) {
+    s.why = "three or more percentages in one line — that's a recap, not a call";
+    return s;
+  }
+
   // 1. LOADING — get ready. Never buys; that is the room's own instruction.
   if (RE_LOADING.test(low)) {
     const c = findContract(t);
@@ -290,6 +326,18 @@ function parseSignal(text, cfg) {
     if (!s.symbol) { s.why = "they called an exit but I couldn't tell which ticker"; return s; }
     s.fire = true;
     s.why = "full exit on " + s.symbol;
+    return s;
+  }
+
+  // 2b. "Out" / "Fully out" — Aristotle's exit is two words with no ticker.
+  //     Resolved by whose position it is, exactly like a bare trim. The
+  //     anchored regex is what keeps "Damn it actually worked out" from
+  //     reading as an exit — a bare out IS the whole message, or it's chatter.
+  if (RE_BARE_OUT.test(t)) {
+    s.action = RE_HALF.test(t) ? "TRIM" : "CLOSE";
+    s.needs_position = true;
+    s.matched = "bare exit";
+    s.why = "an exit with no ticker in it — working out which position they meant";
     return s;
   }
 
@@ -411,6 +459,14 @@ function parseSignal(text, cfg) {
       s.why = "a trim with no ticker in it — working out which position they meant";
       return s;
     }
+    // "Out of JNJ -33%" — OUT OF a named ticker is a full exit that happens
+    // to carry a percentage, not a partial. "out of half" stays a trim.
+    if (/^(?:i'?m\s+)?(?:fully\s+)?out\s+of\b/i.test(t) && !RE_HALF.test(t)) {
+      s.action = "CLOSE"; s.fire = true;
+      s.why = "full exit on " + s.symbol +
+              (s.pct === null ? "" : " at " + s.pct + "%");
+      return s;
+    }
     s.why = "trim on " + s.symbol +
             (s.pct === null ? "" : " at " + s.pct + "%") +
             " — following their trim";
@@ -433,6 +489,18 @@ function parseSignal(text, cfg) {
         const mq0 = RE_QTY.exec(t);
         if (mq0) s.qty = parseInt(mq0[1], 10);
         s.why = "a fill price with no contract in it — looking for the LOADING call it belongs to";
+        return s;
+      }
+      // Aristotle's trigger: "In @here starters" — the whole message. His
+      // fill already happened; the contract was in his PREP a minute ago,
+      // and the price (if any) trails on the end ("I'm in @1.31"). Fires on
+      // the last thing this admin loaded, at the market when no price came.
+      const mi = RE_BARE_IN.exec(t);
+      if (mi) {
+        s.action = "OPEN"; s.matched = "bare in on a loaded contract";
+        s.needs_loaded = true;
+        s.limit = mi[1] ? parseFloat(mi[1]) : null;
+        s.why = "a bare \"in\" — looking for the PREP it belongs to";
         return s;
       }
       s.why = "sounds like an entry but there's no full contract in it";
@@ -462,6 +530,30 @@ function parseSignal(text, cfg) {
     s.fire = true;
     s.why = "entry: " + human(s);
     return s;
+  }
+
+  // 5b. "QQQ 668 0 day puts @here lightly" — a whole entry in five words,
+  //     no verb, no price. Only counts when stripping the contract and the
+  //     sizing filler leaves NOTHING — "NVDA 205C looks juicy" leaves "looks
+  //     juicy" and stays chatter.
+  {
+    const c5 = findContract(t);
+    if (c5) {
+      const leftover = t
+        .replace(/(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?\s*(?:\d{1,2}\s*days?\s*)?(?:calls?|puts?|c|p)\b/i, " ")
+        .replace(/\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b|\b\d*dte\b|\b\d{1,2}\s*days?\b/gi, " ")
+        .replace(RE_FILLER, " ")
+        .replace(/\s+/g, " ").trim();
+      if (!leftover) {
+        s.symbol = c5.symbol; s.strike = c5.strike; s.side = c5.side;
+        s.expiry = c5.expiry;
+        s.action = "OPEN"; s.matched = "bare contract entry";
+        s.fire = true;
+        s.warn = "no price posted — it pays the market.";
+        s.why = "entry: " + human(s) + " — the contract IS the whole message";
+        return s;
+      }
+    }
   }
 
   // 6. A plain exit word with something identifiable behind it.

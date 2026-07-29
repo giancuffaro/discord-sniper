@@ -66,10 +66,10 @@ RE_MONTH_DAY = re.compile(r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
 RE_DTE_ANY = re.compile(r"\b(\d*dte)\b", re.IGNORECASE)
 RE_DATE_ANY = re.compile(r"\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b")
 
-RE_PCT = re.compile(r"@\s*(\d{1,3}(?:\.\d+)?)\s*%")
+RE_PCT = re.compile(r"@\s*(-?\d{1,3}(?:\.\d+)?)\s*%")
 # A percentage anywhere at all. The second room writes trims as a bare number:
 # "20%", "50% @here", "40% in spy now". No verb, no ticker, just the number.
-RE_PCT_ANY = re.compile(r"(\d{1,3}(?:\.\d+)?)\s*%")
+RE_PCT_ANY = re.compile(r"(-?\d{1,3}(?:\.\d+)?)\s*%")
 # "5-6% risk." and "risk was only 10%" are position sizing, not a gain. Same
 # shape as a bare trim and the exact opposite meaning — read as a trim it sells
 # you out of a trade on a sentence about how much they're willing to lose.
@@ -98,8 +98,9 @@ RE_LOADING = re.compile(r"\b(?:loading|loaded|prep(?:ping|ped)?)\b",
 RE_ALLOUT = re.compile(r"\ball\s+out\b", re.IGNORECASE)
 RE_TRIM = re.compile(r"\btrim(?:ming|med|s)?\b", re.IGNORECASE)
 RE_BACKIN = re.compile(r"\bback\s+in\b", re.IGNORECASE)
-RE_ENTRY = re.compile(r"\b(?:in|entered|entering|filled|bto|bought|buying)\b",
-                      re.IGNORECASE)
+RE_ENTRY = re.compile(
+    r"\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b"
+    r"|\b(?:took|take|taking)\s+(?:some|a)\b", re.IGNORECASE)
 # "added to SPY @everyone new avg is 2.8" — they doubled up and their average
 # moved. Whether that buys you a second contract is a setting, not a parser
 # decision: the parser only says "this is an add", and guards.resolve_add has
@@ -113,8 +114,9 @@ RE_ADD = re.compile(r"\badd(?:ed|ing|s)?\s+(?:to|more)\b|\badding\b"
 RE_AVG_PRICE = re.compile(
     r"\b(?:avg|average)\w*\s*(?:is|of|at|around|near|:|=|@)?\s*"
     r"\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)", re.IGNORECASE)
-RE_EXIT = re.compile(r"\b(?:exited|exiting|closed|closing|stc|sold|selling|out)\b",
-                     re.IGNORECASE)
+RE_EXIT = re.compile(
+    r"\b(?:exited|exiting|closed|closing|stc|sold|selling|out|cutting)\b",
+    re.IGNORECASE)
 # "Filled 3.95 starters" — their entry arrives as TWO messages. The contract was
 # named minutes earlier in a "Loading 205 calls Friday expiration on NVDA"
 # notice, and this line carries nothing but the price. On its own it is not an
@@ -155,6 +157,32 @@ def _num(s):
     return float(str(s).replace(",", ""))
 
 
+# ---- Aristotle's grammar, from his real corpus --------------------------------
+# PREP names the contract, then "In @here" is the trigger — HIS fill already
+# happened, the price arrives as its own message afterwards. So a bare "In"
+# fires on the last PREP, at the market. "Out" / "Fully out" close the same
+# way: no ticker, resolved by whose position it is. "QQQ 668 0 day puts
+# @here lightly" is a whole entry in five words.
+RE_BARE_IN = re.compile(
+    r"^(?:i'?m\s+|i\s+|we\s+)?in\b"
+    r"(?:\s+(?:here|everyone|starters?|lightly|light|small|super\s+light"
+    r"|very\s+light|these|again|now))*"
+    r"\s*(?:@?\s*\$?(\d{1,3}(?:\.\d{1,2})?))?\s*[.!]?$", re.IGNORECASE)
+RE_BARE_OUT = re.compile(
+    r"^(?:i'?m\s+)?(?:fully\s+|all\s+)?out\b(?:\s+(?:of\s+)?half)?[\s!.]{0,4}$",
+    re.IGNORECASE)
+RE_HALF = re.compile(r"\b(?:out\s+of|sold)\s+half\b", re.IGNORECASE)
+RE_FILLER = re.compile(
+    r"\b(?:lightly|light|super|very|small|starters?|lottos?|lotto|these|some"
+    r"|size|zero|for|high|risk|deg[ea]n)\b|[().!]", re.IGNORECASE)
+RE_DAYS_ANY = re.compile(r"\b(\d{1,2})\s*days?\b", re.IGNORECASE)
+RE_CONTRACT_DTE = re.compile(
+    r"(?<![A-Za-z])\$?(?P<symbol>[A-Za-z]{1,5})\s+"
+    r"\$?(?P<strike>\d{1,5}(?:\.\d{1,2})?)\s+"
+    r"(?P<days>\d{1,2})\s*days?\s+(?P<kind>calls?|puts?)\b", re.IGNORECASE)
+RE_PCT_COUNT = re.compile(r"-?\d{1,3}(?:\.\d+)?\s*%")
+
+
 # Lines that must never fire no matter what else is in them.
 VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               "looking at", "thinking", "maybe", "might", "if it", "if you",
@@ -167,7 +195,7 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               "yesterday", "tomorrow", "nice day", "conviction", "wish i",
               # "71.7% chance of no cut" on FOMC day — a percentage that is
               # about the Fed, not about a trade. Nearly parsed as a trim.
-              "chance of", "probability", "odds of")
+              "chance of", "probability", "odds of", "supposed to")
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
@@ -178,7 +206,11 @@ NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                # exactly like a symbol. None of these is ever a ticker he trades.
                "SOLD", "TRIM", "HOLD", "GOT", "ADD", "FULL", "TOOK", "LOAD",
                "FILL", "CALL", "CALLS", "PUT", "PUTS", "LONG", "SHORT", "SIZE",
-               "RISK", "NEW", "JUST", "NOW", "OVER", "UNDER", "NEAR", "ABOVE"}
+               "RISK", "NEW", "JUST", "NOW", "OVER", "UNDER", "NEAR", "ABOVE",
+               # Trader shorthand that looks exactly like a ticker once
+               # uppercase counts.
+               "OPEX", "ORB", "HOD", "LOD", "EMA", "VWAP", "ATH", "RSI",
+               "FIB", "PREP", "LOL", "SMH", "LFG", "PDT"}
 
 
 @dataclass
@@ -286,6 +318,10 @@ def _expiry_anywhere(text):
     m = RE_DTE_ANY.search(text)
     if m:
         return m.group(1).upper()
+    # Aristotle writes "0 day" where the main room writes 0DTE. Same thing.
+    m = RE_DAYS_ANY.search(text)
+    if m:
+        return "%dDTE" % int(m.group(1))
     m = RE_DATE_ANY.search(text)
     if m:
         return "%d/%d%s" % (int(m.group(1)), int(m.group(2)),
@@ -317,6 +353,16 @@ def _contract(text):
         return {"symbol": sym, "strike": float(m.group("strike")),
                 "side": "CALLS" if m.group("kind").lower().startswith("c") else "PUTS",
                 "expiry": expiry}
+
+    # "QQQ 668 0 day puts" — the expiry sits BETWEEN strike and kind, which
+    # neither shape above allows. Aristotle's habit.
+    m = RE_CONTRACT_DTE.search(text)
+    if m and m.group("symbol").upper() not in NOT_TICKERS:
+        return {"symbol": m.group("symbol").upper(),
+                "strike": float(m.group("strike")),
+                "side": ("CALLS" if m.group("kind").lower().startswith("c")
+                         else "PUTS"),
+                "expiry": "%dDTE" % int(m.group("days"))}
     return None
 
 
@@ -338,13 +384,14 @@ def _bare_symbol(text, allowed):
         # options allowed-list, because that list is about options.
         if s in FUT_SYMS and raw == s:
             return s
-        if allowed:
-            if s not in allowed:
-                continue
-        else:
-            if raw != s or len(s) < 2:
-                continue
-        return s
+        # Written in CAPITALS = a ticker, whoever's list it is or isn't on —
+        # "Fully out of NBIS" has to resolve without NBIS being pre-listed.
+        # The vocabulary list only unlocks lowercase ("40% in spy now").
+        if raw == s and len(s) >= 2:
+            return s
+        if allowed and s in allowed:
+            return s
+        continue
     return None
 
 
@@ -381,6 +428,14 @@ def parse(text, author="", channel="", cfg=None):
             sig.why = 'chatter, not an order (it contains "%s")' % w.strip()
             return sig
 
+    # 0. The recap line. "Way to close the day: AAPL 25% / SPY 63% / JNJ -33%"
+    #    — three or more percentages in one message is a scoreboard, not a
+    #    call, and reading it as a trim would sell on a summary.
+    if len(RE_PCT_COUNT.findall(t)) >= 3:
+        sig.why = ("three or more percentages in one line — that's a recap, "
+                   "not a call")
+        return sig
+
     # 1. LOADING — get contracts ready. The room says outright: DO NOT BUY IN.
     if RE_LOADING.search(low):
         c = _contract(t)
@@ -413,6 +468,18 @@ def parse(text, author="", channel="", cfg=None):
             return sig
         sig.fire = True
         sig.why = "full exit on %s" % sig.symbol
+        return sig
+
+    # 2b. "Out" / "Fully out" — Aristotle's exit is two words with no ticker.
+    #     Resolved by whose position it is, exactly like a bare trim. The
+    #     anchored regex is what keeps "Damn it actually worked out" from
+    #     reading as an exit — a bare out IS the whole message, or it's chatter.
+    if RE_BARE_OUT.match(t):
+        sig.action = "TRIM" if RE_HALF.search(t) else "CLOSE"
+        sig.needs_position = True
+        sig.matched = "bare exit"
+        sig.why = ("an exit with no ticker in it — working out which position "
+                   "they meant")
         return sig
 
     # 3. EXITED ... AND BACK IN — one line, two trades.
@@ -547,6 +614,16 @@ def parse(text, author="", channel="", cfg=None):
             sig.why = ("a trim with no ticker in it — working out which "
                        "position they meant")
             return sig
+        # "Out of JNJ -33%" — OUT OF a named ticker is a full exit that
+        # happens to carry a percentage, not a partial. "out of half" stays
+        # a trim.
+        if re.match(r"^(?:i'?m\s+)?(?:fully\s+)?out\s+of\b", t,
+                    re.IGNORECASE) and not RE_HALF.search(t):
+            sig.action, sig.fire = "CLOSE", True
+            sig.why = ("full exit on %s%s"
+                       % (sig.symbol,
+                          "" if sig.pct is None else " at %g%%" % sig.pct))
+            return sig
         sig.why = ("trim on %s%s — following their trim"
                    % (sig.symbol,
                       "" if sig.pct is None else " at %g%%" % sig.pct))
@@ -572,6 +649,18 @@ def parse(text, author="", channel="", cfg=None):
                     sig.qty = int(mq.group(1))
                 sig.why = ("a fill price with no contract in it — looking for the "
                            "LOADING call it belongs to")
+                return sig
+            # Aristotle's trigger: "In @here starters" — the whole message.
+            # His fill already happened; the contract was in his PREP a minute
+            # ago, and the price (if any) trails on the end ("I'm in @1.31").
+            # Fires on the last thing this admin loaded, at the market when no
+            # price came.
+            mi = RE_BARE_IN.match(t)
+            if mi:
+                sig.action, sig.matched = "OPEN", "bare in on a loaded contract"
+                sig.needs_loaded = True
+                sig.limit = float(mi.group(1)) if mi.group(1) else None
+                sig.why = 'a bare "in" — looking for the PREP it belongs to'
                 return sig
             sig.why = "sounds like an entry but there's no full contract in it"
             return sig
@@ -603,6 +692,31 @@ def parse(text, author="", channel="", cfg=None):
         sig.fire = True
         sig.why = "entry: %s" % sig.human()
         return sig
+
+    # 5b. "QQQ 668 0 day puts @here lightly" — a whole entry in five words,
+    #     no verb, no price. Only counts when stripping the contract and the
+    #     sizing filler leaves NOTHING — "NVDA 205C looks juicy" leaves
+    #     "looks juicy" and stays chatter.
+    c5 = _contract(t)
+    if c5:
+        leftover = re.sub(
+            r"(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?"
+            r"\s*(?:\d{1,2}\s*days?\s*)?(?:calls?|puts?|c|p)\b",
+            " ", t, count=1, flags=re.IGNORECASE)
+        leftover = re.sub(
+            r"\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b|\b\d*dte\b"
+            r"|\b\d{1,2}\s*days?\b", " ", leftover, flags=re.IGNORECASE)
+        leftover = RE_FILLER.sub(" ", leftover)
+        leftover = re.sub(r"\s+", " ", leftover).strip()
+        if not leftover:
+            sig.symbol, sig.strike = c5["symbol"], c5["strike"]
+            sig.side, sig.expiry = c5["side"], c5["expiry"]
+            sig.action, sig.matched = "OPEN", "bare contract entry"
+            sig.fire = True
+            sig.warn = "no price posted — it pays the market."
+            sig.why = ("entry: %s — the contract IS the whole message"
+                       % sig.human())
+            return sig
 
     # 6. A plain exit word with a real contract behind it.
     if RE_EXIT.search(low):
