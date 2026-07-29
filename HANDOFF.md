@@ -686,3 +686,21 @@ wording in the Python/JS/README was updated to match.
 
 Watch out for: the alarm creation needs admin on some PCs — START HERE says so
 in one line and carries on, since double-clicking does the same job.
+
+## For later — two more rooms, same server
+
+He gave these to keep on record, not to build yet ("we can polish everything
+later but its pretty much the same dinamic.. only that these 2 channels dont
+have clean wording"):
+
+- Aristotle's room — channel 987515353670221834
+- Midas room — channel 1144369893760831489
+
+Same dynamic as the main room, messier wording — so before either goes live in
+the watch list, run a capture day: tab open on the channel, Export chat from
+the popup, and tune the parser on the real lines (samples.txt + test_parity
+grow to cover them). Multi-trader keying already handles the people; it's the
+grammar that needs the work. Also parked deliberately, his words: LEAPs and
+multi-day swing rooms ("ok we can talk about leaps an swing later") — those
+need the catch-up-on-reopen read, disk-persisted bridge positions, and
+per-channel stop rules before they're safe.
