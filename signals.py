@@ -90,7 +90,11 @@ RE_QTY = re.compile(r"\b(\d{1,3})\s*(?:x|contracts?|lots?)\b", re.IGNORECASE)
 RE_BARE = re.compile(r"\b([A-Za-z]{1,5})\b")
 
 # --- the five things the room says -------------------------------------------
-RE_LOADING = re.compile(r"\bloading\b", re.IGNORECASE)
+# "loading" is the main room; "PREP AAPL 350 C 7/31" is Aristotle's word for
+# the same thing, and Midas says "Loaded ... cons" — all of them mean GET
+# READY, none of them buys.
+RE_LOADING = re.compile(r"\b(?:loading|loaded|prep(?:ping|ped)?)\b",
+                        re.IGNORECASE)
 RE_ALLOUT = re.compile(r"\ball\s+out\b", re.IGNORECASE)
 RE_TRIM = re.compile(r"\btrim(?:ming|med|s)?\b", re.IGNORECASE)
 RE_BACKIN = re.compile(r"\bback\s+in\b", re.IGNORECASE)
@@ -160,7 +164,10 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               "still holding", "use $", "as risk", "anyone", "lmk", "great job",
               # The victory-lap paragraph. It's full of percentages and prices
               # and it is not a call — none of these words ever appear in one.
-              "yesterday", "tomorrow", "nice day", "conviction", "wish i")
+              "yesterday", "tomorrow", "nice day", "conviction", "wish i",
+              # "71.7% chance of no cut" on FOMC day — a percentage that is
+              # about the Fed, not about a trade. Nearly parsed as a trim.
+              "chance of", "probability", "odds of")
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",

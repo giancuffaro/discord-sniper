@@ -61,6 +61,12 @@ async function addLog(entry) {
 async function capture(text, author, channel, at) {
   const { captured } = await chrome.storage.local.get("captured");
   const c = captured || [];
+  // Discord repaints its message nodes and the first capture day came out
+  // double-spaced — every line twice. Same author, same words, same minute,
+  // in the last few entries = the same message.
+  const t0 = at || Date.now();
+  if (c.slice(-8).some(e => e.text === text && e.author === author &&
+                            Math.abs((e.t || 0) - t0) < 60000)) return;
   // The channel rides along so a capture day across three rooms exports as
   // three distinguishable lexicons — tuning Midas's grammar on Aristotle's
   // sentences would be worse than not tuning at all. The timestamp is the

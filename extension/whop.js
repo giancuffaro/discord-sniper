@@ -40,6 +40,15 @@ function clean(s) {
   return String(s || "").replace(/\s+/g, " ").trim();
 }
 
+/* The first capture day taught us what the storefront looks like — tracking
+ * pixels, "Pay Get access", sign-in prompts. None of it is chat and none of
+ * it belongs in the lexicon file. */
+const JUNK = [/facebook\.com\/tr/i, /^<img\b/i, /^pay get access/i,
+              /^join for free/i, /terms of service/i, /^support chat$/i,
+              /^partners(new)?$/i, /^enter your email/i,
+              /consistent profitability\.?$/i, /tradingview chart access/i];
+function isJunk(t) { return JUNK.some(re => re.test(t)); }
+
 /* A message's own moment, if the page put one anywhere nearby. Chat apps
  * almost universally use <time datetime="..."> for this. When there isn't
  * one, "now" is the only honest guess. */
@@ -84,6 +93,7 @@ function fingerprint(text, at) {
 function handle(el) {
   for (const block of leafBlocks(el, [])) {
     const text = clean(block.innerText);
+    if (isJunk(text)) continue;
     const at = stampOf(block);
     const fp = fingerprint(text, at);
     if (SEEN.has(fp)) continue;

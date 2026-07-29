@@ -212,3 +212,10 @@ $1,100 a contract on NQ short - Trimmed
 Entered AMD 520C 7/20 @ 1.75 Target 524 Stop 505
 Approaching 70% on AMD - Trimmed
 Stopping early
+# --- Aristotle's and Midas's lingo, first capture day (7/29) ----------------
+PREP AAPL 350 C 7/31 @everyone
+Loaded 342.5c cons has to be 7/31 cons @here
+71.7% chance of no cut, 28.3% of rate HIKE. @here
+Prepare to stop
+QQQ 668 0 day puts @here lightly
+Take profits leave runners @here

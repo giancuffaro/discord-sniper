@@ -79,7 +79,10 @@ const RE_USD_CONTRACT = /\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|\/)\s*contract
 
 function num(s) { return parseFloat(String(s).replace(/,/g, "")); }
 
-const RE_LOADING = /\bloading\b/i;
+// "loading" is the main room; "PREP AAPL 350 C 7/31" is Aristotle's word for
+// the same thing, and Midas says "Loaded ... cons" — all of them mean GET
+// READY, none of them buys.
+const RE_LOADING = /\b(?:loading|loaded|prep(?:ping|ped)?)\b/i;
 const RE_ALLOUT = /\ball\s+out\b/i;
 const RE_TRIM = /\btrim(?:ming|med|s)?\b/i;
 const RE_BACKIN = /\bback\s+in\b/i;
@@ -109,7 +112,10 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   "anyone", "lmk", "great job",
   // The victory-lap paragraph. It's full of percentages and prices and it is
   // not a call — none of these words ever appear in one.
-  "yesterday", "tomorrow", "nice day", "conviction", "wish i"];
+  "yesterday", "tomorrow", "nice day", "conviction", "wish i",
+  // "71.7% chance of no cut" on FOMC day — a percentage that is about the
+  // Fed, not about a trade. Nearly parsed as a trim.
+  "chance of", "probability", "odds of"];
 
 const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",

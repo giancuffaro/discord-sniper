@@ -814,3 +814,25 @@ the market-hours guard already refuses entries outside 09:30–16:00 ET and
 weekends, and exits were never time-boxed. auto_safe_after_close is gone from
 defaults and settings.example. TEST/REAL stays exactly as it was: manual,
 two-click confirm to go live — that's the activation he means.
+
+## Update — first capture day read, quick fixes shipped
+
+His first Export chat (7/29, all four rooms) taught us:
+- Main room grammar: confirmed working (the GOOGL triple).
+- Aristotle: "PREP AAPL 350 C 7/31" = loading; entries are bare contracts
+  with NO price ("QQQ 668 0 day puts @here lightly"); exits "Fully out" /
+  "Take profits leave runners". Needs an entry rule (bare contract + no
+  verb = OPEN at the ask) and "N day" as an expiry shape — build after one
+  more capture day. Room stays RECORD_ONLY.
+- Midas: prose + underlying levels ("Loaded 342.5c cons", "added off
+  342.30", "If 341.85 doesn't hold exiting longs"), ticker implied from
+  earlier messages. Hardest room; needs context-carry. Stays RECORD_ONLY.
+- Whop: capture caught only the storefront — the chat feed lives in an
+  embedded frame. Fixed: whop.js now runs all_frames:true, plus a junk
+  filter built from the storefront lines. He needs a logged-in tab and a
+  re-export.
+Fixes shipped: capture dedupe (every Discord line was doubled — same
+author+text within 60s of the last few entries is skipped), RE_LOADING now
+also matches loaded/prep/prepping/prepped (all GET READY, never buy), and
+new veto words "chance of"/"probability"/"odds of" — Brett's "71.7% chance
+of no cut" was one step from reading as a trim. Samples at 189, parity green.
