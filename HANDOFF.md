@@ -704,3 +704,17 @@ grammar that needs the work. Also parked deliberately, his words: LEAPs and
 multi-day swing rooms ("ok we can talk about leaps an swing later") — those
 need the catch-up-on-reopen read, disk-persisted bridge positions, and
 per-channel stop rules before they're safe.
+
+## Update — the Whop recorder
+
+He has a trader on whop.com. Same tab-reading approach, shipped RECORD-ONLY:
+`extension/whop.js` is a deliberately wide net (leaf-text-block heuristic,
+fingerprint dedupe, <time datetime> stamps, history flag on old stamps)
+because Whop's DOM is unknown here and hashed-class/tailwind, so there's
+nothing stable to hook yet. Every message it sends carries platform:"whop"
+and the worker gates on that BEFORE the parser — one line, one place, where
+trading would eventually be switched on after the room's export has been
+studied and the reader made precise. Capture tags Whop rooms as
+"whop:/path", so several Whop rooms stay separate lexicons in the export.
+Next step is entirely material-driven: he opens the Whop room, scrolls back,
+Exports chat, and the reader + parser get built on real sentences.

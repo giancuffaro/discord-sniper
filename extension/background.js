@@ -350,6 +350,16 @@ async function reinject() {
       await chrome.scripting.executeScript({ target: { tabId: t.id }, files: ["content.js"] });
     } catch (e) { /* tab closed or mid-navigation; the next attach picks it up */ }
   }
+  // The Whop reader gets put back the same way, into any Whop tab that's open.
+  try {
+    tabs = await chrome.tabs.query({ url: ["https://whop.com/*",
+                                           "https://*.whop.com/*"] });
+  } catch (e) { return; }
+  for (const t of tabs) {
+    try {
+      await chrome.scripting.executeScript({ target: { tabId: t.id }, files: ["whop.js"] });
+    } catch (e) { /* same story */ }
+  }
 }
 
 /* ---- going to sleep when the session is over ------------------------------
@@ -422,6 +432,17 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   (async () => {
     const c = await cfg();
     if (c.capture) capture(msg.text, msg.author, msg.channelId, msg.postedAt);
+
+    // Whop stops here too, and harder: the Whop reader is a wide net that
+    // hasn't been taught the room's shape yet, so EVERYTHING it sends is
+    // capture material and none of it may touch the parser. When the Whop
+    // room's export has been studied and its reader made precise, this gate
+    // is where trading would be switched on — deliberately one line, in one
+    // place.
+    if (String(msg.platform || "") === "whop") {
+      reply({ ok: true });
+      return;
+    }
 
     // Scrolled-in history stops here: filed in the capture with its ORIGINAL
     // timestamp, and never parsed. An old call acted on today is how you buy

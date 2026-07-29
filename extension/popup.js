@@ -550,6 +550,8 @@ $("export").onclick = async () => {
   const ROOMS = { "829754942817828884": "main",
                   "987515353670221834": "aristotle",
                   "1144369893760831489": "midas" };
+  // Whop rooms tag themselves "whop:/their/path" — shown as-is, so two
+  // different Whop rooms stay two different lexicons in the file.
   // Sorted by when the message was POSTED, not when it was scraped —
   // scrolling up paints newest-first, and a file in paint order would read
   // like a week played backwards.
