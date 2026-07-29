@@ -545,8 +545,15 @@ $("copylog").onclick = async () => {
 
 $("export").onclick = async () => {
   const { captured } = await chrome.storage.local.get("captured");
+  // Which room each line came from. Three rooms export into one file, and the
+  // tag is what keeps their three dialects apart when the parser gets tuned.
+  const ROOMS = { "829754942817828884": "main",
+                  "987515353670221834": "aristotle",
+                  "1144369893760831489": "midas" };
   const rows = (captured || []).map(c =>
-    new Date(c.t).toLocaleTimeString() + "  " + (c.author || "?") + ": " + c.text);
+    new Date(c.t).toLocaleTimeString() +
+    "  [" + (ROOMS[c.channel] || c.channel || "?") + "]" +
+    "  " + (c.author || "?") + ": " + c.text);
   const blob = new Blob([rows.join("\n") || "nothing captured yet"],
                         { type: "text/plain" });
   const url = URL.createObjectURL(blob);

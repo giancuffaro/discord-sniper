@@ -12,6 +12,19 @@ importScripts("parser.js", "guards.js");
 const BRIDGE_DEFAULT = "http://127.0.0.1:8787/order";
 const LOG_MAX = 120;
 
+/* Rooms that are being RECORDED, never traded. Aristotle's and Midas post the
+ * same kind of calls but with messier wording, and the parser hasn't been
+ * tuned on their sentences yet — a half-understood call is worse than none.
+ * Every message from these channels goes into the capture file (that's the
+ * point — Export chat hands over their lexicon for tuning) and absolutely
+ * nothing else happens: no parse, no guards, no orders, whatever the settings
+ * say. Hard-coded on purpose so a wiped settings box can't accidentally arm
+ * them. When a room graduates, its line comes out of this set. */
+const RECORD_ONLY = new Set([
+  "987515353670221834",     // Aristotle's room
+  "1144369893760831489"     // Midas room
+]);
+
 async function cfg() {
   const { settings } = await chrome.storage.local.get("settings");
   return Object.assign({
@@ -34,10 +47,13 @@ async function addLog(entry) {
   await chrome.storage.local.set({ log: l.slice(0, LOG_MAX) });
 }
 
-async function capture(text, author) {
+async function capture(text, author, channel) {
   const { captured } = await chrome.storage.local.get("captured");
   const c = captured || [];
-  c.push({ t: Date.now(), author, text });
+  // The channel rides along so a capture day across three rooms exports as
+  // three distinguishable lexicons — tuning Midas's grammar on Aristotle's
+  // sentences would be worse than not tuning at all.
+  c.push({ t: Date.now(), author, text, channel: String(channel || "") });
   await chrome.storage.local.set({ captured: c.slice(-3000) });
 }
 
@@ -402,7 +418,16 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 
   (async () => {
     const c = await cfg();
-    if (c.capture) capture(msg.text, msg.author);
+    if (c.capture) capture(msg.text, msg.author, msg.channelId);
+
+    // Record-only rooms stop right here, captured and nothing more. The
+    // return is BEFORE the parser on purpose — these rooms' wording hasn't
+    // been learned yet, and the one thing worse than missing their call is
+    // half-reading it and firing the wrong thing.
+    if (RECORD_ONLY.has(String(msg.channelId || ""))) {
+      reply({ ok: true });
+      return;
+    }
 
     let sig = parseSignal(msg.text, c);
     // Their new blended average, off the raw parse, BEFORE the resolvers get
