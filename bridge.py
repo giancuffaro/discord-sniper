@@ -933,16 +933,26 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(n) or b"{}")
         except Exception:                                   # noqa: BLE001
             return self._json(400, {"ok": False, "message": "unreadable"})
-        if "futures_enabled" not in body:
+        if "futures_enabled" not in body and "allowed_symbols" not in body:
             return self._json(400, {"ok": False, "message": "nothing to set"})
-        want = bool(body["futures_enabled"])
         path = os.path.join(HERE, "settings.json")
         try:
             with open(path, encoding="utf-8") as f:
                 data = json.load(f)
         except (OSError, ValueError):
             data = {}
-        data.setdefault("execution", {})["futures_enabled"] = want
+        want = None
+        if "futures_enabled" in body:
+            want = bool(body["futures_enabled"])
+            data.setdefault("execution", {})["futures_enabled"] = want
+        # The allowed-symbols list follows the popup, so the browser and the
+        # bridge can never disagree about what's tradeable. An empty box means
+        # empty list means EVERYTHING is allowed — that's his stated policy
+        # ("i pretty much allow everything").
+        if "allowed_symbols" in body:
+            data["allowed_symbols"] = [str(s).upper()
+                                       for s in (body["allowed_symbols"] or [])
+                                       if str(s).strip()]
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
@@ -951,15 +961,18 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False,
                                     "message": "couldn't save it: %s" % e})
         reload_settings()
-        note("FUTURES  switch %s from the popup"
-             % ("ON — real futures orders are now allowed when live"
-                if want else "OFF"))
+        if want is not None:
+            note("FUTURES  switch %s from the popup"
+                 % ("ON — real futures orders are now allowed when live"
+                    if want else "OFF"))
+        if "allowed_symbols" in body:
+            note("SYMBOLS  allowed list from the popup: %s"
+                 % (", ".join(sorted(ALLOWED)) or "everything"))
         return self._json(200, dict(self._status(), ok=True,
                                     message=("futures ON — his futures calls "
                                              "can now place real orders in "
                                              "live mode" if want else
-                                             "futures OFF — futures calls are "
-                                             "logged, never sent")))
+                                             "saved")))
 
     def do_POST(self):
         if self.path.startswith("/mode"):

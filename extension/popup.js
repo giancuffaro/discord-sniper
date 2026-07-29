@@ -494,13 +494,17 @@ $("save").onclick = async () => {
   // The switch lives in TWO places on purpose: the extension (gates whether
   // a futures call fires at all) and the bridge's settings.json (second lock
   // on real orders). Saving sets both so they can't drift apart.
-  try { await askBridge("/config", { futures_enabled: fut }); }
+  const syms = textToList($("symbols").value).map(x => x.toUpperCase());
+  // The allowed list rides along too, so the bridge's copy always matches
+  // this box. Empty box = empty list = everything allowed, both sides.
+  try { await askBridge("/config", { futures_enabled: fut,
+                                     allowed_symbols: syms }); }
   catch (e) { /* bridge down — the extension-side gate still holds */ }
   return patch({
   futures_enabled: fut,
   channel_ids: textToList($("channels").value),
   follow_admins: textToList($("admins").value),
-  allowed_symbols: textToList($("symbols").value).map(x => x.toUpperCase()),
+  allowed_symbols: syms,
   trim_action: $("trim").value,
   close_at_trim_pct: parseFloat($("trimpct").value) || 50,
   bridge_url: $("bridge").value.trim() || DEFAULTS.bridge_url,
