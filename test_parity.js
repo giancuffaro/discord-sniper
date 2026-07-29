@@ -28,7 +28,8 @@ const FIELDS = ["fire", "action", "symbol", "side", "strike", "expiry",
                 // Futures and his-levels: one language reading "Short NQ @
                 // 28660" as a trade while the other calls it chatter is the
                 // exact disagreement this file exists to catch.
-                "kind", "direction", "their_stop", "their_target", "usd"];
+                "kind", "direction", "their_stop", "their_target", "usd",
+                "all"];
 let bad = 0;
 
 for (const row of py) {

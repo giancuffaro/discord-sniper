@@ -63,7 +63,7 @@ MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
           "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
 RE_MONTH_DAY = re.compile(r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
                           r"[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b", re.IGNORECASE)
-RE_DTE_ANY = re.compile(r"\b(\d*dte)\b", re.IGNORECASE)
+RE_DTE_ANY = re.compile(r"\b(\d*dte)s?\b", re.IGNORECASE)
 RE_DATE_ANY = re.compile(r"\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b")
 
 RE_PCT = re.compile(r"@\s*(-?\d{1,3}(?:\.\d+)?)\s*%")
@@ -77,7 +77,8 @@ RE_PCT_ANY = re.compile(r"(-?\d{1,3}(?:\.\d+)?)\s*%")
 # risk free now" is untouched.
 RE_PCT_RISK = re.compile(
     r"\d{1,3}(?:\.\d+)?\s*%\s*(?:of\s+)?(?:risk|stop|trail)\b"
-    r"|\b(?:risk|risking|risked|stop|trail)\b[^.!?]{0,20}?\d{1,3}(?:\.\d+)?\s*%",
+    r"|\b(?:risk|risking|risked|stop|trail|lose|losing|lost|drawdown)\b"
+    r"[^.!?]{0,25}?\d{1,3}(?:\.\d+)?\s*%",
     re.IGNORECASE)
 # "My avg is $3.05" — posted a minute after the entry, as its own message.
 RE_AVG = re.compile(r"\bavg|\baverage\b", re.IGNORECASE)
@@ -96,7 +97,8 @@ RE_BARE = re.compile(r"\b([A-Za-z]{1,5})\b")
 RE_LOADING = re.compile(r"\b(?:loading|loaded|prep(?:ping|ped)?)\b",
                         re.IGNORECASE)
 RE_ALLOUT = re.compile(r"\ball\s+out\b", re.IGNORECASE)
-RE_TRIM = re.compile(r"\btrim(?:ming|med|s)?\b", re.IGNORECASE)
+RE_TRIM = re.compile(r"\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b",
+                     re.IGNORECASE)
 RE_BACKIN = re.compile(r"\bback\s+in\b", re.IGNORECASE)
 RE_ENTRY = re.compile(
     r"\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b"
@@ -172,9 +174,29 @@ RE_BARE_OUT = re.compile(
     r"^(?:i'?m\s+)?(?:fully\s+|all\s+)?out\b(?:\s+(?:of\s+)?half)?[\s!.]{0,4}$",
     re.IGNORECASE)
 RE_HALF = re.compile(r"\b(?:out\s+of|sold)\s+half\b", re.IGNORECASE)
+# Midas's "In @here my add level will be 744.30" / "In 0days at 1.97" — an
+# IN at the start, not leading into prose, with a trading cue somewhere in
+# the line. The blocklist is what keeps "In no rush to lose money today"
+# from buying anything.
+RE_LOOSE_IN = re.compile(
+    r"^(?:i'?m\s+|i\s+|we\s+)?in\b(?!\s+(?:no|not|the|a|an|this|that|it"
+    r"|order|fact|case|between|rush|and|but|on|to|for|honeydrip)\b)",
+    re.IGNORECASE)
+RE_IN_CUE = re.compile(
+    r"\d+\.\d{1,2}|\bstarters?\b|\bcons?\b|\b[01]\s*d(?:ays?|tes?)\b"
+    r"|\blightly\b|\bfill\b|\badd\s+level\b", re.IGNORECASE)
+RE_IN_PRICE = re.compile(r"(?:\bat|@)\s*\$?(\d{1,2}\.\d{1,2})\b", re.IGNORECASE)
+# "All positions closed" / "Out of all trades" — everything this trader
+# holds goes, whatever the tickers are.
+RE_CLOSE_ALL = re.compile(
+    r"\ball\s+positions?\s+(?:are\s+)?closed\b"
+    r"|\bclos(?:ed|ing)\s+all\s+positions?\b"
+    r"|\bout\s+of\s+all\s+trades\b|\bsold\s+everything\b", re.IGNORECASE)
 RE_FILLER = re.compile(
     r"\b(?:lightly|light|super|very|small|starters?|lottos?|lotto|these|some"
-    r"|size|zero|for|high|risk|deg[ea]n)\b|[().!]", re.IGNORECASE)
+    r"|size|zero|for|high|risk|deg[ea]n|accts?|account|starter)\b"
+    r"|[()!,]|\.(?!\d)",
+    re.IGNORECASE)
 RE_DAYS_ANY = re.compile(r"\b(\d{1,2})\s*days?\b", re.IGNORECASE)
 RE_CONTRACT_DTE = re.compile(
     r"(?<![A-Za-z])\$?(?P<symbol>[A-Za-z]{1,5})\s+"
@@ -192,7 +214,7 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               "still holding", "use $", "as risk", "anyone", "lmk", "great job",
               # The victory-lap paragraph. It's full of percentages and prices
               # and it is not a call — none of these words ever appear in one.
-              "yesterday", "tomorrow", "nice day", "conviction", "wish i",
+              "yesterday", "nice day", "conviction", "wish i",
               # "71.7% chance of no cut" on FOMC day — a percentage that is
               # about the Fed, not about a trade. Nearly parsed as a trim.
               "chance of", "probability", "odds of", "supposed to")
@@ -257,6 +279,8 @@ class Signal:
     their_stop: Optional[float] = None
     their_target: Optional[float] = None
     usd: Optional[float] = None
+    # "All positions closed" — close everything this trader holds.
+    all: bool = False
     warn: str = ""
     raw: str = ""
     clean: str = ""
@@ -309,9 +333,15 @@ def clean_text(raw):
     return re.sub(r"\s+", " ", t).strip()
 
 
+RE_TMRW_EXP = re.compile(r"\btomorrow\s+exp\w*", re.IGNORECASE)
+
+
 def _expiry_anywhere(text):
     """"to July 29th" -> "7/29". Only used when the contract itself didn't
     carry an expiry, so it can't override anything they actually wrote."""
+    # "tomorrow exp" is Midas's and Aristotle's way of writing 1DTE.
+    if RE_TMRW_EXP.search(text):
+        return "1DTE"
     m = RE_MONTH_DAY.search(text)
     if m:
         return "%d/%d" % (MONTHS[m.group(1).lower()[:3]], int(m.group(2)))
@@ -448,6 +478,16 @@ def parse(text, author="", channel="", cfg=None):
                    "room's own rule" % (sig.symbol or "something"))
         return sig
 
+    # 1b. "All positions closed" / "Out of all trades" — everything this
+    #     trader holds goes. No ticker to resolve: the worker walks their
+    #     whole book and closes each one.
+    if RE_CLOSE_ALL.search(low):
+        sig.action, sig.all = "CLOSE", True
+        sig.matched = "close everything"
+        sig.why = ("they closed everything — selling every trade of theirs "
+                   "still open")
+        return sig
+
     # 2. ALL OUT — full exit. Checked before trim, because "all out" wins.
     if RE_ALLOUT.search(low):
         c = _contract(t)
@@ -506,6 +546,16 @@ def parse(text, author="", channel="", cfg=None):
         sig.why = ("out and back into %s%s — same contract, sold and re-bought"
                    % (sig.symbol,
                       "" if sig.limit is None else " @ %.2f" % sig.limit))
+        return sig
+
+    # 3a2. "1.26 new avg" on its own — that's their bookkeeping after an add
+    #      that was already signalled, not a second add. Reading it as one
+    #      would buy five more contracts per arithmetic update.
+    if re.match(r"^\$?\d+(?:\.\d+)?\s*(?:is\s+)?(?:my\s+)?new\s+avg\.?$", t,
+                re.IGNORECASE):
+        sig.matched = "their new average"
+        sig.why = ("their running average after an add they already called — "
+                   "nothing to do")
         return sig
 
     # 3b. ADDED TO — they doubled up and posted their new average.
@@ -662,6 +712,25 @@ def parse(text, author="", channel="", cfg=None):
                 sig.limit = float(mi.group(1)) if mi.group(1) else None
                 sig.why = 'a bare "in" — looking for the PREP it belongs to'
                 return sig
+            # Midas's shape: "In @here my add level will be 744.30" / "In
+            # 0days at 1.97". Starts with IN, not prose, and carries a
+            # trading cue. The price is only believed when it's premium-sized
+            # — 744.30 is a level on the chart, not a thing you pay for a
+            # contract.
+            if RE_LOOSE_IN.match(t) and RE_IN_CUE.search(t):
+                sig.action = "OPEN"
+                sig.matched = "loose in on a loaded contract"
+                sig.needs_loaded = True
+                mp = RE_IN_PRICE.search(t)
+                lim = float(mp.group(1)) if mp else None
+                if lim is None:
+                    md0 = re.search(r"\b(\d{1,2}\.\d{1,2})\b", t)
+                    if md0 and float(md0.group(1)) < 100:
+                        lim = float(md0.group(1))
+                sig.limit = lim
+                sig.why = ('an "in" with detail around it — looking for the '
+                           'PREP it belongs to')
+                return sig
             sig.why = "sounds like an entry but there's no full contract in it"
             return sig
         sig.symbol, sig.strike = c["symbol"], c["strike"]
@@ -708,12 +777,16 @@ def parse(text, author="", channel="", cfg=None):
             r"|\b\d{1,2}\s*days?\b", " ", leftover, flags=re.IGNORECASE)
         leftover = RE_FILLER.sub(" ", leftover)
         leftover = re.sub(r"\s+", " ", leftover).strip()
-        if not leftover:
+        lone = re.match(r"^\$?(\d{1,2}(?:\.\d{1,2})?)$", leftover)
+        if not leftover or (lone and float(lone.group(1)) < 100):
             sig.symbol, sig.strike = c5["symbol"], c5["strike"]
             sig.side, sig.expiry = c5["side"], c5["expiry"]
             sig.action, sig.matched = "OPEN", "bare contract entry"
             sig.fire = True
-            sig.warn = "no price posted — it pays the market."
+            if lone:
+                sig.limit = float(lone.group(1))
+            else:
+                sig.warn = "no price posted — it pays the market."
             sig.why = ("entry: %s — the contract IS the whole message"
                        % sig.human())
             return sig

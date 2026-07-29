@@ -869,3 +869,36 @@ Known gaps, deliberate: "Prep SPY 744 C tomorrow exp" dies on the
 "tomorrow" veto (PREP-only loss); two-ticker trim lines ("15% CRWV / 40%
 JNJ") only act the first; his percent-stream (93/107/132/146%) would trim
 on each until the position runs out.
+
+## Update — Aristotle LIVE in test; Midas grammar built, room in SHADOW
+
+His words: "actually dont put him in shadow mode, go ahead and test him out,
+im not going to go live until next week anyway... ill double check tomorrow
+everything and mention if i see anything weird." So: Aristotle's channel now
+TRADES in test mode. Trading channels are baked into cfg() (main +
+Aristotle) and merged with whatever's in the popup box, so graduation never
+depends on a settings box. Midas moved into the SHADOW set — parsed for
+real, "would have read this as..." in the log, nothing fires.
+
+Midas grammar (from a month of his room, parity at 228):
+- "Loaded $SPY 744c [0dtes]" = PREPARE; "0dtes"/"1dtes" plural parses; "In
+  $SPY 749p tomorrow exp" — "tomorrow" is OFF the veto list and "tomorrow
+  exp" = 1DTE (the recap guard covers the victory laps that veto protected).
+- Loose IN: "In @here my add level will be 744.30" / "In at 1.34" / "In
+  754c cons" — starts with in, NOT prose (blocklist: no/not/the/rush/...,
+  word-bounded — "at" once died on the "a"), carries a cue (decimal,
+  starters, cons, 0days, fill, add level). Premium-sized decimals (<100)
+  become the limit; 744.30 is a chart level and is ignored.
+- "Small Accts, $KO 85c 7/17 starter 1.38" — bare-contract entry now accepts
+  a lone leftover price (<100) as the limit; the filler class no longer eats
+  the dot out of "1.38".
+- "All positions closed" / "out of all trades" / "sold everything" — new
+  sig.all: background walks every position of that trader and closes each
+  (respects OFF). "Took some off" = trim. "1.26 new avg" alone = their
+  bookkeeping, NOT a second add (was worth 5 phantom contracts per update).
+  "won't lose more than 15%" — lose/losing/lost/drawdown joined the
+  risk-percent guard.
+Still known-thin for Midas: his corpus is entry-rich and exit-poor; asked
+him for July 16-29 and for losing days (stop-outs). His add levels are
+underlying prices — we don't act on them (no underlying feed), we buy once
+at signal.

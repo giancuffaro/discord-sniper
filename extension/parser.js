@@ -40,7 +40,7 @@ const RE_FRI_EXP = /\bfri(?:day)?\s*exp\w*/i;
 const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
                  jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
 const RE_MONTH_DAY = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i;
-const RE_DTE_ANY = /\b(\d*dte)\b/i;
+const RE_DTE_ANY = /\b(\d*dte)s?\b/i;
 const RE_DATE_ANY = /\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/;
 
 const RE_PCT = /@\s*(-?\d{1,3}(?:\.\d+)?)\s*%/;
@@ -52,7 +52,7 @@ const RE_PCT_ANY = /(-?\d{1,3}(?:\.\d+)?)\s*%/;
 // you out of a trade on a sentence about how much they're willing to lose. Only
 // consulted when the line has no exit verb in it, so "trimming SPY @ 45%, risk
 // free now" is untouched.
-const RE_PCT_RISK = /\d{1,3}(?:\.\d+)?\s*%\s*(?:of\s+)?(?:risk|stop|trail)\b|\b(?:risk|risking|risked|stop|trail)\b[^.!?]{0,20}?\d{1,3}(?:\.\d+)?\s*%/i;
+const RE_PCT_RISK = /\d{1,3}(?:\.\d+)?\s*%\s*(?:of\s+)?(?:risk|stop|trail)\b|\b(?:risk|risking|risked|stop|trail|lose|losing|lost|drawdown)\b[^.!?]{0,25}?\d{1,3}(?:\.\d+)?\s*%/i;
 // "My avg is $3.05" — posted a minute after the entry, as its own message.
 const RE_AVG = /\bavg|\baverage\b/i;
 const RE_LIMIT = /@\s*\$?(\d+(?:\.\d{1,4})?)(?![\d.]*\s*%)/;
@@ -87,16 +87,26 @@ function num(s) { return parseFloat(String(s).replace(/,/g, "")); }
  * @here lightly" is a whole entry in five words. */
 const RE_BARE_IN = /^(?:i'?m\s+|i\s+|we\s+)?in\b(?:\s+(?:here|everyone|starters?|lightly|light|small|super\s+light|very\s+light|these|again|now))*\s*(?:@?\s*\$?(\d{1,3}(?:\.\d{1,2})?))?\s*[.!]?$/i;
 const RE_BARE_OUT = /^(?:i'?m\s+)?(?:fully\s+|all\s+)?out\b(?:\s+(?:of\s+)?half)?[\s!.]{0,4}$/i;
+// Midas's "In @here my add level will be 744.30" / "In 0days at 1.97" — an
+// IN at the start, not leading into prose, with a trading cue somewhere in
+// the line. The blocklist is what keeps "In no rush to lose money today"
+// from buying anything.
+const RE_LOOSE_IN = /^(?:i'?m\s+|i\s+|we\s+)?in\b(?!\s+(?:no|not|the|a|an|this|that|it|order|fact|case|between|rush|and|but|on|to|for|honeydrip)\b)/i;
+const RE_IN_CUE = /\d+\.\d{1,2}|\bstarters?\b|\bcons?\b|\b[01]\s*d(?:ays?|tes?)\b|\blightly\b|\bfill\b|\badd\s+level\b/i;
+const RE_IN_PRICE = /(?:\bat|@)\s*\$?(\d{1,2}\.\d{1,2})\b/i;
+// "All positions closed" / "Out of all trades" — everything this trader
+// holds goes, whatever the tickers are.
+const RE_CLOSE_ALL = /\ball\s+positions?\s+(?:are\s+)?closed\b|\bclos(?:ed|ing)\s+all\s+positions?\b|\bout\s+of\s+all\s+trades\b|\bsold\s+everything\b/i;
 const RE_HALF = /\b(?:out\s+of|sold)\s+half\b/i;
 // Entry-line filler that isn't information: sizing talk and hype words.
-const RE_FILLER = /\b(?:lightly|light|super|very|small|starters?|lottos?|lotto|these|some|size|zero|for|high|risk|deg[ea]n)\b|[().!]/gi;
+const RE_FILLER = /\b(?:lightly|light|super|very|small|starters?|lottos?|lotto|these|some|size|zero|for|high|risk|deg[ea]n|accts?|account|starter)\b|[()!,]|\.(?!\d)/gi;
 
 // "loading" is the main room; "PREP AAPL 350 C 7/31" is Aristotle's word for
 // the same thing, and Midas says "Loaded ... cons" — all of them mean GET
 // READY, none of them buys.
 const RE_LOADING = /\b(?:loading|loaded|prep(?:ping|ped)?)\b/i;
 const RE_ALLOUT = /\ball\s+out\b/i;
-const RE_TRIM = /\btrim(?:ming|med|s)?\b/i;
+const RE_TRIM = /\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b/i;
 const RE_BACKIN = /\bback\s+in\b/i;
 const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a)\b/i;
 const RE_EXIT = /\b(?:exited|exiting|closed|closing|stc|sold|selling|out|cutting)\b/i;
@@ -124,7 +134,7 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   "anyone", "lmk", "great job",
   // The victory-lap paragraph. It's full of percentages and prices and it is
   // not a call — none of these words ever appear in one.
-  "yesterday", "tomorrow", "nice day", "conviction", "wish i",
+  "yesterday", "nice day", "conviction", "wish i",
   // "71.7% chance of no cut" on FOMC day — a percentage that is about the
   // Fed, not about a trade. Nearly parsed as a trim.
   "chance of", "probability", "odds of", "supposed to"];
@@ -156,7 +166,10 @@ function cleanText(raw) {
 /* "to July 29th" -> "7/29". Only used when the contract itself didn't carry an
  * expiry, so it can never override one they actually wrote. */
 const RE_DAYS_ANY = /\b(\d{1,2})\s*days?\b/i;
+// "tomorrow exp" is Midas's and Aristotle's way of writing 1DTE.
+const RE_TMRW_EXP = /\btomorrow\s+exp\w*/i;
 function expiryAnywhere(text) {
+  if (RE_TMRW_EXP.test(text)) return "1DTE";
   let m = RE_MONTH_DAY.exec(text);
   if (m) return MONTHS[m[1].toLowerCase().slice(0, 3)] + "/" + parseInt(m[2], 10);
   m = RE_DTE_ANY.exec(text);
@@ -269,6 +282,8 @@ function parseSignal(text, cfg) {
               // dry run has.
               kind: "", direction: null, their_stop: null, their_target: null,
               usd: null,
+              // "All positions closed" — close everything this trader holds.
+              all: false,
               warn: "", raw, clean: "", matched: "" };
   if (!raw) { s.why = "empty message"; return s; }
 
@@ -309,6 +324,15 @@ function parseSignal(text, cfg) {
     if (c) { s.symbol = c.symbol; s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
     s.why = "they're getting ready on " + (s.symbol || "something") +
             " — LOADING never buys, that's the room's own rule";
+    return s;
+  }
+
+  // 1b. "All positions closed" / "Out of all trades" — everything this
+  //     trader holds goes. No ticker to resolve: the worker walks their
+  //     whole book and closes each one.
+  if (RE_CLOSE_ALL.test(low)) {
+    s.action = "CLOSE"; s.all = true; s.matched = "close everything";
+    s.why = "they closed everything — selling every trade of theirs still open";
     return s;
   }
 
@@ -361,6 +385,15 @@ function parseSignal(text, cfg) {
     s.why = "out and back into " + s.symbol +
             (s.limit === null ? "" : " @ " + s.limit.toFixed(2)) +
             " — same contract, sold and re-bought";
+    return s;
+  }
+
+  // 3a2. "1.26 new avg" on its own — that's their bookkeeping after an add
+  //      that was already signalled, not a second add. Reading it as one
+  //      would buy five more contracts per arithmetic update.
+  if (/^\$?\d+(?:\.\d+)?\s*(?:is\s+)?(?:my\s+)?new\s+avg\.?$/i.test(t)) {
+    s.matched = "their new average";
+    s.why = "their running average after an add they already called — nothing to do";
     return s;
   }
 
@@ -503,6 +536,23 @@ function parseSignal(text, cfg) {
         s.why = "a bare \"in\" — looking for the PREP it belongs to";
         return s;
       }
+      // Midas's shape: "In @here my add level will be 744.30" / "In 0days at
+      // 1.97". Starts with IN, not prose, and carries a trading cue. The
+      // price is only believed when it's premium-sized — 744.30 is a level
+      // on the chart, not a thing you pay for a contract.
+      if (RE_LOOSE_IN.test(t) && RE_IN_CUE.test(t)) {
+        s.action = "OPEN"; s.matched = "loose in on a loaded contract";
+        s.needs_loaded = true;
+        const mp = RE_IN_PRICE.exec(t);
+        let lim = mp ? parseFloat(mp[1]) : null;
+        if (lim === null) {
+          const md0 = /\b(\d{1,2}\.\d{1,2})\b/.exec(t);
+          if (md0 && parseFloat(md0[1]) < 100) lim = parseFloat(md0[1]);
+        }
+        s.limit = lim;
+        s.why = "an \"in\" with detail around it — looking for the PREP it belongs to";
+        return s;
+      }
       s.why = "sounds like an entry but there's no full contract in it";
       return s;
     }
@@ -544,12 +594,14 @@ function parseSignal(text, cfg) {
         .replace(/\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b|\b\d*dte\b|\b\d{1,2}\s*days?\b/gi, " ")
         .replace(RE_FILLER, " ")
         .replace(/\s+/g, " ").trim();
-      if (!leftover) {
+      const lonePrice = /^\$?(\d{1,2}(?:\.\d{1,2})?)$/.exec(leftover);
+      if (!leftover || (lonePrice && parseFloat(lonePrice[1]) < 100)) {
         s.symbol = c5.symbol; s.strike = c5.strike; s.side = c5.side;
         s.expiry = c5.expiry;
         s.action = "OPEN"; s.matched = "bare contract entry";
         s.fire = true;
-        s.warn = "no price posted — it pays the market.";
+        if (lonePrice) s.limit = parseFloat(lonePrice[1]);
+        else s.warn = "no price posted — it pays the market.";
         s.why = "entry: " + human(s) + " — the contract IS the whole message";
         return s;
       }

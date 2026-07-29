@@ -21,17 +21,17 @@ const LOG_MAX = 120;
  * say. Hard-coded on purpose so a wiped settings box can't accidentally arm
  * them. When a room graduates, its line comes out of this set. */
 const RECORD_ONLY = new Set([
-  "1144369893760831489"     // Midas room — prose and underlying levels;
-                            // needs context-tracking before it's readable
+  // (empty — every Discord room is at least shadow-read now; Whop is still
+  // gated separately by platform until its reader is precise)
 ]);
 
-/* Aristotle's room graduated from recording to SHADOW: his grammar is built
- * (PREP / bare "In" / bare percents / "Fully out", learned from his real
- * corpus), so the parser now reads every message and the log says what it
- * WOULD have done — and nothing fires. One clean shadow day against his
- * actual calls is the graduation exam; then this set loses its line too. */
+/* Aristotle TRADES in test mode now — his call: "actually dont put him in
+ * shadow mode, go ahead and test him out, im not going to go live until next
+ * week anyway." Midas takes the shadow slot instead: his grammar just got
+ * built from a month of his room, so the log shows what it WOULD have done
+ * with his calls, and nothing fires until a clean shadow day proves it. */
 const SHADOW = new Set([
-  "987515353670221834"      // Aristotle's room
+  "1144369893760831489"     // Midas room
 ]);
 
 async function cfg() {
@@ -42,7 +42,7 @@ async function cfg() {
     capture: true,
     bridge_url: BRIDGE_DEFAULT,
     author_names: [],
-    channel_ids: [],
+    channel_ids: [],   // merged with the graduated rooms below
     extra_veto_words: [],
     guards: {}
   }, settings || {});
@@ -57,6 +57,14 @@ async function cfg() {
   c.allowed_symbols = Array.from(new Set(
     [].concat((settings || {}).allowed_symbols || [], VOCAB)
       .map(x => String(x).toUpperCase())));
+  // The rooms that trade are baked in, so graduating one never depends on a
+  // settings box being right: the main room and Aristotle's. Anything typed
+  // in the popup's channel box is honoured ON TOP of these.
+  c.channel_ids = Array.from(new Set(
+    [].concat((settings || {}).channel_ids || [],
+              ["829754942817828884",     // main room
+               "987515353670221834"])    // Aristotle — live in TEST, his word
+      .map(String)));
   return c;
 }
 
@@ -558,6 +566,41 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         sig.why = "they added to " + (sig.symbol || "a position") +
                   " but you're not in it — nothing to add onto";
       }
+    }
+
+    // "All positions closed" — walk everything this trader holds and close
+    // each one as its own order. Respect the OFF switch like everything else.
+    if (sig.all && sig.action === "CLOSE") {
+      if (c.stopped || c.armed === false) { reply({ ok: true }); return; }
+      const stAll = await guardState();
+      const whoAll = String(sig.caller || msg.author || "").toLowerCase();
+      const mine = Object.keys(stAll.positions || {})
+        .filter(k => keyWho(k) === whoAll);
+      if (!mine.length) {
+        await addLog({ kind: "ignored",
+                       why: "they closed everything, but you're not in any of " +
+                            "their trades — nothing to sell",
+                       text: msg.text, author: msg.author });
+        reply({ ok: true });
+        return;
+      }
+      for (const k of mine) {
+        const one = Object.assign({}, sig, {
+          all: false, symbol: keySymbol(k), fire: true, needs_position: false });
+        await fillFromPosition(one, msg.author);
+        await guardRecord(one, c, msg.author);
+        inFlight++;
+        let r1;
+        try { r1 = await sendOrder(one, one.qty || 1, c, msg.author); }
+        finally { inFlight--; }
+        if (r1.ok) watchFills();
+        await addLog({ kind: r1.ok ? "sent" : "failed",
+                       what: human(one) + " x" + (one.qty || 1), action: "CLOSE",
+                       why: r1.msg, text: msg.text, author: msg.author });
+      }
+      badge();
+      reply({ ok: true });
+      return;
     }
 
     if (!sig.fire) {
