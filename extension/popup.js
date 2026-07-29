@@ -550,8 +550,11 @@ $("export").onclick = async () => {
   const ROOMS = { "829754942817828884": "main",
                   "987515353670221834": "aristotle",
                   "1144369893760831489": "midas" };
-  const rows = (captured || []).map(c =>
-    new Date(c.t).toLocaleTimeString() +
+  // Sorted by when the message was POSTED, not when it was scraped —
+  // scrolling up paints newest-first, and a file in paint order would read
+  // like a week played backwards.
+  const rows = (captured || []).slice().sort((a, b) => a.t - b.t).map(c =>
+    new Date(c.t).toLocaleString() +
     "  [" + (ROOMS[c.channel] || c.channel || "?") + "]" +
     "  " + (c.author || "?") + ": " + c.text);
   const blob = new Blob([rows.join("\n") || "nothing captured yet"],

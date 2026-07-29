@@ -47,14 +47,17 @@ async function addLog(entry) {
   await chrome.storage.local.set({ log: l.slice(0, LOG_MAX) });
 }
 
-async function capture(text, author, channel) {
+async function capture(text, author, channel, at) {
   const { captured } = await chrome.storage.local.get("captured");
   const c = captured || [];
   // The channel rides along so a capture day across three rooms exports as
   // three distinguishable lexicons — tuning Midas's grammar on Aristotle's
-  // sentences would be worse than not tuning at all.
-  c.push({ t: Date.now(), author, text, channel: String(channel || "") });
-  await chrome.storage.local.set({ captured: c.slice(-3000) });
+  // sentences would be worse than not tuning at all. The timestamp is the
+  // message's own, not the moment it was scraped — scrolled-in history
+  // should read as the day it happened. 8000 lines is a couple of weeks of
+  // three rooms; older ones fall off the back.
+  c.push({ t: at || Date.now(), author, text, channel: String(channel || "") });
+  await chrome.storage.local.set({ captured: c.slice(-8000) });
 }
 
 async function badge() {
@@ -418,7 +421,16 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 
   (async () => {
     const c = await cfg();
-    if (c.capture) capture(msg.text, msg.author, msg.channelId);
+    if (c.capture) capture(msg.text, msg.author, msg.channelId, msg.postedAt);
+
+    // Scrolled-in history stops here: filed in the capture with its ORIGINAL
+    // timestamp, and never parsed. An old call acted on today is how you buy
+    // somebody's exit from last Tuesday — reading the past is for tuning,
+    // never for trading.
+    if (msg.history) {
+      reply({ ok: true });
+      return;
+    }
 
     // Record-only rooms stop right here, captured and nothing more. The
     // return is BEFORE the parser on purpose — these rooms' wording hasn't

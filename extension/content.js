@@ -68,9 +68,14 @@ function handle(li) {
   const t = li.querySelector("time[datetime]");
   const postedAt = t ? Date.parse(t.getAttribute("datetime")) : Date.now();
   // When you open or scroll a channel, Discord paints old messages into the
-  // DOM. Those are history, not calls. Anything from before this tab started
-  // watching is ignored outright.
-  if (postedAt < STARTED - 5000) return;
+  // DOM. Those are history, not calls — but history is exactly what tuning
+  // the parser on a new room needs, and scrolling up is the one honest way to
+  // get it (no API, no login, nothing Discord didn't already send this
+  // browser). So it goes through MARKED, and the worker files it in the
+  // capture and refuses to let it anywhere near the trading path. Scroll back
+  // through a week of a room and you've exported its whole lexicon tonight
+  // instead of collecting it live for days.
+  const history = postedAt < STARTED - 5000;
 
   const text = textOf(li);
   if (!text) return;
@@ -81,6 +86,7 @@ function handle(li) {
     author: authorOf(li),
     channelId: channelId(),
     postedAt,
+    history,
     url: location.href
   }).catch(() => { /* worker asleep mid-send; the next one wakes it */ });
 }
