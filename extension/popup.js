@@ -19,7 +19,7 @@
 const $ = id => document.getElementById(id);
 
 const DEFAULTS = {
-  armed: false, stopped: false, capture: true,
+  armed: true, stopped: false, capture: true,   // ON is the resting state
   bridge_url: "http://127.0.0.1:8787/order",
   channel_ids: [], follow_admins: [],
   // THE futures switch. Off = his NQ/ES calls are read and logged, nothing

@@ -24,8 +24,6 @@
     "regular_hours_only": true,
     "open_time": "09:30",
     "close_time": "16:00",
-    "_auto_safe_after_close": "Once entries are done for the day AND you're flat, go back to SAFE without being asked. It will not do this while you're still holding something.",
-    "auto_safe_after_close": true,
     "max_message_age_seconds": 20
   },
 

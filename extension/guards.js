@@ -19,10 +19,7 @@ const GUARD_DEFAULTS = {
   // New trades are allowed right through to the closing bell. Exits are not
   // time-boxed at all — see guardCheck, which only applies this to OPEN.
   close_time: "16:00",
-  max_message_age_seconds: 20,
-  // Once entries are done for the day, switch OFF on its own — but only
-  // once you're flat. See sessionSweep() in background.js.
-  auto_safe_after_close: true
+  max_message_age_seconds: 20
 };
 
 function etNow() {

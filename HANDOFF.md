@@ -800,3 +800,17 @@ settings.example.json (the key), and the parser's no-price warning was
 reworded since there's no chase limit to reference. If the room is in it,
 he's in it, whatever the ask has done since — the bid-sitting entry style is
 still what protects the price actually paid.
+
+## Update — ON is the resting state
+
+His words: "i want the bot to be on 24/7 as soon as you execute it, beucase
+you can only trade during market hours anyway. but if i want it to go live
+with an account with money then yes have to activate it for now."
+
+Done: armed defaults true everywhere; ensureArmed() in background.js arms
+once per install (marker `armed_once`) so the OFF button still sticks when
+pressed on purpose. sessionSweep (the after-close auto-disarm) is DELETED —
+the market-hours guard already refuses entries outside 09:30–16:00 ET and
+weekends, and exits were never time-boxed. auto_safe_after_close is gone from
+defaults and settings.example. TEST/REAL stays exactly as it was: manual,
+two-click confirm to go live — that's the activation he means.

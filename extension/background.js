@@ -28,7 +28,7 @@ const RECORD_ONLY = new Set([
 async function cfg() {
   const { settings } = await chrome.storage.local.get("settings");
   const c = Object.assign({
-    armed: false,
+    armed: true,       // ON is the resting state — see ensureArmed()
     stopped: false,
     capture: true,
     bridge_url: BRIDGE_DEFAULT,
@@ -381,61 +381,39 @@ async function reinject() {
   }
 }
 
-/* ---- going to sleep when the session is over ------------------------------
+/* ---- always on -------------------------------------------------------------
  *
- * The room calls entries in the morning and stops around midday. Leaving this
- * Left ON all afternoon and overnight, every stray line in that channel is
- * still being read by something that can spend money, for eleven hours, for no
- * reason. So once entries are done for the day it switches itself OFF.
+ * The bot used to switch itself OFF after the session and wait to be armed
+ * each morning. Deleted, on his word: "i want the bot to be on 24/7 as soon
+ * as you execute it, beucase you can only trade during market hours anyway."
+ * He's right — the market-hours guard already refuses entries outside the
+ * session and weekends, and exits were never time-boxed. Being ON around the
+ * clock costs nothing and misses nothing.
  *
- * With one exception, and it matters: it will not disarm while you're still
- * holding something. If the room calls the exit at 12:40 and this had already
- * shut itself off at 12:00, that exit doesn't fire and you're sitting in a
- * position nobody is watching. So while you're holding, it stays armed and
- * says so — exits are allowed at any hour, only entries are time-boxed.
+ * What stays manual, on his word too: TEST vs REAL. Being ON only ever spends
+ * pretend money until he flips the mode himself ("if i want it to go live
+ * with an account with money then yes have to activate it").
+ *
+ * ensureArmed runs once per install: it arms the bot and leaves a marker so
+ * the OFF button still works — pressing OFF is a choice, and choices stick.
  */
-async function sessionSweep() {
-  const c = await cfg();
-  if (!c.armed) return;
-  const g = Object.assign({}, GUARD_DEFAULTS, c.guards || {});
-  if (g.auto_safe_after_close === false) return;
-
-  const phase = sessionPhase(g);
-  if (phase !== "done" && phase !== "shut") return;
-
-  const st = await guardState();
-  const held = Object.keys(st.positions || {});
-  if (held.length) {
-    const { holdNotice } = await chrome.storage.local.get("holdNotice");
-    if (holdNotice !== st.day) {
-      await chrome.storage.local.set({ holdNotice: st.day });
-      await addLog({ kind: "update", why: "entries are done for the day, but " +
-                     "you're still in " + held.map(keySymbol).join(", ") +
-                     " — staying ON so " +
-                     "their exit can still fire. It'll switch OFF once you're flat." });
-    }
-    badge();
-    return;
-  }
-
-  const settings = Object.assign({}, c, { armed: false });
-  await chrome.storage.local.set({ settings });
-  await addLog({ kind: "update", why: "entries are done for the day and you're " +
-                 "flat, so it switched itself OFF. Nothing fires until you " +
-                 "arm it again tomorrow." });
-  try {
-    chrome.notifications.create({
-      type: "basic", iconUrl: "icon128.png",
-      title: "Switched itself OFF",
-      message: "Session's over and you're flat. Disarmed itself."
-    });
-  } catch (e) { /* nicety */ }
+async function ensureArmed() {
+  const { settings, armed_once } = await chrome.storage.local.get(
+    ["settings", "armed_once"]);
+  if (armed_once) return;
+  await chrome.storage.local.set({
+    settings: Object.assign({}, settings || {}, { armed: true, stopped: false }),
+    armed_once: true
+  });
+  await addLog({ kind: "update", why: "ON by default now — it runs 24/7 and " +
+                 "the market-hours guard does the timekeeping. TEST/REAL " +
+                 "stays yours to flip. OFF still works if you ever want it." });
   badge();
 }
 
 chrome.alarms.create("watch-build", { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); sessionSweep(); syncFills(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); }
 });
 
 // Going from ON back to OFF is the moment a held-back update can land, so
@@ -642,8 +620,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   return true;   // keep the message channel open for the async reply
 });
 
-chrome.runtime.onInstalled.addListener(() => { badge(); reinject(); });
-chrome.runtime.onStartup.addListener(() => { badge(); reinject(); });
+chrome.runtime.onInstalled.addListener(() => { ensureArmed(); badge(); reinject(); });
+chrome.runtime.onStartup.addListener(() => { ensureArmed(); badge(); reinject(); });
+ensureArmed();
 badge();
 reinject();
 checkBuild();
