@@ -9,7 +9,7 @@ Enter and nothing changes. There is no way to break the file from in here:
 it's read, the answers are checked, and only then is it written back.
 
 What this file does NOT do: it does not touch your Webull keys (that's
-START HERE, number 2) and it does not switch anything to live money (that's
+the extension popup) and it does not switch anything to live money (that's
 the button in the extension popup, and it asks twice).
 """
 
@@ -32,7 +32,7 @@ def load():
             return None
         shutil.copyfile(EXAMPLE, SETTINGS)
         print("   You didn't have a settings.json yet, so I started one from")
-        print("   the example. Your Webull keys aren't in it — number 2 on")
+        print("   the example. Your Webull keys aren't in it — the popup's")
         print("   START HERE puts those in.\n")
     try:
         with open(SETTINGS, encoding="utf-8") as f:
@@ -42,7 +42,7 @@ def load():
         # parser error tells you nothing useful.
         print("   settings.json has a typo in it — usually a missing comma or")
         print("   a stray quote — so I can't read it. Easiest fix: rename it to")
-        print("   settings-broken.json, run number 2 to put your keys back in,")
+        print("   settings-broken.json, paste your keys back in via the popup,")
         print("   then run this again.")
         return None
 

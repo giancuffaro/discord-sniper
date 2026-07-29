@@ -641,6 +641,10 @@ class Handler(BaseHTTPRequestHandler):
                 "account": WB_ACCOUNT,
                 "error": WB_ERROR,
                 "has_keys": keys_in,
+                # Just the tail, so the popup can say "keys in, ...4859"
+                # without the key itself ever going back to a browser.
+                "key_tail": str((EXEC.get("webull") or {})
+                               .get("app_key", ""))[-4:] if keys_in else "",
                 # The real margin account's buying power, straight from Webull,
                 # cached for half a minute because the popup asks every few
                 # seconds and the broker doesn't need to hear from us that
@@ -775,11 +779,72 @@ class Handler(BaseHTTPRequestHandler):
             out["pl"] = round((bid - paid) * 100 * int(p.get("qty") or 0), 2)
         return self._json(200, out)
 
+    def _set_keys(self):
+        """Webull keys, typed into the extension popup instead of a console.
+
+        He asked for this by name — "if i have to enter the api keys in the
+        extension to work thats better. i like to lean more to the UI side."
+        The security shape is unchanged: the keys are POSTed once over
+        127.0.0.1 (never leaves this machine), written straight into
+        settings.json with owner-only permissions, and NOT kept anywhere in
+        the browser — the popup forgets them the moment they're sent, and all
+        it ever gets back is the last four characters.
+        """
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:                                   # noqa: BLE001
+            return self._json(400, {"ok": False, "message": "unreadable"})
+        key = str(body.get("app_key", "")).strip()
+        secret = str(body.get("app_secret", "")).strip()
+        if not key or not secret:
+            return self._json(400, {"ok": False,
+                                    "message": "both boxes need something in "
+                                               "them — key and secret"})
+        path = os.path.join(HERE, "settings.json")
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            # No settings.json yet — a brand-new PC. Start from the example,
+            # which is exactly what the old menu's install step did.
+            try:
+                with open(os.path.join(HERE, "settings.example.json"),
+                          encoding="utf-8") as f:
+                    data = json.load(f)
+            except (OSError, ValueError):
+                data = {}
+        w = data.setdefault("execution", {}).setdefault("webull", {})
+        w["app_key"], w["app_secret"] = key, secret
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            os.chmod(path, 0o600)
+        except OSError as e:
+            return self._json(200, {"ok": False,
+                                    "message": "couldn't save them: %s" % e})
+        reload_settings()
+        # Prove them straight away — connect for quotes, pick the options
+        # account. The answer lands in the popup, not in a console window.
+        connect_broker(quiet=True)
+        if WB is not None:
+            msg = ("saved and working — connected to account %s. Nothing goes "
+                   "live until you flip the switch." % WB_ACCOUNT)
+        else:
+            msg = ("saved, but they didn't connect: %s — check for a typo and "
+                   "paste them again." % (WB_ERROR or "unknown")[:160])
+        note("KEYS     new Webull keys from the popup (…%s) — %s"
+             % (key[-4:], "connected" if WB is not None else "NOT connected"))
+        return self._json(200, dict(self._status(), ok=WB is not None,
+                                    message=msg))
+
     def do_POST(self):
         if self.path.startswith("/mode"):
             return self._set_mode()
         if self.path.startswith("/mark"):
             return self._mark()
+        if self.path.startswith("/keys"):
+            return self._set_keys()
 
         if os.path.exists(os.path.join(HERE, "STOP")) or \
            os.path.exists(os.path.join(HERE, "STOP.txt")):

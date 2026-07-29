@@ -57,35 +57,32 @@ afternoon, not a drained account.
 
 ## There is one button
 
-`🎯 START HERE.bat`. That's the only file you ever double-click. It opens a
-numbered menu and everything is a number:
+`🎯 START HERE.bat`. That's the only file you ever double-click, and it has no
+menu any more — no numbers, nothing to pick. Every run does the whole morning
+by itself, in order:
 
-```
-  FIRST TIME - do these once, top to bottom
-    1   Install everything
-    2   Put my Webull keys in
-    3   Check the keys actually work      (places no orders)
-    4   Set the 9:25 morning alarm
+- installs anything missing (first run on a PC only)
+- quietly pulls the latest build down from GitHub
+- sets the 9:25 weekday alarm if it isn't set, working the timezone out itself
+- starts the bridge, hidden
+- opens your signal channel in Chrome
 
-  EVERY DAY - or just let the alarm do it
-    5   Start now  -  bridge + your Discord channel
-    6   Stop the bridge
+then tells you the one thing only you can do (the two switches in the popup)
+and closes itself. Run it twice, nothing doubles — it notices what's already
+done and leaves it alone. After the first run, the 9:25 alarm presses the
+button for you, so most days you press nothing at all.
 
-  CHANGE HOW IT TRADES
-   11   The numbers  -  buying power, trades a day, averaging in
+Your Webull keys don't go in at a console any more either. They go in through
+the extension popup — Settings, two boxes, one save button. They're sent once
+to the bridge on your own PC (127.0.0.1, never the internet), written into
+`settings.json` with owner-only permissions, and the browser forgets them the
+moment they're sent. The popup only ever shows the last four characters.
 
-  IF SOMETHING LOOKS WRONG
-    7   Show me what the bridge has been doing
-    8   Test how it reads the room's messages
-    9   Send my changes up to GitHub
-   10   Get the latest down from GitHub
-```
+The rare stuff — stopping the bridge, reading its log, pushing to GitHub,
+turning the alarm off — lives in `EXTRAS.bat`. Day to day you never open it.
 
-Do 1, 2, 3, 4 once, in that order, and you never touch 1-4 again. After the
-alarm is set, most days you press nothing at all.
-
-The only thing the menu can't do for you is Chrome — loading the extension is a
-Chrome thing and Windows can't click through it. That's the next section, and
+The only thing START HERE can't do for you is Chrome — loading the extension is
+a Chrome thing and Windows can't click through it. That's the next section, and
 it's also once.
 
 ---
@@ -124,16 +121,17 @@ Sniper, click the pin. The icon now sits next to your address bar with a little
 badge on it. That badge is your status at a glance: `OFF` in grey, or today's
 trade count in orange when it's on.
 
-**6. Install the Python side.** Back in `C:\discord-sniper`, double-click
-**🎯 START HERE.bat** and press **1**. It installs what the bridge needs and
-makes you a `settings.json`. If it complains about Python, install it from
+**6. Run START HERE.** Back in `C:\discord-sniper`, double-click
+**🎯 START HERE.bat**. It installs what the bridge needs, makes you a
+`settings.json`, starts the bridge hidden, sets the morning alarm and opens
+your channel — all by itself. If it complains about Python, install it from
 python.org and **tick "Add Python to PATH"** on the first screen of the
-installer — that box is the whole reason this ever fails.
+installer — that box is the whole reason this ever fails. To shut the bridge
+down later: `EXTRAS.bat`, option 1.
 
-**7. Start the bridge.** Same menu, press **5**. The bridge starts *hidden* —
-no window on your screen — and the menu waits until it's actually answering
-before it tells you it's up. Nothing can trade unless it's running, which is why
-**5** is also what the 9:25 alarm presses for you. To shut it down, **6**.
+**7. Put your keys in.** In the extension popup, open Settings, paste your
+Webull App Key and App Secret into the two boxes, hit save. The popup tells you
+straight away whether they connected.
 
 **8. Open Discord in Chrome.** The actual Chrome tab, not the Discord desktop
 app — the extension can only see a real browser tab. Go to the signal channel
@@ -171,8 +169,9 @@ outright, both by what Webull calls it and by an account id ending in a futures
 suffix (`3T0B`).
 
 Most people have more than one account — a margin one, a cash one, sometimes a
-futures one — and nothing good comes of the bot guessing which. So menu **2**
-prints the list and makes you pick:
+futures one — and nothing good comes of the bot guessing which. Saving keys
+through the popup picks the options account automatically and refuses futures;
+if you ever need to pick by hand, `EXTRAS.bat` option 9 prints the list:
 
 ```
   Which account should it trade?
@@ -470,14 +469,14 @@ Windows doesn't ship them. Everything here runs on New York time, so it couldn't
 start at all.
 
 It's fixed two ways now, deliberately belt-and-braces, because this is the one
-clock the whole thing depends on. `tzdata` is in requirements.txt, so menu
-number 1 installs the proper database. And `eastern.py` has the US Eastern rule written
+clock the whole thing depends on. `tzdata` is in requirements.txt, so START
+HERE's first run installs the proper database. And `eastern.py` has the US Eastern rule written
 out by hand as a fallback, so even on a PC where that install was never done, it
 starts anyway. The fallback was checked minute-by-minute against the real
 database across five years — including both daylight-saving switchovers — and
 gives an identical clock at every point.
 
-Press **1** on the menu once on this PC and it'll pick up `tzdata` properly.
+Run START HERE once on this PC and it'll pick up `tzdata` properly.
 
 ---
 
@@ -729,8 +728,11 @@ loses money:
 - `popup.html` / `popup.js` — the dashboard.
 
 **On your PC**
-- `🎯 START HERE.bat` — the menu. The only file you double-click.
-- `_run_hidden.vbs` — one line, launches the bridge with no window. The menu
+- `🎯 START HERE.bat` — the only file you double-click. No menu — it does the
+  whole morning by itself.
+- `EXTRAS.bat` — the rare stuff: stop the bridge, read its log, GitHub push and
+  pull, alarm off, console keys.
+- `_run_hidden.vbs` — one line, launches the bridge with no window. START HERE
   runs it for you; don't double-click it yourself.
 - `bridge.py` — receives orders, holds the credentials, places
   the trade. Listens on 127.0.0.1 only, so nothing outside this machine can
@@ -745,17 +747,17 @@ loses money:
   refuses futures accounts. Every error it can hit is translated into a sentence
   that tells you what to fix.
 - `setup_keys.py` — puts your API keys in without you ever opening a JSON file
-  and getting a comma wrong at 9:29. Menu number 2.
-- `check_keys.py` — the preflight. Menu number 3.
+  and getting a comma wrong at 9:29. The popup's key boxes use the same file.
+- `check_keys.py` — the preflight. EXTRAS.bat option 3.
 - `settings_quick.py` — the numbers that change a day: pretend buying power,
   trades a day, contracts per trade, averaging in, the stop loss %, and how long
-  your bid may sit there. Menu number 11. Press Enter on any question and it
+  your bid may sit there. EXTRAS.bat option 5. Press Enter on any question and it
   leaves that one alone.
 - `eastern.py` — New York time, with the rule written out by hand so Windows
   not shipping a timezone database can't stop the bridge.
 - `signals.py` / `guards.py` — the Python twins of `parser.js` / `guards.js`.
   Not run day to day; they're what the tests test.
-- `settings.example.json` — copy to `settings.json` and fill in. Menu number 1
+- `settings.example.json` — copy to `settings.json` and fill in. START HERE
   does this for you.
 
 **Checks**
@@ -799,7 +801,8 @@ is never going near the store. So it does it itself:
 - **The extension** asks for that fingerprint every 30 seconds. When it changes,
   it reloads itself — which is the reload arrow, pressed from the inside — and
   puts a fresh reader back into your Discord tab without you touching it.
-- **Menu number 10** pulls anything new down from GitHub. Say **Y** to the
+- START HERE quietly pulls anything new down from GitHub on every run;
+  EXTRAS.bat option 7 does it by hand. Say **Y** to the
   "keep watching?" question and it stays open checking every 2 minutes.
 
 Run all three and the loop closes: change a file on github.com from your phone
@@ -813,7 +816,7 @@ Two things it deliberately won't do:
   While it's on it holds the update, tells you it's waiting, and applies it the
   moment you turn the bot off.
 - **It won't pull over the top of unpushed work.** If it finds edits on this PC
-  that aren't on GitHub, it stops and tells you to do number 9 first.
+  that aren't on GitHub, it stops and tells you to push first (EXTRAS.bat option 6).
 
 The bridge has to be running for any of this — it's the part that can see the
 disk. If it's off, nothing updates and nothing breaks; it catches up when the
@@ -835,7 +838,7 @@ In order, and not before you've done the one above it:
 3. Open the extension popup and switch the bottom button to **REAL MONEY**.
    That button is the only place real money gets turned on — nothing on the
    black console screen ever asks you, so you can't switch it by accident while
-   setting something else up. Then menu **7** to read what the bridge said: you
+   setting something else up. Then EXTRAS.bat option 2 to read what the bridge said: you
    want `mode: webull` and `Webull: connected, options account ...`.
 4. Turn the bot **OFF** while you check that. The two switches are separate and
    both have to be on before a single order goes out — so confirm the bridge

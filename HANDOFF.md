@@ -652,3 +652,37 @@ Watch out for, next session: `HARD_MAX_QTY` is still 2 in live mode and
 `max_qty` in the popup still caps live buys at 1 — the 5-lot pattern is
 test-only until he says otherwise. And `migratePositions` in guards.js moves
 any pre-v1.4 bare-symbol position under its author's key on first read.
+
+## Update — no more menu, keys through the popup
+
+His ask: *"can you make the start here stuff all automatic ? i dont want to
+type any numbers at all... if i have to enter the api keys in the extension to
+work thats better. i like to lean more to the UI side."*
+
+**START HERE has no menu now.** Double-click = the whole morning: first-run
+pip install (detected by `import webull` failing), settings.json from the
+example, a quiet best-effort `git pull --ff-only` (skipped if dirty/offline),
+the 9:25 weekday alarm set idempotently — 9:25 ET converted to the PC's local
+clock in PowerShell so nobody does timezone arithmetic at a prompt — the
+bridge started hidden and probed until it answers, Chrome opened on the
+channel, then a has_keys probe of `/mode` decides whether to tell him to paste
+keys. Window closes itself. The `morning` argument still exists and the old
+scheduled task still points at this same file.
+
+**Keys go in through the popup.** New `POST /keys` on the bridge: writes
+app_key/app_secret into settings.json (created from the example on a bare PC),
+chmod 600, reloads, reconnects quietly, answers with the connect result. The
+browser stores NOTHING — the two password inputs are wiped on success, and the
+only thing that ever comes back is `key_tail` (last 4) on `/mode`. The
+security shape is unchanged: credentials at rest live in settings.json on the
+PC, never in Chrome. `setup_keys.py` still exists (EXTRAS option 9) and is
+still the way to pick between multiple accounts by hand; the popup path picks
+the options account automatically.
+
+**EXTRAS.bat** holds everything that used to be a menu number: stop bridge,
+bridge log, check_keys, tune, settings_quick, GitHub push/pull (with the
+merge-ours recovery kept intact), alarm off, console keys. All "press N"
+wording in the Python/JS/README was updated to match.
+
+Watch out for: the alarm creation needs admin on some PCs — START HERE says so
+in one line and carries on, since double-clicking does the same job.

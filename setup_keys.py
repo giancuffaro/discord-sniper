@@ -1,7 +1,7 @@
 """
 setup_keys.py — puts your Webull key, secret and account into settings.json.
 
-Menu number 2 runs it. It exists so you never have to open a JSON file and get
+EXTRAS.bat runs it (the popup is the nicer way now). It exists so you never have to open a JSON file and get
 a comma wrong at 9:29 in the morning.
 
 It does one thing beyond typing: it logs in and shows you every account you

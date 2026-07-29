@@ -44,7 +44,7 @@ def main():
         if "built-in" in eastern.source():
             line(HM, "Using the built-in timezone rule — the tzdata package "
                      "isn't installed.")
-            line("         ", "Not a problem, but menu number 1 would tidy it up.")
+            line("         ", "Not a problem, but double-clicking START HERE would tidy it up.")
     except Exception as e:                              # noqa: BLE001
         line(NO, "Couldn't work out the time in New York: %s" % e)
         return 1
@@ -54,7 +54,7 @@ def main():
     if not os.path.exists(path):
         line(NO, "There's no settings.json in this folder.")
         blank()
-        line("         ", "Open START HERE and press 2, then put your Webull "
+        line("         ", "Put your Webull keys in through the extension popup's "
                           "key and secret in. That creates it.")
         return 1
     try:
@@ -64,7 +64,7 @@ def main():
         line(NO, "settings.json is there but it isn't readable: %s" % e)
         blank()
         line("         ", "Something edited it by hand and broke it. Menu "
-                          "number 2 writes a fresh one.")
+                          "saving your keys in the popup writes a fresh one.")
         return 1
     line(OK, "settings.json found and readable.")
 
@@ -76,7 +76,7 @@ def main():
     if not key or not secret:
         line(NO, "No Webull API key saved.")
         blank()
-        line("         ", "Open START HERE and press 2. Nothing can trade "
+        line("         ", "Paste your keys into the extension popup's Settings. Nothing can trade "
                           "until that's done.")
         return 1
     # Never print the key. Enough to recognise it, not enough to use it.
@@ -98,7 +98,7 @@ def main():
     if not W.SDK_OK:
         line(NO, "The Webull SDK isn't installed.")
         blank()
-        line("         ", "Open START HERE and press 1, let it finish, then "
+        line("         ", "Double-click START HERE, let it finish, then "
                           "press 3 again.")
         line("         ", "(%s)" % W.SDK_WHY[:110])
         return 1

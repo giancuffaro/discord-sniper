@@ -99,7 +99,7 @@ function paintMode() {
   if (!modeStatus) {
     btn.className = "grow dry big";
     btn.innerHTML = "CAN'T REACH YOUR PC<small>the bridge isn't running</small>";
-    sub.textContent = "on your PC: open START HERE and press 5";
+    sub.textContent = "on your PC: double-click START HERE, then look again";
     return;
   }
   // The real account's buying power, whenever the bridge can read it. Shown
@@ -120,7 +120,23 @@ function paintMode() {
     btn.innerHTML = "TEST MODE<small>click to switch to real money</small>";
     sub.textContent = (modeStatus.has_keys
       ? "nothing is really bought — trades are written down on your PC"
-      : "no Webull keys saved yet — START HERE, press 2") + bpBit;
+      : "no Webull keys saved yet — scroll down to Settings and paste them in") + bpBit;
+  }
+}
+
+function paintKeys() {
+  const el = $("keystate");
+  if (!el) return;
+  if (!modeStatus) {
+    el.textContent = "Can't check your keys — the bridge isn't running.";
+  } else if (modeStatus.has_keys) {
+    el.textContent = "Keys are in (…" + (modeStatus.key_tail || "????") + ")" +
+      (modeStatus.connected ? " and connected to Webull."
+                            : ", but not connected" +
+                              (modeStatus.error ? ": " + modeStatus.error : "."));
+  } else {
+    el.textContent = "No keys saved yet. Get them from the Webull developer " +
+      "page, paste both boxes, hit save. They stay on your PC, never in Chrome.";
   }
 }
 
@@ -131,7 +147,33 @@ async function refreshMode() {
     modeStatus = null;      // bridge isn't running, which is a normal state
   }
   paintMode();
+  paintKeys();
 }
+
+/* The keys go to the bridge and nowhere else. Nothing is written to
+ * chrome.storage — the browser forgets them the moment they're sent, which is
+ * the whole reason the bridge exists in the first place. */
+$("savekeys").onclick = async () => {
+  const key = $("wbkey").value.trim();
+  const secret = $("wbsecret").value.trim();
+  const el = $("keystate");
+  if (!key || !secret) {
+    el.textContent = "Both boxes need something in them — the key and the secret.";
+    return;
+  }
+  $("savekeys").textContent = "Saving and checking…";
+  try {
+    const r = await askBridge("/keys", { app_key: key, app_secret: secret });
+    modeStatus = r;
+    el.textContent = r.message || "saved";
+    if (r.ok) { $("wbkey").value = ""; $("wbsecret").value = ""; }
+    paintMode();
+  } catch (e) {
+    el.textContent = "Couldn't reach the bridge on your PC — double-click " +
+      "START HERE first, then try again.";
+  }
+  $("savekeys").textContent = "Save keys to this PC";
+};
 
 $("mode").onclick = async () => {
   if (modeStatus && modeStatus.live) {         // safe direction — just do it
@@ -143,7 +185,7 @@ $("mode").onclick = async () => {
   if (!modeStatus) return refreshMode();
   if (!modeStatus.has_keys) {
     $("modestate").textContent =
-      "there are no Webull keys saved yet — START HERE, press 2, then come back";
+      "no Webull keys saved yet — paste them into Settings below, then come back";
     return;
   }
   if (!armLive) {                              // first click: ask, don't act

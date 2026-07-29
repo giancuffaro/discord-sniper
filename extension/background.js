@@ -93,7 +93,7 @@ async function sendOrder(sig, qty, c, author) {
     });
   } catch (e) {
     return { ok: false, msg: "couldn't reach the bridge on your PC — did you " +
-             "press 5 on START HERE? The trade did NOT go out." };
+             "double-click START HERE? The trade did NOT go out." };
   }
   const ms = Math.round(performance.now() - t0);
   const body = (await r.text()).slice(0, 200);

@@ -222,7 +222,7 @@ def list_accounts(app_key, app_secret):
     Used by menu 2. Read-only — it cannot place anything."""
     if not SDK_OK:
         raise Refused("the Webull SDK isn't installed. Open START HERE in this "
-                      "folder and press 1 first. (%s)" % SDK_WHY[:120])
+                      "folder first - it installs what's missing. (%s)" % SDK_WHY[:120])
     if not app_key or not app_secret:
         raise Refused("no app key and secret to log in with yet.")
     api = ApiClient(app_key, app_secret, REGION)
@@ -284,7 +284,7 @@ class WebullOptions:
     def connect(self):
         if not SDK_OK:
             raise Refused("the Webull SDK isn't installed. Open START HERE in "
-                          "this folder, press 1, then start the bridge "
+                          "this folder - it installs what's missing and starts the bridge "
                           "again. (%s)" % SDK_WHY[:120])
         if not self.app_key or not self.app_secret:
             raise Refused("no Webull API key saved yet. Open START HERE, press "
@@ -307,7 +307,7 @@ class WebullOptions:
             match = [a for a in accounts if _acct_id(a) == str(self.account_id)]
             if not match:
                 raise Refused("account %s isn't in your Webull account list any "
-                              "more. Open START HERE, press 2, and pick it again."
+                              "more. EXTRAS.bat, keys option, picks it again."
                               % self.account_id)
             chosen = match[0]
         else:
@@ -315,13 +315,13 @@ class WebullOptions:
             if not options_accounts:
                 raise Refused("the only Webull account I can see looks like your "
                               "FUTURES account. This bot trades options only, so "
-                              "nothing was sent. Open START HERE, press 2, and pick "
+                              "nothing was sent. Run EXTRAS.bat, keys option, and pick "
                               "the account you want it to use.")
             if len(options_accounts) > 1:
                 ids = ", ".join("%s (%s)" % (_acct_id(a), _acct_kind(a))
                                 for a in options_accounts)
                 raise Refused("you have more than one Webull account — %s. Open "
-                              "START HERE, press 2, and pick which one this bot "
+                              "EXTRAS.bat, keys option, and pick which one this bot "
                               "uses." % ids)
             chosen = options_accounts[0]
 
@@ -329,7 +329,7 @@ class WebullOptions:
         self.account_kind = _acct_kind(chosen)
         if is_futures(chosen):
             raise Refused("account %s is a FUTURES account. This bot is options "
-                          "only — nothing was sent. Open START HERE, press 2, and "
+                          "only — nothing was sent. Run EXTRAS.bat, keys option, and "
                           "pick your margin or cash account instead."
                           % self.account_id)
         return self.account_id
@@ -363,7 +363,7 @@ class WebullOptions:
         fns = self._quote_fns()
         if not fns:
             raise Refused("couldn't find Webull's option-quote method in the SDK. "
-                          "Open START HERE and press 1 again.")
+                          "Double-click START HERE again - it reinstalls what's missing.")
         errors = []
         shapes = [((occ,), {}), (([occ],), {}), ((occ, "US_OPTION"), {}),
                   (([occ], "US_OPTION"), {}), ((), {"symbols": occ}),
