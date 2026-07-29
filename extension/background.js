@@ -27,17 +27,28 @@ const RECORD_ONLY = new Set([
 
 async function cfg() {
   const { settings } = await chrome.storage.local.get("settings");
-  return Object.assign({
+  const c = Object.assign({
     armed: false,
     stopped: false,
     capture: true,
     bridge_url: BRIDGE_DEFAULT,
-    allowed_symbols: [],
     author_names: [],
     channel_ids: [],
     extra_veto_words: [],
     guards: {}
   }, settings || {});
+  // NOTHING is blocked by ticker any more — the refusal checks are deleted.
+  // This list survives only as VOCABULARY: it helps the parser recognise a
+  // ticker typed in lowercase ("40% in spy now"), which lets it follow MORE,
+  // never less. His old saved list merges with the built-ins.
+  const VOCAB = ["SPY", "QQQ", "IWM", "DIA", "AAPL", "AMD", "NVDA", "NFLX",
+                 "TSLA", "META", "MSFT", "AMZN", "GOOGL", "GOOG", "PLTR",
+                 "COIN", "HOOD", "SMCI", "AVGO", "MU", "INTC", "BABA", "UBER",
+                 "SNOW", "CRM", "ORCL", "BAC", "XOM"];
+  c.allowed_symbols = Array.from(new Set(
+    [].concat((settings || {}).allowed_symbols || [], VOCAB)
+      .map(x => String(x).toUpperCase())));
+  return c;
 }
 
 async function addLog(entry) {

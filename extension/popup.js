@@ -21,19 +21,16 @@ const $ = id => document.getElementById(id);
 const DEFAULTS = {
   armed: false, stopped: false, capture: true,
   bridge_url: "http://127.0.0.1:8787/order",
-  channel_ids: [], follow_admins: [], allowed_symbols: [],
-  trim_action: "ignore", close_at_trim_pct: 50,
+  channel_ids: [], follow_admins: [],
   // THE futures switch. Off = his NQ/ES calls are read and logged, nothing
   // fires. Deliberately off out of the box.
   futures_enabled: false,
-  // max_trades_per_day 0 means no daily limit — it follows every call they
-  // make. average_in true means when they add to a trade you're already in and
-  // post a new average, you buy another one, up to max_adds_per_position times.
-  guards: { max_qty: 1, max_trades_per_day: 0, cooldown_seconds: 5,
-            dedupe_seconds: 120, regular_hours_only: true,
-            open_time: "09:30", close_time: "15:45",
-            average_in: true, max_adds_per_position: 2,
-            max_message_age_seconds: 20 }
+  // The old filter knobs (trim modes, symbol lists, add limits, daily caps)
+  // are deleted from the code — "no filters wanted. id like to follow
+  // everything to the tee as they do." What's left is safety, not filtering.
+  guards: { cooldown_seconds: 5, dedupe_seconds: 120,
+            regular_hours_only: true, open_time: "09:30",
+            close_time: "15:45", max_message_age_seconds: 20 }
 };
 
 const listToText = a => (a || []).join(", ");
@@ -429,14 +426,7 @@ async function render() {
 
   $("channels").value = listToText(s.channel_ids);
   $("admins").value = listToText(s.follow_admins);
-  $("symbols").value = listToText(s.allowed_symbols);
   $("futures").value = s.futures_enabled ? "1" : "0";
-  $("trim").value = s.trim_action;
-  $("trimpct").value = s.close_at_trim_pct;
-  $("maxqty").value = s.guards.max_qty;
-  $("maxday").value = s.guards.max_trades_per_day;
-  $("avgin").value = s.guards.average_in ? "1" : "0";
-  $("maxadds").value = s.guards.max_adds_per_position;
   $("bridge").value = s.bridge_url;
 
   const box = $("log");
@@ -493,29 +483,17 @@ $("save").onclick = async () => {
   const fut = $("futures").value === "1";
   // The switch lives in TWO places on purpose: the extension (gates whether
   // a futures call fires at all) and the bridge's settings.json (second lock
-  // on real orders). Saving sets both so they can't drift apart.
-  const syms = textToList($("symbols").value).map(x => x.toUpperCase());
-  // The allowed list rides along too, so the bridge's copy always matches
-  // this box. Empty box = empty list = everything allowed, both sides.
+  // on real orders). Saving sets both so they can't drift apart — and both
+  // are told the allowed list is empty for good: "no filters wanted."
   try { await askBridge("/config", { futures_enabled: fut,
-                                     allowed_symbols: syms }); }
+                                     allowed_symbols: [] }); }
   catch (e) { /* bridge down — the extension-side gate still holds */ }
   return patch({
-  futures_enabled: fut,
-  channel_ids: textToList($("channels").value),
-  follow_admins: textToList($("admins").value),
-  allowed_symbols: syms,
-  trim_action: $("trim").value,
-  close_at_trim_pct: parseFloat($("trimpct").value) || 50,
-  bridge_url: $("bridge").value.trim() || DEFAULTS.bridge_url,
-  guards: Object.assign({}, DEFAULTS.guards, {
-    max_qty: parseInt($("maxqty").value, 10) || 1,
-    // No "|| 0" fallback needed and none wanted: 0 is a real setting here, it
-    // means no daily limit, and "|| 6" would have quietly overruled it.
-    max_trades_per_day: Math.max(0, parseInt($("maxday").value, 10) || 0),
-    average_in: $("avgin").value === "1",
-    max_adds_per_position: Math.max(0, parseInt($("maxadds").value, 10) || 0)
-  })
+    futures_enabled: fut,
+    channel_ids: textToList($("channels").value),
+    follow_admins: textToList($("admins").value),
+    bridge_url: $("bridge").value.trim() || DEFAULTS.bridge_url,
+    guards: DEFAULTS.guards
   });
 };
 

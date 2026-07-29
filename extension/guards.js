@@ -7,16 +7,11 @@
  * possible day.
  */
 
+/* The old knobs — trim modes, add limits, daily caps, allowed lists — are
+ * deleted, not defaulted. His rule: "no filters wanted. id like to follow
+ * everything to the tee as they do." What's left is the safety that isn't a
+ * filter: dedupe, cooldown, staleness, market hours, and the position book. */
 const GUARD_DEFAULTS = {
-  max_qty: 1,
-  // 0 or less means no daily limit at all.
-  max_trades_per_day: 6,
-  // Follow them when they add to a position and post a new average. Off means
-  // the add is logged and nothing is sent.
-  average_in: false,
-  // A ceiling on that, because adding three more times on the way down is how a
-  // $400 trade quietly becomes a $1,600 one.
-  max_adds_per_position: 2,
   cooldown_seconds: 5,
   dedupe_seconds: 120,
   regular_hours_only: true,
@@ -171,10 +166,7 @@ async function guardCheck(sig, ctx, cfg) {
     if ((now - st.lastFire) / 1000 < g.cooldown_seconds)
       return { allowed: false, reason: "still in the " + g.cooldown_seconds +
         "s cooldown after the last fire" };
-    // 0 means you took the daily limit off on purpose.
-    if (g.max_trades_per_day > 0 && st.count >= g.max_trades_per_day)
-      return { allowed: false, reason: "you've hit your limit of " +
-        g.max_trades_per_day + " trades for today" };
+    // The daily trade cap is gone — he follows every call they make.
   }
 
   return { allowed: true, reason: "allowed" };
@@ -241,16 +233,12 @@ function pickHeld(held, who) {
  * they meant. Mirrors guards.resolve_add. */
 async function resolveAdd(sig, author, cfg) {
   if (!sig.needs_add) return sig;
-  const g = Object.assign({}, GUARD_DEFAULTS, (cfg || {}).guards || {});
   const who = String(sig.caller || author || "").toLowerCase();
 
-  if (!g.average_in) {
-    sig.why = "they added to their " + (sig.symbol || "position") + " and their " +
-              "average moved — averaging in is switched off, so nothing was " +
-              "sent. You're still in it.";
-    return sig;
-  }
-
+  // The average_in switch, the add ceiling and the allowed-list check that
+  // used to live here are deleted — "follow everything to the tee". The one
+  // rule left is the one that isn't a preference: you can only add to a
+  // trade you're actually in.
   const st = await guardState();
   const held = st.positions || {};
   if (!sig.symbol) {
@@ -268,18 +256,7 @@ async function resolveAdd(sig, author, cfg) {
               "there's nothing to average into";
     return sig;
   }
-  const allowed = ((cfg || {}).allowed_symbols || []).map(x => String(x).toUpperCase());
-  if (allowed.length && !allowed.includes(sig.symbol)) {
-    sig.why = sig.symbol + " isn't on your allowed-symbols list";
-    return sig;
-  }
   const adds = parseInt(pos.adds || 0, 10) || 0;
-  if (g.max_adds_per_position >= 0 && adds >= g.max_adds_per_position) {
-    sig.why = "they added to " + sig.symbol + " again, but you've already " +
-              "averaged in " + adds + (adds === 1 ? " time" : " times") +
-              " on it — that's your limit, so nothing was sent";
-    return sig;
-  }
   // The contract comes from what you're holding, never from the add message —
   // "added to SPY" doesn't say which strike, and buying a different one isn't
   // averaging, it's a second trade.
@@ -366,11 +343,6 @@ async function resolveLoaded(sig, author, cfg) {
   if (!cand.symbol || cand.strike === null || cand.strike === undefined || !cand.side) {
     sig.why = "they posted a fill price on its own, and the LOADING call before " +
               "it didn't name a full contract either — nothing was sent";
-    return sig;
-  }
-  const allowed = (cfg.allowed_symbols || []).map(x => String(x).toUpperCase());
-  if (allowed.length && !allowed.includes(cand.symbol)) {
-    sig.why = cand.symbol + " isn't on your allowed-symbols list";
     return sig;
   }
   if (cand.used) {
@@ -488,13 +460,13 @@ async function guardRecord(sig, cfg, author) {
   return st;
 }
 
-/* max_qty caps what you BUY. An exit has to be allowed to sell everything
- * you're holding — capping that at one contract after you've averaged in would
- * leave you quietly still in the trade. */
+/* Real-money buys are pinned to ONE contract — that's a sizing safety, not a
+ * filter, and it stays until he raises it on purpose. Sells are never capped
+ * down: an exit has to be allowed to sell everything you're holding, or
+ * you're quietly still in the trade. Test mode never calls this. */
 function clampQty(wanted, cfg, action) {
-  const g = Object.assign({}, GUARD_DEFAULTS, cfg.guards || {});
   const n = Math.max(1, parseInt(wanted || 1, 10) || 1);
   const a = String(action || "").toUpperCase();
-  if (a === "CLOSE" || a === "TRIM") return n;   // sells are never capped down
-  return Math.min(n, g.max_qty);
+  if (a === "CLOSE" || a === "TRIM") return n;
+  return 1;
 }

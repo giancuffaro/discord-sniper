@@ -70,29 +70,21 @@ ok(not sigmod.parse("all out of AAPL", cfg=CFG).reenter,
    "'all out' must not re-enter")
 
 # --- trims ------------------------------------------------------------------
-# The default is now "get out on their first trim, whatever the number is", so
-# every one of these is a full exit. The percentage still has to be read as a
-# percentage and never as a limit price.
+# The trim_action setting is DELETED — "no filters wanted. id like to follow
+# everything to the tee as they do." A trim always parses as TRIM and never
+# fires from the parser: the follow-them logic downstream sells its share.
+# The percentage still has to be read as a percentage, never a limit price.
 t = check("@Unraveller (Admin)🔮 trimming SPY @everyone @ 45%",
-          action="CLOSE", fire=True, symbol="SPY", pct=45.0)
+          action="TRIM", fire=False, symbol="SPY", pct=45.0)
 ok(t.limit is None, "'@ 45%%' must not be read as a limit price, got %r" % t.limit)
-check("@Brett (Admin) trimming AAPL @ 9% @everyone", action="CLOSE", fire=True,
+check("@Brett (Admin) trimming AAPL @ 9% @everyone", action="TRIM", fire=False,
       pct=9.0)
-check("@Unraveller (Admin)🔮 trimming AMD @everyone", action="CLOSE", fire=True,
+check("@Unraveller (Admin)🔮 trimming AMD @everyone", action="TRIM", fire=False,
       symbol="AMD", pct=None)
-
-IGNORER = dict(CFG, trim_action="ignore")
-i = sigmod.parse("@Brett (Admin) trimming SPY @ 12% @everyone", cfg=IGNORER)
-ok(not i.fire and i.action == "TRIM",
-   "trim_action=ignore should hold and wait for 'all out', got %s" % i.why)
-
-ATPCT = dict(CFG, trim_action="at_pct", close_at_trim_pct=50)
-ok(not sigmod.parse("trimming SPY @everyone @ 45%", cfg=ATPCT).fire,
-   "45% is under a 50% target — should hold")
-ok(sigmod.parse("trimming SPY @everyone @ 50%", cfg=ATPCT).fire,
-   "50% meets a 50% target — should close")
-ok(not sigmod.parse("trimming AMD @everyone", cfg=ATPCT).fire,
-   "a trim with no percentage should hold, not guess")
+# A trim with no ticker asks the position book instead of guessing.
+nt = sigmod.parse("@Brett (Admin) trimming @here", cfg=CFG)
+ok(nt.action == "TRIM" and nt.needs_position and not nt.fire,
+   "a bare trim hands off to the position book, got %s" % nt.why)
 
 # --- the other room's grammar, verbatim from 7/23 ---------------------------
 # These two admins post straight into the channel instead of going through the
@@ -116,16 +108,18 @@ for line in ["Brett (Admin) — 11:19 AM Trimming @here",
              "Brett (Admin) — 11:44 AM Out of 80% of my position. Stops moved to $208.30",
              "Brett (Admin) — 11:52 AM Tapped 40% there into $210. Stop moved to $208.70",
              "Brett (Admin) — 12:06 PM 50% @here"]:
-    n = check(line, action="CLOSE", fire=False)
+    n = check(line, action="TRIM", fire=False)
     ok(n.needs_position, "%r should ask the guards which position it means" % line[-24:])
 
-# Lowercase tickers only count because they're on the allowed list.
+# Lowercase tickers still resolve from the vocabulary list — it helps the
+# parser READ more; nothing is ever refused off it. Trims never fire from the
+# parser: the follow-them logic downstream sells its share.
 check("Unraveller (Admin) — 10:04 AM 30% on SPY @here",
-      action="CLOSE", fire=True, symbol="SPY", pct=30.0)
+      action="TRIM", fire=False, symbol="SPY", pct=30.0)
 check("Unraveller (Admin) — 10:18 AM 40% in spy now. Down to runners",
-      action="CLOSE", fire=True, symbol="SPY", pct=40.0)
+      action="TRIM", fire=False, symbol="SPY", pct=40.0)
 check("Unraveller (Admin) — 10:09 AM Trimmed more on spy 35% @here",
-      action="CLOSE", fire=True, symbol="SPY", pct=35.0)
+      action="TRIM", fire=False, symbol="SPY", pct=35.0)
 
 # Talk about the trade is not the trade.
 for line in ["Unraveller (Admin) — 9:58 AM Spy holding beautiful",
@@ -169,9 +163,9 @@ avg = check("@Brett (Admin) my avg is 3.05 @everyone", fire=False)
 ok(avg.action != "ADD" and not avg.needs_add,
    "a bare average with no add verb must not read as an add, got %s" % avg.action)
 
-# A trim priced in dollars instead of percent still exits on the first one.
+# A trim priced in dollars instead of percent is still a trim.
 check("@Mike (Admin) trimming AMZN @everyone +20 dollar per con",
-      action="CLOSE", fire=True, symbol="AMZN", pct=None)
+      action="TRIM", fire=False, symbol="AMZN", pct=None)
 check("@Unraveller (Admin)🔮 all out of NVDA @ 125% @everyone",
       action="CLOSE", fire=True, symbol="NVDA", pct=125.0)
 
@@ -241,18 +235,10 @@ again = lg.resolve_loaded(sigmod.parse("Filled 4.20 more", cfg=CFG), "Unraveller
 ok(not again.fire, "a second bare fill must not re-open the same trade: %s" % again.why)
 
 # --- averaging in -----------------------------------------------------------
-# Switched off is the safe default, and it stays a no-op: written in the log,
-# nothing sent, still in the trade.
-AVOFF = {"guards": dict(RES["guards"], average_in=False)}
-off = Guards(AVOFF, here=NOSTOP)
-off.record(sigmod.parse("in SPY 7/31 745C @ 2.40", cfg=CFG), "Brett")
-r = off.resolve_add(sigmod.parse("Brett (Admin) added to SPY, new avg is 2.8",
-                                 cfg=CFG), "Brett")
-ok(not r.fire and "switched off" in r.why,
-   "with averaging off an add must send nothing: %s" % r.why)
-
+# The average_in switch and the add ceiling are DELETED — adds always follow.
+# The one rule left isn't a preference: you can only add to a trade you hold.
 AVON = {"allowed_symbols": CFG["allowed_symbols"],
-        "guards": dict(RES["guards"], average_in=True, max_adds_per_position=2)}
+        "guards": dict(RES["guards"])}
 on = Guards(AVON, here=NOSTOP)
 first = sigmod.parse("in SPY 7/31 745C @ 2.40", cfg=CFG)
 on.record(first, "Brett")
@@ -274,14 +260,12 @@ on.record(add1, "Brett")
 ok(on.open_pos["brett|SPY"]["qty"] == 2 and on.open_pos["brett|SPY"]["adds"] == 1,
    "after one add you hold two contracts, got %r" % on.open_pos["brett|SPY"])
 
-# Second add allowed, third refused — that's the ceiling doing its job, and the
-# reason a $240 trade can't quietly become a $960 one.
+# No ceiling any more — every add they post follows. Three in a row all fire.
 add2 = on.resolve_add(sigmod.parse("Brett (Admin) adding to SPY @ 2.5", cfg=CFG), "Brett")
-ok(add2.fire, "the second add is within the limit of 2: %s" % add2.why)
+ok(add2.fire, "the second add follows: %s" % add2.why)
 on.record(add2, "Brett")
 add3 = on.resolve_add(sigmod.parse("Brett (Admin) adding to SPY @ 2.2", cfg=CFG), "Brett")
-ok(not add3.fire and "your limit" in add3.why,
-   "a third add must be refused: %s" % add3.why)
+ok(add3.fire, "the third add follows too — no ceiling, his rule: %s" % add3.why)
 
 # And the exit sells all three, not one. Selling one would leave you holding
 # two contracts while the log says you're flat.
@@ -364,6 +348,7 @@ for line in [
 ]:
     check(line, fire=False)
 
+# "Full sold" is a complete exit, not a trim — the word FULL is the tell.
 check("Full sold nvda close to 25% on weeklies. We are at 208 sqz level now @here",
       fire=True, action="CLOSE", symbol="NVDA")
 
@@ -383,7 +368,7 @@ for line in [
     check(line, fire=False)
 
 # --- guards -----------------------------------------------------------------
-G = {"guards": {"max_qty": 1, "max_trades_per_day": 4, "cooldown_seconds": 0,
+G = {"guards": {"cooldown_seconds": 0,
                 "dedupe_seconds": 60, "regular_hours_only": False,
                 "max_message_age_seconds": 0}}
 g = Guards(G, here=NOSTOP)

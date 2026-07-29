@@ -125,7 +125,6 @@ def load_settings():
 CFG = load_settings()
 EXEC = CFG.get("execution", {})
 MODE = str(EXEC.get("mode", "dryrun")).lower()
-ALLOWED = set(str(s).upper() for s in CFG.get("allowed_symbols", []))
 
 WB = None           # the Webull connection, made once at startup
 WB_ERROR = ""
@@ -174,10 +173,9 @@ def build_book():
 def reload_settings():
     """Pick up the keys having been typed in while the bridge was running, so you
     don't have to restart it to see that they're in."""
-    global CFG, EXEC, ALLOWED
+    global CFG, EXEC
     CFG = load_settings()
     EXEC = CFG.get("execution", {})
-    ALLOWED = set(str(s).upper() for s in CFG.get("allowed_symbols", []))
     EXEC["mode"] = MODE          # the running mode wins; the file may be behind
 
 
@@ -933,7 +931,7 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(n) or b"{}")
         except Exception:                                   # noqa: BLE001
             return self._json(400, {"ok": False, "message": "unreadable"})
-        if "futures_enabled" not in body and "allowed_symbols" not in body:
+        if "futures_enabled" not in body:
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
         try:
@@ -945,14 +943,7 @@ class Handler(BaseHTTPRequestHandler):
         if "futures_enabled" in body:
             want = bool(body["futures_enabled"])
             data.setdefault("execution", {})["futures_enabled"] = want
-        # The allowed-symbols list follows the popup, so the browser and the
-        # bridge can never disagree about what's tradeable. An empty box means
-        # empty list means EVERYTHING is allowed — that's his stated policy
-        # ("i pretty much allow everything").
-        if "allowed_symbols" in body:
-            data["allowed_symbols"] = [str(s).upper()
-                                       for s in (body["allowed_symbols"] or [])
-                                       if str(s).strip()]
+
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
@@ -965,9 +956,7 @@ class Handler(BaseHTTPRequestHandler):
             note("FUTURES  switch %s from the popup"
                  % ("ON — real futures orders are now allowed when live"
                     if want else "OFF"))
-        if "allowed_symbols" in body:
-            note("SYMBOLS  allowed list from the popup: %s"
-                 % (", ".join(sorted(ALLOWED)) or "everything"))
+
         return self._json(200, dict(self._status(), ok=True,
                                     message=("futures ON — his futures calls "
                                              "can now place real orders in "
@@ -998,18 +987,15 @@ class Handler(BaseHTTPRequestHandler):
         sym = str(order.get("symbol", "")).upper()
         if not sym:
             return self._reply(400, "no symbol in that order")
-        # The allowed list is about options tickers. A futures root has its
-        # own list — the multiplier table — because being IN that table is
-        # what makes its money math real.
-        if order.get("kind") == "future":
-            if sym not in FUT_MULT:
-                note("BLOCKED  %s isn't a futures contract I know the "
-                     "multiplier for" % sym)
-                return self._reply(403, "%s isn't a futures product I know — "
-                                        "not sent" % sym)
-        elif ALLOWED and sym not in ALLOWED:
-            note("BLOCKED  %s isn't on the allowed list in settings.json" % sym)
-            return self._reply(403, "%s isn't on your allowed-symbols list" % sym)
+        # No ticker is ever blocked — the allowed-list filter is deleted, on
+        # his word: "no filters wanted." The one check left isn't a filter:
+        # a futures root has to be in the multiplier table, because without
+        # its multiplier the money math would be fiction.
+        if order.get("kind") == "future" and sym not in FUT_MULT:
+            note("BLOCKED  %s isn't a futures contract I know the "
+                 "multiplier for" % sym)
+            return self._reply(403, "%s isn't a futures product I know — "
+                                    "not sent" % sym)
 
         cap = (HARD_MAX_SELL_QTY
                if order.get("action") in ("CLOSE", "TRIM")
@@ -1109,7 +1095,7 @@ def main():
     print("  listening on http://127.0.0.1:%d  (this PC only)" % PORT)
     print("  mode: %s%s" % (MODE, "   <- nothing real is being sent"
                             if MODE == "dryrun" else "   <- REAL ORDERS"))
-    print("  allowed symbols: %s" % (", ".join(sorted(ALLOWED)) or "any"))
+    print("  symbols: everything trades - no filters, his rule")
     print("  panic button: make a file called STOP in this folder")
     connect_broker()
     print("=" * 62)

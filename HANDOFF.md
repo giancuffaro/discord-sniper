@@ -763,3 +763,31 @@ What's live behind it:
 
 Known wart: replay.py treats futures prices as premium (a "skipped, cost
 $748500" line) — replay is options-math only for now.
+
+## Update — the filters are deleted, not hidden
+
+His words: "no stop making different rules, just change the existing ones. or
+just remove that box all together because i dont want to block anything...
+no filters wanted. id like to follow everything to the tee as they do." And:
+"delete what i dont want from the coding so its less for you to read."
+
+Gone from the CODE, not defaulted: trim_action/close_at_trim_pct (a trim
+always parses as TRIM; the follow-them logic sells its share), average_in and
+max_adds_per_position (adds always follow; only "you're not in it" refuses),
+max_trades_per_day (every call counts), max_qty (live buys are pinned to ONE
+contract in clampQty/clamp_qty as a sizing safety — raise on purpose, not by
+knob), and every allowed-symbols REFUSAL (bridge, parser entry check,
+resolve_add, resolve_loaded). The bridge's ALLOWED set is deleted entirely.
+
+allowed_symbols survives ONLY as vocabulary — it helps the parser read a
+lowercase ticker ("40% in spy now"); nothing is ever refused off it. The
+extension merges his old saved list with a built-in VOCAB list in cfg().
+
+New parser rule that fell out of this: "Full sold nvda close to 25%" — FULL +
+an exit verb + a bare % = complete exit, not a trim. Without it the trim rule
+would sell 3 of 5 on a call that means "I'm out".
+
+The popup lost the whole filter block; what's left is: on/off, test/real,
+channels, callers, futures switch, keys, bridge url, save/export/copy.
+Still deliberate: live-mode trims refuse to sell real contracts (test mode
+sells 3); that flips when he says so, not by a setting.

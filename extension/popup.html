@@ -136,51 +136,12 @@
     <label>Only follow these callers (blank = anyone)</label>
     <input id="admins" placeholder="Brett, HoneyDrip">
 
-    <label>Symbols you'll allow</label>
-    <input id="symbols" placeholder="SPY, QQQ, AAPL, AMD, NVDA">
-
-    <div class="half">
-      <div>
-        <label>On their trims</label>
-        <select id="trim">
-          <option value="ignore">hold until "all out"</option>
-          <option value="close">exit on the first trim</option>
-          <option value="at_pct">exit at or above…</option>
-        </select>
-      </div>
-      <div>
-        <label>…this %</label>
-        <input id="trimpct" type="number" min="1" max="500" value="50">
-      </div>
-    </div>
-
-    <div class="half">
-      <div>
-        <label>Contracts per trade</label>
-        <input id="maxqty" type="number" min="1" max="50" value="1">
-      </div>
-      <div>
-        <label>Trades per day (0 = no limit)</label>
-        <input id="maxday" type="number" min="0" max="50" value="0">
-      </div>
-    </div>
-
-    <div class="half">
-      <div>
-        <label>When they add to a trade</label>
-        <select id="avgin">
-          <option value="0">do nothing, just log it</option>
-          <option value="1">buy another one too</option>
-        </select>
-      </div>
-      <div>
-        <label>Max times to add</label>
-        <input id="maxadds" type="number" min="0" max="10" value="2">
-      </div>
-    </div>
-    <div class="note">"Buy another one too" only ever applies to a trade you're
-      already in, and it always buys the same contract you're holding. 2 adds
-      means you can end up holding three of it and no more.</div>
+    <!-- There used to be half a page of filters here: allowed symbols, trim
+         behaviour, contracts per trade, trades per day, averaging-in limits.
+         All removed on his word — "no filters wanted. id like to follow
+         everything to the tee as they do." The rules are now fixed in code:
+         every ticker allowed, every call followed, trims sell, adds follow,
+         no daily cap. -->
 
     <div class="half">
       <div>

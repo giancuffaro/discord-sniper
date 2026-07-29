@@ -39,18 +39,10 @@ class Guards:
         self.channels = set(str(c) for c in cfg.get("channel_ids", []))
         self.authors = set(str(a) for a in cfg.get("author_ids", []))
         self.author_names = set(str(a).lower() for a in cfg.get("author_names", []))
-        self.max_qty = int(g.get("max_qty", 1))
-        # 0, or anything below it, means no daily limit at all. Written this way
-        # rather than as a huge number so the log can say "no daily limit" and
-        # mean it, instead of "you've hit your limit of 999999 trades".
-        self.max_trades_per_day = int(g.get("max_trades_per_day", 10))
-        # Averaging in. When they add to a position and post a new average, this
-        # is what decides whether you follow them in with a second contract. Off
-        # means the add is logged and nothing is sent, which is the old behaviour.
-        self.average_in = bool(g.get("average_in", False))
-        # And a ceiling on it, because "adding" three more times on the way down
-        # is how a $400 trade quietly becomes a $1,600 one.
-        self.max_adds = int(g.get("max_adds_per_position", 2))
+        # The old knobs — max_qty, daily caps, average_in switches, add
+        # ceilings, allowed-list refusals — are deleted, not defaulted. His
+        # rule: "no filters wanted. id like to follow everything to the tee
+        # as they do." What's left is safety, not preference.
         self.cooldown_s = float(g.get("cooldown_seconds", 5))
         self.dedupe_s = float(g.get("dedupe_seconds", 120))
         self.session_only = bool(g.get("regular_hours_only", True))
@@ -88,11 +80,6 @@ class Guards:
         if self._day != today:
             self._day, self._count = today, 0
 
-    def trades_left(self):
-        self._roll_day()
-        if self.max_trades_per_day <= 0:
-            return 9999             # no daily limit set
-        return max(0, self.max_trades_per_day - self._count)
 
     def killed(self):
         return os.path.exists(self.kill_path) or os.path.exists(self.kill_path + ".txt")
@@ -169,10 +156,7 @@ class Guards:
             if (now - self._last_fire) < self.cooldown_s:
                 return False, ("still in the %.0fs cooldown after the last fire"
                                % self.cooldown_s)
-            # 0 means you took the daily limit off on purpose.
-            if 0 < self.max_trades_per_day <= self._count:
-                return False, ("you've hit your limit of %d trades for today"
-                               % self.max_trades_per_day)
+            # The daily trade cap is gone — he follows every call they make.
 
         return True, "allowed"
 
@@ -260,12 +244,10 @@ class Guards:
             return sig
         who = str(getattr(sig, "caller", "") or author_name or "").lower()
 
-        if not self.average_in:
-            sig.why = ("they added to their %s and their average moved — "
-                       "averaging in is switched off, so nothing was sent. "
-                       "You're still in it." % (sig.symbol or "position"))
-            return sig
-
+        # The average_in switch, the add ceiling and the allowed-list check
+        # are deleted — "follow everything to the tee". The one rule left is
+        # the one that isn't a preference: you can only add to a trade you're
+        # actually in.
         if not sig.symbol:
             k = self._pick_held(who)
             if k:
@@ -280,17 +262,7 @@ class Guards:
             sig.why = ("they added to their %s, but you're not in it — there's "
                        "nothing to average into" % sig.symbol)
             return sig
-        if self.allowed and sig.symbol not in self.allowed:
-            sig.why = "%s isn't on your allowed-symbols list" % sig.symbol
-            return sig
-
         adds = int(pos.get("adds", 0))
-        if self.max_adds >= 0 and adds >= self.max_adds:
-            sig.why = ("they added to %s again, but you've already averaged in "
-                       "%d time%s on it — that's your limit, so nothing was sent"
-                       % (sig.symbol, adds, "" if adds == 1 else "s"))
-            return sig
-
         # The contract comes from what you're holding, never from the add
         # message — "added to SPY" doesn't say which strike, and buying a
         # different one isn't averaging, it's a second trade.
@@ -356,9 +328,6 @@ class Guards:
             sig.why = ("they posted a fill price on its own, and the LOADING call "
                        "before it didn't name a full contract either — nothing "
                        "was sent")
-            return sig
-        if self.allowed and cand["symbol"] not in self.allowed:
-            sig.why = ("%s isn't on your allowed-symbols list" % cand["symbol"])
             return sig
         if cand.get("used"):
             # A second price on the same loading call is them averaging into the
@@ -469,9 +438,9 @@ class Guards:
             self._count += 1
 
     def clamp_qty(self, wanted, action="OPEN"):
-        """max_qty is a cap on what you BUY. An exit has to be allowed to sell
-        everything you're holding — capping that at one contract after you've
-        averaged in would leave you quietly still in the trade."""
+        """Real-money buys are pinned to ONE contract — a sizing safety, not
+        a filter, until he raises it on purpose. Sells are never capped down:
+        an exit has to sell everything you hold or you're quietly still in."""
         if str(action).upper() in ("CLOSE", "TRIM"):
-            return max(1, int(wanted or 1))     # sells are never capped down
-        return max(1, min(int(wanted or 1), self.max_qty))
+            return max(1, int(wanted or 1))
+        return 1

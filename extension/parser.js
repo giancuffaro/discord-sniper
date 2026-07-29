@@ -367,6 +367,22 @@ function parseSignal(text, cfg) {
     s.why = "that percentage is their risk, not a gain — nothing to act on";
     return s;
   }
+  // "Full sold nvda close to 25%" — the word FULL turns a percentage line
+  // into a complete exit. Without this, the trim rule below would swallow it
+  // and sell 3 of 5 on a call that means "I'm out".
+  if (/\bfull(?:y)?\b/i.test(low) && RE_EXIT.test(low) && pctM && !findContract(t)) {
+    s.symbol = bareSymbol(t, allowed);
+    s.action = "CLOSE"; s.matched = "full exit";
+    s.pct = parseFloat(pctM[1]);
+    if (!s.symbol) {
+      s.needs_position = true;
+      s.why = "a full exit with no ticker in it — working out which position they meant";
+      return s;
+    }
+    s.fire = true;
+    s.why = "full exit on " + s.symbol;
+    return s;
+  }
   if (RE_TRIM.test(low) || (pctM && !findContract(t))) {
     s.symbol = bareSymbol(t, allowed);
     s.action = "TRIM"; s.matched = "trim";
@@ -377,40 +393,21 @@ function parseSignal(text, cfg) {
     const mu = RE_USD_CONTRACT.exec(t);
     if (mu) s.usd = num(mu[1]);
 
-    const mode = String(cfg.trim_action || "close").toLowerCase();
-    const target = parseFloat(cfg.close_at_trim_pct != null ? cfg.close_at_trim_pct : 50);
-    const willClose = mode === "close" ||
-      (mode === "at_pct" && s.pct !== null && s.pct >= target);
-
+    // There used to be a trim_action setting here (ignore / close / close
+    // above a %). Deleted on his word — "no filters wanted. id like to
+    // follow everything to the tee as they do." A trim is a trim: the
+    // follow-them logic downstream sells its share and keeps the rest.
     if (!s.symbol) {
-      if (willClose) {
-        // Held back rather than dropped. resolveSymbol in guards.js works out
-        // which position they meant from what you're holding and who said it;
-        // if it can't, nothing is sent.
-        s.action = "CLOSE"; s.needs_position = true;
-        s.why = "a trim with no ticker in it — working out which position they meant";
-      } else {
-        s.why = "a trim, but I couldn't tell which ticker";
-      }
+      // Held back rather than dropped. resolveSymbol in guards.js works out
+      // which position they meant from what you're holding and who said it;
+      // if it can't, nothing is sent.
+      s.needs_position = true;
+      s.why = "a trim with no ticker in it — working out which position they meant";
       return s;
     }
-
-    if (mode === "close") {
-      s.action = "CLOSE"; s.fire = true;
-      s.why = "closing " + s.symbol + " on their first trim";
-    } else if (mode === "at_pct") {
-      if (willClose) {
-        s.action = "CLOSE"; s.fire = true;
-        s.why = "closing " + s.symbol + " — they're trimming at " + s.pct +
-                "%, your target is " + target + "%";
-      } else {
-        s.why = "trim on " + s.symbol + " at " + (s.pct === null ? "?" : s.pct) +
-                "% — under your " + target + "% target, holding";
-      }
-    } else {
-      s.why = "trim on " + s.symbol + (s.pct === null ? "" : " at " + s.pct + "%") +
-              " — you're set to ignore trims and exit on \"all out\"";
-    }
+    s.why = "trim on " + s.symbol +
+            (s.pct === null ? "" : " at " + s.pct + "%") +
+            " — following their trim";
     return s;
   }
 
@@ -448,10 +445,8 @@ function parseSignal(text, cfg) {
     if (msO && num(msO[1]) !== s.strike) s.their_stop = num(msO[1]);
     const mtO = RE_THEIR_TARGET.exec(t);
     if (mtO && num(mtO[1]) !== s.strike) s.their_target = num(mtO[1]);
-    if (allowed.length && !allowed.includes(s.symbol)) {
-      s.why = s.symbol + " isn't on your allowed-symbols list";
-      return s;
-    }
+    // (The allowed-symbols refusal that used to sit here is gone — every
+    // ticker trades. "no filters wanted.")
     if (s.limit === null) {
       // No price in the message means nothing to measure the ask against, so
       // the chase limit has nothing to do and it buys at whatever the ask is.

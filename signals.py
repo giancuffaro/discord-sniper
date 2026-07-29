@@ -498,6 +498,22 @@ def parse(text, author="", channel="", cfg=None):
         sig.why = ("that percentage is their risk, not a gain — nothing to act "
                    "on")
         return sig
+    # "Full sold nvda close to 25%" — the word FULL turns a percentage line
+    # into a complete exit. Without this, the trim rule below would swallow it
+    # and sell 3 of 5 on a call that means "I'm out".
+    if re.search(r"\bfull(?:y)?\b", low) and RE_EXIT.search(low) and \
+            pct_m and not _contract(t):
+        sig.symbol = _bare_symbol(t, allowed)
+        sig.action, sig.matched = "CLOSE", "full exit"
+        sig.pct = float(pct_m.group(1))
+        if not sig.symbol:
+            sig.needs_position = True
+            sig.why = ("a full exit with no ticker in it — working out which "
+                       "position they meant")
+            return sig
+        sig.fire = True
+        sig.why = "full exit on %s" % sig.symbol
+        return sig
     if RE_TRIM.search(low) or (pct_m and not _contract(t)):
         sig.symbol = _bare_symbol(t, allowed)
         sig.action, sig.matched = "TRIM", "trim"
@@ -512,42 +528,21 @@ def parse(text, author="", channel="", cfg=None):
         if mu:
             sig.usd = _num(mu.group(1))
 
-        mode = (cfg.get("trim_action") or "close").lower()
-        will_close = False
-        target = float(cfg.get("close_at_trim_pct", 50))
-        if mode == "close":
-            will_close = True
-        elif mode == "at_pct":
-            will_close = sig.pct is not None and sig.pct >= target
-
+        # There used to be a trim_action setting here (ignore / close / close
+        # above a %). Deleted on his word — "no filters wanted. id like to
+        # follow everything to the tee as they do." A trim is a trim: the
+        # follow-them logic downstream sells its share and keeps the rest.
         if not sig.symbol:
-            if will_close:
-                # Held back rather than dropped. guards.resolve_symbol works out
-                # which position they meant from what you're holding and who
-                # said it; if it can't, nothing is sent.
-                sig.action, sig.needs_position = "CLOSE", True
-                sig.why = ("a trim with no ticker in it — working out which "
-                           "position they meant")
-            else:
-                sig.why = "a trim, but I couldn't tell which ticker"
+            # Held back rather than dropped. guards.resolve_symbol works out
+            # which position they meant from what you're holding and who said
+            # it; if it can't, nothing is sent.
+            sig.needs_position = True
+            sig.why = ("a trim with no ticker in it — working out which "
+                       "position they meant")
             return sig
-
-        if mode == "close":
-            sig.action, sig.fire = "CLOSE", True
-            sig.why = "closing %s on their first trim" % sig.symbol
-        elif mode == "at_pct":
-            if will_close:
-                sig.action, sig.fire = "CLOSE", True
-                sig.why = ("closing %s — they're trimming at %g%%, your target is "
-                           "%g%%" % (sig.symbol, sig.pct, target))
-            else:
-                sig.why = ("trim on %s at %s%% — under your %g%% target, holding"
-                           % (sig.symbol,
-                              "?" if sig.pct is None else ("%g" % sig.pct), target))
-        else:
-            sig.why = ("trim on %s%s — you're set to ignore trims and exit on "
-                       "\"all out\"" % (sig.symbol,
-                                        "" if sig.pct is None else " at %g%%" % sig.pct))
+        sig.why = ("trim on %s%s — following their trim"
+                   % (sig.symbol,
+                      "" if sig.pct is None else " at %g%%" % sig.pct))
         return sig
 
     # 5. IN — the entry. Needs a full contract; a bare "in" is not an order.
@@ -591,9 +586,8 @@ def parse(text, author="", channel="", cfg=None):
         mt_o = RE_THEIR_TARGET.search(t)
         if mt_o and float(mt_o.group(1).replace(",", "")) != (sig.strike or -1):
             sig.their_target = _num(mt_o.group(1))
-        if allowed and sig.symbol not in allowed:
-            sig.why = "%s isn't on your allowed-symbols list" % sig.symbol
-            return sig
+        # (The allowed-symbols refusal that used to sit here is gone — every
+        # ticker trades. "no filters wanted.")
         if sig.limit is None:
             # No price in the message means nothing to measure the ask against,
             # so the chase limit has nothing to do and it buys at whatever the

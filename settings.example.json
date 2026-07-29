@@ -10,22 +10,14 @@
   "_follow_admins": "Empty means follow every admin the scribe relays. Put names in to follow only some, e.g. [\"Unraveller\", \"Brett\"].",
   "follow_admins": [],
 
+  "_allowed_symbols": "NOT a filter any more - nothing is ever blocked by ticker, on his word ('no filters wanted'). This survives only as VOCABULARY: it helps the parser recognise a ticker typed in lowercase, like '40% in spy now'. Add words, never to block, only to read better.",
   "allowed_symbols": ["SPY", "QQQ", "IWM", "AAPL", "AMD", "NVDA", "NFLX",
                       "TSLA", "META", "MSFT", "AMZN", "GOOGL"],
   "extra_veto_words": [],
 
-  "_trim_action": "close = get out the first time they trim, whatever the number is. ignore = hold until they say 'all out'. at_pct = get out the first time they trim at or above close_at_trim_pct.",
-  "trim_action": "close",
-  "close_at_trim_pct": 50,
+  "_gone": "trim_action, close_at_trim_pct, max_qty, max_trades_per_day, average_in and max_adds_per_position used to live here. Deleted, not defaulted - 'no filters wanted. id like to follow everything to the tee as they do.' Trims sell, adds follow, every call counts.",
 
   "guards": {
-    "max_qty": 1,
-    "_max_trades_per_day": "How many entries it will take in one day. 0 means no limit - it follows every call they make.",
-    "max_trades_per_day": 0,
-    "_average_in": "They add to a position and post a new average. true = follow them in with another contract; false = write it in the log and send nothing. An add is only ever allowed on a trade you are already in, and it always buys the contract you are holding, never the one in their message.",
-    "average_in": true,
-    "_max_adds_per_position": "How many times you will average into the SAME position. 2 means you can end up holding three contracts of it and no more.",
-    "max_adds_per_position": 2,
     "cooldown_seconds": 5,
     "dedupe_seconds": 120,
     "_hours": "The window for NEW trades only. Exits are always allowed whatever the clock says - you never want to be stuck in something because it's one minute past.",

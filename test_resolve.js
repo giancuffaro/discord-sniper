@@ -122,22 +122,15 @@ function ok(cond, label) { if (!cond) { bad++; console.log("  - " + label); } }
   ok(!s.fire, "a loading line with no contract must not become a trade: " + s.why);
 
   // --- averaging in --------------------------------------------------------
-  // Same four refusals as guards.py: switched off, not in it, already added
-  // your limit of times, or it can't tell which position they meant.
-  const AVOFF = { guards: { average_in: false }, allowed_symbols: ["SPY"] };
-  const AVON = { guards: { average_in: true, max_adds_per_position: 2 },
-                 allowed_symbols: ["SPY"] };
+  // The average_in switch and add ceiling are DELETED — adds always follow.
+  // The refusals left are the ones that aren't preferences: not in it, or
+  // can't tell which position they meant.
+  const AVON = { guards: {}, allowed_symbols: ["SPY"] };
   const add = () => ({ action: "ADD", needs_add: true, symbol: "SPY",
                        side: null, strike: null, expiry: null, limit: 2.8,
                        qty: null, fire: false, caller: "Brett" });
   const opened = { action: "OPEN", symbol: "SPY", side: "CALLS", strike: 745,
                    expiry: "7/31", qty: 1, caller: "Brett" };
-
-  store = {};
-  await G.guardRecord(opened, AVOFF, "Brett");
-  s = await G.resolveAdd(add(), "Brett", AVOFF);
-  ok(!s.fire && /switched off/.test(s.why),
-     "with averaging off an add must send nothing: " + s.why);
 
   store = {};
   await G.guardRecord(opened, AVON, "Brett");
@@ -158,10 +151,10 @@ function ok(cond, label) { if (!cond) { bad++; console.log("  - " + label); } }
      "after one add you hold two contracts, got " + JSON.stringify(st.positions["brett|SPY"]));
 
   s = await G.resolveAdd(add(), "Brett", AVON);
-  ok(s.fire, "the second add is within the limit of 2: " + s.why);
+  ok(s.fire, "the second add follows: " + s.why);
   await G.guardRecord(s, AVON, "Brett");
   s = await G.resolveAdd(add(), "Brett", AVON);
-  ok(!s.fire && /your limit/.test(s.why), "a third add must be refused: " + s.why);
+  ok(s.fire, "the third add follows too — no ceiling, his rule: " + s.why);
 
   // And the exit sells all three. Selling one would leave you holding two while
   // the log says you're flat.
