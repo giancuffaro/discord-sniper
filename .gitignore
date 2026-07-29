@@ -12,3 +12,7 @@ webull_trade_sdk.log
 trades.log
 
 bridge.log
+
+# The day files the bridge writes for backtesting - one per trading day.
+# They're his trading record, not code, so they stay on the PC.
+days/

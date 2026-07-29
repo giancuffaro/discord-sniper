@@ -153,8 +153,9 @@ function ok(cond, label) { if (!cond) { bad++; console.log("  - " + label); } }
      "their blended average must not become the limit, got " + s.limit);
   await G.guardRecord(s, AVON, "Brett");
   let st = await G.guardState();
-  ok(st.positions.SPY.qty === 2 && st.positions.SPY.adds === 1,
-     "after one add you hold two contracts, got " + JSON.stringify(st.positions.SPY));
+  // Positions are keyed "trader|SYM" now — Brett's SPY, not just SPY.
+  ok(st.positions["brett|SPY"].qty === 2 && st.positions["brett|SPY"].adds === 1,
+     "after one add you hold two contracts, got " + JSON.stringify(st.positions["brett|SPY"]));
 
   s = await G.resolveAdd(add(), "Brett", AVON);
   ok(s.fire, "the second add is within the limit of 2: " + s.why);
@@ -164,8 +165,8 @@ function ok(cond, label) { if (!cond) { bad++; console.log("  - " + label); } }
 
   // And the exit sells all three. Selling one would leave you holding two while
   // the log says you're flat.
-  const exit = { action: "CLOSE", symbol: "SPY", qty: 1 };
-  await G.fillFromPosition(exit);
+  const exit = { action: "CLOSE", symbol: "SPY", qty: 1, caller: "Brett" };
+  await G.fillFromPosition(exit, "Brett");
   ok(exit.qty === 3, "an exit must sell everything you averaged into, got " + exit.qty);
   ok(G.clampQty(exit.qty, AVON, "CLOSE") === 3,
      "max_qty caps what you buy, never what you sell, got " +

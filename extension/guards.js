@@ -50,12 +50,33 @@ function todayET() {
     .format(new Date());
 }
 
+/* One trade = one trader + one ticker. "brett|SPY" and "unraveler|SPY" are
+ * different trades in the same name — that's the whole point. Mirrors
+ * positions.key_of on the bridge, so the two sides' books line up key for key. */
+function posKey(trader, symbol) {
+  return ((String(trader || "?").trim().toLowerCase()) || "?") + "|" +
+         String(symbol || "").toUpperCase();
+}
+function keySymbol(k) { return String(k || "").split("|").pop(); }
+function keyWho(k) { return String(k || "").split("|")[0]; }
+
+/* Positions written down before the trader went into the key were stored under
+ * the bare ticker. Move them once, using the author that was already on them —
+ * losing a live position over a bookkeeping change would be unforgivable. */
+function migratePositions(pos) {
+  const out = {};
+  for (const [k, p] of Object.entries(pos || {})) {
+    out[k.includes("|") ? k : posKey((p || {}).author, k)] = p;
+  }
+  return out;
+}
+
 async function guardState() {
   const { guardState: st } = await chrome.storage.local.get("guardState");
   const day = todayET();
   if (st && st.day === day) {
     st.recent = st.recent || {};
-    st.positions = st.positions || {};
+    st.positions = migratePositions(st.positions || {});
     st.loaded = st.loaded || {};
     return st;
   }
@@ -63,7 +84,7 @@ async function guardState() {
   // yesterday is still sitting in your account this morning. Loading notices do
   // reset: yesterday's "getting ready on NVDA" means nothing this morning.
   return { day, count: 0, lastFire: 0, recent: {}, loaded: {},
-           positions: (st && st.positions) || {} };
+           positions: migratePositions((st && st.positions) || {}) };
 }
 
 async function saveGuardState(s) {
@@ -120,15 +141,26 @@ async function guardCheck(sig, ctx, cfg) {
 
   // What you're holding is checked before anything else, because "you're
   // already in AMD" tells you far more than "that looked like a repeat".
-  if (sig.action === "OPEN" && st.positions[sig.symbol])
+  // Checked per TRADER now: Brett being in SPY doesn't stop Unraveler's SPY
+  // call — those are two different trades and both should run.
+  const who = String(sig.caller || ctx.author || "").toLowerCase();
+  // A position whose owner was never known blocks anyone's re-entry in that
+  // name — better one missed trade than one doubled one.
+  const already = st.positions[posKey(who, sig.symbol)] ||
+    Object.keys(st.positions).some(k => keySymbol(k) === sig.symbol &&
+                                        keyWho(k) === "?");
+  if (sig.action === "OPEN" && already)
     return { allowed: false, reason: "you're already in " + sig.symbol +
       " from their earlier call — this one would double you up" };
 
-  if (sig.action === "CLOSE" && !st.positions[sig.symbol])
+  if ((sig.action === "CLOSE" || sig.action === "TRIM") &&
+      !st.positions[posKey(who, sig.symbol)] &&
+      !Object.keys(st.positions).some(k => keySymbol(k) === sig.symbol))
     // At most brokers a sell with nothing to sell isn't a no-op — it opens a
     // short. Never send it.
     return { allowed: false, reason: "you're not in " + sig.symbol +
-      ", so there's nothing to close — the order was not sent" };
+      ", so there's nothing to " + (sig.action === "TRIM" ? "trim" : "close") +
+      " — the order was not sent" };
 
   const last = st.recent[signalKey(sig)];
   if (last && (now - last) / 1000 < g.dedupe_seconds)
@@ -160,56 +192,43 @@ async function resolveSymbol(sig, author) {
   if (sig.symbol || !sig.needs_position) return sig;
   const st = await guardState();
   const held = st.positions || {};
-  const names = Object.keys(held);
-  if (!names.length) {
+  const keys = Object.keys(held);
+  if (!keys.length) {
     sig.why = "a trim with no ticker in it, and you're not in anything — nothing to close";
     return sig;
   }
   const who = String(sig.caller || author || "").toLowerCase();
-  const theirs = names.filter(n =>
-    who && String(held[n].author || "").toLowerCase() === who);
-
-  let pick = null;
-  if (theirs.length === 1) pick = theirs[0];
-  else if (!theirs.length && names.length === 1) {
-    // Only one thing open, so it's tempting to just take it. But if that
-    // position was opened by a different admin, a trim from this one is about
-    // something you never got into — closing the other guy's trade on it is
-    // exactly the mistake this whole function exists to avoid.
-    const only = names[0];
-    const owner = String(held[only].author || "").toLowerCase();
-    if (!who || !owner || owner === who) pick = only;
-  }
+  const pick = pickHeld(held, who);
 
   if (!pick) {
-    const what = names.slice().sort().map(n =>
-      n + (held[n].author ? " (" + held[n].author + "'s call)" : "")).join(", ");
+    const what = keys.slice().sort().map(k =>
+      keySymbol(k) + " (" + keyWho(k) + "'s call)").join(", ");
     sig.why = "a trim with no ticker in it. You're in " + what + ", and this " +
       "came from " + (sig.caller || author || "somebody I couldn't name") +
       " — I can't tell which one they meant, so nothing was sent. Close it in " +
       "the Webull app if you want out.";
     return sig;
   }
-  sig.symbol = pick;
+  sig.symbol = keySymbol(pick);
   sig.fire = true;
-  sig.why = "closing " + pick + " on their first trim — they didn't name it, " +
-            "but it's the position " + (sig.caller || author || "they") + " put you in";
+  sig.why = (sig.action === "TRIM" ? "trimming " : "closing ") + sig.symbol +
+            " — they didn't name it, but it's the position " +
+            (sig.caller || author || "they") + " put you in";
   return sig;
 }
 
 /* Which of your open positions did this admin mean? Their own first, and the
- * only one open second — but never somebody else's. Null when it can't be sure,
- * and being sure is the whole point. Mirrors guards._pick_held. */
+ * only one open second — but never somebody else's. The positions are keyed
+ * "trader|SYM" now, so "their own" is just a key prefix. Returns the KEY, or
+ * null when it can't be sure — and being sure is the whole point. */
 function pickHeld(held, who) {
-  const names = Object.keys(held || {});
-  if (!names.length) return null;
-  const theirs = names.filter(n =>
-    who && String(held[n].author || "").toLowerCase() === who);
+  const keys = Object.keys(held || {});
+  if (!keys.length) return null;
+  const theirs = keys.filter(k => who && keyWho(k) === who);
   if (theirs.length === 1) return theirs[0];
-  if (!theirs.length && names.length === 1) {
-    const only = names[0];
-    const owner = String(held[only].author || "").toLowerCase();
-    if (!who || !owner || owner === who) return only;
+  if (!theirs.length && keys.length === 1) {
+    const owner = keyWho(keys[0]);
+    if (!who || owner === "?" || owner === who) return keys[0];
   }
   return null;
 }
@@ -234,13 +253,16 @@ async function resolveAdd(sig, author, cfg) {
 
   const st = await guardState();
   const held = st.positions || {};
-  if (!sig.symbol) sig.symbol = pickHeld(held, who);
+  if (!sig.symbol) {
+    const k = pickHeld(held, who);
+    if (k) sig.symbol = keySymbol(k);
+  }
   if (!sig.symbol) {
     sig.why = "they added to a position and didn't name it, and I can't tell " +
               "which one they meant — nothing was sent";
     return sig;
   }
-  const pos = held[sig.symbol];
+  const pos = findHeld(held, who, sig.symbol);
   if (!pos) {
     sig.why = "they added to their " + sig.symbol + ", but you're not in it — " +
               "there's nothing to average into";
@@ -276,6 +298,22 @@ async function resolveAdd(sig, author, cfg) {
             (theirAvg === null || theirAvg === undefined ? ""
              : ", their average across both is now " + Number(theirAvg).toFixed(2));
   return sig;
+}
+
+/* This trader's position in this ticker — their own key first, and failing
+ * that the ONE open trade in the name, whoever's it is. Null when it's
+ * ambiguous, because two trades in the same ticker is exactly when a guess
+ * sells the wrong man's contracts. */
+function findHeld(held, who, symbol) {
+  const exact = (held || {})[posKey(who, symbol)];
+  if (exact) return exact;
+  const ks = Object.keys(held || {}).filter(k => keySymbol(k) === String(symbol || "").toUpperCase());
+  return ks.length === 1 ? held[ks[0]] : null;
+}
+function findHeldKey(held, who, symbol) {
+  if ((held || {})[posKey(who, symbol)]) return posKey(who, symbol);
+  const ks = Object.keys(held || {}).filter(k => keySymbol(k) === String(symbol || "").toUpperCase());
+  return ks.length === 1 ? ks[0] : null;
 }
 
 /* A LOADING notice never buys anything — that's the room's own rule. But it is
@@ -356,9 +394,10 @@ async function resolveLoaded(sig, author, cfg) {
 /* "all out of AMD" never says which contract, and neither does "exited and
  * back in" — the room already knows which one. A broker doesn't, so the
  * missing pieces come from what you're actually holding. */
-async function fillFromPosition(sig) {
+async function fillFromPosition(sig, author) {
   const st = await guardState();
-  const p = st.positions[sig.symbol];
+  const who = String(sig.caller || author || "").toLowerCase();
+  const p = findHeld(st.positions, who, sig.symbol);
   if (!p) return sig;
   if (sig.strike === null || sig.strike === undefined) sig.strike = p.strike;
   if (!sig.side) sig.side = p.side;
@@ -387,42 +426,54 @@ async function guardRecord(sig, cfg, author) {
   const cut = now - Math.max(g.dedupe_seconds, 300) * 1000;
   for (const k of Object.keys(st.recent)) if (st.recent[k] < cut) delete st.recent[k];
 
+  const k = posKey(who, sig.symbol);
   if (sig.action === "OPEN") {
-    // The author is kept so a later symbol-less trim from the same admin can
-    // be pinned to the position they actually opened.
+    // The author is in the KEY now, so a later symbol-less trim from the same
+    // admin pins to the position they actually opened — and two admins can be
+    // in the same ticker without stepping on each other's bookkeeping.
     // pending: the order has gone out, nobody has sold to you yet. Your entry
     // sits on the bid, so this is the normal state for a while and sometimes
     // the only state it ever reaches. The bridge is what decides it filled;
     // syncFills in background.js clears this when it says so.
-    st.positions[sig.symbol] = { side: sig.side, strike: sig.strike,
-                                 expiry: sig.expiry, ts: now, author: who,
-                                 qty: parseInt(sig.qty || 1, 10) || 1, adds: 0,
-                                 pending: true };
+    st.positions[k] = { side: sig.side, strike: sig.strike,
+                        expiry: sig.expiry, ts: now, author: who,
+                        qty: parseInt(sig.qty || 1, 10) || 1, adds: 0,
+                        pending: true };
     st.lastFire = now;
     st.count += 1;
   } else if (sig.action === "ADD") {
-    // One more contract of the same thing. The count is what an exit sells, and
+    // More contracts of the same thing. The count is what an exit sells, and
     // the add count is what stops this happening all day.
-    const p = st.positions[sig.symbol];
+    const pk = findHeldKey(st.positions, who, sig.symbol);
+    const p = pk ? st.positions[pk] : null;
     if (p) {
       p.qty = (parseInt(p.qty || 1, 10) || 1) + (parseInt(sig.qty || 1, 10) || 1);
       p.adds = (parseInt(p.adds || 0, 10) || 0) + 1;
       p.ts = now;
-      // The add is a resting bid like any other entry, so the extra contract
-      // isn't yours yet either. The bridge corrects this count when it fills,
+      // The add is a resting bid like any other entry, so the extra contracts
+      // aren't yours yet either. The bridge corrects this count when it fills,
       // or when it doesn't.
       p.pending = true;
     }
     st.lastFire = now;
     st.count += 1;
+  } else if (sig.action === "TRIM") {
+    // Sold some, kept the rest. The bridge knows the exact count afterwards
+    // and syncFills writes it back; the subtraction here just keeps the popup
+    // honest in the seconds in between.
+    const pk = findHeldKey(st.positions, who, sig.symbol);
+    const p = pk ? st.positions[pk] : null;
+    if (p) p.qty = Math.max(0, (parseInt(p.qty || 1, 10) || 1) -
+                               (parseInt(sig.qty || 1, 10) || 1)) || p.qty;
   } else if (sig.action === "CLOSE") {
-    const held = st.positions[sig.symbol] || {};
-    delete st.positions[sig.symbol];
+    const pk = findHeldKey(st.positions, who, sig.symbol) || k;
+    const held = st.positions[pk] || {};
+    delete st.positions[pk];
     if (sig.reenter) {
       // Sold and bought straight back into the same contract. The tracker has
       // to know you're still in it, or the room's next "all out" gets refused
       // for having nothing to sell.
-      st.positions[sig.symbol] = {
+      st.positions[pk] = {
         side: sig.side || held.side,
         strike: (sig.strike === null || sig.strike === undefined)
                 ? held.strike : sig.strike,
@@ -443,6 +494,7 @@ async function guardRecord(sig, cfg, author) {
 function clampQty(wanted, cfg, action) {
   const g = Object.assign({}, GUARD_DEFAULTS, cfg.guards || {});
   const n = Math.max(1, parseInt(wanted || 1, 10) || 1);
-  if (String(action || "").toUpperCase() === "CLOSE") return n;
+  const a = String(action || "").toUpperCase();
+  if (a === "CLOSE" || a === "TRIM") return n;   // sells are never capped down
   return Math.min(n, g.max_qty);
 }

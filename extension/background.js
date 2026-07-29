@@ -59,10 +59,18 @@ async function badge() {
   }
 }
 
-async function sendOrder(sig, qty, c) {
+async function sendOrder(sig, qty, c, author) {
   const order = {
     action: sig.action, symbol: sig.symbol, side: sig.side, qty,
     strike: sig.strike, expiry: sig.expiry, limit: sig.limit,
+    // Who called it. This is half the identity of the trade now — Brett's SPY
+    // and Unraveler's SPY are two different positions, and every order has to
+    // say whose it is or the bridge can't tell them apart.
+    trader: sig.caller || author || "?",
+    // Their new blended average, when this is an add. The bridge does the
+    // reverse math on it — new_avg*(n+1) - old_avg*n — to recover what the
+    // add actually cost, and bids that.
+    avg: (sig.avg === 0 || sig.avg) ? sig.avg : null,
     // "exited SPY, and back in @ 2.84" is one message and two orders: sell the
     // contract, then buy the same one back. The bridge does both legs so the
     // gap between them is as small as it can be.
@@ -97,17 +105,41 @@ async function sendOrder(sig, qty, c) {
  * it sends no order and can move no money. Returns null whenever there's no
  * answer (bridge down, no keys, not in the trade), and the caller just says
  * less rather than guessing a number. */
-async function markPosition(symbol, c) {
+async function markPosition(symbol, trader, c) {
   try {
     const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/mark", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ symbol })
+      body: JSON.stringify({ symbol, trader })
     });
     if (!r.ok) return null;
     return await r.json();
   } catch (e) {
     return null;
   }
+}
+
+/* Which mode the bridge is actually in. TEST and REAL follow different rules
+ * on this side — test plays the room's full pattern (5 in, add 5, trim 3),
+ * real stays on the conservative settings — so the answer has to come from
+ * the one program that knows. /fills keeps it fresh; this is the cold start. */
+async function bridgeMode(c) {
+  const { bridge_mode } = await chrome.storage.local.get("bridge_mode");
+  if (bridge_mode) return bridge_mode;
+  try {
+    const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/mode",
+                          { cache: "no-store" });
+    if (r.ok) {
+      const j = await r.json();
+      if (j.mode) {
+        await chrome.storage.local.set({ bridge_mode: j.mode });
+        return j.mode;
+      }
+    }
+  } catch (e) { /* bridge down; fall through */ }
+  // No bridge to ask means no order can send anyway. Defaulting to test keeps
+  // every rule on the cautious-for-real-money side: the test pattern only
+  // ever fires pretend trades.
+  return "dryrun";
 }
 
 /* ---- finding out what actually happened ------------------------------------
@@ -152,7 +184,11 @@ async function syncFills() {
       new RegExp("^" + sym.replace(/[^A-Z0-9]/gi, "") + "\\s*(—|-)?\\s*", "i"), "");
     await addLog({ kind: e.kind === "filled" ? "fired" :
                          (e.kind === "stopped" ? "stopped" : "update"),
-                   what: sym, why: why || e.text });
+                   // Whose trade it is rides on the heading now — with two
+                   // admins in the same ticker, "SPY — filled" alone doesn't
+                   // say which trade just moved.
+                   what: sym + (e.who && e.who !== "?" ? " · " + e.who : ""),
+                   why: why || e.text });
     if (e.kind === "filled" || e.kind === "stopped") {
       try {
         chrome.notifications.create({
@@ -189,11 +225,13 @@ async function syncFills() {
     }
   }
   if (changed) await saveGuardState(st);
-  // The pretend account, straight from the bridge, so the popup can print a
-  // balance instead of leaving you to work out from the log whether $4,000 was
-  // ever doing anything. Null in live mode — there Webull is the only honest
-  // answer and a second made-up number would be worse than none.
+  // The test account and the day's trade table, straight from the bridge, so
+  // the popup can draw the whole day instead of leaving you to reconstruct it
+  // from log lines. wallet is null in live mode — there Webull is the only
+  // honest answer and a second made-up number would be worse than none.
   await chrome.storage.local.set({ wallet: data.wallet || null,
+                                   day_table: data.table || [],
+                                   bridge_mode: data.mode || null,
                                    fills_seq: data.seq || 0 });
   badge();
 }
@@ -324,7 +362,8 @@ async function sessionSweep() {
     if (holdNotice !== st.day) {
       await chrome.storage.local.set({ holdNotice: st.day });
       await addLog({ kind: "update", why: "entries are done for the day, but " +
-                     "you're still in " + held.join(", ") + " — staying ON so " +
+                     "you're still in " + held.map(keySymbol).join(", ") +
+                     " — staying ON so " +
                      "their exit can still fire. It'll switch OFF once you're flat." });
     }
     badge();
@@ -366,6 +405,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     if (c.capture) capture(msg.text, msg.author);
 
     let sig = parseSignal(msg.text, c);
+    // Their new blended average, off the raw parse, BEFORE the resolvers get
+    // to it — resolveAdd deliberately strips the average out of the limit
+    // field (it isn't a tradeable price), but the bridge's reverse math needs
+    // the number itself.
+    const postedAvg = (sig.action === "ADD") ? sig.limit : null;
     // "Trimming @here" with no ticker. The parser can't finish that on its own
     // — only the position tracker knows what you're holding and who put you in
     // it — so the ticker gets filled in here, before anything decides to fire.
@@ -379,6 +423,55 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // already in, but only if you switched averaging on and only up to your own
     // limit. resolveLoaded can hand one of these over too, so it comes after.
     if (sig.needs_add) sig = await resolveAdd(sig, msg.author, c);
+
+    /* ---- test mode plays the room's full pattern ------------------------
+     * On the bridge's dry run the rules are his, fixed on purpose so every
+     * day is comparable: an entry is 5 contracts, an add is 5 more, a trim
+     * sells 3, "all out" sells the rest. Money never blocks anything — the
+     * bridge's unlimited book keeps score of what it would have taken. None
+     * of this touches real mode, which stays on the conservative settings. */
+    const mode = await bridgeMode(c);
+    const testing = mode !== "webull";
+    if (testing && sig.action === "TRIM" && !sig.fire) {
+      if (!sig.symbol) {
+        sig.needs_position = true;
+        sig = await resolveSymbol(sig, msg.author);
+      } else {
+        sig.fire = true;
+      }
+      if (sig.fire) {
+        sig.action = "TRIM";
+        sig.qty = 3;
+        sig.why = "their trim — test mode sells 3 and holds the rest" +
+                  (sig.pct != null ? " (they're up " + sig.pct + "%)" : "");
+      }
+    }
+    if (testing && sig.action === "ADD") {
+      const stAdd = await guardState();
+      const whoAdd = String(sig.caller || msg.author || "").toLowerCase();
+      if (!sig.symbol) {
+        const pk = pickHeld(stAdd.positions, whoAdd);
+        if (pk) sig.symbol = keySymbol(pk);
+      }
+      const posAdd = sig.symbol
+        ? findHeld(stAdd.positions, whoAdd, sig.symbol) : null;
+      if (posAdd) {
+        sig.side = posAdd.side; sig.strike = posAdd.strike;
+        sig.expiry = posAdd.expiry;
+        sig.avg = postedAvg;      // the bridge back-solves the real add price
+        sig.limit = null;         // their average is not a price you can pay
+        sig.qty = 5;
+        sig.fire = true;
+        sig.why = "their add — test mode buys 5 more" +
+                  (postedAvg ? ", and their new average " +
+                   Number(postedAvg).toFixed(2) + " tells the bridge what the " +
+                   "add really cost" : "");
+      } else if (!sig.fire) {
+        sig.why = "they added to " + (sig.symbol || "a position") +
+                  " but you're not in it — nothing to add onto";
+      }
+    }
+
     if (!sig.fire) {
       // Only worth showing the ones that looked like a trade and then failed a
       // check. Logging pure chatter would bury the useful lines.
@@ -391,7 +484,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         // that tells you what your own trade was doing.
         let mark = "";
         if (sig.action === "TRIM" && sig.symbol) {
-          const m = await markPosition(sig.symbol, c);
+          const m = await markPosition(sig.symbol, sig.caller || msg.author, c);
           if (m && m.ok && m.pct != null) {
             mark = "  —  yours is at " + Number(m.bid).toFixed(2) +
                    " right now, " + (m.pct >= 0 ? "+" : "") + m.pct + "% on the " +
@@ -418,14 +511,18 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // there knows which contract. A broker doesn't, so fill it in from the
     // position before this leaves the browser. This also sets the quantity on
     // an exit, which is why it has to happen before the line below.
-    if (sig.action === "CLOSE") await fillFromPosition(sig);
-    const qty = clampQty(sig.qty || 1, c, sig.action);
+    if (sig.action === "CLOSE") await fillFromPosition(sig, msg.author);
+    // Test mode's sizes are the pattern, not the settings: 5 on the way in,
+    // 3 out on a trim, the rest on "all out". Real mode keeps the caps.
+    const qty = testing && (sig.action === "OPEN" || sig.action === "ADD")
+      ? (sig.qty || 5)
+      : clampQty(sig.qty || 1, c, sig.action);
     // Recorded before the order goes out, so a crash mid-send can't double-fire.
     await guardRecord(sig, c, msg.author);
     inFlight++;
     let res;
     try {
-      res = await sendOrder(sig, qty, c);
+      res = await sendOrder(sig, qty, c, msg.author);
     } finally {
       inFlight--;     // must drop even if that threw, or updates stall forever
     }

@@ -270,8 +270,9 @@ ok(add1.strike == 745.0 and add1.side == "CALLS" and add1.expiry == "7/31",
 ok(add1.limit is None,
    "their blended average must not become the limit, got %r" % add1.limit)
 on.record(add1, "Brett")
-ok(on.open_pos["SPY"]["qty"] == 2 and on.open_pos["SPY"]["adds"] == 1,
-   "after one add you hold two contracts, got %r" % on.open_pos["SPY"])
+# Positions are keyed by trader now — Brett's SPY, not just SPY.
+ok(on.open_pos["brett|SPY"]["qty"] == 2 and on.open_pos["brett|SPY"]["adds"] == 1,
+   "after one add you hold two contracts, got %r" % on.open_pos["brett|SPY"])
 
 # Second add allowed, third refused — that's the ceiling doing its job, and the
 # reason a $240 trade can't quietly become a $960 one.
@@ -417,9 +418,11 @@ ok(spy_out.strike == 745 and spy_out.side == "PUTS" and spy_out.expiry == "7/28"
    "the contract should be filled in from the open position, got %r %r %r"
    % (spy_out.strike, spy_out.side, spy_out.expiry))
 g.record(spy_out)
-ok("SPY" in g.open_pos,
+# Recorded with no author, so the key's owner is "?" — an unknown-owner
+# position still blocks re-entry and still answers exits in that name.
+ok("?|SPY" in g.open_pos,
    "after out-and-straight-back-in you are still holding SPY, not flat")
-ok(g.open_pos["SPY"]["strike"] == 745 and g.open_pos["SPY"]["expiry"] == "7/28",
+ok(g.open_pos["?|SPY"]["strike"] == 745 and g.open_pos["?|SPY"]["expiry"] == "7/28",
    "the re-entry is the same contract, so the tracker keeps 7/28 745P")
 a, why = g.check(spy_in, 1, 2, "bob", msg_epoch=now())
 ok(not a and "already in SPY" in why,
@@ -430,7 +433,7 @@ ok(not a and "already in SPY" in why,
 flat = sigmod.parse("all out of SPY", cfg=CFG)
 ok(g.check(flat, 1, 2, "bob", msg_epoch=now())[0], "the plain exit should pass")
 g.record(flat)
-ok("SPY" not in g.open_pos, "a plain 'all out' leaves you flat")
+ok("?|SPY" not in g.open_pos, "a plain 'all out' leaves you flat")
 a, why = g.check(spy_in, 1, 2, "bob", msg_epoch=now())
 ok(a, "a fresh entry after a plain exit must NOT read as a duplicate: %s" % why)
 

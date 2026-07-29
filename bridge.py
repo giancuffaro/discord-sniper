@@ -37,15 +37,28 @@ from eastern import ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(HERE, "trades.log")
+DAYS = os.path.join(HERE, "days")
 PORT = 8787
 
 # Second opinion on size. The extension already caps this, but the extension
 # is the part that lives in a browser, so it does not get the last word.
+# Test mode runs the room's full pattern — 5 in, 5 more on an add — so its
+# ceiling is higher than live's, where 2 is still the most a browser message
+# is allowed to buy with real money.
 HARD_MAX_QTY = 2
+HARD_MAX_QTY_DRY = 10
 # Exits get their own, higher ceiling. Average in twice and you hold three
 # contracts; "all out" has to mean all three. Capping a sell at the buy limit
 # would leave you still holding the rest and not know it.
-HARD_MAX_SELL_QTY = 10
+HARD_MAX_SELL_QTY = 20
+
+# The test-mode sizing pattern, which is his, not the room's: every entry is
+# taken as 5 contracts, every add as 5 more, every trim sells 3, and "all out"
+# sells whatever is left. Fixed numbers on purpose — the day is only
+# comparable to yesterday if the sizing never moves.
+DRY_ENTRY_QTY = 5
+DRY_ADD_QTY = 5
+DRY_TRIM_QTY = 3
 
 
 def build_stamp():
@@ -116,21 +129,24 @@ def build_book():
              "stays where it is" % BOOK.open_count())
         return
     w = EXEC.get("webull", {}) or {}
-    # The pretend account is dry-run only. In live mode Webull knows what you
-    # have and a second made-up number that disagrees with it is worse than no
-    # number at all.
-    purse = (EXEC.get("dry_run_buying_power") if MODE != "webull" else None)
+    # The test account is now UNLIMITED, on purpose. Nothing gets refused for
+    # money; instead the book keeps the high-water mark of cash tied up at
+    # once, because "how much would I actually need to fund this" is the
+    # question the test days exist to answer, and a cap answers a different
+    # one. In live mode there's no pretend account at all — Webull is the
+    # authority on what you have.
     BOOK = positions.Book(
         WB, note,
         stop_pct=float(w.get("stop_loss_pct", 20)),
         fill_seconds=float(w.get("entry_fill_seconds", 90)),
         poll_seconds=float(w.get("fill_poll_seconds", 5)),
         simulated=(MODE != "webull"),
-        wallet=purse)
-    if purse:
-        note("pretend account: $%.0f to start. It goes down when a bid fills "
-             "and back up when you sell, and an entry that doesn't fit gets "
-             "skipped." % float(purse))
+        unlimited=(MODE != "webull"))
+    BOOK.save_day = save_day
+    if MODE != "webull":
+        note("test account: unlimited. Nothing is refused for money — instead "
+             "I keep the most cash that was ever tied up at once, which is the "
+             "number that tells you what funding this really takes.")
 
 
 def reload_settings():
@@ -187,8 +203,42 @@ def note(line):
         pass
 
 
+def today_str():
+    return datetime.now(ET).strftime("%Y-%m-%d")
+
+
+def save_day():
+    """Write today's whole trading day to days/YYYY-MM-DD.json, every time
+    anything changes.
+
+    This is the backtesting record: who called what, what you paid, every
+    partial sale, how each trade ended, and what the day cost to be in. It's
+    rewritten on every event rather than saved at some end-of-day moment,
+    because a bridge that crashes at 11am should still leave the morning on
+    disk. The popup's "previous days" view reads these files; so can
+    replay.py."""
+    if BOOK is None:
+        return
+    try:
+        os.makedirs(DAYS, exist_ok=True)
+        path = os.path.join(DAYS, today_str() + ".json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"date": today_str(), "mode": MODE,
+                       "table": BOOK.table(), "wallet": BOOK.wallet()}, f)
+    except OSError:
+        pass        # a full disk must never take down the trading path
+
+
+def tkey(order):
+    """The book's key for the trade this order is about: who called it, plus
+    the ticker. Brett's SPY and Unraveler's SPY are two different trades."""
+    return positions.key_of(order.get("trader"), order.get("symbol"))
+
+
 def describe(o):
     bits = [o.get("action", "?"), o.get("symbol", "?")]
+    if o.get("trader"):
+        bits.append("(%s's call)" % o["trader"])
     if o.get("strike"):
         bits.append("%s%s" % (o["strike"], "C" if o.get("side") == "CALLS" else "P"))
     if o.get("expiry"):
@@ -247,7 +297,7 @@ def dry_entry(order):
                             "qty": int(order.get("qty") or 1)})
 
 
-def exit_price(order, sym):
+def exit_price(order, key):
     """(price, note) — what one contract sold for on a dry run.
 
     Nothing was really sold, so this has to be worked out, and it decides
@@ -256,16 +306,16 @@ def exit_price(order, sym):
       1. The live bid. Selling means hitting the bid, so that is the price —
          never the ask, which you would not get. The watchdog has been writing
          down the last one it saw on every poll.
-      2. Their posted percentage on their posted entry. "all out @ 45%" off an
-         entry they called at 2.66 means the contract was worth 3.86. That is a
-         real number about the market, and comparing it against YOUR fill is
-         what shows the cost of getting in late.
+      2. Their posted percentage on their running average. "all out @ 45%" off
+         an average they've built to 2.66 means the contract was worth 3.86.
+         That is a real number about the market, and comparing it against YOUR
+         fill is what shows the cost of getting in late.
       3. Nothing. Then it says so and leaves the balance alone, because a
          made-up exit price turns the one number he's checking into fiction.
     """
     if BOOK is None:
         return None, ""
-    p = BOOK.info(sym) or {}
+    p = BOOK.info(key) or {}
     # Ask right now, at the moment they called it. This is the whole answer to
     # "how much did that actually make" — not their percentage, not the last
     # thing the watchdog happened to see five seconds ago, but what the contract
@@ -281,14 +331,50 @@ def exit_price(order, sym):
     if bid:
         return float(bid), " (last quote I saw)"
     pct = order.get("pct")
-    theirs = p.get("their_price")
+    theirs = p.get("their_avg") or p.get("their_price")
     if pct not in (None, "") and theirs:
         return round(float(theirs) * (1 + float(pct) / 100.0), 2), \
             " at their %+.0f%%" % float(pct)
     return None, ""
 
 
-def plan_exit(order, sym):
+def implied_add_price(pos, new_avg):
+    """The reverse math. They held n units averaging a, added one more, and
+    posted the new average — so the one they just bought cost
+    new_avg*(n+1) - a*n. 2.88 becoming 2.55 means the add went off at 2.22.
+
+    That number is a fact about the market, not about their account: it's what
+    the contract genuinely traded at the moment they added, which is exactly
+    why it's the right price to bid. Returns None whenever the arithmetic
+    can't be trusted — no starting average, or an answer at or below zero,
+    which means the message didn't mean what it looked like it meant.
+    """
+    if not new_avg or not pos:
+        return None
+    a = pos.get("their_avg") or pos.get("their_price")
+    if not a:
+        return None
+    n = max(1, int(pos.get("their_units") or 1))
+    x = float(new_avg) * (n + 1) - float(a) * n
+    if x < 0.02:
+        return None
+    return round(x, 2)
+
+
+def find_key(order):
+    """Which trade is this order about. The trader's own first; failing that,
+    the only live trade in that ticker; failing that, the trader key as-is
+    (which will read as "not in it" downstream, and say so)."""
+    key = tkey(order)
+    if BOOK is None or BOOK.state_of(key) is not None:
+        return key
+    others = BOOK.find_by_symbol(order.get("symbol"))
+    if len(others) == 1:
+        return others[0]
+    return key
+
+
+def plan_exit(order, key):
     """Work out whether there is anything to sell, before anything is sent.
 
     This is the whole reason the book exists. Sitting on the bid, an entry can
@@ -300,7 +386,8 @@ def plan_exit(order, sym):
     Returns (go_ahead, claimed, reply). `claimed` means the book handed this
     position over to us and is expecting to be told how it ended.
     """
-    st = BOOK.state_of(sym)
+    sym = str(order.get("symbol", "")).upper()
+    st = BOOK.state_of(key)
     if st is None:
         # Nothing on record. Usually this bridge was restarted mid-day, so the
         # browser remembers a position this program never saw. Sending the
@@ -309,22 +396,22 @@ def plan_exit(order, sym):
         return True, False, None
 
     if st == positions.WORKING:
-        held = BOOK.cancel_entry(sym, "their exit landed before your bid filled")
+        held = BOOK.cancel_entry(key, "their exit landed before your bid filled")
         if not held:
             return False, False, (True,
                 "your bid on %s never filled, so there was nothing to sell. "
                 "It's been pulled and you're flat on it." % sym)
-        st = BOOK.state_of(sym)
+        st = BOOK.state_of(key)
 
     if st != positions.FILLED:
         return False, False, (True,
             "you're not in %s (%s), so nothing was sent." % (sym, st))
 
-    if not BOOK.claim(sym):
+    if not BOOK.claim(key):
         return False, False, (True,
             "%s is already being closed — the stop got there first." % sym)
 
-    held = BOOK.qty_of(sym)
+    held = BOOK.qty_of(key)
     asked = int(order.get("qty") or 1)
     if held and held != asked:
         note("size: the browser said %d on %s, you actually hold %d — selling "
@@ -338,51 +425,74 @@ def place(order):
     extension exactly like a rejected order, and you'd never know which."""
     sym = str(order.get("symbol", "")).upper()
     action = order.get("action")
+    key = find_key(order) if BOOK is not None else tkey(order)
+
+    # The reverse math, before any mode branch, because it improves the order
+    # in both. They posted the new average their add produced; the add itself
+    # went off at new_avg*(n+1) - old_avg*n, and THAT is the price worth
+    # bidding — it's where the contract actually just traded.
+    if action == "ADD" and BOOK is not None and order.get("avg"):
+        pos = BOOK.info(key)
+        imp = implied_add_price(pos, order["avg"])
+        if imp:
+            order["limit"] = imp
+            note("reverse math: their average moved to %.2f across %d fills, "
+                 "so the add went off at ~%.2f — bidding that"
+                 % (float(order["avg"]),
+                    max(1, int((pos or {}).get("their_units") or 1)) + 1, imp))
 
     claimed = False
     if action == "CLOSE" and BOOK is not None:
-        go, claimed, reply = plan_exit(order, sym)
+        go, claimed, reply = plan_exit(order, key)
         if not go:
             note("EXIT     %s" % reply[1])
             return reply
     what = describe(order)
 
+    # TRIM — sell some, keep the rest. Test mode only for now: in live he's
+    # still set to hold until "all out", and a browser message must not gain
+    # the power to sell real contracts before he's said so.
+    if action == "TRIM":
+        if MODE != "dryrun":
+            return False, ("trims don't sell in live mode — you're set to hold "
+                           "until \"all out\". Nothing was sent.")
+        if BOOK is None:
+            return False, "no book yet, nothing to trim"
+        st = BOOK.state_of(key)
+        if st == positions.WORKING:
+            return False, ("their trim landed while your bid on %s was still "
+                           "resting — leaving it; their \"all out\" will pull "
+                           "it if it never fills" % sym)
+        held = BOOK.qty_of(key)
+        if not held:
+            return False, ("you're not in %s, so there was nothing to trim"
+                           % sym)
+        want = min(int(order.get("qty") or DRY_TRIM_QTY), held)
+        got, how = exit_price(order, key)
+        sold = BOOK.trim(key, want, got, "their trim" + how + " —")
+        if not sold:
+            return False, ("couldn't put a price on that trim (no quote, no "
+                           "percentage), so nothing was sold — still holding "
+                           "%d" % held)
+        return True, "dry run — sold %d, holding the rest" % sold
+
     if MODE == "dryrun":
-        # Dry run checks the money too. The whole point of sitting on dry run
-        # for a week is to find out what would really have happened, and "you
-        # couldn't afford that one" is a big part of what really happens on a
-        # small account. It uses the pretend balance in settings.json because
-        # there's no broker connected to ask.
-        if action in ("OPEN", "ADD") and order.get("limit"):
-            # What's left, not what you started with. Money already in a trade
-            # can't be spent again, and the old check let it be — four $280
-            # entries all passed against the same $4,000 and you'd have been
-            # holding more than the account could ever have paid for.
-            wallet = BOOK.available() if BOOK is not None else None
-            if wallet is None:
-                # No running account — either the book isn't built yet or no
-                # starting balance was ever configured. Fall back to the flat
-                # number, and treat 0 or blank as "don't check", which is what
-                # it has always meant. A depleted ledger is different: that is
-                # a real 0.0 from available() and it must fail the check.
-                wallet = EXEC.get("dry_run_buying_power")
-                if wallet in (None, "", 0):
-                    wallet = None
-            if wallet is not None:
-                from webull_options import affordability
-                _cost, ok, msg = affordability(order["limit"], order.get("qty") or 1,
-                                               wallet)
-                if not ok:
-                    note("DRY RUN  SKIPPED  %s   %s" % (what, msg))
-                    if claimed:
-                        BOOK.release(sym)
-                    return False, msg
+        # Money is never the reason a test trade gets refused any more. The
+        # unlimited book keeps the high-water mark instead — the answer to
+        # "how much would I need" — and every entry goes through at the
+        # standard test size.
+        if action in ("OPEN", "ADD"):
+            order["qty"] = int(order.get("qty")
+                               or (DRY_ADD_QTY if action == "ADD"
+                                   else DRY_ENTRY_QTY))
         note("DRY RUN  %s   (nothing was sent to a broker)" % what)
         if action in ("OPEN", "ADD"):
             dry_entry(order)
+            if action == "ADD" and order.get("avg"):
+                BOOK.their_add(key, order["avg"])
         if claimed:
-            got, how = exit_price(order, sym)
-            BOOK.finish(sym, positions.CLOSED,
+            got, how = exit_price(order, key)
+            BOOK.finish(key, positions.CLOSED,
                         "sold on their call (dry run)" + how, price=got)
         if order.get("reenter"):
             note("DRY RUN  then straight back in on the same contract%s"
@@ -426,6 +536,8 @@ def place(order):
                 note("ORDER IN %s" % ticket["what"])
                 if BOOK is not None:
                     BOOK.entry_sent(order, ticket)
+                    if action == "ADD" and order.get("avg"):
+                        BOOK.their_add(key, order["avg"])
                 return True, entry_words(ticket)
 
             if action == "CLOSE":
@@ -434,7 +546,7 @@ def place(order):
                 msg = res["what"]
                 note("SOLD     %s" % msg)
                 if claimed:
-                    BOOK.finish(sym, positions.CLOSED,
+                    BOOK.finish(key, positions.CLOSED,
                                 "sold on their call at %.2f" % float(res["limit"]))
 
                 # "exited SPY, and back in @ 2.84" — they sold and bought the
@@ -466,12 +578,12 @@ def place(order):
             # Nothing was sent, so the position is exactly where it was. Hand it
             # back, or the stop that was watching it stays switched off.
             if claimed:
-                BOOK.release(sym)
+                BOOK.release(key)
             note("REFUSED  %s  ->  %s" % (what, e))
             return False, str(e)
         except Exception as e:                          # noqa: BLE001
             if claimed:
-                BOOK.release(sym)
+                BOOK.release(key)
             note("ERROR    %s  ->  %s" % (what, e))
             return False, ("something went wrong talking to Webull: %s. The "
                            "order may not have gone out — check the Webull app."
@@ -479,6 +591,26 @@ def place(order):
 
     return False, ("execution mode '%s' isn't a thing. Use dryrun, webull or "
                    "webhook." % MODE)
+
+
+_BP = {"t": 0.0, "v": None}
+
+
+def real_buying_power():
+    """The margin account's real buying power, or None when there's nothing
+    honest to report. Cached ~30s on top of the SDK's own cache — the popup
+    asks every few seconds and the broker doesn't need to hear about it."""
+    if WB is None:
+        return None
+    now = time.time()
+    if now - _BP["t"] < 30:
+        return _BP["v"]
+    try:
+        v = WB.buying_power()
+    except Exception:                                   # noqa: BLE001
+        v = None
+    _BP["t"], _BP["v"] = now, v
+    return v
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -509,6 +641,11 @@ class Handler(BaseHTTPRequestHandler):
                 "account": WB_ACCOUNT,
                 "error": WB_ERROR,
                 "has_keys": keys_in,
+                # The real margin account's buying power, straight from Webull,
+                # cached for half a minute because the popup asks every few
+                # seconds and the broker doesn't need to hear from us that
+                # often. None whenever there's nothing honest to say.
+                "buying_power": real_buying_power(),
                 "stopped": os.path.exists(os.path.join(HERE, "STOP")) or
                            os.path.exists(os.path.join(HERE, "STOP.txt"))}
 
@@ -518,14 +655,39 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/fills"):
             # What actually happened to the orders the browser sent. It asks
             # with the id of the last thing it saw, so it only gets what's new.
+            # The mode rides along so the extension always knows whether it's
+            # in test or real without a second call — the trim and sizing
+            # rules on its side hang off that answer.
             if BOOK is None:
-                return self._json(200, {"positions": {}, "events": [], "seq": 0})
+                return self._json(200, {"positions": {}, "events": [],
+                                        "seq": 0, "mode": MODE})
             since = parse_qs(urlparse(self.path).query).get("since", ["0"])[0]
             BOOK.sweep()
             try:
-                return self._json(200, BOOK.snapshot(since))
+                return self._json(200, dict(BOOK.snapshot(since), mode=MODE))
             except (TypeError, ValueError):
-                return self._json(200, BOOK.snapshot(0))
+                return self._json(200, dict(BOOK.snapshot(0), mode=MODE))
+        if self.path.startswith("/days"):
+            # The dated files this bridge has been writing — one per trading
+            # day. This is the backtesting shelf.
+            try:
+                names = sorted(n[:-5] for n in os.listdir(DAYS)
+                               if n.endswith(".json"))
+            except OSError:
+                names = []
+            return self._json(200, {"days": names})
+        if self.path.startswith("/day"):
+            # One previous day, whole. ?date=2026-07-29
+            q = parse_qs(urlparse(self.path).query).get("date", [""])[0]
+            safe = "".join(ch for ch in q if ch.isdigit() or ch == "-")
+            path = os.path.join(DAYS, (safe or today_str()) + ".json")
+            try:
+                with open(path, encoding="utf-8") as f:
+                    return self._json(200, json.load(f))
+            except (OSError, ValueError):
+                return self._json(200, {"date": safe, "table": [],
+                                        "wallet": None,
+                                        "missing": True})
         if self.path.startswith("/build"):
             # Asked every half minute by the extension. Deliberately does not
             # touch settings or the broker — it's the cheapest call here.
@@ -594,7 +756,8 @@ class Handler(BaseHTTPRequestHandler):
         sym = str(body.get("symbol", "")).upper()
         if BOOK is None or not sym:
             return self._json(200, {"ok": False})
-        p = BOOK.info(sym)
+        key = find_key({"trader": body.get("trader"), "symbol": sym})
+        p = BOOK.info(key)
         if not p or not p.get("occ") or WB is None:
             return self._json(200, {"ok": False})
         try:
@@ -636,8 +799,9 @@ class Handler(BaseHTTPRequestHandler):
             note("BLOCKED  %s isn't on the allowed list in settings.json" % sym)
             return self._reply(403, "%s isn't on your allowed-symbols list" % sym)
 
-        cap = (HARD_MAX_SELL_QTY if order.get("action") == "CLOSE"
-               else HARD_MAX_QTY)
+        cap = (HARD_MAX_SELL_QTY
+               if order.get("action") in ("CLOSE", "TRIM")
+               else (HARD_MAX_QTY_DRY if MODE == "dryrun" else HARD_MAX_QTY))
         try:
             qty = max(1, min(int(order.get("qty") or 1), cap))
         except (TypeError, ValueError):
@@ -667,7 +831,8 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
-        if MODE != "dryrun" and not (order.get("strike") and order.get("expiry")):
+        if MODE != "dryrun" and order.get("action") != "TRIM" \
+                and not (order.get("strike") and order.get("expiry")):
             note("BLOCKED  %s %s arrived with no strike/expiry" %
                  (order.get("action"), sym))
             return self._reply(400,

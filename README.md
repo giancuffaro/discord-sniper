@@ -292,50 +292,58 @@ to react to something that was posted before you sat down.
 
 ---
 
-## The pretend account, and what a trim was really worth
+## The test account, the trade table, and what a trim is now
 
-On a dry run there's a starting balance — `dry_run_buying_power` in
-settings.json, $4,000 out of the box — and it is a **running account**, not a
-limit that gets checked. It used to be the second thing: every entry was
-compared against the same $4,000 and nothing ever came off it, so four trades in
-a row all passed and the number never moved. Now:
+**Test mode has no money limit, on purpose.** Every call the room makes goes
+through, at a fixed size — an entry is **5 contracts**, an add is **5 more**, a
+trim **sells 3**, and "all out" sells whatever's left. Nothing is ever refused
+for being too expensive. Instead the bridge keeps the one number a cap could
+never give you: the **most cash that was tied up at any one moment** of the
+day, resting bids included. That's what the popup means by "most tied up at
+once", and it is the honest answer to *how much money would I need to follow
+this room for real*. Run a week of test days and the biggest of those numbers
+is your funding requirement.
 
-- a bid going out **ties the money up** — it's promised, and it can't be
-  promised twice
-- a fill **spends it**, at what you actually paid
-- nobody taking the bid **hands it straight back**
-- selling **credits it** at what you sold for, and the profit or loss is banked
+**Several traders at once.** A trade is a *trader plus a ticker* now. If Brett
+calls SPY and Unraveler calls SPY five minutes later, those are two positions —
+different contracts, different averages, different stops — and they never touch
+each other. Brett's "all out" sells Brett's contracts and leaves Unraveler's
+exactly where they were. Every line in the log and every row in the table says
+whose trade it is.
 
-What's left is what the next entry has to fit inside, and an entry that doesn't
-fit gets skipped with a reason. The balance, the day's move, what's tied up in
-resting bids and what your open trades are worth right now all sit in the popup,
-above the log.
+**Trims sell now (in test).** "Trimming here" from an admin sells 3 of your 5
+and keeps the trade open, with the stop still guarding what's left. The sale is
+priced off the live bid when there's a quote, and off their percentage on their
+own average when there isn't — and the log says which. A trade only counts as a
+win or a loss once the last contract is gone. In **real-money mode trims still
+don't sell anything** — that stays switched off until you say otherwise.
 
-None of this exists in live mode. There, Webull knows what you've got, and a
-second made-up number sitting next to it that disagrees would be worse than
-having no number at all — so the panel hides itself.
+**The reverse math on adds.** When they add and post their new average, the
+average itself is not a price anyone can trade at — it's a blend. But it hides
+the real number: if they were in at 2.88 and the add moved them to 2.55, the
+contract they just bought cost 2.55×2 − 2.88 = **2.22**. The bridge does that
+arithmetic the moment the message lands and puts the bid in at the answer,
+because that's where the contract actually just traded. Each further add solves
+off the updated average, automatically.
 
-**Their percentage is not your percentage.** When the room says "trimming SPY @
-23%", that's 23% on *their* entry. You got in later and at a different price, so
-the only honest way to know what that moment was worth to you is to look at what
-the contract is trading at right then. So it does: every trim you're ignoring
-still gets priced against the live bid, and the log line tells you where *your*
-trade is:
+**The trade table.** The popup has a *Trades* box: one row per trade — the
+contract, who called it, what you paid, every partial sale as it happens, and
+whether it's live, bid in, or all out, with the running dollars on the row.
+It's the scoreboard; the log underneath stays the diary.
 
-> not a trade · trim on SPY at 23% — you're set to ignore trims and exit on "all
-> out" — yours is at 3.42 right now, +15% on the 2.98 you paid (+$44)
+**Previous days.** The bridge writes the whole table to a dated file on your PC
+as the day happens (`days/2026-07-29.json` and so on), one per trading day.
+The dropdown on the Trades box loads any of them, so "how did Tuesday actually
+go" is two clicks, and the files are plain JSON for backtesting.
 
-Same thing at the exit. When they call "all out", the sell price is the live bid
-at that second, not their posted percentage. If there's no quote to be had — no
-keys saved, or the bridge can't reach Webull — it falls back to their percentage
-applied to their entry price, and says which one it used. If it has neither, it
-leaves the balance alone and tells you so, rather than inventing a number and
-quietly turning the one figure you're checking into fiction.
+**Both buying powers.** Under the mode button: your real Webull margin buying
+power, read live from the broker, shown in both modes. The test side shows the
+peak-needed figure instead of a made-up balance.
 
 **Copying the log.** There's a *Copy log* button under the log box. A Chrome
 popup closes the moment you click anywhere else, so you can't select text out of
 it — the button puts the whole thing on your clipboard as plain text, oldest
-first, with the account summary at the top. If Chrome blocks the clipboard it
+first, with the day summary at the top. If Chrome blocks the clipboard it
 saves it as a file instead.
 
 ---
@@ -629,8 +637,9 @@ truth about your week. Same sentence either way, on purpose.
 
 Two knobs, both in `settings.json`:
 
-- `execution.dry_run_buying_power` — your pretend account size, dry run only.
-  `0` turns the check off.
+- `execution.dry_run_buying_power` — no longer consulted on a dry run: test
+  mode is unlimited on purpose and reports the peak-needed figure instead
+  (see "The test account" section above). The knob is kept for `replay.py --cash`.
 - `execution.webull.keep_cash_buffer` — dollars to never touch when live. `50`
   means an entry is skipped once it would leave you under $50.
 

@@ -190,8 +190,12 @@ function human(s) {
 // a duplicate of the re-entry and you ride the position into the close.
 // Symbol stays at index 1: guardRecord's purge splits on "|" and reads it.
 function signalKey(s) {
+  // The caller is on the end now. Brett and Unraveler posting the same call
+  // minutes apart are two trades, not a duplicate — without the name, the
+  // second man's "all out of SPY" dies in the dedupe window of the first's.
   return [s.action, s.symbol, s.side, s.strike, s.expiry, s.pct,
-          s.reenter ? 1 : 0].join("|");
+          s.reenter ? 1 : 0,
+          String(s.caller || "").toLowerCase()].join("|");
 }
 
 function parseSignal(text, cfg) {

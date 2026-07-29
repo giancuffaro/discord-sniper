@@ -102,18 +102,25 @@ function paintMode() {
     sub.textContent = "on your PC: open START HERE and press 5";
     return;
   }
+  // The real account's buying power, whenever the bridge can read it. Shown
+  // in BOTH modes — knowing what the margin account could do is half of how
+  // you judge whether the test day's "would need $X" figure is realistic.
+  const bp = modeStatus.buying_power;
+  const bpBit = (bp === null || bp === undefined)
+    ? "" : " · $" + Math.round(bp).toLocaleString() + " real buying power";
   if (modeStatus.live) {
     btn.className = "grow live big";
     btn.innerHTML = "REAL MONEY<small>click to go back to test mode</small>";
-    sub.textContent = modeStatus.connected
+    sub.textContent = (modeStatus.connected
       ? ("orders go to your Webull account " + (modeStatus.account || "?"))
-      : ("REAL MONEY but not connected: " + (modeStatus.error || "unknown"));
+      : ("REAL MONEY but not connected: " + (modeStatus.error || "unknown")))
+      + bpBit;
   } else {
     btn.className = "grow dry big";
     btn.innerHTML = "TEST MODE<small>click to switch to real money</small>";
-    sub.textContent = modeStatus.has_keys
+    sub.textContent = (modeStatus.has_keys
       ? "nothing is really bought — trades are written down on your PC"
-      : "no Webull keys saved yet — START HERE, press 2";
+      : "no Webull keys saved yet — START HERE, press 2") + bpBit;
   }
 }
 
@@ -159,10 +166,76 @@ $("mode").onclick = async () => {
   }
 };
 
+/* ---- the day as a table ---------------------------------------------------
+ * One row per trade: who called it, the contract, what you paid, every
+ * partial sale, and how it ended. This is the page you actually read at
+ * lunchtime — the log is the diary, this is the scoreboard. */
+const keySym = k => String(k || "").split("|").pop();
+const keyWho = k => String(k || "").split("|")[0];
+
+function contractStr(r) {
+  return [r.symbol, r.expiry || "",
+          (r.strike != null && r.strike !== "" ? r.strike : "") +
+          (r.side === "PUTS" ? "P" : r.side === "CALLS" ? "C" : "")]
+         .filter(Boolean).join(" ");
+}
+
+function renderTable(rows, el) {
+  if (!rows || !rows.length) {
+    el.innerHTML = '<div class="note">No trades on this day.</div>';
+    return;
+  }
+  const money = n => (n < 0 ? "-$" : "+$") + Math.abs(Math.round(n));
+  el.innerHTML = rows.map(r => {
+    const state = r.all_out
+      ? (r.state === "stopped" ? "STOPPED OUT"
+         : r.state === "nofill" ? "NO FILL"
+         : r.state === "failed" ? "CHECK WEBULL" : "ALL OUT")
+      : (r.state === "working" ? "BID IN" : "LIVE · holding " + r.qty);
+    const cls = r.all_out
+      ? (r.state === "nofill" ? "flat" : (r.pl >= 0 ? "up" : "down"))
+      : "livepos";
+    const ins = (r.entries || [])
+      .map(e => e.qty + " @ " + Number(e.price).toFixed(2)).join(" + ");
+    const outs = (r.exits || [])
+      .map(e => e.qty + " @ " + Number(e.price).toFixed(2)).join(", ");
+    const bits = [];
+    if (ins) bits.push("in " + ins);
+    if (outs) bits.push("out " + outs);
+    if (r.all_out && r.state !== "nofill") bits.push(money(r.pl));
+    else if ((r.exits || []).length) bits.push(money(r.pl) + " so far");
+    return '<div class="trow"><b>' + contractStr(r) + "</b> · " +
+           (r.who || "?") + ' · <span class="tag ' + cls + '">' + state +
+           "</span><span class=\"sub\">" +
+           (bits.join(" · ") || "nothing has happened yet") + "</span></div>";
+  }).join("");
+}
+
+/* Previous days live on the bridge as one file per date. Picking one swaps
+ * the table to that day and stops the live refresh overwriting it; "today"
+ * hands it back to the live feed. */
+let viewingDay = "";        // "" = today, live
+let viewedRows = null;
+
+async function loadDays() {
+  try {
+    const r = await askBridge("/days");
+    const sel = $("dayspick");
+    const have = new Set(Array.from(sel.options).map(o => o.value));
+    for (const d of (r.days || []).slice().reverse()) {
+      if (have.has(d)) continue;
+      const o = document.createElement("option");
+      o.value = d; o.textContent = d;
+      sel.appendChild(o);
+    }
+  } catch (e) { /* bridge down; the picker just stays at "today" */ }
+}
+
 async function render() {
   const s = await getSettings();
-  const { guardState: gs, log, wallet } =
-    await chrome.storage.local.get(["guardState", "log", "wallet"]);
+  const { guardState: gs, log, wallet, day_table } =
+    await chrome.storage.local.get(["guardState", "log", "wallet",
+                                    "day_table"]);
 
   // The big word is what it IS right now. The small line is what a click does.
   // Getting those two the wrong way round is how somebody turns a bot on while
@@ -189,12 +262,17 @@ async function render() {
   // "holding" and "bid in" are not the same thing any more. An entry rests on
   // the bid, so a symbol can be on this list with nobody having sold to you
   // yet — saying "holding SPY" then would be a lie you'd act on.
+  // Positions are keyed "trader|SYM" now — two admins can be in the same
+  // ticker and they are two different trades. On screen that reads as
+  // "SPY (brett)".
   const posAll = (gs && gs.positions) || {};
-  const owned = held.filter(sym => !posAll[sym].pending);
-  const waiting = held.filter(sym => posAll[sym].pending);
+  const showKey = k => keySym(k) +
+    (keyWho(k) && keyWho(k) !== "?" ? " (" + keyWho(k) + ")" : "");
+  const owned = held.filter(k => !posAll[k].pending);
+  const waiting = held.filter(k => posAll[k].pending);
   const where = [];
-  if (owned.length) where.push("holding " + owned.join(", "));
-  if (waiting.length) where.push("bid in on " + waiting.join(", "));
+  if (owned.length) where.push("holding " + owned.map(showKey).join(", "));
+  if (waiting.length) where.push("bid in on " + waiting.map(showKey).join(", "));
   bits.push(where.length ? where.join(" · ") : "flat");
   $("state").textContent = bits.join(" · ");
 
@@ -205,31 +283,28 @@ async function render() {
   if (!held.length) {
     $("holding").innerHTML = "<b>Flat.</b> Not in anything.";
   } else {
-    const rows = held.map(sym => {
-      const p = pos[sym] || {};
-      const contract = [sym,
+    const rows = held.map(k => {
+      const p = pos[k] || {};
+      const who = keyWho(k) !== "?" ? " · " + keyWho(k) + "'s call" : "";
+      const contract = [keySym(k),
                         p.expiry || "",
                         (p.strike != null ? p.strike : "") +
                         (p.side === "PUTS" ? "P" : p.side === "CALLS" ? "C" : "")]
                        .filter(Boolean).join(" ");
-      // How many you're holding matters now that it can average in. One is the
-      // normal case and saying "x1" every time is noise, so it only shows up
-      // once there's more than one.
       const n = parseInt(p.qty || 1, 10) || 1;
       if (p.pending) {
         // The order is out and nobody has taken it. You own nothing here yet,
         // and on the fast ones you never will — that's the trade-off of sitting
         // on the bid, and it should look different on screen.
         return '<span class="in wait">BID IN</span> <b>' + contract + "</b>" +
-               (p.ts ? " — since " + clock(p.ts) : "") +
+               who + (p.ts ? " — since " + clock(p.ts) : "") +
                " · nobody has sold to you yet";
       }
       return '<span class="in">IN</span> <b>' + contract + "</b>" +
-             (n > 1 ? " <b>x" + n + "</b>" : "") +
+             " <b>x" + n + "</b>" + who +
              (p.ts ? " — since " + clock(p.ts) : "") +
              (p.fill ? " · paid " + Number(p.fill).toFixed(2) : "") +
-             (p.stop ? " · stop " + Number(p.stop).toFixed(2) : "") +
-             (n > 1 ? " (averaged in " + (p.adds || n - 1) + "x)" : "");
+             (p.stop ? " · stop " + Number(p.stop).toFixed(2) : "");
     });
     $("holding").innerHTML = rows.join("<br>");
   }
@@ -248,20 +323,43 @@ async function render() {
   } else {
     purse.style.display = "";
     const money = n => (n < 0 ? "-$" : "$") + Math.abs(n).toFixed(0);
-    const day = wallet.equity - wallet.start;
     const rows = [];
-    rows.push('<b>' + money(wallet.equity) + "</b> account · " +
-              '<span class="' + (day >= 0 ? "up" : "down") + '">' +
-              (day >= 0 ? "+" : "") + money(day) + " today</span>" +
-              " · started " + money(wallet.start));
-    const bits = [money(wallet.cash) + " cash"];
-    if (wallet.reserved) bits.push(money(wallet.reserved) + " tied up in bids");
-    if (wallet.open_cost) {
-      bits.push(money(wallet.open_cost) + " in open trades" +
-                (wallet.open_worth != null
-                 ? " (worth " + money(wallet.open_worth) + " now)" : ""));
+    if (wallet.unlimited) {
+      // The test account has no ceiling on purpose. The two numbers that
+      // matter instead: what the day made, and the most cash that was ever
+      // tied up at once — which is what funding this for real would take.
+      const day = wallet.day != null ? wallet.day : wallet.realised;
+      rows.push('<b>TEST · no limits</b> · <span class="' +
+                (day >= 0 ? "up" : "down") + '">' +
+                (day >= 0 ? "+" : "") + money(day) + " today</span>");
+      rows.push('<span class="sub">most tied up at once: <b>' +
+                money(wallet.peak) + "</b> — that's roughly what this day " +
+                "would need for real</span>");
+      const bits = [];
+      if (wallet.reserved) bits.push(money(wallet.reserved) + " out in bids");
+      if (wallet.open_cost) {
+        bits.push(money(wallet.open_cost) + " in open trades" +
+                  (wallet.open_worth != null
+                   ? " (worth " + money(wallet.open_worth) + " now)" : ""));
+      }
+      if (bits.length) {
+        rows.push('<span class="sub">' + bits.join(" · ") + "</span>");
+      }
+    } else {
+      const day = wallet.equity - wallet.start;
+      rows.push('<b>' + money(wallet.equity) + "</b> account · " +
+                '<span class="' + (day >= 0 ? "up" : "down") + '">' +
+                (day >= 0 ? "+" : "") + money(day) + " today</span>" +
+                " · started " + money(wallet.start));
+      const bits = [money(wallet.cash) + " cash"];
+      if (wallet.reserved) bits.push(money(wallet.reserved) + " tied up in bids");
+      if (wallet.open_cost) {
+        bits.push(money(wallet.open_cost) + " in open trades" +
+                  (wallet.open_worth != null
+                   ? " (worth " + money(wallet.open_worth) + " now)" : ""));
+      }
+      rows.push('<span class="sub">' + bits.join(" · ") + "</span>");
     }
-    rows.push('<span class="sub">' + bits.join(" · ") + "</span>");
     const done = wallet.wins + wallet.losses;
     if (done) {
       rows.push('<span class="sub">' + done +
@@ -271,6 +369,15 @@ async function render() {
                 " banked</span>");
     }
     purse.innerHTML = rows.join("<br>");
+  }
+
+  // The scoreboard: today's table live from the bridge, or a previous day
+  // loaded off the shelf. A loaded day stays put — the 2-second refresh only
+  // repaints when you're on "today".
+  if (viewingDay) {
+    renderTable(viewedRows || [], $("daytable"));
+  } else {
+    renderTable(day_table || [], $("daytable"));
   }
 
   $("channels").value = listToText(s.channel_ids);
@@ -367,7 +474,12 @@ $("copylog").onclick = async () => {
             e.why || "", e.text ? (e.author || "?") + ": " + e.text : ""]
            .filter(Boolean).join("  |  ");
   });
-  if (wallet) {
+  if (wallet && wallet.unlimited) {
+    lines.unshift("test day " + (wallet.realised >= 0 ? "+" : "-") + "$" +
+                  Math.abs(wallet.realised).toFixed(0) + " (" + wallet.wins +
+                  " up / " + wallet.losses + " down, most tied up at once $" +
+                  (wallet.peak || 0).toFixed(0) + ")", "");
+  } else if (wallet) {
     lines.unshift("account $" + wallet.equity.toFixed(0) + " (started $" +
                   wallet.start.toFixed(0) + ", " + wallet.wins + " up / " +
                   wallet.losses + " down, banked $" +
@@ -405,7 +517,24 @@ $("export").onclick = async () => {
     });
 };
 
+/* The previous-days picker. "today" is the live feed; a date is a file the
+ * bridge saved, frozen until you pick something else. */
+$("dayspick").onchange = async () => {
+  const v = $("dayspick").value;
+  if (!v) { viewingDay = ""; viewedRows = null; return render(); }
+  try {
+    const r = await askBridge("/day?date=" + v);
+    viewingDay = v;
+    viewedRows = r.table || [];
+  } catch (e) {
+    viewingDay = "";
+    viewedRows = null;
+  }
+  render();
+};
+
 render();
 setInterval(render, 2000);
 refreshMode();
 setInterval(refreshMode, 4000);
+loadDays();

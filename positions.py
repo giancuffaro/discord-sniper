@@ -6,9 +6,9 @@ the spread and filled in under a second, so writing the position down the
 instant the order was sent was never wrong in practice.
 
 Sitting on the bid breaks that. A resting bid is an offer, not a purchase. It
-fills when a seller comes down to you, which on a call that runs straight from
-the message is *never*. So there are now three things that can happen to an
-entry, and only one of them means you're in:
+fills when a seller comes down to you, which on a fast one is *never*. So there
+are three things that can happen to an entry, and only one of them means you're
+in:
 
     working   the bid is sitting there, nothing has happened yet
     filled    a seller took it, you own contracts, at a price this file knows
@@ -17,6 +17,13 @@ entry, and only one of them means you're in:
 Everything downstream depends on getting that right. If the browser thinks
 you're holding SPY and you aren't, the next trim they post sends a sell for
 contracts that don't exist, and the 20% stop is guarding an empty chair.
+
+THE BOOK IS KEYED BY TRADER, NOT BY TICKER. This is new and it matters: Brett
+and Unraveler can both be in SPY at the same time, on different contracts, and
+they are two different trades. "all out" from Brett closes Brett's SPY and
+touches nothing else. A book keyed by ticker alone would have blended them into
+one position and sold the wrong man's trade — which is exactly what it used to
+do the day both of them were in the same name.
 
 This file also holds the stop. Two of them, actually, because one can fail:
 
@@ -28,9 +35,8 @@ This file also holds the stop. Two of them, actually, because one can fail:
                        the contract gaps straight through it.
 
 Both can sell. Only one is allowed to. `claim()` is how that's decided, and
-every path that closes a position goes through it — the watchdog, the resting
-stop, and the room's own trim. Whoever gets there first wins and the others
-find the door shut.
+every path that fully closes a position goes through it. A trim doesn't claim —
+selling 3 of 5 leaves a position behind, and the stop has to keep guarding it.
 
 Nothing in here talks to the browser. bridge.py exposes a snapshot over GET
 /fills and the extension reconciles against it.
@@ -55,6 +61,13 @@ HOLDING = (FILLED,)
 DONE = (NOFILL, STOPPED, CLOSED, FAILED)
 
 
+def key_of(trader, symbol):
+    """One trade = one trader + one ticker. "brett|SPY" and "unraveler|SPY"
+    are different trades in the same name, which is the whole point."""
+    who = str(trader or "?").strip().lower() or "?"
+    return "%s|%s" % (who, str(symbol or "").upper())
+
+
 class Book:
     """Every entry this program has sent today, and what became of it.
 
@@ -64,7 +77,8 @@ class Book:
     """
 
     def __init__(self, wb, note, stop_pct=20.0, fill_seconds=90.0,
-                 poll_seconds=5.0, simulated=False, wallet=None):
+                 poll_seconds=5.0, simulated=False, wallet=None,
+                 unlimited=False):
         self.wb = wb                    # the broker, or None in a dry run
         self.note = note                # bridge.note — writes to trades.log
         self.stop_pct = float(stop_pct)
@@ -72,29 +86,39 @@ class Book:
         self.poll_seconds = max(1.0, float(poll_seconds))
         self.simulated = simulated
         self._lock = threading.RLock()
-        self._pos = {}                  # symbol -> dict
+        self._pos = {}                  # key ("trader|SYM") -> dict
+        self._archive = []              # finished trades, kept for the table
         self._events = []               # things the extension hasn't seen yet
         self._seq = 0
+        self.save_day = None            # bridge sets this; writes the day file
 
-        # The pretend account. Dry run only — with real money Webull is the
-        # authority on what you've got and making up a second number that
-        # disagrees with it would be worse than having none.
+        # The account, and there are now two kinds of pretend one.
         #
-        # It is a running balance, not a limit that gets checked. Cash leaves
-        # when a bid actually fills, comes back at what you sold for, and what
-        # is left is what the next entry has to fit inside. A static "can you
-        # afford $280 out of $4,000" answers yes four times in a row and lets
-        # you hold more than the account could ever have paid for.
-        self.start_cash = None if wallet in (None, "", 0) else float(wallet)
-        self.cash = self.start_cash
+        # unlimited: nothing is ever refused for money. Instead the book keeps
+        # the HIGH-WATER MARK — the most cash that was tied up at any one
+        # moment — because that is the actual answer to "how much would I need
+        # to fund this". A cap answers "what fits in $4,000"; the mark answers
+        # "what does the room's day cost to follow".
+        #
+        # a starting balance (wallet=N): the old running account. Kept because
+        # the tests exercise it and because it's the right tool once he settles
+        # on a real number.
+        self.unlimited = bool(unlimited)
+        if self.unlimited:
+            self.start_cash = 0.0
+            self.cash = 0.0             # net cash flow; goes negative in trades
+        else:
+            self.start_cash = None if wallet in (None, "", 0) else float(wallet)
+            self.cash = self.start_cash
         self.reserved = 0.0             # bids that are out but haven't filled
+        self.peak = 0.0                 # most money committed at once
         self.realised = 0.0             # profit and loss on trades that are over
         self.wins = 0
         self.losses = 0
-        self.closed_trades = []         # [{symbol, qty, fill, exit, pl}]
+        self.closed_trades = []         # [{key, who, symbol, qty, fill, exit, pl}]
 
     # -- writing things down --------------------------------------------------
-    def _event(self, symbol, kind, text, qty=None):
+    def _event(self, key, kind, text, qty=None):
         """`qty` is how many contracts you hold AFTER this happened.
 
         It's carried as a number on purpose. The browser has to decide whether
@@ -103,17 +127,28 @@ class Book:
         don't own.
         """
         with self._lock:
+            p = self._pos.get(key) or {}
             if qty is None:
-                p = self._pos.get(symbol)
-                qty = int(p.get("qty") or 0) if p else 0
+                qty = int(p.get("qty") or 0)
             self._seq += 1
             self._events.append({"id": self._seq, "t": time.time(),
-                                 "symbol": symbol, "kind": kind, "text": text,
-                                 "qty": int(qty)})
+                                 "key": key, "symbol": p.get("symbol")
+                                 or key.split("|")[-1],
+                                 "who": p.get("who") or key.split("|")[0],
+                                 "kind": kind, "text": text, "qty": int(qty)})
             # A day of events is plenty and this lives in memory.
             if len(self._events) > 400:
                 self._events = self._events[-400:]
         self.note("%-8s %s" % (kind.upper(), text))
+        # The day file on disk, rewritten after anything worth writing down.
+        # This is what "look at how we did last Tuesday" reads later, so it is
+        # kept current rather than written once at some end-of-day moment that
+        # a crashed bridge never reaches.
+        if self.save_day is not None:
+            try:
+                self.save_day()
+            except Exception:                           # noqa: BLE001
+                pass        # a full disk must not take down the trading path
 
     # -- the pretend account --------------------------------------------------
     @staticmethod
@@ -123,30 +158,43 @@ class Book:
         that could afford everything."""
         return float(price or 0) * 100 * int(qty or 0)
 
+    def _mark_peak(self):
+        """The most money this day has had committed at once. Bids that are
+        out count — that money is promised even before it's spent."""
+        with self._lock:
+            open_cost = sum(float(p.get("cost") or 0)
+                            for p in self._pos.values()
+                            if p.get("state") == FILLED)
+            now = self.reserved + open_cost
+            if now > self.peak:
+                self.peak = now
+
     def available(self):
         """Spendable cash: what's left, minus the bids already out there.
 
-        A resting bid is money you've promised. Not counting it lets four
-        entries in a row each pass a check against the same $4,000."""
+        None means "don't gate on money" — either there's no account at all
+        (live mode; Webull is the authority) or the account is unlimited on
+        purpose and the peak tracker is doing the measuring instead."""
         with self._lock:
-            if self.cash is None:
+            if self.unlimited or self.cash is None:
                 return None
             return max(0.0, self.cash - self.reserved)
 
-    def _reserve(self, sym, amount):
+    def _reserve(self, key, amount):
         with self._lock:
             if self.cash is None:
                 return
             self.reserved += float(amount)
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             if p:
                 p["reserved"] = float(amount)
+        self._mark_peak()
 
-    def _unreserve(self, sym):
+    def _unreserve(self, key):
         with self._lock:
             if self.cash is None:
                 return
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             held = float((p or {}).get("reserved") or 0)
             self.reserved = max(0.0, self.reserved - held)
             if p:
@@ -171,18 +219,61 @@ class Book:
                     priced = False
                     continue
                 worth += self._dollars(b, p.get("qty"))
-            return {
-                "start": round(self.start_cash, 2),
+            out = {
                 "cash": round(self.cash, 2),
                 "reserved": round(self.reserved, 2),
                 "open_cost": round(open_cost, 2),
                 "open_worth": round(worth, 2) if priced and open_cost else None,
                 "realised": round(self.realised, 2),
-                "equity": round(self.cash + (worth if priced else open_cost), 2),
                 "wins": self.wins,
                 "losses": self.losses,
                 "trades": list(self.closed_trades[-40:]),
             }
+            if self.unlimited:
+                # No balance to run down, so the useful numbers are what the
+                # day made and what it would have cost to be there for it.
+                out["unlimited"] = True
+                out["peak"] = round(self.peak, 2)
+                out["day"] = round(self.realised
+                                   + (worth - open_cost if priced else 0.0), 2)
+            else:
+                out["start"] = round(self.start_cash, 2)
+                out["equity"] = round(self.cash
+                                      + (worth if priced else open_cost), 2)
+            return out
+
+    # -- the day as a table ---------------------------------------------------
+    def _row(self, p):
+        return {
+            "key": p.get("key"),
+            "who": p.get("who") or "?",
+            "symbol": p.get("symbol"),
+            "side": p.get("side"),
+            "strike": p.get("strike"),
+            "expiry": p.get("expiry"),
+            "state": p.get("state"),
+            "qty": int(p.get("qty") or 0),
+            "avg": p.get("fill"),
+            "adds": int(p.get("adds") or 0),
+            "entries": list(p.get("entries") or []),
+            "exits": list(p.get("exits") or []),
+            "pl": round(float(p.get("trade_pl") or 0), 2),
+            "their_avg": p.get("their_avg"),
+            "their_units": p.get("their_units"),
+            "opened": p.get("sent_at"),
+            "closed": p.get("closed_at"),
+            "all_out": p.get("state") in DONE,
+        }
+
+    def table(self):
+        """Every trade of the day, open and finished, one row each — who
+        called it, what you paid, every partial sale, and how it ended. This
+        is what the popup's table and the day files are made of."""
+        with self._lock:
+            rows = [self._row(p) for p in self._pos.values()] + \
+                   [self._row(p) for p in self._archive]
+        rows.sort(key=lambda r: r.get("opened") or 0)
+        return rows
 
     def snapshot(self, since=0):
         """What the extension asks for. `since` is the last event id it saw."""
@@ -191,17 +282,18 @@ class Book:
                 "positions": {k: dict(v, occ=None) for k, v in self._pos.items()},
                 "events": [e for e in self._events if e["id"] > int(since or 0)],
                 "wallet": self.wallet(),
+                "table": self.table(),
                 "seq": self._seq,
             }
 
-    def holding(self, symbol):
+    def holding(self, key):
         with self._lock:
-            p = self._pos.get(str(symbol).upper())
+            p = self._pos.get(key)
             return bool(p and p.get("state") in HOLDING)
 
-    def state_of(self, symbol):
+    def state_of(self, key):
         with self._lock:
-            p = self._pos.get(str(symbol).upper())
+            p = self._pos.get(key)
             return p.get("state") if p else None
 
     def open_count(self):
@@ -210,33 +302,58 @@ class Book:
             return sum(1 for p in self._pos.values()
                        if p.get("state") in (WORKING, FILLED))
 
-    def info(self, symbol):
+    def info(self, key):
         """A copy of what's known about a position, for callers that need a
         number off it — their posted entry price, the last bid seen — without
         reaching into the book and holding the lock while they think."""
         with self._lock:
-            p = self._pos.get(str(symbol).upper())
+            p = self._pos.get(key)
             return dict(p) if p else None
 
-    def qty_of(self, symbol):
+    def find_by_symbol(self, symbol):
+        """Keys of every live trade in this ticker, any trader. For the one
+        caller that has a symbol but no name — and if this returns more than
+        one key, the right answer is to ask, not to pick."""
+        sym = str(symbol or "").upper()
+        with self._lock:
+            return [k for k, p in self._pos.items()
+                    if p.get("symbol") == sym
+                    and p.get("state") in (WORKING, FILLED)]
+
+    def qty_of(self, key):
         """How many contracts you actually own. Not how many were ordered —
         an exit priced off the wrong one of those two is how you end up
         selling short."""
         with self._lock:
-            p = self._pos.get(str(symbol).upper())
+            p = self._pos.get(key)
             return int(p.get("qty") or 0) if p else 0
+
+    def their_add(self, key, new_avg):
+        """They bought more and posted the new blended average. Written down so
+        the NEXT add has the right starting point for the reverse math."""
+        with self._lock:
+            p = self._pos.get(key)
+            if not p:
+                return
+            if new_avg:
+                p["their_avg"] = float(new_avg)
+            p["their_units"] = int(p.get("their_units") or 1) + 1
 
     # -- an entry goes out ----------------------------------------------------
     def entry_sent(self, order, ticket):
         """Called the moment Webull accepts the buy. Starts the watcher that
         decides whether this ever becomes a real position."""
         sym = str(order.get("symbol", "")).upper()
+        key = key_of(order.get("trader"), sym)
+        who = str(order.get("trader") or "?").strip() or "?"
         with self._lock:
-            prev = self._pos.get(sym) or {}
+            prev = self._pos.get(key) or {}
             # Averaging in: a second entry on something already held. Keep the
             # first fill price; the watcher adds to the quantity when it fills.
             adding = prev.get("state") == FILLED
-            self._pos[sym] = {
+            self._pos[key] = {
+                "key": key,
+                "who": who if not adding else (prev.get("who") or who),
                 "symbol": sym,
                 "state": WORKING,
                 "order_id": ticket.get("order_id"),
@@ -253,25 +370,37 @@ class Book:
                 "fill": prev.get("fill") if adding else None,
                 "stop": prev.get("stop") if adding else None,
                 "stop_order_id": prev.get("stop_order_id") if adding else None,
-                "their_price": order.get("limit"),
+                "their_price": (prev.get("their_price") if adding
+                                else order.get("limit")),
+                # Their side of the trade, for the reverse math on adds. Starts
+                # at their posted entry and one unit; their_add() moves it.
+                "their_avg": (prev.get("their_avg") if adding
+                              else order.get("limit")),
+                "their_units": prev.get("their_units", 1) if adding else 1,
                 "cost": float(prev.get("cost") or 0) if adding else 0.0,
+                "entries": list(prev.get("entries") or []) if adding else [],
+                "exits": list(prev.get("exits") or []) if adding else [],
+                "trade_pl": float(prev.get("trade_pl") or 0) if adding else 0.0,
                 "last_bid": prev.get("last_bid") if adding else None,
                 "reserved": 0.0,
-                "sent_at": time.time(),
+                "sent_at": (prev.get("sent_at") if adding else time.time()),
                 "closing": False,
+                "watching": prev.get("watching", False),
             }
         # Money out of the door the moment the bid is out, not when it fills.
         # It isn't spent yet, but it is promised, and it can't be promised twice.
-        self._reserve(sym, self._dollars(ticket.get("limit"),
+        self._reserve(key, self._dollars(ticket.get("limit"),
                                          ticket.get("qty") or 1))
-        self._event(sym, "working",
-                    "%s — bid is in at %.2f, waiting for a seller (%.0fs)"
-                    % (sym, float(ticket.get("limit") or 0), self.fill_seconds))
-        t = threading.Thread(target=self._watch_fill, args=(sym,), daemon=True)
+        self._event(key, "working",
+                    "%s — %s's call, bid is in at %.2f for %d, waiting for a "
+                    "seller (%.0fs)"
+                    % (sym, who, float(ticket.get("limit") or 0),
+                       int(ticket.get("qty") or 1), self.fill_seconds))
+        t = threading.Thread(target=self._watch_fill, args=(key,), daemon=True)
         t.start()
 
     # -- did it fill? ---------------------------------------------------------
-    def _watch_fill(self, sym):
+    def _watch_fill(self, key):
         """Polls until the order fills or the deadline runs out.
 
         The deadline is the important half. An entry left resting all day can
@@ -282,7 +411,7 @@ class Book:
             while time.time() < deadline:
                 time.sleep(min(2.0, self.poll_seconds))
                 with self._lock:
-                    p = self._pos.get(sym)
+                    p = self._pos.get(key)
                     if not p or p["state"] != WORKING:
                         return              # somebody else resolved it
                     oid, occ, limit = p["order_id"], p["occ"], p["limit"]
@@ -290,24 +419,24 @@ class Book:
 
                 state, filled_qty, avg = self._probe(oid, occ, limit)
                 if state == FILLED:
-                    self._became_filled(sym, filled_qty or want, avg or limit)
+                    self._became_filled(key, filled_qty or want, avg or limit)
                     return
                 if state == "dead":
-                    self._became_nofill(sym, "Webull cancelled or rejected it")
+                    self._became_nofill(key, "Webull cancelled or rejected it")
                     return
         except Exception as e:                          # noqa: BLE001
-            self._event(sym, "failed",
+            self._event(key, "failed",
                         "%s — lost track of the entry: %s. Check the Webull app."
-                        % (sym, str(e)[:120]))
+                        % (key.split("|")[-1], str(e)[:120]))
             with self._lock:
-                if sym in self._pos:
-                    self._pos[sym]["state"] = FAILED
+                if key in self._pos:
+                    self._pos[key]["state"] = FAILED
             return
 
         # Deadline. Pull it — but check one last time, because it can fill in
         # the second between the last poll and the cancel going out.
         with self._lock:
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             if not p or p["state"] != WORKING:
                 return
             oid, occ, limit, want = (p["order_id"], p["occ"], p["limit"],
@@ -319,10 +448,10 @@ class Book:
                 pass
         state, filled_qty, avg = self._probe(oid, occ, limit)
         if state == FILLED or (filled_qty or 0) > 0:
-            self._became_filled(sym, filled_qty or want, avg or limit)
+            self._became_filled(key, filled_qty or want, avg or limit)
         else:
             self._became_nofill(
-                sym, "nobody sold at %.2f within %.0fs"
+                key, "nobody sold at %.2f within %.0fs"
                      % (float(limit or 0), self.fill_seconds))
 
     def _probe(self, oid, occ, limit):
@@ -347,9 +476,9 @@ class Book:
             return WORKING, 0, None
         return self.wb.order_status(oid)
 
-    def _became_filled(self, sym, qty, price):
+    def _became_filled(self, key, qty, price):
         with self._lock:
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             if not p or p["state"] not in (WORKING,):
                 return
             first = p["qty"] == 0
@@ -363,18 +492,23 @@ class Book:
                            / max(1, total))
             p.update(state=FILLED, qty=total, fill=round(blended, 4),
                      filled_at=time.time())
+            p.setdefault("entries", []).append(
+                {"t": time.time(), "qty": int(qty or 1),
+                 "price": round(float(price), 4)})
+            sym = p["symbol"]
             side, strike, expiry = p["side"], p["strike"], p["expiry"]
         # Promised money becomes spent money. The debit is what you actually
         # paid, which is not always what you bid — a seller can come down
         # further than your price.
         paid = self._dollars(price, qty or 1)
-        self._unreserve(sym)
+        self._unreserve(key)
         with self._lock:
             if self.cash is not None:
                 self.cash -= paid
-                p = self._pos.get(sym)
+                p = self._pos.get(key)
                 if p:
                     p["cost"] = float(p.get("cost") or 0) + paid
+        self._mark_peak()
         # With no broker at all there is nothing to ask, so the dry run assumed
         # this filled. Said out loud every single time, because an assumed fill
         # is the one number in the log that is not evidence of anything.
@@ -384,49 +518,54 @@ class Book:
         left = self.available()
         money = ("" if left is None else
                  " — cost $%.0f, $%.0f left to trade with" % (paid, left))
-        self._event(sym, "filled",
+        if left is None and self.unlimited:
+            money = " — cost $%.0f" % paid
+        self._event(key, "filled",
                     "%s — filled %s at %.2f%s%s%s" % (sym, qty, float(price),
                                                       "" if first else
                                                       " (now holding %d)" % total,
                                                       money, assumed))
-        self._arm_stop(sym, side, strike, expiry, total, blended)
+        self._arm_stop(key, side, strike, expiry, total, blended)
 
-    def _became_nofill(self, sym, why):
+    def _became_nofill(self, key, why):
         with self._lock:
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             if not p or p["state"] != WORKING:
                 return
+            sym = p["symbol"]
         # Nothing was bought, so the money that was promised comes straight
         # back. Leaving it tied up would slowly starve the account of trades
         # over a morning of missed fills — which, sitting on the bid, is most
         # of them.
-        self._unreserve(sym)
+        self._unreserve(key)
         with self._lock:
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             if not p:
                 return
             # Averaging in that never filled leaves the ORIGINAL position alone.
             # Only the new contracts failed to arrive.
             if p["qty"] > 0:
                 p["state"] = FILLED
-                self._event(sym, "nofill",
+                self._event(key, "nofill",
                             "%s — the add didn't fill (%s). You still hold %d."
                             % (sym, why, p["qty"]))
                 return
             p["state"] = NOFILL
-        self._event(sym, "nofill",
+            p["closed_at"] = time.time()
+        self._event(key, "nofill",
                     "%s — no fill (%s). You are NOT in this one." % (sym, why))
 
     # -- the stop -------------------------------------------------------------
-    def _arm_stop(self, sym, side, strike, expiry, qty, fill):
+    def _arm_stop(self, key, side, strike, expiry, qty, fill):
         """Both halves of it. The resting order first, because that's the one
         that survives this program dying; the watchdog second, because that's
         the one that works when Webull won't take the resting order."""
+        sym = key.split("|")[-1]
         stop_price = max(0.01, round(float(fill) * (1 - self.stop_pct / 100), 2))
         oid = None
         if self.wb is not None and not self.simulated:
             with self._lock:
-                p = self._pos.get(sym)
+                p = self._pos.get(key)
                 old = p.get("stop_order_id") if p else None
             # Averaging in moves the stop, so the old one has to go first or
             # you end up with two resting sells and get flattened twice.
@@ -438,42 +577,44 @@ class Book:
             try:
                 oid, stop_price = self.wb.place_stop(sym, side, strike, expiry,
                                                      qty, fill)
-                self._event(sym, "stop-set",
+                self._event(key, "stop-set",
                             "%s — stop resting at Webull at %.2f (-%.0f%% from "
                             "%.2f)" % (sym, stop_price, self.stop_pct, fill))
             except Exception as e:                      # noqa: BLE001
                 # Not fatal, and it must not read as if you're unprotected —
                 # the watchdog below is still running.
-                self._event(sym, "stop-warn",
+                self._event(key, "stop-warn",
                             "%s — Webull wouldn't hold a resting stop (%s). The "
                             "watchdog on this PC is still on it, so keep this "
                             "program running." % (sym, str(e)[:90]))
         with self._lock:
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             if p:
                 p["stop"] = stop_price
                 p["stop_order_id"] = oid
                 if not p.get("watching"):
                     p["watching"] = True
-                    threading.Thread(target=self._watchdog, args=(sym,),
+                    threading.Thread(target=self._watchdog, args=(key,),
                                      daemon=True).start()
         if self.simulated:
-            self._event(sym, "stop-set",
+            self._event(key, "stop-set",
                         "%s — pretend stop at %.2f (-%.0f%% from %.2f)"
                         % (sym, stop_price, self.stop_pct, fill))
 
-    def _watchdog(self, sym):
-        """Checks the bid. If it's at or under the stop, sells.
+    def _watchdog(self, key):
+        """Checks the bid. If it's at or under the stop, sells what's left.
 
         This is the half that works when the resting stop was refused, and the
-        half that catches a contract gapping straight through the trigger."""
+        half that catches a contract gapping straight through the trigger.
+        After a trim it guards the remainder — 2 contracts still get a stop."""
         while True:
             time.sleep(self.poll_seconds)
             with self._lock:
-                p = self._pos.get(sym)
+                p = self._pos.get(key)
                 if not p or p["state"] != FILLED or p.get("closing"):
                     return
                 occ, stop, qty = p["occ"], p["stop"], p["qty"]
+                sym = p["symbol"]
                 side, strike, expiry = p["side"], p["strike"], p["expiry"]
             if self.wb is None or not occ or not stop:
                 return
@@ -485,60 +626,117 @@ class Book:
                 # Kept so the account can be marked to market, and so a close
                 # that arrives without a price still has a real number to use.
                 with self._lock:
-                    q = self._pos.get(sym)
+                    q = self._pos.get(key)
                     if q:
                         q["last_bid"] = float(bid)
             if bid is None or float(bid) > float(stop):
                 continue
-            if not self.claim(sym):
+            if not self.claim(key):
                 return          # the resting stop or their trim got there first
-            self._event(sym, "stopped",
+            self._event(key, "stopped",
                         "%s — bid hit %.2f, at or under your %.2f stop. Selling "
                         "%d." % (sym, float(bid), float(stop), qty))
             if self.simulated:
-                self.finish(sym, STOPPED, "pretend stop-out at %.2f" % float(bid),
+                self.finish(key, STOPPED, "pretend stop-out at %.2f" % float(bid),
                             price=float(bid))
                 return
             try:
                 self.wb.sell(sym, side, strike, expiry, qty)
-                self.finish(sym, STOPPED, "stopped out at %.2f" % float(bid),
+                self.finish(key, STOPPED, "stopped out at %.2f" % float(bid),
                             price=float(bid))
             except Exception as e:                      # noqa: BLE001
-                self._event(sym, "failed",
+                self._event(key, "failed",
                             "%s — the stop tried to sell and couldn't: %s. Go "
                             "close it in the Webull app." % (sym, str(e)[:110]))
-                self.finish(sym, FAILED, "stop failed to sell")
+                self.finish(key, FAILED, "stop failed to sell")
             return
 
+    # -- selling part of it ---------------------------------------------------
+    def trim(self, key, qty, price, why):
+        """Sell some contracts and keep the rest. Returns how many were sold.
+
+        This is what a trim IS now: they say "trimming", you sell 3 of your 5
+        and stay in the trade with a stop still on the other 2. It does not go
+        through claim() — claiming is for closes, and a trimmed position still
+        needs the watchdog guarding what's left.
+
+        Refuses (returns 0) without a price rather than settling at a made-up
+        one. A partial sale at a fictional price would quietly poison the one
+        number the whole day is being run to find out.
+        """
+        with self._lock:
+            p = self._pos.get(key)
+            if not p or p["state"] != FILLED or p.get("closing"):
+                return 0
+            held = int(p.get("qty") or 0)
+            n = min(max(0, int(qty or 0)), held)
+            if n <= 0:
+                return 0
+            if price is None:
+                price = p.get("last_bid")
+            if price is None:
+                self._event(key, "stop-warn",
+                            "%s — they trimmed, but there's no price to sell at "
+                            "(no quote and no percentage). Still holding %d."
+                            % (p["symbol"], held))
+                return 0
+            price = float(price)
+            fill = float(p.get("fill") or price)
+            chunk_cost = fill * 100 * n
+            got = price * 100 * n
+            pl = got - chunk_cost
+            p["qty"] = held - n
+            p["cost"] = max(0.0, float(p.get("cost") or 0) - chunk_cost)
+            p.setdefault("exits", []).append(
+                {"t": time.time(), "qty": n, "price": round(price, 4),
+                 "pl": round(pl, 2)})
+            p["trade_pl"] = float(p.get("trade_pl") or 0) + pl
+            if self.cash is not None:
+                self.cash += got
+                self.realised += pl
+            left = p["qty"]
+            sym = p["symbol"]
+        self._event(key, "trimmed",
+                    "%s — %s sold %d at %.2f (%s$%.0f on those), still holding "
+                    "%d%s" % (sym, why, n, price, "+" if pl >= 0 else "-",
+                              abs(pl), left,
+                              "" if left else " — that trim was the lot"))
+        if left == 0:
+            # Their trims walked the whole position out the door. That's a
+            # finished trade, and it should say so rather than sit at qty 0.
+            self.finish(key, CLOSED, "their trims sold the last of it",
+                        price=None, settle=False)
+        return n
+
     # -- one close, and only one ----------------------------------------------
-    def claim(self, symbol):
+    def claim(self, key):
         """Take ownership of closing this position. Returns False if something
         else already has it — that's the whole double-sell guard.
 
-        Also pulls the resting stop, because selling on their trim while a stop
+        Also pulls the resting stop, because selling on their call while a stop
         order is still sitting at Webull is how you end up short a contract you
         never meant to sell."""
-        sym = str(symbol).upper()
         with self._lock:
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             if not p or p["state"] != FILLED or p.get("closing"):
                 return False
             p["closing"] = True
+            sym = p["symbol"]
             oid = p.get("stop_order_id")
             p["stop_order_id"] = None
         if oid and self.wb is not None and not self.simulated:
             try:
                 self.wb.cancel(oid)
-                self._event(sym, "stop-pulled",
+                self._event(key, "stop-pulled",
                             "%s — pulled the resting stop before selling" % sym)
             except Exception:                           # noqa: BLE001
-                self._event(sym, "stop-warn",
+                self._event(key, "stop-warn",
                             "%s — couldn't pull the resting stop. If it's still "
                             "in Webull after this sells, cancel it by hand."
                             % sym)
         return True
 
-    def cancel_entry(self, symbol, why="pulled"):
+    def cancel_entry(self, key, why="pulled"):
         """Take a resting bid back off the book.
 
         This is the case sitting on the bid creates and crossing the spread
@@ -548,52 +746,60 @@ class Book:
         zero if that bid was the whole position, and the count you were already
         holding if it was only an add on top of it.
         """
-        sym = str(symbol).upper()
         with self._lock:
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             if not p or p["state"] != WORKING:
-                return self.qty_of(sym)
+                return self.qty_of(key)
             oid = p["order_id"]
+            sym = p["symbol"]
             held = int(p.get("qty") or 0)
             # An add that gets pulled leaves the original position exactly where
             # it was. Only the new contracts are gone.
             p["state"] = FILLED if held > 0 else NOFILL
+            if not held:
+                p["closed_at"] = time.time()
+        self._unreserve(key)
         if oid and self.wb is not None and not self.simulated:
             try:
                 self.wb.cancel(oid)
             except Exception:                           # noqa: BLE001
-                self._event(sym, "stop-warn",
+                self._event(key, "stop-warn",
                             "%s — couldn't pull the resting bid. If it's still "
                             "in Webull, cancel it there by hand." % sym)
-        self._event(sym, "pulled",
+        self._event(key, "pulled",
                     "%s — %s. The bid is off the book%s"
                     % (sym, why, "; you own nothing here." if not held
                        else "; you still hold %d." % held))
         return held
 
-    def release(self, symbol):
+    def release(self, key):
         """The close didn't happen after all. Put it back."""
         with self._lock:
-            p = self._pos.get(str(symbol).upper())
+            p = self._pos.get(key)
             if p:
                 p["closing"] = False
 
-    def finish(self, symbol, state, why, price=None):
+    def finish(self, key, state, why, price=None, settle=True):
         """The position is over. `price` is what you sold each contract for.
 
         Give it a price whenever one is known and the pretend account can tell
         you what the trade actually made. Leave it out and the money side goes
         quiet rather than guessing — a made-up exit price would turn the one
         number he's checking into fiction.
+
+        `settle=False` is for the caller that has already moved the money
+        (trim() selling the last contracts) and only needs the trade marked
+        finished and counted.
         """
-        sym = str(symbol).upper()
         with self._lock:
-            p = self._pos.get(sym)
+            p = self._pos.get(key)
             if not p:
                 return
             qty = int(p.get("qty") or 0)
             cost = float(p.get("cost") or 0)
             entry = p.get("fill")
+            sym = p.get("symbol") or key.split("|")[-1]
+            who = p.get("who") or key.split("|")[0]
             if price is None:
                 # No price was passed, but the watchdog has been keeping the
                 # last bid it saw, and the bid is what you'd sell into.
@@ -601,36 +807,67 @@ class Book:
             p.update(state=state, closing=False, qty=0, closed_at=time.time())
 
         money = ""
-        if self.cash is not None and qty and price is not None:
+        if settle and self.cash is not None and qty and price is not None:
             got = self._dollars(price, qty)
             pl = got - cost
             with self._lock:
                 self.cash += got
                 self.realised += pl
-                if pl >= 0:
+                p = self._pos.get(key)
+                if p is not None:
+                    p.setdefault("exits", []).append(
+                        {"t": time.time(), "qty": qty,
+                         "price": round(float(price), 4), "pl": round(pl, 2)})
+                    p["trade_pl"] = float(p.get("trade_pl") or 0) + pl
+                    p["cost"] = 0.0
+                total = float((p or {}).get("trade_pl") or pl)
+                if total >= 0:
                     self.wins += 1
                 else:
                     self.losses += 1
                 self.closed_trades.append(
-                    {"symbol": sym, "qty": qty, "fill": entry,
-                     "exit": round(float(price), 2), "pl": round(pl, 2),
-                     "t": time.time()})
+                    {"key": key, "who": who, "symbol": sym, "qty": qty,
+                     "fill": entry, "exit": round(float(price), 2),
+                     "pl": round(total, 2), "t": time.time()})
                 pot = self.cash
-            money = (" · %s$%.0f on the trade · account $%.0f"
-                     % ("+" if pl >= 0 else "-", abs(pl), pot))
+            money = (" · %s$%.0f on the trade · %s"
+                     % ("+" if pl >= 0 else "-", abs(pl),
+                        ("day so far %s$%.0f"
+                         % ("+" if self.realised >= 0 else "-",
+                            abs(self.realised))) if self.unlimited
+                        else "account $%.0f" % pot))
+        elif not settle:
+            # trim() already banked the money chunk by chunk; just count it.
+            with self._lock:
+                p = self._pos.get(key)
+                total = float((p or {}).get("trade_pl") or 0)
+                if total >= 0:
+                    self.wins += 1
+                else:
+                    self.losses += 1
+                self.closed_trades.append(
+                    {"key": key, "who": who, "symbol": sym, "qty": qty,
+                     "fill": entry, "exit": None, "pl": round(total, 2),
+                     "t": time.time()})
+            money = (" · %s$%.0f on the whole trade"
+                     % ("+" if total >= 0 else "-", abs(total)))
         elif self.cash is not None and qty:
             # Held contracts sold at a price nobody told us. The cash can't be
             # credited without inventing a number, so it says so instead of
             # quietly leaving the account short.
             money = " · sold, but at a price I never saw — account left as it was"
-        self._event(sym, state, "%s — %s%s" % (sym, why, money))
+        self._event(key, state, "%s — %s%s" % (sym, why, money))
 
     def sweep(self, older_than=1800):
-        """Forget finished positions so the book doesn't grow all day."""
+        """Move finished positions out of the working book so it doesn't grow
+        all day. They stay in the archive — the table still shows the whole
+        day, finished trades included; that's what it's FOR."""
         now = time.time()
         with self._lock:
             for k in list(self._pos):
                 p = self._pos[k]
                 if p.get("state") in DONE and \
                         now - p.get("closed_at", p.get("sent_at", now)) > older_than:
-                    self._pos.pop(k, None)
+                    self._archive.append(self._pos.pop(k))
+            if len(self._archive) > 200:
+                self._archive = self._archive[-200:]

@@ -571,3 +571,84 @@ now.
 
 Not changed, deliberately: trims are still ignored, exit is still on "all out".
 He chose that against the alternative and it was worth about 4x on his log days.
+
+## Update — v1.4.0: many traders, real trims, no limits on test
+
+His words, from the night before he wanted it running:
+
+> pretty much i need it to run without any limits on test mode, pretend we
+> have unlimited buying power ( i know i said ) but i need to know how much
+> money it needs approximately.
+
+> so i want it to be able to enter multiple trades at once, example if brett
+> enter a trade and unravler enter another one i want all to execute correctly
+> and not get confused with one another..
+
+> if an entry has been made and the avg is 2.88 and then an another add makes
+> a new average ending up in 2.55 then do reverse math which would be the
+> second contracts cost 2.22. does that make any sense ?
+
+> on test mode just default and assume 5 contracts have been bought. if theres
+> an add, assume 5 more. on trims.. assume they sold 3 so sell 3, another
+> trim, sell 3 more, all out would be the rest.
+
+**The book is keyed by trader now.** `positions.key_of(trader, symbol)` →
+`"brett|SPY"`. Brett and Unraveler can both be in SPY on different contracts
+and they are two different trades: separate fills, separate stops, separate
+averages, separate exits. Same key shape on the extension side (`posKey` in
+guards.js) and in guards.py, so all three books line up key for key. Every
+order now carries `trader` — it's half the identity of the trade.
+
+**Unlimited test account.** The dry-run book takes `unlimited=True`: nothing
+is ever refused for money, and instead it keeps `peak` — the high-water mark
+of cash committed at once (resting bids count). That's the answer to "how much
+money does it need approximately". The popup prints it as "most tied up at
+once". The old `$N` running account still exists and still passes its tests;
+`dry_run_buying_power` in settings.json is simply not consulted on a dry run
+any more.
+
+**Test-mode sizing is the pattern, fixed on purpose:** entry = 5, add = 5,
+trim sells 3, all out sells the rest (constants at the top of bridge.py).
+Trims EXECUTE on a dry run now — `Book.trim()` sells the chunk, banks the P/L
+per chunk, leaves the stop guarding the remainder, and a trade only counts as
+a win or a loss once it's fully out. In LIVE mode trims still refuse to sell —
+he hasn't said trims may touch real money, so they don't.
+
+**The reverse math** (`implied_add_price` in bridge.py): they held n fills
+averaging a, posted new average v after an add, so the add went off at
+v·(n+1) − a·n. His example is the docstring: 2.88 then 2.55 → 2.22. That
+number is a market fact — where the contract just traded — so it becomes the
+bid on the add order, in both modes. `their_avg`/`their_units` live on the
+position and `Book.their_add()` rolls them forward, so a second add solves off
+the right base. If the arithmetic comes out ≤ $0.02 it's distrusted and the
+order falls back to a live quote.
+
+**The trade table.** `Book.table()` — one row per trade: who, contract, your
+average, every entry, every partial exit with its P/L, state, all-out flag.
+Rides on `/fills` for the popup (a "Trades" box with per-row state tags), and
+is written to `days/YYYY-MM-DD.json` on every event (`save_day` in bridge.py —
+rewritten as it happens, so a crash at 11am still leaves the morning on disk).
+`GET /days` lists the shelf, `GET /day?date=...` serves one; the popup has a
+dropdown that loads any previous day. `days/` is gitignored — it's his trading
+record, not code.
+
+**Buying power, both kinds.** `/mode` now carries `buying_power` — the real
+margin account's number via `WB.buying_power()`, cached ~30s in the bridge on
+top of the SDK's own cache — and the popup shows it under the mode button in
+both modes. The test side shows the peak-needed figure instead of a made-up
+balance.
+
+**Dedupe got a name on it.** `signalKey`/`Sig.key()` end with the caller now,
+because Brett's "all out of SPY" and Unraveler's "all out of SPY" minutes
+apart are two different trades, not a duplicate. Symbol stays at index 1 —
+the record purge reads it there.
+
+**The bridge tells the extension the mode** (on `/fills` and `/mode`), and the
+extension caches it as `bridge_mode`. That's what gates the test pattern; with
+no bridge reachable it defaults to the test rules, which can't spend anything
+anyway.
+
+Watch out for, next session: `HARD_MAX_QTY` is still 2 in live mode and
+`max_qty` in the popup still caps live buys at 1 — the 5-lot pattern is
+test-only until he says otherwise. And `migratePositions` in guards.js moves
+any pre-v1.4 bare-symbol position under its author's key on first read.

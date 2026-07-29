@@ -76,6 +76,25 @@
   .purse .sub { color: #7d8697; font-size: 11px; }
   .purse .up { color: #4ade80; }
   .purse .down { color: #f87171; }
+  /* The scoreboard: one row per trade — who called it, what you paid, every
+     partial sale, how it ended. The log is the diary; this is the day. */
+  .tablebox { background: #10151d; border: 1px solid #1c2331; border-radius: 6px;
+              padding: 7px 9px; margin: 8px 0 2px; }
+  .tablehead { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .tablehead b { font-size: 11px; letter-spacing: .06em; color: #9aa3b5;
+                 text-transform: uppercase; flex: 1; }
+  .tablehead select { width: auto; font-size: 11px; padding: 3px 6px; }
+  .trow { padding: 5px 0; border-bottom: 1px solid #141922; font-size: 12px;
+          color: #c6cdda; }
+  .trow:last-child { border-bottom: none; }
+  .trow b { color: #e6edf6; }
+  .trow .sub { display: block; color: #7d8697; font-size: 11px; }
+  .tag { font-size: 10px; font-weight: 700; letter-spacing: .04em;
+         padding: 1px 5px; border-radius: 4px; background: #1c2331; }
+  .tag.livepos { color: #fbbf24; }
+  .tag.up { color: #4ade80; }
+  .tag.down { color: #f87171; }
+  .tag.flat { color: #6b7383; }
 </style>
 </head>
 <body>
@@ -97,6 +116,16 @@
 
   <div class="holding" id="holding">Flat.</div>
   <div class="purse" id="purse" style="display:none"></div>
+
+  <!-- The day, one row per trade. Live for today; the dropdown loads any
+       previous day the bridge has on file — that's the backtesting shelf. -->
+  <div class="tablebox">
+    <div class="tablehead">
+      <b>Trades</b>
+      <select id="dayspick"><option value="">today, live</option></select>
+    </div>
+    <div id="daytable"><div class="note">No trades yet today.</div></div>
+  </div>
 
   <details>
     <summary>Settings</summary>

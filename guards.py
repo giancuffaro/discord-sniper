@@ -17,6 +17,22 @@ from eastern import ET
 KILL_FILE = "STOP"          # create a file called STOP next to the bot to halt it
 
 
+def key_of(trader, symbol):
+    """One trade = one trader + one ticker, same as positions.key_of and
+    posKey in guards.js. "brett|SPY" and "unraveler|SPY" are two different
+    trades in the same name — that's the point."""
+    who = str(trader or "?").strip().lower() or "?"
+    return "%s|%s" % (who, str(symbol or "").upper())
+
+
+def _key_sym(k):
+    return str(k).split("|")[-1]
+
+
+def _key_who(k):
+    return str(k).split("|")[0]
+
+
 class Guards:
     def __init__(self, cfg, here="."):
         g = cfg.get("guards", {})
@@ -50,10 +66,11 @@ class Guards:
         self._recent = {}       # signal key -> timestamp
         self._day = None
         self._count = 0
-        # What the bot believes you're holding. Two admins calling the same
-        # trade five minutes apart is the normal case in a signal room, and
-        # without this you'd buy it twice.
-        self.open_pos = {}      # symbol -> {side, strike, expiry, ts}
+        # What the bot believes you're holding, keyed "trader|SYM" — Brett's
+        # SPY and Unraveler's SPY are two different trades and both can be
+        # open at once. The same admin calling the same ticker twice is still
+        # caught, because that lands on the same key.
+        self.open_pos = {}      # "trader|SYM" -> {side, strike, expiry, ts}
         # The last LOADING notice each admin posted. Their entry is two messages
         # — the contract, then the price — and this is what holds the first one
         # until the second one turns up. Per author, because both admins load
@@ -121,15 +138,26 @@ class Guards:
         # dedupe: the same call posted twice in a couple of minutes is one trade
         # What you're holding is checked before anything else, because "you're
         # already in AMD" tells you far more than "that looked like a repeat".
-        if sig.action == "OPEN" and self.open_pos.get(sig.symbol):
+        # Per TRADER now: Brett being in SPY doesn't block Unraveler's SPY call.
+        who = str(getattr(sig, "caller", "") or author_name or "").lower()
+        already = self.open_pos.get(key_of(who, sig.symbol)) or next(
+            # A position whose owner was never known blocks anyone's re-entry
+            # in that name — better one missed trade than one doubled one.
+            (p for k, p in self.open_pos.items()
+             if _key_sym(k) == sig.symbol and _key_who(k) == "?"), None)
+        if sig.action == "OPEN" and already:
             return False, ("you're already in %s from their earlier call — "
                            "this one would double you up" % sig.symbol)
 
-        if sig.action == "CLOSE" and sig.symbol not in self.open_pos:
+        if sig.action in ("CLOSE", "TRIM") and \
+                not self.open_pos.get(key_of(who, sig.symbol)) and \
+                not any(_key_sym(k) == sig.symbol for k in self.open_pos):
             # This one matters more than it looks. At most brokers a sell with
             # nothing to sell isn't a no-op — it opens a short. Never send it.
-            return False, ("you're not in %s, so there's nothing to close — "
-                           "the order was not sent" % sig.symbol)
+            return False, ("you're not in %s, so there's nothing to %s — "
+                           "the order was not sent"
+                           % (sig.symbol,
+                              "trim" if sig.action == "TRIM" else "close"))
 
         key = sig.key()
         last = self._recent.get(key)
@@ -168,25 +196,11 @@ class Guards:
                        "anything — nothing to close")
             return sig
 
-        theirs = [s for s, p in held.items()
-                  if who and str(p.get("author", "")).lower() == who]
-        pick = None
-        if len(theirs) == 1:
-            pick = theirs[0]
-        elif not theirs and len(held) == 1:
-            # Only one thing open, so it's tempting to just take it. But if that
-            # position was opened by a different admin, a trim from this one is
-            # about something you never got into — closing the other guy's trade
-            # on it is exactly the mistake this whole method exists to avoid.
-            only = next(iter(held))
-            owner = str(held[only].get("author", "")).lower()
-            if not who or not owner or owner == who:
-                pick = only
+        pick = self._pick_held(who)
 
         if not pick:
-            what = ", ".join("%s%s" % (s, (" (%s's call)" % held[s]["author"])
-                                       if held[s].get("author") else "")
-                             for s in sorted(held))
+            what = ", ".join("%s (%s's call)" % (_key_sym(k), _key_who(k))
+                             for k in sorted(held))
             sig.why = ("a trim with no ticker in it. You're in %s, and this came "
                        "from %s — I can't tell which one they meant, so nothing "
                        "was sent. Close it in the Webull app if you want out."
@@ -194,30 +208,43 @@ class Guards:
                           or "somebody I couldn't name"))
             return sig
 
-        sig.symbol = pick
+        sig.symbol = _key_sym(pick)
         sig.fire = True
         sig.why = ("closing %s on their first trim — they didn't name it, but "
                    "it's the position %s put you in"
-                   % (pick, getattr(sig, "caller", "") or author_name or "they"))
+                   % (sig.symbol,
+                      getattr(sig, "caller", "") or author_name or "they"))
         return sig
 
     def _pick_held(self, who):
         """Which of your open positions did this admin mean? Their own first,
-        and the only one open second — but never somebody else's. Returns None
-        when it can't be sure, and being sure is the whole point."""
+        and the only one open second — but never somebody else's. The keys are
+        "trader|SYM", so "their own" is a prefix. Returns the KEY, or None
+        when it can't be sure — and being sure is the whole point."""
         held = self.open_pos
         if not held:
             return None
-        theirs = [s for s, p in held.items()
-                  if who and str(p.get("author", "")).lower() == who]
+        theirs = [k for k in held if who and _key_who(k) == who]
         if len(theirs) == 1:
             return theirs[0]
         if not theirs and len(held) == 1:
             only = next(iter(held))
-            owner = str(held[only].get("author", "")).lower()
-            if not who or not owner or owner == who:
+            owner = _key_who(only)
+            if not who or owner == "?" or owner == who:
                 return only
         return None
+
+    def _find_held(self, who, symbol):
+        """This trader's position in this ticker — their own key first, then
+        the ONE open trade in the name whoever's it is. None when ambiguous:
+        two trades in the same ticker is exactly when a guess sells the wrong
+        man's contracts."""
+        exact = self.open_pos.get(key_of(who, symbol))
+        if exact is not None:
+            return exact
+        ks = [k for k in self.open_pos
+              if _key_sym(k) == str(symbol or "").upper()]
+        return self.open_pos[ks[0]] if len(ks) == 1 else None
 
     def resolve_add(self, sig, author_name=""):
         """"added to SPY, new avg is 2.8" — they bought more of what they're
@@ -240,13 +267,15 @@ class Guards:
             return sig
 
         if not sig.symbol:
-            sig.symbol = self._pick_held(who)
+            k = self._pick_held(who)
+            if k:
+                sig.symbol = _key_sym(k)
         if not sig.symbol:
             sig.why = ("they added to a position and didn't name it, and I "
                        "can't tell which one they meant — nothing was sent")
             return sig
 
-        pos = self.open_pos.get(sig.symbol)
+        pos = self._find_held(who, sig.symbol)
         if not pos:
             sig.why = ("they added to their %s, but you're not in it — there's "
                        "nothing to average into" % sig.symbol)
@@ -349,11 +378,12 @@ class Guards:
                       or "they"))
         return sig
 
-    def fill_from_position(self, sig):
+    def fill_from_position(self, sig, author_name=""):
         """"all out of AMD" never says which contract, and neither does "exited
         and back in" — everyone in the room already knows which one. A broker
         doesn't, so the missing pieces come from what you're actually holding."""
-        p = self.open_pos.get(sig.symbol)
+        who = str(getattr(sig, "caller", "") or author_name or "").lower()
+        p = self._find_held(who, sig.symbol)
         if not p:
             return sig
         if sig.strike is None:
@@ -382,34 +412,44 @@ class Guards:
             self._recent = {k: v for k, v in self._recent.items()
                             if k[1] != sig.symbol}
         self._recent[sig.key()] = now
+        pk = key_of(who, sig.symbol)
         if sig.action == "OPEN":
-            # The author is kept so a later symbol-less trim from the same
-            # admin can be pinned to the position they actually opened.
+            # The author is in the KEY now, so a later symbol-less trim from
+            # the same admin pins to the position they actually opened — and
+            # two admins can be in the same ticker without colliding.
             # "pending" means the order has gone out and nobody has sold to you
             # yet. Entries rest on the bid, so that is the normal state for a
             # while and sometimes the only one it ever reaches. Only the bridge
             # can clear it, because only the bridge sees the fill.
-            self.open_pos[sig.symbol] = {"side": sig.side, "strike": sig.strike,
-                                         "expiry": sig.expiry, "ts": now,
-                                         "author": who, "qty": int(sig.qty or 1),
-                                         "adds": 0, "pending": True}
+            self.open_pos[pk] = {"side": sig.side, "strike": sig.strike,
+                                 "expiry": sig.expiry, "ts": now,
+                                 "author": who, "qty": int(sig.qty or 1),
+                                 "adds": 0, "pending": True}
         elif sig.action == "ADD":
-            # One more contract of the same thing. The count is what an exit
+            # More contracts of the same thing. The count is what an exit
             # sells, and the add count is what stops it happening all day.
-            p = self.open_pos.get(sig.symbol)
+            p = self._find_held(who, sig.symbol)
             if p is not None:
                 p["qty"] = int(p.get("qty", 1)) + int(sig.qty or 1)
                 p["adds"] = int(p.get("adds", 0)) + 1
                 p["ts"] = now
-                p["pending"] = True     # the extra contract isn't yours yet
+                p["pending"] = True     # the extra contracts aren't yours yet
+        elif sig.action == "TRIM":
+            # Sold some, kept the rest. The bridge's count is the truth; this
+            # subtraction just keeps the local picture roughly honest.
+            p = self._find_held(who, sig.symbol)
+            if p is not None:
+                p["qty"] = max(1, int(p.get("qty", 1)) - int(sig.qty or 1))
         elif sig.action == "CLOSE":
-            held = self.open_pos.pop(sig.symbol, None)
+            ks = [k for k in self.open_pos if _key_sym(k) == sig.symbol]
+            gone = pk if pk in self.open_pos else (ks[0] if len(ks) == 1 else pk)
+            held = self.open_pos.pop(gone, None)
             if getattr(sig, "reenter", False):
                 # Sold and bought straight back into the same contract. The
                 # tracker has to know you're still in it, or the room's next
                 # "all out" gets refused for having nothing to sell.
                 base = held or {}
-                self.open_pos[sig.symbol] = {
+                self.open_pos[gone] = {
                     "side": sig.side or base.get("side"),
                     "strike": sig.strike if sig.strike is not None
                               else base.get("strike"),
@@ -432,6 +472,6 @@ class Guards:
         """max_qty is a cap on what you BUY. An exit has to be allowed to sell
         everything you're holding — capping that at one contract after you've
         averaged in would leave you quietly still in the trade."""
-        if str(action).upper() == "CLOSE":
-            return max(1, int(wanted or 1))
+        if str(action).upper() in ("CLOSE", "TRIM"):
+            return max(1, int(wanted or 1))     # sells are never capped down
         return max(1, min(int(wanted or 1), self.max_qty))

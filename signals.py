@@ -194,8 +194,14 @@ class Signal:
         # but they're two different calls minutes apart — without this the real
         # exit is thrown away as a duplicate of the re-entry and you ride the
         # position into the close.
+        # The caller is on the end now, too. Brett and Unraveler posting the
+        # same call minutes apart are two trades, not a duplicate — without
+        # the name, the second man's "all out of SPY" would die inside the
+        # dedupe window of the first's. Symbol stays at index 1 because
+        # guards.record's purge reads k[1].
         return (self.action, self.symbol, self.side, self.strike, self.expiry,
-                self.pct, bool(self.reenter))
+                self.pct, bool(self.reenter),
+                str(getattr(self, "caller", "") or "").lower())
 
     def human(self):
         if not self.action:
