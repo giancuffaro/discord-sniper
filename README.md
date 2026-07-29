@@ -198,7 +198,7 @@ through the same code, so they can't end up disagreeing about what's what.
 **Putting the keys in**
 
 Menu, number **2**. It asks for the key, the secret, which account, and your
-chase limit. It writes them to `settings.json` with locked-down permissions.
+your keys. It writes them to `settings.json` with locked-down permissions.
 That file is gitignored — it never gets committed, and an update never
 overwrites it.
 
@@ -213,12 +213,10 @@ window) and read it back. Close the window when you're done.
 extension popup, where you can see which way it's set instead of trying to
 remember what you answered in a terminal three days ago.
 
-**The chase limit** is the one setting worth understanding. The room posts
-`in SPY 7/28 745P @ 2.76`. By the time you see it, the ask might be 2.80, or it
-might be 3.40. Their fill is not your fill. If the ask is more than **15%** above
-the price they quoted, the bridge skips the trade instead of buying the top. It
-says so in the log. That's not a bug and it will happen — a skipped trade is the
-cheapest trade there is.
+**The chase limit is gone.** It used to skip an entry when the ask had run
+too far past the room's price. Deleted on his word — "no filters wanted. id
+like to follow everything to the tee as they do." The entry still sits on
+the bid, which is what protects the price actually paid.
 
 > **There is no paper mode for options.** Not in this bot, not at Webull, not
 > anywhere. Stocks have one; options don't. The instant you switch mode to

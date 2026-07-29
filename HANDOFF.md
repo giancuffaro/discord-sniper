@@ -791,3 +791,12 @@ The popup lost the whole filter block; what's left is: on/off, test/real,
 channels, callers, futures switch, keys, bridge url, save/export/copy.
 Still deliberate: live-mode trims refuse to sell real contracts (test mode
 sells 3); that flips when he says so, not by a setting.
+
+## Update — the chase limit is deleted too
+
+His quote of the setup_keys prompt, then "remove this". Gone from
+webull_options.buy() (the Refused branch), setup_keys.py (the question),
+settings.example.json (the key), and the parser's no-price warning was
+reworded since there's no chase limit to reference. If the room is in it,
+he's in it, whatever the ask has done since — the bid-sitting entry style is
+still what protects the price actually paid.

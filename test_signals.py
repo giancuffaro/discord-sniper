@@ -96,7 +96,7 @@ b = check("Brett (Admin) — 11:02 AM In NVDA $210C to July 29th. Stop below $20
           action="OPEN", fire=True, symbol="NVDA", side="CALLS", strike=210.0,
           expiry="7/29")
 ok(b.caller == "Brett", "the header names the caller, got %r" % b.caller)
-ok(b.warn, "no price was posted, so it should warn that the chase limit can't help")
+ok(b.warn, "no price was posted, so it should warn there is nothing to compare against")
 
 # The fill price arrives as its own message a minute later. Nothing to do.
 check("Brett (Admin) — 11:04 AM My avg is $3.05", fire=False, action=None)

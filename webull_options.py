@@ -255,7 +255,6 @@ class WebullOptions:
         # How far above the price they quoted you're willing to pay. Their fill
         # is not your fill; by the time you see the message the ask has often
         # moved. Past this, it skips rather than chasing.
-        self.max_chase_pct = float(w.get("max_chase_pct", 15))
         # Pay a hair over the ask so a marketable limit actually fills instead
         # of resting while the move happens without you.
         self.buffer_pct = float(w.get("marketable_buffer_pct", 2))
@@ -639,13 +638,11 @@ class WebullOptions:
             raise Refused("no live ask on %s, so there's nothing safe to price "
                           "against. Nothing was sent." % occ)
 
-        if their_price:
-            over = (ask - float(their_price)) / float(their_price) * 100
-            if over > self.max_chase_pct:
-                raise Refused("they got in at %.2f but the ask is already %.2f — "
-                              "that's %.0f%% worse and past your %.0f%% chase "
-                              "limit. Skipped on purpose."
-                              % (float(their_price), ask, over, self.max_chase_pct))
+        # The chase limit that used to sit here is DELETED, on his word:
+        # "no filters wanted. id like to follow everything to the tee as they
+        # do." If the room is in it, he's in it, whatever the ask has done
+        # since — the bid-sitting entry style is still what protects the
+        # price actually paid.
 
         limit = self.entry_limit(bid, ask)
         # Checked here rather than earlier because this is the first point the

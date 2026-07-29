@@ -143,15 +143,9 @@ def main():
         print("No key or secret yet, so there's nothing to log in with — the")
         print("account list is skipped. Run this again once you have them.")
 
-    print()
-    print("Chase limit: if their entry was 3.00 and the ask has already run to")
-    print("3.60, that's 20% worse than they got. Past this number it skips the")
-    print("trade instead of buying the top — it does NOT buy it late.")
-    chase = ask("Max chase %", str(wb.get("max_chase_pct", 15)))
-    try:
-        wb["max_chase_pct"] = float(str(chase).strip().rstrip("%"))
-    except ValueError:
-        wb["max_chase_pct"] = 15.0
+    # The chase-limit question that used to be here is deleted — "no filters
+    # wanted. id like to follow everything to the tee as they do." If the
+    # room is in it, he's in it.
 
     with open(PATH, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2)
@@ -166,7 +160,6 @@ def main():
     print("  secret   %s" % mask(wb.get("app_secret", "")))
     print("  account  %s" % (wb.get("account_id") or "(not set — it will pick "
                              "your options account on its own)"))
-    print("  chase    %g%%" % wb.get("max_chase_pct", 15))
     print()
     print("Real orders are OFF until you switch the extension to LIVE. That")
     print("switch is in the extension popup, not in here.")

@@ -59,8 +59,6 @@
       "stop_loss_pct": 20,
       "_fill_poll_seconds": "How often the bridge asks whether your bid filled, and how often the stop watchdog checks the bid. 5 is fine. Lower is faster and asks Webull for more quotes.",
       "fill_poll_seconds": 5,
-      "_max_chase_pct": "If the ask is more than this % above the price they got in at, skip rather than chase.",
-      "max_chase_pct": 15,
       "_keep_cash_buffer": "Dollars to never touch, in a live account. 0 spends everything available. 50 means an entry is skipped once it would leave you under $50.",
       "keep_cash_buffer": 0,
       "marketable_buffer_pct": 2

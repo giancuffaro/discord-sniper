@@ -448,10 +448,10 @@ function parseSignal(text, cfg) {
     // (The allowed-symbols refusal that used to sit here is gone — every
     // ticker trades. "no filters wanted.")
     if (s.limit === null) {
-      // No price in the message means nothing to measure the ask against, so
-      // the chase limit has nothing to do and it buys at whatever the ask is.
-      s.warn = "they didn't post a fill price on this one, so your chase limit " +
-               "can't protect you — it pays the ask.";
+      // No price in the message. Worth saying out loud rather than
+      // discovering on the fill.
+      s.warn = "they didn't post a fill price on this one — nothing to " +
+               "compare your fill against.";
     }
     s.fire = true;
     s.why = "entry: " + human(s);
@@ -471,7 +471,7 @@ function parseSignal(text, cfg) {
 
   // 7. "My avg is $3.05" — the fill price, posted a minute after the entry as
   //    its own message. Nothing to do with it: the order is long gone by then
-  //    and the chase check happens at entry or not at all. Named here only so
+  //    by then. Named here only so
   //    the log says something useful instead of "nothing in it".
   if (RE_AVG.test(low)) {
     s.matched = "their fill price";
