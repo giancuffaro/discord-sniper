@@ -333,6 +333,23 @@ function bridgeBaseFrom(url) {
   return (url || BRIDGE_DEFAULT).replace(/\/order\/?$/, "").replace(/\/$/, "");
 }
 
+/* Is New York trading right now? Used only to decide when a reload is safe.
+ * The bot is ON 24/7 by design, so "waits until you turn it OFF" would mean
+ * updates wait forever — instead they land the moment the session isn't on.
+ * A few minutes of margin either side so an update never blinks the reader
+ * right at the bell. */
+function marketOpenNow() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", hour12: false,
+    weekday: "short", hour: "2-digit", minute: "2-digit"
+  }).formatToParts(new Date());
+  const g = {};
+  for (const p of parts) g[p.type] = p.value;
+  if (g.weekday === "Sat" || g.weekday === "Sun") return false;
+  const mins = parseInt(g.hour, 10) * 60 + parseInt(g.minute, 10);
+  return mins >= 9 * 60 + 15 && mins <= 16 * 60 + 10;
+}
+
 async function checkBuild() {
   const c = await cfg();
   let stamp;
@@ -352,18 +369,18 @@ async function checkBuild() {
   }
   if (stamp === build_stamp) return;
 
-  if (c.armed || inFlight > 0) {
+  if (inFlight > 0 || (c.armed && marketOpenNow())) {
     const { build_waiting } = await chrome.storage.local.get("build_waiting");
     if (build_waiting !== stamp) {
       await chrome.storage.local.set({ build_waiting: stamp });
       await addLog({ kind: "update", why: "a new version is on this PC. It'll " +
-                     "load itself the moment you turn the bot OFF — not while " +
-                     "you're armed." });
+                     "load itself as soon as the market session is over (or " +
+                     "the moment you turn the bot OFF) — never mid-session." });
       try {
         chrome.notifications.create({
           type: "basic", iconUrl: "icon128.png",
           title: "Update ready",
-          message: "New version waiting. It'll apply when you disarm."
+          message: "New version waiting. It applies itself after the close."
         });
       } catch (e) { /* nicety */ }
     }

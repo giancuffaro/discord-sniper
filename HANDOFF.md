@@ -1071,3 +1071,34 @@ author prefix. (Both parsers behave identically on prefixed lines, so
 this is an export-format thing, not a live-parity thing.)
 
 Waiting on him: more Midas days (especially losing days) via Export chat.
+
+## Update — no more zips: GitHub pull is the update path now (v1.13.5)
+
+He asked to stop the unzip-over-the-folder routine. The machinery mostly
+existed (bridge /build fingerprint + extension self-reload + EXTRAS pull);
+three gaps closed:
+
+1. The self-reload waited for the bot to be OFF — but ON is 24/7 now, so
+   updates waited forever. checkBuild now reloads whenever the SESSION
+   isn't on (marketOpenNow(): Mon-Fri 09:15-16:10 ET is the hold window;
+   in-flight orders always hold). Log/notification wording updated.
+2. EXTRAS 7 refused to pull over local changes and pointed at option 6 —
+   which would have -X-ours'd his STALE zip contents over the repo. Now 7
+   fetches, and if the tree is dirty (zip residue) offers a one-question
+   "make this folder exactly match GitHub" = git reset --hard origin/main.
+   Keys/days/trades.log are gitignored so untouched. First run of 7 will
+   hit exactly this path — that's the transition off zips.
+3. A pull leaves the RUNNING bridge on old code, and a mid-day bridge
+   restart wipes the in-memory day (save_day would rewrite today's file
+   from an empty book — pre-existing hazard, still parked). So 7 now ends
+   by OFFERING a bridge restart (stop + _run_hidden.vbs) with a plain
+   warning to say N mid-session.
+
+The flow he was told: I push → he runs EXTRAS 7 (→ Y) → extension updates
+itself after the close, bridge restarts on his Y or next START HERE. The
+v1.13.5 zip is the LAST zip — it carries the new EXTRAS 7.
+
+Bat-editing gotcha (cost one retry): EXTRAS.bat is CRLF; read it with
+newline="" (keep \r\n literal) before splitting on \r\n, or the splice
+appends a duplicate :pull block at the end instead of replacing (batch
+goto jumps to the FIRST label — old behavior silently wins).

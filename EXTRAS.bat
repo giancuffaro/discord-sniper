@@ -328,13 +328,19 @@ if errorlevel 1 (
   goto back
 )
 
-git diff --quiet
-if errorlevel 1 goto dirty
-git diff --cached --quiet
-if errorlevel 1 goto dirty
-
 echo   Getting the latest...
 echo.
+git fetch origin main
+if errorlevel 1 (
+  echo   Couldn't reach GitHub. Check the internet and try again.
+  goto back
+)
+
+git diff --quiet
+if errorlevel 1 goto pulldirty
+git diff --cached --quiet
+if errorlevel 1 goto pulldirty
+
 git pull --ff-only origin main
 if errorlevel 1 (
   echo.
@@ -343,15 +349,47 @@ if errorlevel 1 (
   echo   question, and it sorts itself out.
   goto back
 )
-echo.
-echo   Up to date. If any extension files changed, Chrome picks it
-echo   up on its own within about half a minute - you don't touch it.
-goto back
+goto pulldone
 
-:dirty
-echo   You've got changes on this PC that aren't on GitHub yet, and
-echo   pulling would go over the top of them. Do 6 first, then come
-echo   back to 7.
+:pulldirty
+echo   The files on this PC don't match GitHub. That's normal if
+echo   updates used to arrive as a zip pasted over this folder -
+echo   from now on THIS is the update, no more zips. The cure is to
+echo   make this folder exactly match GitHub. Your keys, your day
+echo   records and your trade log are NOT touched - they live
+echo   outside GitHub on purpose.
+echo.
+set "MATCH="
+set /p MATCH="   Make this folder match GitHub now? (Y = yes): "
+if /i not "!MATCH!"=="Y" goto back
+git reset --hard origin/main
+if errorlevel 1 (
+  echo   That failed and nothing was changed. Send me a photo of
+  echo   this screen.
+  goto back
+)
+
+:pulldone
+echo.
+echo   Up to date. Chrome picks up the new extension on its own -
+echo   straight away while the market is closed, or the moment the
+echo   session ends if it's open right now. You don't touch Chrome.
+echo.
+echo   The BRIDGE only runs new code after a restart. Restarting it
+echo   mid-session starts today's scorekeeping fresh, so say N if
+echo   the market is open and trades are on.
+echo.
+set "RB="
+set /p RB="   Restart the bridge now? (Y = yes / N = later): "
+if /i not "!RB!"=="Y" (
+  echo   Leaving it. It picks up the new code next time it starts.
+  goto back
+)
+powershell -NoProfile -Command ^
+  "$p = Get-CimInstance Win32_Process -Filter \"Name='python.exe' OR Name='pythonw.exe'\" | Where-Object { $_.CommandLine -like '*bridge.py*' };" ^
+  "if ($p) { $p | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }; Write-Host '  Old bridge stopped.' } else { Write-Host '  Bridge was not running.' }"
+wscript.exe "%~dp0_run_hidden.vbs"
+echo   New bridge starting, hidden. Give it a few seconds.
 goto back
 
 
