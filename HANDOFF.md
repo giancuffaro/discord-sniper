@@ -921,3 +921,30 @@ resolved by trader when no ticker. Parity at 241 lines.
 He can supply corpus going back much further if needed. Still thin: Midas
 losing days. Whop re-export still pending (needs logged-in tab since the
 all_frames fix).
+
+## Update — first live test day graded; the reply bug, fixed two ways
+
+Day one of all-rooms testing: +$196, 7 up / 6 down, peak $7,040. His copied
+log only reached back to 10:25 (LOG_MAX was 120) — the visible five trades
+netted +$723, so the morning he couldn't see netted -$527, which matches the
+"day so far -$687" line at 10:38 exactly. Fixes: LOG_MAX is 400, and Copy
+log now leads with "THE DAY, TRADE BY TRADE" — every trade from the day
+table with entries, exits and WIN/LOSS/STILL OPEN verdicts — so analysis
+never depends on log reach again.
+
+HE found the day's real bug (screenshot): Mike REPLIED to his own morning
+AMD entry; the scribe relay line inside the reply re-read as a fresh entry
+and the bot bought AMD 470P again at 4.15 and then 6.10 (top tick, after
+the real trade closed +56%). Two independent fixes:
+1. content.js flags Discord replies ([id^="message-reply-context"]) and the
+   worker refuses to trade them (still captured, logged as "a REPLY quoting
+   an older message").
+2. The echo guard (guards.js + guards.py, tested): same trader + same
+   contract + same POSTED PRICE only enters once per day (st.echoes /
+   self.echoes). Genuine re-entries always carry a new price (GOOGL 4.45 →
+   3.50 → 3.20 all passed). Entries with no posted price are exempt —
+   Aristotle's bare re-entries can't be told apart.
+Also of note from the day, not a bug: the 3-of-5 trim ladder sells out
+before the room's big runners (last SPY sold +30%, Brett rode to +65%).
+That's the fixed-pattern trade-off, on record for when he wants to revisit
+sizing.

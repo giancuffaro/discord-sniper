@@ -80,6 +80,12 @@ function handle(li) {
   const text = textOf(li);
   if (!text) return;
 
+  // A reply quotes an older message, and Discord renders the quoted line
+  // inside the new one — which is how Mike replying to his own morning entry
+  // re-bought AMD at top tick. Discord marks replies with a stable id
+  // pattern, so they're flagged here and the worker refuses to trade them.
+  const isReply = !!li.querySelector('[id^="message-reply-context"]');
+
   chrome.runtime.sendMessage({
     type: "MESSAGE",
     text,
@@ -87,6 +93,7 @@ function handle(li) {
     channelId: channelId(),
     postedAt,
     history,
+    reply: isReply,
     url: location.href
   }).catch(() => { /* worker asleep mid-send; the next one wakes it */ });
 }

@@ -450,3 +450,31 @@ if fails:
         print("  -", f)
     sys.exit(1)
 print("All checks passed.")
+
+# --- the echo guard ----------------------------------------------------------
+# Mike replied to his own morning entry; the scribe line reposted word for
+# word and the bot re-bought AMD at top tick. Same trader + same contract +
+# same posted price runs ONCE a day. A real re-entry has a new price.
+eg = Guards({"guards": {"regular_hours_only": False, "cooldown_seconds": 0,
+                        "max_message_age_seconds": 0}}, here=NOSTOP)
+first_amd = sigmod.parse("@Mike (Admin) in AMD 7/31 470P @ 3.55 @everyone", cfg=CFG)
+ok(eg.check(first_amd, 1, 2, "Mike", msg_epoch=now())[0],
+   "the first AMD entry passes")
+eg.record(first_amd, "Mike")
+# trade closes...
+closed_amd = sigmod.parse("@Mike (Admin) all out of AMD @ 56% @everyone", cfg=CFG)
+eg.record(closed_amd, "Mike")
+echo = sigmod.parse("@Mike (Admin) in AMD 7/31 470P @ 3.55 @everyone", cfg=CFG)
+a, why = eg.check(echo, 1, 2, "Mike", msg_epoch=now())
+ok(not a and "already ran today" in why,
+   "the word-for-word repost must be refused: %s" % why)
+fresh = sigmod.parse("@Mike (Admin) in AMD 7/31 470P @ 2.90 @everyone", cfg=CFG)
+ok(eg.check(fresh, 1, 2, "Mike", msg_epoch=now())[0],
+   "a genuine re-entry at a NEW price still passes")
+
+if fails:
+    print("FAILED %d echo-guard check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("A repost is not a trade: the same call at the same price runs once.")

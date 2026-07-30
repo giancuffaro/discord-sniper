@@ -10,7 +10,7 @@
 importScripts("parser.js", "guards.js");
 
 const BRIDGE_DEFAULT = "http://127.0.0.1:8787/order";
-const LOG_MAX = 120;
+const LOG_MAX = 400;   // a full trading day, not just the last hour
 
 /* Rooms that are being RECORDED, never traded. Aristotle's and Midas post the
  * same kind of calls but with messier wording, and the parser hasn't been
@@ -458,6 +458,22 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // is where trading would be switched on — deliberately one line, in one
     // place.
     if (String(msg.platform || "") === "whop") {
+      reply({ ok: true });
+      return;
+    }
+
+    // A reply is a quote of something older — the words are a repeat, not a
+    // fresh call. Captured for the record, never traded. This is the fix for
+    // Mike replying to his own morning entry and the bot re-buying AMD at
+    // top tick off the quoted line.
+    if (msg.reply) {
+      const rv = parseSignal(msg.text, c);
+      if (rv.action && rv.fire !== false || rv.action === "OPEN") {
+        await addLog({ kind: "ignored",
+                       why: "that's a REPLY quoting an older message — not a " +
+                            "fresh call, so nothing was sent",
+                       text: msg.text, author: msg.author });
+      }
       reply({ ok: true });
       return;
     }

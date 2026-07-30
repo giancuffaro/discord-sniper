@@ -33,6 +33,14 @@ def _key_who(k):
     return str(k).split("|")[0]
 
 
+def _echo_key(sig, who):
+    """Trader + contract + posted price. A scribe repost or a reply-quote is
+    word-for-word the same call; a real re-entry comes at a new price."""
+    return "|".join(str(x) for x in
+                    (str(who).lower(), sig.symbol, sig.strike, sig.expiry,
+                     sig.side, sig.limit))
+
+
 class Guards:
     def __init__(self, cfg, here="."):
         g = cfg.get("guards", {})
@@ -135,6 +143,13 @@ class Guards:
         if sig.action == "OPEN" and already:
             return False, ("you're already in %s from their earlier call — "
                            "this one would double you up" % sig.symbol)
+
+        # The echo guard: the same exact entry only runs once a day. Only
+        # with a posted price — bare re-entries can't be told apart.
+        if sig.action == "OPEN" and sig.limit is not None and                 _echo_key(sig, who) in getattr(self, "echoes", {}):
+            return False, ("that exact call (same contract, same price) "
+                           "already ran today — reads like a repost or a "
+                           "reply quote, not a new trade")
 
         if sig.action in ("CLOSE", "TRIM") and \
                 not self.open_pos.get(key_of(who, sig.symbol)) and \
@@ -387,6 +402,10 @@ class Guards:
         self._recent[sig.key()] = now
         pk = key_of(who, sig.symbol)
         if sig.action == "OPEN":
+            if sig.limit is not None:
+                if not hasattr(self, "echoes"):
+                    self.echoes = {}
+                self.echoes[_echo_key(sig, who)] = now
             # The author is in the KEY now, so a later symbol-less trim from
             # the same admin pins to the position they actually opened — and
             # two admins can be in the same ticker without colliding.

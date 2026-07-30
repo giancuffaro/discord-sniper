@@ -502,7 +502,8 @@ $("save").onclick = async () => {
  * search URL. This puts it on the clipboard as plain text, oldest first so it
  * reads like a morning rather than backwards. */
 $("copylog").onclick = async () => {
-  const { log, wallet } = await chrome.storage.local.get(["log", "wallet"]);
+  const { log, wallet, day_table } =
+    await chrome.storage.local.get(["log", "wallet", "day_table"]);
   const head = { sent: "BID IN", fired: "FILLED", failed: "FAILED",
                  skipped: "SKIPPED", stopped: "STOPPED OUT",
                  ignored: "not a trade", update: "UPDATED" };
@@ -523,6 +524,24 @@ $("copylog").onclick = async () => {
                   wallet.start.toFixed(0) + ", " + wallet.wins + " up / " +
                   wallet.losses + " down, banked $" +
                   wallet.realised.toFixed(0) + ")", "");
+  }
+  // The trade list up top — every trade of the day with its verdict, so the
+  // analysis never depends on how far back the log happens to reach.
+  const rows = (day_table || []).map(r => {
+    const ins = (r.entries || []).map(e => e.qty + "@" + Number(e.price).toFixed(2)).join(" +");
+    const outs = (r.exits || []).map(e => e.qty + "@" + Number(e.price).toFixed(2)).join(", ");
+    const verdict = r.all_out
+      ? (r.state === "nofill" ? "NO FILL"
+         : (r.pl >= 0 ? "WIN +$" + Math.round(r.pl) : "LOSS -$" + Math.abs(Math.round(r.pl))))
+      : "STILL OPEN (" + r.qty + " held)";
+    return [r.opened ? clock(r.opened * 1000) : "?",
+            (r.who || "?") + " " + contractStr(r),
+            ins ? "in " + ins : "no fill",
+            outs ? "out " + outs : "", verdict].filter(Boolean).join("  |  ");
+  });
+  if (rows.length) {
+    lines.unshift("");
+    lines.unshift.apply(lines, ["THE DAY, TRADE BY TRADE:"].concat(rows, [""]));
   }
   const text = lines.join("\n") || "nothing logged yet";
   const btn = $("copylog");

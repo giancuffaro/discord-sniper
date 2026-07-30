@@ -79,6 +79,16 @@ async function guardState() {
            positions: migratePositions((st && st.positions) || {}) };
 }
 
+/* One line per traded ENTRY, for the whole day: trader + contract + posted
+ * price. A scribe repost or a reply-quote is word-for-word the same call,
+ * and "already in" only protects while you're holding — this is what stops
+ * the echo re-buying AMD at top tick an hour after the trade closed. A real
+ * re-entry always comes at a different posted price, so it passes. */
+function echoKey(sig, who) {
+  return [String(who || "").toLowerCase(), sig.symbol, sig.strike, sig.expiry,
+          sig.side, sig.limit].join("|");
+}
+
 async function saveGuardState(s) {
   await chrome.storage.local.set({ guardState: s });
 }
@@ -144,6 +154,17 @@ async function guardCheck(sig, ctx, cfg) {
   if (sig.action === "OPEN" && already)
     return { allowed: false, reason: "you're already in " + sig.symbol +
       " from their earlier call — this one would double you up" };
+
+  // The echo guard. Only with a posted price — re-entries with no price
+  // (Aristotle's bare contracts) can't be told apart from each other, and
+  // blocking those would block his real second run at a name.
+  if (sig.action === "OPEN" && sig.limit !== null && sig.limit !== undefined) {
+    st.echoes = st.echoes || {};
+    if (st.echoes[echoKey(sig, who)])
+      return { allowed: false, reason: "that exact call (same contract, same " +
+        "price) already ran today — reads like a repost or a reply quote, " +
+        "not a new trade" };
+  }
 
   if ((sig.action === "CLOSE" || sig.action === "TRIM") &&
       !st.positions[posKey(who, sig.symbol)] &&
@@ -403,6 +424,11 @@ async function guardRecord(sig, cfg, author) {
 
   const k = posKey(who, sig.symbol);
   if (sig.action === "OPEN") {
+    // Written down for the echo guard: this exact call has now run today.
+    if (sig.limit !== null && sig.limit !== undefined) {
+      st.echoes = st.echoes || {};
+      st.echoes[echoKey(sig, who)] = now;
+    }
     // The author is in the KEY now, so a later symbol-less trim from the same
     // admin pins to the position they actually opened — and two admins can be
     // in the same ticker without stepping on each other's bookkeeping.
