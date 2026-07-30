@@ -26,7 +26,6 @@ echo      1   Stop the bridge
 echo      2   Show me what the bridge has been doing
 echo      3   Check the keys actually work      ^(places no orders^)
 echo      4   Test how it reads the room's messages
-echo      5   The numbers  -  trades a day, averaging in
 echo      6   Send my changes up to GitHub
 echo      7   Get the latest down from GitHub
 echo      8   Turn the 9:25 morning alarm off
@@ -42,7 +41,6 @@ if "!PICK!"=="1"  goto stopbridge
 if "!PICK!"=="2"  goto showlog
 if "!PICK!"=="3"  goto checkkeys
 if "!PICK!"=="4"  goto readtest
-if "!PICK!"=="5"  goto numbers
 if "!PICK!"=="6"  goto push
 if "!PICK!"=="7"  goto pull
 if "!PICK!"=="8"  goto alarmoff
@@ -148,19 +146,6 @@ python drill.py "!XF!" !ROOMPICK!
 if exist "drill-report.txt" start "" notepad "drill-report.txt"
 goto back
 
-
-rem ============================================================
-rem  5 - the numbers
-rem ============================================================
-:numbers
-cls
-echo.
-echo   Nothing here can place a trade, and nothing here goes live.
-echo   It only changes the numbers it trades by.
-echo.
-call :needpython || goto back
-python settings_quick.py
-goto back
 
 
 rem ============================================================

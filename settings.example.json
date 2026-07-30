@@ -15,7 +15,7 @@
                       "TSLA", "META", "MSFT", "AMZN", "GOOGL"],
   "extra_veto_words": [],
 
-  "_gone": "trim_action, close_at_trim_pct, max_qty, max_trades_per_day, average_in and max_adds_per_position used to live here. Deleted, not defaulted - 'no filters wanted. id like to follow everything to the tee as they do.' Trims sell, adds follow, every call counts.",
+  "_gone": "trim_action, close_at_trim_pct, max_qty, max_trades_per_day, average_in, max_adds_per_position and dry_run_buying_power used to live here. Deleted, not defaulted - 'no filters wanted. id like to follow everything to the tee as they do.' Trims sell, adds follow, every call counts, and the test wallet is unlimited: it reports the most money tied up at once instead of refusing anything.",
 
   "guards": {
     "cooldown_seconds": 5,
@@ -33,9 +33,6 @@
     "webhook_url": "",
     "headers": {},
     "timeout_seconds": 4,
-
-    "_dry_run_buying_power": "Pretend account size, dollars, used ONLY in dry run so you can see which entries you couldn't have afforded. One contract is 100 shares, so a $2.80 call costs $280. Set it to what is actually in the account. 0 or null = don't check in dry run. Live mode ignores this and asks Webull for the real number.",
-    "dry_run_buying_power": 4000,
 
     "_futures_enabled": "THE futures switch. false = his NQ/ES calls are read, priced and logged, and nothing ever fires. true = they trade: pretend money in dry run, ONE real contract at a time in live. Leave false until the Webull futures data subscription is live. The popup's Settings flips this for you.",
     "futures_enabled": false,

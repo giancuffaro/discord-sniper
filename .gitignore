@@ -16,3 +16,7 @@ bridge.log
 # The day files the bridge writes for backtesting - one per trading day.
 # They're his trading record, not code, so they stay on the PC.
 days/
+
+# Working files the drill and the chat export leave in the folder.
+drill-report.txt
+signal-room-chat.txt

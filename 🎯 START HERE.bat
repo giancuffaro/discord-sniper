@@ -70,25 +70,35 @@ if not exist settings.json (
   copy settings.example.json settings.json >nul 2>&1
 )
 
-rem ---- [2/5] the latest build, quietly -------------------------
-rem  Best effort only. No internet, or changes sitting on this PC?
-rem  Fine - today runs on what's already here, and nothing is lost.
-set "UPDATED=skipped"
+rem ---- [2/5] the latest build, all by itself -------------------
+rem  This folder MIRRORS GitHub now - no more zips, no menu picks.
+rem  Every morning it makes itself exactly match what's up there,
+rem  which also clears any residue from the old unzip-over-the-top
+rem  days. Keys, day records and logs live outside git - untouched.
+rem  No internet? Fine - today runs on what's already here.
+set "UPDATED=0"
 where git >nul 2>&1
 if errorlevel 1 goto pastpull
 git rev-parse --is-inside-work-tree >nul 2>&1
 if errorlevel 1 goto pastpull
-git diff --quiet 2>nul
+set "OLDREV="
+for /f %%r in ('git rev-parse HEAD 2^>nul') do set "OLDREV=%%r"
+git fetch origin main >nul 2>&1
 if errorlevel 1 goto pastpull
-git diff --cached --quiet 2>nul
-if errorlevel 1 goto pastpull
-git pull --ff-only origin main >nul 2>&1
-if not errorlevel 1 set "UPDATED=done"
+git reset --hard origin/main >nul 2>&1
+set "NEWREV="
+for /f %%r in ('git rev-parse HEAD 2^>nul') do set "NEWREV=%%r"
+if not "!OLDREV!"=="!NEWREV!" set "UPDATED=1"
+rem  Leftovers from before-git days and retired versions - gone
+rem  quietly if any are still lying around. Nothing current is
+rem  named any of these.
+for %%f in (BRIDGE.bat KEYS.bat RUN.bat SETUP.bat TEST.bat execute.py listener.py webull_trade_sdk.log settings_quick.py "* UPDATE.bat" "* PUSH CHANGES.bat" "* FIRST PUSH TO GITHUB.bat" "* SET UP ON THIS PC.bat" "* FIX THE PUSH.bat") do del %%f >nul 2>&1
 :pastpull
-if "!UPDATED!"=="done" (
-  echo   [2/5] Checked GitHub for a newer build - you're current.
+if "!UPDATED!"=="1" (
+  echo   [2/5] A newer build just came down from GitHub.
 ) else (
-  echo   [2/5] Couldn't check GitHub just now - running what's here.
+  echo   [2/5] Checked GitHub - you're current. ^(Or offline, and
+  echo         today runs on what's already here.^)
 )
 
 rem ---- [3/5] the 9:25 alarm, set once, no questions ------------
@@ -119,7 +129,14 @@ set RUNNING=0
 powershell -NoProfile -Command "try { $null = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/build' -TimeoutSec 2 -UseBasicParsing; exit 0 } catch { exit 1 }" >nul 2>&1
 if not errorlevel 1 set RUNNING=1
 
-if "!RUNNING!"=="1" (
+set "NEEDSTART=0"
+if "!RUNNING!"=="0" set "NEEDSTART=1"
+if "!RUNNING!"=="1" if "!UPDATED!"=="1" (
+  echo   [4/5] New build - moving the bridge onto it...
+  powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='python.exe' OR Name='pythonw.exe'\" | Where-Object { $_.CommandLine -like '*bridge.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
+  set "NEEDSTART=1"
+)
+if "!NEEDSTART!"=="0" (
   echo   [4/5] The bridge is already running. Leaving it alone.
 ) else (
   echo   [4/5] Starting the bridge, hidden...
@@ -173,10 +190,11 @@ if "!HASKEYS!"=="0" (
   echo   ============================================================
   echo.
 )
-echo     Ready. The two switches are yours and only yours:
-echo       - the bot is OFF until you turn it ON      ^(top button^)
-echo       - it's in TEST MODE until you switch it    ^(bottom button^)
-echo     Both live in the extension popup. TEST MODE buys nothing.
+echo     Ready. It's ON and reading, 24/7 - the market-hours
+echo     guard does the timekeeping. The one switch that's yours:
+echo       - TEST or REAL                             ^(bottom button^)
+echo     It stays in TEST until YOU flip it. TEST buys nothing.
+echo     OFF up top is the emergency brake.
 echo.
 echo     This window closes itself. You're done here.
 echo   ============================================================

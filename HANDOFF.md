@@ -1110,3 +1110,34 @@ restart automatically"): the Restart-the-bridge-now? question is gone from
 option 7 — pull ends by stopping any running bridge and relaunching it
 hidden, automatically. The mid-session caveat lives on as a comment in the
 bat and in the wording that updates belong in the evening.
+
+## Update — updates are fully automatic now; the dead files are gone (v1.13.6)
+
+"i also dont want to hit extra, so just make that automatic aswell" — so
+START HERE's step [2/5] no longer politely skips when the tree is dirty:
+it fetches and `git reset --hard origin/main` every run. The folder
+MIRRORS GitHub. If HEAD moved, UPDATED=1 and step [4/5] stops the running
+bridge and relaunches it onto the new code (it already restarts the
+extension via the /build fingerprint). So the whole update path is now:
+I push → his 9:25 alarm (or any double-click of START HERE) does the rest.
+EXTRAS 7 still exists for a mid-day manual pull; the automatic path is the
+morning run. Consequence, deliberate: any local edits on his PC are wiped
+daily — he doesn't edit code, and keys/days/logs are gitignored.
+
+"clean all the files that are trash now" — deleted from the repo:
+settings_quick.py (every number it tuned — buying power caps, trades/day,
+max_qty, averaging switches — is a deleted filter; the file only wrote
+dead keys) plus its EXTRAS option 5 (menu now has a deliberate gap at 5 —
+renumbering would break "Do 6 first" references and his muscle memory).
+dry_run_buying_power removed from settings.example.json (unlimited book).
+README updated. And START HERE's update step quietly `del`s the pre-git
+leftovers if they're still on his disk: BRIDGE.bat KEYS.bat RUN.bat
+SETUP.bat TEST.bat execute.py listener.py webull_trade_sdk.log
+settings_quick.py and the five old emoji bats (matched as "* UPDATE.bat"
+etc. — cmd can't type emoji, wildcards can). .gitignore grew
+drill-report.txt and signal-room-chat.txt so the drill's working files
+never look like "changes".
+
+Closing text of START HERE finally caught up with reality: it said "the
+bot is OFF until you turn it ON", which hasn't been true since ON-24/7.
+Now: ON and reading, TEST until HE flips it, OFF is the emergency brake.
