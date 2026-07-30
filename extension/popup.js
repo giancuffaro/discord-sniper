@@ -572,7 +572,8 @@ $("export").onclick = async () => {
   // tag is what keeps their three dialects apart when the parser gets tuned.
   const ROOMS = { "829754942817828884": "main",
                   "987515353670221834": "aristotle",
-                  "1144369893760831489": "midas" };
+                  "1144369893760831489": "midas",
+                  "1433933203302776852": "aristotle-small" };
   // Whop rooms tag themselves "whop:/their/path" — shown as-is, so two
   // different Whop rooms stay two different lexicons in the file.
   // Sorted by when the message was POSTED, not when it was scraped —

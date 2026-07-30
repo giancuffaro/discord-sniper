@@ -1141,3 +1141,20 @@ never look like "changes".
 Closing text of START HERE finally caught up with reality: it said "the
 bot is OFF until you turn it ON", which hasn't been true since ON-24/7.
 Now: ON and reading, TEST until HE flips it, OFF is the emergency brake.
+
+## Update — fourth room: Aristotle's small-account challenge (v1.13.7)
+
+Channel 1433933203302776852, "its aristotles but its a small account
+challenge". Wired the same as the others: baked into channel_ids
+(testing, like everyone — nothing real until HE flips it), fourth tab in
+START HERE (same server id), exports tagged "aristotle-small", drill
+prompt mentions it. Same grammar the reader already knows from his main
+room.
+
+Known edge, told to him: positions are keyed trader|SYMBOL, so if
+Aristotle runs the SAME ticker in both his rooms at once, the bot sees
+one trade — a bare trim from either room resolves to his newest position.
+Refine only if it actually happens.
+
+First update delivered WITHOUT a zip — it rides down on his next START
+HERE (or EXTRAS 7).

@@ -141,7 +141,7 @@ set "XF="
 set /p XF="   Export file (Enter = Downloads\signal-room-chat.txt): "
 if "!XF!"=="" set "XF=%USERPROFILE%\Downloads\signal-room-chat.txt"
 set "ROOMPICK="
-set /p ROOMPICK="   One room only? (Enter = all, or: main / aristotle / midas): "
+set /p ROOMPICK="   One room only? (Enter = all, or: main / aristotle / midas / aristotle-small): "
 python drill.py "!XF!" !ROOMPICK!
 if exist "drill-report.txt" start "" notepad "drill-report.txt"
 goto back

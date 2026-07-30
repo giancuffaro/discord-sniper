@@ -61,7 +61,10 @@ async function cfg() {
     [].concat((settings || {}).channel_ids || [],
               ["829754942817828884",     // main room
                "987515353670221834",     // Aristotle — testing, his word
-               "1144369893760831489"])   // Midas — testing, his word
+               "1144369893760831489",    // Midas — testing, his word
+               "1433933203302776852"])   // Aristotle's small-account
+                                         // challenge — same grammar the
+                                         // reader already knows, testing
       .map(String)));
   return c;
 }

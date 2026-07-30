@@ -27,12 +27,14 @@ set "SERVER_ID=525113944239767562"
 set "CHANNEL_ID=829754942817828884"
 set "DISCORD_URL=https://discord.com/channels/%SERVER_ID%/%CHANNEL_ID%"
 
-rem  The two extra rooms. These open in their own tabs and get RECORDED
-rem  only - the extension is hard-wired to never trade off them until
-rem  their wording has been learned. Capture a few days, Export chat,
-rem  and the parser gets tuned on their real sentences.
+rem  The extra rooms. Each opens in its own tab and trades in TEST
+rem  like the main room - pretend money for everyone until HE flips
+rem  REAL in the popup. Their wording keeps getting tuned from the
+rem  Export chat captures.
 set "ARISTOTLE_URL=https://discord.com/channels/%SERVER_ID%/987515353670221834"
 set "MIDAS_URL=https://discord.com/channels/%SERVER_ID%/1144369893760831489"
+rem  Aristotle again, but his small-account challenge room.
+set "ARISTOTLE_SMALL_URL=https://discord.com/channels/%SERVER_ID%/1433933203302776852"
 
 set INTERACTIVE=1
 if /i "%~1"=="morning" set INTERACTIVE=0
@@ -158,18 +160,19 @@ if "!NEEDSTART!"=="0" (
 )
 
 rem ---- [5/5] Chrome, all three rooms ---------------------------
-echo   [5/5] Opening your three rooms in Chrome - main trades,
-echo         Aristotle's and Midas are recorded only...
+echo   [5/5] Opening your four rooms in Chrome - all of them
+echo         testing with pretend money until YOU flip REAL...
 set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
 if defined CHROME (
-  start "" "!CHROME!" "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!"
+  start "" "!CHROME!" "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!"
 ) else (
   start "" "!DISCORD_URL!"
   start "" "!ARISTOTLE_URL!"
   start "" "!MIDAS_URL!"
+  start "" "!ARISTOTLE_SMALL_URL!"
   echo         Couldn't find Chrome in the usual folders - opened your
   echo         default browser. The extension only runs in Chrome.
 )
