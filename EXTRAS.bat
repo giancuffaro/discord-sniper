@@ -375,16 +375,11 @@ echo   Up to date. Chrome picks up the new extension on its own -
 echo   straight away while the market is closed, or the moment the
 echo   session ends if it's open right now. You don't touch Chrome.
 echo.
-echo   The BRIDGE only runs new code after a restart. Restarting it
-echo   mid-session starts today's scorekeeping fresh, so say N if
-echo   the market is open and trades are on.
-echo.
-set "RB="
-set /p RB="   Restart the bridge now? (Y = yes / N = later): "
-if /i not "!RB!"=="Y" (
-  echo   Leaving it. It picks up the new code next time it starts.
-  goto back
-)
+rem  No question here on his word - he updates after hours, so the
+rem  bridge just restarts onto the new code by itself. (A mid-session
+rem  restart would start today's scorekeeping fresh, which is why
+rem  updates belong in the evening.)
+echo   Restarting the bridge onto the new code...
 powershell -NoProfile -Command ^
   "$p = Get-CimInstance Win32_Process -Filter \"Name='python.exe' OR Name='pythonw.exe'\" | Where-Object { $_.CommandLine -like '*bridge.py*' };" ^
   "if ($p) { $p | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }; Write-Host '  Old bridge stopped.' } else { Write-Host '  Bridge was not running.' }"

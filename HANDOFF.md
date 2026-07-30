@@ -1102,3 +1102,11 @@ Bat-editing gotcha (cost one retry): EXTRAS.bat is CRLF; read it with
 newline="" (keep \r\n literal) before splitting on \r\n, or the splice
 appends a duplicate :pull block at the end instead of replacing (batch
 goto jumps to the FIRST label — old behavior silently wins).
+
+## Update — EXTRAS 7 restarts the bridge without asking
+
+On his word ("I'm not gonna update this during market hours... make it
+restart automatically"): the Restart-the-bridge-now? question is gone from
+option 7 — pull ends by stopping any running bridge and relaunching it
+hidden, automatically. The mid-session caveat lives on as a comment in the
+bat and in the wording that updates belong in the evening.
