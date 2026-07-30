@@ -948,3 +948,33 @@ Also of note from the day, not a bug: the 3-of-5 trim ladder sells out
 before the room's big runners (last SPY sold +30%, Brett rode to +65%).
 That's the fixed-pattern trade-off, on record for when he wants to revisit
 sizing.
+
+## Update — day one autopsy answered; trims now sell 1; popup text copyable
+
+His four questions after day one, answered and shipped (v1.13.1):
+
+WITHOUT Mike's reply error: AMD#2 (bought 4.15 off the reply, sold +$80)
+comes out of the ledger — realized goes +$196 → about +$116, record 6 up /
+6 down. AMD#3 (5 @ 6.10 top tick, $3,050) would never have existed; that's
+the STILL OPEN position dragging the day. The $7,040 peak is UNCHANGED —
+computed to the dollar as SPY $2,715 + AMD#1 $1,675 + META $2,650 held
+simultaneously ~10:31, which is BEFORE either echo buy. The peak was
+legitimate money-in-use.
+
+TRIM LADDER: on his word ("maybe in every 'trim' we can sell 1 contract
+instead of 3") DRY_TRIM_QTY and DRY_FUT_TRIM_QTY are 1, and the test-mode
+trim override in background.js sends qty 1. Entries/adds stay 5. So a
+5-contract trade now survives four trims instead of one and rides runners
+closer to the caller's full exit — the day-one evidence was the last SPY
+selling +30% while Brett rode +65%.
+
+POPUP COPY/PASTE: body { user-select: text } (buttons excluded) — every
+number, log line and table row in the popup can be selected and copied.
+The popup only closes when you click OUTSIDE it, so dragging a selection
+inside is safe.
+
+WHERE THE REST OF THE LOG LIVES (told to him): trades.log in the
+discord-sniper folder is the full play-by-play (Notepad opens it);
+days\YYYY-MM-DD.json is the structured per-trade table the bridge rewrites
+on every event; the popup Trades table shows today live and the dropdown
+loads any saved day; Copy log now leads with the full-day trade table.

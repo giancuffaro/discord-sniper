@@ -551,8 +551,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       }
       if (sig.fire) {
         sig.action = "TRIM";
-        sig.qty = 3;
-        sig.why = "their trim — test mode sells 3 and holds the rest" +
+        sig.qty = 1;    // one per trim — keeps runners on for the big move
+        sig.why = "their trim — selling 1, holding the rest" +
                   (sig.pct != null ? " (they're up " + sig.pct + "%)" : "");
       }
     }

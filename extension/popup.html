@@ -6,7 +6,11 @@
   :root { color-scheme: dark; }
   body { width: 360px; margin: 0; padding: 12px 14px 16px;
          font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
-         background: #0b0d12; color: #e6e8ee; }
+         background: #0b0d12; color: #e6e8ee;
+         /* Everything is copyable. The popup stays open while you drag a
+            selection inside it — it only closes when you click OUTSIDE. */
+         user-select: text; -webkit-user-select: text; cursor: auto; }
+  button { user-select: none; -webkit-user-select: none; }
   h1 { font-size: 14px; margin: 0 0 10px; letter-spacing: .08em;
        text-transform: uppercase; color: #f5b342; }
   .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }

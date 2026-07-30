@@ -53,12 +53,14 @@ HARD_MAX_QTY_DRY = 10
 HARD_MAX_SELL_QTY = 20
 
 # The test-mode sizing pattern, which is his, not the room's: every entry is
-# taken as 5 contracts, every add as 5 more, every trim sells 3, and "all out"
-# sells whatever is left. Fixed numbers on purpose — the day is only
-# comparable to yesterday if the sizing never moves.
+# taken as 5 contracts, every add as 5 more, every trim sells ONE, and "all
+# out" sells whatever is left. Trims moved from 3 to 1 on his word ("maybe in
+# every trim we can sell 1 contract instead of 3") after day one showed the
+# 3-lot ladder selling out before the room's big runners — the last SPY went
+# at +30% while Brett rode to +65%. One per trim keeps runners on.
 DRY_ENTRY_QTY = 5
 DRY_ADD_QTY = 5
-DRY_TRIM_QTY = 3
+DRY_TRIM_QTY = 1
 
 # Futures sizing runs smaller on purpose: one NQ point is $20 and Felony's
 # trades swing hundreds of points, so 3 contracts trimmed one at a time
