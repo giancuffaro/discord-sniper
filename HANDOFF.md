@@ -1010,3 +1010,36 @@ timestamps; now they're shown.
 
 The 13-trade money list in wallet.trades was complete all along — that plus
 trades.log is the full record; only the table rows went missing. v1.13.2.
+
+## Update — day one graded for the NEW rooms (he pasted the Copy log)
+
+He asked what worked and what didn't, Aristotle and Midas only.
+
+ARISTOTLE: not one line in the whole log (10:25-12:53). Either the tab
+wasn't open/logged in, or he posted nothing in that window. Export chat
+will settle it — waiting on him.
+
+MIDAS: the tab WAS recording, and his lines exposed three things, all
+fixed in v1.13.3:
+1. MISSED HIS ONLY REAL TRADE. He posted Loaded before 10:20 (before log
+   reach) and "Filled at 1.46" at 11:56 — 97 minutes of resting his bid,
+   his style. The 30-minute loading window refused it; he later posted
+   "Trimmed at 17%". FIX: loading window default 1800s → 14400s (4h) in
+   guards.js + guards.py; the stale-fill tests in test_signals.py and
+   test_resolve.js now assert 2h fires and 5h+ refuses.
+2. "Not adding to this position" PARSED AS AN ADD (RE_ADD saw "adding",
+   never looked left). Only stayed safe because we held no Midas position.
+   FIX: negation vetoes "not adding" / "won't add" / "wont add" /
+   "no adds" in VETO_WORDS, both parsers.
+3. His planning chatter — "Some trim targets are 737.70 and lower",
+   "Or from 15% profit" — was refused only because bare trims need a
+   resolvable position; holding his trade, the second one would have SOLD.
+   FIX: "trim target" veto + a from-N% rule (a percentage with "from" in
+   front is a level, not a sale), both parsers. Corpus now 244 lines,
+   parity green.
+
+Also noted in his log, not new: every message appears twice (two BID IN /
+SKIPPED "already acted 0s ago" pairs) — the dupe guard held every time, no
+double trades; likely the same channel open in two tabs at once. Told him
+to keep one tab per channel. The reply-echo AMD entries at 10:45/11:01
+fired in this log because he was still on the pre-fix build.

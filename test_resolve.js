@@ -104,14 +104,22 @@ function ok(cond, label) { if (!cond) { bad++; console.log("  - " + label); } }
   ok(!s.fire && /can't find the LOADING call/.test(s.why),
      "a fill price with no loading call must not fire: " + s.why);
 
-  // They loaded before lunch and posted a price at the close. Not the same
-  // trade, so nothing is sent.
+  // A patient fill still counts. Day one live: Midas loaded before 10:20 and
+  // posted "Filled at 1.46" at 11:56 — the old 30-minute window threw away
+  // his only real trade of the day. Four hours now.
   store = {};
   await G.rememberLoading(loading, "Unraveller");
   store.guardState.loaded["unraveller"].ts -= 7200 * 1000;
   s = await G.resolveLoaded(fill(), "Unraveller", LCFG);
+  ok(s.fire,
+     "a fill two hours after the loading call is Midas being patient — it " +
+     "must fire: " + s.why);
+
+  // But not FOREVER: past four hours it's yesterday's plan, not this fill.
+  store.guardState.loaded["unraveller"].ts -= 12800 * 1000;
+  s = await G.resolveLoaded(fill(), "Unraveller", LCFG);
   ok(!s.fire && /too long ago/.test(s.why),
-     "a fill two hours after the loading call must not fire: " + s.why);
+     "a fill five-plus hours after the loading call must not fire: " + s.why);
 
   // "Loading does not mean enter" names no contract, so there is nothing to
   // pin a later price to.

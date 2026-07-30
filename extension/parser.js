@@ -145,7 +145,12 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   "yesterday", "nice day", "conviction", "wish i",
   // "71.7% chance of no cut" on FOMC day — a percentage that is about the
   // Fed, not about a trade. Nearly parsed as a trim.
-  "chance of", "probability", "odds of", "supposed to"];
+  "chance of", "probability", "odds of", "supposed to",
+  // Midas planning out loud, day one live: "Not adding to this position"
+  // would have BOUGHT five more if we'd been holding his trade — RE_ADD saw
+  // "adding" and never looked left for the "Not". And "Some trim targets
+  // are 737.70 and lower" is a map of where he MIGHT sell, not a sale.
+  "not adding", "won't add", "wont add", "no adds", "trim target"];
 
 const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
@@ -325,6 +330,15 @@ function parseSignal(text, cfg) {
   //    call, and reading it as a trim would sell on a summary.
   if ((t.match(/-?\d{1,3}(?:\.\d+)?\s*%/g) || []).length >= 3) {
     s.why = "three or more percentages in one line — that's a recap, not a call";
+    return s;
+  }
+
+  // "Or from 15% profit" — Midas describing the level he'd trim FROM. The
+  // "from" in front of the percentage is the tell: it's a condition for
+  // later, not something he just did. Read as a trim it would have sold.
+  if (/\bfrom\s+\d{1,3}(?:\.\d+)?\s*%/.test(low)) {
+    s.why = "a percentage with \"from\" in front of it is a level they're " +
+            "planning around, not a sale";
     return s;
   }
 

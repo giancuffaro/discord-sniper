@@ -356,7 +356,13 @@ async function resolveLoaded(sig, author, cfg) {
     return sig;
   }
   const win = parseFloat((cfg.guards || {}).loading_window_seconds);
-  const windowS = isNaN(win) ? 1800 : win;
+  // Four hours, not thirty minutes. Midas rests his bid at his price and
+  // waits: day one live he posted Loaded before 10:20 and "Filled at 1.46"
+  // at 11:56, and the 30-minute window threw away his only real trade of
+  // the day (he trimmed it +17% an hour later). The Loaded call names the
+  // full contract, so a late fill is still unambiguous; four hours spans a
+  // morning of waiting without reaching back into yesterday.
+  const windowS = isNaN(win) ? 14400 : win;
   const age = (Date.now() - cand.ts) / 1000;
   if (windowS && age > windowS) {
     sig.why = "they posted a fill price on its own, but the last LOADING call " +

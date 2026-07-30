@@ -76,7 +76,10 @@ class Guards:
         # until the second one turns up. Per author, because both admins load
         # different things within minutes of each other.
         self.loaded = {}        # author (lowercased) -> {symbol, side, ...}
-        self.loaded_window_s = float(g.get("loading_window_seconds", 1800))
+        # Four hours — Midas rests his bid at his price and waits; the old
+        # 30-minute window threw away his "Filled at 1.46" 97 minutes after
+        # the Loaded call, which was his only real trade of day one.
+        self.loaded_window_s = float(g.get("loading_window_seconds", 14400))
         # Checked again at resolve time: the LOADING rule doesn't check the
         # allowed list, so without this a two-message entry would be the one way
         # round it.

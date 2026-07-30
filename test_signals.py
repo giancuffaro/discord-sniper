@@ -316,16 +316,28 @@ orphan = nolo.resolve_loaded(sigmod.parse("Filled 3.95 starters", cfg=CFG), "Bre
 ok(not orphan.fire and "can't find the LOADING call" in orphan.why,
    "a fill price with no loading call must not fire: %s" % orphan.why)
 
-# Stale: they loaded before lunch and posted a price at the close. Not the same
-# trade, and nothing is sent.
+# A patient fill still counts. Day one live: Midas loaded before 10:20 and
+# posted "Filled at 1.46" at 11:56 — 97 minutes of resting at his price —
+# and the old 30-minute window threw the trade away. The window is four
+# hours now: the Loaded call names the whole contract, so the late fill is
+# unambiguous.
 old = Guards(dict(RES, allowed_symbols=CFG["allowed_symbols"]), here=NOSTOP)
 old.remember_loading(sigmod.parse("Loading 205 calls Friday expiration on NVDA",
                                   cfg=CFG), "Unraveller")
 old.loaded["unraveller"]["ts"] -= 7200
-stale_fill = old.resolve_loaded(sigmod.parse("Filled 3.95 starters", cfg=CFG),
-                                "Unraveller")
-ok(not stale_fill.fire and "too long ago" in stale_fill.why,
-   "a fill two hours after the loading call must not fire: %s" % stale_fill.why)
+late_fill = old.resolve_loaded(sigmod.parse("Filled 3.95 starters", cfg=CFG),
+                               "Unraveller")
+ok(late_fill.fire,
+   "a fill two hours after the loading call is Midas being patient — it must "
+   "fire: %s" % late_fill.why)
+
+# But not FOREVER: past four hours it is yesterday's plan, not this fill.
+old.loaded["unraveller"]["ts"] -= 12800
+dead_fill = old.resolve_loaded(sigmod.parse("Filled 3.95 starters", cfg=CFG),
+                               "Unraveller")
+ok(not dead_fill.fire and "too long ago" in dead_fill.why,
+   "a fill five-plus hours after the loading call must not fire: %s"
+   % dead_fill.why)
 
 # "Loading does not mean enter" is a loading line with no contract in it, so
 # there is nothing to pin a later price to.
@@ -478,3 +490,23 @@ if fails:
         print("  -", f)
     raise SystemExit(1)
 print("A repost is not a trade: the same call at the same price runs once.")
+
+
+# --- Midas planning out loud, day one live. None of these are orders. -------
+# "Not adding" contains "adding", and the ADD pattern would have bought five
+# more if we'd been holding his trade. The other two are maps of where he
+# MIGHT sell — read as trims they'd have sold.
+check("Midas (Admin): Not adding to this position", action=None)
+check("Midas (Admin): Some trim targets are 737.70 and lower", action=None)
+check("Midas (Admin): Or from 15% profit", action=None)
+# But the real actions those words appear near must still fire.
+check("Taking more cons @here at 748.50", action="OPEN")
+check("Midas (Admin): Trimmed at 17% @here", action="TRIM")
+
+if fails:
+    print("FAILED %d Midas-chatter check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("Planning talk is not an order: no adds, trim targets and "
+      "from-percents all stay ignored.")
