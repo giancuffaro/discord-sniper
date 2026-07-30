@@ -1043,3 +1043,31 @@ SKIPPED "already acted 0s ago" pairs) — the dupe guard held every time, no
 double trades; likely the same channel open in two tabs at once. Told him
 to keep one tab per channel. The reply-echo AMD entries at 10:45/11:01
 fired in this log because he was still on the pre-fix build.
+
+## Update — the drill (practice tool) and the tab doubling explained
+
+The doubling mystery is solved and it wasn't Discord: he clicked START
+HERE by hand AND the 9:25 alarm ran it again — every channel open in two
+tabs, every message read twice. The dupe guard held every time. Fix that
+makes it impossible anyway: background.js oneTabPerChannel() on the 30s
+alarm — same channel in two tabs, the extra closes itself (active tab
+survives, else the oldest). v1.13.4.
+
+"What can we do to practice more on the wording? midas is kind of hard" —
+built drill.py + EXTRAS option 10. The flow: scroll far back in a channel
+(history is captured, never traded) → popup "Export chat" → EXTRAS 10 (or
+python drill.py signal-room-chat.txt midas) → drill-report.txt opens in
+Notepad with every line's verdict from the SAME reader that trades:
+WOULD FIRE / WOULD SELL (if holding) / noted (Loaded) / ignored + why.
+Bare fills pair with the caller's last Loaded inside the report; bare
+trims say they'd resolve to the newest open position. Honest limits
+stated in the file: no positions and no timing guards in a replay —
+wording practice, not a backtest.
+
+Drill implementation note: the export writes "Author: text" but live the
+reader gets text with author separate — drill.py splits the same way,
+otherwise a bare "Filled at 1.46" stops being recognisable behind the
+author prefix. (Both parsers behave identically on prefixed lines, so
+this is an export-format thing, not a live-parity thing.)
+
+Waiting on him: more Midas days (especially losing days) via Export chat.

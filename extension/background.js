@@ -432,9 +432,37 @@ async function ensureArmed() {
   badge();
 }
 
+/* One tab per channel. Day one he clicked START HERE by hand and the 9:25
+ * alarm ran it again — every channel open twice, every message read twice.
+ * The double-trade guard caught all of them, but the log read double and it
+ * only takes one missed catch. So: the same channel in two tabs, and the
+ * extra one closes itself. The tab being looked at survives; otherwise the
+ * oldest does. */
+async function oneTabPerChannel() {
+  let tabs;
+  try {
+    tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
+                                           "https://*.discord.com/channels/*"] });
+  } catch (e) { return; }
+  const byChannel = {};
+  for (const t of tabs) {
+    let path;
+    try { path = new URL(t.url).pathname; } catch (e) { continue; }
+    (byChannel[path] = byChannel[path] || []).push(t);
+  }
+  for (const path of Object.keys(byChannel)) {
+    const dupes = byChannel[path];
+    if (dupes.length < 2) continue;
+    dupes.sort((a, b) => ((b.active ? 1 : 0) - (a.active ? 1 : 0)) || (a.id - b.id));
+    for (const extra of dupes.slice(1)) {
+      try { await chrome.tabs.remove(extra.id); } catch (e) { /* already gone */ }
+    }
+  }
+}
+
 chrome.alarms.create("watch-build", { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); }
 });
 
 // Going from ON back to OFF is the moment a held-back update can land, so

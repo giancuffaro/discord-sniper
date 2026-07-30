@@ -31,6 +31,7 @@ echo      6   Send my changes up to GitHub
 echo      7   Get the latest down from GitHub
 echo      8   Turn the 9:25 morning alarm off
 echo      9   Put keys in the old way, at this console
+echo     10   Practice the reader on a chat export
 echo.
 echo      0   Close this
 echo.
@@ -46,6 +47,7 @@ if "!PICK!"=="6"  goto push
 if "!PICK!"=="7"  goto pull
 if "!PICK!"=="8"  goto alarmoff
 if "!PICK!"=="9"  goto keys
+if "!PICK!"=="10" goto drill
 if "!PICK!"=="0"  exit /b 0
 goto menu
 
@@ -116,6 +118,34 @@ echo   reads the lines in samples.txt.
 echo.
 call :needpython || goto back
 python tune.py
+goto back
+
+
+rem ============================================================
+rem  10 - drill a chat export
+rem ============================================================
+:drill
+cls
+echo.
+echo   Nothing here can place a trade. This runs a whole chat export
+echo   through the same reader that trades and writes a report: what
+echo   would fire, what gets ignored, and exactly why. That report is
+echo   how a room's wording gets learned - anything that reads wrong,
+echo   send the report over and the reader gets tuned on it.
+echo.
+echo   Get the file first: extension popup, "Export chat". It saves
+echo   signal-room-chat.txt ^(usually into Downloads^). Scroll far back
+echo   in the channel before exporting - scrolled history is captured
+echo   too, and it is never traded.
+echo.
+call :needpython || goto back
+set "XF="
+set /p XF="   Export file (Enter = Downloads\signal-room-chat.txt): "
+if "!XF!"=="" set "XF=%USERPROFILE%\Downloads\signal-room-chat.txt"
+set "ROOMPICK="
+set /p ROOMPICK="   One room only? (Enter = all, or: main / aristotle / midas): "
+python drill.py "!XF!" !ROOMPICK!
+if exist "drill-report.txt" start "" notepad "drill-report.txt"
 goto back
 
 
