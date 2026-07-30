@@ -417,3 +417,50 @@ if bad:
     raise SystemExit(1)
 print("Futures: points times multiplier, shorts profit downwards, their stop "
       "on the record, no premium tied up.")
+
+
+# --- a finished trade must survive a re-entry on the same key ---------------
+# Day one, live: Unraveller stopped out of TSLA at 09:33 and was back in
+# eleven minutes later. The new entry took the "unraveller|TSLA" slot in the
+# working book before sweep() (which waits half an hour) ever filed the old
+# one — the loss kept its money in the wallet but vanished from the table,
+# which is why the popup showed a day of wins and none of the morning losses.
+# This pins the fix: the finished trade goes to the archive the moment the
+# key is reused.
+wb = FakeWB(fills=True, ask=4.50, bid=4.50)
+b = book(wb, unlimited=True)
+TS = {"symbol": "TSLA", "side": "PUTS", "strike": 305, "expiry": "7/31",
+      "limit": 4.50, "trader": "Unraveller"}
+TK = positions.key_of("Unraveller", "TSLA")
+b.entry_sent(TS, ticket(wb, limit=4.50, qty=5, oid="t1"))
+settle(b, TK)
+b.claim(TK)
+b.finish(TK, positions.CLOSED, "stopped out", price=4.15)
+b.entry_sent(dict(TS, limit=3.20), ticket(wb, limit=3.20, qty=5, oid="t2"))
+settle(b, TK)
+rows = [r for r in b.table() if r["symbol"] == "TSLA"]
+ok(len(rows) == 2, "re-entering TSLA must not eat the finished trade — "
+   "table has %d TSLA row(s), wanted 2" % len(rows))
+done = [r for r in rows if r["all_out"]]
+ok(len(done) == 1 and abs(done[0]["pl"] - (-175.0)) < 0.5,
+   "and the finished row still says what it lost, got %s"
+   % [r.get("pl") for r in done])
+
+# --- midnight resets the scoreboard, not the holdings -----------------------
+before_open = b.open_count()
+b.new_day()
+w = b.wallet()
+ok(w["wins"] == 0 and w["losses"] == 0 and abs(w["realised"]) < 0.01,
+   "a new day starts at zero, got %s up / %s down, realised %s"
+   % (w["wins"], w["losses"], w["realised"]))
+ok(all(not r["all_out"] for r in b.table()),
+   "yesterday's finished trades are off today's table")
+ok(b.open_count() == before_open,
+   "but what you're holding carries over: %s -> %s"
+   % (before_open, b.open_count()))
+
+if bad:
+    print("\n%d day-book check(s) failed." % bad)
+    raise SystemExit(1)
+print("A re-entry archives the finished trade instead of eating it, and "
+      "midnight resets the scoreboard without touching what you hold.")

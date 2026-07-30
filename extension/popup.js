@@ -237,10 +237,15 @@ function renderTable(rows, el) {
     const cls = r.all_out
       ? (r.state === "nofill" ? "flat" : (r.pl >= 0 ? "up" : "down"))
       : "livepos";
+    // Every fill and every sale carries its New York time, so a row reads
+    // "in 09:33 5 @ 4.50 · out 09:43 3 @ 4.15" and he can line it up
+    // against the room's messages minute by minute.
     const ins = (r.entries || [])
-      .map(e => e.qty + " @ " + Number(e.price).toFixed(2)).join(" + ");
+      .map(e => (e.t ? clock(e.t * 1000) + " " : "") +
+                e.qty + " @ " + Number(e.price).toFixed(2)).join(" + ");
     const outs = (r.exits || [])
-      .map(e => e.qty + " @ " + Number(e.price).toFixed(2)).join(", ");
+      .map(e => (e.t ? clock(e.t * 1000) + " " : "") +
+                e.qty + " @ " + Number(e.price).toFixed(2)).join(", ");
     const bits = [];
     if (ins) bits.push("in " + ins);
     if (outs) bits.push("out " + outs);
@@ -528,8 +533,10 @@ $("copylog").onclick = async () => {
   // The trade list up top — every trade of the day with its verdict, so the
   // analysis never depends on how far back the log happens to reach.
   const rows = (day_table || []).map(r => {
-    const ins = (r.entries || []).map(e => e.qty + "@" + Number(e.price).toFixed(2)).join(" +");
-    const outs = (r.exits || []).map(e => e.qty + "@" + Number(e.price).toFixed(2)).join(", ");
+    const ins = (r.entries || []).map(e => (e.t ? clock(e.t * 1000) + " " : "") +
+      e.qty + "@" + Number(e.price).toFixed(2)).join(" + ");
+    const outs = (r.exits || []).map(e => (e.t ? clock(e.t * 1000) + " " : "") +
+      e.qty + "@" + Number(e.price).toFixed(2)).join(", ");
     const verdict = r.all_out
       ? (r.state === "nofill" ? "NO FILL"
          : (r.pl >= 0 ? "WIN +$" + Math.round(r.pl) : "LOSS -$" + Math.abs(Math.round(r.pl))))

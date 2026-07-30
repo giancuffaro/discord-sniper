@@ -978,3 +978,35 @@ discord-sniper folder is the full play-by-play (Notepad opens it);
 days\YYYY-MM-DD.json is the structured per-trade table the bridge rewrites
 on every event; the popup Trades table shows today live and the dropdown
 loads any saved day; Copy log now leads with the full-day trade table.
+
+## Update — he found the day file; two real bugs fell out of it
+
+He uploaded days/2026-07-30.json and asked where the losing trades were.
+They weren't in the table — and that was a BUG, not a display choice:
+
+1. RE-ENTRY ATE THE FINISHED TRADE. Positions live under trader|SYM.
+   sweep() only files finished trades to the archive after 30 minutes, but
+   Unraveller re-entered TSLA ~11 minutes after stopping out — entry_sent()
+   overwrote the finished position before sweep ever saw it. The wallet kept
+   the money (its own closed_trades list), so P/L was right, but the trade
+   row vanished. All five morning losses and both closed AMD trades were
+   eaten this way. Fix: entry_sent() archives a DONE position before taking
+   the key. Regression test in test_positions.py.
+
+2. MIDNIGHT NEVER HAPPENED. The bridge runs 24/7 now, and nothing reset the
+   scoreboard: Wednesday's GOOGL +$165 and QQQ +$108 were still on
+   Thursday's count. "+$196, 7 up / 6 down" was really TWO days. Thursday
+   7/30 alone: -$77, 5 up / 6 down (and stripping Mike's echo AMD +$80,
+   -$157, 4 up / 6 down). Fix: Book.new_day() (clears archive + day
+   scoreboard, keeps open positions, re-marks peak) called by bridge
+   roll_day() from save_day() and the /fills poll. Yesterday's file is
+   already complete on disk when the roll happens.
+   NOTE: peak $7,040 stands — all three legs were Thursday ~10:26-10:49.
+
+Also on his ask: every entry and exit in the popup table and Copy log now
+carries its New York time ("in 09:33 5 @ 4.50") so he can line rows up
+against the room minute by minute. The day files always stored these
+timestamps; now they're shown.
+
+The 13-trade money list in wallet.trades was complete all along — that plus
+trades.log is the full record; only the table rows went missing. v1.13.2.

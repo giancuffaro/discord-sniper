@@ -355,6 +355,16 @@ class Book:
             # Averaging in: a second entry on something already held. Keep the
             # first fill price; the watcher adds to the quantity when it fills.
             adding = prev.get("state") == FILLED
+            # A finished trade can still be sitting under this key — sweep()
+            # only files it away after half an hour, and Unraveller re-entered
+            # TSLA eleven minutes after stopping out. This overwrite used to
+            # eat the finished row whole: the money survived (the wallet keeps
+            # its own list) but the trade vanished from the table. That is why
+            # day one's table showed the wins and none of the morning losses.
+            # Now the finished trade is archived before the new one takes the
+            # key.
+            if prev and not adding and prev.get("state") in DONE:
+                self._archive.append(prev)
             self._pos[key] = {
                 "key": key,
                 "who": who if not adding else (prev.get("who") or who),
@@ -932,3 +942,20 @@ class Book:
                     self._archive.append(self._pos.pop(k))
             if len(self._archive) > 200:
                 self._archive = self._archive[-200:]
+
+    def new_day(self):
+        """Midnight in New York. Yesterday's file is already complete on disk
+        — the bridge rewrote it on every event — so what resets here is the
+        scoreboard: the finished-trade shelf, the day's P/L, the win/loss
+        record, the peak. Without this, Wednesday's GOOGL and QQQ wins were
+        still being counted on Thursday and '+$196' was really two days.
+        Open positions carry over untouched — a trade held overnight is still
+        a trade — and whatever they cost re-marks the peak from zero."""
+        with self._lock:
+            self._archive = []
+            self.realised = 0.0
+            self.wins = 0
+            self.losses = 0
+            self.closed_trades = []
+            self.peak = 0.0
+        self._mark_peak()

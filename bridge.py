@@ -229,6 +229,26 @@ def today_str():
     return datetime.now(ET).strftime("%Y-%m-%d")
 
 
+# The date the scoreboard currently belongs to. The bridge runs 24/7 now, so
+# midnight has to actually mean something: without this, Wednesday's two wins
+# were still on Thursday's scoreboard and "the day" was really two days.
+CUR_DAY = None
+
+
+def roll_day():
+    """Called before every day-file write and every /fills poll. The moment
+    the New York date changes, yesterday's scoreboard is retired — its file
+    is already complete on disk — and today starts at zero."""
+    global CUR_DAY
+    d = today_str()
+    if CUR_DAY is None:
+        CUR_DAY = d
+    elif d != CUR_DAY:
+        CUR_DAY = d
+        if BOOK is not None:
+            BOOK.new_day()
+
+
 def save_day():
     """Write today's whole trading day to days/YYYY-MM-DD.json, every time
     anything changes.
@@ -241,6 +261,7 @@ def save_day():
     replay.py."""
     if BOOK is None:
         return
+    roll_day()
     try:
         os.makedirs(DAYS, exist_ok=True)
         path = os.path.join(DAYS, today_str() + ".json")
@@ -753,6 +774,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"positions": {}, "events": [],
                                         "seq": 0, "mode": MODE})
             since = parse_qs(urlparse(self.path).query).get("since", ["0"])[0]
+            roll_day()
             BOOK.sweep()
             try:
                 return self._json(200, dict(BOOK.snapshot(since), mode=MODE))
