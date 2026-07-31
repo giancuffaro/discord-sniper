@@ -220,7 +220,23 @@ async function bridgeMode(c) {
  * room posts would send a sell for contracts that were never bought, and the
  * 20% stop would be guarding a position that doesn't exist.
  */
+let fillsBusy = false;   // two pollers, one cursor — see below
+
 async function syncFills() {
+  // The 30-second alarm and the after-an-order fast poll can land on top of
+  // each other. Both would read the same `fills_seq`, fetch the same events,
+  // and write the same log line twice — which is exactly how "sold 1 at
+  // 7.35, still holding 2" appeared twice on day two. One at a time.
+  if (fillsBusy) return;
+  fillsBusy = true;
+  try {
+    await syncFillsInner();
+  } finally {
+    fillsBusy = false;
+  }
+}
+
+async function syncFillsInner() {
   const c = await cfg();
   const { fills_seq } = await chrome.storage.local.get("fills_seq");
   let data;

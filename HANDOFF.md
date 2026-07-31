@@ -1158,3 +1158,38 @@ Refine only if it actually happens.
 
 First update delivered WITHOUT a zip — it rides down on his next START
 HERE (or EXTRAS 7).
+
+## Update — day two graded: the reader bought a verb (v1.13.8)
+
+He pasted day two's Copy log ("see if you find anything weird"). +$330,
+2 up 1 down, and the 1-per-trim ladder proved itself: AMD rode all five
+of Unraveller's trims to +58% (+$405 vs day one's early exits).
+
+The bad one: Midas posted "741.60 is new line in the sand. I'm going to
+take 742c starters and add full size at 741.60..." and the reader fired
+OPEN **TAKE** 742C — bought the verb. (Died quietly as a nofill: TAKE
+quotes don't exist. Still wrong.) Eight minutes later "I'm about 80% sure
+market falls" fired TRIM +80%. Fixes, both parsers, samples 247, all
+green: TAKE and KEEP into NOT_TICKERS; "going to"/"gonna" veto (announced
+intent is not an entry — his entry is the fill that follows); a %-sure
+veto (confidence is not a sale).
+
+The doubled log line ("sold 1 at 7.35... still holding 2" twice at 09:37)
+was the after-order fast poll and the 30s alarm running syncFills
+concurrently — same fills_seq cursor read twice, same events logged
+twice. fillsBusy flag now makes them take turns. No money was ever
+doubled; it was log-only.
+
+Noted, no code change: "couldn't reach the bridge" at 09:55 and 10:51 —
+transient, bridge answered fine at 09:36/09:58/10:00. It cost the
+KingBeeAri MSFT entry (his 46% winner). If it repeats, EXTRAS 2 (bridge
+log) around those minutes is the diagnostic. Bridge refusals reply HTTP
+502 by design — reads scary in the log but the sentence after it is the
+bridge's own explanation. Also fine, by design: AMD call posted @4.65,
+we filled @6.50 — no chase limit exists on his instruction; live bid is
+what the market cost at that second. Mike's NVDA nofill (bid 2.53, ran
+away) is the same coin's other face.
+
+Challenge room works: KingBeeAri captured, his MSFT entry parsed
+correctly, his bare "In @here"/"Trim @here"/"25%" shapes resolve exactly
+like Aristotle's. First full day where every room ran the new plumbing.
