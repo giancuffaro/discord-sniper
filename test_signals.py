@@ -605,3 +605,35 @@ if fails:
     raise SystemExit(1)
 print("The Futures channel reads: AVG entries, seven ways of saying stopped, "
       "papercuts sell, war stories don't.")
+
+
+# --- High Risk + the 2K challenge, from his pastes ---------------------------
+# The near-disaster: a trim update carries a direction, a symbol, a stop with
+# digits and the word "in" — everything an AVG-entry needs except the truth.
+check("$1,000 a contract on NQ short - Trimmed\n\nStop now BE holding "
+      "runners for full target. We are now 9/10 this week. Every winning "
+      "trade has been at least 50 points. Be sure to post in gains",
+      action="TRIM")
+check("Re-Entered NQ short @ 29555\n\nStop 29620\nTarget 29300",
+      action="OPEN", symbol="NQ")
+check("Re-entered long here @ 23480 on NQ. Stop is candles low - 23440",
+      action="OPEN", symbol="NQ")
+s = check("Short NQ @ 28165\nSt0p 28225\nTarget 28000", action="OPEN")
+ok(s.their_stop == 28225.0, "St0p with a zero still reads, got %s" % s.their_stop)
+s = check("Long ES @ 7580\nStop 7565\nTarget 1: 7600\nTarget 2: 7650",
+          action="OPEN")
+ok(s.their_target == 7600.0,
+   "Target 1: 7600 keeps the level, not the label, got %s" % s.their_target)
+check("Taking BE on NQ\n\nHave to rock out.", action="CLOSE", symbol="NQ")
+s = check("Entered (4) SLV 55C 8/21 @ 1.61\nStop is todays low.\nTarget 60",
+          action="OPEN", symbol="SLV", strike=55.0, expiry="8/21")
+ok(s.qty == 4, "his (4) is his size, got %s" % s.qty)
+check("Stopped on VXX -15%", action="CLOSE", symbol="VXX")
+
+if fails:
+    print("FAILED %d High-Risk/2K check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("High Risk and the 2K challenge read clean — and a trim update can "
+      "never turn into an entry.")

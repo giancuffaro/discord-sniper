@@ -1360,3 +1360,34 @@ Book now does (test rooms score in the dry wallet even while other rooms
 are live — that IS the dual book, done); per-room grammar profiles (bare
 percents: Aristotle trims vs Felony-room updates) still pending Whop
 wiring; Whop platform gate still record-only.
+
+## v1.14.1 — High Risk + 2K challenge taught; one near-disaster caught in review
+
+High Risk channel (link: whop.com/joined/firststeptrading/high-risk-...):
+same grammar as Day Trades/Futures plus quirks, all pinned: "St0p 28225"
+(zero for o), "Target 1: 7600 / Target 2:" (label only skipped when a
+colon follows — "Target 28250" can't lose its 2), "Taking BE (on NQ)" =
+close at breakeven (joined RE_PAPERCUT).
+
+THE NEAR-DISASTER, caught while testing, never shipped broken: his trim
+updates ("$1,000 a contract on NQ short - Trimmed / Stop now 28130 ...
+post in gains") contain a direction, a FUT symbol, a digit stop and the
+word "in" — everything the v1.14.0 AVG-entry fallback wanted. It would
+have BOUGHT on a trim. Guards now: any trim word kills the entry read,
+and the direction+symbol must sit within the first 40 chars (entries lead
+with their call; buried "on NQ short" doesn't). RE_FUT_DIR_SYM iterates
+candidates (leftmost "long here" no longer shadows "on NQ") with the
+wandering shape ("Re-entered long here @ 23480 on NQ") first, and the
+fallback also accepts an inline @price (Re-Entered NQ short @ 29555).
+
+2K challenge (whop.com/firststeptrading/fst-2-k-challenge-...): his OWN
+posted signal format ("Entered (3) ABC 25C @ 1.23 for 6/19"). Qty in
+parens captured (RE_QTY_PAREN), "2 CONS" counts as contracts, "Stopped on
+VXX -15%" closes. His per-entry size is recorded — the day a room goes
+LIVE with his sizing, sig.qty is already there (test mode stays 5/1).
+
+Samples 295, parity green, all suites green. Known deferred: bare-percent
+updates ("65% on NVDA $100 per con") would TRIM under Aristotle's rule —
+per-room grammar profiles are REQUIRED before any Whop room leaves
+record-only. Two-contract entries ("SPY 742P and QQQ 696P" one message)
+still act the first only.

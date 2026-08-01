@@ -90,7 +90,11 @@ RE_PCT_RISK = re.compile(
 RE_AVG = re.compile(r"\bavg|\baverage\b", re.IGNORECASE)
 # a price, but never a percentage: "@ 3.4" is a fill, "@ 38%" is a gain
 RE_LIMIT = re.compile(r"@\s*\$?(\d+(?:\.\d{1,4})?)(?![\d.]*\s*%)")
-RE_QTY = re.compile(r"\b(\d{1,3})\s*(?:x|contracts?|lots?)\b", re.IGNORECASE)
+# "(2 CONS)" and "Entered (4) SLV 55C" — the 2K challenge posts HIS size
+# with every entry, in parentheses. Captured for the record and for the day
+# per-room LIVE wants to mirror his sizing.
+RE_QTY = re.compile(r"\b(\d{1,3})\s*(?:x|con(?:tract)?s?|lots?)\b", re.IGNORECASE)
+RE_QTY_PAREN = re.compile(r"\((\d{1,3})\)\s*(?=[A-Za-z$])")
 # Case-insensitive on purpose — the second room types "on spy", not "on SPY".
 # Lowercase only counts when you have an allowed-symbols list to check it
 # against; see _bare_symbol for why.
@@ -155,12 +159,17 @@ RE_FUT_ENTRY = re.compile(
     r"\$?(\d[\d,]*(?:\.\d{1,2})?)\b",
     re.IGNORECASE)
 RE_THEIR_STOP = re.compile(
-    # "SL 28302" is the same stop as "Stop 28302" — Whop shorthand.
-    # "SL at be" (break-even) carries no number and stays unmatched.
-    r"\b(?:stop\s*(?:loss)?|sl)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b",
+    # "SL 28302" is the same stop as "Stop 28302" — Whop shorthand. "St0p"
+    # with a zero is a real typo from the High Risk channel. "SL at be"
+    # (break-even) carries no number and stays unmatched.
+    r"\b(?:st[o0]p(?:\s*loss)?|sl)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b",
     re.IGNORECASE)
 RE_THEIR_TARGET = re.compile(
-    r"\b(?:target|tp|pt)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b", re.IGNORECASE)
+    # "Target 1: 7600" numbers its targets — the first target is his level,
+    # the "1" is just a label. The label only counts when a colon follows,
+    # so "Target 28250" can't lose its leading digit.
+    r"\b(?:target|tp|pt)\s*(?:\d\s*[:=]\s*)?\$?(\d[\d,]*(?:\.\d{1,2})?)\b",
+    re.IGNORECASE)
 # "Target hit $1700 a contract - 2nd trim" / "$1,100 a contract on NQ short"
 # / "$800 a con". His futures trims speak in dollars per contract, and on a
 # dry run that number is the only honest exit price there is.
@@ -171,8 +180,12 @@ RE_USD_CONTRACT = re.compile(
 # 23865 AVG", "Entered NQ short 23477 average", "Short RTY AVG - 2398.4".
 # Direction + symbol either way round, price arriving as an average.
 RE_FUT_DIR_SYM = re.compile(
-    r"\b(long|short)\s+\$?([A-Za-z0-9]{1,4})\b"
-    r"|\b([A-Za-z0-9]{1,4})\s+(long|short)\b", re.IGNORECASE)
+    # The wandering shape first — "Re-entered long here @ 23480 on NQ" — or
+    # the alternation would stop at "long here" and never reach the symbol.
+    r"\b(long|short)\b[^\n.]{0,24}?\bon\s+\$?([A-Za-z0-9]{1,4})\b"
+    r"|\b(long|short)\s+\$?([A-Za-z0-9]{1,4})\b"
+    r"|\b([A-Za-z0-9]{1,4})\s+(long|short)\b",
+    re.IGNORECASE)
 RE_FUT_AVG = re.compile(
     r"\b(?:avg|average)\s*[-:]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b"
     r"|\b(\d[\d,]*(?:\.\d{1,2})?)\s+(?:avg|average)\b", re.IGNORECASE)
@@ -191,6 +204,7 @@ RE_STOP_HIT = re.compile(
 # "Taking papercut" is a sale.
 RE_PAPERCUT = re.compile(
     r"\btak(?:e|ing)\s+(?:a\s+|this\s+|the\s+)?paper\s*cut"
+    r"|\btak(?:e|ing)\s+be\b"          # "Taking BE" — out at breakeven
     r"|\btaking\s+the\s+loss\b"
     r"|\block(?:ing)?\s+in\s+an?\s+\d+\s+point\s+loss\b", re.IGNORECASE)
 
@@ -746,15 +760,33 @@ def parse(text, author="", channel="", cfg=None):
         # inline price, direction and symbol either way round, the price
         # arriving as an average. Requires the average or his stop/target so
         # "comfortable being long NQ" chatter (no numbers) stays chatter.
-        md = RE_FUT_DIR_SYM.search(t)
+        # TWO safety guards, from the High Risk channel's own lines. His trim
+        # updates read "...$1,000 a contract on NQ short - Trimmed / Stop now
+        # 28130 ... post in gains" — that has a direction, a symbol, a stop
+        # with digits and even the word "in". Without these guards it would
+        # have BOUGHT. 1) any trim word kills the entry read; 2) an entry
+        # leads with its call, so the direction+symbol must sit in the first
+        # 40 characters, where "on NQ short" buried mid-update doesn't.
+        md = None
+        if not RE_TRIM.search(low):
+            for cand in RE_FUT_DIR_SYM.finditer(t):
+                if cand.start() > 40:
+                    break
+                c_s = (cand.group(2) or cand.group(4) or cand.group(5)
+                       or "").upper()
+                if c_s in FUT_SYMS:
+                    md = cand
+                    break
         if md:
-            d0 = (md.group(1) or md.group(4) or "").upper()
-            s0 = (md.group(2) or md.group(3) or "").upper()
+            d0 = (md.group(1) or md.group(3) or md.group(6) or "").upper()
+            s0 = (md.group(2) or md.group(4) or md.group(5) or "").upper()
             if d0 and s0 in FUT_SYMS:
                 ma_f = RE_FUT_AVG.search(t)
-                if ma_f:
+                ml_f = RE_LIMIT.search(t)
+                if ma_f or ml_f:
                     fut_dir, fut_sym = d0, s0
-                    fut_px = _num(ma_f.group(1) or ma_f.group(2))
+                    fut_px = _num(ma_f.group(1) or ma_f.group(2)) if ma_f \
+                        else float(ml_f.group(1))
                     fut_end = md.end()
                 elif RE_THEIR_STOP.search(t) and RE_ENTRY.search(low):
                     # "Short NQ - Light / Stop 23400 / Target 23300" — a
@@ -931,7 +963,7 @@ def parse(text, author="", channel="", cfg=None):
             ma = RE_AVG_PRICE.search(t)
             if ma:
                 sig.limit = float(ma.group(1))
-        mq = RE_QTY.search(t)
+        mq = RE_QTY.search(t) or RE_QTY_PAREN.search(t)
         if mq:
             sig.qty = int(mq.group(1))
         # "Entered AMD 520C 7/20 @ 1.75  Target 524  Stop 505" — HIS levels,

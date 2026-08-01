@@ -59,7 +59,11 @@ const RE_PCT_RISK = /\d{1,3}(?:\.\d+)?\s*%\s*(?:of\s+)?(?:risk|stop|trail)\b|\b(
 // "My avg is $3.05" — posted a minute after the entry, as its own message.
 const RE_AVG = /\bavg|\baverage\b/i;
 const RE_LIMIT = /@\s*\$?(\d+(?:\.\d{1,4})?)(?![\d.]*\s*%)/;
-const RE_QTY = /\b(\d{1,3})\s*(?:x|contracts?|lots?)\b/i;
+// "(2 CONS)" and "Entered (4) SLV 55C" — the 2K challenge posts HIS size
+// with every entry, in parentheses. Captured for the record and for the
+// day per-room LIVE wants to mirror his sizing.
+const RE_QTY = /\b(\d{1,3})\s*(?:x|con(?:tract)?s?|lots?)\b/i;
+const RE_QTY_PAREN = /\((\d{1,3})\)\s*(?=[A-Za-z$])/;
 // Case-insensitive on purpose — the second room types "on spy", not "on SPY".
 // Lowercase only counts when there's an allowed list; see bareSymbol.
 const RE_BARE = /\b([A-Za-z]{1,5})\b/g;
@@ -77,8 +81,10 @@ const FUT_SYMS = new Set(["NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K",
 // shorthand for the same stop ("SL at be" carries no number and stays
 // unmatched), and "$800 a con" is "a contract" with the end bitten off.
 const RE_FUT_ENTRY = /\b(short|long)\s+\$?([A-Za-z0-9]{1,4})\s*(?:@|at\b)?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
-const RE_THEIR_STOP = /\b(?:stop\s*(?:loss)?|sl)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
-const RE_THEIR_TARGET = /\b(?:target|tp|pt)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
+// "St0p" with a zero is a real High Risk channel typo; "Target 1: 7600"
+// numbers its targets — the label only counts when a colon follows.
+const RE_THEIR_STOP = /\b(?:st[o0]p(?:\s*loss)?|sl)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
+const RE_THEIR_TARGET = /\b(?:target|tp|pt)\s*(?:\d\s*[:=]\s*)?\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
 // "Target hit $1700 a contract - 2nd trim" / "$1,100 a contract on NQ short"
 // / "$800 a con". His futures trims speak in dollars per contract, and on a
 // dry run that number is the only honest exit price there is.
@@ -86,7 +92,9 @@ const RE_USD_CONTRACT = /\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|\/)\s*con(?:tr
 // His Futures-channel entry variants: "Long NQ - AVG 24015", "Long NQ -
 // 23865 AVG", "Entered NQ short 23477 average", "Short RTY AVG - 2398.4".
 // Direction + symbol either way round, price arriving as an average.
-const RE_FUT_DIR_SYM = /\b(long|short)\s+\$?([A-Za-z0-9]{1,4})\b|\b([A-Za-z0-9]{1,4})\s+(long|short)\b/i;
+// Wandering shape first — "Re-entered long here @ 23480 on NQ" — or the
+// alternation stops at "long here" and never reaches the symbol.
+const RE_FUT_DIR_SYM = /\b(long|short)\b[^\n.]{0,24}?\bon\s+\$?([A-Za-z0-9]{1,4})\b|\b(long|short)\s+\$?([A-Za-z0-9]{1,4})\b|\b([A-Za-z0-9]{1,4})\s+(long|short)\b/gi;
 const RE_FUT_AVG = /\b(?:avg|average)\s*[-:]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b|\b(\d[\d,]*(?:\.\d{1,2})?)\s+(?:avg|average)\b/i;
 // The room says "gold"/"silver" as often as GC/SI.
 const FUT_NICKNAMES = { GOLD: "GC", SILVER: "SI", PLATINUM: "PL" };
@@ -98,7 +106,7 @@ const RE_STOP_HIT = /^(?:eh\s+|welp\s+)?stopp(?:ed|ing)\b|\b(?:be\s+|trailing\s+
 // "Taking paper cut" / "Locking in a 8 point loss" — an early exit by hand.
 // Verb-led on purpose: "those paper cuts we took yesterday" is a war story,
 // "Taking papercut" is a sale.
-const RE_PAPERCUT = /\btak(?:e|ing)\s+(?:a\s+|this\s+|the\s+)?paper\s*cut|\btaking\s+the\s+loss\b|\block(?:ing)?\s+in\s+an?\s+\d+\s+point\s+loss\b/i;
+const RE_PAPERCUT = /\btak(?:e|ing)\s+(?:a\s+|this\s+|the\s+)?paper\s*cut|\btak(?:e|ing)\s+be\b|\btaking\s+the\s+loss\b|\block(?:ing)?\s+in\s+an?\s+\d+\s+point\s+loss\b/i;
 
 function num(s) { return parseFloat(String(s).replace(/,/g, "")); }
 
@@ -548,14 +556,31 @@ function parseSignal(text, cfg) {
     // price, direction and symbol either way round, the price arriving as
     // an average. Requires the average or his stop plus an entry verb, so
     // "comfortable being long NQ" chatter stays chatter.
-    const md = RE_FUT_DIR_SYM.exec(t);
+    // TWO safety guards, from the High Risk channel's own lines. His trim
+    // updates read "...$1,000 a contract on NQ short - Trimmed / Stop now
+    // 28130 ... post in gains" — a direction, a symbol, a stop with digits
+    // and even the word "in". Without these it would have BOUGHT. 1) any
+    // trim word kills the entry read; 2) an entry leads with its call, so
+    // the direction+symbol must sit in the first 40 characters.
+    let md = null;
+    if (!RE_TRIM.test(low)) {
+      RE_FUT_DIR_SYM.lastIndex = 0;
+      let cand;
+      while ((cand = RE_FUT_DIR_SYM.exec(t)) !== null) {
+        if (cand.index > 40) break;
+        const cS = (cand[2] || cand[4] || cand[5] || "").toUpperCase();
+        if (FUT_SYMS.has(cS)) { md = cand; break; }
+      }
+    }
     if (md) {
-      const d0 = (md[1] || md[4] || "").toUpperCase();
-      const s0 = (md[2] || md[3] || "").toUpperCase();
+      const d0 = (md[1] || md[3] || md[6] || "").toUpperCase();
+      const s0 = (md[2] || md[4] || md[5] || "").toUpperCase();
       if (d0 && FUT_SYMS.has(s0)) {
         const maF = RE_FUT_AVG.exec(t);
-        if (maF) {
-          futDir = d0; futSym = s0; futPx = num(maF[1] || maF[2]);
+        const mlF = RE_LIMIT.exec(t);
+        if (maF || mlF) {
+          futDir = d0; futSym = s0;
+          futPx = maF ? num(maF[1] || maF[2]) : parseFloat(mlF[1]);
           futEnd = (md.index || 0) + md[0].length;
         } else if (RE_THEIR_STOP.test(t) && RE_ENTRY.test(low)) {
           futDir = d0; futSym = s0; futEnd = (md.index || 0) + md[0].length;
@@ -715,7 +740,7 @@ function parseSignal(text, cfg) {
       const ma = RE_AVG_PRICE.exec(t);
       if (ma) s.limit = parseFloat(ma[1]);
     }
-    const mq = RE_QTY.exec(t);
+    const mq = RE_QTY.exec(t) || RE_QTY_PAREN.exec(t);
     if (mq) s.qty = parseInt(mq[1], 10);
     // "Entered AMD 520C 7/20 @ 1.75  Target 524  Stop 505" — HIS levels, on
     // the underlying. Written down for the day his numbers replace the flat
