@@ -517,9 +517,6 @@ async function ensureArmed() {
     settings: Object.assign({}, settings || {}, { armed: true, stopped: false }),
     armed_once: true
   });
-  await addLog({ kind: "update", why: "ON by default now — it runs 24/7 and " +
-                 "the market-hours guard does the timekeeping. TEST/REAL " +
-                 "stays yours to flip. OFF still works if you ever want it." });
   badge();
 }
 
@@ -859,6 +856,15 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   return true;   // keep the message channel open for the async reply
 });
 
+async function scrubOldBanners() {
+  // The "ON by default now..." banner used to be written into the log at
+  // install. He's asked for it gone — including the copies already stored.
+  const { log } = await chrome.storage.local.get("log");
+  if (!log) return;
+  const keep = log.filter(e => !String(e.why || "").startsWith("ON by default now"));
+  if (keep.length !== log.length) await chrome.storage.local.set({ log: keep });
+}
+
 async function allRoomsTesting() {
   // "as soon as app starts everyone is testing obviously" — LIVE is a
   // decision he makes fresh, per room, per session. Nothing stays armed
@@ -874,8 +880,8 @@ async function allRoomsTesting() {
   }
 }
 
-chrome.runtime.onInstalled.addListener(() => { allRoomsTesting(); ensureArmed(); badge(); reinject(); });
-chrome.runtime.onStartup.addListener(() => { allRoomsTesting(); ensureArmed(); badge(); reinject(); });
+chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); ensureArmed(); badge(); reinject(); });
+chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); ensureArmed(); badge(); reinject(); });
 ensureArmed();
 badge();
 reinject();

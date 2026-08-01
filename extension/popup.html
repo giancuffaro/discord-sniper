@@ -117,12 +117,8 @@
     <div class="state" id="modestate">Checking the bridge…</div>
   </div>
 
-  <div class="note" id="bothnote">It's ON by itself, 24/7 — the market-hours
-    guard does the timekeeping. Every room starts in TESTING (pretend money)
-    and goes LIVE one by one in Settings, only by your hand. Rooms reset to
-    TESTING whenever Chrome restarts. OFF up top is the emergency brake.</div>
 
-  <div class="holding" id="holding">Flat.</div>
+  <div class="holding" id="holding">No active trades</div>
   <div class="purse" id="purse" style="display:none"></div>
 
   <!-- Where the money comes from, room by room. -->
@@ -133,7 +129,7 @@
   <div class="tablebox">
     <div class="tablehead">
       <b>Trades</b>
-      <select id="dayspick"><option value="">today, live</option></select>
+      <select id="dayspick"><option value="">today</option></select>
     </div>
     <div id="daytable"><div class="note">No trades yet today.</div></div>
   </div>
@@ -157,25 +153,13 @@
          switch is REAL — in TEST mode everything pretends regardless. -->
     <label>Rooms — each one is its own switch</label>
     <div id="roomtoggles"></div>
-    <div class="note">TESTING = pretend money, logged and scored. LIVE = that
-      room's calls buy with your Webull account. Each room is armed on its
-      own, asks you to confirm, and falls back to TESTING whenever Chrome
-      restarts. Hit Save settings to apply.</div>
+    <div class="note">One click flips a room between TESTING (pretend money)
+      and LIVE (your Webull account). Applies instantly. Everything falls
+      back to TESTING when Chrome restarts.</div>
 
-    <div class="half">
-      <div>
-        <label>Futures calls (NQ / ES)</label>
-        <select id="futures">
-          <option value="0">off — read and log only</option>
-          <option value="1">ON — trade them</option>
-        </select>
-      </div>
-      <div></div>
-    </div>
-    <div class="note">This is the futures switch. Off: his NQ/ES calls are
-      read, priced and logged, nothing fires. On: they trade — pretend money
-      in TEST, one real contract at a time in REAL. Flip it once your Webull
-      futures data subscription is live.</div>
+    <!-- The futures switch is GONE — "i dont want extra switches,, everything
+         should be either testing or live." Futures follow their room's
+         toggle like everything else. -->
 
     <label>Webull App Key</label>
     <input id="wbkey" type="password" autocomplete="off"

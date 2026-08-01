@@ -85,7 +85,10 @@ def futures_on():
     default. Until it's true, a live futures order is refused at the door —
     everything else (parser, book, dry run) already works, which is the whole
     point: flipping this is the only thing left to do."""
-    return bool(EXEC.get("futures_enabled", False))
+    # The switch is retired — "i dont want extra switches,, everything
+    # should be either testing or live." Futures follow their room's toggle
+    # like everything else; his CME data is confirmed live.
+    return True
 
 
 def build_stamp():

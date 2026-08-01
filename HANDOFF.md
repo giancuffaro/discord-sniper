@@ -1470,3 +1470,22 @@ background wiring already worked; START HERE now opens all SIX Whop tabs.
 Popup: "Channel IDs to watch" and "Only follow these callers" fields
 deleted on his word ("this is pointless now") — rooms are baked, callers
 never filtered. Saved settings write channel_ids:[] / follow_admins:[].
+
+## v1.15.4 — popup stripped to what he actually reads
+
+All his words, one sweep:
+- Futures switch DELETED everywhere (popup select + note, /config field,
+  bridge futures_on() returns True): "i dont want extra switches,,
+  everything should be either testing or live." Futures follow their
+  room's toggle; CME data confirmed live.
+- Room toggles are ONE button each: click flips testing<->LIVE, saves
+  instantly, NO confirm dialog, no Save step. Red = LIVE only.
+- Trades dropdown's first entry shows today's DATE (ET), not "today,
+  live".
+- "Flat. Not in anything." -> "No active trades".
+- Bridge line is two dots: green/red Bridge, green/red Webull keys,
+  buying power when known. All explanation sentences removed (bothnote
+  gone, "rooms go LIVE one by one" gone).
+- Empty trades table shows NOTHING (was "No trades on this day.").
+- The "ON by default now..." banner: no longer written at install AND
+  scrubbed out of already-stored logs at startup (scrubOldBanners).

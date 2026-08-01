@@ -85,23 +85,22 @@ async function askBridge(path, body) {
  * bridge: reachable or not, keys or not, real buying power when known. The
  * per-room toggles in Settings are the only thing that arms real money. */
 function paintMode() {
+  // Two dots, no essays: Bridge up or not, keys in or not. Green means
+  // good. Buying power rides along when Webull will say it.
   const sub = $("modestate");
+  const dot = ok => '<span style="color:' + (ok ? "#4ade80" : "#f87171") +
+                    '">&#9679;</span> ';
   if (!modeStatus) {
-    sub.textContent = "Can't reach your PC — double-click START HERE, " +
-                      "then look again.";
+    sub.innerHTML = dot(false) + "Bridge &nbsp; " + dot(false) + "Webull keys";
     return;
   }
   const bp = modeStatus.buying_power;
   const bpBit = (bp === null || bp === undefined)
-    ? "" : " · $" + Math.round(bp).toLocaleString() + " real buying power";
-  sub.textContent = (modeStatus.has_keys
-    ? (modeStatus.connected
-       ? "Bridge up, connected to Webull " + (modeStatus.account || "")
-       : "Bridge up, keys in but not connected" +
-         (modeStatus.error ? ": " + modeStatus.error : ""))
-    : "Bridge up. No Webull keys yet — Settings below.") + bpBit +
-    " · rooms go LIVE one by one in Settings";
+    ? "" : " &nbsp;·&nbsp; $" + Math.round(bp).toLocaleString() + " buying power";
+  sub.innerHTML = dot(true) + "Bridge &nbsp; " +
+    dot(!!(modeStatus.has_keys && modeStatus.connected)) + "Webull keys" + bpBit;
 }
+
 
 function paintKeys() {
   const el = $("keystate");
@@ -223,44 +222,32 @@ function renderRoomToggles(channelLive) {
   if (!box) return;
   box.innerHTML = Object.keys(ROOM_NAMES).map(id => {
     const live = !!(channelLive || {})[id];
+    // ONE button, one click, flips and saves instantly. No dropdown, no
+    // confirm, no Save step — his word. Red is reserved for real money.
     return '<div class="row" style="margin-bottom:4px">' +
            '<span class="grow" style="font-size:12px">' + ROOM_NAMES[id] +
-           '</span><select data-room="' + id + '" style="width:110px">' +
-           '<option value="0"' + (live ? "" : " selected") + '>testing</option>' +
-           '<option value="1"' + (live ? " selected" : "") + '>LIVE</option>' +
-           "</select></div>";
+           '</span><button data-room="' + id + '" class="' +
+           (live ? "live" : "safe") + '" style="width:110px">' +
+           (live ? "LIVE" : "testing") + "</button></div>";
   }).join("");
-}
-
-/* Flipping a room to LIVE is the one dangerous click left, so it asks in
- * plain words, once, right there. Testing needs no confirmation — the safe
- * direction never does. */
-function armRoomToggleConfirms() {
-  document.querySelectorAll("#roomtoggles select[data-room]").forEach(sel => {
-    sel.onchange = () => {
-      if (sel.value === "1" &&
-          !confirm("REAL MONEY for \"" +
-                   (ROOM_NAMES[sel.dataset.room] || "this room") +
-                   "\"?\n\nIts calls will buy with your Webull account the " +
-                   "moment you hit Save settings. Options have no practice " +
-                   "mode. It goes back to TESTING whenever Chrome restarts.")) {
-        sel.value = "0";
-      }
+  box.querySelectorAll("button[data-room]").forEach(btn => {
+    btn.onclick = async () => {
+      const { settings } = await chrome.storage.local.get("settings");
+      const s = settings || {};
+      s.channel_live = s.channel_live || {};
+      const id = btn.dataset.room;
+      if (s.channel_live[id]) delete s.channel_live[id];
+      else s.channel_live[id] = true;
+      await chrome.storage.local.set({ settings: s });
+      renderRoomToggles(s.channel_live);
     };
   });
 }
 
-function readRoomToggles() {
-  const out = {};
-  document.querySelectorAll("#roomtoggles select[data-room]").forEach(sel => {
-    if (sel.value === "1") out[sel.dataset.room] = true;
-  });
-  return out;
-}
 
 function renderTable(rows, el) {
   if (!rows || !rows.length) {
-    el.innerHTML = '<div class="note">No trades on this day.</div>';
+    el.innerHTML = "";   // no trades = nothing to say
     return;
   }
   const money = n => (n < 0 ? "-$" : "+$") + Math.abs(Math.round(n));
@@ -302,7 +289,17 @@ function renderTable(rows, el) {
 let viewingDay = "";        // "" = today, live
 let viewedRows = null;
 
+function etToday() {
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York",
+    year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  return p;   // 2026-08-01
+}
+
 async function loadDays() {
+  // The first entry is today — shown as the actual date, his ask.
+  const first = $("dayspick").options[0];
+  if (first) first.textContent = etToday();
+
   try {
     const r = await askBridge("/days");
     const sel = $("dayspick");
@@ -366,7 +363,7 @@ async function render() {
   // AMD" into an order. This just puts it on screen.
   const pos = (gs && gs.positions) || {};
   if (!held.length) {
-    $("holding").innerHTML = "<b>Flat.</b> Not in anything.";
+    $("holding").innerHTML = "No active trades";
   } else {
     const rows = held.map(k => {
       const p = pos[k] || {};
@@ -466,9 +463,7 @@ async function render() {
   }
   renderRoomStats(wallet, day_table);
 
-  $("futures").value = s.futures_enabled ? "1" : "0";
   renderRoomToggles(s.channel_live || {});
-  armRoomToggleConfirms();
   $("bridge").value = s.bridge_url;
 
   const box = $("log");
@@ -522,17 +517,14 @@ $("arm").onclick = async () => {
 };
 
 $("save").onclick = async () => {
-  const fut = $("futures").value === "1";
   // The switch lives in TWO places on purpose: the extension (gates whether
   // a futures call fires at all) and the bridge's settings.json (second lock
   // on real orders). Saving sets both so they can't drift apart — and both
   // are told the allowed list is empty for good: "no filters wanted."
-  try { await askBridge("/config", { futures_enabled: fut,
+  try { await askBridge("/config", {
                                      allowed_symbols: [] }); }
   catch (e) { /* bridge down — the extension-side gate still holds */ }
   return patch({
-    futures_enabled: fut,
-    channel_live: readRoomToggles(),
     // channels are baked into the worker; callers are never filtered
     channel_ids: [], follow_admins: [],
     bridge_url: $("bridge").value.trim() || DEFAULTS.bridge_url,
