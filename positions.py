@@ -264,6 +264,7 @@ class Book:
             "pl": round(float(p.get("trade_pl") or 0), 2),
             "their_avg": p.get("their_avg"),
             "their_units": p.get("their_units"),
+            "live": bool(p.get("live")),
             "opened": p.get("sent_at"),
             "closed": p.get("closed_at"),
             "all_out": p.get("state") in DONE,
@@ -355,6 +356,11 @@ class Book:
             # Averaging in: a second entry on something already held. Keep the
             # first fill price; the watcher adds to the quantity when it fills.
             adding = prev.get("state") == FILLED
+            # Per-room live now. A position knows whether it is real money —
+            # the fill watcher probes Webull for live ones and the quote feed
+            # for test ones, and the pretend wallet only ever counts the
+            # pretend positions.
+            is_live = bool(ticket.get("live") or order.get("live"))
             # A finished trade can still be sitting under this key — sweep()
             # only files it away after half an hour, and Unraveller re-entered
             # TSLA eleven minutes after stopping out. This overwrite used to
@@ -367,6 +373,7 @@ class Book:
                 self._archive.append(prev)
             self._pos[key] = {
                 "key": key,
+                "live": is_live,
                 "who": who if not adding else (prev.get("who") or who),
                 "symbol": sym,
                 # Futures support. An options contract is 100 shares; NQ is
@@ -451,7 +458,8 @@ class Book:
                     oid, occ, limit = p["order_id"], p["occ"], p["limit"]
                     want = p["want_qty"]
 
-                state, filled_qty, avg = self._probe(oid, occ, limit)
+                state, filled_qty, avg = self._probe(oid, occ, limit,
+                                                     live=p.get("live"))
                 if state == FILLED:
                     self._became_filled(key, filled_qty or want, avg or limit)
                     return
@@ -494,7 +502,10 @@ class Book:
                 self.wb.cancel(oid)
             except Exception:                           # noqa: BLE001
                 pass
-        state, filled_qty, avg = self._probe(oid, occ, limit)
+        with self._lock:
+            p_l = self._pos.get(key) or {}
+        state, filled_qty, avg = self._probe(oid, occ, limit,
+                                             live=p_l.get("live"))
         if state == FILLED or (filled_qty or 0) > 0:
             self._became_filled(key, filled_qty or want, avg or limit)
         else:
@@ -502,9 +513,14 @@ class Book:
                 key, "nobody sold at %.2f within %.0fs"
                      % (float(limit or 0), self.fill_seconds))
 
-    def _probe(self, oid, occ, limit):
-        """(state, filled_qty, avg_price) — from the broker for real, or from
-        the live quote in a dry run."""
+    def _probe(self, oid, occ, limit, live=False):
+        """(state, filled_qty, avg_price) — from the broker for real money,
+        or from the live quote for a test position."""
+        if live:
+            # Real money: Webull is the only honest answer.
+            if self.wb is None:
+                return WORKING, 0, None
+            return self.wb.order_status(oid)
         if self.wb is None or not occ:
             # No broker, or no quotable contract — futures have no OCC symbol
             # and no quote feed yet. Nothing can be checked, so a dry run
@@ -562,10 +578,13 @@ class Book:
         with self._lock:
             p0 = self._pos.get(key)
             is_fut = bool(p0 and p0.get("kind") == "future")
-        paid = 0.0 if is_fut else self._dollars(price, qty or 1)
+            is_live = bool(p0 and p0.get("live"))
+        paid = 0.0 if (is_fut or is_live) else self._dollars(price, qty or 1)
         self._unreserve(key)
         with self._lock:
-            if self.cash is not None and not is_fut:
+            # Real money never touches the pretend wallet — Webull's own
+            # numbers are the only honest ledger for a live position.
+            if self.cash is not None and not is_fut and not is_live:
                 self.cash -= paid
                 p = self._pos.get(key)
                 if p:
@@ -776,7 +795,7 @@ class Book:
                 {"t": time.time(), "qty": n, "price": round(price, 4),
                  "pl": round(pl, 2)})
             p["trade_pl"] = float(p.get("trade_pl") or 0) + pl
-            if self.cash is not None:
+            if self.cash is not None and not p.get("live"):
                 self.cash += got
                 self.realised += pl
             left = p["qty"]
@@ -905,8 +924,10 @@ class Book:
                 got = self._dollars(price, qty)
                 pl = got - cost
             with self._lock:
-                self.cash += got
-                self.realised += pl
+                p_live = bool((self._pos.get(key) or {}).get("live"))
+                if not p_live:
+                    self.cash += got
+                    self.realised += pl
                 p = self._pos.get(key)
                 if p is not None:
                     p.setdefault("exits", []).append(
@@ -915,14 +936,15 @@ class Book:
                     p["trade_pl"] = float(p.get("trade_pl") or 0) + pl
                     p["cost"] = 0.0
                 total = float((p or {}).get("trade_pl") or pl)
-                if total >= 0:
-                    self.wins += 1
-                else:
-                    self.losses += 1
-                self.closed_trades.append(
-                    {"key": key, "who": who, "symbol": sym, "qty": qty,
-                     "fill": entry, "exit": round(float(price), 2),
-                     "pl": round(total, 2), "t": time.time()})
+                if not p_live:
+                    if total >= 0:
+                        self.wins += 1
+                    else:
+                        self.losses += 1
+                    self.closed_trades.append(
+                        {"key": key, "who": who, "symbol": sym, "qty": qty,
+                         "fill": entry, "exit": round(float(price), 2),
+                         "pl": round(total, 2), "t": time.time()})
                 pot = self.cash
             money = (" · %s$%.0f on the trade · %s"
                      % ("+" if pl >= 0 else "-", abs(pl),
@@ -935,14 +957,17 @@ class Book:
             with self._lock:
                 p = self._pos.get(key)
                 total = float((p or {}).get("trade_pl") or 0)
-                if total >= 0:
-                    self.wins += 1
+                if p is not None and p.get("live"):
+                    pass          # Webull keeps the score on real money
                 else:
-                    self.losses += 1
-                self.closed_trades.append(
-                    {"key": key, "who": who, "symbol": sym, "qty": qty,
-                     "fill": entry, "exit": None, "pl": round(total, 2),
-                     "t": time.time()})
+                    if total >= 0:
+                        self.wins += 1
+                    else:
+                        self.losses += 1
+                    self.closed_trades.append(
+                        {"key": key, "who": who, "symbol": sym, "qty": qty,
+                         "fill": entry, "exit": None, "pl": round(total, 2),
+                         "t": time.time()})
             money = (" · %s$%.0f on the whole trade"
                      % ("+" if total >= 0 else "-", abs(total)))
         elif self.cash is not None and qty:

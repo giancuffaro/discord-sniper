@@ -579,3 +579,29 @@ if fails:
         print("  -", f)
     raise SystemExit(1)
 print("Day Trades reads clean: verbs trade, updates and resting orders don't.")
+
+
+# --- the Futures channel, from his paste --------------------------------------
+s = check("Long NQ - AVG 24015\nStop 23990\nTarget 24050", action="OPEN",
+          symbol="NQ")
+ok(s.limit == 24015.0 and s.their_stop == 23990.0,
+   "AVG-style futures entry carries his price and stop, got %s/%s"
+   % (s.limit, s.their_stop))
+check("Entered NQ short 23477 average\nStop 23515", action="OPEN", symbol="NQ")
+check("Stopped\nCouldn't update was busy earlier", action="CLOSE")
+check("Stop got hit, was putting little one to bed.", action="CLOSE")
+check("Trailing stop hit on RTY, beautiful trade!", action="CLOSE", symbol="RTY")
+check("Stopped on gold. Reclaim here is nasty", action="CLOSE", symbol="GC")
+check("Don't like this hold - Taking papercut.", action="CLOSE")
+check("Again those paper cuts we took yesterday and today gone", action=None)
+check("Stops BE won't let this go red!", action=None)
+check("Short NQ @ 29792\n\nStop 29840\nTarget 29550\n\nIf we get stopped will "
+      "look for re-entry.", action="OPEN", symbol="NQ")
+
+if fails:
+    print("FAILED %d Futures-channel check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("The Futures channel reads: AVG entries, seven ways of saying stopped, "
+      "papercuts sell, war stories don't.")

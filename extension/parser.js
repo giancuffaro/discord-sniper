@@ -83,6 +83,22 @@ const RE_THEIR_TARGET = /\b(?:target|tp|pt)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})
 // / "$800 a con". His futures trims speak in dollars per contract, and on a
 // dry run that number is the only honest exit price there is.
 const RE_USD_CONTRACT = /\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|\/)\s*con(?:tract)?s?\b/i;
+// His Futures-channel entry variants: "Long NQ - AVG 24015", "Long NQ -
+// 23865 AVG", "Entered NQ short 23477 average", "Short RTY AVG - 2398.4".
+// Direction + symbol either way round, price arriving as an average.
+const RE_FUT_DIR_SYM = /\b(long|short)\s+\$?([A-Za-z0-9]{1,4})\b|\b([A-Za-z0-9]{1,4})\s+(long|short)\b/i;
+const RE_FUT_AVG = /\b(?:avg|average)\s*[-:]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b|\b(\d[\d,]*(?:\.\d{1,2})?)\s+(?:avg|average)\b/i;
+// The room says "gold"/"silver" as often as GC/SI.
+const FUT_NICKNAMES = { GOLD: "GC", SILVER: "SI", PLATINUM: "PL" };
+// "Stopped" alone at the start of a message, "Eh stopped", "Stop got hit",
+// "BE stop hit", "Trailing stop hit on RTY" — their stop fired, said seven
+// ways. Start-anchored so "if we get stopped" inside an entry's rationale
+// never reads as an exit.
+const RE_STOP_HIT = /^(?:eh\s+|welp\s+)?stopp(?:ed|ing)\b|\b(?:be\s+|trailing\s+)?stop\s+(?:got\s+|was\s+)?hit\b/i;
+// "Taking paper cut" / "Locking in a 8 point loss" — an early exit by hand.
+// Verb-led on purpose: "those paper cuts we took yesterday" is a war story,
+// "Taking papercut" is a sale.
+const RE_PAPERCUT = /\btak(?:e|ing)\s+(?:a\s+|this\s+|the\s+)?paper\s*cut|\btaking\s+the\s+loss\b|\block(?:ing)?\s+in\s+an?\s+\d+\s+point\s+loss\b/i;
 
 function num(s) { return parseFloat(String(s).replace(/,/g, "")); }
 
@@ -272,6 +288,7 @@ function bareSymbol(text, allowed) {
     // ...in ANY case — the Whop room types "Stopped on nq" all day, and
     // futures symbols aren't English words, so lowercase is safe here.
     if (FUT_SYMS.has(s)) return s;
+    if (FUT_NICKNAMES[s]) return FUT_NICKNAMES[s];
     // Written in CAPITALS = a ticker, whoever's list it is or isn't on —
     // "Fully out of NBIS" has to resolve without NBIS being pre-listed.
     // The vocabulary list only unlocks lowercase ("40% in spy now").
@@ -342,7 +359,7 @@ function parseSignal(text, cfg) {
 
   const veto = VETO_WORDS.concat(cfg.extra_veto_words || []);
   for (const w of veto) {
-    if (low.includes(String(w).toLowerCase())) {
+    if (low.includes(String(w).toLowerCase()) && !RE_PAPERCUT.test(low)) {
       s.why = 'chatter, not an order (it contains "' + String(w).trim() + '")';
       return s;
     }
@@ -422,7 +439,7 @@ function parseSignal(text, cfg) {
   //     Resolved by whose position it is, exactly like a bare trim. The
   //     anchored regex is what keeps "Damn it actually worked out" from
   //     reading as an exit — a bare out IS the whole message, or it's chatter.
-  if (RE_STOPPED_OUT.test(low)) {
+  if (RE_STOPPED_OUT.test(low) || RE_STOP_HIT.test(t) || RE_PAPERCUT.test(low)) {
     s.symbol = bareSymbol(t, allowed);
     s.action = RE_PARTIAL.test(low) ? "TRIM" : "CLOSE";
     s.matched = "stopped out";
@@ -522,20 +539,48 @@ function parseSignal(text, cfg) {
   //     grammar goes live. Which side of the switch that happens on is not
   //     the parser's decision; it reads, the guards and the bridge decide.
   const mf = RE_FUT_ENTRY.exec(t);
+  let futDir = null, futSym = null, futPx = null, futEnd = 0;
   if (mf && FUT_SYMS.has(mf[2].toUpperCase())) {
-    s.symbol = mf[2].toUpperCase();
+    futDir = mf[1].toUpperCase(); futSym = mf[2].toUpperCase();
+    futPx = num(mf[3]); futEnd = (mf.index || 0) + mf[0].length;
+  } else {
+    // "Long NQ - AVG 24015" / "Entered NQ short 23477 average" — no inline
+    // price, direction and symbol either way round, the price arriving as
+    // an average. Requires the average or his stop plus an entry verb, so
+    // "comfortable being long NQ" chatter stays chatter.
+    const md = RE_FUT_DIR_SYM.exec(t);
+    if (md) {
+      const d0 = (md[1] || md[4] || "").toUpperCase();
+      const s0 = (md[2] || md[3] || "").toUpperCase();
+      if (d0 && FUT_SYMS.has(s0)) {
+        const maF = RE_FUT_AVG.exec(t);
+        if (maF) {
+          futDir = d0; futSym = s0; futPx = num(maF[1] || maF[2]);
+          futEnd = (md.index || 0) + md[0].length;
+        } else if (RE_THEIR_STOP.test(t) && RE_ENTRY.test(low)) {
+          futDir = d0; futSym = s0; futEnd = (md.index || 0) + md[0].length;
+        }
+      }
+    }
+  }
+  if (futSym) {
+    s.symbol = futSym;
     s.kind = "future";
-    s.direction = mf[1].toUpperCase();
-    s.limit = num(mf[3]);
+    s.direction = futDir;
+    s.limit = futPx;
     s.action = "OPEN"; s.matched = "futures entry";
-    const rest = t.slice((mf.index || 0) + mf[0].length);
+    const rest = t.slice(futEnd);
     const ms = RE_THEIR_STOP.exec(rest);
     if (ms) s.their_stop = num(ms[1]);
     const mt = RE_THEIR_TARGET.exec(rest);
     if (mt) s.their_target = num(mt[1]);
     s.fire = true;
+    if (s.limit === null) {
+      s.warn = "they posted no price on this one — it pays the market.";
+    }
     s.why = "futures entry: " + s.direction + " " + s.symbol + " @ " +
-            s.limit + (s.their_stop !== null ? ", their stop " + s.their_stop : "") +
+            (s.limit === null ? "market" : s.limit) +
+            (s.their_stop !== null ? ", their stop " + s.their_stop : "") +
             (s.their_target !== null ? ", their target " + s.their_target : "");
     return s;
   }

@@ -127,6 +127,15 @@ def load_settings():
 CFG = load_settings()
 EXEC = CFG.get("execution", {})
 MODE = str(EXEC.get("mode", "dryrun")).lower()
+# THE MASTER SWITCH IS RETIRED — his word: "remove the main big switch since
+# i want every room to act individually. its either testing or they are
+# live.. just like that." Execution is decided per ORDER now (order["live"],
+# set by the room's own toggle in the popup); the bridge itself always keeps
+# the dry book and connects to Webull whenever keys are in. A settings.json
+# still saying mode=webull is treated as dryrun so an old file can't arm
+# anything by itself.
+if MODE == "webull":
+    MODE = "dryrun"
 
 WB = None           # the Webull connection, made once at startup
 WB_ERROR = ""
@@ -518,13 +527,16 @@ def place(order):
             return reply
     what = describe(order)
 
-    # TRIM — sell some, keep the rest. Test mode only for now: in live he's
-    # still set to hold until "all out", and a browser message must not gain
-    # the power to sell real contracts before he's said so.
+    # Whether THIS order is real money — the room's own toggle, not a global.
+    live_order = bool(order.get("live")) and MODE != "webhook"
+
+    # TRIM — sell some, keep the rest. Test rooms only for now: in a LIVE
+    # room he's still set to hold until "all out", and a browser message must
+    # not gain the power to sell real contracts before he's said so.
     if action == "TRIM":
-        if MODE != "dryrun":
-            return False, ("trims don't sell in live mode — you're set to hold "
-                           "until \"all out\". Nothing was sent.")
+        if live_order:
+            return False, ("trims don't sell in a LIVE room yet — you're set "
+                           "to hold until \"all out\". Nothing was sent.")
         if BOOK is None:
             return False, "no book yet, nothing to trim"
         st = BOOK.state_of(key)
@@ -550,7 +562,9 @@ def place(order):
                            "%d" % held)
         return True, "dry run — sold %d, holding the rest" % sold
 
-    if MODE == "dryrun":
+    if MODE == "webhook":
+        pass          # falls through to the webhook branch below
+    elif not live_order:
         # Money is never the reason a test trade gets refused any more. The
         # unlimited book keeps the high-water mark instead — the answer to
         # "how much would I need" — and every entry goes through at the
@@ -595,9 +609,10 @@ def place(order):
             note("FAILED  %s  ->  %s" % (what, e))
             return False, "the webhook didn't answer: %s" % e
 
-    if MODE == "webull":
+    if live_order:
         if WB is None:
-            return False, ("not connected to Webull: %s" % (WB_ERROR or "unknown"))
+            return False, ("this room is set LIVE but the bridge isn't "
+                           "connected to Webull: %s" % (WB_ERROR or "unknown"))
 
         # Futures, real money. Two locks on this door: the futures switch in
         # settings (off until he flips it), and webull_futures itself, which
@@ -637,6 +652,7 @@ def place(order):
                 ticket = WB.buy(order["symbol"], order.get("side"),
                                 order.get("strike"), order.get("expiry"), qty,
                                 their_price=order.get("limit"))
+                ticket["live"] = True   # real money — the Book must know
                 # "ORDER IN", not "BOUGHT". Webull has accepted a resting bid;
                 # nobody has sold you anything yet.
                 note("ORDER IN %s" % ticket["what"])
@@ -741,8 +757,10 @@ class Handler(BaseHTTPRequestHandler):
     def _status(self):
         reload_settings()
         keys_in = bool((EXEC.get("webull") or {}).get("app_key"))
-        return {"mode": MODE,
-                "live": MODE == "webull",
+        return {"mode": "per-room",
+                # No global live any more — rooms go live one by one in the
+                # popup, and each ORDER carries its own flag.
+                "live": False,
                 "connected": WB is not None,
                 "account": WB_ACCOUNT,
                 "error": WB_ERROR,
@@ -808,8 +826,14 @@ class Handler(BaseHTTPRequestHandler):
         self._reply(200, "bridge is up, mode=%s" % MODE)
 
     def _set_mode(self):
-        """The live / dry-run switch, driven from the popup so you don't have to
-        find this window and restart it."""
+        """RETIRED. The master switch is gone — rooms go live one at a time
+        in the popup, and every order carries its own live flag. This answers
+        politely so an old popup can't flip anything."""
+        return self._json(200, dict(self._status(), ok=False,
+            message="the master switch is retired — each room has its own "
+                    "TESTING/LIVE toggle in the popup now"))
+
+    def _set_mode_retired(self):
         global WB_ERROR
         reload_settings()
         try:
@@ -1023,7 +1047,7 @@ class Handler(BaseHTTPRequestHandler):
 
         cap = (HARD_MAX_SELL_QTY
                if order.get("action") in ("CLOSE", "TRIM")
-               else (HARD_MAX_QTY_DRY if MODE == "dryrun" else HARD_MAX_QTY))
+               else (HARD_MAX_QTY if order.get("live") else HARD_MAX_QTY_DRY))
         try:
             qty = max(1, min(int(order.get("qty") or 1), cap))
         except (TypeError, ValueError):
@@ -1053,7 +1077,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
-        if MODE != "dryrun" and order.get("action") != "TRIM" \
+        if order.get("live") and order.get("action") != "TRIM" \
                 and order.get("kind") != "future" \
                 and not (order.get("strike") and order.get("expiry")):
             note("BLOCKED  %s %s arrived with no strike/expiry" %

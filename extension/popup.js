@@ -66,8 +66,6 @@ function clock(t) {
  * should never make you confirm anything.
  */
 let modeStatus = null;
-let armLive = false;          // true when the button is waiting for click two
-let armLiveTimer = null;
 
 function bridgeBase() {
   const url = $("bridge").value.trim() || DEFAULTS.bridge_url;
@@ -83,45 +81,26 @@ async function askBridge(path, body) {
   return r.json();
 }
 
+/* The master switch is retired. This paints one honest line about the
+ * bridge: reachable or not, keys or not, real buying power when known. The
+ * per-room toggles in Settings are the only thing that arms real money. */
 function paintMode() {
-  const btn = $("mode"), sub = $("modestate");
-
-  btn.style.width = "100%";
-
-  if (armLive) {
-    btn.className = "grow confirm big";
-    btn.innerHTML = "CLICK AGAIN FOR REAL MONEY" +
-                    "<small>this one really buys. options have no practice " +
-                    "mode.</small>";
-    sub.textContent = "or wait a few seconds and it forgets you asked";
-    return;
-  }
+  const sub = $("modestate");
   if (!modeStatus) {
-    btn.className = "grow dry big";
-    btn.innerHTML = "CAN'T REACH YOUR PC<small>the bridge isn't running</small>";
-    sub.textContent = "on your PC: double-click START HERE, then look again";
+    sub.textContent = "Can't reach your PC — double-click START HERE, " +
+                      "then look again.";
     return;
   }
-  // The real account's buying power, whenever the bridge can read it. Shown
-  // in BOTH modes — knowing what the margin account could do is half of how
-  // you judge whether the test day's "would need $X" figure is realistic.
   const bp = modeStatus.buying_power;
   const bpBit = (bp === null || bp === undefined)
     ? "" : " · $" + Math.round(bp).toLocaleString() + " real buying power";
-  if (modeStatus.live) {
-    btn.className = "grow live big";
-    btn.innerHTML = "REAL MONEY<small>click to go back to test mode</small>";
-    sub.textContent = (modeStatus.connected
-      ? ("orders go to your Webull account " + (modeStatus.account || "?"))
-      : ("REAL MONEY but not connected: " + (modeStatus.error || "unknown")))
-      + bpBit;
-  } else {
-    btn.className = "grow dry big";
-    btn.innerHTML = "TEST MODE<small>click to switch to real money</small>";
-    sub.textContent = (modeStatus.has_keys
-      ? "nothing is really bought — trades are written down on your PC"
-      : "no Webull keys saved yet — scroll down to Settings and paste them in") + bpBit;
-  }
+  sub.textContent = (modeStatus.has_keys
+    ? (modeStatus.connected
+       ? "Bridge up, connected to Webull " + (modeStatus.account || "")
+       : "Bridge up, keys in but not connected" +
+         (modeStatus.error ? ": " + modeStatus.error : ""))
+    : "Bridge up. No Webull keys yet — Settings below.") + bpBit +
+    " · rooms go LIVE one by one in Settings";
 }
 
 function paintKeys() {
@@ -175,38 +154,6 @@ $("savekeys").onclick = async () => {
   $("savekeys").textContent = "Save keys to this PC";
 };
 
-$("mode").onclick = async () => {
-  if (modeStatus && modeStatus.live) {         // safe direction — just do it
-    armLive = false;
-    try { modeStatus = await askBridge("/mode", { live: false }); }
-    catch (e) { modeStatus = null; }
-    return paintMode();
-  }
-  if (!modeStatus) return refreshMode();
-  if (!modeStatus.has_keys) {
-    $("modestate").textContent =
-      "no Webull keys saved yet — paste them into Settings below, then come back";
-    return;
-  }
-  if (!armLive) {                              // first click: ask, don't act
-    armLive = true;
-    paintMode();
-    clearTimeout(armLiveTimer);
-    armLiveTimer = setTimeout(() => { armLive = false; paintMode(); }, 6000);
-    return;
-  }
-  armLive = false;
-  clearTimeout(armLiveTimer);
-  try {
-    const r = await askBridge("/mode", { live: true });
-    modeStatus = r;
-    paintMode();
-    if (r.message) $("modestate").textContent = r.message;
-  } catch (e) {
-    modeStatus = null;
-    paintMode();
-  }
-};
 
 /* ---- the day as a table ---------------------------------------------------
  * One row per trade: who called it, the contract, what you paid, every
@@ -242,6 +189,24 @@ function renderRoomToggles(channelLive) {
            '<option value="1"' + (live ? " selected" : "") + '>LIVE</option>' +
            "</select></div>";
   }).join("");
+}
+
+/* Flipping a room to LIVE is the one dangerous click left, so it asks in
+ * plain words, once, right there. Testing needs no confirmation — the safe
+ * direction never does. */
+function armRoomToggleConfirms() {
+  document.querySelectorAll("#roomtoggles select[data-room]").forEach(sel => {
+    sel.onchange = () => {
+      if (sel.value === "1" &&
+          !confirm("REAL MONEY for \"" +
+                   (ROOM_NAMES[sel.dataset.room] || "this room") +
+                   "\"?\n\nIts calls will buy with your Webull account the " +
+                   "moment you hit Save settings. Options have no practice " +
+                   "mode. It goes back to TESTING whenever Chrome restarts.")) {
+        sel.value = "0";
+      }
+    };
+  });
 }
 
 function readRoomToggles() {
@@ -463,6 +428,7 @@ async function render() {
   $("admins").value = listToText(s.follow_admins);
   $("futures").value = s.futures_enabled ? "1" : "0";
   renderRoomToggles(s.channel_live || {});
+  armRoomToggleConfirms();
   $("bridge").value = s.bridge_url;
 
   const box = $("log");

@@ -109,15 +109,18 @@
   </div>
   <div class="state" id="state">Loading…</div>
 
+  <!-- The big TEST/REAL switch is GONE — his design: "remove the main big
+       switch since i want every room to act individually. its either testing
+       or they are live.. just like that." Each room's toggle in Settings is
+       the whole decision now; this line just reports the bridge. -->
   <div class="bar">
-    <button id="mode" class="grow dry big" style="width:100%">Checking the bridge…</button>
-    <div class="state" id="modestate" style="margin-top:6px">&nbsp;</div>
+    <div class="state" id="modestate">Checking the bridge…</div>
   </div>
 
   <div class="note" id="bothnote">It's ON by itself, 24/7 — the market-hours
-    guard does the timekeeping, so nothing fires outside the session anyway.
-    The bottom switch is the one that's yours: TEST pretends, REAL buys, and
-    only you flip it. OFF up top is the emergency brake.</div>
+    guard does the timekeeping. Every room starts in TESTING (pretend money)
+    and goes LIVE one by one in Settings, only by your hand. Rooms reset to
+    TESTING whenever Chrome restarts. OFF up top is the emergency brake.</div>
 
   <div class="holding" id="holding">Flat.</div>
   <div class="purse" id="purse" style="display:none"></div>
@@ -150,11 +153,12 @@
 
     <!-- One row per room: TESTING or LIVE. Only matters once the master
          switch is REAL — in TEST mode everything pretends regardless. -->
-    <label>Rooms — testing or live (only counts when REAL is on)</label>
+    <label>Rooms — each one is its own switch</label>
     <div id="roomtoggles"></div>
-    <div class="note">While the big switch is TEST, every room pretends.
-      When you flip REAL, only rooms set to LIVE trade real money — the
-      rest keep being logged and never touch Webull.</div>
+    <div class="note">TESTING = pretend money, logged and scored. LIVE = that
+      room's calls buy with your Webull account. Each room is armed on its
+      own, asks you to confirm, and falls back to TESTING whenever Chrome
+      restarts. Hit Save settings to apply.</div>
 
     <div class="half">
       <div>

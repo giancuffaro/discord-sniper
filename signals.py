@@ -167,6 +167,32 @@ RE_THEIR_TARGET = re.compile(
 RE_USD_CONTRACT = re.compile(
     r"\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|/)\s*con(?:tract)?s?\b",
     re.IGNORECASE)
+# His Futures-channel entry variants: "Long NQ - AVG 24015", "Long NQ -
+# 23865 AVG", "Entered NQ short 23477 average", "Short RTY AVG - 2398.4".
+# Direction + symbol either way round, price arriving as an average.
+RE_FUT_DIR_SYM = re.compile(
+    r"\b(long|short)\s+\$?([A-Za-z0-9]{1,4})\b"
+    r"|\b([A-Za-z0-9]{1,4})\s+(long|short)\b", re.IGNORECASE)
+RE_FUT_AVG = re.compile(
+    r"\b(?:avg|average)\s*[-:]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b"
+    r"|\b(\d[\d,]*(?:\.\d{1,2})?)\s+(?:avg|average)\b", re.IGNORECASE)
+# The room says "gold"/"silver" as often as GC/SI.
+FUT_NICKNAMES = {"GOLD": "GC", "SILVER": "SI", "PLATINUM": "PL"}
+# "Stopped" alone at the start of a message, "Eh stopped", "Stop got hit",
+# "BE stop hit", "Trailing stop hit on RTY" — their stop fired, said seven
+# different ways. Start-anchored so "if we get stopped" inside an entry's
+# rationale never reads as an exit.
+RE_STOP_HIT = re.compile(
+    r"^(?:eh\s+|welp\s+)?stopp(?:ed|ing)\b"
+    r"|\b(?:be\s+|trailing\s+)?stop\s+(?:got\s+|was\s+)?hit\b",
+    re.IGNORECASE)
+# "Taking paper cut" / "Locking in a 8 point loss" — an early exit by hand.
+# Verb-led on purpose: "those paper cuts we took yesterday" is a war story,
+# "Taking papercut" is a sale.
+RE_PAPERCUT = re.compile(
+    r"\btak(?:e|ing)\s+(?:a\s+|this\s+|the\s+)?paper\s*cut"
+    r"|\btaking\s+the\s+loss\b"
+    r"|\block(?:ing)?\s+in\s+an?\s+\d+\s+point\s+loss\b", re.IGNORECASE)
 
 
 def _num(s):
@@ -475,6 +501,8 @@ def _bare_symbol(text, allowed):
         # a way it isn't for stock tickers.
         if s in FUT_SYMS:
             return s
+        if s in FUT_NICKNAMES:
+            return FUT_NICKNAMES[s]
         # Written in CAPITALS = a ticker, whoever's list it is or isn't on —
         # "Fully out of NBIS" has to resolve without NBIS being pre-listed.
         # The vocabulary list only unlocks lowercase ("40% in spy now").
@@ -515,7 +543,7 @@ def parse(text, author="", channel="", cfg=None):
         return sig
 
     for w in tuple(VETO_WORDS) + tuple(cfg.get("extra_veto_words", ())):
-        if w.lower() in low:
+        if w.lower() in low and not RE_PAPERCUT.search(low):
             sig.why = 'chatter, not an order (it contains "%s")' % w.strip()
             return sig
 
@@ -600,7 +628,8 @@ def parse(text, author="", channel="", cfg=None):
     #     Resolved by whose position it is, exactly like a bare trim. The
     #     anchored regex is what keeps "Damn it actually worked out" from
     #     reading as an exit — a bare out IS the whole message, or it's chatter.
-    if RE_STOPPED_OUT.search(low):
+    if RE_STOPPED_OUT.search(low) or RE_STOP_HIT.search(t) \
+            or RE_PAPERCUT.search(low):
         sig.symbol = _bare_symbol(t, allowed)
         sig.action = "TRIM" if RE_PARTIAL.search(low) else "CLOSE"
         sig.matched = "stopped out"
@@ -707,13 +736,38 @@ def parse(text, author="", channel="", cfg=None):
     #     this grammar goes live. Which side of the switch that happens on is
     #     not the parser's decision; it reads, the guards and bridge decide.
     mfut = RE_FUT_ENTRY.search(t)
+    fut_dir = fut_sym = fut_px = None
+    fut_end = 0
     if mfut and mfut.group(2).upper() in FUT_SYMS:
-        sig.symbol = mfut.group(2).upper()
+        fut_dir, fut_sym = mfut.group(1).upper(), mfut.group(2).upper()
+        fut_px, fut_end = _num(mfut.group(3)), mfut.end()
+    else:
+        # "Long NQ - AVG 24015" / "Entered NQ short 23477 average" — no
+        # inline price, direction and symbol either way round, the price
+        # arriving as an average. Requires the average or his stop/target so
+        # "comfortable being long NQ" chatter (no numbers) stays chatter.
+        md = RE_FUT_DIR_SYM.search(t)
+        if md:
+            d0 = (md.group(1) or md.group(4) or "").upper()
+            s0 = (md.group(2) or md.group(3) or "").upper()
+            if d0 and s0 in FUT_SYMS:
+                ma_f = RE_FUT_AVG.search(t)
+                if ma_f:
+                    fut_dir, fut_sym = d0, s0
+                    fut_px = _num(ma_f.group(1) or ma_f.group(2))
+                    fut_end = md.end()
+                elif RE_THEIR_STOP.search(t) and RE_ENTRY.search(low):
+                    # "Short NQ - Light / Stop 23400 / Target 23300" — a
+                    # real call with no price anywhere. Recorded as a
+                    # market entry; the dry run will say so out loud.
+                    fut_dir, fut_sym, fut_end = d0, s0, md.end()
+    if fut_sym:
+        sig.symbol = fut_sym
         sig.kind = "future"
-        sig.direction = mfut.group(1).upper()
-        sig.limit = _num(mfut.group(3))
+        sig.direction = fut_dir
+        sig.limit = fut_px
         sig.action, sig.matched = "OPEN", "futures entry"
-        rest = t[mfut.end():]
+        rest = t[fut_end:]
         ms = RE_THEIR_STOP.search(rest)
         if ms:
             sig.their_stop = _num(ms.group(1))
@@ -721,8 +775,12 @@ def parse(text, author="", channel="", cfg=None):
         if mt:
             sig.their_target = _num(mt.group(1))
         sig.fire = True
-        sig.why = ("futures entry: %s %s @ %g%s%s"
-                   % (sig.direction, sig.symbol, sig.limit,
+        if sig.limit is None:
+            sig.warn = ("they posted no price on this one — it pays the "
+                        "market.")
+        sig.why = ("futures entry: %s %s @ %s%s%s"
+                   % (sig.direction, sig.symbol,
+                      "market" if sig.limit is None else "%g" % sig.limit,
                       "" if sig.their_stop is None
                       else ", their stop %g" % sig.their_stop,
                       "" if sig.their_target is None

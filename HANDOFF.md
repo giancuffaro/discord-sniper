@@ -1318,3 +1318,45 @@ SANDBOX NOTE for future turns: this cloud workspace rolled back twice,
 silently losing local commits/files that were already pushed. GitHub is
 the truth — at the start of any turn after a gap, fetch and compare
 before editing, and re-seat local work on top of origin/main.
+
+## v1.14.0 — THE MASTER SWITCH IS RETIRED; the Futures channel is taught
+
+His words: "remove the main big switch since i want every room to act
+individually. its either testing or they are live.. just like that. as
+soon as app starts everyone is testing obviously."
+
+Architecture now: execution is PER ORDER. The extension sets order.live
+from the room's own toggle; the bridge routes each order (live -> Webull
+path, else dry book). MODE is forced to dryrun at boot (an old
+settings.json saying webull can't arm anything); webhook mode survives as
+the only global. POST /mode answers politely that it's retired. The Book
+holds live and test positions side by side: p["live"] decides whether the
+fill watcher probes Webull order_status or the quote feed, and the pretend
+wallet/scoreboard NEVER counts live positions (Webull is the ledger for
+real money). _row exports "live" for the popup. Live trims still refuse
+(hold-until-all-out stands). Live tickets are marked live by the bridge;
+webull_futures orders inherit via order["live"].
+
+Extension: big TEST/REAL button deleted from the popup — a one-line bridge
+status replaces it (keys, connection, buying power). Room toggles are THE
+control: flipping one to LIVE pops a plain-words confirm; Save applies.
+allRoomsTesting() clears channel_live on browser start/install — LIVE is
+per room, per session, never survives a Chrome restart.
+
+Futures channel taught (samples 283, parity green): AVG-style entries
+("Long NQ - AVG 24015", "Entered NQ short 23477 average", "Short RTY AVG -
+2398.4"), priceless-but-real calls ("Short NQ - Light" + Stop/Target =
+market entry with a warning), seven ways of saying stopped ("Stopped" at
+message start, "Eh stopped", "Stop got hit", "BE stop hit", "Trailing stop
+hit on RTY"), papercuts sell ("Taking papercut" — verb-led, exempted from
+the don't-veto; "paper cuts we took yesterday" stays a war story),
+gold/silver/platinum map to GC/SI/PL. Sandbox data endpoint he supplied,
+for when quotes matter: https://api.sandbox.webull.com/openapi/market-data/futures/tick
+(docs: developer.webull.com/apis/docs/reference/futures-tick) — noted for
+webull_futures/quote work once his CME data is live.
+
+NOT done, deliberate: live-mode paper-scoring dual wallet beyond what the
+Book now does (test rooms score in the dry wallet even while other rooms
+are live — that IS the dual book, done); per-room grammar profiles (bare
+percents: Aristotle trims vs Felony-room updates) still pending Whop
+wiring; Whop platform gate still record-only.

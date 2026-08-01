@@ -143,7 +143,9 @@ async function sendOrder(sig, qty, c, author) {
     their_stop: (sig.their_stop === 0 || sig.their_stop) ? sig.their_stop : null,
     their_target: (sig.their_target === 0 || sig.their_target) ? sig.their_target : null,
     usd: (sig.usd === 0 || sig.usd) ? sig.usd : null,
-    source: "discord-extension", raw: sig.raw, ts: Date.now()
+    source: "discord-extension", raw: sig.raw, ts: Date.now(),
+    // Real money or pretend, decided by the ROOM's toggle, not a global.
+    live: !!sig.live
   };
   const t0 = performance.now();
   let r;
@@ -623,25 +625,13 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
      * sells 3, "all out" sells the rest. Money never blocks anything — the
      * bridge's unlimited book keeps score of what it would have taken. None
      * of this touches real mode, which stays on the conservative settings. */
-    const mode = await bridgeMode(c);
-    // Per-room TEST/LIVE, his design: "each channel had a toggle button from
-    // testing to live so i would be able to choose which channel i want and
-    // dont want to trade live". While the master switch is TEST, everything
-    // pretends, exactly as before. The moment the master goes REAL, only
-    // rooms he flipped to LIVE trade real money — the rest are held here,
-    // logged, and never reach the bridge.
-    if (mode === "webull" &&
-        !((c.channel_live || {})[String(msg.channelId || "")])) {
-      await addLog({ kind: "skipped", action: sig.action,
-                     what: sig.action + " " + (sig.symbol || ""),
-                     why: "REAL money is on, but this room is still set to " +
-                          "TESTING — its call was logged, not traded. Flip " +
-                          "it to LIVE in the popup when it's earned it.",
-                     text: msg.text, author: msg.author });
-      reply({ ok: true });
-      return;
-    }
-    const testing = mode !== "webull";
+    // THE MASTER SWITCH IS RETIRED — his word: "remove the main big switch
+    // since i want every room to act individually. its either testing or
+    // they are live.. just like that." Each room's own toggle decides, per
+    // order. Every room resets to TESTING when Chrome starts.
+    const roomLive = !!((c.channel_live || {})[String(msg.channelId || "")]);
+    sig.live = roomLive;
+    const testing = !roomLive;
     if (testing && sig.action === "TRIM" && !sig.fire) {
       if (!sig.symbol) {
         sig.needs_position = true;
@@ -810,8 +800,23 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   return true;   // keep the message channel open for the async reply
 });
 
-chrome.runtime.onInstalled.addListener(() => { ensureArmed(); badge(); reinject(); });
-chrome.runtime.onStartup.addListener(() => { ensureArmed(); badge(); reinject(); });
+async function allRoomsTesting() {
+  // "as soon as app starts everyone is testing obviously" — LIVE is a
+  // decision he makes fresh, per room, per session. Nothing stays armed
+  // for real money across a browser restart.
+  const { settings } = await chrome.storage.local.get("settings");
+  if (settings && settings.channel_live &&
+      Object.keys(settings.channel_live).length) {
+    settings.channel_live = {};
+    await chrome.storage.local.set({ settings });
+    await addLog({ kind: "update",
+                   why: "Chrome restarted — every room is back to TESTING. " +
+                        "LIVE is flipped per room, per session, in Settings." });
+  }
+}
+
+chrome.runtime.onInstalled.addListener(() => { allRoomsTesting(); ensureArmed(); badge(); reinject(); });
+chrome.runtime.onStartup.addListener(() => { allRoomsTesting(); ensureArmed(); badge(); reinject(); });
 ensureArmed();
 badge();
 reinject();
