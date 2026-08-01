@@ -456,12 +456,26 @@ class Book:
                     self._became_filled(key, filled_qty or want, avg or limit)
                     return
                 if state == "dead":
-                    self._became_nofill(key, "Webull cancelled or rejected it")
+                    self._became_nofill(key, "Webull cancelled or rejected it, "
+                                        "or there was never a price to bid "
+                                        "with")
                     return
         except Exception as e:                          # noqa: BLE001
+            # The watcher died. Whatever went wrong, a bid may not sit in
+            # "waiting for a seller" forever — that's how a garbage entry
+            # (TAKE 742C, no price, no quote) stayed BID IN from 11:15 to
+            # the close. The bid is declared dead; Webull is the referee if
+            # this was ever real.
+            with self._lock:
+                p = self._pos.get(key)
+                if p is not None and p["state"] == WORKING:
+                    p["state"] = FAILED
+                    p["closed_at"] = time.time()
+            self._unreserve(key)
             self._event(key, "failed",
-                        "%s — lost track of the entry: %s. Check the Webull app."
-                        % (key.split("|")[-1], str(e)[:120]))
+                        "%s — lost track of the entry: %s. The bid is treated "
+                        "as DEAD — check the Webull app before trusting this "
+                        "line." % (key.split("|")[-1], str(e)[:120]))
             with self._lock:
                 if key in self._pos:
                     self._pos[key]["state"] = FAILED
@@ -497,11 +511,20 @@ class Book:
             # treats the entry as filled at the price it would have bid, and
             # the log says so. This is the one place the dry run flatters
             # itself, and it's marked every time it happens.
+            if limit is None:
+                # ...but with no bid price EITHER, there is nothing to
+                # pretend a fill at. Dead on arrival, honestly.
+                return "dead", 0, None
             return FILLED, None, limit
         if self.simulated:
             # Keys are present and quotes are real, so a dry run can answer the
             # actual question: did anyone offer to sell at your bid? If the ask
             # comes down to your price, somebody would have.
+            if limit is None:
+                # A bid with no price can't be matched against any ask. Let
+                # the deadline pull it rather than crash the watcher — this
+                # exact float(None) is what wedged TAKE 742C in BID IN.
+                return WORKING, 0, None
             try:
                 ask, bid, _ = self.wb.ask_bid(occ)
             except Exception:                           # noqa: BLE001

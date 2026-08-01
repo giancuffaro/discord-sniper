@@ -464,3 +464,36 @@ if bad:
     raise SystemExit(1)
 print("A re-entry archives the finished trade instead of eating it, and "
       "midnight resets the scoreboard without touching what you hold.")
+
+
+# --- a bid with no price must die at the deadline, not wait forever ---------
+# Day two live: "TAKE 742C" went out with no posted price and no real quote.
+# float(None) crashed the fill watcher, and the crash path forgot to change
+# the state — so the popup said "waiting for a seller" from 11:15 to the
+# close. Both halves are pinned here: no price -> the deadline pulls it, and
+# a watcher that dies -> the bid is declared dead, never left WORKING.
+wb = FakeWB(fills=True, ask=2.77, bid=2.77)
+b = book(wb, unlimited=True, simulated=True)   # dry run WITH quotes, like live
+NP = dict(ORDER, trader="Midas")
+NK = positions.key_of("Midas", "SPY")
+b.entry_sent(NP, {"order_id": None, "occ": "SPY   250801C00745000",
+                  "limit": None, "bid": None, "ask": None, "qty": 5})
+settle(b, NK)
+ok(b.state_of(NK) in (positions.NOFILL, positions.FAILED),
+   "a priceless bid must be pulled at the deadline, got %s" % b.state_of(NK))
+ok(not b.holding(NK), "and you must not be counted as holding it")
+
+# No quote feed AND no price: dead on arrival, honestly.
+b2 = book(None, unlimited=True)
+b2.entry_sent(NP, {"order_id": None, "occ": None, "limit": None,
+                   "bid": None, "ask": None, "qty": 5})
+settle(b2, NK)
+ok(b2.state_of(NK) in (positions.NOFILL, positions.FAILED),
+   "no quote and no price is dead on arrival, got %s" % b2.state_of(NK))
+ok(not b2.holding(NK), "and holds nothing")
+
+if bad:
+    print("\n%d dead-bid check(s) failed." % bad)
+    raise SystemExit(1)
+print("A bid with no price dies at the deadline; a crashed watcher declares "
+      "the bid dead instead of leaving it waiting forever.")

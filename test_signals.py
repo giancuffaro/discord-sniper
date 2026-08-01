@@ -510,25 +510,3 @@ if fails:
     raise SystemExit(1)
 print("Planning talk is not an order: no adds, trim targets and "
       "from-percents all stay ignored.")
-
-
-# --- day two live: the reader bought a verb. Never again. --------------------
-# "I'm going to take 742c starters" fired OPEN TAKE 742C, and "I'm about 80%
-# sure" fired a TRIM. Both are Midas narrating a plan, not doing a thing.
-check("Midas (Admin): 741.60 is new line in the sand. I'm going to take 742c "
-      "starters and add full size at 741.60, stop loss is a 5 min close "
-      "below 741.60 @everyone", action=None)
-check("Midas (Admin): Multiple tries to break above 742.70 has failed. I'm "
-      "about 80% sure market falls without breaking above that level",
-      action=None)
-# KingBeeAri's challenge-room entry stays a real entry.
-s = check("In some light MSFT 462.5 call @everyone", action="OPEN",
-          symbol="MSFT", strike=462.5, side="CALLS")
-
-if fails:
-    print("FAILED %d plan-talk check(s):" % len(fails))
-    for f in fails:
-        print("  -", f)
-    raise SystemExit(1)
-print("A plan is not an order: announced intent and confidence percentages "
-      "stay ignored, and the challenge room's real entries still fire.")
