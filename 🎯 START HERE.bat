@@ -35,6 +35,11 @@ set "ARISTOTLE_URL=https://discord.com/channels/%SERVER_ID%/987515353670221834"
 set "MIDAS_URL=https://discord.com/channels/%SERVER_ID%/1144369893760831489"
 rem  Aristotle again, but his small-account challenge room.
 set "ARISTOTLE_SMALL_URL=https://discord.com/channels/%SERVER_ID%/1433933203302776852"
+rem  Felony's Whop rooms - the reader only sees what's open in a tab.
+set "WHOP1=https://whop.com/joined/firststeptrading/day-trades-cvgzKYDmcUEDGh/app/"
+set "WHOP2=https://whop.com/joined/firststeptrading/futures-26GaLgZVMzB2PL/app/"
+set "WHOP3=https://whop.com/joined/firststeptrading/high-risk-hpXJymtw0yMqzB/app/"
+set "WHOP4=https://whop.com/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app/"
 
 set INTERACTIVE=1
 if /i "%~1"=="morning" set INTERACTIVE=0
@@ -160,19 +165,24 @@ if "!NEEDSTART!"=="0" (
 )
 
 rem ---- [5/5] Chrome, all three rooms ---------------------------
-echo   [5/5] Opening your four rooms in Chrome - all of them
-echo         testing with pretend money until YOU flip REAL...
+echo   [5/5] Opening your rooms in Chrome - four Discord, four
+echo         Whop - all testing with pretend money until YOU flip
+echo         a room LIVE by hand...
 set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
 if defined CHROME (
-  start "" "!CHROME!" "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!"
+  start "" "!CHROME!" "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!" "!WHOP1!" "!WHOP2!" "!WHOP3!" "!WHOP4!"
 ) else (
   start "" "!DISCORD_URL!"
   start "" "!ARISTOTLE_URL!"
   start "" "!MIDAS_URL!"
   start "" "!ARISTOTLE_SMALL_URL!"
+  start "" "!WHOP1!"
+  start "" "!WHOP2!"
+  start "" "!WHOP3!"
+  start "" "!WHOP4!"
   echo         Couldn't find Chrome in the usual folders - opened your
   echo         default browser. The extension only runs in Chrome.
 )

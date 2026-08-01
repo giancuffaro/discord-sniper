@@ -1442,3 +1442,12 @@ test P/L automatically speaks micro dollars — a 100-point NQ trade reads
 dollars; the book prices exits off points x micro mult, so no distortion.
 He's cloning onto a laptop — gave him the one-line git clone with his own
 PAT embedded (his token, his machine) + load-unpacked + keys reminder.
+
+## v1.15.2 — START HERE opens the Whop rooms too
+
+Laptop bring-up went clean (fresh clone, all 4 Discord tabs, settings
+good). Whop tabs weren't opened by START HERE — now they are: the four
+known room URLs (Day Trades, Futures, High Risk, 2K Challenge) open with
+the Discord four, and oneTabPerChannel dedupes whop.com/joined/* paths
+the same way so the 9:25 alarm can't stack them. Swing Trades and Long
+Term links still wanted from him (URL hashes can't be guessed).

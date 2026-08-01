@@ -533,7 +533,10 @@ async function oneTabPerChannel() {
   let tabs;
   try {
     tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
-                                           "https://*.discord.com/channels/*"] });
+                                           "https://*.discord.com/channels/*",
+                                           // Whop rooms dedupe the same way —
+                                           // the morning alarm reopens them.
+                                           "https://whop.com/joined/*"] });
   } catch (e) { return; }
   const byChannel = {};
   for (const t of tabs) {
