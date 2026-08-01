@@ -81,6 +81,12 @@ def _place(wb, contract, side, qty, limit=None):
     shapes = []
     base = {"symbol": contract, "qty": int(qty), "quantity": int(qty),
             "side": side, "order_type": "LIMIT" if limit else "MARKET"}
+    # The FUTURES account, picked automatically when the keys went in — his
+    # rule: options ride the MARGIN account, futures ride the FUTURES one,
+    # nobody picks anything twice.
+    fut_acct = getattr(wb, "futures_account_id", None)
+    if fut_acct:
+        base["account_id"] = base["accountId"] = str(fut_acct)
     if limit:
         base["limit_price"] = base["price"] = float(limit)
     shapes.append((base,))

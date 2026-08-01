@@ -815,6 +815,9 @@ class Handler(BaseHTTPRequestHandler):
                 "live": False,
                 "connected": WB is not None,
                 "account": WB_ACCOUNT,
+                # The futures account, auto-picked next to the margin one.
+                "futures_account": getattr(WB, "futures_account_id", None)
+                                   if WB is not None else None,
                 "error": WB_ERROR,
                 "has_keys": keys_in,
                 # Just the tail, so the popup can say "keys in, ...4859"

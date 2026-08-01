@@ -97,8 +97,11 @@ function paintMode() {
   const bp = modeStatus.buying_power;
   const bpBit = (bp === null || bp === undefined)
     ? "" : " &nbsp;·&nbsp; $" + Math.round(bp).toLocaleString() + " buying power";
+  const fut = modeStatus.futures_account
+    ? " &nbsp; " + dot(true) + "Futures acct" : "";
   sub.innerHTML = dot(true) + "Bridge &nbsp; " +
-    dot(!!(modeStatus.has_keys && modeStatus.connected)) + "Webull keys" + bpBit;
+    dot(!!(modeStatus.has_keys && modeStatus.connected)) + "Webull keys" +
+    fut + bpBit;
 }
 
 

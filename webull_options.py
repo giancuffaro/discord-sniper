@@ -316,16 +316,37 @@ class WebullOptions:
                               "FUTURES account. This bot trades options only, so "
                               "nothing was sent. Run EXTRAS.bat, keys option, and pick "
                               "the account you want it to use.")
-            if len(options_accounts) > 1:
+            # His rule now: MARGIN automatically. "i would like for it to
+            # choose the margin account automatically for options" — no
+            # EXTRAS step, no picking. Margin first; if there's no margin
+            # account, the biggest non-futures one; a genuine tie still
+            # refuses loudly rather than guessing between equals.
+            margins = [a for a in options_accounts
+                       if "MARGIN" in _acct_kind(a).upper()]
+            if len(margins) == 1:
+                chosen = margins[0]
+            elif len(options_accounts) == 1:
+                chosen = options_accounts[0]
+            elif margins:
+                ids = ", ".join("%s (%s)" % (_acct_id(a), _acct_kind(a))
+                                for a in margins)
+                raise Refused("you have more than one MARGIN account — %s. "
+                              "Open EXTRAS.bat, keys option, and pick one."
+                              % ids)
+            else:
                 ids = ", ".join("%s (%s)" % (_acct_id(a), _acct_kind(a))
                                 for a in options_accounts)
-                raise Refused("you have more than one Webull account — %s. Open "
-                              "EXTRAS.bat, keys option, and pick which one this bot "
-                              "uses." % ids)
-            chosen = options_accounts[0]
+                raise Refused("you have more than one Webull account and none "
+                              "is MARGIN — %s. Open EXTRAS.bat, keys option, "
+                              "and pick one." % ids)
 
         self.account_id = _acct_id(chosen)
         self.account_kind = _acct_kind(chosen)
+        # And the FUTURES account rides along, picked automatically — "use
+        # the futures one" — so MNQ/MES orders know where they live without
+        # anyone choosing anything twice.
+        futs = [a for a in accounts if is_futures(a)]
+        self.futures_account_id = _acct_id(futs[0]) if futs else None
         if is_futures(chosen):
             raise Refused("account %s is a FUTURES account. This bot is options "
                           "only — nothing was sent. Run EXTRAS.bat, keys option, and "

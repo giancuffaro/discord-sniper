@@ -1489,3 +1489,15 @@ All his words, one sweep:
 - Empty trades table shows NOTHING (was "No trades on this day.").
 - The "ON by default now..." banner: no longer written at install AND
   scrubbed out of already-stored logs at startup (scrubOldBanners).
+
+## v1.15.5 — accounts pick themselves: MARGIN for options, FUTURES for futures
+
+His key sees three accounts (CASH $8.53, MARGIN $64.89, FUTURES) and the
+old code refused with "pick one in EXTRAS". His rule now, automatic on
+key save: options ride the MARGIN account (exactly one margin -> chosen;
+one account total -> chosen; genuine ties still refuse loudly), futures
+ride the FUTURES account (webull_options exposes futures_account_id;
+webull_futures stamps it on every order). /mode reports futures_account;
+the popup's status line shows a third green dot "Futures acct" when it's
+found. The dot he wanted green goes green the moment keys save — no
+EXTRAS visit, no picking twice.
