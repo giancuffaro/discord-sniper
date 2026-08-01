@@ -1429,3 +1429,16 @@ still per-session and confirmed by hand.
 - HIS WEBULL CME DATA IS LIVE — confirmed from this session via the Webull
   MCP: NQU6/ESU6 snapshots with bid/ask returned (Friday close data).
   Futures switch in the popup is what remains for him to flip.
+
+## v1.15.1 — micros, always
+
+His buying power: every futures call trades the MICRO of what Felony
+names. NQ->MNQ, ES->MES, YM->MYM, RTY->M2K, GC->MGC, CL->MCL, SI->SIL.
+Translated once in background.js BEFORE guards and the book, so entries,
+trims, stop-outs and "Stopped on nq" all land on the same micro position.
+FUT_MULT already knew the micro multipliers (MNQ $2/pt vs NQ $20), so the
+test P/L automatically speaks micro dollars — a 100-point NQ trade reads
++$200/con, not +$2,000. His paste-along $-a-con exits are the MINI's
+dollars; the book prices exits off points x micro mult, so no distortion.
+He's cloning onto a laptop — gave him the one-line git clone with his own
+PAT embedded (his token, his machine) + load-unpacked + keys reminder.

@@ -671,6 +671,18 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // since i want every room to act individually. its either testing or
     // they are live.. just like that." Each room's own toggle decides, per
     // order. Every room resets to TESTING when Chrome starts.
+    // MICROS, always — his word: "when felony mentiones NQ and ES, we are
+    // going to shoot the diminutive of the underlying.. meaning MNQ because
+    // my buying power wont be the same. same for any other future." The
+    // translation happens HERE, before guards and the book, so the whole
+    // trade lives under the micro: his later "Stopped on nq" translates the
+    // same way and lands on the same position.
+    const MICRO_OF = { NQ: "MNQ", ES: "MES", YM: "MYM", RTY: "M2K",
+                       GC: "MGC", CL: "MCL", SI: "SIL" };
+    if (sig.kind === "future" && sig.symbol && MICRO_OF[sig.symbol]) {
+      sig.symbol = MICRO_OF[sig.symbol];
+    }
+
     const roomLive = !!((c.channel_live || {})[String(msg.channelId || "")]);
     sig.live = roomLive;
     sig.room = ROOM_LABELS[String(msg.channelId || "")] ||
