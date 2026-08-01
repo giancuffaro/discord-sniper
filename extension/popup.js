@@ -466,8 +466,6 @@ async function render() {
   }
   renderRoomStats(wallet, day_table);
 
-  $("channels").value = listToText(s.channel_ids);
-  $("admins").value = listToText(s.follow_admins);
   $("futures").value = s.futures_enabled ? "1" : "0";
   renderRoomToggles(s.channel_live || {});
   armRoomToggleConfirms();
@@ -535,8 +533,8 @@ $("save").onclick = async () => {
   return patch({
     futures_enabled: fut,
     channel_live: readRoomToggles(),
-    channel_ids: textToList($("channels").value),
-    follow_admins: textToList($("admins").value),
+    // channels are baked into the worker; callers are never filtered
+    channel_ids: [], follow_admins: [],
     bridge_url: $("bridge").value.trim() || DEFAULTS.bridge_url,
     guards: DEFAULTS.guards
   });

@@ -40,6 +40,8 @@ set "WHOP1=https://whop.com/joined/firststeptrading/day-trades-cvgzKYDmcUEDGh/ap
 set "WHOP2=https://whop.com/joined/firststeptrading/futures-26GaLgZVMzB2PL/app/"
 set "WHOP3=https://whop.com/joined/firststeptrading/high-risk-hpXJymtw0yMqzB/app/"
 set "WHOP4=https://whop.com/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app/"
+set "WHOP5=https://whop.com/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/app/"
+set "WHOP6=https://whop.com/joined/firststeptrading/long-term-sMzuBmyHSwKzFW/app/"
 
 set INTERACTIVE=1
 if /i "%~1"=="morning" set INTERACTIVE=0
@@ -87,7 +89,21 @@ set "UPDATED=0"
 where git >nul 2>&1
 if errorlevel 1 goto pastpull
 git rev-parse --is-inside-work-tree >nul 2>&1
-if errorlevel 1 goto pastpull
+if not errorlevel 1 goto haverepo
+rem  An unzipped or copied folder has no .git - his laptop's did not. Wire
+rem  it up right here instead of printing instructions at him. Windows may
+rem  pop a GitHub sign-in once; keys/days/logs are untracked and untouched.
+echo         This folder isn't wired to GitHub yet - wiring it now...
+git init >nul 2>&1
+git remote remove origin >nul 2>&1
+git remote add origin https://github.com/giancuffaro/discord-sniper.git >nul 2>&1
+git fetch origin main
+if errorlevel 1 (
+  echo         Couldn't reach GitHub to wire it - running what's here.
+  goto pastpull
+)
+git checkout -B main >nul 2>&1
+:haverepo
 set "OLDREV="
 for /f %%r in ('git rev-parse HEAD 2^>nul') do set "OLDREV=%%r"
 git fetch origin main >nul 2>&1
@@ -173,7 +189,7 @@ if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%Loca
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
 if defined CHROME (
-  start "" "!CHROME!" "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!" "!WHOP1!" "!WHOP2!" "!WHOP3!" "!WHOP4!"
+  start "" "!CHROME!" "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!" "!WHOP1!" "!WHOP2!" "!WHOP3!" "!WHOP4!" "!WHOP5!" "!WHOP6!"
 ) else (
   start "" "!DISCORD_URL!"
   start "" "!ARISTOTLE_URL!"
@@ -183,6 +199,8 @@ if defined CHROME (
   start "" "!WHOP2!"
   start "" "!WHOP3!"
   start "" "!WHOP4!"
+  start "" "!WHOP5!"
+  start "" "!WHOP6!"
   echo         Couldn't find Chrome in the usual folders - opened your
   echo         default browser. The extension only runs in Chrome.
 )

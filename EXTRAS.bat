@@ -237,32 +237,9 @@ goto back
 
 
 :firstpush
-echo   This folder isn't connected to GitHub yet.
-echo.
-echo   Do this in your browser first:
-echo.
-echo     1. Go to  https://github.com/new
-echo     2. Repository name:  discord-sniper
-echo     3. Set it to PRIVATE
-echo     4. Leave every tickbox empty - no README
-echo     5. Click "Create repository"
-echo.
-pause
-git init >nul 2>&1
-git branch -M main >nul 2>&1
-git add -A
-git commit -q -m "Discord Sniper"
-git remote remove origin >nul 2>&1
-git remote add origin https://github.com/giancuffaro/discord-sniper.git
-echo.
-echo   Pushing. A GitHub sign-in window may pop up - finish it and
-echo   this carries on by itself.
-echo.
-git push -u origin main
-if not errorlevel 1 (
-  echo.
-  echo   Done. It's on GitHub.
-  goto back
+echo   This folder isn't wired to GitHub yet. Run START HERE once -
+echo   it wires the folder up by itself now - then come back here.
+goto back
 )
 echo.
 echo   Didn't go through. Your work is safe either way - it's on this

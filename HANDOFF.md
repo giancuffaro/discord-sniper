@@ -1451,3 +1451,22 @@ known room URLs (Day Trades, Futures, High Risk, 2K Challenge) open with
 the Discord four, and oneTabPerChannel dedupes whop.com/joined/* paths
 the same way so the 9:25 alarm can't stack them. Swing Trades and Long
 Term links still wanted from him (URL hashes can't be guessed).
+
+## v1.15.3 — self-wiring git, all six Whop rooms open, dead settings gone
+
+His laptop's EXTRAS showed the ancient "create a repo in your browser"
+instructions — root cause: the folder he was running had no .git (an
+unzipped/copied folder, likely the OneDrive-Desktop twin of the real
+clone). Instead of instructions, START HERE step [2/5] now WIRES an
+unconnected folder itself: git init + remote add origin + fetch +
+checkout -B main, then the normal mirror/reset flow takes over (Windows
+may pop the GitHub sign-in once). EXTRAS :firstpush now just points at
+START HERE. Keys/days/logs untracked, untouched.
+
+Swing Trades (swing-trades-6Q7acPPpFb6CyZ) and Long Term
+(long-term-sMzuBmyHSwKzFW) links received — my guessed slugs matched, so
+background wiring already worked; START HERE now opens all SIX Whop tabs.
+
+Popup: "Channel IDs to watch" and "Only follow these callers" fields
+deleted on his word ("this is pointless now") — rooms are baked, callers
+never filtered. Saved settings write channel_ids:[] / follow_admins:[].
