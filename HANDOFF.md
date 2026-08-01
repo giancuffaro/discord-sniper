@@ -1501,3 +1501,16 @@ webull_futures stamps it on every order). /mode reports futures_account;
 the popup's status line shows a third green dot "Futures acct" when it's
 found. The dot he wanted green goes green the moment keys save — no
 EXTRAS visit, no picking twice.
+
+## v1.15.6 — Chrome launched with no-throttle flags
+
+Day one at full speed went clean ("everything working to perfection");
+Monday is the verdict day and he plans MORE channels after. He asked how
+to make Chrome faster/unfailing: START HERE now launches Chrome with
+--disable-renderer-backgrounding --disable-backgrounding-occluded-windows
+--disable-background-timer-throttling so background room tabs are read
+at full speed. Told him the by-hand list: Memory Saver OFF (or exempt
+discord.com + whop.com — Memory Saver discarding a tab KILLS the reader
+in it), PC never sleeps, background apps on, dedicated Chrome profile,
+Defender exclusion for the folder. RAM can't be "dedicated" on Windows —
+16GB is plenty; the real killer is tab discarding, not memory size.
