@@ -20,6 +20,37 @@ const LOG_MAX = 400;   // a full trading day, not just the last hour
  * nothing else happens: no parse, no guards, no orders, whatever the settings
  * say. Hard-coded on purpose so a wiped settings box can't accidentally arm
  * them. When a room graduates, its line comes out of this set. */
+/* The Whop rooms that trade now — HIS word: "i want everything running at
+ * full speed.. every channel, options and futures, equities and swings."
+ * Matched by slug so the URL hash never matters. Felony's rooms post bare
+ * percentages as PROGRESS ("65% on NVDA"), not trims — the verb decides —
+ * so every whop room parses with bare_pct_trims off. Unknown whop rooms
+ * stay capture-only until they're named here. */
+const WHOP_ROOMS = [
+  { slug: "day-trades",         id: "whop:day-trades",   name: "Whop Day Trades" },
+  { slug: "futures-",           id: "whop:futures",      name: "Whop Futures" },
+  { slug: "high-risk",          id: "whop:high-risk",    name: "Whop High Risk" },
+  { slug: "fst-2-k-challenge",  id: "whop:2k-challenge", name: "Whop 2K Challenge" },
+  { slug: "swing-trades",       id: "whop:swing",        name: "Whop Swing Trades" },
+  { slug: "long-term",          id: "whop:long-term",    name: "Whop Long Term" }
+];
+function whopRoomOf(channelId) {
+  const p = String(channelId || "");
+  if (!p.startsWith("whop:")) return null;
+  return WHOP_ROOMS.find(r => p.includes(r.slug)) || null;
+}
+
+/* Every room's plain name, for the per-room scoreboard he asked for. */
+const ROOM_LABELS = {
+  "829754942817828884": "Main room",
+  "987515353670221834": "Aristotle",
+  "1144369893760831489": "Midas",
+  "1433933203302776852": "Aristotle small",
+  "whop:day-trades": "Whop Day Trades", "whop:futures": "Whop Futures",
+  "whop:high-risk": "Whop High Risk", "whop:2k-challenge": "Whop 2K Challenge",
+  "whop:swing": "Whop Swing Trades", "whop:long-term": "Whop Long Term"
+};
+
 const RECORD_ONLY = new Set([
   // (empty — every Discord room is at least shadow-read now; Whop is still
   // gated separately by platform until its reader is precise)
@@ -62,9 +93,10 @@ async function cfg() {
               ["829754942817828884",     // main room
                "987515353670221834",     // Aristotle — testing, his word
                "1144369893760831489",    // Midas — testing, his word
-               "1433933203302776852"])   // Aristotle's small-account
-                                         // challenge — same grammar the
-                                         // reader already knows, testing
+               "1433933203302776852",    // Aristotle's small-account challenge
+               // Felony's Whop rooms — canonical ids, matched by slug below
+               "whop:day-trades", "whop:futures", "whop:high-risk",
+               "whop:2k-challenge", "whop:swing", "whop:long-term"])
       .map(String)));
   return c;
 }
@@ -145,7 +177,9 @@ async function sendOrder(sig, qty, c, author) {
     usd: (sig.usd === 0 || sig.usd) ? sig.usd : null,
     source: "discord-extension", raw: sig.raw, ts: Date.now(),
     // Real money or pretend, decided by the ROOM's toggle, not a global.
-    live: !!sig.live
+    live: !!sig.live,
+    // Which room called it — the per-room scoreboard keys off this.
+    room: sig.room || null
   };
   const t0 = performance.now();
   let r;
@@ -543,8 +577,16 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // is where trading would be switched on — deliberately one line, in one
     // place.
     if (String(msg.platform || "") === "whop") {
-      reply({ ok: true });
-      return;
+      const wroom = whopRoomOf(msg.channelId);
+      if (!wroom) {
+        reply({ ok: true });   // unknown whop room: captured, nothing more
+        return;
+      }
+      // A graduated Felony room. Canonical id so toggles/guards don't care
+      // about URL hashes, and his grammar profile: bare percents are
+      // progress updates here, never trims — the verb decides.
+      msg.channelId = wroom.id;
+      c.bare_pct_trims = false;
     }
 
     // A reply is a quote of something older — the words are a repeat, not a
@@ -631,6 +673,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // order. Every room resets to TESTING when Chrome starts.
     const roomLive = !!((c.channel_live || {})[String(msg.channelId || "")]);
     sig.live = roomLive;
+    sig.room = ROOM_LABELS[String(msg.channelId || "")] ||
+               String(msg.channelId || "");
     const testing = !roomLive;
     if (testing && sig.action === "TRIM" && !sig.fire) {
       if (!sig.symbol) {

@@ -511,6 +511,34 @@ function parseSignal(text, cfg) {
     return s;
   }
 
+  // 3a-equity. "Entered BULL equity @ 7.24" / "Grabbed NFLX equity @ 74.8"
+  // / "Snagging starters on PYPL equity @ 41.03 AVG" — plain shares, Swing
+  // Trades and Long Term style. The word "equity" next to the ticker IS the
+  // instrument; price from @ or their average.
+  const meq = /(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+(?:equity|shares|stock)\b/i.exec(t);
+  if (meq && !NOT_TICKERS.has(meq[1].toUpperCase())) {
+    if (/\b(?:entered|entering|grabbed|grabbing|snagg?(?:ed|ing)|bought|buying|added|adding|in)\b/i.test(low)) {
+      s.symbol = meq[1].toUpperCase();
+      s.kind = "equity";
+      s.action = "OPEN"; s.matched = "equity entry";
+      const mL = RE_LIMIT.exec(t);
+      const maE = RE_FUT_AVG.exec(t);
+      if (mL) s.limit = parseFloat(mL[1]);
+      else if (maE) s.limit = num(maE[1] || maE[2]);
+      const msE = RE_THEIR_STOP.exec(t);
+      if (msE) s.their_stop = num(msE[1]);
+      const mtE = RE_THEIR_TARGET.exec(t);
+      if (mtE) s.their_target = num(mtE[1]);
+      if (s.limit === null) {
+        s.why = "an equity entry with no price anywhere — nothing to follow";
+        return s;
+      }
+      s.fire = true;
+      s.why = "equity entry: some shares of " + s.symbol + " @ " + s.limit;
+      return s;
+    }
+  }
+
   // 3a2. "1.26 new avg" on its own — that's their bookkeeping after an add
   //      that was already signalled, not a second add. Reading it as one
   //      would buy five more contracts per arithmetic update.
@@ -643,7 +671,8 @@ function parseSignal(text, cfg) {
     s.why = "full exit on " + s.symbol;
     return s;
   }
-  if (RE_TRIM.test(low) || (pctM && !findContract(t))) {
+  const barePctOk = cfg && cfg.bare_pct_trims === false ? false : true;
+  if (RE_TRIM.test(low) || (pctM && !findContract(t) && barePctOk)) {
     s.symbol = bareSymbol(t, allowed);
     s.action = "TRIM"; s.matched = "trim";
     if (pctM) s.pct = parseFloat(pctM[1]);

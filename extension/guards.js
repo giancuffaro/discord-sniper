@@ -132,13 +132,29 @@ async function guardCheck(sig, ctx, cfg) {
 
   if (g.regular_hours_only && (sig.action === "OPEN" || sig.action === "ADD")) {
     const t = etNow();
-    if (t.wd === "Sat" || t.wd === "Sun")
-      return { allowed: false, reason: "it's the weekend — the market is shut" };
     const mins = t.h * 60 + t.m;
-    if (mins < hm(g.open_time) || mins > hm(g.close_time))
-      return { allowed: false, reason: "it's " + String(t.h).padStart(2, "0") + ":" +
-        String(t.m).padStart(2, "0") + " ET — new trades are only allowed between " +
-        g.open_time + " and " + g.close_time };
+    if (sig.kind === "future") {
+      // Futures trade nearly 24 hours — Felony shorts NQ at 10PM on a
+      // Sunday, and that's a real entry. The futures week: opens Sunday
+      // 6PM ET, closes Friday 5PM ET, with a 5-6PM ET maintenance break
+      // every day. Only those gaps refuse an entry.
+      const shut =
+        (t.wd === "Sat") ||
+        (t.wd === "Sun" && mins < 18 * 60) ||
+        (t.wd === "Fri" && mins >= 17 * 60) ||
+        (mins >= 17 * 60 && mins < 18 * 60);
+      if (shut)
+        return { allowed: false, reason: "the futures market itself is shut " +
+          "right now (daily 5-6PM ET break, or the weekend gap Fri 5PM to " +
+          "Sun 6PM) — the order would just be rejected" };
+    } else {
+      if (t.wd === "Sat" || t.wd === "Sun")
+        return { allowed: false, reason: "it's the weekend — the market is shut" };
+      if (mins < hm(g.open_time) || mins > hm(g.close_time))
+        return { allowed: false, reason: "it's " + String(t.h).padStart(2, "0") + ":" +
+          String(t.m).padStart(2, "0") + " ET — new trades are only allowed between " +
+          g.open_time + " and " + g.close_time };
+    }
   }
 
   // What you're holding is checked before anything else, because "you're

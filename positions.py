@@ -265,6 +265,7 @@ class Book:
             "their_avg": p.get("their_avg"),
             "their_units": p.get("their_units"),
             "live": bool(p.get("live")),
+            "room": p.get("room"),
             "opened": p.get("sent_at"),
             "closed": p.get("closed_at"),
             "all_out": p.get("state") in DONE,
@@ -374,6 +375,7 @@ class Book:
             self._pos[key] = {
                 "key": key,
                 "live": is_live,
+                "room": order.get("room") or prev.get("room"),
                 "who": who if not adding else (prev.get("who") or who),
                 "symbol": sym,
                 # Futures support. An options contract is 100 shares; NQ is
@@ -579,7 +581,10 @@ class Book:
             p0 = self._pos.get(key)
             is_fut = bool(p0 and p0.get("kind") == "future")
             is_live = bool(p0 and p0.get("live"))
-        paid = 0.0 if (is_fut or is_live) else self._dollars(price, qty or 1)
+            m0 = float((p0 or {}).get("mult") or 100)
+        # mult-aware: an option is 100 shares, a share is one share. The old
+        # hardcoded x100 would have priced $1,000 of NFLX stock as $100,000.
+        paid = 0.0 if (is_fut or is_live) else float(price) * m0 * int(qty or 1)
         self._unreserve(key)
         with self._lock:
             # Real money never touches the pretend wallet — Webull's own
@@ -921,7 +926,7 @@ class Book:
                 pl = (float(price) - float(entry or price)) * mult * qty * dirn
                 got = pl
             else:
-                got = self._dollars(price, qty)
+                got = float(price) * mult * qty
                 pl = got - cost
             with self._lock:
                 p_live = bool((self._pos.get(key) or {}).get("live"))
@@ -944,6 +949,7 @@ class Book:
                     self.closed_trades.append(
                         {"key": key, "who": who, "symbol": sym, "qty": qty,
                          "fill": entry, "exit": round(float(price), 2),
+                         "room": (p or {}).get("room"),
                          "pl": round(total, 2), "t": time.time()})
                 pot = self.cash
             money = (" · %s$%.0f on the trade · %s"
@@ -967,7 +973,7 @@ class Book:
                     self.closed_trades.append(
                         {"key": key, "who": who, "symbol": sym, "qty": qty,
                          "fill": entry, "exit": None, "pl": round(total, 2),
-                         "t": time.time()})
+                         "room": (p or {}).get("room"), "t": time.time()})
             money = (" · %s$%.0f on the whole trade"
                      % ("+" if total >= 0 else "-", abs(total)))
         elif self.cash is not None and qty:
@@ -990,6 +996,64 @@ class Book:
                     self._archive.append(self._pos.pop(k))
             if len(self._archive) > 200:
                 self._archive = self._archive[-200:]
+
+    # -- surviving a restart ---------------------------------------------------
+    # Swing trades hold for DAYS now, and a bridge that forgets everything on
+    # restart can't hold anything overnight. The bridge writes this alongside
+    # every day file and reads it back at boot: FILLED positions always come
+    # back (a swing is still yours tomorrow); the day's archive and scoreboard
+    # come back only if it's still the same trading day.
+    def export_state(self):
+        with self._lock:
+            keep = {}
+            for k, p in self._pos.items():
+                if p.get("state") == FILLED:
+                    q = {kk: vv for kk, vv in p.items()
+                         if isinstance(vv, (str, int, float, bool, list,
+                                            dict, type(None)))}
+                    keep[k] = q
+            return {"pos": keep,
+                    "archive": [dict(a) for a in self._archive],
+                    "wallet": {"cash": self.cash, "realised": self.realised,
+                               "wins": self.wins, "losses": self.losses,
+                               "peak": self.peak,
+                               "trades": list(self.closed_trades)}}
+
+    def restore_state(self, data, same_day):
+        if not isinstance(data, dict):
+            return 0
+        n = 0
+        with self._lock:
+            for k, p in (data.get("pos") or {}).items():
+                if k in self._pos:
+                    continue
+                p = dict(p)
+                p["state"] = FILLED
+                p["closing"] = False
+                self._pos[k] = p
+                n += 1
+            if same_day:
+                self._archive = list(data.get("archive") or [])
+                w = data.get("wallet") or {}
+                self.cash = float(w.get("cash") or 0.0)
+                self.realised = float(w.get("realised") or 0.0)
+                self.wins = int(w.get("wins") or 0)
+                self.losses = int(w.get("losses") or 0)
+                self.peak = float(w.get("peak") or 0.0)
+                self.closed_trades = list(w.get("trades") or [])
+        # Stops re-arm outside the lock: each restored hold gets its
+        # watchdog back, exactly as if it had just filled.
+        for k, p in list(data.get("pos") or {}).items():
+            try:
+                self._arm_stop(k, p.get("side"), p.get("strike"),
+                               p.get("expiry"), int(p.get("qty") or 1),
+                               float(p.get("fill") or 0) or None)
+            except Exception:                           # noqa: BLE001
+                pass
+        if n:
+            self.note("RESTORED %d position(s) from the last run — swings "
+                      "survive a restart now" % n)
+        return n
 
     def new_day(self):
         """Midnight in New York. Yesterday's file is already complete on disk

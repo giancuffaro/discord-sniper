@@ -20,3 +20,6 @@ days/
 # Working files the drill and the chat export leave in the folder.
 drill-report.txt
 signal-room-chat.txt
+
+# The book's memory across restarts - trading record, not code.
+state.json

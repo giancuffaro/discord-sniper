@@ -175,7 +175,48 @@ function contractStr(r) {
 const ROOM_NAMES = { "829754942817828884": "Main room",
                      "987515353670221834": "Aristotle",
                      "1144369893760831489": "Midas",
-                     "1433933203302776852": "Aristotle small acct" };
+                     "1433933203302776852": "Aristotle small acct",
+                     "whop:day-trades": "Whop Day Trades",
+                     "whop:futures": "Whop Futures",
+                     "whop:high-risk": "Whop High Risk",
+                     "whop:2k-challenge": "Whop 2K Challenge",
+                     "whop:swing": "Whop Swing Trades",
+                     "whop:long-term": "Whop Long Term" };
+
+/* The per-room scoreboard he asked for: "trade information, won, lost,
+ * profits, from each individual channel just to have good data to see where
+ * everything comes from." Built from the day's finished trades (which carry
+ * their room now) plus what's still open. */
+function renderRoomStats(wallet, dayTable) {
+  const el = $("roomstats");
+  if (!el) return;
+  const rows = {};
+  for (const tr of ((wallet || {}).trades || [])) {
+    const r = tr.room || "(before room tags)";
+    const s = rows[r] = rows[r] || { w: 0, l: 0, pl: 0, open: 0 };
+    if ((tr.pl || 0) >= 0) s.w += 1; else s.l += 1;
+    s.pl += tr.pl || 0;
+  }
+  for (const r of (dayTable || [])) {
+    if (!r.all_out) {
+      const s = rows[r.room || "(before room tags)"] =
+        rows[r.room || "(before room tags)"] || { w: 0, l: 0, pl: 0, open: 0 };
+      s.open += 1;
+    }
+  }
+  const names = Object.keys(rows);
+  if (!names.length) { el.style.display = "none"; return; }
+  el.style.display = "";
+  const money = n => (n < 0 ? "-$" : "+$") + Math.abs(Math.round(n));
+  el.innerHTML = "<div class=\"tablehead\"><b>By room — today</b></div>" +
+    names.sort((a, b) => rows[b].pl - rows[a].pl).map(n => {
+      const s = rows[n];
+      return '<div class="trow"><b>' + n + "</b>" +
+        '<span class="sub">' + s.w + " up / " + s.l + " down · " +
+        money(s.pl) + (s.open ? " · " + s.open + " still open" : "") +
+        "</span></div>";
+    }).join("");
+}
 
 function renderRoomToggles(channelLive) {
   const box = $("roomtoggles");
@@ -423,6 +464,7 @@ async function render() {
   } else {
     renderTable(day_table || [], $("daytable"));
   }
+  renderRoomStats(wallet, day_table);
 
   $("channels").value = listToText(s.channel_ids);
   $("admins").value = listToText(s.follow_admins);

@@ -67,6 +67,9 @@ DRY_TRIM_QTY = 1
 # mirrors his trim / 2nd trim / runner pattern without pretending a $4k
 # account trades 5 NQ.
 DRY_FUT_QTY = 3
+# Equity test size, in DOLLARS: qty = round($1000 / share price). "we arnt
+# working with real money anyways so might aswell start testing it out."
+DRY_EQ_USD = 1000.0
 DRY_FUT_TRIM_QTY = 1
 
 # What one point of price movement is worth, per contract. THIS is the number
@@ -258,6 +261,33 @@ def roll_day():
             BOOK.new_day()
 
 
+STATE_PATH = os.path.join(HERE, "state.json")
+
+
+def save_state():
+    """The book's memory, written beside every day file. This is what lets a
+    swing trade survive a bridge restart — and what stops a mid-day restart
+    from wiping the morning off the scoreboard."""
+    if BOOK is None:
+        return
+    try:
+        with open(STATE_PATH, "w", encoding="utf-8") as f:
+            json.dump({"date": today_str(), "state": BOOK.export_state()}, f)
+    except OSError:
+        pass
+
+
+def load_state():
+    if BOOK is None:
+        return
+    try:
+        with open(STATE_PATH, encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        return
+    BOOK.restore_state(d.get("state") or {}, d.get("date") == today_str())
+
+
 def save_day():
     """Write today's whole trading day to days/YYYY-MM-DD.json, every time
     anything changes.
@@ -271,6 +301,7 @@ def save_day():
     if BOOK is None:
         return
     roll_day()
+    save_state()
     try:
         os.makedirs(DAYS, exist_ok=True)
         path = os.path.join(DAYS, today_str() + ".json")
@@ -337,6 +368,20 @@ def dry_entry(order):
                  % order.get("symbol"))
             return
         order["mult"] = FUT_MULT.get(str(order.get("symbol", "")).upper(), 1.0)
+        BOOK.entry_sent(order, {"order_id": None, "occ": None,
+                                "limit": float(limit), "bid": None, "ask": None,
+                                "qty": int(order.get("qty") or 1)})
+        return
+    # Equity — plain shares, his Swing Trades / Long Term style ("Entered
+    # BULL equity @ 7.24"). One share is one share: multiplier 1, no OCC,
+    # no expiry. Test-sized in dollars, not contracts — about $1000 worth —
+    # because 100 shares of NFLX and 100 of a $7 stock are different bets.
+    if order.get("kind") == "equity":
+        if not limit:
+            note("DRY RUN  %s equity call came with no price — not tracked"
+                 % order.get("symbol"))
+            return
+        order["mult"] = 1.0
         BOOK.entry_sent(order, {"order_id": None, "occ": None,
                                 "limit": float(limit), "bid": None, "ask": None,
                                 "qty": int(order.get("qty") or 1)})
@@ -572,6 +617,10 @@ def place(order):
         if action in ("OPEN", "ADD"):
             if order.get("kind") == "future":
                 order["qty"] = DRY_FUT_QTY
+            elif order.get("kind") == "equity":
+                # ~$1,000 of stock per entry, whatever the share price.
+                px = float(order.get("limit") or 0)
+                order["qty"] = max(1, int(round(DRY_EQ_USD / px))) if px else 100
             else:
                 order["qty"] = int(order.get("qty")
                                    or (DRY_ADD_QTY if action == "ADD"
@@ -1130,6 +1179,7 @@ def connect_broker(quiet=False):
         else:
             note("Webull NOT connected — %s" % WB_ERROR)
     build_book()
+    load_state()      # swings survive restarts
 
 
 def main():

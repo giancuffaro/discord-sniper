@@ -1391,3 +1391,41 @@ updates ("65% on NVDA $100 per con") would TRIM under Aristotle's rule —
 per-room grammar profiles are REQUIRED before any Whop room leaves
 record-only. Two-contract entries ("SPY 742P and QQQ 696P" one message)
 still act the first only.
+
+## v1.15.0 — full speed: every channel, options, futures 24h, equity, swings
+
+His word: "i want everything running at full speed.. every channel,
+options and futures, equities and swings." All test money; per-room LIVE
+still per-session and confirmed by hand.
+
+- FUTURES TRADE 24H now: guards.js applies the real futures calendar to
+  kind=future entries (Sun 6PM ET open, Fri 5PM close, daily 5-6PM break);
+  equities keep the 9:30-16:00 window. guards.py mirror: futures skip the
+  equities window.
+- EQUITY: parser reads "Entered BULL equity @ 7.24" / "Grabbed NFLX equity
+  @ 74.8" / "Snagging starters on PYPL equity @ 41.03 AVG" -> OPEN
+  kind=equity (mult 1). Bridge test-sizes in DOLLARS: DRY_EQ_USD=1000 ->
+  qty=round(1000/px). positions.py money math is mult-aware now (the old
+  hardcoded x100 would have priced $1k of NFLX as $100k).
+- SWINGS SURVIVE RESTARTS: Book.export_state/restore_state + bridge
+  state.json (written with every day file, loaded at boot). FILLED
+  positions always come back with stops re-armed; archive + scoreboard
+  come back same-day only. Also fixes the old mid-day-restart-wipes-the-
+  morning hazard. state.json gitignored.
+- WHOP ROOMS TRADE (test): background whop gate now graduates known slugs
+  -> canonical ids (whop:day-trades, whop:futures, whop:high-risk,
+  whop:2k-challenge, whop:swing, whop:long-term), baked into channel_ids,
+  in ROOM_NAMES toggles. Felony-room grammar profile: bare_pct_trims=false
+  (bare "65%" is progress there, never a trim — the verb decides; parser
+  cfg flag, both brains). whop.js learned author lines
+  ("Felony@felonytrades·1d" blocks -> lastAuthor). Unknown whop rooms stay
+  capture-only. CAVEAT, said plainly: the whop DOM reader is still the
+  wide-net heuristic and untested against the live logged-in page — the
+  Export chat file remains wanted to pin it down. Swing/Long Term slugs
+  are guessed ("swing-trades"/"long-term") until he sends those links.
+- PER-ROOM SCOREBOARD: orders carry room labels; Book positions +
+  closed_trades keep them; popup "By room — today" box: up/down, net $,
+  still-open per room.
+- HIS WEBULL CME DATA IS LIVE — confirmed from this session via the Webull
+  MCP: NQU6/ESU6 snapshots with bid/ask returned (Friday close data).
+  Futures switch in the popup is what remains for him to flip.

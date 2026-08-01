@@ -90,10 +90,23 @@ function fingerprint(text, at) {
   return text.slice(0, 120) + "|" + Math.floor(at / 60000);
 }
 
+/* "Felony@felonytrades·1d" — Whop paints the author as its own little block
+ * right before the message. Remember the last one seen and hand it to the
+ * next message, exactly how a human reads the feed. */
+let lastAuthor = "?";
+const RE_AUTHOR = /^(.{1,24}?)\s*(?:\(MOD\))?\s*@[a-z0-9_.]+\s*[·•]/i;
+
 function handle(el) {
   for (const block of leafBlocks(el, [])) {
-    const text = clean(block.innerText);
+    let text = clean(block.innerText);
     if (isJunk(text)) continue;
+    const ma = RE_AUTHOR.exec(text);
+    if (ma) {
+      lastAuthor = ma[1].trim() || "?";
+      // The author line sometimes carries the message right behind it.
+      text = clean(text.replace(RE_AUTHOR, "").replace(/^\S*\s*/, ""));
+      if (text.length < 8) continue;
+    }
     const at = stampOf(block);
     const fp = fingerprint(text, at);
     if (SEEN.has(fp)) continue;
@@ -101,9 +114,9 @@ function handle(el) {
     if (SEEN.size > 6000) SEEN.clear();
     chrome.runtime.sendMessage({
       type: "MESSAGE",
-      platform: "whop",          // the worker files these and nothing more
+      platform: "whop",
       text,
-      author: "?",               // learned later, from what the export shows
+      author: lastAuthor,
       channelId: roomId(),
       postedAt: at,
       history: at < STARTED - 5000,

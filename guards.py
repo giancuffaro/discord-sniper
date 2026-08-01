@@ -121,7 +121,11 @@ class Guards:
             return False, ("that call is %.0f seconds old — too stale to chase"
                            % (now - msg_epoch))
 
-        if self.session_only and sig.action in ("OPEN", "ADD"):
+        if self.session_only and sig.action in ("OPEN", "ADD") \
+                and getattr(sig, "kind", None) != "future":
+            # Futures trade nearly 24h (Sun 6PM ET - Fri 5PM ET, daily 5-6PM
+            # break) — the mirror of guards.js applies the futures calendar
+            # there; here futures simply skip the equities window.
             t = datetime.now(ET)
             if t.weekday() > 4:
                 return False, "it's the weekend — the market is shut"

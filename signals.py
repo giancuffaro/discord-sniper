@@ -710,6 +710,39 @@ def parse(text, author="", channel="", cfg=None):
         sig.why = "their fill confirmation — looking for the PREP it belongs to"
         return sig
 
+    # 3a-equity. "Entered BULL equity @ 7.24" / "Grabbed NFLX equity @ 74.8"
+    #    / "Snagging starters on PYPL equity @ 41.03 AVG" — plain shares,
+    #    Swing Trades and Long Term style. The word "equity" next to the
+    #    ticker IS the instrument; price from @ or their average.
+    meq = re.search(r"(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+(?:equity|shares|stock)\b",
+                    t, re.IGNORECASE)
+    if meq and meq.group(1).upper() not in NOT_TICKERS:
+        if re.search(r"\b(?:entered|entering|grabbed|grabbing|snagg?(?:ed|ing)"
+                     r"|bought|buying|added|adding|in)\b", low):
+            sig.symbol = meq.group(1).upper()
+            sig.kind = "equity"
+            sig.action, sig.matched = "OPEN", "equity entry"
+            m_l = RE_LIMIT.search(t)
+            ma_e = RE_FUT_AVG.search(t)
+            if m_l:
+                sig.limit = float(m_l.group(1))
+            elif ma_e:
+                sig.limit = _num(ma_e.group(1) or ma_e.group(2))
+            ms_e = RE_THEIR_STOP.search(t)
+            if ms_e:
+                sig.their_stop = _num(ms_e.group(1))
+            mt_e = RE_THEIR_TARGET.search(t)
+            if mt_e:
+                sig.their_target = _num(mt_e.group(1))
+            if sig.limit is None:
+                sig.why = ("an equity entry with no price anywhere — nothing "
+                           "to follow")
+                return sig
+            sig.fire = True
+            sig.why = ("equity entry: %s shares of %s @ %g"
+                       % ("some", sig.symbol, sig.limit))
+            return sig
+
     # 3a2. "1.26 new avg" on its own — that's their bookkeeping after an add
     #      that was already signalled, not a second add. Reading it as one
     #      would buy five more contracts per arithmetic update.
@@ -855,7 +888,8 @@ def parse(text, author="", channel="", cfg=None):
         sig.fire = True
         sig.why = "full exit on %s" % sig.symbol
         return sig
-    if RE_TRIM.search(low) or (pct_m and not _contract(t)):
+    bare_pct_ok = cfg.get("bare_pct_trims", True) if cfg else True
+    if RE_TRIM.search(low) or (pct_m and not _contract(t) and bare_pct_ok):
         sig.symbol = _bare_symbol(t, allowed)
         sig.action, sig.matched = "TRIM", "trim"
         if pct_m:
