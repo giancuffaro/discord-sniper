@@ -69,13 +69,17 @@ const RE_BARE = /\b([A-Za-z]{1,5})\b/g;
  * use HIS levels instead of the flat 20% rule when his room trades. */
 const FUT_SYMS = new Set(["NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K",
                           "CL", "MCL", "GC", "MGC", "SI", "SIL", "NG"]);
-const RE_FUT_ENTRY = /\b(short|long)\s+\$?([A-Za-z0-9]{1,4})\s*@\s*\$?(\d[\d,]*(?:\.\d{1,2})?)/i;
-const RE_THEIR_STOP = /\bstop\s*(?:loss)?\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
+// The @ is optional now — his Day Trades channel writes "Short nq 28240.50"
+// with nothing between the symbol and the price. "SL 28302" is Whop
+// shorthand for the same stop ("SL at be" carries no number and stays
+// unmatched), and "$800 a con" is "a contract" with the end bitten off.
+const RE_FUT_ENTRY = /\b(short|long)\s+\$?([A-Za-z0-9]{1,4})\s*(?:@|at\b)?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
+const RE_THEIR_STOP = /\b(?:stop\s*(?:loss)?|sl)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
 const RE_THEIR_TARGET = /\b(?:target|tp|pt)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
-// "Target hit $1700 a contract - 2nd trim" / "$1,100 a contract on NQ short".
-// His futures trims speak in dollars per contract, and on a dry run that
-// number is the only honest exit price there is.
-const RE_USD_CONTRACT = /\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|\/)\s*contract/i;
+// "Target hit $1700 a contract - 2nd trim" / "$1,100 a contract on NQ short"
+// / "$800 a con". His futures trims speak in dollars per contract, and on a
+// dry run that number is the only honest exit price there is.
+const RE_USD_CONTRACT = /\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|\/)\s*con(?:tract)?s?\b/i;
 
 function num(s) { return parseFloat(String(s).replace(/,/g, "")); }
 

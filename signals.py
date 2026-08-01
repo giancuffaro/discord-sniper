@@ -142,17 +142,25 @@ RE_BARE_FILL = re.compile(
 FUT_SYMS = {"NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K",
             "CL", "MCL", "GC", "MGC", "SI", "SIL", "NG"}
 RE_FUT_ENTRY = re.compile(
-    r"\b(short|long)\s+\$?([A-Za-z0-9]{1,4})\s*@\s*\$?(\d[\d,]*(?:\.\d{1,2})?)",
+    # The @ is optional now — his Day Trades channel writes "Short nq
+    # 28240.50" with nothing between the symbol and the price. The number
+    # keeps it honest: "long NQ into the close" has no price, so no entry.
+    r"\b(short|long)\s+\$?([A-Za-z0-9]{1,4})\s*(?:@|at\b)?\s*"
+    r"\$?(\d[\d,]*(?:\.\d{1,2})?)\b",
     re.IGNORECASE)
 RE_THEIR_STOP = re.compile(
-    r"\bstop\s*(?:loss)?\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b", re.IGNORECASE)
+    # "SL 28302" is the same stop as "Stop 28302" — Whop shorthand.
+    # "SL at be" (break-even) carries no number and stays unmatched.
+    r"\b(?:stop\s*(?:loss)?|sl)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b",
+    re.IGNORECASE)
 RE_THEIR_TARGET = re.compile(
     r"\b(?:target|tp|pt)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b", re.IGNORECASE)
-# "Target hit $1700 a contract - 2nd trim" / "$1,100 a contract on NQ short".
-# His futures trims speak in dollars per contract, and on a dry run that
-# number is the only honest exit price there is.
+# "Target hit $1700 a contract - 2nd trim" / "$1,100 a contract on NQ short"
+# / "$800 a con". His futures trims speak in dollars per contract, and on a
+# dry run that number is the only honest exit price there is.
 RE_USD_CONTRACT = re.compile(
-    r"\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|/)\s*contract", re.IGNORECASE)
+    r"\$\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:a|per|/)\s*con(?:tract)?s?\b",
+    re.IGNORECASE)
 
 
 def _num(s):

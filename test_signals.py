@@ -532,3 +532,23 @@ if fails:
     raise SystemExit(1)
 print("A plan is not an order: announced intent and confidence percentages "
       "stay ignored, and the challenge room's real entries still fire.")
+# --- Felony's Whop shorthand, from the channel survey ------------------------
+# Same trades as his Discord screenshots, fewer characters: no @ before the
+# price, SL for Stop, "a con" for "a contract".
+s = check("Short nq 28240.50 SL 28302", action="OPEN", symbol="NQ")
+ok(s.kind == "future" and s.direction == "SHORT",
+   "bare 'Short nq 28240.50' is a futures short, got %s/%s" % (s.kind, s.direction))
+ok(s.their_stop == 28302.0, "SL 28302 is his stop, got %s" % s.their_stop)
+s = check("40 points $800 a con on NQ long - Trimmed", action="TRIM")
+ok(s.usd == 800.0, "'$800 a con' carries the honest exit, got %s" % s.usd)
+s = check("Trimmed $800 a contract SL at be", action="TRIM")
+ok(s.usd == 800.0 and s.their_stop is None,
+   "'SL at be' has no number so no stop is invented, got %s/%s"
+   % (s.usd, s.their_stop))
+
+if fails:
+    print("FAILED %d Whop-shorthand check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("Felony's shorthand reads: bare shorts, SL stops, dollars a con.")

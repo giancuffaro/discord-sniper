@@ -1221,3 +1221,48 @@ all fixed (v1.13.9):
 
 His words, the standing rule: "there should[n't] be any positions trying
 to get in, much less carrying over to the next day."
+## The Whop chapter opens — FirstStepTrading (Felony), the channel map
+
+Discord chapter closed on his word ("lets put a period there"). He
+subscribed to Felony's Whop: https://whop.com/joined/firststeptrading/
+He'll subscribe to Webull's CME futures data (free per the Webull/CME
+partner page) and was told the futures switch in the popup is the only
+thing left to flip after that. NinjaTrader question answered: Webull is
+the friendly path (everything's built against it); NT would be a second
+bridge — revisit only if real-size futures costs matter someday.
+
+His survey of the workspace — the six channels that post real entries
+and exits, with their sample grammar:
+- Day Trades: "Short nq 28240.50 / SL 28302", "Trimmed $800 a contract /
+  SL at be" — futures shorthand.
+- Futures: "Long NQ @ 29925 / Stop 29875 / Target 30,100", "40 points
+  $800 a con on NQ long - Trimmed".
+- Swing Trades: "Entered VXX 25C 8/28 @ 1.3" + stops/targets, "Entered
+  BULL equity @ 7.24" — OPTIONS + EQUITY, multi-day.
+- High Risk: "Long NQ @ 28490 / Stop 28450 / Target 28600", "Stopped 20
+  point loss", "$1,000 a contract on NQ short - Trimmed".
+- Long Term: "Grabbed NFLX equity @ 74.8", "Snagging starters on PYPL
+  equity @ 41.03 AVG" — EQUITY, adds/holds.
+- FST x 2K Challenge: "Entered (4) SLV 55C 8/21 @ 1.61 / Stop is today's
+  low / Target 60" — options with HIS qty and text stops.
+Not signals: Trading Floor (levels/plans), Daily Watchlist, and the
+info/chat channels. "Read First" holds their definitions of Loading/
+Filled/Trimming — worth capturing verbatim when he exports.
+
+Already taught from the survey quotes (v1.13.10, samples 249, parity
+green): futures entries without the @ ("Short nq 28240.50"), SL as stop
+shorthand (numberless "SL at be" stays unmatched), "$800 a con".
+
+Still ahead, in rough order:
+1. His scrollback + Export chat from the six channels (whop.js all_frames
+   capture is shipped but untested against the real logged-in room) —
+   that pins Whop's DOM shape and channel paths ("whop:/..." tags).
+2. Per-channel wiring: Day Trades / Futures / High Risk are the futures
+   pipeline (built, behind futures_enabled). 2K Challenge is options —
+   closest to today's pipeline, plus his "(4)" qty and text stops.
+3. Swing Trades / Long Term need TWO new things before any of it trades,
+   even in test: EQUITY orders (new kind: shares, mult 1, no expiry) and
+   the parked multi-day-hold machinery (disk-persisted book, catch-up on
+   reopen). Do not let a "Grabbed NFLX equity" line near the options
+   path meanwhile — "equity" lines currently have no grammar, and if one
+   ever parses by accident the NOT_TICKERS/veto approach is the tool.
