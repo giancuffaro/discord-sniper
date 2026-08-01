@@ -285,3 +285,21 @@ Long NQ @ 29925 Stop 29875 Target 30,100
 40 points $800 a con on NQ long - Trimmed
 Trimmed $800 a contract SL at be
 Stopped 20 point loss
+Stopped on nq
+Stopped at be
+Stopped be on nq
+Full sold $3400 a contract
+Full sold nq 500 points $10,000 a contract
+Full sold 200 points
+Trailed out nq 200 points
+First trim order at 28550
+Sell order at 29630
+Buy order sitting at 28934
+Load nvda 205p
+Entered nvda July 20th 205c Avg 2.25 Sl 203
+Entered Spy 740p 1dte Avg 2.24
+Added more new avg 28984
+Made small add into nvda
+Sl moved to 29765
+Up 210 points $4200 a contract
+100 points $2,000 a con - 2nd trim

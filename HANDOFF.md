@@ -1266,3 +1266,55 @@ Still ahead, in rough order:
    reopen). Do not let a "Grabbed NFLX equity" line near the options
    path meanwhile — "equity" lines currently have no grammar, and if one
    ever parses by accident the NOT_TICKERS/veto approach is the tool.
+
+## Update — Day Trades taught from his full-channel paste; per-room LIVE toggles (v1.13.11)
+
+He pasted the entire Day Trades channel (June 1 - now, Felony + the mod
+Trademorewiser who posts the mechanical lines) and asked to "start with
+this one". Also: shorter replies from now on — the chat is clogging.
+
+Grammar taught, both parsers, samples 270, parity green, all suites pass:
+- bare "Load nvda 205p" = PREPARE (RE_LOADING now matches load/loading/loaded)
+- "Stopped on nq" / "at be" / "be on nq" / "20 point loss" = their stop
+  fired = CLOSE (RE_STOPPED_OUT extended)
+- "Full sold $3400 a contract" / "nq 500 points $10,000 a contract" /
+  "200 points" = CLOSE carrying usd (full-exit rule no longer demands a
+  percentage)
+- "Trailed out nq" = CLOSE; futures symbols now resolve in ANY case
+  ("nq", "es" lowercase — they aren't English words, safe where stock
+  tickers wouldn't be)
+- RESTING-ORDER NARRATION NEVER TRADES: "Sell order at 29630", "Buy order
+  sitting at 28934", "First trim (order) at 28550" — new veto; "First
+  trim 37%" (no "at level") still trims
+- "Entered nvda July 20th 205c / Avg 2.25 / Sl 203" — month-name expiry
+  inside the contract (was reading "July" as ticker TH!), and Avg on the
+  next line becomes the limit when no @ price
+- "Made small add into nvda" = ADD ("into")
+- Verified ignored: bare "$1000 a contract", "70 points...", "Up 210
+  points...", "Sl moved to...", bare "75%"-style updates (in THIS room
+  bare percents are progress, not trims — the verb decides; note: when
+  Whop rooms are wired for real, Aristotle-style bare-percent-trims vs
+  this room's bare-percent-updates will need per-room profiles)
+
+PER-ROOM TEST/LIVE TOGGLES, his design: popup Settings now lists every
+room with testing/LIVE selects (ROOM_NAMES in popup.js), stored as
+settings.channel_live. Enforcement in background: master TEST = everything
+pretends as always; master REAL = rooms not flipped LIVE are logged and
+never reach the bridge. Default: everything testing. When he's near the
+REAL flip, consider the dual-book so testing rooms keep paper-scoring in
+live mode (not built yet, on record).
+
+Webull data sub ($220/mo he remembers): NOT findable publicly. Webull's
+API docs say OpenAPI futures data requires a paid subscription whose
+"subscription module is under active development and will be released
+soon"; in-app CME L1/L2 is free via the CME partner page. Told him to
+claim the free in-app CME data and ask Webull support about the API-side
+package (that's the one our bridge actually consumes).
+
+Equity + multi-day holds: HIS word — build them eventually, but Swing
+Trades and Long Term channels are ON HOLD, not trading yet.
+
+SANDBOX NOTE for future turns: this cloud workspace rolled back twice,
+silently losing local commits/files that were already pushed. GitHub is
+the truth — at the start of any turn after a gap, fetch and compare
+before editing, and re-seat local work on top of origin/main.

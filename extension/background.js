@@ -624,6 +624,23 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
      * bridge's unlimited book keeps score of what it would have taken. None
      * of this touches real mode, which stays on the conservative settings. */
     const mode = await bridgeMode(c);
+    // Per-room TEST/LIVE, his design: "each channel had a toggle button from
+    // testing to live so i would be able to choose which channel i want and
+    // dont want to trade live". While the master switch is TEST, everything
+    // pretends, exactly as before. The moment the master goes REAL, only
+    // rooms he flipped to LIVE trade real money — the rest are held here,
+    // logged, and never reach the bridge.
+    if (mode === "webull" &&
+        !((c.channel_live || {})[String(msg.channelId || "")])) {
+      await addLog({ kind: "skipped", action: sig.action,
+                     what: sig.action + " " + (sig.symbol || ""),
+                     why: "REAL money is on, but this room is still set to " +
+                          "TESTING — its call was logged, not traded. Flip " +
+                          "it to LIVE in the popup when it's earned it.",
+                     text: msg.text, author: msg.author });
+      reply({ ok: true });
+      return;
+    }
     const testing = mode !== "webull";
     if (testing && sig.action === "TRIM" && !sig.fire) {
       if (!sig.symbol) {

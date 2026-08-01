@@ -148,6 +148,14 @@
          every ticker allowed, every call followed, trims sell, adds follow,
          no daily cap. -->
 
+    <!-- One row per room: TESTING or LIVE. Only matters once the master
+         switch is REAL — in TEST mode everything pretends regardless. -->
+    <label>Rooms — testing or live (only counts when REAL is on)</label>
+    <div id="roomtoggles"></div>
+    <div class="note">While the big switch is TEST, every room pretends.
+      When you flip REAL, only rooms set to LIVE trade real money — the
+      rest keep being logged and never touch Webull.</div>
+
     <div class="half">
       <div>
         <label>Futures calls (NQ / ES)</label>

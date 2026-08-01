@@ -552,3 +552,30 @@ if fails:
         print("  -", f)
     raise SystemExit(1)
 print("Felony's shorthand reads: bare shorts, SL stops, dollars a con.")
+
+
+# --- the Day Trades room, from his paste of the whole channel ----------------
+# Progress updates never trade; verbs do. Resting orders never trade; fills do.
+check("Stopped on nq", action="CLOSE", symbol="NQ")
+check("Stopped at be", action="CLOSE")
+check("Full sold nq 500 points $10,000 a contract", action="CLOSE",
+      symbol="NQ", usd=10000.0)
+check("Trailed out nq", action="CLOSE", symbol="NQ")
+check("First trim order at 28550", action=None)
+check("Sell order at 29630", action=None)
+check("Buy order sitting at 28934", action=None)
+check("Load nvda 205p", action="PREPARE", fire=False, symbol="NVDA")
+s = check("Entered nvda July 20th 205c\nAvg 2.25\nSl 203", action="OPEN",
+          symbol="NVDA", strike=205.0, expiry="7/20")
+ok(s.limit == 2.25, "their Avg is the price they paid, got %s" % s.limit)
+check("Made small add into nvda", action="ADD", symbol="NVDA")
+check("$1000 a contract", action=None)
+check("Up 210 points $4200 a contract", action=None)
+check("First trim 37% on SPY", action="TRIM", symbol="SPY")
+
+if fails:
+    print("FAILED %d Day-Trades check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("Day Trades reads clean: verbs trade, updates and resting orders don't.")

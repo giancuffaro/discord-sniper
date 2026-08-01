@@ -22,7 +22,10 @@ const RE_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2190}-\u{27BF}\u{FE0F}\u{200D}]/gu;
 // the TAIL of a longer word — "Loading 205 calls" gave a ticker of ADING, which
 // then failed the allowed-list check for reasons that had nothing to do with
 // what the line said.
-const RE_CONTRACT = /(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+(?:(\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d*dte)\s+)?\$?(\d{1,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b/gi;
+// The expiry between symbol and strike can be a date, a DTE, or — the Whop
+// room's habit — a month name: "Entered nvda July 20th 205c". Without the
+// month alternative, "July" got read as the SYMBOL: entry came out TH 205C.
+const RE_CONTRACT = /(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+(?:(\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d*dte|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?)\s+)?\$?(\d{1,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b/gi;
 
 // The same contract written back to front: "205 calls Friday expiration on
 // NVDA". Requires the word "on" before the ticker — that's what keeps it from
@@ -108,7 +111,10 @@ const RE_CLOSE_ALL = /\ball\s+positions?\s+(?:are\s+)?closed\b|\bclos(?:ed|ing)\
 const RE_HALF = /\b(?:out\s+of|sold)\s+half\b/i;
 // "Stopped out of half my position" / "Stopping out of 2nd entry" — their
 // stop fired. Half or a numbered entry = partial; otherwise the trade's done.
-const RE_STOPPED_OUT = /\bstopp?(?:ed|ing)\s+out\b/i;
+// "Stopped out" is the main room. The Whop Day Trades room drops the "out":
+// "Stopped on nq", "Stopped at be", "Stopped be on nq", "Stopped 20 point
+// loss". All of them mean their stop fired.
+const RE_STOPPED_OUT = /\bstopp?(?:ed|ing)\s+(?:out\b|on\s+\w|at\s+be\b|be\b|\d+\s+point)/i;
 const RE_PARTIAL = /\bhalf\b|\b(?:2nd|second|1st|first)\s+entry\b|\bpart\b|\bsome\b/i;
 // Entry-line filler that isn't information: sizing talk and hype words.
 const RE_FILLER = /\b(?:lightly|light|super|very|small|starters?|lottos?|lotto|these|some|size|zero|for|high|risk|deg[ea]n|accts?|account|starter)\b|[()!,]|\.(?!\d)/gi;
@@ -116,7 +122,7 @@ const RE_FILLER = /\b(?:lightly|light|super|very|small|starters?|lottos?|lotto|t
 // "loading" is the main room; "PREP AAPL 350 C 7/31" is Aristotle's word for
 // the same thing, and Midas says "Loaded ... cons" — all of them mean GET
 // READY, none of them buys.
-const RE_LOADING = /\b(?:loading|loaded|prep(?:ping|ped)?)\b/i;
+const RE_LOADING = /\b(?:load(?:ing|ed)?|prep(?:ping|ped)?)\b/i;
 const RE_ALLOUT = /\ball\s+out\b/i;
 const RE_TRIM = /\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b/i;
 const RE_BACKIN = /\bback\s+in\b/i;
@@ -133,7 +139,7 @@ const RE_BARE_FILL = /^(?:just\s+|we\s+|i\s+|i've\s+|ive\s+|we've\s+)*(?:filled|
 // moved. Whether that buys you a second contract is a setting, not a parser
 // decision: resolveAdd in guards.js has the final word, because only the guards
 // know whether you're even in it.
-const RE_ADD = /\badd(?:ed|ing|s)?\s+(?:to|more)\b|\badding\b|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b|\b(?:new|updated)\s+(?:avg|average)\b/i;
+const RE_ADD = /\badd(?:ed|ing|s)?\s+(?:to|more|into)\b|\badding\b|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b|\b(?:new|updated)\s+(?:avg|average)\b/i;
 // The price out of "new avg is 2.8", "avg 3.05", "average: $2.90". Never a
 // percentage — "avg gain 30%" is a result, not a price.
 const RE_AVG_PRICE = /\b(?:avg|average)\w*\s*(?:is|of|at|around|near|:|=|@)?\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)/i;
@@ -217,6 +223,10 @@ function findContract(text) {
     if (NOT_TICKERS.has(sym)) continue;
     const k = m[4].toLowerCase();
     let expiry = (m[2] || "").toUpperCase() || null;
+    if (expiry && /^[A-Z]/.test(expiry) && !expiry.endsWith("DTE")) {
+      const md = RE_MONTH_DAY.exec(expiry.toLowerCase());
+      if (md) expiry = MONTHS[md[1]] + "/" + parseInt(md[2], 10);
+    }
     if (!expiry) expiry = expiryAnywhere(text.slice(RE_CONTRACT.lastIndex));
     return { symbol: sym, strike: parseFloat(m[3]),
              side: k.startsWith("c") ? "CALLS" : "PUTS",
@@ -259,7 +269,9 @@ function bareSymbol(text, allowed) {
     // A futures symbol written in capitals is recognisable on its own —
     // "on NQ short - Trimmed" has to resolve whether or not NQ is on the
     // options allowed-list, because that list is about options.
-    if (FUT_SYMS.has(s) && raw === s) return s;
+    // ...in ANY case — the Whop room types "Stopped on nq" all day, and
+    // futures symbols aren't English words, so lowercase is safe here.
+    if (FUT_SYMS.has(s)) return s;
     // Written in CAPITALS = a ticker, whoever's list it is or isn't on —
     // "Fully out of NBIS" has to resolve without NBIS being pre-listed.
     // The vocabulary list only unlocks lowercase ("40% in spy now").
@@ -357,6 +369,16 @@ function parseSignal(text, cfg) {
   // not his position. Day two it fired TRIM (+80%).
   if (/\d{1,3}(?:\.\d+)?\s*%\s*sure\b/.test(low)) {
     s.why = "that percentage is how sure they are, not a sale";
+    return s;
+  }
+
+  // The Whop room narrates its RESTING orders: "Sell order at 29630", "Buy
+  // order sitting at 28934", "First trim order at 28550", "First trim at
+  // 29563". Orders they PLACED, not fills — acting on one sells at a level
+  // the market hasn't reached. ("First trim 37%" has no "at <level>", so a
+  // real first trim still reads as a trim.)
+  if (/\b(?:buy|sell|trim)\s+order\b|\border\s+(?:at|sitting|set)\b|\bfirst\s+(?:trim|sell)\s+(?:order\s+)?(?:set\s+)?at\s+\$?\d+(?!\s*%)/.test(low)) {
+    s.why = "that's a resting order they've placed, not a fill — nothing has happened yet";
     return s;
   }
 
@@ -533,10 +555,15 @@ function parseSignal(text, cfg) {
   // "Full sold nvda close to 25%" — the word FULL turns a percentage line
   // into a complete exit. Without this, the trim rule below would swallow it
   // and sell 3 of 5 on a call that means "I'm out".
-  if (/\bfull(?:y)?\b/i.test(low) && RE_EXIT.test(low) && pctM && !findContract(t)) {
+  // "Full sold $3400 a contract" / "Full sold nq 500 points" — the Whop
+  // room's full exits often carry dollars or points instead of a percent.
+  // FULL + an exit verb is the call; the numbers just say how it went.
+  if (/\bfull(?:y)?\b/i.test(low) && RE_EXIT.test(low) && !findContract(t)) {
     s.symbol = bareSymbol(t, allowed);
     s.action = "CLOSE"; s.matched = "full exit";
-    s.pct = parseFloat(pctM[1]);
+    if (pctM) s.pct = parseFloat(pctM[1]);
+    const muF = RE_USD_CONTRACT.exec(t);
+    if (muF) s.usd = num(muF[1]);
     if (!s.symbol) {
       s.needs_position = true;
       s.why = "a full exit with no ticker in it — working out which position they meant";
@@ -636,6 +663,13 @@ function parseSignal(text, cfg) {
     s.action = "OPEN"; s.matched = "entry";
     const m = RE_LIMIT.exec(t);
     if (m) s.limit = parseFloat(m[1]);
+    else {
+      // The Whop room posts the fill on the next line of the SAME message:
+      // "Entered nvda July 20th 205c / Avg 2.25". Their average is the
+      // price they paid — that's the limit.
+      const ma = RE_AVG_PRICE.exec(t);
+      if (ma) s.limit = parseFloat(ma[1]);
+    }
     const mq = RE_QTY.exec(t);
     if (mq) s.qty = parseInt(mq[1], 10);
     // "Entered AMD 520C 7/20 @ 1.75  Target 524  Stop 505" — HIS levels, on

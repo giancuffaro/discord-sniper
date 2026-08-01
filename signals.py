@@ -36,8 +36,14 @@ RE_EMOJI = re.compile("[\U0001F000-\U0001FAFF←-⯿️]")
 # then failed the allowed-list check for reasons that had nothing to do with
 # what the line said.
 RE_CONTRACT = re.compile(
+    # The expiry between symbol and strike can be a date, a DTE, or — the
+    # Whop room's habit — a month name: "Entered nvda July 20th 205c".
+    # Without the month alternative, "July" got read as the SYMBOL and the
+    # entry came out as TH 205C.
     r"(?<![A-Za-z])\$?(?P<symbol>[A-Za-z]{1,5})\s+"
-    r"(?:(?P<expiry>\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d*dte)\s+)?"
+    r"(?:(?P<expiry>\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d*dte"
+    r"|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?"
+    r"\s+\d{1,2}(?:st|nd|rd|th)?)\s+)?"
     r"\$?(?P<strike>\d{1,5}(?:\.\d{1,2})?)\s*"
     r"(?P<kind>calls?|puts?|c|p)\b", re.IGNORECASE)
 
@@ -94,7 +100,7 @@ RE_BARE = re.compile(r"\b([A-Za-z]{1,5})\b")
 # "loading" is the main room; "PREP AAPL 350 C 7/31" is Aristotle's word for
 # the same thing, and Midas says "Loaded ... cons" — all of them mean GET
 # READY, none of them buys.
-RE_LOADING = re.compile(r"\b(?:loading|loaded|prep(?:ping|ped)?)\b",
+RE_LOADING = re.compile(r"\b(?:load(?:ing|ed)?|prep(?:ping|ped)?)\b",
                         re.IGNORECASE)
 RE_ALLOUT = re.compile(r"\ball\s+out\b", re.IGNORECASE)
 RE_TRIM = re.compile(r"\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b",
@@ -107,7 +113,7 @@ RE_ENTRY = re.compile(
 # moved. Whether that buys you a second contract is a setting, not a parser
 # decision: the parser only says "this is an add", and guards.resolve_add has
 # the final word, because only the guards know whether you're even in it.
-RE_ADD = re.compile(r"\badd(?:ed|ing|s)?\s+(?:to|more)\b|\badding\b"
+RE_ADD = re.compile(r"\badd(?:ed|ing|s)?\s+(?:to|more|into)\b|\badding\b"
                     r"|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b"
                     r"|\b(?:new|updated)\s+(?:avg|average)\b", re.IGNORECASE)
 # The price out of "new avg is 2.8", "avg 3.05", "average: $2.90". Their new
@@ -184,7 +190,12 @@ RE_BARE_OUT = re.compile(
 RE_HALF = re.compile(r"\b(?:out\s+of|sold)\s+half\b", re.IGNORECASE)
 # "Stopped out of half my position" / "Stopping out of 2nd entry" — their
 # stop fired. Half or a numbered entry = partial; otherwise the trade's done.
-RE_STOPPED_OUT = re.compile(r"\bstopp?(?:ed|ing)\s+out\b", re.IGNORECASE)
+RE_STOPPED_OUT = re.compile(
+    # "Stopped out" is the main room. The Whop Day Trades room drops the
+    # "out": "Stopped on nq", "Stopped at be", "Stopped be on nq",
+    # "Stopped 20 point loss". All of them mean their stop fired.
+    r"\bstopp?(?:ed|ing)\s+(?:out\b|on\s+\w|at\s+be\b|be\b|\d+\s+point)",
+    re.IGNORECASE)
 RE_PARTIAL = re.compile(
     r"\bhalf\b|\b(?:2nd|second|1st|first)\s+entry\b|\bpart\b|\bsome\b",
     re.IGNORECASE)
@@ -410,6 +421,11 @@ def _contract(text):
             continue
         k = m.group("kind").lower()
         expiry = (m.group("expiry") or "").upper() or None
+        if expiry and expiry[0].isalpha() and not expiry.endswith("DTE"):
+            md = RE_MONTH_DAY.search(expiry)
+            if md:
+                expiry = "%d/%d" % (MONTHS[md.group(1).lower()],
+                                    int(md.group(2)))
         if not expiry:
             expiry = _expiry_anywhere(text[m.end():])
         return {"symbol": sym, "strike": float(m.group("strike")),
@@ -453,10 +469,11 @@ def _bare_symbol(text, allowed):
         s = raw.upper()
         if s in NOT_TICKERS:
             continue
-        # A futures symbol written in capitals is recognisable on its own —
-        # "on NQ short - Trimmed" has to resolve whether or not NQ is on the
-        # options allowed-list, because that list is about options.
-        if s in FUT_SYMS and raw == s:
+        # A futures symbol is recognisable on its own, in ANY case — the
+        # Whop room types "Stopped on nq" and "Trailed out nq" in lowercase
+        # all day. These aren't English words, so lowercase is safe here in
+        # a way it isn't for stock tickers.
+        if s in FUT_SYMS:
             return s
         # Written in CAPITALS = a ticker, whoever's list it is or isn't on —
         # "Fully out of NBIS" has to resolve without NBIS being pre-listed.
@@ -522,6 +539,17 @@ def parse(text, author="", channel="", cfg=None):
     # not his position. Day two it fired TRIM (+80%).
     if re.search(r"\d{1,3}(?:\.\d+)?\s*%\s*sure\b", low):
         sig.why = "that percentage is how sure they are, not a sale"
+        return sig
+
+    # The Whop room narrates its RESTING orders: "Sell order at 29630",
+    # "Buy order sitting at 28934", "First trim order at 28550", "First
+    # trim at 29563". Those are orders they PLACED, not fills — acting on
+    # one sells at a level the market hasn't reached. ("First trim 37%"
+    # has no "at <level>", so a real first trim still reads as a trim.)
+    if re.search(r"\b(?:buy|sell|trim)\s+order\b|\border\s+(?:at|sitting|set)\b"
+                 r"|\bfirst\s+(?:trim|sell)\s+(?:order\s+)?(?:set\s+)?at\s+\$?\d+(?!\s*%)",
+                 low):
+        sig.why = "that's a resting order they've placed, not a fill — nothing has happened yet"
         return sig
 
     # 1. LOADING — get contracts ready. The room says outright: DO NOT BUY IN.
@@ -716,11 +744,19 @@ def parse(text, author="", channel="", cfg=None):
     # "Full sold nvda close to 25%" — the word FULL turns a percentage line
     # into a complete exit. Without this, the trim rule below would swallow it
     # and sell 3 of 5 on a call that means "I'm out".
+    # "Full sold $3400 a contract" / "Full sold nq 500 points" / "Full sold
+    # 200 points" — the Whop room's full exits often carry dollars or points
+    # instead of a percentage. FULL + an exit verb is the call; the numbers
+    # just say how it went.
     if re.search(r"\bfull(?:y)?\b", low) and RE_EXIT.search(low) and \
-            pct_m and not _contract(t):
+            not _contract(t):
         sig.symbol = _bare_symbol(t, allowed)
         sig.action, sig.matched = "CLOSE", "full exit"
-        sig.pct = float(pct_m.group(1))
+        if pct_m:
+            sig.pct = float(pct_m.group(1))
+        mu_f = RE_USD_CONTRACT.search(t)
+        if mu_f:
+            sig.usd = _num(mu_f.group(1))
         if not sig.symbol:
             sig.needs_position = True
             sig.why = ("a full exit with no ticker in it — working out which "
@@ -830,6 +866,13 @@ def parse(text, author="", channel="", cfg=None):
         m = RE_LIMIT.search(t)
         if m:
             sig.limit = float(m.group(1))
+        else:
+            # The Whop room posts the fill on the next line of the SAME
+            # message: "Entered nvda July 20th 205c / Avg 2.25". Their
+            # average is the price they paid — that's the limit.
+            ma = RE_AVG_PRICE.search(t)
+            if ma:
+                sig.limit = float(ma.group(1))
         mq = RE_QTY.search(t)
         if mq:
             sig.qty = int(mq.group(1))

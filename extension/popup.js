@@ -222,6 +222,36 @@ function contractStr(r) {
          .filter(Boolean).join(" ");
 }
 
+/* The rooms and their toggle rows. Every room starts (and stays) TESTING
+ * until HE flips it — LIVE is a per-room decision on top of the big REAL
+ * switch, never instead of it. */
+const ROOM_NAMES = { "829754942817828884": "Main room",
+                     "987515353670221834": "Aristotle",
+                     "1144369893760831489": "Midas",
+                     "1433933203302776852": "Aristotle small acct" };
+
+function renderRoomToggles(channelLive) {
+  const box = $("roomtoggles");
+  if (!box) return;
+  box.innerHTML = Object.keys(ROOM_NAMES).map(id => {
+    const live = !!(channelLive || {})[id];
+    return '<div class="row" style="margin-bottom:4px">' +
+           '<span class="grow" style="font-size:12px">' + ROOM_NAMES[id] +
+           '</span><select data-room="' + id + '" style="width:110px">' +
+           '<option value="0"' + (live ? "" : " selected") + '>testing</option>' +
+           '<option value="1"' + (live ? " selected" : "") + '>LIVE</option>' +
+           "</select></div>";
+  }).join("");
+}
+
+function readRoomToggles() {
+  const out = {};
+  document.querySelectorAll("#roomtoggles select[data-room]").forEach(sel => {
+    if (sel.value === "1") out[sel.dataset.room] = true;
+  });
+  return out;
+}
+
 function renderTable(rows, el) {
   if (!rows || !rows.length) {
     el.innerHTML = '<div class="note">No trades on this day.</div>';
@@ -432,6 +462,7 @@ async function render() {
   $("channels").value = listToText(s.channel_ids);
   $("admins").value = listToText(s.follow_admins);
   $("futures").value = s.futures_enabled ? "1" : "0";
+  renderRoomToggles(s.channel_live || {});
   $("bridge").value = s.bridge_url;
 
   const box = $("log");
@@ -495,6 +526,7 @@ $("save").onclick = async () => {
   catch (e) { /* bridge down — the extension-side gate still holds */ }
   return patch({
     futures_enabled: fut,
+    channel_live: readRoomToggles(),
     channel_ids: textToList($("channels").value),
     follow_admins: textToList($("admins").value),
     bridge_url: $("bridge").value.trim() || DEFAULTS.bridge_url,
