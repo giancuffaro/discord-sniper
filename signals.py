@@ -239,7 +239,12 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               # his trade — the ADD pattern saw "adding" and never looked
               # left for the "Not". And "Some trim targets are 737.70 and
               # lower" is a map of where he MIGHT sell, not a sale.
-              "not adding", "won't add", "wont add", "no adds", "trim target")
+              "not adding", "won't add", "wont add", "no adds", "trim target",
+              # "I'm going to take 742c starters and add full size at 741.60"
+              # — Midas narrating a PLAN. Day two the reader bought the verb:
+              # OPEN TAKE 742C. Announced intent is not an entry; his entry
+              # is the fill that follows.
+              "going to", "gonna")
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
@@ -251,6 +256,10 @@ NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                "SOLD", "TRIM", "HOLD", "GOT", "ADD", "FULL", "TOOK", "LOAD",
                "FILL", "CALL", "CALLS", "PUT", "PUTS", "LONG", "SHORT", "SIZE",
                "RISK", "NEW", "JUST", "NOW", "OVER", "UNDER", "NEAR", "ABOVE",
+               # Day two live: "going to take 742c" bought TAKE, and "Keep 305
+               # puts loaded" once read KEEP as the ticker. Verbs in front of
+               # a strike.
+               "TAKE", "KEEP",
                # Trader shorthand that looks exactly like a ticker once
                # uppercase counts.
                "OPEX", "ORB", "HOD", "LOD", "EMA", "VWAP", "ATH", "RSI",
@@ -499,6 +508,12 @@ def parse(text, author="", channel="", cfg=None):
     if re.search(r"\bfrom\s+\d{1,3}(?:\.\d+)?\s*%", low):
         sig.why = ('a percentage with "from" in front of it is a level '
                    "they're planning around, not a sale")
+        return sig
+
+    # "I'm about 80% sure market falls" — a percentage about his CONFIDENCE,
+    # not his position. Day two it fired TRIM (+80%).
+    if re.search(r"\d{1,3}(?:\.\d+)?\s*%\s*sure\b", low):
+        sig.why = "that percentage is how sure they are, not a sale"
         return sig
 
     # 1. LOADING — get contracts ready. The room says outright: DO NOT BUY IN.
