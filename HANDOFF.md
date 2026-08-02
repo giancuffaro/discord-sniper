@@ -1577,3 +1577,20 @@ from the z tabs after a day or two is the tuning corpus.
 
 42 rooms = 42 tabs across two Chrome windows. Flagged the RAM reality to
 him (Memory Saver exemptions matter even more now).
+
+## v1.16.2 — the leaderboard: every room, every day, ranked
+
+His plan said out loud: "self learning over days.. not going live on any
+channel until very very consistent.. keep adding channels and servers..
+stay with the best performers." Built the ranking view: bridge GET
+/scoreboard aggregates every days/*.json by room (wins, losses, net
+pretend $, days active); the popup's By-room box now reads "today 2-1
++$140 · all time 9-4 +$610 (5d)" per room, ranked by all-time net, and
+rooms with history show even on quiet days. Old trades without room tags
+group as "(before room tags)".
+
+His PC: 64GB / 16-core / RTX 3090 — told him 42 tabs is a rounding error.
+Broker throughput answered: TEST mode sends Webull literally nothing (dry
+book only), so channel count is free; LIVE someday = only his handful of
+proven rooms, a few orders a minute worst case, far under Webull's API
+limits, with fixed sizing + one-contract futures caps keeping it sane.

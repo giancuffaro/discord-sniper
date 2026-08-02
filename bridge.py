@@ -874,6 +874,36 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"date": safe, "table": [],
                                         "wallet": None,
                                         "missing": True})
+        if self.path.startswith("/scoreboard"):
+            # Every room's whole record, across every day file on disk.
+            # This is his "stay with the best performers" chart: wins,
+            # losses, net pretend dollars, days seen — per room, all time.
+            rooms = {}
+            try:
+                for fn in sorted(os.listdir(DAYS)):
+                    if not fn.endswith(".json"):
+                        continue
+                    try:
+                        with open(os.path.join(DAYS, fn), encoding="utf-8") as f:
+                            d = json.load(f)
+                    except (OSError, ValueError):
+                        continue
+                    seen_rooms = set()
+                    for tr in ((d.get("wallet") or {}).get("trades") or []):
+                        r = tr.get("room") or "(before room tags)"
+                        s = rooms.setdefault(r, {"w": 0, "l": 0, "pl": 0.0,
+                                                 "days": 0})
+                        if float(tr.get("pl") or 0) >= 0:
+                            s["w"] += 1
+                        else:
+                            s["l"] += 1
+                        s["pl"] += float(tr.get("pl") or 0)
+                        seen_rooms.add(r)
+                    for r in seen_rooms:
+                        rooms[r]["days"] += 1
+            except OSError:
+                pass
+            return self._json(200, {"rooms": rooms})
         if self.path.startswith("/build"):
             # Asked every half minute by the extension. Deliberately does not
             # touch settings or the broker — it's the cheapest call here.

@@ -238,17 +238,30 @@ function renderRoomStats(wallet, dayTable) {
       s.open += 1;
     }
   }
+  // Rooms with any history join the board even if quiet today — that's
+  // the whole point of "stay with the best performers".
+  for (const n of Object.keys(scoreAll || {})) {
+    rows[n] = rows[n] || { w: 0, l: 0, pl: 0, open: 0 };
+  }
   const names = Object.keys(rows);
   if (!names.length) { el.style.display = "none"; return; }
   el.style.display = "";
   const money = n => (n < 0 ? "-$" : "+$") + Math.abs(Math.round(n));
-  el.innerHTML = "<div class=\"tablehead\"><b>By room — today</b></div>" +
-    names.sort((a, b) => rows[b].pl - rows[a].pl).map(n => {
+  const rank = n => (scoreAll && scoreAll[n]) ? scoreAll[n].pl : rows[n].pl;
+  el.innerHTML = "<div class=\"tablehead\"><b>By room — today &amp; all time</b></div>" +
+    names.sort((a, b) => rank(b) - rank(a)).map(n => {
       const s = rows[n];
+      const a = (scoreAll || {})[n];
+      const today = s.w + s.l + s.open
+        ? "today " + s.w + "-" + s.l + " " + money(s.pl) +
+          (s.open ? " · " + s.open + " open" : "")
+        : "quiet today";
+      const ever = a
+        ? " &nbsp;·&nbsp; all time " + a.w + "-" + a.l + " " + money(a.pl) +
+          " (" + a.days + "d)"
+        : "";
       return '<div class="trow"><b>' + n + "</b>" +
-        '<span class="sub">' + s.w + " up / " + s.l + " down · " +
-        money(s.pl) + (s.open ? " · " + s.open + " still open" : "") +
-        "</span></div>";
+        '<span class="sub">' + today + ever + "</span></div>";
     }).join("");
 }
 
@@ -328,6 +341,13 @@ function etToday() {
   const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York",
     year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   return p;   // 2026-08-01
+}
+
+let scoreAll = null;      // all-time per-room record, from the bridge
+
+async function loadScoreboard() {
+  try { scoreAll = (await askBridge("/scoreboard")).rooms || null; }
+  catch (e) { scoreAll = null; }
 }
 
 async function loadDays() {
@@ -681,3 +701,4 @@ setInterval(render, 2000);
 refreshMode();
 setInterval(refreshMode, 4000);
 loadDays();
+loadScoreboard();
