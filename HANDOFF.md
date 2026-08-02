@@ -1558,3 +1558,22 @@ Note for the exit path: sig.limit now carries their posted sell price on
 z-format exits — bridge exit_price does NOT yet read order limit as a
 fallback; test-mode exits will use live bid/pct as before. Improvement
 candidate if z-format test exits come up priceless in the day files.
+
+## v1.16.1 — z trades batch two: 25 more channels (42 rooms total)
+
+His links, his groupings, one duplicate removed: 10 unlabeled ("ZT
+opt-1..10" — likely the OPTIONS DAY TRADES / LOTTO block from the server
+sidebar), 4 Swings ("ZT swing-1..4"), 5 Covered Calls ("ZT cc-1..5"),
+1 Forex ("ZT forex"), 5 Futures ("ZT fut-1..5"). All: baked channel_ids,
+labels, toggles, scoreboard, and a second Chrome window in START HERE.
+Labels are placeholders until he sends the real channel names — asked.
+
+Grammar reality, said plainly in the reply: the circle format covers the
+Bullwinkle rooms; TLM/Mr-M/luxe/King-Maker formats are taught from the
+videos where seen; covered-calls/spreads (multi-leg) and forex have NO
+grammar yet — those channels capture and refuse until taught (safe by
+design: the parser says no to what it doesn't understand). Export chat
+from the z tabs after a day or two is the tuning corpus.
+
+42 rooms = 42 tabs across two Chrome windows. Flagged the RAM reality to
+him (Memory Saver exemptions matter even more now).
