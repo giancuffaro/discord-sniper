@@ -551,9 +551,35 @@ async function oneTabPerChannel() {
   }
 }
 
+/* Does Whop push new messages into an open tab like Discord does, or only
+ * show them on refresh? Unknown until Monday proves it — so it's made not
+ * to matter. Any Whop tab that hasn't produced a single captured message
+ * in 5 minutes gets quietly reloaded: if Whop pushes live, this almost
+ * never fires; if it doesn't, the reader is never more than ~5 minutes
+ * behind, and the 15-second history grace in whop.js means a reload can
+ * never trade the old messages it repaints. */
+const whopTabSeen = {};    // tabId -> last time a message arrived from it
+
+async function whopWatchdog() {
+  let tabs;
+  try {
+    tabs = await chrome.tabs.query({ url: ["https://whop.com/joined/*"] });
+  } catch (e) { return; }
+  const now = Date.now();
+  for (const t of tabs) {
+    if (!whopTabSeen[t.id]) { whopTabSeen[t.id] = now; continue; }
+    if (now - whopTabSeen[t.id] > 5 * 60 * 1000) {
+      whopTabSeen[t.id] = now;
+      try { await chrome.tabs.reload(t.id); } catch (e) { /* tab gone */ }
+    }
+  }
+}
+
+chrome.alarms.create("whop-watchdog", { periodInMinutes: 1 });
 chrome.alarms.create("watch-build", { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(a => {
   if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); }
+  if (a.name === "whop-watchdog") whopWatchdog();
 });
 
 // Going from ON back to OFF is the moment a held-back update can land, so
@@ -568,6 +594,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 
   (async () => {
     const c = await cfg();
+    if (sender && sender.tab && String(msg.platform || "") === "whop") {
+      whopTabSeen[sender.tab.id] = Date.now();   // this tab is alive
+    }
     if (c.capture) capture(msg.text, msg.author, msg.channelId, msg.postedAt);
 
     // Whop stops here too, and harder: the Whop reader is a wide net that

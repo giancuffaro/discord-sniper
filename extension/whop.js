@@ -119,7 +119,11 @@ function handle(el) {
       author: lastAuthor,
       channelId: roomId(),
       postedAt: at,
-      history: at < STARTED - 5000,
+      // The first 15 seconds after a (re)load are the page painting what
+      // already happened. Whop doesn't always stamp messages with a time,
+      // so without this grace an old entry could look brand new on every
+      // reload and BUY. History is captured, studied, never traded.
+      history: at < STARTED - 5000 || (Date.now() - STARTED) < 15000,
       url: location.href
     }).catch(() => { /* worker asleep; the next send wakes it */ });
   }

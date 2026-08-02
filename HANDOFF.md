@@ -1514,3 +1514,19 @@ discord.com + whop.com — Memory Saver discarding a tab KILLS the reader
 in it), PC never sleeps, background apps on, dedicated Chrome profile,
 Defender exclusion for the folder. RAM can't be "dedicated" on Windows —
 16GB is plenty; the real killer is tab discarding, not memory size.
+
+## v1.15.7 — the Whop-push question made not to matter
+
+He asked whether Whop pushes messages into an open tab (Discord-style) or
+needs a reload — unknowable from here until Monday proves it. Made
+irrelevant: whopWatchdog (1-min alarm) reloads any whop.com/joined tab
+that produced zero captured messages in 5 minutes (push works -> watchdog
+near-never fires; push doesn't -> reader lags at most ~5 min), and
+whop.js gained a 15-second startup grace: everything captured in the
+first 15s after a (re)load is history — captured, never traded. That
+grace also fixes a pre-existing danger: unstamped Whop messages defaulted
+to Date.now() and the morning's initial paint could have looked fresh
+enough to trade. Monday's log tells us which world we're in — captures
+between reloads = push; captures clustering every ~5 min = no push, and
+we tighten the interval. (Sandbox rolled back mid-turn again; re-seated
+on origin/main and re-applied — GitHub remains the only truth.)
