@@ -42,6 +42,15 @@ set "WHOP3=https://whop.com/joined/firststeptrading/high-risk-hpXJymtw0yMqzB/app
 set "WHOP4=https://whop.com/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app/"
 set "WHOP5=https://whop.com/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/app/"
 set "WHOP6=https://whop.com/joined/firststeptrading/long-term-sMzuBmyHSwKzFW/app/"
+rem  z trades (ZTRADEZ) - the free-trial week. Different Discord server.
+set "ZT_SERVER=496871546963492874"
+set "ZT1=https://discord.com/channels/%ZT_SERVER%/829352738239414332"
+set "ZT2=https://discord.com/channels/%ZT_SERVER%/721821717328298066"
+set "ZT3=https://discord.com/channels/%ZT_SERVER%/1504469469844738158"
+set "ZT4=https://discord.com/channels/%ZT_SERVER%/1174393224253681674"
+set "ZT5=https://discord.com/channels/%ZT_SERVER%/748266924122570882"
+set "ZT6=https://discord.com/channels/%ZT_SERVER%/1343408561803362374"
+set "ZT7=https://discord.com/channels/%ZT_SERVER%/1151897689185861632"
 
 set INTERACTIVE=1
 if /i "%~1"=="morning" set INTERACTIVE=0
@@ -191,7 +200,7 @@ if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=
 if defined CHROME (
   rem  The flags stop Chrome throttling background tabs - a room you're
   rem  not looking at still gets read the instant a message lands.
-  start "" "!CHROME!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!" "!WHOP1!" "!WHOP2!" "!WHOP3!" "!WHOP4!" "!WHOP5!" "!WHOP6!"
+  start "" "!CHROME!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!" "!WHOP1!" "!WHOP2!" "!WHOP3!" "!WHOP4!" "!WHOP5!" "!WHOP6!" "!ZT1!" "!ZT2!" "!ZT3!" "!ZT4!" "!ZT5!" "!ZT6!" "!ZT7!"
 ) else (
   start "" "!DISCORD_URL!"
   start "" "!ARISTOTLE_URL!"
@@ -203,6 +212,13 @@ if defined CHROME (
   start "" "!WHOP4!"
   start "" "!WHOP5!"
   start "" "!WHOP6!"
+  start "" "!ZT1!"
+  start "" "!ZT2!"
+  start "" "!ZT3!"
+  start "" "!ZT4!"
+  start "" "!ZT5!"
+  start "" "!ZT6!"
+  start "" "!ZT7!"
   echo         Couldn't find Chrome in the usual folders - opened your
   echo         default browser. The extension only runs in Chrome.
 )

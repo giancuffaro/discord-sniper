@@ -331,3 +331,15 @@ Quick 10% NVDA if you want it
 Entered BULL equity @ 7.24
 Grabbed NFLX equity @ 74.8
 Snagging starters on PYPL equity @ 41.03 AVG
+🟢 SPY 450 P 6/17 @2.00 ON THE BREAK OF $451.50
+🟢 GOOGL - $172.5 C 1.12 12/6 ON THE BREAK OF $171.39 @everyone
+🟢 GOOGL - in @ 1.06 @everyone
+🔴 GOOGL - 1.13 OUT HALF ✅
+🔴 GOOGL - 1.19 OUT ALL BUT 1 ✅ SL 1.12
+🔴 GOOGL - 1.20 OUT LAST ✅
+🔴 NVDA - 2.00 OUT 1/3 ✅ PENDING ORDER TO FILL
+🔴 NVDA - 2.07 OUT ✅
+⚪ NVDA - 0.72 ✅
+🟢 AMZN - $215 C 3.40 JAN / 2025 GOING LIGHT @everyone
+🔴 AAPL - 3.15 ✂️
+🟢 TSLA - 12/06 350 C 5.22 ON THE BREAK OF $339.10 LOOKS LIEK A SWING

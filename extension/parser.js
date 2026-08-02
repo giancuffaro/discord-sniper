@@ -407,6 +407,80 @@ function parseSignal(text, cfg) {
     return s;
   }
 
+  // ---- z trades' posted format (their own server-map rules) ---------------
+  //   GREEN circle = BOUGHT   RED = SOLD   WHITE = update   scissors = trim
+  //   "ON THE BREAK OF $451.50" = conditional; his "in @ 1.06" is the fill.
+  //   Circles live in the RAW text — the cleaner strips emoji.
+  const zg = raw.includes("\u{1F7E2}");
+  const zr = raw.includes("\u{1F534}");
+  const zw = raw.includes("\u26AA");
+  const zs = raw.includes("\u2702");
+  if (zw && !zg && !zr) {
+    s.why = "their price update (white circle) — not an order";
+    return s;
+  }
+  if (zg || zr || (zs && !RE_TRIM.test(low))) {
+    // "GOOGL - $172.5 C" — the dash hides the contract; drop it.
+    const tZ = t.replace(/\s-\s/g, " ");
+    const cZ = findContract(tZ);
+    let pxZ = null;
+    const reDec = /\b(\d{1,4}\.\d{1,4})\b/g;
+    let md0;
+    while ((md0 = reDec.exec(tZ)) !== null) {
+      const v = parseFloat(md0[1]);
+      if (cZ && Math.abs(v - cZ.strike) < 0.001) continue;
+      pxZ = v;
+      break;
+    }
+    if (zg) {
+      const brk = /on\s+the\s+break\s+of\s+\$?(\d[\d.,]*)/.exec(low);
+      if (cZ && brk) {
+        s.symbol = cZ.symbol; s.strike = cZ.strike; s.side = cZ.side;
+        s.expiry = cZ.expiry;
+        s.action = "PREPARE"; s.matched = "z-format conditional";
+        s.why = "they'll buy when " + s.symbol + " breaks " + brk[1] +
+                " — waiting for their fill, exactly like a LOADING";
+        return s;
+      }
+      if (cZ) {
+        s.symbol = cZ.symbol; s.strike = cZ.strike; s.side = cZ.side;
+        s.expiry = cZ.expiry;
+        s.action = "OPEN"; s.matched = "z-format entry";
+        const mL = RE_LIMIT.exec(t);
+        s.limit = mL ? parseFloat(mL[1]) : pxZ;
+        if (s.limit === null) s.warn = "no price on the green circle — it pays the market.";
+        s.fire = true;
+        s.why = "entry: " + human(s);
+        return s;
+      }
+      if (pxZ !== null) {
+        s.action = "OPEN"; s.matched = "z-format fill";
+        s.needs_loaded = true;
+        s.limit = pxZ;
+        s.symbol = bareSymbol(t, allowed);
+        s.why = "their fill on the break-of call — looking for the conditional it belongs to";
+        return s;
+      }
+      s.why = "a green circle with no contract and no price — nothing to follow";
+      return s;
+    }
+    s.symbol = bareSymbol(t, allowed);
+    const partial = zs || /\bout\s+half\b|\bout\s+\d\/\d\b|\ball\s+but\b|\bone\s+left\b|\btrim/.test(low);
+    s.action = partial ? "TRIM" : "CLOSE";
+    s.matched = "z-format exit";
+    if (pxZ !== null) s.limit = pxZ;
+    if (!s.symbol) {
+      s.needs_position = true;
+      s.why = "they sold (" + (zr ? "red" : "scissors") + " circle) with no " +
+              "ticker — working out which position they meant";
+      return s;
+    }
+    s.fire = s.action === "CLOSE";
+    s.why = (s.action === "CLOSE" ? "full exit on " : "their trim on ") +
+            s.symbol + (pxZ === null ? "" : " at " + pxZ);
+    return s;
+  }
+
   // 1. LOADING — get ready. Never buys; that is the room's own instruction.
   if (RE_LOADING.test(low)) {
     const c = findContract(t);

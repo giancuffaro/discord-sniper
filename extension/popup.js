@@ -183,7 +183,14 @@ const ROOM_NAMES = { "829754942817828884": "Main room",
                      "whop:high-risk": "Whop High Risk",
                      "whop:2k-challenge": "Whop 2K Challenge",
                      "whop:swing": "Whop Swing Trades",
-                     "whop:long-term": "Whop Long Term" };
+                     "whop:long-term": "Whop Long Term",
+                     "829352738239414332": "ZT top-flow",
+                     "721821717328298066": "ZT scalps",
+                     "1504469469844738158": "ZT uoa-data",
+                     "1174393224253681674": "ZT long-swings",
+                     "748266924122570882": "ZT uoa-swings",
+                     "1343408561803362374": "ZT 5k-challenge",
+                     "1151897689185861632": "ZT strategy-testing" };
 
 /* The per-room scoreboard he asked for: "trade information, won, lost,
  * profits, from each individual channel just to have good data to see where

@@ -594,6 +594,86 @@ def parse(text, author="", channel="", cfg=None):
         sig.why = "that's a resting order they've placed, not a fill — nothing has happened yet"
         return sig
 
+    # ---- z trades' posted format (their own server-map rules) --------------
+    #   GREEN circle  = BOUGHT      RED circle = SOLD      WHITE = update
+    #   "ON THE BREAK OF $451.50"   = conditional: he enters when the stock
+    #   breaks that level — a LOADING, and his "in @ 1.06" reply is the fill.
+    #   Scissors = a trim. Circles live in the RAW text (the cleaner strips
+    #   emoji), so they're read before anything else.
+    zg = "\U0001F7E2" in raw                       # green circle
+    zr = "\U0001F534" in raw                       # red circle
+    zw = "\u26AA" in raw                           # white circle
+    zs = "\u2702" in raw                           # scissors
+    if zw and not zg and not zr:
+        sig.why = "their price update (white circle) — not an order"
+        return sig
+    if zg or zr or (zs and not RE_TRIM.search(low)):
+        # Bullwinkle writes "GOOGL - $172.5 C" — the dash between symbol and
+        # strike hides the contract from the normal reader. Drop it here.
+        t_z = re.sub(r"\s-\s", " ", t)
+        c_z = _contract(t_z)
+        # the premium: first decimal in the line that isn't the strike
+        px_z = None
+        for mm in re.finditer(r"\b(\d{1,4}\.\d{1,4})\b", t_z):
+            v = float(mm.group(1))
+            if c_z and abs(v - float(c_z["strike"])) < 0.001:
+                continue
+            px_z = v
+            break
+        if zg:
+            brk = re.search(r"on\s+the\s+break\s+of\s+\$?(\d[\d.,]*)", low)
+            if c_z and brk:
+                sig.symbol = c_z["symbol"]
+                sig.strike, sig.side = c_z["strike"], c_z["side"]
+                sig.expiry = c_z["expiry"]
+                sig.action, sig.matched = "PREPARE", "z-format conditional"
+                sig.why = ("they'll buy when %s breaks %s — waiting for their "
+                           "fill, exactly like a LOADING"
+                           % (sig.symbol, brk.group(1)))
+                return sig
+            if c_z:
+                sig.symbol = c_z["symbol"]
+                sig.strike, sig.side = c_z["strike"], c_z["side"]
+                sig.expiry = c_z["expiry"]
+                sig.action, sig.matched = "OPEN", "z-format entry"
+                m_l = RE_LIMIT.search(t)
+                sig.limit = float(m_l.group(1)) if m_l else px_z
+                if sig.limit is None:
+                    sig.warn = ("no price on the green circle — it pays the "
+                                "market.")
+                sig.fire = True
+                sig.why = "entry: %s" % sig.human()
+                return sig
+            if px_z is not None:
+                # "GOOGL - in @ 1.06" — the fill on his break-of conditional
+                sig.action, sig.matched = "OPEN", "z-format fill"
+                sig.needs_loaded = True
+                sig.limit = px_z
+                sig.symbol = _bare_symbol(t, allowed)
+                sig.why = ("their fill on the break-of call — looking for the "
+                           "conditional it belongs to")
+                return sig
+            sig.why = "a green circle with no contract and no price — nothing to follow"
+            return sig
+        # red circle or scissors: they sold something
+        sig.symbol = _bare_symbol(t, allowed)
+        partial = bool(zs or re.search(
+            r"\bout\s+half\b|\bout\s+\d/\d\b|\ball\s+but\b"
+            r"|\bone\s+left\b|\btrim", low))
+        sig.action = "TRIM" if partial else "CLOSE"
+        sig.matched = "z-format exit"
+        if px_z is not None:
+            sig.limit = px_z            # the price they sold at
+        if not sig.symbol:
+            sig.needs_position = True
+            sig.why = ("they sold (%s circle) with no ticker — working out "
+                       "which position they meant" % ("red" if zr else "scissors"))
+            return sig
+        sig.fire = sig.action == "CLOSE"
+        sig.why = (("full exit on %s" if sig.action == "CLOSE"
+                    else "their trim on %s") % sig.symbol) +             ("" if px_z is None else " at %g" % px_z)
+        return sig
+
     # 1. LOADING — get contracts ready. The room says outright: DO NOT BUY IN.
     if RE_LOADING.search(low):
         c = _contract(t)

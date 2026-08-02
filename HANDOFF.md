@@ -1530,3 +1530,31 @@ enough to trade. Monday's log tells us which world we're in — captures
 between reloads = push; captures clustering every ~5 min = no push, and
 we tighten the interval. (Sandbox rolled back mid-turn again; re-seated
 on origin/main and re-applied — GitHub remains the only truth.)
+
+## v1.16.0 — z trades: seven channels wired, their format taught
+
+Free-trial week on a second Discord server, ZTRADEZ (496871546963492874).
+Channels wired (all testing, toggles + scoreboard + morning tabs):
+top-flow 829352738239414332, scalps 721821717328298066, uoa-data
+1504469469844738158, long-swings 1174393224253681674, uoa-swings
+748266924122570882, 5k-challenge 1343408561803362374, strategy-testing
+1151897689185861632. Labels "ZT ...".
+
+Their grammar came from HIS screen-recording videos (4 of 6 transcribed
+by vision agents from extracted frames; 2 were website/broker tours with
+no Discord content; 2 more transcripts died to a rate limit and he said
+skip them). The server posts its OWN format in #server-map: GREEN circle
+= BOUGHT, RED = SOLD, WHITE = update, "ON THE BREAK OF $X" = conditional
+entry, and the caller (Bullwinkle in the ZTRADEZ OPTIONS channels)
+confirms fills as "in @ 1.06" replies. Taught, both parsers, circles read
+from RAW text (the cleaner strips emoji), dash-blind contracts
+("GOOGL - $172.5 C 1.12 12/6"): green+break-of = PREPARE (loading),
+green+contract+price = entry, green+bare price = needs_loaded fill,
+red = exit at the posted price (OUT HALF / OUT 1/3 / ALL BUT 1 / ONE
+LEFT / scissors = TRIM; OUT / OUT LAST = CLOSE), white = never an order.
+Samples 310, parity green, all suites green.
+
+Note for the exit path: sig.limit now carries their posted sell price on
+z-format exits — bridge exit_price does NOT yet read order limit as a
+fallback; test-mode exits will use live bid/pct as before. Improvement
+candidate if z-format test exits come up priceless in the day files.

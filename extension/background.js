@@ -48,7 +48,14 @@ const ROOM_LABELS = {
   "1433933203302776852": "Aristotle small",
   "whop:day-trades": "Whop Day Trades", "whop:futures": "Whop Futures",
   "whop:high-risk": "Whop High Risk", "whop:2k-challenge": "Whop 2K Challenge",
-  "whop:swing": "Whop Swing Trades", "whop:long-term": "Whop Long Term"
+  "whop:swing": "Whop Swing Trades", "whop:long-term": "Whop Long Term",
+  "829352738239414332": "ZT top-flow",
+  "721821717328298066": "ZT scalps",
+  "1504469469844738158": "ZT uoa-data",
+  "1174393224253681674": "ZT long-swings",
+  "748266924122570882": "ZT uoa-swings",
+  "1343408561803362374": "ZT 5k-challenge",
+  "1151897689185861632": "ZT strategy-testing"
 };
 
 const RECORD_ONLY = new Set([
@@ -96,7 +103,9 @@ async function cfg() {
                "1433933203302776852",    // Aristotle's small-account challenge
                // Felony's Whop rooms — canonical ids, matched by slug below
                "whop:day-trades", "whop:futures", "whop:high-risk",
-               "whop:2k-challenge", "whop:swing", "whop:long-term"])
+               "whop:2k-challenge", "whop:swing", "whop:long-term",
+               // z trades (ZTRADEZ) — the free-trial week, all testing
+               "829352738239414332", "721821717328298066", "1504469469844738158", "1174393224253681674", "748266924122570882", "1343408561803362374", "1151897689185861632"])
       .map(String)));
   return c;
 }
