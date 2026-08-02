@@ -105,6 +105,35 @@ function paintMode() {
 }
 
 
+function paintProps() {
+  const box = $("proplist");
+  if (!box) return;
+  const props = (modeStatus || {}).props || [];
+  box.innerHTML = props.length ? props.map(pr =>
+    '<div class="row" style="margin-bottom:4px">' +
+    '<span class="grow" style="font-size:12px">' + pr.name +
+    ' <span style="color:#7d8697">(' + pr.platform + ')</span></span>' +
+    '<button data-prop="' + pr.name + '" data-op="toggle" class="' +
+    (pr.enabled ? "live" : "safe") + '" style="width:88px">' +
+    (pr.enabled ? "ARMED" : "off") + "</button>" +
+    '<button data-prop="' + pr.name + '" data-op="remove" ' +
+    'style="width:34px">✕</button></div>').join("") : "";
+  box.querySelectorAll("button[data-prop]").forEach(btn => {
+    btn.onclick = async () => {
+      const op = btn.dataset.op;
+      try {
+        modeStatus = await askBridge("/props",
+          op === "toggle" ? { toggle: btn.dataset.prop }
+                          : { remove: btn.dataset.prop });
+        $("propstate").textContent = modeStatus.message || "saved";
+      } catch (e) {
+        $("propstate").textContent = "couldn't reach the bridge";
+      }
+      paintProps();
+    };
+  });
+}
+
 function paintKeys() {
   const el = $("keystate");
   if (!el) return;
@@ -129,11 +158,30 @@ async function refreshMode() {
   }
   paintMode();
   paintKeys();
+  paintProps();
 }
 
 /* The keys go to the bridge and nowhere else. Nothing is written to
  * chrome.storage — the browser forgets them the moment they're sent, which is
  * the whole reason the bridge exists in the first place. */
+$("propadd").onclick = async () => {
+  const name = $("propname").value.trim();
+  if (!name) { $("propstate").textContent = "give it a name first"; return; }
+  try {
+    modeStatus = await askBridge("/props", { add: {
+      name, platform: $("propplatform").value,
+      username: $("propuser").value.trim(),
+      password: $("proppass").value,
+      extra: $("propextra").value.trim() } });
+    $("propstate").textContent = modeStatus.message || "saved";
+    $("propname").value = ""; $("propuser").value = "";
+    $("proppass").value = ""; $("propextra").value = "";
+  } catch (e) {
+    $("propstate").textContent = "couldn't reach the bridge — START HERE first";
+  }
+  paintProps();
+};
+
 $("savekeys").onclick = async () => {
   const key = $("wbkey").value.trim();
   const secret = $("wbsecret").value.trim();

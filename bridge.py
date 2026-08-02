@@ -681,6 +681,25 @@ def place(order):
                                "futures switch is off. Flip it in the popup's "
                                "Settings once your Webull futures data "
                                "subscription is live.")
+            # Prop firms first — his design: "id like felonys trades to be
+            # executed on some prop firms". Any ARMED prop account takes the
+            # futures order INSTEAD of Webull; Webull only trades futures
+            # when no prop is armed. Refusals are sentences, never silence.
+            armed_props = [p for p in (CFG.get("props") or [])
+                           if p.get("enabled")]
+            if armed_props:
+                import props as prop_mod
+                sent, refused = prop_mod.execute_all(armed_props, order, note)
+                if claimed and not sent:
+                    BOOK.release(key)
+                if sent and BOOK is not None and order.get("action") in ("OPEN", "ADD"):
+                    BOOK.entry_sent(order, {"order_id": None, "occ": None,
+                                            "limit": order.get("limit"),
+                                            "bid": None, "ask": None,
+                                            "qty": int(order.get("qty") or 1),
+                                            "live": True})
+                summary = "; ".join(sent + refused)
+                return bool(sent), (summary or "no prop account took it")
             try:
                 import webull_futures
                 ok, msg = webull_futures.execute(WB, BOOK, order, key, note)
@@ -818,6 +837,11 @@ class Handler(BaseHTTPRequestHandler):
                 # The futures account, auto-picked next to the margin one.
                 "futures_account": getattr(WB, "futures_account_id", None)
                                    if WB is not None else None,
+                # Prop accounts: names only, never credentials.
+                "props": [{"name": p.get("name"),
+                           "platform": p.get("platform"),
+                           "enabled": bool(p.get("enabled"))}
+                          for p in (CFG.get("props") or [])],
                 "error": WB_ERROR,
                 "has_keys": keys_in,
                 # Just the tail, so the popup can say "keys in, ...4859"
@@ -1096,6 +1120,58 @@ class Handler(BaseHTTPRequestHandler):
                                              "live mode" if want else
                                              "saved")))
 
+    def _set_props(self):
+        """Prop-firm accounts, managed from the popup. Ops: add (full entry
+        with credentials), toggle (enable/disable by name), remove (by name).
+        Credentials are written to settings.json (chmod 600) and NEVER echoed
+        back — the popup only ever sees name/platform/enabled."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:                                   # noqa: BLE001
+            return self._json(400, {"ok": False, "message": "unreadable"})
+        path = os.path.join(HERE, "settings.json")
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            data = {}
+        props = data.get("props") or []
+        msg = "saved"
+        if isinstance(body.get("add"), dict):
+            a = body["add"]
+            entry = {"name": str(a.get("name") or "prop")[:40],
+                     "platform": str(a.get("platform") or "webhook").lower(),
+                     "username": str(a.get("username") or ""),
+                     "password": str(a.get("password") or ""),
+                     "extra": str(a.get("extra") or ""),
+                     # armed by hand, later, on purpose — never at creation
+                     "enabled": False}
+            props = [p for p in props if p.get("name") != entry["name"]]
+            props.append(entry)
+            msg = "%s saved — it starts DISABLED; arm it in the list" % entry["name"]
+        elif body.get("toggle"):
+            for p in props:
+                if p.get("name") == body["toggle"]:
+                    p["enabled"] = not p.get("enabled")
+                    msg = "%s is now %s" % (p["name"],
+                                            "ARMED — real orders" if p["enabled"]
+                                            else "disabled")
+        elif body.get("remove"):
+            props = [p for p in props if p.get("name") != body["remove"]]
+            msg = "removed"
+        data["props"] = props
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            os.chmod(path, 0o600)
+        except OSError as e:
+            return self._json(200, {"ok": False,
+                                    "message": "couldn't save it: %s" % e})
+        reload_settings()
+        note("PROPS    %s" % msg)
+        return self._json(200, dict(self._status(), ok=True, message=msg))
+
     def do_POST(self):
         if self.path.startswith("/mode"):
             return self._set_mode()
@@ -1105,6 +1181,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._set_keys()
         if self.path.startswith("/config"):
             return self._set_config()
+        if self.path.startswith("/props"):
+            return self._set_props()
 
         if os.path.exists(os.path.join(HERE, "STOP")) or \
            os.path.exists(os.path.join(HERE, "STOP.txt")):

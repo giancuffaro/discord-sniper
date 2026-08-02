@@ -1594,3 +1594,30 @@ Broker throughput answered: TEST mode sends Webull literally nothing (dry
 book only), so channel count is free; LIVE someday = only his handful of
 proven rooms, a few orders a minute worst case, far under Webull's API
 limits, with fixed sizing + one-contract futures caps keeping it sane.
+
+## v1.17.0 — prop firms: the UI, the adapters, the fan-out
+
+His ask: Felony's futures executed on prop accounts, connectable in the
+UI. Reality researched and told straight: prop firms don't expose APIs —
+their PLATFORMS do. Three adapters cover the industry (props.py):
+tradovate (Apex, MyFundedFutures, Tradeify...), projectx (TopstepX,
+Bulenox and the ProjectX wave; `extra` = gateway URL), webhook (the
+universal escape hatch — PickMyTrade / PropSyncX style copiers). Options
+prop firms (Vanquish Trader — the first options prop firm — Options
+Funding etc.) are young and have NO automation APIs; connectable only if
+they ever expose a platform or accept webhooks — told him.
+
+Plumbing: POST /props (add/toggle/remove; creds to settings.json chmod
+600, NEVER echoed — /mode returns name/platform/enabled only). Popup
+Settings: prop list with ARMED/off + remove buttons and an add form
+(name, platform, user, pass/key, extra). New props always start DISABLED.
+place(): when any prop is ARMED, live futures orders go to ALL armed
+props INSTEAD of Webull (his stated intent), booked live in the Book;
+refusals come back as sentences. Nothing reaches any prop until a room is
+LIVE — the testing wall stands.
+
+UNTESTED-BY-DESIGN: tradovate/projectx adapters are written to their
+public docs but have never touched a real account (he owns none yet).
+The standing rule applies double: the FIRST order through any prop
+account is a supervised event. Cheapest safe path: webhook adapter into
+a copier's demo, or a Tradovate demo eval, watched live.

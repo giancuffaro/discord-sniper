@@ -161,6 +161,34 @@
          should be either testing or live." Futures follow their room's
          toggle like everything else. -->
 
+    <!-- Prop-firm accounts. Adding one stores it DISABLED; the arm click
+         is separate and deliberate. Credentials go straight to the bridge,
+         never stored in the browser, never echoed back. -->
+    <label>Prop firms (futures orders go here when armed)</label>
+    <div id="proplist"></div>
+    <div class="half">
+      <div><input id="propname" placeholder="Name (Apex 50K)"></div>
+      <div>
+        <select id="propplatform">
+          <option value="tradovate">Tradovate</option>
+          <option value="projectx">ProjectX (TopstepX...)</option>
+          <option value="webhook">Webhook (PickMyTrade...)</option>
+        </select>
+      </div>
+    </div>
+    <input id="propuser" placeholder="Username / email" autocomplete="off"
+           style="margin-top:6px">
+    <input id="proppass" type="password" autocomplete="off"
+           placeholder="Password / API key" style="margin-top:6px">
+    <input id="propextra" placeholder="Extra: gateway URL, webhook URL, or demo/live"
+           style="margin-top:6px">
+    <div class="row" style="margin-top:6px">
+      <button id="propadd" class="grow">Add prop firm</button>
+    </div>
+    <div class="note" id="propstate">When any prop is ARMED, live futures
+      orders go to it instead of Webull. Everything stays pretend until a
+      room is LIVE anyway.</div>
+
     <label>Webull App Key</label>
     <input id="wbkey" type="password" autocomplete="off"
            placeholder="paste your App Key">
