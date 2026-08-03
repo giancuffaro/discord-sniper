@@ -189,10 +189,22 @@ if "!NEEDSTART!"=="0" (
   )
 )
 
-rem ---- [5/5] Chrome, all three rooms ---------------------------
-echo   [5/5] Opening your rooms in Chrome - four Discord, four
-echo         Whop - all testing with pretend money until YOU flip
-echo         a room LIVE by hand...
+rem ---- [5/5] Chrome, all the rooms ----------------------------
+echo   [5/5] Closing any open Chrome first, so re-running this ^(or the
+echo         9:25 alarm^) doesn't stack a SECOND copy of every room on
+echo         top of the ones already open. Then reopening them fresh...
+rem  Graceful close (no /F) so Chrome saves its session and never shows
+rem  the "restore pages?" bar. A short wait lets it actually finish before
+rem  we reopen, otherwise the new window lands before the old ones are gone.
+taskkill /IM chrome.exe >nul 2>&1
+timeout /t 3 /nobreak >nul
+rem  If anything stubbornly hung on, one firm nudge - by now the session is
+rem  already saved from the graceful try above.
+tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
+if not errorlevel 1 (
+  taskkill /F /IM chrome.exe >nul 2>&1
+  timeout /t 1 /nobreak >nul
+)
 set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"

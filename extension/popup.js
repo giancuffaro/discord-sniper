@@ -170,7 +170,7 @@ function paintPaper() {
   const btn = $("paperbtn");
   if (!btn) return;
   btn.textContent = paperOn ? "ON" : "off";
-  btn.className = paperOn ? "live" : "safe";
+  btn.className = "tgl " + (paperOn ? "live" : "safe");
   if ($("paperstate")) {
     $("paperstate").textContent = !s.has_keys
       ? "Add your Webull keys first — paper trading uses the same connection."
@@ -197,7 +197,7 @@ function paintSim() {
   const btn = $("simreal");
   if (btn) {
     btn.textContent = simRealistic ? "ON" : "off";
-    btn.className = simRealistic ? "live" : "safe";
+    btn.className = "tgl " + (simRealistic ? "live" : "safe");
   }
   if ($("simoffset") && document.activeElement !== $("simoffset"))
     $("simoffset").value = s.entry_offset_dollars || "";
@@ -208,7 +208,7 @@ function paintSim() {
   const lb = $("simladder");
   if (lb) {
     lb.textContent = simLadder ? "ON" : "off";
-    lb.className = simLadder ? "live" : "safe";
+    lb.className = "tgl " + (simLadder ? "live" : "safe");
   }
 }
 
@@ -219,7 +219,7 @@ $("paperbtn").onclick = async () => {
   paperOn = !paperOn;
   const btn = $("paperbtn");
   btn.textContent = paperOn ? "ON" : "off";
-  btn.className = paperOn ? "live" : "safe";
+  btn.className = "tgl " + (paperOn ? "live" : "safe");
   try {
     modeStatus = await askBridge("/config", { paper_trading: paperOn });
   } catch (e) {
@@ -236,13 +236,13 @@ $("simreal").onclick = async () => {
 function paintSimQuick() {
   const btn = $("simreal");
   btn.textContent = simRealistic ? "ON" : "off";
-  btn.className = simRealistic ? "live" : "safe";
+  btn.className = "tgl " + (simRealistic ? "live" : "safe");
 }
 $("simladder").onclick = async () => {
   simLadder = !simLadder;
   const b = $("simladder");
   b.textContent = simLadder ? "ON" : "off";
-  b.className = simLadder ? "live" : "safe";
+  b.className = "tgl " + (simLadder ? "live" : "safe");
   await saveSim();
 };
 async function saveSim() {
@@ -457,9 +457,11 @@ function renderRoomToggles(channelLive) {
     // confirm, no Save step — his word. Red is reserved for real money.
     return '<div class="row" style="margin-bottom:4px">' +
            '<span class="grow" style="font-size:12px">' + ROOM_NAMES[id] +
-           '</span><button data-room="' + id + '" class="' +
-           (live ? "live" : "safe") + '" style="width:110px">' +
-           (live ? "LIVE" : "testing") + "</button></div>";
+           '</span><span style="font-size:11px;letter-spacing:.04em;width:52px;' +
+           'text-align:right;color:' + (live ? "#f87171" : "#7d8697") + '">' +
+           (live ? "LIVE" : "testing") + '</span>' +
+           '<button data-room="' + id + '" class="tgl money ' +
+           (live ? "live" : "safe") + '"></button></div>';
   }).join("");
   box.querySelectorAll("button[data-room]").forEach(btn => {
     btn.onclick = async () => {
@@ -861,6 +863,46 @@ $("export").onclick = async () => {
       // you can still copy it out.
       chrome.tabs.create({ url });
     });
+};
+
+/* Update the app from the popup — pulls the newest build and restarts the
+ * bridge on the PC, so START HERE is never needed just for an update. The
+ * bridge goes away for a few seconds while it re-execs onto the new code, so
+ * this waits, then re-checks that it came back up. */
+$("updateapp").onclick = async () => {
+  const btn = $("updateapp");
+  const el = $("updatestate");
+  btn.disabled = true;
+  btn.textContent = "Checking GitHub…";
+  try {
+    const r = await askBridge("/update", { go: true });
+    el.textContent = r.message || (r.ok ? "updating…" : "couldn't update");
+    if (r.ok && /restart/i.test(r.message || "")) {
+      btn.textContent = "Restarting the bridge…";
+      // Give the bridge time to re-exec, then confirm it's answering again.
+      let back = false;
+      for (let i = 0; i < 15 && !back; i++) {
+        await new Promise(res => setTimeout(res, 1500));
+        try {
+          const m = await askBridge("/mode");
+          if (m && (m.connected !== undefined || m.mode)) { back = true; }
+        } catch (e) { /* still down, keep waiting */ }
+      }
+      if (back) {
+        el.textContent = "Updated — the bridge is back up on the new version.";
+        try { chrome.runtime.reload(); } catch (e) { /* extension refresh */ }
+      } else {
+        el.textContent = "Updated the files, but the bridge hasn't answered " +
+          "yet. Give it a moment; if it stays quiet, double-click START HERE " +
+          "once.";
+      }
+    }
+  } catch (e) {
+    el.textContent = "Couldn't reach the bridge on your PC — double-click " +
+      "START HERE first, then try again.";
+  }
+  btn.disabled = false;
+  btn.textContent = "Update to the latest version";
 };
 
 /* The previous-days picker. "today" is the live feed; a date is a file the

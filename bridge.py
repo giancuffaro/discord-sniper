@@ -19,6 +19,8 @@ your wifi, not the internet.
 
 import json
 import os
+import sys
+import threading
 import time
 import zlib
 from datetime import datetime
@@ -1210,6 +1212,64 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, dict(self._status(), ok=ok_all,
                                     message=" ".join(msgs)))
 
+    def _self_update(self):
+        """Pull the latest build from GitHub and restart the bridge onto it —
+        this is the popup's Update button, so he never has to open START HERE
+        for an update again. Local-only (the server binds 127.0.0.1). Keys, day
+        files and logs are gitignored, so the hard reset never touches them.
+
+        If the pull fails, nothing restarts and the reason goes back to the
+        popup. If the pull works but the re-exec somehow doesn't, the new files
+        are already on disk, so the next normal restart (START HERE / the 9:25
+        alarm) picks them up — no worse off than before."""
+        import subprocess
+        try:
+            old = subprocess.run(["git", "rev-parse", "HEAD"], cwd=HERE,
+                                 capture_output=True, text=True, timeout=20)
+            fetch = subprocess.run(["git", "fetch", "origin", "main"], cwd=HERE,
+                                   capture_output=True, text=True, timeout=90)
+            if fetch.returncode != 0:
+                return self._json(200, {"ok": False,
+                    "message": "couldn't reach GitHub: %s"
+                               % (fetch.stderr or fetch.stdout or "")[:150]})
+            reset = subprocess.run(["git", "reset", "--hard", "origin/main"],
+                                   cwd=HERE, capture_output=True, text=True,
+                                   timeout=60)
+            if reset.returncode != 0:
+                return self._json(200, {"ok": False,
+                    "message": "downloaded it, but couldn't apply it: %s"
+                               % (reset.stderr or "")[:150]})
+            new = subprocess.run(["git", "rev-parse", "HEAD"], cwd=HERE,
+                                 capture_output=True, text=True, timeout=20)
+        except FileNotFoundError:
+            return self._json(200, {"ok": False,
+                "message": "git isn't installed on this PC, so the popup can't "
+                           "self-update. Double-click START HERE once instead."})
+        except Exception as e:                              # noqa: BLE001
+            return self._json(200, {"ok": False,
+                                    "message": "update failed: %s" % str(e)[:150]})
+
+        if old.stdout.strip() == new.stdout.strip():
+            return self._json(200, {"ok": True,
+                "message": "already on the latest — nothing to update."})
+
+        # Reply FIRST, then restart a beat later so this response reaches the
+        # popup before the process is replaced.
+        def _restart():
+            time.sleep(1.2)
+            try:
+                os.execv(sys.executable,
+                         [sys.executable, os.path.join(HERE, "bridge.py")])
+            except Exception as e:                          # noqa: BLE001
+                note("self-update: restart failed, staying on old code (%s). "
+                     "The new files are on disk for the next START HERE." % e)
+        threading.Thread(target=_restart, daemon=True).start()
+        note("SELF-UPDATE pulled %s..%s — restarting the bridge"
+             % (old.stdout.strip()[:7], new.stdout.strip()[:7]))
+        return self._json(200, {"ok": True,
+            "message": "Update downloaded — restarting the bridge. Give it "
+                       "~10 seconds, then you're on the new version."})
+
     def _set_config(self):
         """The futures switch, flipped from the popup. One field, written to
         settings.json so it survives restarts, effective immediately."""
@@ -1344,6 +1404,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._set_config()
         if self.path.startswith("/props"):
             return self._set_props()
+        if self.path.startswith("/update"):
+            return self._self_update()
 
         if os.path.exists(os.path.join(HERE, "STOP")) or \
            os.path.exists(os.path.join(HERE, "STOP.txt")):

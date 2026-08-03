@@ -37,6 +37,25 @@
   button.dry { background: #1e293b; border-color: #334155; color: #cbd5e1; }
   button.confirm { background: #b45309; border-color: #f59e0b; color: #fff;
                    font-weight: 700; }
+  /* Pill switches. The on/off toggles read as a sliding switch instead of a
+     text button — state still rides on .safe (off) / .live (on), but the word
+     inside is hidden and the knob position + colour say it instead. Only
+     buttons tagged .tgl become switches, so the big money buttons are untouched.
+     .money marks the per-room switches, whose ON state is real-money RED rather
+     than the neutral blue the sim toggles use. */
+  button.tgl { position: relative; width: 46px; min-width: 46px; height: 24px;
+               padding: 0; border-radius: 999px; flex: none; overflow: hidden;
+               font-size: 0; color: transparent;
+               transition: background .15s, border-color .15s; }
+  button.tgl::before { content: ""; position: absolute; top: 2px; left: 2px;
+                       width: 18px; height: 18px; border-radius: 50%;
+                       background: #e6e8ee; transition: left .15s; }
+  button.tgl:hover { filter: brightness(1.12); }
+  button.tgl.safe { background: #2a2f3c; border-color: #3a4152; }
+  button.tgl.safe::before { left: 2px; background: #8b93a5; }
+  button.tgl.live { background: #2563eb; border-color: #3b82f6; }
+  button.tgl.live::before { left: 26px; background: #fff; }
+  button.tgl.money.live { background: #b91c1c; border-color: #ef4444; }
   .bar { border-top: 1px solid #1c212c; margin-top: 10px; padding-top: 10px; }
   .state { font-size: 12px; color: #9aa3b5; }
   label { display: block; font-size: 11px; color: #9aa3b5; margin: 8px 0 3px;
@@ -166,7 +185,7 @@
     <label>Fills</label>
     <div class="row" style="margin-bottom:4px">
       <span class="grow" style="font-size:12px">Webull Paper (real sim fills)</span>
-      <button id="paperbtn" class="safe" style="width:88px">off</button>
+      <button id="paperbtn" class="tgl safe">off</button>
     </div>
     <div class="note" id="paperstate">On: orders fill in your Webull paper
       account for true prices, still scored per room. Off: the built-in
@@ -175,7 +194,7 @@
     <label>Realism &amp; tactics (test money)</label>
     <div class="row" style="margin-bottom:4px">
       <span class="grow" style="font-size:12px">Honest fills (spread + fees)</span>
-      <button id="simreal" class="safe" style="width:88px">off</button>
+      <button id="simreal" class="tgl safe">off</button>
     </div>
     <div class="half">
       <div>
@@ -192,7 +211,7 @@
       the stop to breakeven so the trade can't lose. Blank = off. Save applies.</div>
     <div class="row" style="margin-top:6px;margin-bottom:4px">
       <span class="grow" style="font-size:12px">Auto-trim ladder</span>
-      <button id="simladder" class="safe" style="width:88px">off</button>
+      <button id="simladder" class="tgl safe">off</button>
     </div>
     <div class="note">Takes their entry, runs YOUR exit: trim at +10 / +20 / +30%,
       keep 2 runners. Stop rides with it — +10% same stop, +20% breakeven,
@@ -271,6 +290,15 @@
     <div class="note">"Export chat" downloads every message this extension has
       seen, as a text file. Send it to me and I'll tune the reader to your
       room's exact wording.</div>
+
+    <label>App version</label>
+    <div class="row" style="margin-top:4px">
+      <button id="updateapp" class="grow">Update to the latest version</button>
+    </div>
+    <div class="note" id="updatestate">Pulls the newest build from GitHub and
+      restarts the bridge on your PC by itself — no need to open START HERE. The
+      bridge blinks for about 10 seconds while it swaps over, so do it when
+      you're not mid-trade.</div>
   </details>
 
   <!-- The log is a scrolling box, and you cannot select text out of a popup

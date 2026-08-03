@@ -1938,3 +1938,42 @@ His flow to turn paper on (popup way): pull this update, open the popup Settings
 paste the sandbox key+secret into the PAPER boxes, Save (it verifies on the spot
 and reports the $1M sim account), then flip Fills → Webull Paper ON. The EXTRAS
 console path (9 to enter, 3 to check) still works too.
+
+## v1.20.4 — popup-driven updates, no-duplicate rooms, pill toggles
+
+Three things, all so he lives in the popup and out of the console.
+
+1. **START HERE no longer stacks duplicate rooms.** Re-running it (or the 9:25
+   alarm) used to open a SECOND copy of all ~50 rooms on top of the first.
+   Now [5/5] gracefully closes Chrome first (no /F, so the session saves and
+   there's no "restore pages?" bar), waits, force-nudges only if something hung,
+   then reopens the rooms fresh.
+
+2. **"Update to the latest version" button in the popup** (Settings, bottom).
+   New bridge route `POST /update` → `_self_update()`: `git fetch` +
+   `reset --hard origin/main`, then `os.execv` re-execs the bridge onto the new
+   code. Replies to the popup FIRST, then restarts ~1.2s later; the popup polls
+   `/mode` for up to ~22s to confirm it came back, then reloads the extension.
+   Safe by construction: keys/day-files/logs are gitignored so the reset never
+   touches them; if the pull fails nothing restarts (reason shown); if the pull
+   works but the re-exec doesn't, the files are already on disk for the next
+   START HERE. This is why THIS one still needs a manual START HERE — his bridge
+   is pre-/update, so the button doesn't exist there yet; after this, updates
+   are one popup tap.
+   NOTE: the bridge self-updates via git in its own folder; it uses his cached
+   GitHub creds the same way START HERE's git does. Never wire the PAT into the
+   bridge.
+
+3. **All the on/off toggles are pill switches now** (his screenshot). New `.tgl`
+   class renders a sliding switch; state still rides on `.safe`/`.live` so the
+   toggle logic is unchanged (the six className swaps just gained a `"tgl "`
+   prefix; the word inside is hidden by font-size:0). Sim toggles (paper /
+   honest-fills / ladder) go blue when ON; the per-room toggles are `.tgl.money`
+   and go RED when LIVE, and keep the "LIVE"/"testing" word as a small coloured
+   label beside the switch so the real-money cue survives. The big TEST/REAL
+   buttons and prop arm buttons are untouched (no `.tgl`).
+
+Standing reminder for the paper-key blocker he hit twice: the popup was already
+right; his bridge was still pre-v1.20.2 in memory, so a paper-only /keys save
+got the OLD "both boxes need something" rejection. One START HERE fixes it (and
+lands all of the above), then the Update button keeps him current from the popup.
