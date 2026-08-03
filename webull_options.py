@@ -252,10 +252,18 @@ class WebullOptions:
         self.app_secret = w.get("app_secret", "")
         self.account_id = w.get("account_id") or None
         self.account_kind = ""
-        # Paper trading: route to Webull's simulated account for HONEST fills
-        # instead of our own model. One flag; the endpoint and (optional)
-        # paper account id are overridable for when the docs land.
-        self.paper = bool(w.get("paper_trading", False))  # OFF until the real endpoint is known
+        # Paper trading routes to Webull's simulated account for HONEST fills
+        # instead of our own model. The docs settled it (Aug 2026): paper IS the
+        # sandbox host, and Webull's two environments are FULLY ISOLATED — the
+        # sandbox needs its OWN app key/secret from a separate (auto-approved,
+        # few-minute) sandbox API application. His production keys 401 there not
+        # because the host is wrong but because prod creds don't exist in the
+        # sandbox at all. Paper mode therefore uses paper_app_key/secret; it
+        # falls back to the live keys only so an old config still connects.
+        self.paper = bool(w.get("paper_trading", False))
+        self.paper_app_key = w.get("paper_app_key", "")
+        self.paper_app_secret = w.get("paper_app_secret", "")
+        self.paper_warning = ""     # set on connect when paper can't run yet
         self.endpoint = (w.get("paper_endpoint") or PAPER_ENDPOINT) if self.paper \
             else LIVE_ENDPOINT
         self.paper_account_id = w.get("paper_account_id") or None
@@ -279,7 +287,7 @@ class WebullOptions:
         # How long an unfilled entry is allowed to sit there before it's pulled.
         # This is the number that stops a bid from filling at 3:55pm into a
         # trade the room called at 9:40 and closed at 10:05.
-        self.fill_seconds = float(w.get("entry_fill_seconds", 90))
+        self.fill_seconds = float(w.get("entry_fill_seconds", 180))
         # The protective stop, as a percentage of what you actually paid.
         self.stop_pct = float(w.get("stop_loss_pct", 20))
         # Dollars to leave untouched no matter what. 0 means "spend it all".
@@ -292,6 +300,15 @@ class WebullOptions:
         self._bal_at = 0.0
 
     # -- connect --------------------------------------------------------------
+    def _creds(self):
+        """(key, secret) for the current environment. Paper prefers its own
+        sandbox keys; it falls back to the live keys only so an old config that
+        never got sandbox keys still connects (it will then 401 and revert to
+        live below, which is the honest outcome)."""
+        if self.paper and self.paper_app_key and self.paper_app_secret:
+            return self.paper_app_key, self.paper_app_secret
+        return self.app_key, self.app_secret
+
     def connect(self):
         if not SDK_OK:
             raise Refused("the Webull SDK isn't installed. Open START HERE in "
@@ -300,8 +317,19 @@ class WebullOptions:
         if not self.app_key or not self.app_secret:
             raise Refused("no Webull API key saved yet. Open START HERE, press "
                           "2, and put your app key and secret in.")
+        if self.paper and not (self.paper_app_key and self.paper_app_secret):
+            # Not an error — just tell the truth about why paper can't run and
+            # keep going on live so quotes + the in-house sim still work.
+            self.paper_warning = (
+                "Webull PAPER needs its own sandbox app key. Webull's sandbox "
+                "is fully isolated from your live account, so your live keys "
+                "won't work there. Apply for a SANDBOX API key (it's a separate "
+                "application, auto-approved in a few minutes), then paste it "
+                "under EXTRAS -> keys -> paper. Running the in-house sim mean"
+                "while.")
 
-        api = ApiClient(self.app_key, self.app_secret, REGION)
+        key, secret = self._creds()
+        api = ApiClient(key, secret, REGION)
         api.add_endpoint(REGION, self.endpoint)
         self._api = api
         self.trade = TradeClient(api)
@@ -310,12 +338,11 @@ class WebullOptions:
         try:
             accounts = _unpack_accounts(self.trade.account_v2.get_account_list())
         except Exception as e:                          # noqa: BLE001
-            # Paper endpoint rejected the keys (401 / wrong environment). His
-            # keys are valid for LIVE — they pulled quotes before — so the
-            # paper HOST is the guess that's wrong, not the credentials. Fall
-            # back to the live connection so quotes + the in-house honest-fill
-            # sim keep working; paper just stays unavailable until the real
-            # endpoint is known. Never leave him fully disconnected.
+            # Sandbox rejected the keys (401). Either paper has no sandbox key
+            # yet, or the sandbox key is wrong. Fall back to the LIVE connection
+            # with the live keys so quotes + the in-house honest-fill sim keep
+            # working; paper just stays off until a valid sandbox key is in.
+            # Never leave him fully disconnected.
             if self.paper:
                 self.paper = False
                 self.endpoint = LIVE_ENDPOINT

@@ -177,7 +177,14 @@ function paintPaper() {
       : (paperOn
          ? (s.paper_available
             ? "ON — filling in your Webull paper account, scored per room."
-            : "ON, but the paper account isn't connected yet — check keys / the paper endpoint.")
+            : (s.paper_warning
+               || (!s.paper_keys_in
+                   ? "ON, but no sandbox key saved. Webull paper is a separate, "
+                     + "isolated environment — apply for a SANDBOX API key "
+                     + "(auto-approved in minutes) and paste it in EXTRAS → keys "
+                     + "→ paper. Running the in-house sim meanwhile."
+                   : "ON, but the sandbox key was rejected — double-check it. "
+                     + "Running the in-house sim meanwhile.")))
          : "Off — using the built-in honest-fill model.");
   }
 }

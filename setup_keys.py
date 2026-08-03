@@ -143,6 +143,22 @@ def main():
         print("No key or secret yet, so there's nothing to log in with — the")
         print("account list is skipped. Run this again once you have them.")
 
+    # Paper (sandbox) keys. Webull's sandbox is a SEPARATE, fully-isolated
+    # environment: your live keys do not work there. Apply for a SANDBOX API
+    # key (a second application on the Webull developer site — it's
+    # auto-approved in a few minutes) and paste it here. These are only used
+    # when the extension's Webull Paper toggle is ON; blank = paper stays off.
+    print()
+    print("-" * 62)
+    print("PAPER (sandbox) keys — optional, for honest simulated fills.")
+    print("Webull's sandbox is separate from your live account, so it needs")
+    print("its OWN key. Get one at developer.webull.com (apply for the SANDBOX")
+    print("environment — auto-approved in minutes). Leave blank to skip.")
+    print()
+    wb["paper_app_key"] = ask("Paper App Key", wb.get("paper_app_key", ""))
+    wb["paper_app_secret"] = ask("Paper App Secret",
+                                 wb.get("paper_app_secret", ""), secret=True)
+
     # The chase-limit question that used to be here is deleted — "no filters
     # wanted. id like to follow everything to the tee as they do." If the
     # room is in it, he's in it.
@@ -156,10 +172,14 @@ def main():
 
     print()
     print("Saved to settings.json.")
-    print("  key      %s" % mask(wb.get("app_key", "")))
-    print("  secret   %s" % mask(wb.get("app_secret", "")))
-    print("  account  %s" % (wb.get("account_id") or "(not set — it will pick "
-                             "your options account on its own)"))
+    print("  key         %s" % mask(wb.get("app_key", "")))
+    print("  secret      %s" % mask(wb.get("app_secret", "")))
+    print("  account     %s" % (wb.get("account_id") or "(not set — it will "
+                                "pick your options account on its own)"))
+    print("  paper key   %s" % (mask(wb.get("paper_app_key", "")) or
+                                "(none — paper stays off)"))
+    print("  paper secret %s" % (mask(wb.get("paper_app_secret", "")) or
+                                 "(none)"))
     print()
     print("Real orders are OFF until you switch the extension to LIVE. That")
     print("switch is in the extension popup, not in here.")

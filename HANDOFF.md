@@ -1874,3 +1874,35 @@ get a better fill than they post. Not built yet.
 
 Trim ladder stays OFF by default (his call — he'll flip it on when he wants).
 The auto-update pushes straight from GitHub, so there is nothing to re-download.
+
+## v1.20.2 — Webull Paper is REAL: the sandbox needs its own key
+
+Chased the paper 401 to ground with the actual docs (Aug 2026). The finding:
+paper IS the sandbox host `api.sandbox.webull.com` (our guess was right all
+along), but Webull's two environments are **fully isolated** — the sandbox is a
+**separate API application** with its **own app key/secret** (auto-approved in a
+few minutes), and production keys simply don't exist there. That's the whole
+reason his live keys 401'd against the sandbox: not a wrong host, a wrong
+environment. His live `get_account_list` only ever returns his 3 live accounts;
+the paper books (Cash/Margin/Events/Futures/Crypto, each seeded $1,000,000,
+"DEM…" ids) live behind the sandbox key.
+
+Wiring:
+- `webull_options.py` — new `paper_app_key`/`paper_app_secret`; `_creds()` picks
+  the sandbox pair in paper mode (falls back to live keys only so an old config
+  still connects). `connect()` sets a plain-English `paper_warning` when paper
+  is on but no sandbox key is saved, and the 401 fallback comment now names the
+  real cause. `fill_seconds` default 90 → 180 to match the 3-min window.
+- `setup_keys.py` — a PAPER (sandbox) keys section after the live keys, masked
+  in the summary. Blank = paper stays off.
+- `bridge.py` `_status()` now returns `paper_warning` + `paper_keys_in`.
+- `popup.js` paintPaper explains "no sandbox key saved → apply for one, running
+  the in-house sim meanwhile" vs "sandbox key rejected".
+- `settings.example.json` documents paper_app_key/secret and the isolation.
+
+To go live on paper: apply for a SANDBOX API key at developer.webull.com (US,
+sandbox environment, auto-approved), paste it under EXTRAS → keys → paper, flip
+the Fills → Webull Paper toggle ON. The bridge then connects to the sandbox,
+`get_account_list` returns the $1M DEM books, and entries fill there for real
+prices while staying scored per room. In-house honest-fill sim remains the
+fallback whenever paper can't connect.

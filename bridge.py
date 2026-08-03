@@ -949,6 +949,9 @@ class Handler(BaseHTTPRequestHandler):
                 "simulation": CFG.get("simulation", {}),
                 "paper": paper_on(),
                 "paper_available": (WB is not None and getattr(WB, "paper", False)),
+                # Why paper isn't running, in plain words (missing sandbox key).
+                "paper_warning": getattr(WB, "paper_warning", "") if WB is not None else "",
+                "paper_keys_in": bool((EXEC.get("webull") or {}).get("paper_app_key")),
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}

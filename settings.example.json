@@ -54,8 +54,8 @@
       ],
       "_entry_price": "Where your buy order sits. Webull takes no market orders on options, so this is always a limit. bid = sit on the bid and wait for a seller to come down to you - cheapest, and on a call that runs straight from the message you will not get filled at all. mid = halfway between bid and ask. ask = pay the offer plus marketable_buffer_pct, which is what fills nearly every time.",
       "entry_price": "bid",
-      "_entry_fill_seconds": "How long your bid is allowed to sit there before it gets pulled. An entry left resting all day can fill at 3:55pm into a trade they called at 9:40 and were out of by 10:05 - you would be buying their exit.",
-      "entry_fill_seconds": 90,
+      "_entry_fill_seconds": "How long your bid is allowed to sit there before it gets pulled. An entry left resting all day can fill at 3:55pm into a trade they called at 9:40 and were out of by 10:05 - you would be buying their exit. 180 = 3 minutes, enough for a cheap contract to actually get hit.",
+      "entry_fill_seconds": 180,
       "_stop_loss_pct": "The stop, as a % off what YOU actually paid - not off the price they posted. 20 means a fill at 2.80 gets a stop at 2.24. It is held two ways: a real stop order resting at Webull, and a watchdog in bridge.py checking the bid. Whichever sees it first sells, and only one of them is allowed to. On options premium 20% is tight - it is a normal amount of movement on a slow morning.",
       "stop_loss_pct": 20,
       "_fill_poll_seconds": "How often the bridge asks whether your bid filled, and how often the stop watchdog checks the bid. 5 is fine. Lower is faster and asks Webull for more quotes.",
@@ -63,8 +63,10 @@
       "_keep_cash_buffer": "Dollars to never touch, in a live account. 0 spends everything available. 50 means an entry is skipped once it would leave you under $50.",
       "keep_cash_buffer": 0,
       "marketable_buffer_pct": 2,
-      "_paper_trading": "Webull OpenAPI paper trading (launched July 2026): route orders to your Webull SIMULATED account for real fills, still scored per room. The popup's Fills toggle flips this. paper_endpoint/paper_account_id override the host/account once Webull's docs name them.",
+      "_paper_trading": "Webull OpenAPI paper trading routes orders to your Webull SIMULATED (sandbox) account for real fills, still scored per room. The popup's Fills toggle flips this. Webull's sandbox is FULLY ISOLATED from your live account and needs its OWN sandbox app key/secret (a separate developer application, auto-approved in minutes) — your live keys will NOT work there. Paste the sandbox keys as paper_app_key/paper_app_secret (or via setup_keys). paper_endpoint defaults to api.sandbox.webull.com; paper_account_id names a specific sim account if you have more than one.",
       "paper_trading": false,
+      "paper_app_key": "",
+      "paper_app_secret": "",
       "paper_endpoint": "",
       "paper_account_id": ""
     }
