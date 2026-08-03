@@ -674,6 +674,66 @@ def parse(text, author="", channel="", cfg=None):
         sig.why = "entry: %s" % sig.human()
         return sig
 
+    # ---- The Market Bishop / "The Pawn": "I'm Entering Option: NOW 97 C 7/24
+    #      Entry: 0.82". The label makes the ticker unambiguous, so the contract
+    #      is read directly (NOW = ServiceNow, which the generic reader rejects
+    #      as the word "now" — here the label overrides that). Trims already read
+    #      via "Trimming ARM 535 P ...".
+    pw = re.match(r"^(?:@\w+\s+)?i'?m\s+entering\s+option:?\s*(.*)$",
+                  t, re.IGNORECASE | re.DOTALL)
+    if pw:
+        mc = re.match(r"\s*([A-Za-z]{1,5})\s+\$?(\d{1,5}(?:\.\d+)?)\s*"
+                      r"([CcPp])\b(.*)$", pw.group(1))
+        if mc:
+            sig.symbol = mc.group(1).upper()
+            sig.strike = float(mc.group(2))
+            sig.side = "CALLS" if mc.group(3).upper() == "C" else "PUTS"
+            md = re.search(r"\b(\d{1,2}/\d{1,2})\b", mc.group(4))
+            if md:
+                sig.expiry = md.group(1)
+            me = re.search(r"entry:?\s*\$?([0-9]*\.?[0-9]+)",
+                           pw.group(1), re.IGNORECASE)
+            sig.limit = float(me.group(1)) if me else None
+            sig.action, sig.matched = "OPEN", "market-bishop entry"
+            sig.fire = True
+            if sig.limit is None:
+                sig.warn = "no entry price posted — it pays the market."
+            sig.why = "entry: %s" % sig.human()
+            return sig
+
+    # ---- Vero: "QQQ 708C 7/21 1.03 2 CONTRACTS" / "SPY 757P 8/3 1.13 4 CONS".
+    #      Symbol, strike+side, date, premium, size — the "N CONTRACTS/CONS" tail
+    #      is the fingerprint that makes this safe to read as an entry.
+    vr = re.match(r"^([A-Za-z]{1,5})\s+(\d{1,5})\s*([CcPp])\s+"
+                  r"(\d{1,2}/\d{1,2})\s+(\d+\.\d{1,2})\s+\d+\s*"
+                  r"(?:contracts?|cons?)\b", t, re.IGNORECASE)
+    if vr and vr.group(1).upper() not in NOT_TICKERS:
+        sig.symbol = vr.group(1).upper()
+        sig.strike = float(vr.group(2))
+        sig.side = "CALLS" if vr.group(3).upper() == "C" else "PUTS"
+        sig.expiry = vr.group(4)
+        sig.limit = float(vr.group(5))
+        sig.action, sig.matched = "OPEN", "vero entry"
+        sig.fire = True
+        sig.why = "entry: %s" % sig.human()
+        return sig
+
+    # ---- MR.TOPHAT lotto: "lotto yolo SPX 7460C 0dte @0.25". Anchored on the
+    #      lotto/yolo lead + an @-price + a real contract, and refused if it
+    #      carries a percentage (that's a recap, not a fresh call).
+    if re.match(r"^(?:@\w+\s+)?(?:lotto|yolo)\b", low) and "@" in t \
+            and not RE_PCT_ANY.search(t):
+        c = _contract(t)
+        if c:
+            sig.symbol, sig.strike = c["symbol"], c["strike"]
+            sig.side, sig.expiry = c["side"], c["expiry"]
+            mp = re.search(r"@\s*\$?([0-9]*\.?[0-9]+)", t)
+            sig.limit = float(mp.group(1)) if mp else None
+            sig.action, sig.matched = "OPEN", "lotto entry"
+            sig.fire = True
+            sig.why = "entry: %s" % sig.human()
+            return sig
+
     # ---- labeled alert-bot format (Sir Goldman [BOKA] and any bot that
     #      posts ENTRY / TRIM / EXIT / COMMENT as a keyword). The label is
     #      the truth; COMMENT is chatter no matter how many tickers it holds.

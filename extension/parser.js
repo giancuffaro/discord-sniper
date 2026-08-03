@@ -465,6 +465,56 @@ function parseSignal(text, cfg) {
     return s;
   }
 
+  // ---- The Market Bishop / "The Pawn": "I'm Entering Option: NOW 97 C 7/24
+  //      Entry: 0.82". The label makes the ticker unambiguous (NOW = ServiceNow).
+  const pw = /^(?:@\w+\s+)?i'?m\s+entering\s+option:?\s*([\s\S]*)$/i.exec(t);
+  if (pw) {
+    const mc = /^\s*([A-Za-z]{1,5})\s+\$?(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b([\s\S]*)$/.exec(pw[1]);
+    if (mc) {
+      s.symbol = mc[1].toUpperCase();
+      s.strike = parseFloat(mc[2]);
+      s.side = mc[3].toUpperCase() === "C" ? "CALLS" : "PUTS";
+      const md = /\b(\d{1,2}\/\d{1,2})\b/.exec(mc[4]);
+      if (md) s.expiry = md[1];
+      const me = /entry:?\s*\$?([0-9]*\.?[0-9]+)/i.exec(pw[1]);
+      s.limit = me ? parseFloat(me[1]) : null;
+      s.action = "OPEN"; s.matched = "market-bishop entry"; s.fire = true;
+      if (s.limit === null || isNaN(s.limit))
+        s.warn = "no entry price posted — it pays the market.";
+      s.why = "entry: " + human(s);
+      return s;
+    }
+  }
+
+  // ---- Vero: "QQQ 708C 7/21 1.03 2 CONTRACTS". The "N CONTRACTS/CONS" tail is
+  //      the fingerprint.
+  const vr = /^([A-Za-z]{1,5})\s+(\d{1,5})\s*([CcPp])\s+(\d{1,2}\/\d{1,2})\s+(\d+\.\d{1,2})\s+\d+\s*(?:contracts?|cons?)\b/i.exec(t);
+  if (vr && !NOT_TICKERS.has(vr[1].toUpperCase())) {
+    s.symbol = vr[1].toUpperCase();
+    s.strike = parseFloat(vr[2]);
+    s.side = vr[3].toUpperCase() === "C" ? "CALLS" : "PUTS";
+    s.expiry = vr[4];
+    s.limit = parseFloat(vr[5]);
+    s.action = "OPEN"; s.matched = "vero entry"; s.fire = true;
+    s.why = "entry: " + human(s);
+    return s;
+  }
+
+  // ---- MR.TOPHAT lotto: "lotto yolo SPX 7460C 0dte @0.25". Anchored lead +
+  //      @-price + real contract, refused if it carries a percentage (recap).
+  if (/^(?:@\w+\s+)?(?:lotto|yolo)\b/i.test(low) && t.indexOf("@") !== -1
+        && !RE_PCT_ANY.test(t)) {
+    const c = findContract(t);
+    if (c) {
+      s.symbol = c.symbol; s.strike = c.strike; s.side = c.side; s.expiry = c.expiry;
+      const mp = /@\s*\$?([0-9]*\.?[0-9]+)/.exec(t);
+      s.limit = mp ? parseFloat(mp[1]) : null;
+      s.action = "OPEN"; s.matched = "lotto entry"; s.fire = true;
+      s.why = "entry: " + human(s);
+      return s;
+    }
+  }
+
   // ---- labeled alert-bot format (Sir Goldman [BOKA]): ENTRY / TRIM /
   //      EXIT / COMMENT keyword is the truth; COMMENT never trades.
   const ml = /^(?:@\w+\s+)?(ENTRY|TRIM|EXIT|COMMENT)\b\s*([\s\S]*)$/i.exec(t);

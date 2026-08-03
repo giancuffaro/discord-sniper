@@ -719,3 +719,28 @@ if fails:
 print("Bullwinkle reads: TICKER | $strike C/P premium buys (premium not the "
       "break level), /MES LONG HERE is a long future, and CC/CSP selling "
       "strategies are never bought.")
+
+
+# --- four more z-trades bots: Market Bishop, Vero, MR.TOPHAT, EvaPanda --------
+check("I'm Entering Option: NOW 97 C 7/24 Entry: 0.82", action="OPEN", fire=True,
+      symbol="NOW", strike=97.0, side="CALLS", expiry="7/24", limit=0.82)
+check("QQQ 708C 7/21 1.03 2 CONTRACTS", action="OPEN", fire=True, symbol="QQQ",
+      strike=708.0, side="CALLS", expiry="7/21", limit=1.03)
+check("SPY 757P 8/3 1.13 4 CONS - Looking for 7600 on ES", action="OPEN",
+      fire=True, symbol="SPY", strike=757.0, side="PUTS", limit=1.13)
+check("lotto yolo SPX 7460C 0dte @0.25 QUICK SCALP LOTTO!!", action="OPEN",
+      fire=True, symbol="SPX", strike=7460.0, side="CALLS", limit=0.25)
+check("Close STC NVDA 07/31/2026 200c @ 1.36 all out", action="CLOSE",
+      symbol="NVDA", strike=200.0)
+# guards: EvaPanda "Update:" analysis is ignored; a lotto recap with % is not a buy
+check("Update: IWM 300C 8/7 ~ 0.47 - waiting to see 296 break", fire=False, action=None)
+check("lotto SPX 7460C @3.00 +200% huge win", fire=False, action=None)
+
+if fails:
+    print("FAILED %d z-bot check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("Market Bishop / Vero / MR.TOPHAT / EvaPanda read: labeled 'Entering "
+      "Option' buys, 'N CONTRACTS' buys, a lotto lead buys, STC closes, and "
+      "analysis Updates and lotto recaps do nothing.")

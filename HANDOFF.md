@@ -2118,3 +2118,30 @@ these are lower/optional; NOT covered calls / forex / crypto per his note):
   ignored; worth confirming live.
 Covered-call channels (ZT cc-1..5), ZT forex, and crypto are intentionally left
 unread per his note.
+
+## v1.22.2 — four more z-trades bots tuned (Bishop, Vero, MR.TOPHAT, EvaPanda)
+
+From the same export. EvaPanda's STC closes and "Update:" analysis already
+worked (JPM close/update handler), so three new ENTRY readers:
+- **The Market Bishop / "The Pawn"** (ZT opt-7 1239624229583061052): "I'm
+  Entering Option: NOW 97 C 7/24 Entry: 0.82". The label makes NOW unambiguous
+  (ServiceNow), so the contract is read directly past the NOT_TICKERS "now"
+  veto. Trims ("Trimming ARM 535 P ...") already read.
+- **Vero** (Vero-1/2 1323708708374450247 / 760694103401955378): "QQQ 708C 7/21
+  1.03 2 CONTRACTS" — the "N CONTRACTS/CONS" tail is the fingerprint.
+- **MR.TOPHAT** (1135947475912495216): "lotto yolo SPX 7460C 0dte @0.25" —
+  anchored on the lotto/yolo lead + @-price + real contract, refused if a
+  percentage is present (recap guard).
+signals.py + parser.js, 6 samples, parity 341, test_signals block (incl the
+recap/analysis negatives).
+
+### Lingo coverage map (for the next scan)
+TUNED: Honeydrip, Aristotle(+small), Midas, all Whop (Felony), Boka (labeled),
+Market Guru, JPM (opt-6), Demon (opt-10), Bullwinkle (top-flow/scalps/futures),
+Bishop (opt-7), Vero, MR.TOPHAT, EvaPanda.
+STILL NO ENTRY DATA (export these — scroll back first, then popup Export chat):
+ZT opt-3 (Nitro Trades), ZT opt-4, ZT strategy-testing, ZT uoa-data,
+ZT 5k-challenge, ZT swing-4, and confirm Boka 2/4 match Boka 1/3. Futures fut-3/4
+and Vero-3 likely reuse tuned formats (Bullwinkle futures / Vero tail) — lower
+priority. Covered calls (cc-1..5), forex, crypto: intentionally NOT read per his
+note.
