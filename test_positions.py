@@ -497,3 +497,73 @@ if bad:
     raise SystemExit(1)
 print("A bid with no price dies at the deadline; a crashed watcher declares "
       "the bid dead instead of leaving it waiting forever.")
+
+
+# --- his trim ladder: run our own exit on their entry -----------------------
+# +10% trim, same stop. +20% trim, stop to breakeven. +30% trim, stop to +10%.
+# Never sell below the 2 runners he wants left for the rooms' un-called moves.
+# The rung fires on the live bid; the stop rides up with it whether or not
+# there was room left to sell.
+wb = FakeWB(fills=True, ask=4.00, bid=4.00)
+b = book(wb)
+LADORD = {"symbol": "SPY", "side": "CALLS", "strike": 745, "expiry": "7/31",
+          "limit": 4.00, "trader": "Ladder"}
+LK = positions.key_of("Ladder", "SPY")
+b.ladder_on = True
+b.ladder_keep = 2
+wb.limits["9"] = 4.00
+wb.qtys["9"] = 4
+b.entry_sent(LADORD, {"order_id": "9", "occ": "SPY   250801C00745000",
+                      "limit": 4.00, "bid": 4.00, "ask": 4.06, "qty": 4})
+settle(b, LK)
+ok(b.state_of(LK) == positions.FILLED and b.qty_of(LK) == 4,
+   "start the ladder holding 4 at 4.00, got %s x%s"
+   % (b.state_of(LK), b.qty_of(LK)))
+
+def snap_stop(key):
+    return b.snapshot()["positions"][key].get("stop")
+
+# +10% -> bid 4.40. Sell one (4->3), stop unchanged (still ~3.20 = 20% under).
+b.auto_ladder(LK, 4.40)
+ok(b.qty_of(LK) == 3, "+10%% trims one, holds 3, got %s" % b.qty_of(LK))
+ok(abs((snap_stop(LK) or 0) - 3.20) < 0.02,
+   "+10%% leaves the stop where it was (3.20), got %s" % snap_stop(LK))
+
+# +20% -> bid 4.80. Sell one (3->2), stop to breakeven (fill = 4.00).
+b.auto_ladder(LK, 4.80)
+ok(b.qty_of(LK) == 2, "+20%% trims to the 2 runners, got %s" % b.qty_of(LK))
+ok(abs((snap_stop(LK) or 0) - 4.00) < 0.02,
+   "+20%% moves the stop to breakeven (4.00), got %s" % snap_stop(LK))
+
+# +30% -> bid 5.20. No room to sell (2 runners are protected), but the stop
+# still ratchets to +10% = 4.40.
+b.auto_ladder(LK, 5.20)
+ok(b.qty_of(LK) == 2, "+30%% keeps the 2 runners, got %s" % b.qty_of(LK))
+ok(abs((snap_stop(LK) or 0) - 4.40) < 0.02,
+   "+30%% locks the stop at +10%% (4.40), got %s" % snap_stop(LK))
+
+# Higher still — nothing new fires, the runners ride.
+b.auto_ladder(LK, 6.00)
+ok(b.qty_of(LK) == 2, "past +30%% the runners are left alone, got %s" % b.qty_of(LK))
+
+# Off by default: a fresh book with the ladder off never trims itself.
+wb2 = FakeWB(fills=True, ask=4.00, bid=4.00)
+b3 = book(wb2)
+ok(b3.ladder_on is False, "the ladder ships OFF")
+wb2.limits["7"] = 4.00
+wb2.qtys["7"] = 4
+b3.entry_sent(dict(LADORD, trader="NoLad"),
+              {"order_id": "7", "occ": "SPY   250801C00745000",
+               "limit": 4.00, "bid": 4.00, "ask": 4.06, "qty": 4})
+NL = positions.key_of("NoLad", "SPY")
+settle(b3, NL)
+b3.auto_ladder(NL, 6.00)
+ok(b3.qty_of(NL) == 4, "ladder off means it never trims for you, got %s"
+   % b3.qty_of(NL))
+
+if bad:
+    print("\n%d ladder check(s) failed." % bad)
+    raise SystemExit(1)
+print("Trim ladder: +10% trims and holds the stop, +20% goes to breakeven, "
+      "+30% locks +10%, the 2 runners are never sold, and it's off unless "
+      "you flip it on.")

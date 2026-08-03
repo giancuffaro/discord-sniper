@@ -111,6 +111,20 @@ def entry_offset(kind):
     return float(s.get("entry_offset_dollars", 0.0))
 
 
+def ladder_cfg():
+    """His trim ladder from settings. Default is his stated plan: +10% same
+    stop, +20% breakeven, +30% lock +10%, keep 2 runners."""
+    s = _sim().get("auto_ladder", {})
+    on = bool(s.get("enabled", False))
+    keep = int(s.get("keep_runners", 2))
+    rungs = s.get("rungs") or [
+        {"at": 10.0, "sell": 1, "stop_to": None},
+        {"at": 20.0, "sell": 1, "stop_to": 0.0},
+        {"at": 30.0, "sell": 1, "stop_to": 10.0},
+    ]
+    return on, keep, rungs
+
+
 def auto_be_cfg():
     """His secure-the-trade idea: after +N%, sell a slice and move the stop to
     breakeven so the rest can't lose. {enabled, at_pct, sell_frac}."""
@@ -237,6 +251,10 @@ def build_book():
     BOOK.realistic = realism_on()
     BOOK.fee_option = fee_per("option")
     BOOK.fee_future = fee_per("future")
+    _lad_on, _lad_keep, _lad_rungs = ladder_cfg()
+    BOOK.ladder_on = _lad_on
+    BOOK.ladder_keep = _lad_keep
+    BOOK.ladder_rungs = _lad_rungs
     _abe_on, _abe_pct, _abe_frac = auto_be_cfg()
     BOOK.auto_be_on = _abe_on
     BOOK.auto_be_pct = _abe_pct
@@ -1209,6 +1227,12 @@ class Handler(BaseHTTPRequestHandler):
                 BOOK.realistic = bool(sim.get("realistic_fills", False))
                 BOOK.fee_option = float(sim.get("fee_per_contract", 0.65))
                 BOOK.fee_future = float(sim.get("fee_per_future", 1.24))
+                if isinstance(sim.get("auto_ladder"), dict):
+                    ld = sim["auto_ladder"]
+                    BOOK.ladder_on = bool(ld.get("enabled", False))
+                    BOOK.ladder_keep = int(ld.get("keep_runners", 2))
+                    if ld.get("rungs"):
+                        BOOK.ladder_rungs = ld["rungs"]
                 ab = sim.get("auto_breakeven", {})
                 BOOK.auto_be_on = bool(ab.get("enabled", False))
                 BOOK.auto_be_pct = float(ab.get("at_pct", 10.0))

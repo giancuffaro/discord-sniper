@@ -190,6 +190,13 @@
     <div class="note">Bid-under fights slippage — a resting limit that catches
       pullbacks and skips the chases. Auto-secure sells a slice at +% and moves
       the stop to breakeven so the trade can't lose. Blank = off. Save applies.</div>
+    <div class="row" style="margin-top:6px;margin-bottom:4px">
+      <span class="grow" style="font-size:12px">Auto-trim ladder</span>
+      <button id="simladder" class="safe" style="width:88px">off</button>
+    </div>
+    <div class="note">Takes their entry, runs YOUR exit: trim at +10 / +20 / +30%,
+      keep 2 runners. Stop rides with it — +10% same stop, +20% breakeven,
+      +30% locks +10%. Safety net for the trims they don't call out.</div>
     <div class="row" style="margin-top:6px">
       <button id="simsave" class="grow">Save realism settings</button>
     </div>

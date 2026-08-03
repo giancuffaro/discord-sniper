@@ -183,6 +183,7 @@ function paintPaper() {
 }
 
 let simRealistic = false;
+let simLadder = false;
 function paintSim() {
   const s = (modeStatus || {}).simulation || {};
   simRealistic = !!s.realistic_fills;
@@ -196,6 +197,12 @@ function paintSim() {
   if ($("simbe") && document.activeElement !== $("simbe"))
     $("simbe").value = (s.auto_breakeven && s.auto_breakeven.enabled)
       ? (s.auto_breakeven.at_pct || 10) : "";
+  simLadder = !!(s.auto_ladder && s.auto_ladder.enabled);
+  const lb = $("simladder");
+  if (lb) {
+    lb.textContent = simLadder ? "ON" : "off";
+    lb.className = simLadder ? "live" : "safe";
+  }
 }
 
 /* The keys go to the bridge and nowhere else. Nothing is written to
@@ -224,6 +231,13 @@ function paintSimQuick() {
   btn.textContent = simRealistic ? "ON" : "off";
   btn.className = simRealistic ? "live" : "safe";
 }
+$("simladder").onclick = async () => {
+  simLadder = !simLadder;
+  const b = $("simladder");
+  b.textContent = simLadder ? "ON" : "off";
+  b.className = simLadder ? "live" : "safe";
+  await saveSim();
+};
 async function saveSim() {
   const off = parseFloat($("simoffset").value);
   const be = parseFloat($("simbe").value);
@@ -231,7 +245,11 @@ async function saveSim() {
     realistic_fills: simRealistic,
     entry_offset_dollars: isNaN(off) ? 0 : off,
     auto_breakeven: { enabled: !isNaN(be) && be > 0,
-                      at_pct: isNaN(be) ? 10 : be, sell_fraction: 0.10 }
+                      at_pct: isNaN(be) ? 10 : be, sell_fraction: 0.10 },
+    auto_ladder: { enabled: simLadder, keep_runners: 2,
+                   rungs: [{ at: 10, sell: 1, stop_to: null },
+                           { at: 20, sell: 1, stop_to: 0 },
+                           { at: 30, sell: 1, stop_to: 10 }] }
   };
   try {
     modeStatus = await askBridge("/config", { simulation: sim });

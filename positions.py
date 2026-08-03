@@ -124,6 +124,18 @@ class Book:
         self.auto_be_on = False         # sell a slice at +N%, stop to breakeven
         self.auto_be_pct = 10.0
         self.auto_be_frac = 0.10
+        # HIS trim ladder — run our own exit on their entry, because the
+        # rooms don't always call their trims. Each rung: sell some at +at_pct
+        # and (optionally) drag the stop to entry*(1+stop_to_pct/100). Keep a
+        # couple of runners. His rule: +10% same stop, +20% breakeven,
+        # +30% stop to +10%.
+        self.ladder_on = False
+        self.ladder_keep = 2            # never sell below this many runners
+        self.ladder_rungs = [
+            {"at": 10.0, "sell": 1, "stop_to": None},   # same stop
+            {"at": 20.0, "sell": 1, "stop_to": 0.0},    # breakeven
+            {"at": 30.0, "sell": 1, "stop_to": 10.0},   # lock +10%
+        ]
 
     # -- writing things down --------------------------------------------------
     def _event(self, key, kind, text, qty=None):
@@ -749,6 +761,7 @@ class Book:
                 # secure profit at +N%, drag stop to breakeven. May move the
                 # stop under us, which the check below then respects.
                 self.auto_breakeven(key, float(bid))
+                self.auto_ladder(key, float(bid))
                 with self._lock:
                     q2 = self._pos.get(key)
                     if not q2 or q2.get("state") != FILLED:
@@ -816,6 +829,51 @@ class Book:
                     "%s — up %.0f%%, took %d off and moved the stop to "
                     "breakeven. This trade can't lose now."
                     % (key.split("|")[-1], self.auto_be_pct, n))
+
+    def auto_ladder(self, key, bid):
+        """His exit ladder, run by the watchdog on the live bid. For each rung
+        not yet hit, once the position is up that %, sell the rung's size
+        (never below ladder_keep runners) and, if the rung says so, drag the
+        stop to entry*(1+stop_to/100). His plan: +10% same stop, +20%
+        breakeven, +30% lock +10%. Their own trims/exits still fire on top —
+        this is the safety net for the ones they don't call."""
+        if not self.ladder_on or bid is None or not self.ladder_rungs:
+            return
+        actions = []
+        with self._lock:
+            p = self._pos.get(key)
+            if not p or p.get("state") != FILLED:
+                return
+            fill = float(p.get("fill") or 0)
+            dirn = int(p.get("direction") or 1)
+            if not fill:
+                return
+            gain = (float(bid) - fill) * dirn / fill * 100.0
+            done = p.setdefault("ladder_hit", [])
+            for rung in sorted(self.ladder_rungs, key=lambda r: float(r["at"])):
+                at = float(rung["at"])
+                if at in done or gain + 1e-9 < at:   # epsilon: 19.999% == 20%
+                    continue
+                held = int(p.get("qty") or 0)
+                room = held - int(self.ladder_keep)     # sellable above runners
+                want = min(int(rung.get("sell", 1)), room) if room > 0 else 0
+                done.append(at)
+                if rung.get("stop_to") is not None:
+                    p["stop"] = round(fill * (1 + float(rung["stop_to"]) / 100.0), 4)
+                    actions.append((at, want, float(rung["stop_to"])))
+                else:
+                    actions.append((at, want, None))
+        # sell + narrate outside the lock (trim takes the lock itself)
+        for at, want, stop_to in actions:
+            if want > 0:
+                self.trim(key, want, float(bid),
+                          "auto ladder: +%.0f%% —" % at)
+            if stop_to is not None:
+                where = ("breakeven" if stop_to == 0
+                         else "+%.0f%%" % stop_to)
+                self._event(key, "update",
+                            "%s — ladder hit +%.0f%%, stop moved to %s"
+                            % (key.split("|")[-1], at, where))
 
     # -- selling part of it ---------------------------------------------------
     def trim(self, key, qty, price, why):

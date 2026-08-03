@@ -1806,3 +1806,42 @@ already parses the post bodies fine (v1.19.5 author/timestamp strip) — the
 only issue was WHICH view the tab was on. Also: the NVDA +$2503 winner and
 the whole +$2568 day prove the pipeline works when the bridge stays up; the
 QQQ "miss" he asked about was the bridge-down crash (v1.19.4), not a read.
+
+## v1.20.0 — the trim ladder: run OUR own exit on their entry
+
+His ask, verbatim in spirit: take their entry, but don't wait for them to call
+every trim — because they don't. "So just to be safe, I wanna be making my own
+trims with their entries." And ratchet the stop up each time we trim.
+
+His exact plan, now the built-in default:
+- **+10%** → trim 1 contract, **leave the stop where it is**
+- **+20%** → trim 1 contract, **move the stop to breakeven** (your fill)
+- **+30%** → trim 1 contract, **move the stop to +10%** (lock a winner)
+- Never sell below **2 runners** — the room's un-called moonshots ride on those.
+
+It's a SAFETY NET layered on top of their calls, not a replacement. Their own
+trims/closes still fire; the ladder only sells rungs they haven't already
+taken you out of. On a lot of 5: +10% sells to 4, +20% to 3, +30% to 2, and
+those last 2 are left for a Demon-Alerts-style +100% or an Unraveller runner.
+
+Where it lives:
+- `positions.py` — `Book.ladder_on / ladder_keep / ladder_rungs` fields and the
+  new `auto_ladder(key, bid)` method, hooked into `_watchdog` right after
+  `auto_breakeven`. Runs on the live bid the same way the stop watchdog does.
+  Sells via `self.trim` (outside the lock), moves `p["stop"]` to
+  `fill*(1+stop_to/100)`. Epsilon guard so a 19.999%-computed bid still counts
+  as the +20% rung (float noise cost us a rung in testing once).
+- `bridge.py` — `ladder_cfg()` reads `simulation.auto_ladder` from settings and
+  defaults to his plan; wired into `build_book`; `/config` live-applies it.
+- `extension/popup.js` + `popup.html` — one-tap **Auto-trim ladder** toggle in
+  the Realism & tactics block. Off by default; flipping it POSTs the whole
+  ladder plan (keep 2, the three rungs) to `/config`.
+
+Tested: `test_positions.py` has a full ladder block — 4-lot walked up through
++10/+20/+30/higher, asserting qty (4→3→2→2) and stop (3.20 held → 4.00 BE →
+4.40 +10%), plus that it ships OFF and never trims until enabled. All parity
+and signal tests still green (316 lines identical).
+
+Parked (he said "I understand that takes a while"): capture the UNDERLYING
+price at their entry so we can place a limit conditional order at the ask and
+get a better fill than they post. Not built yet.
