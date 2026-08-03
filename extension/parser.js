@@ -408,6 +408,34 @@ function parseSignal(text, cfg) {
     }
   }
 
+  // ---- "Open / Update / Closed" alert-bot format (JPM Options and the like):
+  //      "Open  SPY 08/03 753C @.92" enters; "Update ... (+40%)" is a running
+  //      P&L post and must NEVER read as a trim; "Closed"/"Close" exits. Gated
+  //      on a readable contract so a stray "close the door" does nothing.
+  const jm = /^(open|update|closed|close)\b\s*([\s\S]*)$/i.exec(t);
+  if (jm && findContract((jm[2] || "").trim())) {
+    const label = jm[1].toLowerCase();
+    const rest = (jm[2] || "").trim();
+    if (label === "update") {
+      s.why = "an Update — a running P&L post, not an order";
+      return s;
+    }
+    const c = findContract(rest);
+    s.symbol = c.symbol; s.strike = c.strike; s.side = c.side; s.expiry = c.expiry;
+    const mp = /@\s*\$?([0-9]*\.?[0-9]+)/.exec(rest);
+    s.limit = mp ? parseFloat(mp[1]) : null;
+    if (label === "open") {
+      s.action = "OPEN"; s.matched = "open-label entry"; s.fire = true;
+      if (s.limit === null || isNaN(s.limit))
+        s.warn = "no price on the entry — it pays the market.";
+      s.why = "entry: " + human(s);
+    } else {
+      s.action = "CLOSE"; s.matched = "close-label exit";
+      s.why = "full exit on " + s.symbol;
+    }
+    return s;
+  }
+
   // ---- labeled alert-bot format (Sir Goldman [BOKA]): ENTRY / TRIM /
   //      EXIT / COMMENT keyword is the truth; COMMENT never trades.
   const ml = /^(?:@\w+\s+)?(ENTRY|TRIM|EXIT|COMMENT)\b\s*([\s\S]*)$/i.exec(t);

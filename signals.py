@@ -600,6 +600,39 @@ def parse(text, author="", channel="", cfg=None):
             sig.why = "their trim on the points call — sell some of it"
             return sig
 
+    # ---- "Open / Update / Closed" alert-bot format (JPM Options and the like):
+    #      a keyword then the contract on the next line (newlines are already
+    #      spaces here): "Open  SPY 08/03 753C @.92". "Open" is the only thing
+    #      that buys. "Update" is a running P&L post — "SPY 753C @1.29 (+40%)" —
+    #      and must NEVER read as a trim; they're just tracking the runner.
+    #      "Closed"/"Close" is the exit. Gated on a readable contract so a stray
+    #      "close the door" can't do anything.
+    jm = re.match(r"^(open|update|closed|close)\b\s*(.*)$", t,
+                  re.IGNORECASE | re.DOTALL)
+    if jm and _contract(jm.group(2).strip()):
+        label = jm.group(1).lower()
+        rest = jm.group(2).strip()
+        if label == "update":
+            sig.why = "an Update — a running P&L post, not an order"
+            return sig
+        c = _contract(rest)
+        sig.symbol, sig.strike = c["symbol"], c["strike"]
+        sig.side, sig.expiry = c["side"], c["expiry"]
+        # Their price can be written "@.92" with no leading zero, which the
+        # normal limit regex skips — read it here so the entry has a number.
+        mp = re.search(r"@\s*\$?([0-9]*\.?[0-9]+)", rest)
+        sig.limit = float(mp.group(1)) if mp else None
+        if label == "open":
+            sig.action, sig.matched = "OPEN", "open-label entry"
+            sig.fire = True
+            if sig.limit is None:
+                sig.warn = "no price on the entry — it pays the market."
+            sig.why = "entry: %s" % sig.human()
+        else:
+            sig.action, sig.matched = "CLOSE", "close-label exit"
+            sig.why = "full exit on %s" % sig.symbol
+        return sig
+
     # ---- labeled alert-bot format (Sir Goldman [BOKA] and any bot that
     #      posts ENTRY / TRIM / EXIT / COMMENT as a keyword). The label is
     #      the truth; COMMENT is chatter no matter how many tickers it holds.

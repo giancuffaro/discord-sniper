@@ -42,7 +42,7 @@ function whopRoomOf(channelId) {
 
 /* Every room's plain name, for the per-room scoreboard he asked for. */
 const ROOM_LABELS = {
-  "829754942817828884": "Main room",
+  "829754942817828884": "Honeydrip daytrades",
   "987515353670221834": "Aristotle",
   "1144369893760831489": "Midas",
   "1433933203302776852": "Aristotle small",
@@ -65,7 +65,7 @@ const ROOM_LABELS = {
   "1239624229583061052": "ZT opt-7",
   "1209181195406024744": "ZT opt-8",
   "1332090335005900800": "ZT opt-9",
-  "874280313038192670": "ZT opt-10",
+  "874280313038192670": "Demon Alerts",
   "1389300087829827745": "ZT swing-1",
   "862419656382873650": "ZT swing-2",
   "1061980561293443152": "ZT swing-3",

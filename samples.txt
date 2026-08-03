@@ -355,3 +355,6 @@ Ticker: `MNQ LONG` Entry: 28465 Stoploss: 28430
 45 points trim 2
 102 points exit target hit
 309 points omg
+Open SPY 08/03 753C @.92
+Update SPY 08/03 753C @1.29 (+40%)
+Closed SPY 08/03 753C @3.68

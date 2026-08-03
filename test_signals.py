@@ -668,3 +668,22 @@ if fails:
 print("Market Guru reads: labeled futures entry with the stop, point-count "
       "trims and exits resolve to the held position, brags stay quiet, and "
       "Felony's dollar exit is left untouched.")
+
+
+# --- "Open / Update / Closed" alert-bot format (JPM Options) ------------------
+# Open buys; the running "Update ... (+N%)" posts are P&L tracking and must NOT
+# read as trims; Closed exits. A keyword with no contract does nothing.
+check("Open\nSPY 08/03 753C @.92", action="OPEN", fire=True,
+      symbol="SPY", strike=753.0, side="CALLS", expiry="08/03", limit=0.92)
+check("Update\nSPY 08/03 753C @1.29 (+40%)", fire=False, action=None)
+check("Update\nSPY 08/03 753C @1.83 (+100%)", fire=False, action=None)
+check("Closed\nSPY 08/03 753C @3.68", action="CLOSE", symbol="SPY", strike=753.0)
+check("Open the discussion for today", fire=False, action=None)
+
+if fails:
+    print("FAILED %d JPM check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("JPM Options reads: Open buys, the +% Updates are ignored as P&L "
+      "tracking, Closed exits, and a bare keyword with no contract is nothing.")
