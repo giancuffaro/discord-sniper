@@ -1766,3 +1766,19 @@ reach it ("couldn't reach the bridge"). A saved state.json had "pos" as a
 list, not the expected {key: position} dict. restore_state now coerces a
 non-dict pos to {} and skips non-dict entries in both loops — never
 crashes the boot again. This, not paper, was the real "bridge down" cause.
+
+## v1.19.5 — Whop posts-feed reader fixed (why Day Trades didn't fire)
+
+His export CONFIRMED whop.js captures Day Trades (46 lines) — reading works.
+The bug: Whop Day Trades is a POSTS feed, and the reader munged
+author+timestamp+message into one blob, so "Trademorewiser (MOD)
+@trademorewiser · 7m Long nq 28470 Sl 28415" reached the parser with the
+trade buried behind the author and relative time -> no clean entry. Fixed:
+RE_AUTHOR now also eats the "· <relative time>" (7m / Jul 23 / 2d), and the
+old "strip first word after author" (which ate the ticker) is gone. Junk
+list extended for posts-feed chrome (Comments/Copy link/Follow/+N more/No
+description/Powered by Whop/nav/date-header lines). Verified: "· 7m Long nq
+28470 Sl 28415" -> OPEN NQ, "· 10m Stopped on nq" -> CLOSE, progress lines
+still ignored. STILL WANT a FRESH export taken right after live trades to
+confirm live posts (not just scrollback) capture with a live timestamp;
+the 8/1 export was all history.

@@ -46,7 +46,14 @@ function clean(s) {
 const JUNK = [/facebook\.com\/tr/i, /^<img\b/i, /^pay get access/i,
               /^join for free/i, /terms of service/i, /^support chat$/i,
               /^partners(new)?$/i, /^enter your email/i,
-              /consistent profitability\.?$/i, /tradingview chart access/i];
+              /consistent profitability\.?$/i, /tradingview chart access/i,
+              // Whop's posts-feed chrome — nav, previews, counts, footers.
+              /^comments?\b/i, /^copy link/i, /\bfollow(ed| )/i, /^newest\b/i,
+              /^\+ ?\d+ more/i, /^no description$/i, /powered by whop/i,
+              /^day trades$/i, /^affiliates$/i, /^trading decoded$/i,
+              /^stop claude$/i, /^\d{1,2}\/\d{1,2}\/\d{2,4},/,
+              /oldest popular controversial/i, /owner\/founder/i,
+              /^lw #?\d/i, /^view \d+ repl/i];
 function isJunk(t) { return JUNK.some(re => re.test(t)); }
 
 /* A message's own moment, if the page put one anywhere nearby. Chat apps
@@ -94,7 +101,7 @@ function fingerprint(text, at) {
  * right before the message. Remember the last one seen and hand it to the
  * next message, exactly how a human reads the feed. */
 let lastAuthor = "?";
-const RE_AUTHOR = /^(.{1,24}?)\s*(?:\(MOD\))?\s*@[a-z0-9_.]+\s*[·•]/i;
+const RE_AUTHOR = /^(.{1,24}?)\s*(?:\(MOD\))?\s*@[a-z0-9_.]+\s*[·•]\s*(?:\d+\s*[smhd]|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z0-9,: ]*?(?=[A-Z$]|$)/i;
 
 function handle(el) {
   for (const block of leafBlocks(el, [])) {
@@ -104,7 +111,7 @@ function handle(el) {
     if (ma) {
       lastAuthor = ma[1].trim() || "?";
       // The author line sometimes carries the message right behind it.
-      text = clean(text.replace(RE_AUTHOR, "").replace(/^\S*\s*/, ""));
+      text = clean(text.replace(RE_AUTHOR, ""));
       if (text.length < 8) continue;
     }
     const at = stampOf(block);
