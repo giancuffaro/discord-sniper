@@ -1631,3 +1631,30 @@ chat) wanted when he has them; until then they parse on the shared
 grammar and refuse the unrecognised. 46 rooms, three Chrome windows.
 (Sandbox rolled back again mid-turn; re-seated on origin/main before
 applying — GitHub is the only truth.)
+
+## v1.17.2 — boka corpus: labeled alert-bot format + Jonny profile
+
+Two boka channels' real messages arrived.
+
+BOKA 1 (Sir Goldman Alert Bot, 1288291150083653652): posts a LABELED
+format — ENTRY / TRIM / EXIT / COMMENT keyword leads each message.
+Taught, both parsers: ENTRY -> parse futures ("Longs MNQ 450s") or an
+options contract ("$SPX 7320p @ 2.7"); TRIM/EXIT -> sell at the posted
+premium ("$SPX 3.8! +41%" -> 3.8, "Out last runner 20.0!" -> close), pct
+captured; COMMENT -> NEVER trades no matter how many tickers ("lost on nq
+today"). Bare TRIM/EXIT with no ticker -> needs_position (his SPX carries
+from the ENTRY). Runs before the "?" guard so an ENTRY with prose still
+reads. The CPI two-legged straddle ("stop order over 775 / under 710")
+safely refuses — no clean contract.
+
+BOKA 3 (JonnyOptions, 1395159239164432515): Felony-style — bare percents
+are PROGRESS ("50% AMD", "95% AMD printing"), verb decides. All four boka
+channels now parse with bare_pct_trims=false (BOKA_IDS in background.js).
+Cashtags ($AMD, $SATL) and "$SATL shares" equity already read.
+
+DEFERRED nuance (noted, not built): Jonny opens NEW positions with the
+word "adding" ("adding $WULF 17c 4/17", "adding $HIMS shares") — our ADD
+only fires if already in it, so his fresh entries read as ADD and won't
+open in test. Options: treat "adding <cashtag> <full contract/shares>" as
+an entry when not already held. Revisit if his channel's scoreboard looks
+thin on entries. samples 316, parity green.

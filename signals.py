@@ -552,6 +552,66 @@ def parse(text, author="", channel="", cfg=None):
     if mc:
         sig.caller = mc.group(1)
 
+    # ---- labeled alert-bot format (Sir Goldman [BOKA] and any bot that
+    #      posts ENTRY / TRIM / EXIT / COMMENT as a keyword). The label is
+    #      the truth; COMMENT is chatter no matter how many tickers it holds.
+    ml = re.match(r"^(?:@\w+\s+)?(ENTRY|TRIM|EXIT|COMMENT)\b\s*(.*)$",
+                  t, re.IGNORECASE | re.DOTALL)
+    if ml:
+        label = ml.group(1).upper()
+        rest = ml.group(2).strip()
+        rlow = rest.lower()
+        if label == "COMMENT":
+            sig.why = "a COMMENT from the alert bot — never an order"
+            return sig
+        if label == "ENTRY":
+            # futures first ("Longs MNQ 450s"), then an options contract.
+            md = re.search(r"\b(long|short)s?\b[^\n.]{0,20}?"
+                           r"\b([A-Za-z]{2,4})\b", rest, re.IGNORECASE)
+            if md and md.group(2).upper() in FUT_SYMS:
+                sig.symbol = md.group(2).upper()
+                sig.kind = "future"
+                sig.direction = md.group(1).upper()
+                mp = RE_LIMIT.search(rest)
+                sig.limit = float(mp.group(1)) if mp else None
+                sig.action, sig.matched = "OPEN", "alert-bot futures entry"
+                sig.fire = True
+                if sig.limit is None:
+                    sig.warn = "no price on the entry — it pays the market."
+                sig.why = "entry: %s %s" % (sig.direction, sig.symbol)
+                return sig
+            c_l = _contract(rest)
+            if c_l:
+                sig.symbol, sig.strike = c_l["symbol"], c_l["strike"]
+                sig.side, sig.expiry = c_l["side"], c_l["expiry"]
+                mp = RE_LIMIT.search(rest)
+                sig.limit = float(mp.group(1)) if mp else None
+                sig.action, sig.matched = "OPEN", "alert-bot entry"
+                sig.fire = True
+                sig.why = "entry: %s" % sig.human()
+                return sig
+            sig.why = "an ENTRY label with no contract I could read"
+            return sig
+        # TRIM or EXIT — sell at the posted premium if there is one.
+        sig.symbol = _bare_symbol(rest, allowed)
+        sig.action = "TRIM" if label == "TRIM" else "CLOSE"
+        sig.matched = "alert-bot %s" % label.lower()
+        mp = re.search(r"\b(\d{1,3}(?:\.\d{1,2})?)\s*[!]", rest)
+        if mp:
+            sig.limit = float(mp.group(1))
+        mpc = RE_PCT_ANY.search(rest)
+        if mpc:
+            sig.pct = float(mpc.group(1))
+        if not sig.symbol:
+            sig.needs_position = True
+            sig.why = ("their %s with no ticker — working out which position "
+                       "they meant" % label.lower())
+            return sig
+        sig.fire = sig.action == "CLOSE"
+        sig.why = ("%s on %s" % (
+            "full exit" if sig.action == "CLOSE" else "trim", sig.symbol))
+        return sig
+
     if "?" in t:
         sig.why = "it's a question, not a call"
         return sig

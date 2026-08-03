@@ -363,6 +363,59 @@ function parseSignal(text, cfg) {
   const mc = RE_CALLER.exec(raw);
   if (mc) s.caller = mc[1];
 
+  // ---- labeled alert-bot format (Sir Goldman [BOKA]): ENTRY / TRIM /
+  //      EXIT / COMMENT keyword is the truth; COMMENT never trades.
+  const ml = /^(?:@\w+\s+)?(ENTRY|TRIM|EXIT|COMMENT)\b\s*([\s\S]*)$/i.exec(t);
+  if (ml) {
+    const label = ml[1].toUpperCase();
+    const rest = (ml[2] || "").trim();
+    if (label === "COMMENT") {
+      s.why = "a COMMENT from the alert bot — never an order";
+      return s;
+    }
+    if (label === "ENTRY") {
+      const md = /\b(long|short)s?\b[^\n.]{0,20}?\b([A-Za-z]{2,4})\b/i.exec(rest);
+      if (md && FUT_SYMS.has(md[2].toUpperCase())) {
+        s.symbol = md[2].toUpperCase(); s.kind = "future";
+        s.direction = md[1].toUpperCase();
+        const mp = RE_LIMIT.exec(rest);
+        s.limit = mp ? parseFloat(mp[1]) : null;
+        s.action = "OPEN"; s.matched = "alert-bot futures entry"; s.fire = true;
+        if (s.limit === null) s.warn = "no price on the entry — it pays the market.";
+        s.why = "entry: " + s.direction + " " + s.symbol;
+        return s;
+      }
+      const cL = findContract(rest);
+      if (cL) {
+        s.symbol = cL.symbol; s.strike = cL.strike; s.side = cL.side;
+        s.expiry = cL.expiry;
+        const mp = RE_LIMIT.exec(rest);
+        s.limit = mp ? parseFloat(mp[1]) : null;
+        s.action = "OPEN"; s.matched = "alert-bot entry"; s.fire = true;
+        s.why = "entry: " + human(s);
+        return s;
+      }
+      s.why = "an ENTRY label with no contract I could read";
+      return s;
+    }
+    s.symbol = bareSymbol(rest, allowed);
+    s.action = label === "TRIM" ? "TRIM" : "CLOSE";
+    s.matched = "alert-bot " + label.toLowerCase();
+    const mp = /\b(\d{1,3}(?:\.\d{1,2})?)\s*[!]/.exec(rest);
+    if (mp) s.limit = parseFloat(mp[1]);
+    const mpc = RE_PCT_ANY.exec(rest);
+    if (mpc) s.pct = parseFloat(mpc[1]);
+    if (!s.symbol) {
+      s.needs_position = true;
+      s.why = "their " + label.toLowerCase() + " with no ticker — working " +
+              "out which position they meant";
+      return s;
+    }
+    s.fire = s.action === "CLOSE";
+    s.why = (s.action === "CLOSE" ? "full exit on " : "trim on ") + s.symbol;
+    return s;
+  }
+
   if (t.includes("?")) { s.why = "it's a question, not a call"; return s; }
 
   const veto = VETO_WORDS.concat(cfg.extra_veto_words || []);
