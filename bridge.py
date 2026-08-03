@@ -80,6 +80,46 @@ FUT_MULT = {"NQ": 20.0, "MNQ": 2.0, "ES": 50.0, "MES": 5.0,
             "SI": 5000.0, "SIL": 1000.0, "NG": 10000.0}
 
 
+# ---- honest fill + his two tactics -----------------------------------------
+# All OFF by default: nothing here changes a single number until he turns it
+# on, so the scoreboard he's already reading stays comparable. These are the
+# knobs behind "make the test tell the truth" and his two ideas.
+def _sim():
+    return CFG.get("simulation", {}) if isinstance(CFG, dict) else {}
+
+
+def realism_on():
+    # honest fills: cross the spread, pay fees. The default once he flips it.
+    return bool(_sim().get("realistic_fills", False))
+
+
+def fee_per(kind):
+    s = _sim()
+    if kind == "future":
+        return float(s.get("fee_per_future", 1.24))   # ~ Webull futures/side
+    if kind == "equity":
+        return float(s.get("fee_per_share_lot", 0.0))
+    return float(s.get("fee_per_contract", 0.65))      # ~ options exchange/OCC
+
+
+def entry_offset(kind):
+    """His nickel-under idea: bid this much BELOW their price. In dollars —
+    0.05 on an option is his '5 bucks lower' (x100). Off = 0."""
+    s = _sim()
+    if kind == "future":
+        return float(s.get("entry_offset_points", 0.0))
+    return float(s.get("entry_offset_dollars", 0.0))
+
+
+def auto_be_cfg():
+    """His secure-the-trade idea: after +N%, sell a slice and move the stop to
+    breakeven so the rest can't lose. {enabled, at_pct, sell_frac}."""
+    s = _sim().get("auto_breakeven", {})
+    return (bool(s.get("enabled", False)),
+            float(s.get("at_pct", 10.0)),
+            float(s.get("sell_fraction", 0.10)))
+
+
 def futures_on():
     """THE switch. execution.futures_enabled in settings.json, off by
     default. Until it's true, a live futures order is refused at the door —
@@ -181,6 +221,14 @@ def build_book():
         simulated=(MODE != "webull"),
         unlimited=(MODE != "webull"))
     BOOK.save_day = save_day
+    # Honest fills + his two tactics, read from settings (all default OFF).
+    BOOK.realistic = realism_on()
+    BOOK.fee_option = fee_per("option")
+    BOOK.fee_future = fee_per("future")
+    _abe_on, _abe_pct, _abe_frac = auto_be_cfg()
+    BOOK.auto_be_on = _abe_on
+    BOOK.auto_be_pct = _abe_pct
+    BOOK.auto_be_frac = _abe_frac
     if MODE != "webull":
         note("test account: unlimited. Nothing is refused for money — instead "
              "I keep the most cash that was ever tied up at once, which is the "
@@ -401,6 +449,15 @@ def dry_entry(order):
         except Exception as e:                          # noqa: BLE001
             note("DRY RUN  no live quote for %s (%s) — using the price they "
                  "posted instead" % (order.get("symbol"), str(e)[:90]))
+    # HIS nickel-under idea: bid below their posted price. A resting limit that
+    # only fills if the ask comes down to it — misses the runaways, catches
+    # the pullbacks. The fill-watcher already refuses it if nobody sells there.
+    off = entry_offset(order.get("kind"))
+    if off and limit:
+        limit = round(max(0.01, float(limit) - off), 4)
+        order["bid_under"] = off
+        note("DRY RUN  bidding %.2f under their price -> %.2f (his rule)"
+             % (off, limit))
     if not limit:
         note("DRY RUN  %s came with no price and there's no quote, so there's "
              "nothing to follow — not tracked" % order.get("symbol"))
@@ -838,6 +895,7 @@ class Handler(BaseHTTPRequestHandler):
                 "futures_account": getattr(WB, "futures_account_id", None)
                                    if WB is not None else None,
                 # Prop accounts: names only, never credentials.
+                "simulation": CFG.get("simulation", {}),
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}
@@ -1088,7 +1146,7 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(n) or b"{}")
         except Exception:                                   # noqa: BLE001
             return self._json(400, {"ok": False, "message": "unreadable"})
-        if "futures_enabled" not in body:
+        if "futures_enabled" not in body and "simulation" not in body:
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
         try:
@@ -1100,6 +1158,19 @@ class Handler(BaseHTTPRequestHandler):
         if "futures_enabled" in body:
             want = bool(body["futures_enabled"])
             data.setdefault("execution", {})["futures_enabled"] = want
+        if isinstance(body.get("simulation"), dict):
+            sim = data.setdefault("simulation", {})
+            sim.update(body["simulation"])
+            # apply live so the next trade already obeys it
+            if BOOK is not None:
+                CFG["simulation"] = sim
+                BOOK.realistic = bool(sim.get("realistic_fills", False))
+                BOOK.fee_option = float(sim.get("fee_per_contract", 0.65))
+                BOOK.fee_future = float(sim.get("fee_per_future", 1.24))
+                ab = sim.get("auto_breakeven", {})
+                BOOK.auto_be_on = bool(ab.get("enabled", False))
+                BOOK.auto_be_pct = float(ab.get("at_pct", 10.0))
+                BOOK.auto_be_frac = float(ab.get("sell_fraction", 0.10))
 
         try:
             with open(path, "w", encoding="utf-8") as f:

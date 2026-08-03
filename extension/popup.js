@@ -159,11 +159,57 @@ async function refreshMode() {
   paintMode();
   paintKeys();
   paintProps();
+  paintSim();
+}
+
+let simRealistic = false;
+function paintSim() {
+  const s = (modeStatus || {}).simulation || {};
+  simRealistic = !!s.realistic_fills;
+  const btn = $("simreal");
+  if (btn) {
+    btn.textContent = simRealistic ? "ON" : "off";
+    btn.className = simRealistic ? "live" : "safe";
+  }
+  if ($("simoffset") && document.activeElement !== $("simoffset"))
+    $("simoffset").value = s.entry_offset_dollars || "";
+  if ($("simbe") && document.activeElement !== $("simbe"))
+    $("simbe").value = (s.auto_breakeven && s.auto_breakeven.enabled)
+      ? (s.auto_breakeven.at_pct || 10) : "";
 }
 
 /* The keys go to the bridge and nowhere else. Nothing is written to
  * chrome.storage — the browser forgets them the moment they're sent, which is
  * the whole reason the bridge exists in the first place. */
+$("simreal").onclick = async () => {
+  simRealistic = !simRealistic;
+  paintSimQuick();
+  await saveSim();
+};
+function paintSimQuick() {
+  const btn = $("simreal");
+  btn.textContent = simRealistic ? "ON" : "off";
+  btn.className = simRealistic ? "live" : "safe";
+}
+async function saveSim() {
+  const off = parseFloat($("simoffset").value);
+  const be = parseFloat($("simbe").value);
+  const sim = {
+    realistic_fills: simRealistic,
+    entry_offset_dollars: isNaN(off) ? 0 : off,
+    auto_breakeven: { enabled: !isNaN(be) && be > 0,
+                      at_pct: isNaN(be) ? 10 : be, sell_fraction: 0.10 }
+  };
+  try {
+    modeStatus = await askBridge("/config", { simulation: sim });
+    $("simstate").textContent = "saved — applies to the next trade";
+  } catch (e) {
+    $("simstate").textContent = "couldn't reach the bridge — START HERE first";
+  }
+  paintSim();
+}
+$("simsave").onclick = saveSim;
+
 $("propadd").onclick = async () => {
   const name = $("propname").value.trim();
   if (!name) { $("propstate").textContent = "give it a name first"; return; }

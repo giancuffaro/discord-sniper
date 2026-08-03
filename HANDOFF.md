@@ -1668,3 +1668,39 @@ discord channel." cfg.adding_is_entry flag: when set, "adding <cashtag>
 background.js, next to bare_pct_trims=false. No other room changes —
 normal rooms' "adding" still means average-up. Both parsers, 316 samples
 green. This closes the deferred nuance from v1.17.2.
+
+## v1.18.0 — honest fills + his two tactics (all OFF by default)
+
+My professional review prompted this: the highest-leverage change is making
+the test book HONEST, plus his two ideas. Three knobs, all in a new
+`simulation` config block, all default OFF so the running scoreboard doesn't
+shift until he flips them (popup Settings -> "Realism & tactics"):
+
+1. HONEST FILLS (realistic_fills): subtract real per-contract fees at exit
+   (fee_per_contract ~0.65 options, fee_per_future ~1.24) so a churny room's
+   +$196 shows its true, lower number. Entries already fill at the live
+   spread via WB.entry_limit. Book.realistic + Book._fee, applied in trim()
+   and (round-trip once at exit).
+2. HIS NICKEL-UNDER (entry_offset_dollars / entry_offset_points): bid this
+   much BELOW their posted price. dry_entry lowers the limit; the existing
+   fill-watcher refuses it if the ask never comes down — which is the point,
+   it skips runaways and catches pullbacks. 0.05 on an option = his "$5
+   lower" (x100).
+3. HIS AUTO-BREAKEVEN (auto_breakeven {enabled, at_pct, sell_fraction}):
+   Book.auto_breakeven() runs inside the stop watchdog on the same live bid.
+   At +at_pct it sells sell_fraction (keeps a runner if it can) and drags the
+   stop to the entry price — the trade can't lose after. Once per position
+   (be_done). Told him the 0DTE caveat: tight %+BE gets tapped by noise;
+   params matter, test per room.
+
+Wiring: /config accepts a `simulation` dict, applies live to BOOK and saves
+to settings.json; /mode returns simulation so the popup paints current
+state; build_book reads it at boot. Popup: honest-fills toggle, bid-under $
+field, auto-secure +% field, Save. All test-money; live path untouched by
+the sim knobs except fees (which are real either way).
+
+Advice on record (my review): stop adding rooms past ~10-15 (noise +
+correlation + parser brittleness), drop forex (Webull can't trade it),
+be wary of multi-leg spreads, add a portfolio/correlation view and a live
+daily-loss circuit breaker before going live. Honest fills was the one he
+asked to build first — done.

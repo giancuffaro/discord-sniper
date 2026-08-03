@@ -1,22 +1,30 @@
 {
   "_read_me": "Copy this file to settings.json and fill it in. settings.json is ignored by git so your token never leaves your PC.",
-
   "bot_token": "PASTE_YOUR_BOT_TOKEN_HERE",
-
-  "channel_ids": ["829754942817828884"],
+  "channel_ids": [
+    "829754942817828884"
+  ],
   "author_ids": [],
   "author_names": [],
-
   "_follow_admins": "Empty means follow every admin the scribe relays. Put names in to follow only some, e.g. [\"Unraveller\", \"Brett\"].",
   "follow_admins": [],
-
   "_allowed_symbols": "NOT a filter any more - nothing is ever blocked by ticker, on his word ('no filters wanted'). This survives only as VOCABULARY: it helps the parser recognise a ticker typed in lowercase, like '40% in spy now'. Add words, never to block, only to read better.",
-  "allowed_symbols": ["SPY", "QQQ", "IWM", "AAPL", "AMD", "NVDA", "NFLX",
-                      "TSLA", "META", "MSFT", "AMZN", "GOOGL"],
+  "allowed_symbols": [
+    "SPY",
+    "QQQ",
+    "IWM",
+    "AAPL",
+    "AMD",
+    "NVDA",
+    "NFLX",
+    "TSLA",
+    "META",
+    "MSFT",
+    "AMZN",
+    "GOOGL"
+  ],
   "extra_veto_words": [],
-
   "_gone": "trim_action, close_at_trim_pct, max_qty, max_trades_per_day, average_in, max_adds_per_position and dry_run_buying_power used to live here. Deleted, not defaulted - 'no filters wanted. id like to follow everything to the tee as they do.' Trims sell, adds follow, every call counts, and the test wallet is unlimited: it reports the most money tied up at once instead of refusing anything.",
-
   "guards": {
     "cooldown_seconds": 5,
     "dedupe_seconds": 120,
@@ -26,26 +34,24 @@
     "close_time": "16:00",
     "max_message_age_seconds": 20
   },
-
   "_execution": "dryrun = log it, send nothing. webull = real options orders in your Webull account. Use START HERE number 2 rather than editing this by hand.",
   "execution": {
     "mode": "dryrun",
     "webhook_url": "",
     "headers": {},
     "timeout_seconds": 4,
-
     "_futures_enabled": "THE futures switch. false = his NQ/ES calls are read, priced and logged, and nothing ever fires. true = they trade: pretend money in dry run, ONE real contract at a time in live. Leave false until the Webull futures data subscription is live. The popup's Settings flips this for you.",
     "futures_enabled": false,
-
     "_assume_weekly_expiry": "Their pinned rules say contracts are weekly unless they spell out 0DTE or a date, so a call like 'in SPY 747C @ 3.00' with no date on it means this Friday. true = fill that in. false = refuse those calls instead. Only ever used on an entry that already named a strike - an exit always uses the contract you are actually holding, never a guess.",
     "assume_weekly_expiry": true,
-
     "webull": {
       "app_key": "",
       "app_secret": "",
       "_account_id": "Blank means pick the options account automatically. It will never use a futures account.",
       "account_id": "",
-      "futures_account_suffixes": ["3T0B"],
+      "futures_account_suffixes": [
+        "3T0B"
+      ],
       "_entry_price": "Where your buy order sits. Webull takes no market orders on options, so this is always a limit. bid = sit on the bid and wait for a seller to come down to you - cheapest, and on a call that runs straight from the message you will not get filled at all. mid = halfway between bid and ask. ask = pay the offer plus marketable_buffer_pct, which is what fills nearly every time.",
       "entry_price": "bid",
       "_entry_fill_seconds": "How long your bid is allowed to sit there before it gets pulled. An entry left resting all day can fill at 3:55pm into a trade they called at 9:40 and were out of by 10:05 - you would be buying their exit.",
@@ -57,6 +63,19 @@
       "_keep_cash_buffer": "Dollars to never touch, in a live account. 0 spends everything available. 50 means an entry is skipped once it would leave you under $50.",
       "keep_cash_buffer": 0,
       "marketable_buffer_pct": 2
+    }
+  },
+  "_simulation": "Honest test-mode fills and two optional tactics, all OFF by default. realistic_fills subtracts real per-contract fees. entry_offset_dollars bids that much under their price (0.05 = $5/option). auto_breakeven sells sell_fraction at +at_pct and moves the stop to breakeven. Flip these in the popup's Realism & tactics section.",
+  "simulation": {
+    "realistic_fills": false,
+    "fee_per_contract": 0.65,
+    "fee_per_future": 1.24,
+    "entry_offset_dollars": 0.0,
+    "entry_offset_points": 0.0,
+    "auto_breakeven": {
+      "enabled": false,
+      "at_pct": 10.0,
+      "sell_fraction": 0.1
     }
   }
 }

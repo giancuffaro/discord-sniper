@@ -116,6 +116,14 @@ class Book:
         self.wins = 0
         self.losses = 0
         self.closed_trades = []         # [{key, who, symbol, qty, fill, exit, pl}]
+        # Honest-fill + his two tactics. All inert until the bridge sets them
+        # from settings, so the existing scoreboard doesn't shift underfoot.
+        self.realistic = False          # subtract real fees per contract
+        self.fee_option = 0.0
+        self.fee_future = 0.0
+        self.auto_be_on = False         # sell a slice at +N%, stop to breakeven
+        self.auto_be_pct = 10.0
+        self.auto_be_frac = 0.10
 
     # -- writing things down --------------------------------------------------
     def _event(self, key, kind, text, qty=None):
@@ -732,7 +740,16 @@ class Book:
                     q = self._pos.get(key)
                     if q:
                         q["last_bid"] = float(bid)
-            if bid is None or float(bid) > float(stop):
+                # His rule runs here, on the same live bid the stop watches:
+                # secure profit at +N%, drag stop to breakeven. May move the
+                # stop under us, which the check below then respects.
+                self.auto_breakeven(key, float(bid))
+                with self._lock:
+                    q2 = self._pos.get(key)
+                    if not q2 or q2.get("state") != FILLED:
+                        return
+                    stop = q2.get("stop")
+            if bid is None or stop is None or float(bid) > float(stop):
                 continue
             if not self.claim(key):
                 return          # the resting stop or their trim got there first
@@ -753,6 +770,47 @@ class Book:
                             "close it in the Webull app." % (sym, str(e)[:110]))
                 self.finish(key, FAILED, "stop failed to sell")
             return
+
+    def _fee(self, p, qty):
+        """Round-trip trading fees, per contract, for the honest sim — applied
+        once at exit so a full open-and-close pays its fees exactly once."""
+        n = int(qty or 0)
+        if p.get("kind") == "future":
+            return self.fee_future * n
+        if p.get("kind") == "equity":
+            return 0.0
+        return self.fee_option * n
+
+    def auto_breakeven(self, key, bid):
+        """His secure-the-trade rule, run by the watchdog: once a live position
+        is up auto_be_pct, sell auto_be_frac of it and drag the stop to the
+        entry price so the runner can't turn into a loss. Once per position."""
+        if not self.auto_be_on or bid is None:
+            return
+        with self._lock:
+            p = self._pos.get(key)
+            if not p or p.get("state") != FILLED or p.get("be_done"):
+                return
+            fill = float(p.get("fill") or 0)
+            held = int(p.get("qty") or 0)
+            mult = float(p.get("mult") or 100)
+            dirn = int(p.get("direction") or 1)
+            if not fill or held <= 0:
+                return
+            gain = (float(bid) - fill) * dirn / fill * 100.0
+            if gain < self.auto_be_pct:
+                return
+            n = max(1, int(round(held * self.auto_be_frac)))
+            n = min(n, held - 1) if held > 1 else 0     # keep a runner if you can
+            p["be_done"] = True
+            p["stop"] = fill                            # breakeven — can't lose
+        if n > 0:
+            self.trim(key, n, float(bid),
+                      "auto: +%.0f%% so securing profit" % self.auto_be_pct)
+        self._event(key, "update",
+                    "%s — up %.0f%%, took %d off and moved the stop to "
+                    "breakeven. This trade can't lose now."
+                    % (key.split("|")[-1], self.auto_be_pct, n))
 
     # -- selling part of it ---------------------------------------------------
     def trim(self, key, qty, price, why):
@@ -800,6 +858,10 @@ class Book:
                 {"t": time.time(), "qty": n, "price": round(price, 4),
                  "pl": round(pl, 2)})
             p["trade_pl"] = float(p.get("trade_pl") or 0) + pl
+            # Real fees: a contract costs something to trade, both ends.
+            fee = self._fee(p, n) if self.realistic else 0.0
+            got -= fee
+            pl -= fee
             if self.cash is not None and not p.get("live"):
                 self.cash += got
                 self.realised += pl
