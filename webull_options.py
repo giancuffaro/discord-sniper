@@ -307,7 +307,27 @@ class WebullOptions:
         self.trade = TradeClient(api)
         self._data = DataClient(api)
 
-        accounts = _unpack_accounts(self.trade.account_v2.get_account_list())
+        try:
+            accounts = _unpack_accounts(self.trade.account_v2.get_account_list())
+        except Exception as e:                          # noqa: BLE001
+            # Paper endpoint rejected the keys (401 / wrong environment). His
+            # keys are valid for LIVE — they pulled quotes before — so the
+            # paper HOST is the guess that's wrong, not the credentials. Fall
+            # back to the live connection so quotes + the in-house honest-fill
+            # sim keep working; paper just stays unavailable until the real
+            # endpoint is known. Never leave him fully disconnected.
+            if self.paper:
+                self.paper = False
+                self.endpoint = LIVE_ENDPOINT
+                api = ApiClient(self.app_key, self.app_secret, REGION)
+                api.add_endpoint(REGION, self.endpoint)
+                self._api = api
+                self.trade = TradeClient(api)
+                self._data = DataClient(api)
+                accounts = _unpack_accounts(
+                    self.trade.account_v2.get_account_list())
+            else:
+                raise
 
         def is_futures(a):
             return (_acct_kind(a) == "FUTURES"

@@ -1746,3 +1746,14 @@ True in webull_options + bridge paper_on() + example settings. Still falls
 back to the in-house honest-fill sim if the paper account isn't reachable
 (unverified endpoint), so nothing breaks — it just prefers real Webull sim
 fills automatically from first boot. Popup toggle can still turn it off.
+
+## v1.19.2 — paper 401 -> auto-fall-back to live connection
+
+He hit "401 UNAUTHORIZED / correct environment" saving keys: the paper
+endpoint guess (api.sandbox.webull.com) rejects live keys. Keys are FINE
+(they pulled quotes/BP before) — the HOST is the wrong guess. connect()
+now catches the paper auth failure and retries on LIVE_ENDPOINT, so he's
+never left disconnected: quotes + in-house honest-fill sim keep running,
+paper just stays unavailable (paintPaper shows "not connected") until the
+real paper endpoint is known. STILL NEED the true Webull paper host/mech
+from their docs or his account to actually enable paper fills.
