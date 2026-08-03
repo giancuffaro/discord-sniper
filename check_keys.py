@@ -165,6 +165,51 @@ def main():
         line(HM, "Couldn't get a test price: %s" % str(e)[:150])
         line("         ", "Worth a second run before you trust it.")
 
+    # --- 6b. paper (sandbox) key ---------------------------------------------
+    # Webull's paper environment is walled off from live, so it has its OWN key.
+    # This proves that key actually reaches the $1M simulated books BEFORE he
+    # flips Paper on and trusts it. If a bad sandbox key were used, connect()
+    # would 401 and quietly fall back to the live connection — so the real test
+    # is not "did it connect" but "did it come up in PAPER". That's what the
+    # client.paper check below is for.
+    blank()
+    p_key, p_secret = wb.get("paper_app_key", ""), wb.get("paper_app_secret", "")
+    if not (p_key and p_secret):
+        line(HM, "No Webull PAPER (sandbox) key saved.")
+        line("         ", "That's fine — Paper mode will use the built-in "
+                          "honest-fill sim. To fill in your real $1M paper "
+                          "books instead, apply for a SANDBOX API key and put "
+                          "it in with menu 9.")
+    else:
+        print("  Checking your PAPER (sandbox) key reaches the simulated "
+              "accounts...")
+        blank()
+        import copy
+        pcfg = copy.deepcopy(cfg)
+        pcfg.setdefault("execution", {}).setdefault("webull", {})
+        pcfg["execution"]["webull"]["paper_trading"] = True
+        pclient = pacct = None
+        try:
+            pclient = W.WebullOptions(pcfg)
+            pacct = pclient.connect()
+        except Exception as e:                          # noqa: BLE001
+            line(NO, "Paper key didn't connect: %s" % str(e)[:150])
+        if pclient is not None and pacct is not None:
+            if getattr(pclient, "paper", False):
+                line(OK, "Paper connected. Simulated account: %s" % pacct)
+                try:
+                    bp = pclient.buying_power()
+                    if bp:
+                        line(OK, "Paper buying power: $%s"
+                             % format(int(bp), ","))
+                except Exception:                       # noqa: BLE001
+                    pass
+            else:
+                line(NO, "The sandbox key was REJECTED — it fell back to your "
+                         "LIVE connection instead of the paper books.")
+                line("         ", "It's a SEPARATE key from your live one. "
+                                  "Re-check the sandbox key with menu 9.")
+
     # --- 7. the brakes --------------------------------------------------------
     blank()
     g = cfg.get("guards", {}) or {}

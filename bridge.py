@@ -1153,10 +1153,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "message": "unreadable"})
         key = str(body.get("app_key", "")).strip()
         secret = str(body.get("app_secret", "")).strip()
-        if not key or not secret:
+        p_key = str(body.get("paper_app_key", "")).strip()
+        p_secret = str(body.get("paper_app_secret", "")).strip()
+        saving_live = bool(key and secret)
+        saving_paper = bool(p_key and p_secret)
+        if not saving_live and not saving_paper:
             return self._json(400, {"ok": False,
-                                    "message": "both boxes need something in "
-                                               "them — key and secret"})
+                                    "message": "give a key and secret — either "
+                                               "your live pair or the paper pair"})
         path = os.path.join(HERE, "settings.json")
         try:
             with open(path, encoding="utf-8") as f:
@@ -1171,7 +1175,12 @@ class Handler(BaseHTTPRequestHandler):
             except (OSError, ValueError):
                 data = {}
         w = data.setdefault("execution", {}).setdefault("webull", {})
-        w["app_key"], w["app_secret"] = key, secret
+        # Save only what was actually sent, so a paper-only save keeps the live
+        # keys and vice-versa.
+        if saving_live:
+            w["app_key"], w["app_secret"] = key, secret
+        if saving_paper:
+            w["paper_app_key"], w["paper_app_secret"] = p_key, p_secret
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
@@ -1180,19 +1189,26 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False,
                                     "message": "couldn't save them: %s" % e})
         reload_settings()
-        # Prove them straight away — connect for quotes, pick the options
-        # account. The answer lands in the popup, not in a console window.
-        connect_broker(quiet=True)
-        if WB is not None:
-            msg = ("saved and working — connected to account %s. Nothing goes "
-                   "live until you flip the switch." % WB_ACCOUNT)
-        else:
-            msg = ("saved, but they didn't connect: %s — check for a typo and "
-                   "paste them again." % (WB_ERROR or "unknown")[:160])
-        note("KEYS     new Webull keys from the popup (…%s) — %s"
-             % (key[-4:], "connected" if WB is not None else "NOT connected"))
-        return self._json(200, dict(self._status(), ok=WB is not None,
-                                    message=msg))
+        # Prove whatever was saved, straight away. The answer lands in the popup.
+        msgs, ok_all = [], True
+        if saving_live:
+            connect_broker(quiet=True)
+            if WB is not None:
+                msgs.append("Live keys working — account %s." % WB_ACCOUNT)
+            else:
+                ok_all = False
+                msgs.append("Live keys didn't connect: %s"
+                            % (WB_ERROR or "unknown")[:120])
+        if saving_paper:
+            ok_p, pmsg = prove_paper_keys()
+            ok_all = ok_all and ok_p
+            msgs.append(pmsg)
+        note("KEYS     new Webull keys from the popup (%s%s) — %s"
+             % ("live …%s " % key[-4:] if saving_live else "",
+                "paper …%s" % p_key[-4:] if saving_paper else "",
+                "ok" if ok_all else "problem"))
+        return self._json(200, dict(self._status(), ok=ok_all,
+                                    message=" ".join(msgs)))
 
     def _set_config(self):
         """The futures switch, flipped from the popup. One field, written to
@@ -1399,6 +1415,32 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, *a):
         pass    # the default logger prints a line per request; note() is enough
+
+
+def prove_paper_keys():
+    """Connect to the Webull sandbox with the saved paper keys and confirm it
+    actually lands in PAPER. A bad sandbox key 401s and WebullOptions.connect()
+    quietly falls back to the live connection, so the real test isn't 'did it
+    connect' — it's 'is it still paper afterward'. Places no orders."""
+    w = EXEC.get("webull") or {}
+    if not (w.get("paper_app_key") and w.get("paper_app_secret")):
+        return False, "No paper (sandbox) key saved."
+    try:
+        import copy
+        from webull_options import WebullOptions
+        pcfg = copy.deepcopy(CFG)
+        pcfg.setdefault("execution", {}).setdefault("webull", {})[
+            "paper_trading"] = True
+        pc = WebullOptions(pcfg)
+        acct = pc.connect()
+    except Exception as e:                              # noqa: BLE001
+        return False, "Paper keys saved, but didn't connect: %s" % str(e)[:120]
+    if getattr(pc, "paper", False):
+        return True, ("Paper keys saved and working — simulated account %s. "
+                      "Flip Webull Paper ON to use it." % acct)
+    return False, ("Paper keys saved, but were REJECTED (it fell back to live). "
+                   "The sandbox key is a SEPARATE key from your live one — "
+                   "re-check it.")
 
 
 def connect_broker(quiet=False):

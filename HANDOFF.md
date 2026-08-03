@@ -1906,3 +1906,35 @@ the Fills → Webull Paper toggle ON. The bridge then connects to the sandbox,
 `get_account_list` returns the $1M DEM books, and entries fill there for real
 prices while staying scored per room. In-house honest-fill sim remains the
 fallback whenever paper can't connect.
+
+## v1.20.3 — make the paper key easy to put in and verify
+
+He hit the EXTRAS menu and couldn't tell 3 from 9. Clarified both, and made
+option 3 actually test the paper key (it didn't before):
+- `check_keys.py` (EXTRAS → 3) now, after the live check, does a REAL sandbox
+  connection when paper keys are saved: it forces paper on in a cfg copy,
+  connects, and — crucially — checks `client.paper` is still true afterward,
+  because a bad sandbox key 401s and connect() silently falls back to live. So
+  "rejected" is caught instead of looking connected. Prints the simulated
+  account id and its buying power.
+- `EXTRAS.bat`: menu 3 → "Check the keys work: live + paper", menu 9 → "Put
+  keys in here: live AND paper/sandbox keys", and the :keys screen says the
+  paper key can ONLY go in here (the popup only takes the live key).
+
+He then asked to put the paper key in through the POPUP for ease (like the live
+key), so it also goes in there now:
+- `popup.html` — a "Webull PAPER (sandbox) App Key/Secret" pair + "Save paper
+  keys" button under the live keys. (Also removed a duplicate `keystate` id.)
+- `popup.js` — savepaperkeys POSTs `{paper_app_key, paper_app_secret}` to /keys,
+  wipes the boxes, repaints.
+- `bridge.py` `/keys` now saves only what was sent (paper-only keeps the live
+  keys and vice-versa) and PROVES each: live via connect_broker, paper via the
+  new `prove_paper_keys()` — forces paper on in a cfg copy, connects, checks
+  `client.paper` is still true (a bad sandbox key 401s → silent live fallback,
+  so "rejected" is caught, not shown as connected). Keys go straight to
+  settings.json (chmod 600), never chrome.storage.
+
+His flow to turn paper on (popup way): pull this update, open the popup Settings,
+paste the sandbox key+secret into the PAPER boxes, Save (it verifies on the spot
+and reports the $1M sim account), then flip Fills → Webull Paper ON. The EXTRAS
+console path (9 to enter, 3 to check) still works too.

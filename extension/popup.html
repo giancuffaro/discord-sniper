@@ -239,11 +239,27 @@
     <div class="row" style="margin-top:8px">
       <button id="savekeys" class="grow">Save keys to this PC</button>
     </div>
+    <div class="note" id="keystate">&nbsp;</div>
+
+    <label>Webull PAPER (sandbox) App Key</label>
+    <input id="wbpkey" type="password" autocomplete="off"
+           placeholder="paste your Sandbox App Key">
+    <label>Webull PAPER (sandbox) App Secret</label>
+    <input id="wbpsecret" type="password" autocomplete="off"
+           placeholder="paste your Sandbox App Secret">
+    <div class="row" style="margin-top:8px">
+      <button id="savepaperkeys" class="grow">Save paper keys to this PC</button>
+    </div>
+    <div class="note">Webull's paper account is a separate, walled-off
+      environment, so it needs its OWN key — apply for a SANDBOX API key at
+      developer.webull.com (auto-approved in minutes). These fill your $1M paper
+      books when Webull Paper is ON. Saved straight to this PC, never the
+      browser.</div>
+    <div class="note" id="paperkeystate">&nbsp;</div>
     <!-- The keys go straight to the bridge on 127.0.0.1 and into
          settings.json on the PC. They are never stored in the browser -
          these boxes are wiped the moment they're sent, and the only thing
          that ever comes back is the last four characters. -->
-    <div class="note" id="keystate">&nbsp;</div>
 
     <label>Bridge on your PC</label>
     <input id="bridge" placeholder="http://127.0.0.1:8787/order">

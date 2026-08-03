@@ -24,12 +24,12 @@ echo     extension popup's Settings.^)
 echo.
 echo      1   Stop the bridge
 echo      2   Show me what the bridge has been doing
-echo      3   Check the keys actually work      ^(places no orders^)
+echo      3   Check the keys work: live + paper  ^(places no orders^)
 echo      4   Test how it reads the room's messages
 echo      6   Send my changes up to GitHub
 echo      7   Get the latest down from GitHub
 echo      8   Turn the 9:25 morning alarm off
-echo      9   Put keys in the old way, at this console
+echo      9   Put keys in here: live AND paper/sandbox keys
 echo     10   Practice the reader on a chat export
 echo.
 echo      0   Close this
@@ -377,9 +377,10 @@ rem ============================================================
 :keys
 cls
 echo.
-echo   The nicer way is the extension popup: Settings, paste the App
-echo   Key and App Secret, hit save. This console way still works,
-echo   and it also lets you pick which account when you have several.
+echo   Your LIVE key can also go in through the extension popup. But the
+echo   PAPER (sandbox) key can ONLY go in here - so for paper trading,
+echo   this is the place. Press Enter on the live lines to keep them,
+echo   then paste the sandbox key and secret at the Paper prompts.
 echo.
 call :needpython || goto back
 python setup_keys.py

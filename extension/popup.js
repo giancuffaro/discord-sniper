@@ -308,6 +308,30 @@ $("savekeys").onclick = async () => {
   $("savekeys").textContent = "Save keys to this PC";
 };
 
+$("savepaperkeys").onclick = async () => {
+  const key = $("wbpkey").value.trim();
+  const secret = $("wbpsecret").value.trim();
+  const el = $("paperkeystate");
+  if (!key || !secret) {
+    el.textContent = "Both boxes need something — the sandbox key and secret.";
+    return;
+  }
+  $("savepaperkeys").textContent = "Saving and checking…";
+  try {
+    const r = await askBridge("/keys",
+      { paper_app_key: key, paper_app_secret: secret });
+    modeStatus = r;
+    el.textContent = r.message || "saved";
+    if (r.ok) { $("wbpkey").value = ""; $("wbpsecret").value = ""; }
+    paintMode();
+    paintPaper();
+  } catch (e) {
+    el.textContent = "Couldn't reach the bridge on your PC — double-click " +
+      "START HERE first, then try again.";
+  }
+  $("savepaperkeys").textContent = "Save paper keys to this PC";
+};
+
 
 /* ---- the day as a table ---------------------------------------------------
  * One row per trade: who called it, the contract, what you paid, every
