@@ -1621,3 +1621,13 @@ public docs but have never touched a real account (he owns none yet).
 The standing rule applies double: the FIRST order through any prop
 account is a supervised event. Cheapest safe path: webhook adapter into
 a copier's demo, or a Tradovate demo eval, watched live.
+
+## v1.17.1 — boka trading: 4 channels (third server)
+
+New server boka trading (1156381060108664884), 4 channels wired Boka 1-4
+(no names in the links). channel_ids, labels, toggles, scoreboard, third
+Chrome window in START HERE. All testing. Real names + grammar (Export
+chat) wanted when he has them; until then they parse on the shared
+grammar and refuse the unrecognised. 46 rooms, three Chrome windows.
+(Sandbox rolled back again mid-turn; re-seated on origin/main before
+applying — GitHub is the only truth.)

@@ -263,7 +263,11 @@ const ROOM_NAMES = { "829754942817828884": "Main room",
                      "1251181965252755517": "ZT fut-2",
                      "1472793065646325904": "ZT fut-3",
                      "1213977047479754783": "ZT fut-4",
-                     "1375454591755489341": "ZT fut-5" };
+                     "1375454591755489341": "ZT fut-5",
+                     "1288291150083653652": "Boka 1",
+                     "1499190814482632825": "Boka 2",
+                     "1395159239164432515": "Boka 3",
+                     "1387459050505240597": "Boka 4" };
 
 /* The per-room scoreboard he asked for: "trade information, won, lost,
  * profits, from each individual channel just to have good data to see where
