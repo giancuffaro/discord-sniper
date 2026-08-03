@@ -436,6 +436,35 @@ function parseSignal(text, cfg) {
     return s;
   }
 
+  // ---- Bullwinkle (ZTRADEZ) format: "AMD | $550 C 12.72", "QQQ $707 P 8.75",
+  //      "/MES | LONG HERE". CC/CSP are SELLING strategies, never a buy — the
+  //      single-letter [CP] word boundary refuses to read them.
+  const bwf = /^\/?([A-Za-z]{2,4})\s*\|\s*(long|short)\s+here\b/i.exec(t);
+  if (bwf && FUT_SYMS.has(bwf[1].toUpperCase())) {
+    s.symbol = bwf[1].toUpperCase(); s.kind = "future";
+    s.direction = bwf[2].toUpperCase();
+    s.action = "OPEN"; s.matched = "bullwinkle futures entry"; s.fire = true;
+    s.warn = "no price on the entry — it pays the market.";
+    s.why = "entry: " + s.direction + " " + s.symbol;
+    return s;
+  }
+  const bw = /^([A-Za-z]{1,5})\s*(\|)?\s*(\$)?(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b([\s\S]*)$/.exec(t);
+  if (bw && (bw[2] || bw[3]) && !NOT_TICKERS.has(bw[1].toUpperCase())) {
+    const rest = bw[6];
+    s.symbol = bw[1].toUpperCase();
+    s.strike = parseFloat(bw[4]);
+    s.side = bw[5].toUpperCase() === "C" ? "CALLS" : "PUTS";
+    const md = /\b(\d{1,2}\/\d{1,2})\b/.exec(rest);
+    if (md) s.expiry = md[1];
+    const mp = /(?<![\d$])(\d+\.\d{1,2})\b/.exec(rest);
+    s.limit = mp ? parseFloat(mp[1]) : null;
+    s.action = "OPEN"; s.matched = "bullwinkle entry"; s.fire = true;
+    if (s.limit === null || isNaN(s.limit))
+      s.warn = "no premium I could read — it pays the market.";
+    s.why = "entry: " + human(s);
+    return s;
+  }
+
   // ---- labeled alert-bot format (Sir Goldman [BOKA]): ENTRY / TRIM /
   //      EXIT / COMMENT keyword is the truth; COMMENT never trades.
   const ml = /^(?:@\w+\s+)?(ENTRY|TRIM|EXIT|COMMENT)\b\s*([\s\S]*)$/i.exec(t);

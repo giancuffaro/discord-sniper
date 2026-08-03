@@ -2086,3 +2086,35 @@ REMAINING (not urgent, he's still test): paper EXITS are still sim'd against the
 paper quote rather than sent to the sandbox — honest enough, but making paper
 trims/closes real sandbox orders would be the next honesty bump. And live TRIMS
 are intentionally off until he decides a browser trim may sell real contracts.
+
+## v1.22.1 — Bullwinkle (ZTRADEZ) lingo learned from the export
+
+He exported a big multi-room chat to grab missed lingo. Ran it through drill.py:
+the biggest gap was **Bullwinkle** (ZT top-flow / scalps / futures — high
+volume across several channels), completely unread. Now tuned:
+- Options: `AMD | $550 C 12.72`, `QQQ $707 P 8.75 NEXT WEEK`,
+  `DELL | $445 C NEXT W 19.48`, `SPY | $742 C 4.49 7/31`. Symbol, a pipe or a
+  $-strike, C/P, and the premium = the first plain decimal after the side, NOT
+  the "$266.50 break-of" stock level (lookbehind excludes $-prefixed numbers).
+- Futures: `/MES | LONG HERE`, `MES | SHORT HERE`.
+- MONEY-CRITICAL: `CC` (covered call) and `CSP` (cash-secured put) are SELLING
+  strategies — the single-letter `[CP]\b` boundary refuses to read them as a
+  buy, so the bot never buys a premium-selling play. Confirmed by him: "we
+  aren't doing covered calls and those things and forex nor crypto yet."
+- Gated on pipe-or-$ so it never hijacks the main-room "in SPY 742C" grammar.
+- Mirrored signals.py + parser.js, 10 samples, parity 335, test_signals block.
+
+STILL UNTUNED from that export (his priorities — options day-trades only, so
+these are lower/optional; NOT covered calls / forex / crypto per his note):
+- **The Pawn (The Market Bishop)** ZT opt-7 `1239624229583061052`: labeled
+  "I'm Entering Option: NOW 97 C 7/24 Entry: 0.82" and "Trimming ARM 535 P 7/24
+  Value: @6.90".
+- **Vero** VERO-1 `1323708708374450247`: "QQQ 708C 7/21 1.03 2 CONTRACTS".
+- **MR.TOPHAT** `1135947475912495216`: "lotto yolo SPX 7460C 0dte @0.25".
+- **EvaPanda Alerts** ZT opt-5 `777750637613416479`: "Close STC NVDA 07/31/2026
+  200c @ 1.36" (STC close), plus informational "Update:" posts.
+- JonnyOptions (Boka 1) "adding $MSFT 390c 5/15" — should work live via boka's
+  adding_is_entry flag (background.js), but drill (signals.py only) shows it
+  ignored; worth confirming live.
+Covered-call channels (ZT cc-1..5), ZT forex, and crypto are intentionally left
+unread per his note.

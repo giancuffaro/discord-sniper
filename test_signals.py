@@ -687,3 +687,35 @@ if fails:
     raise SystemExit(1)
 print("JPM Options reads: Open buys, the +% Updates are ignored as P&L "
       "tracking, Closed exits, and a bare keyword with no contract is nothing.")
+
+
+# --- Bullwinkle (ZTRADEZ) format ---------------------------------------------
+# "TICKER | $STRIKE C/P PREMIUM" options and "/MES | LONG HERE" futures. The
+# premium is the plain decimal after the side, never a "$266.50 break" level.
+# CC (covered call) and CSP (cash-secured put) are SELLING strategies and must
+# NEVER be read as a buy.
+check("AMD | $550 C 12.72", action="OPEN", fire=True, symbol="AMD",
+      strike=550.0, side="CALLS", limit=12.72)
+check("QQQ $707 P 8.75 NEXT WEEK", action="OPEN", fire=True, symbol="QQQ",
+      strike=707.0, side="PUTS", limit=8.75)
+check("NVDA | $205 C 2.45 NEXT W ON THE BREAK OF $197.85", action="OPEN",
+      fire=True, symbol="NVDA", strike=205.0, side="CALLS", limit=2.45)
+check("SPY | $742 C 4.49 7/31", action="OPEN", fire=True, symbol="SPY",
+      strike=742.0, side="CALLS", limit=4.49, expiry="7/31")
+s = check("/MES | LONG HERE", action="OPEN", fire=True, symbol="MES")
+ok(s.kind == "future" and s.direction == "LONG", "the /MES call is a long future")
+check("MES | SHORT HERE", action="OPEN", fire=True, symbol="MES", direction="SHORT")
+# The money-critical ones: selling strategies must NOT buy.
+check("AEO | $13 CSP .45 AUG", fire=False, action=None)
+check("IBIT | $39 CC 1.92 JULY", fire=False, action=None)
+check("MARA | $6 CSP .35 DEC", fire=False, action=None)
+check("NVDA | 1.80 TOP FLOW L", fire=False, action=None)
+
+if fails:
+    print("FAILED %d Bullwinkle check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("Bullwinkle reads: TICKER | $strike C/P premium buys (premium not the "
+      "break level), /MES LONG HERE is a long future, and CC/CSP selling "
+      "strategies are never bought.")

@@ -633,6 +633,47 @@ def parse(text, author="", channel="", cfg=None):
             sig.why = "full exit on %s" % sig.symbol
         return sig
 
+    # ---- Bullwinkle (ZTRADEZ top-flow / scalps / futures) format:
+    #        "AMD | $550 C 12.72"   "QQQ $707 P 8.75 NEXT WEEK"
+    #        "DELL | $445 C NEXT W 19.48"   "SPY | $742 C 4.49 7/31"
+    #        "/MES | LONG HERE"     "MES | SHORT HERE"
+    #      Options: TICKER, a pipe or a $-strike, then C/P and the premium — the
+    #      first plain decimal after the side, NOT a "$266.50 break-of" level.
+    #      CC (covered call) and CSP (cash-secured put) are SELLING strategies,
+    #      never a buy, so the single-letter [CP] word boundary is deliberate:
+    #      it refuses to read CC/CSP as C/P.
+    bwf = re.match(r"^/?([A-Za-z]{2,4})\s*\|\s*(long|short)\s+here\b",
+                   t, re.IGNORECASE)
+    if bwf and bwf.group(1).upper() in FUT_SYMS:
+        sig.symbol = bwf.group(1).upper()
+        sig.kind = "future"
+        sig.direction = bwf.group(2).upper()
+        sig.action, sig.matched = "OPEN", "bullwinkle futures entry"
+        sig.fire = True
+        sig.warn = "no price on the entry — it pays the market."
+        sig.why = "entry: %s %s" % (sig.direction, sig.symbol)
+        return sig
+    bw = re.match(r"^([A-Za-z]{1,5})\s*(\|)?\s*(\$)?"
+                  r"(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b(.*)$", t)
+    if bw and (bw.group(2) or bw.group(3)) and \
+            bw.group(1).upper() not in NOT_TICKERS:
+        rest = bw.group(6)
+        sig.symbol = bw.group(1).upper()
+        sig.strike = float(bw.group(4))
+        sig.side = "CALLS" if bw.group(5).upper() == "C" else "PUTS"
+        md = re.search(r"\b(\d{1,2}/\d{1,2})\b", rest)
+        if md:
+            sig.expiry = md.group(1)
+        # premium: the first plain decimal that isn't a $-prefixed stock level.
+        mp = re.search(r"(?<![\d$])(\d+\.\d{1,2})\b", rest)
+        sig.limit = float(mp.group(1)) if mp else None
+        sig.action, sig.matched = "OPEN", "bullwinkle entry"
+        sig.fire = True
+        if sig.limit is None:
+            sig.warn = "no premium I could read — it pays the market."
+        sig.why = "entry: %s" % sig.human()
+        return sig
+
     # ---- labeled alert-bot format (Sir Goldman [BOKA] and any bot that
     #      posts ENTRY / TRIM / EXIT / COMMENT as a keyword). The label is
     #      the truth; COMMENT is chatter no matter how many tickers it holds.

@@ -358,3 +358,13 @@ Ticker: `MNQ LONG` Entry: 28465 Stoploss: 28430
 Open SPY 08/03 753C @.92
 Update SPY 08/03 753C @1.29 (+40%)
 Closed SPY 08/03 753C @3.68
+AMD | $550 C 12.72 @everyone
+QQQ $707 P 8.75 NEXT WEEK @everyone
+DELL | $445 C NEXT W 19.48 @everyone
+NVDA | $205 C 2.45 NEXT W ON THE BREAK OF $197.85 @everyone
+SPY | $742 C 4.49 7/31 @everyone
+/MES | LONG HERE @everyone
+MES | SHORT HERE @everyone
+AEO | $13 CSP .45 AUG @everyone
+IBIT | $39 CC 1.92 JULY @everyone
+NVDA | 1.80 TOP FLOW L
