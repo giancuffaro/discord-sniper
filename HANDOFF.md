@@ -1704,3 +1704,37 @@ correlation + parser brittleness), drop forex (Webull can't trade it),
 be wary of multi-leg spreads, add a portfolio/correlation view and a live
 daily-loss circuit breaker before going live. Honest fills was the one he
 asked to build first — done.
+
+## v1.19.0 — Webull Paper mode (real sim fills), in-house sim KEPT as fallback
+
+His ask: route to Webull paper, remove the in-house sim. Pushed back on the
+removal and he's right about the fill-guess but NOT the ledger: Webull paper
+is ONE account, so the per-room scoreboard only exists because our book tags
+each fill to its channel. So — repositioned, not removed: Webull paper is the
+FILL SOURCE; our book stays the ledger; the in-house honest-fill model stays
+as the automatic fallback (paper unreachable / futures data not live).
+
+Built:
+- webull_options: endpoint is live-vs-paper configurable (PAPER_ENDPOINT =
+  api.sandbox.webull.com default, override execution.webull.paper_endpoint).
+  Paper account auto-picked (first sim account or paper_account_id); paper
+  positions skip the margin/futures account rules.
+- positions.py: a position can be paper=True -> _probe hits Webull for the
+  real fill BUT it still counts in the wallet/scoreboard (live=False). Clean
+  third state between test and real.
+- bridge: paper_on() gate; ENTRIES route through Webull paper (real fill,
+  booked paper), test-sized the same as the dry book so numbers compare;
+  trims/closes settle in the book against the live paper quote (honest exit,
+  no partial-sell dance). Falls back to the dry sim if WB paper isn't
+  connected — trades never silently drop. /config toggles paper_trading and
+  reconnects the broker to switch endpoints; /mode reports paper +
+  paper_available.
+- popup: "Webull Paper (real sim fills)" toggle with a live status line.
+
+UNVERIFIED-BY-DESIGN: the exact paper endpoint/mechanics aren't in Webull's
+public docs yet (feature is 2 weeks old); PAPER_ENDPOINT is the documented
+sandbox host and is overridable. Same rule as props: FIRST paper order is
+supervised on his machine — confirm the endpoint resolves and a fill comes
+back before trusting it. Until confirmed, paintPaper() shows "not connected"
+and everything runs on the in-house honest-fill sim. That is precisely why
+the sim was NOT deleted.

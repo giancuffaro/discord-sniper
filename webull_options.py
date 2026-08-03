@@ -33,6 +33,11 @@ except Exception as e:                                  # noqa: BLE001
 
 REGION = "us"
 LIVE_ENDPOINT = "api.webull.com"
+# Webull launched OpenAPI paper trading (six asset classes, options + futures)
+# in July 2026. The exact host isn't in the public docs yet; this is the
+# documented sandbox base and is OVERRIDABLE from settings
+# (execution.webull.paper_endpoint) the moment his account names the real one.
+PAPER_ENDPOINT = "api.sandbox.webull.com"
 
 # NYSE closures. Only used to sanity-check an expiry the room gave us.
 HOLIDAYS = {
@@ -247,6 +252,13 @@ class WebullOptions:
         self.app_secret = w.get("app_secret", "")
         self.account_id = w.get("account_id") or None
         self.account_kind = ""
+        # Paper trading: route to Webull's simulated account for HONEST fills
+        # instead of our own model. One flag; the endpoint and (optional)
+        # paper account id are overridable for when the docs land.
+        self.paper = bool(w.get("paper_trading", False))
+        self.endpoint = (w.get("paper_endpoint") or PAPER_ENDPOINT) if self.paper \
+            else LIVE_ENDPOINT
+        self.paper_account_id = w.get("paper_account_id") or None
         # Webull labels futures accounts as MARGIN, so the only reliable way to
         # keep off one is to name it. Put the tail of your futures account id
         # here and it will never be picked.
@@ -290,7 +302,7 @@ class WebullOptions:
                           "2, and put your app key and secret in.")
 
         api = ApiClient(self.app_key, self.app_secret, REGION)
-        api.add_endpoint(REGION, LIVE_ENDPOINT)
+        api.add_endpoint(REGION, self.endpoint)
         self._api = api
         self.trade = TradeClient(api)
         self._data = DataClient(api)
@@ -302,6 +314,23 @@ class WebullOptions:
                     or any(_acct_id(a).upper().endswith(s)
                            for s in self.futures_suffixes))
 
+        # Paper mode: the whole account list is simulated, so just take the
+        # named paper account or the first one. None of the live-account
+        # (margin/futures) rules apply — it's all pretend by definition.
+        if self.paper:
+            if not accounts:
+                raise Refused("connected to Webull PAPER but no simulated "
+                              "account came back — open the paper account in "
+                              "the Webull app once, then reconnect.")
+            chosen = None
+            if self.paper_account_id:
+                chosen = next((a for a in accounts
+                               if _acct_id(a) == str(self.paper_account_id)), None)
+            chosen = chosen or accounts[0]
+            self.account_id = _acct_id(chosen)
+            self.account_kind = "PAPER"
+            self.futures_account_id = _acct_id(chosen)   # same paper book
+            return self.account_id
         if self.account_id:
             match = [a for a in accounts if _acct_id(a) == str(self.account_id)]
             if not match:

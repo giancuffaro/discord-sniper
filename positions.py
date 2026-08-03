@@ -370,6 +370,10 @@ class Book:
             # for test ones, and the pretend wallet only ever counts the
             # pretend positions.
             is_live = bool(ticket.get("live") or order.get("live"))
+            # Paper = Webull's simulated fill (probe the broker for the real
+            # price) BUT still counts in the per-room scoreboard, because it's
+            # pretend money by definition. So it is NOT "live" for the wallet.
+            is_paper = bool(ticket.get("paper") or order.get("paper"))
             # A finished trade can still be sitting under this key — sweep()
             # only files it away after half an hour, and Unraveller re-entered
             # TSLA eleven minutes after stopping out. This overwrite used to
@@ -383,6 +387,7 @@ class Book:
             self._pos[key] = {
                 "key": key,
                 "live": is_live,
+                "paper": is_paper,
                 "room": order.get("room") or prev.get("room"),
                 "who": who if not adding else (prev.get("who") or who),
                 "symbol": sym,
@@ -469,7 +474,7 @@ class Book:
                     want = p["want_qty"]
 
                 state, filled_qty, avg = self._probe(oid, occ, limit,
-                                                     live=p.get("live"))
+                                                     live=p.get("live") or p.get("paper"))
                 if state == FILLED:
                     self._became_filled(key, filled_qty or want, avg or limit)
                     return
@@ -515,7 +520,7 @@ class Book:
         with self._lock:
             p_l = self._pos.get(key) or {}
         state, filled_qty, avg = self._probe(oid, occ, limit,
-                                             live=p_l.get("live"))
+                                             live=p_l.get("live") or p_l.get("paper"))
         if state == FILLED or (filled_qty or 0) > 0:
             self._became_filled(key, filled_qty or want, avg or limit)
         else:

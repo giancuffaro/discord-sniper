@@ -120,6 +120,18 @@ def auto_be_cfg():
             float(s.get("sell_fraction", 0.10)))
 
 
+def paper_on():
+    """Webull PAPER trading (launched July 2026): route orders to Webull's
+    simulated account for HONEST fills instead of our own model. It's the
+    gold-standard test — real engine, real prices — while the per-room book
+    still tags every fill to its channel. One flag in settings; needs WB
+    connected to the paper endpoint. Falls back to the in-house sim if paper
+    isn't reachable, which is exactly why that sim stays."""
+    w = (CFG.get("execution", {}) or {}).get("webull", {}) or {}
+    return bool(w.get("paper_trading", False)) and WB is not None \
+        and getattr(WB, "paper", False)
+
+
 def futures_on():
     """THE switch. execution.futures_enabled in settings.json, off by
     default. Until it's true, a live futures order is refused at the door —
@@ -634,6 +646,13 @@ def place(order):
 
     # Whether THIS order is real money — the room's own toggle, not a global.
     live_order = bool(order.get("live")) and MODE != "webhook"
+    # Paper routes an ENTRY through Webull's simulated engine for a real fill;
+    # it is NOT real money, so the wallet still scores it. Trims/closes settle
+    # in the book against the live paper quote (honest exit price) without the
+    # partial-sell dance. When paper is off, nothing here changes.
+    paper = paper_on() and MODE != "webhook"
+    if paper:
+        order["paper"] = True
 
     # TRIM — sell some, keep the rest. Test rooms only for now: in a LIVE
     # room he's still set to hold until "all out", and a browser message must
@@ -667,9 +686,21 @@ def place(order):
                            "%d" % held)
         return True, "dry run — sold %d, holding the rest" % sold
 
+    if paper and action in ("OPEN", "ADD"):
+        # Paper uses the same test size as the dry book, so the two are
+        # comparable — then it routes to Webull below for the real fill.
+        if order.get("kind") == "future":
+            order["qty"] = DRY_FUT_QTY
+        elif order.get("kind") == "equity":
+            px = float(order.get("limit") or 0)
+            order["qty"] = max(1, int(round(DRY_EQ_USD / px))) if px else 100
+        else:
+            order["qty"] = int(order.get("qty")
+                               or (DRY_ADD_QTY if action == "ADD"
+                                   else DRY_ENTRY_QTY))
     if MODE == "webhook":
         pass          # falls through to the webhook branch below
-    elif not live_order:
+    elif not live_order and not (paper and action in ("OPEN", "ADD")):
         # Money is never the reason a test trade gets refused any more. The
         # unlimited book keeps the high-water mark instead — the answer to
         # "how much would I need" — and every entry goes through at the
@@ -718,10 +749,11 @@ def place(order):
             note("FAILED  %s  ->  %s" % (what, e))
             return False, "the webhook didn't answer: %s" % e
 
-    if live_order:
+    if live_order or (paper and action in ("OPEN", "ADD")):
         if WB is None:
-            return False, ("this room is set LIVE but the bridge isn't "
-                           "connected to Webull: %s" % (WB_ERROR or "unknown"))
+            return False, ("can't reach Webull to place this %s order: %s"
+                           % ("paper" if paper else "LIVE",
+                              WB_ERROR or "unknown"))
 
         # Futures, real money. Two locks on this door: the futures switch in
         # settings (off until he flips it), and webull_futures itself, which
@@ -780,7 +812,8 @@ def place(order):
                 ticket = WB.buy(order["symbol"], order.get("side"),
                                 order.get("strike"), order.get("expiry"), qty,
                                 their_price=order.get("limit"))
-                ticket["live"] = True   # real money — the Book must know
+                ticket["live"] = bool(live_order)   # real money?
+                ticket["paper"] = bool(paper)       # or Webull's sim engine
                 # "ORDER IN", not "BOUGHT". Webull has accepted a resting bid;
                 # nobody has sold you anything yet.
                 note("ORDER IN %s" % ticket["what"])
@@ -896,6 +929,8 @@ class Handler(BaseHTTPRequestHandler):
                                    if WB is not None else None,
                 # Prop accounts: names only, never credentials.
                 "simulation": CFG.get("simulation", {}),
+                "paper": paper_on(),
+                "paper_available": (WB is not None and getattr(WB, "paper", False)),
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}
@@ -1158,6 +1193,13 @@ class Handler(BaseHTTPRequestHandler):
         if "futures_enabled" in body:
             want = bool(body["futures_enabled"])
             data.setdefault("execution", {})["futures_enabled"] = want
+        if "paper_trading" in body:
+            w = data.setdefault("execution", {}).setdefault("webull", {})
+            w["paper_trading"] = bool(body["paper_trading"])
+            CFG.setdefault("execution", {}).setdefault("webull", {})["paper_trading"] = w["paper_trading"]
+            note("PAPER    Webull paper trading %s — reconnecting"
+                 % ("ON" if w["paper_trading"] else "OFF"))
+            want = want if want is not None else None
         if isinstance(body.get("simulation"), dict):
             sim = data.setdefault("simulation", {})
             sim.update(body["simulation"])
@@ -1180,6 +1222,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False,
                                     "message": "couldn't save it: %s" % e})
         reload_settings()
+        if "paper_trading" in body:
+            try:
+                connect_broker(quiet=True)   # re-point at paper/live endpoint
+            except Exception:                # noqa: BLE001
+                pass
         if want is not None:
             note("FUTURES  switch %s from the popup"
                  % ("ON — real futures orders are now allowed when live"

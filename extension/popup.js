@@ -160,6 +160,26 @@ async function refreshMode() {
   paintKeys();
   paintProps();
   paintSim();
+  paintPaper();
+}
+
+let paperOn = false;
+function paintPaper() {
+  const s = modeStatus || {};
+  paperOn = !!s.paper;
+  const btn = $("paperbtn");
+  if (!btn) return;
+  btn.textContent = paperOn ? "ON" : "off";
+  btn.className = paperOn ? "live" : "safe";
+  if ($("paperstate")) {
+    $("paperstate").textContent = !s.has_keys
+      ? "Add your Webull keys first — paper trading uses the same connection."
+      : (paperOn
+         ? (s.paper_available
+            ? "ON — filling in your Webull paper account, scored per room."
+            : "ON, but the paper account isn't connected yet — check keys / the paper endpoint.")
+         : "Off — using the built-in honest-fill model.");
+  }
 }
 
 let simRealistic = false;
@@ -181,6 +201,19 @@ function paintSim() {
 /* The keys go to the bridge and nowhere else. Nothing is written to
  * chrome.storage — the browser forgets them the moment they're sent, which is
  * the whole reason the bridge exists in the first place. */
+$("paperbtn").onclick = async () => {
+  paperOn = !paperOn;
+  const btn = $("paperbtn");
+  btn.textContent = paperOn ? "ON" : "off";
+  btn.className = paperOn ? "live" : "safe";
+  try {
+    modeStatus = await askBridge("/config", { paper_trading: paperOn });
+  } catch (e) {
+    $("paperstate").textContent = "couldn't reach the bridge — START HERE first";
+  }
+  paintPaper();
+};
+
 $("simreal").onclick = async () => {
   simRealistic = !simRealistic;
   paintSimQuick();
