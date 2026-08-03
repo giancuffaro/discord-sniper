@@ -260,9 +260,12 @@ class WebullOptions:
         # because the host is wrong but because prod creds don't exist in the
         # sandbox at all. Paper mode therefore uses paper_app_key/secret; it
         # falls back to the live keys only so an old config still connects.
-        self.paper = bool(w.get("paper_trading", False))
         self.paper_app_key = w.get("paper_app_key", "")
         self.paper_app_secret = w.get("paper_app_secret", "")
+        # Paper is the DEFAULT test engine: a saved sandbox key turns it on with
+        # no toggle. paper_trading can still be forced false by hand.
+        _paper_default = bool(self.paper_app_key and self.paper_app_secret)
+        self.paper = bool(w.get("paper_trading", _paper_default))
         self.paper_warning = ""     # set on connect when paper can't run yet
         self.endpoint = (w.get("paper_endpoint") or PAPER_ENDPOINT) if self.paper \
             else LIVE_ENDPOINT

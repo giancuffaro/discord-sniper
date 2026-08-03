@@ -1977,3 +1977,38 @@ Standing reminder for the paper-key blocker he hit twice: the popup was already
 right; his bridge was still pre-v1.20.2 in memory, so a paper-only /keys save
 got the OLD "both boxes need something" rejection. One START HERE fixes it (and
 lands all of the above), then the Update button keeps him current from the popup.
+
+## v1.20.5 — paper IS the test engine now (always on), and the toggle was gated wrong
+
+He asked for Webull paper to "replace the testing side" and be always active,
+and he hit "Add your Webull keys first — paper trading uses the same connection"
+right after pasting the sandbox key. Both are the same root problem: paper was
+still modelled as an off-by-default add-on gated on the LIVE key.
+
+Fixes:
+- **Paper defaults ON when a sandbox key is present.** `WebullOptions.paper`
+  and `paper_on()` now default to `bool(paper_app_key and paper_app_secret)`
+  instead of False. paper_trading can still be set false BY HAND to force the
+  in-house sim; unset = auto.
+- **Saving a sandbox key turns paper on and connects it right away.** `/keys`
+  (and setup_keys) write `paper_trading = true` when a paper key is saved —
+  overriding any leftover `paper_trading:false` from an old settings.json (his
+  had exactly that, which is why auto-on wouldn't have fired otherwise) — then
+  reconnect so the sandbox is the live connection immediately, no toggle to flip.
+- **The paper toggle no longer requires LIVE keys.** popup paintPaper was gated
+  on `has_keys` (the live app_key) with the stale line "paper trading uses the
+  same connection" — wrong since v1.20.2, paper uses its own isolated sandbox
+  key. Now gated on `paper_keys_in`, and the copy says: paste your SANDBOX key
+  in the PAPER boxes and every test trade fills your $1M paper books.
+- Relabelled the toggle "Test fills — Webull Paper the test engine".
+
+Model now: test rooms → Webull PAPER (sandbox, $1M books); live rooms → real
+account (unchanged). NOTE / next step: the bridge still holds ONE Webull
+connection at a time. With paper default-on, if he flips a room LIVE while paper
+is the active connection, the order would hit the sandbox, not the real account
+— fine today (he's all-test), but going truly live per-room needs a dual-client
+(paper client for test orders, live client for live orders) in connect_broker /
+the send path. Flagged, not built.
+
+His immediate unblock is still one restart onto a v1.20.2+ bridge (Update button
+or START HERE); on the old in-memory bridge a paper-only save is rejected.

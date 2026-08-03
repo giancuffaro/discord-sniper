@@ -63,7 +63,7 @@
       "_keep_cash_buffer": "Dollars to never touch, in a live account. 0 spends everything available. 50 means an entry is skipped once it would leave you under $50.",
       "keep_cash_buffer": 0,
       "marketable_buffer_pct": 2,
-      "_paper_trading": "Webull OpenAPI paper trading routes orders to your Webull SIMULATED (sandbox) account for real fills, still scored per room. The popup's Fills toggle flips this. Webull's sandbox is FULLY ISOLATED from your live account and needs its OWN sandbox app key/secret (a separate developer application, auto-approved in minutes) — your live keys will NOT work there. Paste the sandbox keys as paper_app_key/paper_app_secret (or via setup_keys). paper_endpoint defaults to api.sandbox.webull.com; paper_account_id names a specific sim account if you have more than one.",
+      "_paper_trading": "Paper is the TEST ENGINE: every non-live room fills in your Webull SIMULATED (sandbox) account for real prices, still scored per room. It turns on automatically the moment a sandbox key is saved (leave paper_trading unset for that auto behaviour, or set it false by hand to force the in-house sim instead). Webull's sandbox is FULLY ISOLATED from your live account and needs its OWN app key/secret (a separate developer application, auto-approved in minutes) — your live keys will NOT work there. Paste the sandbox keys as paper_app_key/paper_app_secret (popup PAPER boxes or setup_keys). paper_endpoint defaults to api.sandbox.webull.com; paper_account_id names a specific sim account if you have more than one.",
       "paper_trading": false,
       "paper_app_key": "",
       "paper_app_secret": "",

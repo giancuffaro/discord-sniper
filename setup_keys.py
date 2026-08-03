@@ -158,6 +158,10 @@ def main():
     wb["paper_app_key"] = ask("Paper App Key", wb.get("paper_app_key", ""))
     wb["paper_app_secret"] = ask("Paper App Secret",
                                  wb.get("paper_app_secret", ""), secret=True)
+    # Paper is the test engine — a saved sandbox key turns it on, overriding any
+    # leftover paper_trading:false from an old file.
+    if wb["paper_app_key"] and wb["paper_app_secret"]:
+        wb["paper_trading"] = True
 
     # The chase-limit question that used to be here is deleted — "no filters
     # wanted. id like to follow everything to the tee as they do." If the

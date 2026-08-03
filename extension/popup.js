@@ -172,20 +172,16 @@ function paintPaper() {
   btn.textContent = paperOn ? "ON" : "off";
   btn.className = "tgl " + (paperOn ? "live" : "safe");
   if ($("paperstate")) {
-    $("paperstate").textContent = !s.has_keys
-      ? "Add your Webull keys first — paper trading uses the same connection."
-      : (paperOn
-         ? (s.paper_available
-            ? "ON — filling in your Webull paper account, scored per room."
-            : (s.paper_warning
-               || (!s.paper_keys_in
-                   ? "ON, but no sandbox key saved. Webull paper is a separate, "
-                     + "isolated environment — apply for a SANDBOX API key "
-                     + "(auto-approved in minutes) and paste it in EXTRAS → keys "
-                     + "→ paper. Running the in-house sim meanwhile."
-                   : "ON, but the sandbox key was rejected — double-check it. "
-                     + "Running the in-house sim meanwhile.")))
-         : "Off — using the built-in honest-fill model.");
+    $("paperstate").textContent = !s.paper_keys_in
+      ? "This is your test engine. Paste your Webull SANDBOX key in the PAPER "
+        + "boxes below — a separate key from your live one — and every test "
+        + "trade fills in your $1M Webull paper books. Until then, the built-in "
+        + "honest-fill sim stands in."
+      : (s.paper_available
+         ? "ON — every test trade fills in your $1M Webull paper account, scored per room."
+         : (s.paper_warning
+            || "Sandbox key saved but not connected yet — tap Update (or restart), "
+               + "then it switches on by itself. In-house sim meanwhile."));
   }
 }
 

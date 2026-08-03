@@ -144,7 +144,12 @@ def paper_on():
     connected to the paper endpoint. Falls back to the in-house sim if paper
     isn't reachable, which is exactly why that sim stays."""
     w = (CFG.get("execution", {}) or {}).get("webull", {}) or {}
-    return bool(w.get("paper_trading", False)) and WB is not None \
+    # Paper is the DEFAULT test engine now: once a sandbox key is saved it's on
+    # automatically, no toggle needed. paper_trading can still be set false by
+    # hand to force the in-house sim. Only actually "on" when WB reached the
+    # sandbox — otherwise the in-house sim carries it.
+    default_on = bool(w.get("paper_app_key") and w.get("paper_app_secret"))
+    return bool(w.get("paper_trading", default_on)) and WB is not None \
         and getattr(WB, "paper", False)
 
 
@@ -1183,6 +1188,10 @@ class Handler(BaseHTTPRequestHandler):
             w["app_key"], w["app_secret"] = key, secret
         if saving_paper:
             w["paper_app_key"], w["paper_app_secret"] = p_key, p_secret
+            # Paper is the test engine, so saving a sandbox key turns it ON —
+            # overriding any leftover paper_trading:false from an old settings
+            # file. He can still flip it off by hand later.
+            w["paper_trading"] = True
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
@@ -1193,18 +1202,27 @@ class Handler(BaseHTTPRequestHandler):
         reload_settings()
         # Prove whatever was saved, straight away. The answer lands in the popup.
         msgs, ok_all = [], True
+        have_paper = bool((EXEC.get("webull") or {}).get("paper_app_key")
+                          and (EXEC.get("webull") or {}).get("paper_app_secret"))
+        # Reconnect with the new settings. With a sandbox key present paper is
+        # the default test engine, so this connects to the sandbox and the test
+        # side is live on paper immediately — no extra toggle to flip.
+        connect_broker(quiet=True)
+        if saving_paper:
+            ok_p, pmsg = prove_paper_keys()
+            ok_all = ok_all and ok_p
+            msgs.append(pmsg)
         if saving_live:
-            connect_broker(quiet=True)
-            if WB is not None:
+            if have_paper:
+                # Paper owns the active connection now; the live keys wait until
+                # a room is flipped REAL, so there's nothing to connect-test yet.
+                msgs.append("Live keys saved — used when you flip a room REAL.")
+            elif WB is not None:
                 msgs.append("Live keys working — account %s." % WB_ACCOUNT)
             else:
                 ok_all = False
                 msgs.append("Live keys didn't connect: %s"
                             % (WB_ERROR or "unknown")[:120])
-        if saving_paper:
-            ok_p, pmsg = prove_paper_keys()
-            ok_all = ok_all and ok_p
-            msgs.append(pmsg)
         note("KEYS     new Webull keys from the popup (%s%s) — %s"
              % ("live …%s " % key[-4:] if saving_live else "",
                 "paper …%s" % p_key[-4:] if saving_paper else "",
