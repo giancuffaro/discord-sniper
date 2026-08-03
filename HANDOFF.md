@@ -1789,3 +1789,20 @@ New server VERO (725117609275555851), 3 channels wired Vero 1-3 (no names
 in links). channel_ids, labels, toggles, scoreboard, own Chrome window in
 START HERE. All testing, shared grammar until an Export chat names their
 format. 49 rooms, four Chrome windows.
+
+## v1.19.7 — Whop entries missed: tab was drilled into a single post
+
+His screen recording + the earlier export URL (.../app/posts/post_XXX)
+cracked it. Whop Day Trades is a POSTS FEED: each entry ("Long nq 28470 /
+Sl 28415") is a top-level POST; the running updates ("now 130 points") are
+COMMENTS on it. When the tab is drilled INTO one post (URL has /posts/
+post_...), the reader captures that post's comments but goes BLIND to new
+entry posts in the feed — exactly why comments captured and entries didn't.
+Fix: whopWatchdog now snaps any whop tab off a /posts/ view back to its
+base feed (url.split("/posts/")[0]) on the 1-min alarm, so the tab always
+sits where new entries appear. START HERE already opens the base /app feed;
+this catches the case where it drills in (auto-nav or a click). The reader
+already parses the post bodies fine (v1.19.5 author/timestamp strip) — the
+only issue was WHICH view the tab was on. Also: the NVDA +$2503 winner and
+the whole +$2568 day prove the pipeline works when the bridge stays up; the
+QQQ "miss" he asked about was the bridge-down crash (v1.19.4), not a read.

@@ -638,6 +638,20 @@ async function whopWatchdog() {
   } catch (e) { return; }
   const now = Date.now();
   for (const t of tabs) {
+    // Whop rooms are a POSTS FEED: each entry ("Long nq 28470") is a post,
+    // and the running updates are its comments. If the tab drills INTO a
+    // single post (URL gains "/posts/post_..."), the reader sees that post's
+    // comments but goes BLIND to new entry posts in the feed — which is why
+    // Felony's entries were missed while his "now 130 points" comments came
+    // through. So: any whop tab sitting on a /posts/ view gets snapped back
+    // to its feed, where new entries actually appear.
+    const url = t.url || "";
+    if (url.includes("/posts/")) {
+      const feed = url.split("/posts/")[0];   // .../day-trades-.../app
+      whopTabSeen[t.id] = now;
+      try { await chrome.tabs.update(t.id, { url: feed }); } catch (e) { /* gone */ }
+      continue;
+    }
     if (!whopTabSeen[t.id]) { whopTabSeen[t.id] = now; continue; }
     if (now - whopTabSeen[t.id] > 5 * 60 * 1000) {
       whopTabSeen[t.id] = now;
