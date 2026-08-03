@@ -64,7 +64,7 @@
       "keep_cash_buffer": 0,
       "marketable_buffer_pct": 2,
       "_paper_trading": "Webull OpenAPI paper trading (launched July 2026): route orders to your Webull SIMULATED account for real fills, still scored per room. The popup's Fills toggle flips this. paper_endpoint/paper_account_id override the host/account once Webull's docs name them.",
-      "paper_trading": true,
+      "paper_trading": false,
       "paper_endpoint": "",
       "paper_account_id": ""
     }

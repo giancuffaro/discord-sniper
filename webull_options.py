@@ -255,7 +255,7 @@ class WebullOptions:
         # Paper trading: route to Webull's simulated account for HONEST fills
         # instead of our own model. One flag; the endpoint and (optional)
         # paper account id are overridable for when the docs land.
-        self.paper = bool(w.get("paper_trading", True))   # ON by default — his word
+        self.paper = bool(w.get("paper_trading", False))  # OFF until the real endpoint is known
         self.endpoint = (w.get("paper_endpoint") or PAPER_ENDPOINT) if self.paper \
             else LIVE_ENDPOINT
         self.paper_account_id = w.get("paper_account_id") or None
