@@ -89,7 +89,13 @@ class Book:
     def __init__(self, wb, note, stop_pct=20.0, fill_seconds=180.0,
                  poll_seconds=5.0, simulated=False, wallet=None,
                  unlimited=False):
-        self.wb = wb                    # the broker, or None in a dry run
+        self.wb = wb                    # the DEFAULT broker, or None in a dry run
+        # Two-connection routing. When the bridge holds both a paper client and
+        # a live client, it sets this to a function that, given a position dict,
+        # returns the broker that owns it — the live account for a live
+        # position, the paper account for a paper one. Left None (the common
+        # case) every position uses self.wb, exactly as before.
+        self.broker_resolver = None
         self.note = note                # bridge.note — writes to trades.log
         self.stop_pct = float(stop_pct)
         self.fill_seconds = float(fill_seconds)
@@ -534,15 +540,17 @@ class Book:
                 return
             oid, occ, limit, want = (p["order_id"], p["occ"], p["limit"],
                                      p["want_qty"])
-        if self.wb is not None and oid:
+            wb = self._wbfor(p)
+        if wb is not None and oid:
             try:
-                self.wb.cancel(oid)
+                wb.cancel(oid)
             except Exception:                           # noqa: BLE001
                 pass
         with self._lock:
             p_l = self._pos.get(key) or {}
         state, filled_qty, avg = self._probe(oid, occ, limit,
-                                             live=p_l.get("live") or p_l.get("paper"))
+                                             live=p_l.get("live") or p_l.get("paper"),
+                                             wb=wb)
         if state == FILLED or (filled_qty or 0) > 0:
             self._became_filled(key, filled_qty or want, avg or limit)
         else:
@@ -550,15 +558,33 @@ class Book:
                 key, "nobody sold at %.2f within %s"
                      % (float(limit or 0), self._wait_label()))
 
-    def _probe(self, oid, occ, limit, live=False):
+    def _wbfor(self, p):
+        """The broker that OWNS this position. With two connections up, a live
+        position is managed on the live account and a paper one on the paper
+        account — you can't cancel a live order id on the paper client or vice
+        versa. Safe by construction: the resolver only ever returns the live
+        client for a position explicitly flagged live; anything else stays on
+        paper/sim. No resolver set -> the single default broker, as before."""
+        r = self.broker_resolver
+        if r is not None:
+            try:
+                return r(p or {})
+            except Exception:                           # noqa: BLE001
+                return self.wb
+        return self.wb
+
+    def _probe(self, oid, occ, limit, live=False, wb=None):
         """(state, filled_qty, avg_price) — from the broker for real money,
-        or from the live quote for a test position."""
+        or from the live quote for a test position. `wb` is the broker that owns
+        this position; falls back to the default when the caller didn't route."""
+        if wb is None:
+            wb = self.wb
         if live:
             # Real money: Webull is the only honest answer.
-            if self.wb is None:
+            if wb is None:
                 return WORKING, 0, None
-            return self.wb.order_status(oid)
-        if self.wb is None or not occ:
+            return wb.order_status(oid)
+        if wb is None or not occ:
             # No broker, or no quotable contract — futures have no OCC symbol
             # and no quote feed yet. Nothing can be checked, so a dry run
             # treats the entry as filled at the price it would have bid, and
@@ -579,13 +605,13 @@ class Book:
                 # exact float(None) is what wedged TAKE 742C in BID IN.
                 return WORKING, 0, None
             try:
-                ask, bid, _ = self.wb.ask_bid(occ)
+                ask, bid, _ = wb.ask_bid(occ)
             except Exception:                           # noqa: BLE001
                 return WORKING, 0, None
             if ask and float(ask) <= float(limit) + 0.0001:
                 return FILLED, None, limit
             return WORKING, 0, None
-        return self.wb.order_status(oid)
+        return wb.order_status(oid)
 
     def _became_filled(self, key, qty, price):
         with self._lock:
@@ -701,20 +727,21 @@ class Book:
                 return
         stop_price = max(0.01, round(float(fill) * (1 - self.stop_pct / 100), 2))
         oid = None
-        if self.wb is not None and not self.simulated:
-            with self._lock:
-                p = self._pos.get(key)
-                old = p.get("stop_order_id") if p else None
+        with self._lock:
+            p = self._pos.get(key)
+            wb = self._wbfor(p)
+            old = p.get("stop_order_id") if p else None
+        if wb is not None and not self.simulated:
             # Averaging in moves the stop, so the old one has to go first or
             # you end up with two resting sells and get flattened twice.
             if old:
                 try:
-                    self.wb.cancel(old)
+                    wb.cancel(old)
                 except Exception:                       # noqa: BLE001
                     pass
             try:
-                oid, stop_price = self.wb.place_stop(sym, side, strike, expiry,
-                                                     qty, fill)
+                oid, stop_price = wb.place_stop(sym, side, strike, expiry,
+                                                qty, fill)
                 self._event(key, "stop-set",
                             "%s — stop resting at Webull at %.2f (-%.0f%% from "
                             "%.2f)" % (sym, stop_price, self.stop_pct, fill))
@@ -754,10 +781,11 @@ class Book:
                 occ, stop, qty = p["occ"], p["stop"], p["qty"]
                 sym = p["symbol"]
                 side, strike, expiry = p["side"], p["strike"], p["expiry"]
-            if self.wb is None or not occ or not stop:
+                wb = self._wbfor(p)
+            if wb is None or not occ or not stop:
                 return
             try:
-                _ask, bid, _row = self.wb.ask_bid(occ)
+                _ask, bid, _row = wb.ask_bid(occ)
             except Exception:                           # noqa: BLE001
                 continue        # a missed quote is not a reason to sell
             if bid is not None:
@@ -789,7 +817,7 @@ class Book:
                             price=float(bid))
                 return
             try:
-                self.wb.sell(sym, side, strike, expiry, qty)
+                wb.sell(sym, side, strike, expiry, qty)
                 self.finish(key, STOPPED, "stopped out at %.2f" % float(bid),
                             price=float(bid))
             except Exception as e:                      # noqa: BLE001
@@ -968,9 +996,10 @@ class Book:
             sym = p["symbol"]
             oid = p.get("stop_order_id")
             p["stop_order_id"] = None
-        if oid and self.wb is not None and not self.simulated:
+            wb = self._wbfor(p)
+        if oid and wb is not None and not self.simulated:
             try:
-                self.wb.cancel(oid)
+                wb.cancel(oid)
                 self._event(key, "stop-pulled",
                             "%s — pulled the resting stop before selling" % sym)
             except Exception:                           # noqa: BLE001
@@ -1002,10 +1031,11 @@ class Book:
             p["state"] = FILLED if held > 0 else NOFILL
             if not held:
                 p["closed_at"] = time.time()
+            wb = self._wbfor(p)
         self._unreserve(key)
-        if oid and self.wb is not None and not self.simulated:
+        if oid and wb is not None and not self.simulated:
             try:
-                self.wb.cancel(oid)
+                wb.cancel(oid)
             except Exception:                           # noqa: BLE001
                 self._event(key, "stop-warn",
                             "%s — couldn't pull the resting bid. If it's still "

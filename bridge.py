@@ -146,11 +146,10 @@ def paper_on():
     w = (CFG.get("execution", {}) or {}).get("webull", {}) or {}
     # Paper is the DEFAULT test engine now: once a sandbox key is saved it's on
     # automatically, no toggle needed. paper_trading can still be set false by
-    # hand to force the in-house sim. Only actually "on" when WB reached the
-    # sandbox — otherwise the in-house sim carries it.
+    # hand to force the in-house sim. Only actually "on" when the sandbox client
+    # connected — otherwise the in-house sim carries it.
     default_on = bool(w.get("paper_app_key") and w.get("paper_app_secret"))
-    return bool(w.get("paper_trading", default_on)) and WB is not None \
-        and getattr(WB, "paper", False)
+    return bool(w.get("paper_trading", default_on)) and WB_PAPER is not None
 
 
 def futures_on():
@@ -216,9 +215,15 @@ MODE = str(EXEC.get("mode", "dryrun")).lower()
 if MODE == "webull":
     MODE = "dryrun"
 
-WB = None           # the Webull connection, made once at startup
+WB = None           # the PRIMARY Webull connection (paper if present, else live)
 WB_ERROR = ""
 WB_ACCOUNT = ""
+# Two connections, held at once, so a live room and a paper room can run side by
+# side: a live order goes to the real account, a test order to the sandbox. WB
+# above points at whichever is the primary (paper while he's testing) for quotes
+# and no-position calls.
+WB_PAPER = None     # the sandbox client — every TEST room fills here
+WB_LIVE = None      # the real-money client — only a room flipped LIVE routes here
 BOOK = None         # positions.Book — what filled, what didn't, and the stops
 
 
@@ -254,6 +259,10 @@ def build_book():
         simulated=(MODE != "webull"),
         unlimited=(MODE != "webull"))
     BOOK.save_day = save_day
+    # Two-connection routing: a live position is managed on the real account, a
+    # paper one on the sandbox. broker_for defaults everything not-explicitly-
+    # live to paper, so the real account is never touched by accident.
+    BOOK.broker_resolver = broker_for
     # Honest fills + his two tactics, read from settings (all default OFF).
     BOOK.realistic = realism_on()
     BOOK.fee_option = fee_per("option")
@@ -671,11 +680,11 @@ def place(order):
 
     # Whether THIS order is real money — the room's own toggle, not a global.
     live_order = bool(order.get("live")) and MODE != "webhook"
-    # Paper routes an ENTRY through Webull's simulated engine for a real fill;
-    # it is NOT real money, so the wallet still scores it. Trims/closes settle
-    # in the book against the live paper quote (honest exit price) without the
-    # partial-sell dance. When paper is off, nothing here changes.
-    paper = paper_on() and MODE != "webhook"
+    # Paper routes an ENTRY through Webull's SANDBOX for a real fill; it is NOT
+    # real money, so the wallet still scores it. A LIVE order is never paper —
+    # the two are mutually exclusive, which is what lets a live room and a test
+    # room run at once: live -> real account, paper -> sandbox.
+    paper = paper_on() and not live_order and MODE != "webhook"
     if paper:
         order["paper"] = True
 
@@ -775,10 +784,17 @@ def place(order):
             return False, "the webhook didn't answer: %s" % e
 
     if live_order or (paper and action in ("OPEN", "ADD")):
-        if WB is None:
-            return False, ("can't reach Webull to place this %s order: %s"
-                           % ("paper" if paper else "LIVE",
-                              WB_ERROR or "unknown"))
+        # Route to the right connection: real account for a live order, sandbox
+        # for a paper one. This is the money-safety fork — a live order can only
+        # ever reach WB_LIVE.
+        client = WB_LIVE if live_order else WB_PAPER
+        if client is None:
+            if live_order:
+                return False, ("this room is LIVE but there's no real-money "
+                               "Webull connection — add your live keys and "
+                               "restart. Nothing was sent.")
+            return False, ("can't reach the Webull sandbox to place this paper "
+                           "order: %s" % (WB_ERROR or "unknown"))
 
         # Futures, real money. Two locks on this door: the futures switch in
         # settings (off until he flips it), and webull_futures itself, which
@@ -816,7 +832,7 @@ def place(order):
                 return bool(sent), (summary or "no prop account took it")
             try:
                 import webull_futures
-                ok, msg = webull_futures.execute(WB, BOOK, order, key, note)
+                ok, msg = webull_futures.execute(client, BOOK, order, key, note)
                 if not ok and claimed:
                     BOOK.release(key)
                 return ok, msg
@@ -834,9 +850,9 @@ def place(order):
             # you're already holding. The averaging decision was made upstream;
             # by the time it gets here it's just an order.
             if action in ("OPEN", "ADD"):
-                ticket = WB.buy(order["symbol"], order.get("side"),
-                                order.get("strike"), order.get("expiry"), qty,
-                                their_price=order.get("limit"))
+                ticket = client.buy(order["symbol"], order.get("side"),
+                                    order.get("strike"), order.get("expiry"), qty,
+                                    their_price=order.get("limit"))
                 ticket["live"] = bool(live_order)   # real money?
                 ticket["paper"] = bool(paper)       # or Webull's sim engine
                 # "ORDER IN", not "BOUGHT". Webull has accepted a resting bid;
@@ -849,8 +865,8 @@ def place(order):
                 return True, entry_words(ticket)
 
             if action == "CLOSE":
-                res = WB.sell(order["symbol"], order.get("side"),
-                              order.get("strike"), order.get("expiry"), qty)
+                res = client.sell(order["symbol"], order.get("side"),
+                                  order.get("strike"), order.get("expiry"), qty)
                 msg = res["what"]
                 note("SOLD     %s" % msg)
                 if claimed:
@@ -863,10 +879,10 @@ def place(order):
                 # them is as small as it can be.
                 if order.get("reenter"):
                     try:
-                        back = WB.buy(order["symbol"], order.get("side"),
-                                      order.get("strike"), order.get("expiry"),
-                                      qty,
-                                      their_price=order.get("reenter_limit"))
+                        back = client.buy(order["symbol"], order.get("side"),
+                                          order.get("strike"), order.get("expiry"),
+                                          qty,
+                                          their_price=order.get("reenter_limit"))
                         note("ORDER IN %s   (back in)" % back["what"])
                         if BOOK is not None:
                             BOOK.entry_sent(order, back)
@@ -1517,48 +1533,86 @@ def prove_paper_keys():
         return False, "Paper keys saved, but didn't connect: %s" % str(e)[:120]
     if getattr(pc, "paper", False):
         return True, ("Paper keys saved and working — simulated account %s. "
-                      "Flip Webull Paper ON to use it." % acct)
+                      "Paper is your test engine, so it's already ON." % acct)
     return False, ("Paper keys saved, but were REJECTED (it fell back to live). "
                    "The sandbox key is a SEPARATE key from your live one — "
                    "re-check it.")
 
 
+def broker_for(pos):
+    """The client that owns a position. SAFE BY CONSTRUCTION: the live,
+    real-money client is returned ONLY for a position explicitly flagged live;
+    everything else routes to paper (or the primary/sim when there's no paper
+    client). A position can therefore never reach the real account by accident."""
+    if pos and pos.get("live"):
+        return WB_LIVE
+    return WB_PAPER if WB_PAPER is not None else WB
+
+
 def connect_broker(quiet=False):
-    """Done at startup, and again whenever you flip to live, so the first call
-    of the day doesn't spend three seconds logging in while the move happens."""
-    global WB, WB_ERROR, WB_ACCOUNT
-    live = MODE == "webull"
-    keys_in = bool((EXEC.get("webull") or {}).get("app_key"))
-    # A dry run connects too, when the keys are there. Not to send anything —
-    # it can't, the mode gate is above every order — but to read real quotes,
-    # so that "would this bid have filled?" gets answered by the actual market
-    # instead of by an assumption.
-    if not live and not keys_in:
-        WB, WB_ACCOUNT, WB_ERROR = None, "", ""
-        build_book()
-        return
-    try:
+    """Build BOTH Webull connections — the sandbox (paper) client and the real
+    (live) client — so a live room and a test room can run at the same time. WB
+    is the primary (paper while testing) for quotes and no-position calls. Done
+    at startup and whenever keys change."""
+    global WB, WB_ERROR, WB_ACCOUNT, WB_PAPER, WB_LIVE
+    import copy
+    w = EXEC.get("webull") or {}
+    have_live = bool(w.get("app_key") and w.get("app_secret"))
+    have_paper = bool(w.get("paper_app_key") and w.get("paper_app_secret"))
+
+    WB_PAPER = None
+    WB_LIVE = None
+    errs = []
+    if have_live or have_paper:
         from webull_options import WebullOptions
-        wb = WebullOptions(CFG)
-        acct = wb.connect()
-        WB, WB_ACCOUNT, WB_ERROR = wb, str(acct), ""
-        line = ("Webull connected, options account %s" % acct if live else
-                "Webull connected for quotes only — dry run, nothing can be sent")
-        if not quiet:
-            print("  %s" % line)
+        # Paper (sandbox) client — the test engine, built whenever a sandbox key
+        # is in. Forced into paper mode regardless of the toggle.
+        if have_paper:
+            try:
+                pc = copy.deepcopy(CFG)
+                pc.setdefault("execution", {}).setdefault(
+                    "webull", {})["paper_trading"] = True
+                wbp = WebullOptions(pc)
+                acctp = wbp.connect()
+                if getattr(wbp, "paper", False):
+                    WB_PAPER = wbp
+                    note("Webull PAPER connected — sim account %s" % acctp)
+                else:
+                    errs.append("the sandbox key didn't land in paper")
+            except Exception as e:                      # noqa: BLE001
+                errs.append("paper: %s" % str(e)[:90])
+        # Live (real-money) client — built whenever live keys are in, kept ready
+        # so a room flipped LIVE routes there instantly. Connecting reads the
+        # account list only; it never places an order.
+        if have_live:
+            try:
+                lc = copy.deepcopy(CFG)
+                lc.setdefault("execution", {}).setdefault(
+                    "webull", {})["paper_trading"] = False
+                wbl = WebullOptions(lc)
+                acctl = wbl.connect()
+                if not getattr(wbl, "paper", False):
+                    WB_LIVE = wbl
+                    note("Webull LIVE connected — real account %s (no orders "
+                         "until a room is flipped REAL)" % acctl)
+                else:
+                    errs.append("the live keys came up paper")
+            except Exception as e:                      # noqa: BLE001
+                errs.append("live: %s" % str(e)[:90])
+
+    # Primary: prefer paper while testing, else live, else None (pure sim).
+    WB = WB_PAPER or WB_LIVE
+    WB_ACCOUNT = str(getattr(WB, "account_id", "") or "") if WB is not None else ""
+    WB_ERROR = "; ".join(errs)
+    if not quiet:
+        if WB is not None:
+            print("  Webull connected%s%s"
+                  % (" (paper)" if WB_PAPER is not None else "",
+                     " + live ready" if WB_LIVE is not None else ""))
+        elif have_live or have_paper:
+            print("  Webull: NOT CONNECTED — %s" % (WB_ERROR or "unknown"))
         else:
-            note(line)
-    except Exception as e:                              # noqa: BLE001
-        WB, WB_ACCOUNT = None, ""
-        WB_ERROR = str(e)
-        if not quiet:
-            print("  Webull: NOT CONNECTED — %s" % WB_ERROR)
-            print("          nothing will fire until this is fixed."
-                  if live else
-                  "          the dry run will assume every bid filled, and say "
-                  "so on each line.")
-        else:
-            note("Webull NOT connected — %s" % WB_ERROR)
+            print("  Webull: no keys — the dry run assumes every bid filled.")
     build_book()
     load_state()      # swings survive restarts
 

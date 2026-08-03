@@ -2012,3 +2012,46 @@ the send path. Flagged, not built.
 
 His immediate unblock is still one restart onto a v1.20.2+ bridge (Update button
 or START HERE); on the old in-memory bridge a paper-only save is rejected.
+
+## v1.21.0 — two Webull connections at once (test→paper, live→real) + RAM flags
+
+He asked for the dual-connection so a room can go LIVE on real money while the
+rest keep filling on paper. Built with a money-safety invariant and a routing
+test, since I can't run it against real Webull.
+
+Architecture:
+- **Two clients held at once.** `connect_broker()` now builds `WB_PAPER` (sandbox,
+  forced paper) and `WB_LIVE` (real, forced live) from their respective keys.
+  `WB` stays as the PRIMARY pointer (paper while testing) for quotes and
+  no-position calls. Either can be None (no keys → that side is just absent).
+- **Per-position routing, safe by construction.** `broker_for(pos)` returns
+  `WB_LIVE` ONLY when `pos["live"]` is truthy; everything else → `WB_PAPER`
+  (or the primary/sim). It's set as `BOOK.broker_resolver`, and positions.py
+  routes every broker call through the new `Book._wbfor(p)` (fill-watch cancel,
+  `_probe`, stop placement, watchdog ask_bid/sell, claim/cancel_entry pulls). No
+  resolver → the single default broker, exactly as before. A throwing resolver
+  falls back to the default, never crashes.
+- **Send path forks on the money line.** `paper = paper_on() and not live_order`
+  makes live and paper mutually exclusive, and the entry/close/futures calls use
+  `client = WB_LIVE if live_order else WB_PAPER`. A live order with no live
+  client REFUSES ("this room is LIVE but there's no real-money connection") — it
+  can NEVER silently hit paper or silently hit real. `paper_on()` now keys off
+  `WB_PAPER is not None`.
+- Test: `test_positions.py` "two-connection routing" block asserts live→live,
+  test/unmarked/paper→paper, no-resolver→default, broken-resolver→default.
+
+KNOWN REMAINING WORK before a room truly trades live end-to-end (flagged, NOT
+built — he's all-test so it's not urgent): `Book.simulated` is still a single
+flag off `MODE`. With per-room live, a LIVE position living in a simulated book
+gets a watchdog SIM stop, not a real resting stop / real stop-sell. Making
+`simulated` per-position (a live position is never simulated even while paper
+rooms are) is the next chunk. Entry routing (the money-out moment) is correct
+now; the live *exit* lifecycle is the part still to finish.
+
+Also this version:
+- Paper auto-on message fixed ("it's already ON", not "flip it on").
+- START HERE Chrome launch gained `--process-per-site` (all ~40 discord tabs
+  share one renderer process instead of one each — the big RAM win with this
+  many rooms) and `--disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion`.
+  Flags apply to the whole instance because we now close Chrome first, so the
+  first launch starts the process and later windows inherit.

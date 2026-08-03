@@ -567,3 +567,31 @@ if bad:
 print("Trim ladder: +10% trims and holds the stop, +20% goes to breakeven, "
       "+30% locks +10%, the 2 runners are never sold, and it's off unless "
       "you flip it on.")
+
+
+# --- two-connection routing: live -> real account, everything else -> paper --
+# The money-safety invariant. With both clients up, the book must manage a live
+# position on the live client and a paper/test one on the paper client — and
+# NOTHING that isn't explicitly live may ever resolve to the live client.
+LIVEWB = FakeWB()
+PAPERWB = FakeWB()
+rb = book(PAPERWB)                     # default/primary broker = paper
+rb.broker_resolver = lambda p: LIVEWB if p.get("live") else PAPERWB
+ok(rb._wbfor({"live": True}) is LIVEWB, "a live position routes to the live client")
+ok(rb._wbfor({"live": False}) is PAPERWB, "a test position routes to paper")
+ok(rb._wbfor({}) is PAPERWB, "an unmarked position never touches the live client")
+ok(rb._wbfor({"paper": True}) is PAPERWB, "a paper position routes to paper")
+ok(rb._wbfor({"live": 0, "paper": 1}) is PAPERWB, "paper-not-live stays on paper")
+# No resolver set -> the single default broker, exactly as before two-connection.
+rb.broker_resolver = None
+ok(rb._wbfor({"live": True}) is PAPERWB, "no resolver -> the one default broker")
+# A resolver that throws must never crash a sell/stop — it falls back to default.
+rb.broker_resolver = lambda p: (_ for _ in ()).throw(RuntimeError("boom"))
+ok(rb._wbfor({"live": True}) is PAPERWB, "a broken resolver falls back to default, never crashes")
+
+if bad:
+    print("\n%d routing check(s) failed." % bad)
+    raise SystemExit(1)
+print("Two-connection routing: live positions go to the real account, "
+      "everything else to paper, an unmarked position never reaches live, and "
+      "a broken resolver falls back safely.")
