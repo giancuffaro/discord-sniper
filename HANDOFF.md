@@ -1782,3 +1782,10 @@ description/Powered by Whop/nav/date-header lines). Verified: "· 7m Long nq
 still ignored. STILL WANT a FRESH export taken right after live trades to
 confirm live posts (not just scrollback) capture with a live timestamp;
 the 8/1 export was all history.
+
+## v1.19.6 — VERO: 3 channels (fourth server)
+
+New server VERO (725117609275555851), 3 channels wired Vero 1-3 (no names
+in links). channel_ids, labels, toggles, scoreboard, own Chrome window in
+START HERE. All testing, shared grammar until an Export chat names their
+format. 49 rooms, four Chrome windows.
