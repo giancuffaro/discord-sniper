@@ -410,10 +410,10 @@ async function syncFillsInner() {
     }
   }
   // A bid that's been "pending" for 15 minutes is not pending — it's a ghost.
-  // The bridge pulls every unfilled bid at 90 seconds, so the only ways to
-  // get here are a bridge that restarted (and forgot the position before it
-  // could say "nofill") or a watcher that died mid-trade. Either way the
-  // TAKE 742C lesson applies: nothing may sit in "waiting for a seller"
+  // The bridge pulls every unfilled bid at the 3-minute deadline, so the only
+  // ways to get here are a bridge that restarted (and forgot the position
+  // before it could say "nofill") or a watcher that died mid-trade. Either way
+  // the TAKE 742C lesson applies: nothing may sit in "waiting for a seller"
   // across hours, let alone into the next day.
   const ghostCut = Date.now() - 15 * 60 * 1000;
   for (const k of Object.keys(st.positions)) {
@@ -422,7 +422,7 @@ async function syncFillsInner() {
       delete st.positions[k];
       changed = true;
       await addLog({ kind: "update", what: keySymbol(k),
-                     why: "that bid sat unfilled far past the 90s deadline — " +
+                     why: "that bid sat unfilled far past the deadline — " +
                           "a stale leftover, not a live order. Cleared. If " +
                           "you ever see this in REAL mode, glance at Webull's " +
                           "open orders once." });

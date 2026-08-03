@@ -363,6 +363,51 @@ function parseSignal(text, cfg) {
   const mc = RE_CALLER.exec(raw);
   if (mc) s.caller = mc[1];
 
+  // ---- Market Guru™ Alerts labeled futures format:
+  //        Ticker: `MNQ SHORT SMALL RISKY TRADE`  Entry: 28590  Stoploss: 28620
+  //      symbol is a micro future, extra words are noise, entry/stop are index
+  //      points. Management arrives as bare point counts ("14 points trim",
+  //      "102 points exit target hit"); the point number is their P&L, the
+  //      trim/exit word acts, a lone "309 points omg" does nothing.
+  const mg = /ticker:\s*`?\s*([A-Za-z]{2,4})\b([^`\n]*)/i.exec(t);
+  if (mg && FUT_SYMS.has(mg[1].toUpperCase())
+        && /\bentry:\s*[\d]/i.test(t)) {
+    s.symbol = mg[1].toUpperCase();
+    s.kind = "future";
+    s.direction = /short/i.test(mg[2]) ? "SHORT" : "LONG";
+    const me = /\bentry:\s*([\d][\d.,]*)/i.exec(t);
+    if (me) s.limit = num(me[1]);
+    const ms = /\bstop\s*loss:?\s*([\d][\d.,]*)/i.exec(t);
+    if (ms) s.their_stop = num(ms[1]);
+    s.action = "OPEN"; s.matched = "market-guru futures entry"; s.fire = true;
+    if (s.limit == null || isNaN(s.limit))
+      s.warn = "no entry price posted — it pays the market.";
+    s.why = "entry: " + s.direction + " " + s.symbol + " @ "
+            + (s.limit ? s.limit : "mkt");
+    return s;
+  }
+
+  // Market Guru management by running point count. "exit"/"target hit" closes,
+  // a trim word trims; both resolve against what you hold. A bare "N points"
+  // (no verb) falls through and ends as a non-order.
+  const mgp = /^\s*[-+]?\d+(?:\.\d+)?\s*points?\b([\s\S]*)$/i.exec(low);
+  if (mgp && low.indexOf("$") === -1 && !/\ba con(?:tract)?\b/i.test(low)) {
+    // bare point call only — "$800 a con" is Felony's dollar exit, handled below.
+    const rest = mgp[1];
+    if (/\bexit\b|target\s*hit/i.test(rest)) {
+      s.action = "CLOSE"; s.matched = "market-guru points exit";
+      s.needs_position = true;
+      s.why = "their exit on the points call — close what it belongs to";
+      return s;
+    }
+    if (RE_TRIM.test(rest)) {
+      s.action = "TRIM"; s.matched = "market-guru points trim";
+      s.needs_position = true;
+      s.why = "their trim on the points call — sell some of it";
+      return s;
+    }
+  }
+
   // ---- labeled alert-bot format (Sir Goldman [BOKA]): ENTRY / TRIM /
   //      EXIT / COMMENT keyword is the truth; COMMENT never trades.
   const ml = /^(?:@\w+\s+)?(ENTRY|TRIM|EXIT|COMMENT)\b\s*([\s\S]*)$/i.exec(t);

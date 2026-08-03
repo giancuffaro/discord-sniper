@@ -349,3 +349,9 @@ Snagging starters on PYPL equity @ 41.03 AVG
 @Premium COMMENT Straight mid rn for spx, lost on nq today too.
 @Premium ENTRY Longs MNQ 450s
 @Premium ENTRY $SPX 7550c @ 2.05 lotto
+Ticker: `MNQ SHORT SMALL RISKY TRADE` Entry: 28590 Stoploss: 28620
+Ticker: `MNQ LONG` Entry: 28465 Stoploss: 28430
+14 points trim
+45 points trim 2
+102 points exit target hit
+309 points omg

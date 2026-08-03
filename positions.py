@@ -76,7 +76,17 @@ class Book:
     watchdog when the stop trips.
     """
 
-    def __init__(self, wb, note, stop_pct=20.0, fill_seconds=90.0,
+    def _wait_label(self):
+        """How long a resting bid gets, in plain words for the popup: '3 min'
+        past two minutes, otherwise the raw seconds."""
+        s = self.fill_seconds
+        if s >= 120 and s % 60 == 0:
+            return "%d min" % (s / 60)
+        if s >= 120:
+            return "%.1f min" % (s / 60)
+        return "%.0fs" % s
+
+    def __init__(self, wb, note, stop_pct=20.0, fill_seconds=180.0,
                  poll_seconds=5.0, simulated=False, wallet=None,
                  unlimited=False):
         self.wb = wb                    # the broker, or None in a dry run
@@ -461,9 +471,9 @@ class Book:
                                              ticket.get("qty") or 1))
         self._event(key, "working",
                     "%s — %s's call, bid is in at %.2f for %d, waiting for a "
-                    "seller (%.0fs)"
+                    "seller (%s)"
                     % (sym, who, float(ticket.get("limit") or 0),
-                       int(ticket.get("qty") or 1), self.fill_seconds))
+                       int(ticket.get("qty") or 1), self._wait_label()))
         t = threading.Thread(target=self._watch_fill, args=(key,), daemon=True)
         t.start()
 
@@ -537,8 +547,8 @@ class Book:
             self._became_filled(key, filled_qty or want, avg or limit)
         else:
             self._became_nofill(
-                key, "nobody sold at %.2f within %.0fs"
-                     % (float(limit or 0), self.fill_seconds))
+                key, "nobody sold at %.2f within %s"
+                     % (float(limit or 0), self._wait_label()))
 
     def _probe(self, oid, occ, limit, live=False):
         """(state, filled_qty, avg_price) — from the broker for real money,

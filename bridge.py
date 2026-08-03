@@ -242,7 +242,7 @@ def build_book():
     BOOK = positions.Book(
         WB, note,
         stop_pct=float(w.get("stop_loss_pct", 20)),
-        fill_seconds=float(w.get("entry_fill_seconds", 90)),
+        fill_seconds=float(w.get("entry_fill_seconds", 180)),
         poll_seconds=float(w.get("fill_poll_seconds", 5)),
         simulated=(MODE != "webull"),
         unlimited=(MODE != "webull"))

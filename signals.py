@@ -552,6 +552,54 @@ def parse(text, author="", channel="", cfg=None):
     if mc:
         sig.caller = mc.group(1)
 
+    # ---- Market Guru™ Alerts labeled futures format. The entry is one message
+    #      with newlined labels (collapsed to spaces by clean_text):
+    #        Ticker: `MNQ SHORT SMALL RISKY TRADE`  Entry: 28590  Stoploss: 28620
+    #      The symbol is a micro future, the extra words (SMALL RISKY TRADE) are
+    #      noise, the entry/stop are index points. Management arrives later as
+    #      bare point counts: "14 points trim", "45 points trim 2", "102 points
+    #      exit target hit". The point number is THEIR running P&L, never a
+    #      price — the trim/exit word is what acts, and a lone "309 points omg"
+    #      is a brag that does nothing.
+    mg = re.search(r"ticker:\s*`?\s*([A-Za-z]{2,4})\b([^`\n]*)", t, re.IGNORECASE)
+    if (mg and mg.group(1).upper() in FUT_SYMS
+            and re.search(r"\bentry:\s*[\d]", t, re.IGNORECASE)):
+        sig.symbol = mg.group(1).upper()
+        sig.kind = "future"
+        sig.direction = "SHORT" if "short" in mg.group(2).lower() else "LONG"
+        me = re.search(r"\bentry:\s*([\d][\d.,]*)", t, re.IGNORECASE)
+        if me:
+            sig.limit = _num(me.group(1))
+        ms = re.search(r"\bstop\s*loss:?\s*([\d][\d.,]*)", t, re.IGNORECASE)
+        if ms:
+            sig.their_stop = _num(ms.group(1))
+        sig.action, sig.matched = "OPEN", "market-guru futures entry"
+        sig.fire = True
+        if sig.limit is None:
+            sig.warn = "no entry price posted — it pays the market."
+        sig.why = "entry: %s %s @ %s" % (
+            sig.direction, sig.symbol, ("%g" % sig.limit) if sig.limit else "mkt")
+        return sig
+
+    # Market Guru management by running point count. "exit"/"target hit" closes,
+    # a trim word trims; both need the position worked out from what you hold. A
+    # bare "N points" (no verb) falls through and ends as a non-order.
+    mg_pts = re.match(r"^\s*[-+]?\d+(?:\.\d+)?\s*points?\b(.*)$", low, re.DOTALL)
+    if mg_pts and "$" not in low and not re.search(r"\ba con(?:tract)?\b", low):
+        # bare point call only — a "$800 a con" line is Felony's dollar exit and
+        # belongs to the Whop/Felony handler downstream, not here.
+        rest = mg_pts.group(1)
+        if re.search(r"\bexit\b|target\s*hit", rest):
+            sig.action, sig.matched = "CLOSE", "market-guru points exit"
+            sig.needs_position = True
+            sig.why = "their exit on the points call — close what it belongs to"
+            return sig
+        if RE_TRIM.search(rest):
+            sig.action, sig.matched = "TRIM", "market-guru points trim"
+            sig.needs_position = True
+            sig.why = "their trim on the points call — sell some of it"
+            return sig
+
     # ---- labeled alert-bot format (Sir Goldman [BOKA] and any bot that
     #      posts ENTRY / TRIM / EXIT / COMMENT as a keyword). The label is
     #      the truth; COMMENT is chatter no matter how many tickers it holds.

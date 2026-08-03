@@ -1845,3 +1845,32 @@ and signal tests still green (316 lines identical).
 Parked (he said "I understand that takes a while"): capture the UNDERLYING
 price at their entry so we can place a limit conditional order at the ask and
 get a better fill than they post. Not built yet.
+
+## v1.20.1 — Market Guru™ Alerts format + 3-minute fill window
+
+**Two fixes from a real day where an MNQ trade that ran +309 points never fired.**
+
+1. **Market Guru's labeled futures format was unreadable.** Their entry is one
+   message with newlined labels (clean_text collapses them to spaces):
+   `Ticker: `MNQ SHORT SMALL RISKY TRADE`  Entry: 28590  Stoploss: 28620`.
+   The parser returned "nothing in it that means buy or sell" — so it was NOT
+   the black-screen tab he suspected, it was a parser gap. Now handled: the
+   micro symbol trades, the extra words (SMALL RISKY TRADE) are noise, entry
+   and stop are captured (their_stop rides along). Management comes as bare
+   point counts — "14 points trim" / "45 points trim 2" trims, "102 points
+   exit target hit" closes, a lone "309 points omg" is a brag that does nothing.
+   Both resolve against the held position (needs_position). Guarded so it never
+   eats Felony's "$800 a con" dollar-exit lines (those stay with the Whop
+   handler). Mirrored in `signals.py` + `extension/parser.js`, 6 new
+   `samples.txt` lines, parity green at 322, and a full Market-Guru block in
+   `test_signals.py`.
+
+2. **Fill window 90s → 3 minutes.** `entry_fill_seconds` default is now 180 in
+   `bridge.py` (and positions.py's fallback). His cheap-contract no-fills (ZM
+   0.45, NVDA 2.53) had only 90s to get hit; 3 minutes gives the bid a real
+   chance before it's pulled. User-facing text now reads "3 min" via
+   `Book._wait_label()` instead of a raw "90s", and background.js's ghost-sweep
+   comment/message dropped the hardcoded 90s.
+
+Trim ladder stays OFF by default (his call — he'll flip it on when he wants).
+The auto-update pushes straight from GitHub, so there is nothing to re-download.

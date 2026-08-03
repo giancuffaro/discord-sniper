@@ -637,3 +637,34 @@ if fails:
     raise SystemExit(1)
 print("High Risk and the 2K challenge read clean — and a trim update can "
       "never turn into an entry.")
+
+
+# --- Market Guru™ Alerts: labeled futures entry + point-count management ------
+# Ticker:/Entry:/Stoploss: is one message (newlines collapse to spaces). The
+# micro symbol trades, the extra words are noise, entry/stop are index points.
+# Then management is bare point counts: a verb acts, a lone number is a brag.
+s = check("Ticker:\n`MNQ SHORT SMALL RISKY TRADE`\nEntry:\n28590\nStoploss:\n28620",
+          action="OPEN", fire=True, symbol="MNQ", direction="SHORT",
+          kind="future", limit=28590.0)
+ok(s.their_stop == 28620.0, "their stop rides along, got %s" % s.their_stop)
+check("Ticker:\n`MNQ LONG`\nEntry:\n28465\nStoploss:\n28430",
+      action="OPEN", fire=True, symbol="MNQ", direction="LONG", limit=28465.0)
+# management — trims and the exit resolve against what you hold; brags don't act
+s = check("14 points trim", action="TRIM")
+ok(s.needs_position, "a bare points trim has to find the position it belongs to")
+check("45 points trim 2", action="TRIM")
+check("102 points exit      target hit", action="CLOSE")
+check("16 points", fire=False, action=None)
+check("309 points omg", fire=False, action=None)
+# and it must NOT eat Felony's dollar-carrying trim
+s = check("40 points $800 a con on NQ long - Trimmed", action="TRIM")
+ok(s.usd == 800.0, "Felony's $800-a-con exit still survives, got %s" % s.usd)
+
+if fails:
+    print("FAILED %d Market-Guru check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("Market Guru reads: labeled futures entry with the stop, point-count "
+      "trims and exits resolve to the held position, brags stay quiet, and "
+      "Felony's dollar exit is left untouched.")
