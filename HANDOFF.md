@@ -1757,3 +1757,12 @@ never left disconnected: quotes + in-house honest-fill sim keep running,
 paper just stays unavailable (paintPaper shows "not connected") until the
 real paper endpoint is known. STILL NEED the true Webull paper host/mech
 from their docs or his account to actually enable paper fills.
+
+## v1.19.4 — bridge boot crash fixed (state.json pos as list)
+
+His bridge log: AttributeError 'list' object has no attribute 'items' in
+restore_state -> the bridge died on boot, which is why the popup couldn't
+reach it ("couldn't reach the bridge"). A saved state.json had "pos" as a
+list, not the expected {key: position} dict. restore_state now coerces a
+non-dict pos to {} and skips non-dict entries in both loops — never
+crashes the boot again. This, not paper, was the real "bridge down" cause.

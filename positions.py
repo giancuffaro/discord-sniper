@@ -1089,9 +1089,17 @@ class Book:
     def restore_state(self, data, same_day):
         if not isinstance(data, dict):
             return 0
+        # An older/empty state.json can have "pos" as a list, not a dict.
+        # Anything that isn't a proper {key: position} map is ignored rather
+        # than crashing the whole bridge on boot.
+        pos = data.get("pos")
+        if not isinstance(pos, dict):
+            pos = {}
         n = 0
         with self._lock:
-            for k, p in (data.get("pos") or {}).items():
+            for k, p in pos.items():
+                if not isinstance(p, dict):
+                    continue
                 if k in self._pos:
                     continue
                 p = dict(p)
@@ -1110,7 +1118,9 @@ class Book:
                 self.closed_trades = list(w.get("trades") or [])
         # Stops re-arm outside the lock: each restored hold gets its
         # watchdog back, exactly as if it had just filled.
-        for k, p in list(data.get("pos") or {}).items():
+        for k, p in list(pos.items()):
+            if not isinstance(p, dict):
+                continue
             try:
                 self._arm_stop(k, p.get("side"), p.get("strike"),
                                p.get("expiry"), int(p.get("qty") or 1),
