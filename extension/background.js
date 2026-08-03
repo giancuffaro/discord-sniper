@@ -782,7 +782,10 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // Felony's — the verb decides, not the number.
     const BOKA_IDS = new Set(["1288291150083653652","1499190814482632825",
                               "1395159239164432515","1387459050505240597"]);
-    if (BOKA_IDS.has(String(msg.channelId || ""))) c.bare_pct_trims = false;
+    if (BOKA_IDS.has(String(msg.channelId || ""))) {
+      c.bare_pct_trims = false;
+      c.adding_is_entry = true;   // Jonny's "adding" opens a position
+    }
 
     const roomLive = !!((c.channel_live || {})[String(msg.channelId || "")]);
     sig.live = roomLive;

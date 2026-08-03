@@ -1658,3 +1658,13 @@ only fires if already in it, so his fresh entries read as ADD and won't
 open in test. Options: treat "adding <cashtag> <full contract/shares>" as
 an entry when not already held. Revisit if his channel's scoreboard looks
 thin on entries. samples 316, parity green.
+
+## v1.17.3 — Jonny's "adding" = entry (boka only)
+
+His word: "he says adding to enter, make this an exception for this
+discord channel." cfg.adding_is_entry flag: when set, "adding <cashtag>
+<full contract>" becomes OPEN+fire instead of ADD; a bare "adding more"
+(no contract) still averages. Flag set for the four BOKA_IDS in
+background.js, next to bare_pct_trims=false. No other room changes —
+normal rooms' "adding" still means average-up. Both parsers, 316 samples
+green. This closes the deferred nuance from v1.17.2.

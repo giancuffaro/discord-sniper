@@ -903,14 +903,23 @@ def parse(text, author="", channel="", cfg=None):
         sig.symbol = c["symbol"] if c else _bare_symbol(t, allowed)
         if c:
             sig.strike, sig.side, sig.expiry = c["strike"], c["side"], c["expiry"]
-        sig.action, sig.matched = "ADD", "added to their position"
-        sig.needs_add = True
         m = RE_LIMIT.search(t) or RE_AVG_PRICE.search(t)
         if m:
             sig.limit = float(m.group(1))
         mq = RE_QTY.search(t)
         if mq:
             sig.qty = int(mq.group(1))
+        # JonnyOptions [BOKA] says "adding $WULF 17c 4/17" to OPEN, not to
+        # average up — his word, his room. A per-channel flag turns "adding"
+        # + a full contract into a fresh entry; a bare "adding more" (no
+        # contract) still averages, because you can't open what has no strike.
+        if cfg.get("adding_is_entry") and c:
+            sig.action, sig.matched = "OPEN", "entry (their \"adding\" = enter)"
+            sig.fire = True
+            sig.why = "entry: %s" % sig.human()
+            return sig
+        sig.action, sig.matched = "ADD", "added to their position"
+        sig.needs_add = True
         sig.why = ("they added to their %s and their average moved — checking "
                    "whether you can follow them in"
                    % (sig.symbol or "position"))

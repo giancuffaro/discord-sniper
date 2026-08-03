@@ -684,12 +684,20 @@ function parseSignal(text, cfg) {
     const c = findContract(t);
     s.symbol = c ? c.symbol : bareSymbol(t, allowed);
     if (c) { s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
-    s.action = "ADD"; s.matched = "added to their position";
-    s.needs_add = true;
     const m = RE_LIMIT.exec(t) || RE_AVG_PRICE.exec(t);
     if (m) s.limit = parseFloat(m[1]);
     const mq = RE_QTY.exec(t);
     if (mq) s.qty = parseInt(mq[1], 10);
+    // JonnyOptions [BOKA]: "adding $WULF 17c 4/17" = OPEN, not average up.
+    // A per-channel flag; a bare "adding more" (no contract) still averages.
+    if (cfg && cfg.adding_is_entry && c) {
+      s.action = "OPEN"; s.matched = "entry (their \"adding\" = enter)";
+      s.fire = true;
+      s.why = "entry: " + human(s);
+      return s;
+    }
+    s.action = "ADD"; s.matched = "added to their position";
+    s.needs_add = true;
     s.why = "they added to their " + (s.symbol || "position") + " and their " +
             "average moved — checking whether you can follow them in";
     return s;
