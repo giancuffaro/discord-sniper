@@ -573,6 +573,18 @@ class Book:
                 return self.wb
         return self.wb
 
+    def _sim(self, p):
+        """Is THIS position managed in simulation? The book as a whole can be
+        simulated (dry run / paper test) and still hold a LIVE position that
+        must get a REAL resting stop and a REAL stop-sell on the real account.
+        A live position is therefore NEVER simulated; everything else follows
+        the book's simulated flag. Keyed on the same p["live"] the broker
+        router uses, so the client and the sim-flag can never disagree — a live
+        position gets the live client AND real management, together."""
+        if p and p.get("live"):
+            return False
+        return self.simulated
+
     def _probe(self, oid, occ, limit, live=False, wb=None):
         """(state, filled_qty, avg_price) — from the broker for real money,
         or from the live quote for a test position. `wb` is the broker that owns
@@ -731,7 +743,7 @@ class Book:
             p = self._pos.get(key)
             wb = self._wbfor(p)
             old = p.get("stop_order_id") if p else None
-        if wb is not None and not self.simulated:
+        if wb is not None and not self._sim(p):
             # Averaging in moves the stop, so the old one has to go first or
             # you end up with two resting sells and get flattened twice.
             if old:
@@ -761,7 +773,7 @@ class Book:
                     p["watching"] = True
                     threading.Thread(target=self._watchdog, args=(key,),
                                      daemon=True).start()
-        if self.simulated:
+        if self._sim(p):
             self._event(key, "stop-set",
                         "%s — pretend stop at %.2f (-%.0f%% from %.2f)"
                         % (sym, stop_price, self.stop_pct, fill))
@@ -812,7 +824,7 @@ class Book:
             self._event(key, "stopped",
                         "%s — bid hit %.2f, at or under your %.2f stop. Selling "
                         "%d." % (sym, float(bid), float(stop), qty))
-            if self.simulated:
+            if self._sim(p):
                 self.finish(key, STOPPED, "pretend stop-out at %.2f" % float(bid),
                             price=float(bid))
                 return
@@ -846,6 +858,12 @@ class Book:
         with self._lock:
             p = self._pos.get(key)
             if not p or p.get("state") != FILLED or p.get("be_done"):
+                return
+            # Test-money tactic only. On a LIVE position this would shrink the
+            # ledger without actually selling a real contract, so the book and
+            # the account would drift apart. Live follows the room's real calls
+            # and the real resting stop, nothing self-invented.
+            if p.get("live"):
                 return
             fill = float(p.get("fill") or 0)
             held = int(p.get("qty") or 0)
@@ -881,6 +899,11 @@ class Book:
         with self._lock:
             p = self._pos.get(key)
             if not p or p.get("state") != FILLED:
+                return
+            # Test-money tactic only — see auto_breakeven. A LIVE position must
+            # not be trimmed by a ledger-only routine; it would desync from the
+            # real account. Live rides the room's calls and the real stop.
+            if p.get("live"):
                 return
             fill = float(p.get("fill") or 0)
             dirn = int(p.get("direction") or 1)
@@ -997,7 +1020,7 @@ class Book:
             oid = p.get("stop_order_id")
             p["stop_order_id"] = None
             wb = self._wbfor(p)
-        if oid and wb is not None and not self.simulated:
+        if oid and wb is not None and not self._sim(p):
             try:
                 wb.cancel(oid)
                 self._event(key, "stop-pulled",
@@ -1033,7 +1056,7 @@ class Book:
                 p["closed_at"] = time.time()
             wb = self._wbfor(p)
         self._unreserve(key)
-        if oid and wb is not None and not self.simulated:
+        if oid and wb is not None and not self._sim(p):
             try:
                 wb.cancel(oid)
             except Exception:                           # noqa: BLE001

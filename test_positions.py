@@ -595,3 +595,46 @@ if bad:
 print("Two-connection routing: live positions go to the real account, "
       "everything else to paper, an unmarked position never reaches live, and "
       "a broken resolver falls back safely.")
+
+
+# --- live-exit: a live position is managed for REAL even in a simulated book --
+# The book can be simulated as a whole (dry run / paper test) yet hold ONE live
+# position that must get a real resting stop and a real stop-sell, while paper
+# and test positions stay simulated. _sim(p) keys on the same live flag the
+# broker router uses, so client and management can never disagree.
+sb = book(FakeWB(), simulated=True)
+ok(sb._sim({"live": True}) is False, "a live position is never simulated")
+ok(sb._sim({"paper": True}) is True, "a paper position follows the book's sim flag")
+ok(sb._sim({}) is True, "an unmarked position follows the sim flag")
+
+# A LIVE entry, in a simulated book, fills and gets a REAL resting stop.
+LWB = FakeWB(fills=True, ask=2.00, bid=2.00)
+lb = book(LWB, simulated=True)
+lb.broker_resolver = lambda p: LWB
+LWB.limits["9"] = 2.00; LWB.qtys["9"] = 1
+ltk = ticket(LWB, limit=2.00, oid="9"); ltk["live"] = True
+lb.entry_sent(dict(ORDER, trader="LiveGuy"), ltk)
+LKEY = positions.key_of("LiveGuy", "SPY")
+settle(lb, LKEY)
+ok(lb.state_of(LKEY) == positions.FILLED, "the live entry fills, got %s" % lb.state_of(LKEY))
+ok(any(c[0] == "stop" for c in LWB.calls),
+   "a LIVE position gets a REAL resting stop even in a simulated book")
+
+# A PAPER entry, same simulated book, fills but gets NO real stop (sim-managed).
+PWB = FakeWB(fills=True, ask=2.00, bid=2.00)
+pb = book(PWB, simulated=True)
+pb.broker_resolver = lambda p: PWB
+PWB.limits["8"] = 2.00; PWB.qtys["8"] = 1
+ptk = ticket(PWB, limit=2.00, oid="8"); ptk["paper"] = True
+pb.entry_sent(dict(ORDER, trader="PaperGuy"), ptk)
+PKEY = positions.key_of("PaperGuy", "SPY")
+settle(pb, PKEY)
+ok(pb.state_of(PKEY) == positions.FILLED, "the paper entry fills, got %s" % pb.state_of(PKEY))
+ok(not any(c[0] == "stop" for c in PWB.calls),
+   "a PAPER position gets NO real resting stop — it stays sim-managed")
+
+if bad:
+    print("\n%d live-exit check(s) failed." % bad)
+    raise SystemExit(1)
+print("Live-exit: a live position gets a real resting stop and real management "
+      "even inside a simulated book, while paper positions stay simulated.")

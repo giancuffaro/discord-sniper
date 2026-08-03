@@ -2055,3 +2055,34 @@ Also this version:
   many rooms) and `--disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion`.
   Flags apply to the whole instance because we now close Chrome first, so the
   first launch starts the process and later windows inherit.
+
+## v1.22.0 — the live-exit piece: a live position is managed for real
+
+Finishing what v1.21.0 flagged. `Book.simulated` was a single flag, so a LIVE
+position living in a (dry-run/paper) simulated book got a sim stop, not a real
+one. Now `Book._sim(p)` is per-position: a live position is NEVER simulated
+(real resting stop, real stop-sell on the real account via WB_LIVE), while
+paper/test positions stay simulated exactly as before. Keyed on the same
+`p["live"]` the broker router uses, so the client and the sim-flag can never
+disagree — live gets the live client AND real management together.
+
+Sites moved from `self.simulated` to `self._sim(p)`: the real-stop placement
+guard, the pretend-stop message, the watchdog's sim-vs-real sell fork, and both
+resting-order cancels (claim / cancel_entry). `_probe` was already gated on its
+`live` param so it was left alone.
+
+Also guarded: `auto_breakeven` and `auto_ladder` now return early on a live
+position. They trim the LEDGER only (no real broker sell), so on a live position
+they'd desync the book from the account. Live rides the room's real calls + the
+real stop; the ladder/breakeven stay test-money tactics.
+
+Live model now, end to end: real entry (WB_LIVE), real resting stop, real close
+on "all out". Live TRIMS stay blocked in the send path on purpose (a browser
+message must not sell real contracts on a trim). test_positions "live-exit"
+block proves a live entry in a simulated book gets a real stop while a paper one
+doesn't.
+
+REMAINING (not urgent, he's still test): paper EXITS are still sim'd against the
+paper quote rather than sent to the sandbox — honest enough, but making paper
+trims/closes real sandbox orders would be the next honesty bump. And live TRIMS
+are intentionally off until he decides a browser trim may sell real contracts.
