@@ -128,7 +128,7 @@ def paper_on():
     connected to the paper endpoint. Falls back to the in-house sim if paper
     isn't reachable, which is exactly why that sim stays."""
     w = (CFG.get("execution", {}) or {}).get("webull", {}) or {}
-    return bool(w.get("paper_trading", False)) and WB is not None \
+    return bool(w.get("paper_trading", True)) and WB is not None \
         and getattr(WB, "paper", False)
 
 

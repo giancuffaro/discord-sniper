@@ -1738,3 +1738,11 @@ supervised on his machine — confirm the endpoint resolves and a fill comes
 back before trusting it. Until confirmed, paintPaper() shows "not connected"
 and everything runs on the in-house honest-fill sim. That is precisely why
 the sim was NOT deleted.
+
+## v1.19.1 — Webull Paper defaults ON
+
+His word: paper mode should turn on by itself. paper_trading now defaults
+True in webull_options + bridge paper_on() + example settings. Still falls
+back to the in-house honest-fill sim if the paper account isn't reachable
+(unverified endpoint), so nothing breaks — it just prefers real Webull sim
+fills automatically from first boot. Popup toggle can still turn it off.
