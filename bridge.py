@@ -1635,8 +1635,13 @@ def connect_broker(quiet=False):
                 wbp = WebullOptions(pc)
                 acctp = wbp.connect()
                 if getattr(wbp, "paper", False):
+                    # Paper pays the ASK (marketable), never sits on the bid —
+                    # the sandbox has liquidity, so an entry should fill the
+                    # instant it's read, not miss like a resting bid does live.
+                    wbp.entry_price = "ask"
                     WB_PAPER = wbp
-                    note("Webull PAPER connected — sim account %s" % acctp)
+                    note("Webull PAPER connected — sim account %s (fills at ask)"
+                         % acctp)
                 else:
                     errs.append("the sandbox key didn't land in paper")
             except Exception as e:                      # noqa: BLE001

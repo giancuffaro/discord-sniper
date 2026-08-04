@@ -750,20 +750,36 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       c.bare_pct_trims = false;
     }
 
+    // VERO posts every call as a reply on his own alert bot, so the reply
+    // gate below was killing ALL of them (his 717C entry read as "a reply,
+    // nothing sent"). His format is fixed and self-contained — a full
+    // TICKER STRIKE C/P EXPIRY PRICE, or a clean OUT/ALL OUT — so in a Vero
+    // room a complete call is trusted and the dedupe (same call once) is what
+    // guards a true repeat, not the reply flag.
+    const VERO_IDS = new Set(["1323708708374450247", "760694103401955378",
+                              "1095502893559316482"]);
+    const _veroRoom = VERO_IDS.has(String(msg.channelId || ""));
     // A reply is a quote of something older — the words are a repeat, not a
     // fresh call. Captured for the record, never traded. This is the fix for
     // Mike replying to his own morning entry and the bot re-buying AMD at
     // top tick off the quoted line.
     if (msg.reply) {
       const rv = parseSignal(msg.text, c);
-      if (rv.action && rv.fire !== false || rv.action === "OPEN") {
-        await addLog({ kind: "ignored",
-                       why: "that's a REPLY quoting an older message — not a " +
-                            "fresh call, so nothing was sent",
-                       text: msg.text, author: msg.author });
+      // Vero exception: a complete call (entry with a strike, or a clear
+      // exit/trim) from a Vero room is real even as a reply — let it through.
+      const _veroReal = _veroRoom && rv.action &&
+        ((rv.action === "OPEN" && rv.symbol && rv.strike != null) ||
+         (rv.action !== "OPEN" && rv.symbol));
+      if (!_veroReal) {
+        if (rv.action && rv.fire !== false || rv.action === "OPEN") {
+          await addLog({ kind: "ignored",
+                         why: "that's a REPLY quoting an older message — not a " +
+                              "fresh call, so nothing was sent",
+                         text: msg.text, author: msg.author });
+        }
+        reply({ ok: true });
+        return;
       }
-      reply({ ok: true });
-      return;
     }
 
     // Scrolled-in history stops here: filed in the capture with its ORIGINAL
