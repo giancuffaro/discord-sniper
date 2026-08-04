@@ -1035,6 +1035,19 @@ function showVersion() {
 }
 showVersion();
 
+/* Tabs — browse the panel by page. Every section kept its own id and handler;
+ * switching a tab only changes which page is visible. */
+(function setupTabs() {
+  const btns = document.querySelectorAll('#tabbar .tabbtn');
+  btns.forEach(b => b.addEventListener('click', () => {
+    const t = b.dataset.tab;
+    btns.forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.tabpane').forEach(p =>
+      p.classList.toggle('on', p.dataset.tab === t));
+    if (t === 'keys') { try { refreshVoice(); } catch (e) {} }
+  }));
+})();
+
 /* The previous-days picker. "today" is the live feed; a date is a file the
  * bridge saved, frozen until you pick something else. */
 $("dayspick").onchange = async () => {

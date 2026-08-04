@@ -68,7 +68,7 @@
   details { margin-top: 10px; border-top: 1px solid #1c212c; padding-top: 8px; }
   summary { cursor: pointer; color: #9aa3b5; font-size: 12px; }
   #log { margin-top: 10px; border-top: 1px solid #1c212c; padding-top: 8px;
-         max-height: 210px; overflow-y: auto; }
+         max-height: 260px; overflow-y: auto; }
   .e { padding: 5px 0; border-bottom: 1px solid #141922; }
   .e b { display: block; font-size: 12px; }
   .e span { color: #7d8697; font-size: 11px; }
@@ -118,6 +118,16 @@
   .tag.up { color: #4ade80; }
   .tag.down { color: #f87171; }
   .tag.flat { color: #6b7383; }
+  /* Tabs — the panel organized into pages you can browse. Every section keeps
+     its own id and handler; the tab just decides which page is visible. */
+  .tabbar { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 10px; }
+  .tabbtn { flex: 1; min-width: 56px; font-size: 11px; padding: 6px 4px;
+            background: #12161f; border: 1px solid #2a2f3c; border-radius: 7px;
+            color: #9aa3b5; letter-spacing: .02em; }
+  .tabbtn.on { background: #14243f; border-color: #3b82f6; color: #e6edf6;
+               font-weight: 600; }
+  .tabpane { display: none; }
+  .tabpane.on { display: block; }
 </style>
 </head>
 <body>
@@ -130,65 +140,50 @@
     <div id="stFix" style="color:#fbbf24;margin-top:3px"></div>
   </div>
 
+  <!-- Master on/off + what you're holding stay visible on every tab. -->
   <div class="row">
     <button id="arm" class="grow safe big">OFF</button>
   </div>
   <div class="state" id="state">Loading…</div>
-
-  <!-- The big TEST/REAL switch is GONE — his design: "remove the main big
-       switch since i want every room to act individually. its either testing
-       or they are live.. just like that." Each room's toggle in Settings is
-       the whole decision now; this line just reports the bridge. -->
   <div class="bar">
     <div class="state" id="modestate">Checking the bridge…</div>
   </div>
-
-
   <div class="holding" id="holding">No active trades</div>
   <div class="purse" id="purse" style="display:none"></div>
-
-  <!-- Where the money comes from, room by room. -->
   <div class="tablebox" id="roomstats" style="display:none"></div>
 
-  <!-- The day, one row per trade. Live for today; the dropdown loads any
-       previous day the bridge has on file — that's the backtesting shelf. -->
-  <div class="tablebox">
-    <div class="tablehead">
-      <b>Trades</b>
-      <select id="dayspick"><option value="">today</option></select>
-    </div>
-    <div id="daytable"><div class="note">No trades yet today.</div></div>
+  <!-- ===== TABS ===== -->
+  <div class="tabbar" id="tabbar">
+    <button data-tab="trades" class="tabbtn on">Trades</button>
+    <button data-tab="channels" class="tabbtn">Channels</button>
+    <button data-tab="strategies" class="tabbtn">Strategies</button>
+    <button data-tab="keys" class="tabbtn">Keys</button>
+    <button data-tab="connect" class="tabbtn">Connections</button>
+    <button data-tab="logs" class="tabbtn">Logs</button>
   </div>
 
-  <details>
-    <summary>Settings</summary>
+  <!-- ===== TRADES ===== -->
+  <div class="tabpane on" data-tab="trades">
+    <div class="tablebox">
+      <div class="tablehead">
+        <b>Trades</b>
+        <select id="dayspick"><option value="">today</option></select>
+      </div>
+      <div id="daytable"><div class="note">No trades yet today.</div></div>
+    </div>
+  </div>
 
-    <!-- "Channel IDs to watch" and "Only follow these callers" are GONE —
-         his call: "this is pointless now". The rooms are baked into the
-         worker (that's what the toggles above list), and following
-         everyone is the whole philosophy: no filters. -->
-
-    <!-- There used to be half a page of filters here: allowed symbols, trim
-         behaviour, contracts per trade, trades per day, averaging-in limits.
-         All removed on his word — "no filters wanted. id like to follow
-         everything to the tee as they do." The rules are now fixed in code:
-         every ticker allowed, every call followed, trims sell, adds follow,
-         no daily cap. -->
-
-    <!-- One row per room: TESTING or LIVE. Only matters once the master
-         switch is REAL — in TEST mode everything pretends regardless. -->
+  <!-- ===== CHANNELS ===== -->
+  <div class="tabpane" data-tab="channels">
     <label>Rooms — each one is its own switch</label>
     <div id="roomtoggles"></div>
     <div class="note">One click flips a room between TESTING (pretend money)
       and LIVE (your Webull account). Applies instantly. Everything falls
       back to TESTING when Chrome restarts.</div>
+  </div>
 
-    <!-- The futures switch is GONE — "i dont want extra switches,, everything
-         should be either testing or live." Futures follow their room's
-         toggle like everything else. -->
-
-    <!-- Realism & his two tactics. Every one OFF by default; flip to see
-         honest numbers and to test the ideas per the whole book. -->
+  <!-- ===== STRATEGIES ===== -->
+  <div class="tabpane" data-tab="strategies">
     <label>Test fills</label>
     <div class="row" style="margin-bottom:4px">
       <span class="grow" style="font-size:12px">Webull Paper — the test engine</span>
@@ -228,9 +223,6 @@
     </div>
     <div class="note" id="simstate">&nbsp;</div>
 
-    <!-- Prop-firm accounts. Adding one stores it DISABLED; the arm click
-         is separate and deliberate. Credentials go straight to the bridge,
-         never stored in the browser, never echoed back. -->
     <label>Prop firms (futures orders go here when armed)</label>
     <div id="proplist"></div>
     <div class="half">
@@ -255,7 +247,10 @@
     <div class="note" id="propstate">When any prop is ARMED, live futures
       orders go to it instead of Webull. Everything stays pretend until a
       room is LIVE anyway.</div>
+  </div>
 
+  <!-- ===== KEYS ===== -->
+  <div class="tabpane" data-tab="keys">
     <label>Webull App Key</label>
     <input id="wbkey" type="password" autocomplete="off"
            placeholder="paste your App Key">
@@ -282,10 +277,6 @@
       books when Webull Paper is ON. Saved straight to this PC, never the
       browser.</div>
     <div class="note" id="paperkeystate">&nbsp;</div>
-    <!-- The keys go straight to the bridge on 127.0.0.1 and into
-         settings.json on the PC. They are never stored in the browser -
-         these boxes are wiped the moment they're sent, and the only thing
-         that ever comes back is the last four characters. -->
 
     <label style="margin-top:12px">AI reader — <b id="aiState">off</b></label>
     <input id="aiKey" type="password" autocomplete="off"
@@ -321,19 +312,20 @@
       (console.deepgram.com). Saved to this PC. The desktop Zoom app can't be
       captured this way. It never trades — it writes down.</div>
     <div class="note" id="dgstate">&nbsp;</div>
+  </div>
 
+  <!-- ===== CONNECTIONS ===== -->
+  <div class="tabpane" data-tab="connect">
+    <div class="note" id="connmode">The bridge is the program that runs on your
+      PC and actually places the orders. "Bridge ✅" in the status bar at the
+      top means it's up. If it's down, double-click 🎯 START HERE.</div>
     <label>Bridge on your PC</label>
     <input id="bridge" placeholder="http://127.0.0.1:8787/order">
-
     <div class="row" style="margin-top:10px">
       <button id="save" class="grow">Save settings</button>
-      <button id="export">Export chat</button>
     </div>
-    <div class="note">"Export chat" downloads every message this extension has
-      seen, as a text file. Send it to me and I'll tune the reader to your
-      room's exact wording.</div>
 
-    <label>App version — <b id="appVersion">…</b></label>
+    <label style="margin-top:12px">App version — <b id="appVersion">…</b></label>
     <div class="row" style="margin-top:4px">
       <button id="updateapp" class="grow">Update to the latest version</button>
     </div>
@@ -341,16 +333,19 @@
       restarts the bridge on your PC by itself — no need to open START HERE. The
       bridge blinks for about 10 seconds while it swaps over, so do it when
       you're not mid-trade.</div>
-  </details>
-
-  <!-- The log is a scrolling box, and you cannot select text out of a popup
-       that closes the moment you click away from it. That's why the whole day
-       had to be sent as a search URL once. This copies it as plain text. -->
-  <div class="row" style="margin-top:10px; margin-bottom:0">
-    <button id="copylog" class="grow">Copy log</button>
   </div>
 
-  <div id="log"></div>
+  <!-- ===== LOGS ===== -->
+  <div class="tabpane" data-tab="logs">
+    <div class="row" style="margin-top:4px">
+      <button id="copylog" class="grow">Copy log</button>
+      <button id="export">Export chat</button>
+    </div>
+    <div class="note">"Copy log" grabs today's activity as text. "Export chat"
+      downloads every message this extension has seen — send it to me and I'll
+      tune the reader to your room's exact wording.</div>
+    <div id="log"></div>
+  </div>
 
   <script src="popup.js"></script>
 </body>
