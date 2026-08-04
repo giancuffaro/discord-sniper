@@ -1,0 +1,10 @@
+# One line-ending policy, written down, so the repo stops flapping between
+# CRLF and LF every time a different editor saves a file. Aug 3 the diff
+# was 16,616 lines of pure line-ending churn hiding the real changes.
+#
+# Everything is stored in the repo as LF. Windows launcher scripts are the
+# exception — cmd.exe and WScript are the one place CRLF actually matters.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.vbs text eol=crlf
+*.png binary
