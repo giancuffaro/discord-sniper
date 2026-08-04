@@ -1110,7 +1110,12 @@ function parseSignalInner(text, cfg) {
   }
 
   // 5. IN — the entry. Needs a full contract; a bare "in" is not an order.
-  if (RE_ENTRY.test(low)) {
+  // But a strong exit word (out/closed/sold) with only a weak bare "in" is an
+  // EXIT with commentary, not a buy: "QQQ OUT 2.10 In one runner on MNQ futures"
+  // is Vero closing QQQ; the stray "In" used to hijack it and drop the exit.
+  const _strongEntry = /\b(?:entered|entering|filled|bto|bought|buying|grabbed)\b/i.test(low);
+  const _exitWithWeakIn = RE_EXIT.test(low) && !_strongEntry;
+  if (RE_ENTRY.test(low) && !_exitWithWeakIn) {
     const c = findContract(t);
     if (!c) {
       // The two-message entry: "Loading 205 calls Friday expiration on NVDA",

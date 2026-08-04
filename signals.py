@@ -1427,7 +1427,14 @@ def _parse_inner(text, author="", channel="", cfg=None):
         return sig
 
     # 5. IN — the entry. Needs a full contract; a bare "in" is not an order.
-    if RE_ENTRY.search(low):
+    # But a strong exit word (out/closed/sold) alongside only a weak bare "in"
+    # is an EXIT with commentary, not a buy: "QQQ OUT 2.10 In one runner on MNQ
+    # futures" is Vero closing QQQ, where the stray "In" used to hijack it into
+    # the entry path and drop the exit. Let section 6 handle those.
+    _strong_entry = re.search(
+        r"\b(?:entered|entering|filled|bto|bought|buying|grabbed)\b", low)
+    _exit_with_weak_in = bool(RE_EXIT.search(low)) and not _strong_entry
+    if RE_ENTRY.search(low) and not _exit_with_weak_in:
         c = _contract(t)
         if not c:
             # The two-message entry: "Loading 205 calls Friday expiration on

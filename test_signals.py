@@ -455,6 +455,40 @@ ok(not who.check(entry, 1, 2, "randomguy", msg_epoch=now())[0],
 ok(who.check(entry, 1, 2, "HoneyDrip", msg_epoch=now())[0],
    "the scribe should be allowed")
 
+# --- Aug 4 fixes: took-an-L, wrong-ticker, exit-with-stray-in ----------------
+# "Took an L" and friends are a loss-close (was read as nothing → position sat).
+check("we took an L", action="CLOSE")
+check("taking the L on this", action="CLOSE")
+check("big L today", action="CLOSE")
+ok(sigmod.parse("LOL that was close", cfg=CFG).action != "CLOSE",
+   "'LOL' must not read as a loss")
+ok(sigmod.parse("cool, nice trade", cfg=CFG).action != "CLOSE",
+   "'cool' must not read as a loss")
+
+# A loose 'in' that names a ticker must never buy a different ticker's load.
+_CFG2 = {"allowed_symbols": ["SPY", "QQQ", "TSLA", "META", "AAPL", "NVDA"]}
+_g = Guards(_CFG2, NOSTOP)
+_lo = sigmod.parse("Loading tsla 320 puts Friday expiration", cfg=_CFG2)
+_lo.caller = "Unraveller"; _g.remember_loading(_lo, "Unraveller")
+_en = sigmod.parse("In meta 6.10 avg", cfg=_CFG2); _en.caller = "Unraveller"
+ok(_en.named_symbol == "META", "a named 'in' should record the ticker")
+_r = _g.resolve_loaded(_en, "Unraveller")
+ok(not _r.fire and _r.symbol != "TSLA",
+   "'In meta' must refuse when the load is TSLA, never buy TSLA")
+# ...but a matching load fires.
+_g2 = Guards(_CFG2, NOSTOP)
+_lo2 = sigmod.parse("Loading meta 570 puts friday exp", cfg=_CFG2)
+_lo2.caller = "Unraveller"; _g2.remember_loading(_lo2, "Unraveller")
+_en2 = sigmod.parse("In meta 6.10 avg", cfg=_CFG2); _en2.caller = "Unraveller"
+ok(_g2.resolve_loaded(_en2, "Unraveller").fire,
+   "'In meta' should fire when the load IS meta")
+
+# Vero: "QQQ OUT 2.10 In one runner on MNQ futures" is a QQQ exit, not an entry.
+check("QQQ OUT 2.10 In one runner on MNQ futures.", action="CLOSE", symbol="QQQ")
+check("QQQ 717C 8/4 1.50 4 CONTRACTS", action="OPEN", symbol="QQQ")
+print("Aug 4 fixes read: took-an-L closes, wrong-ticker refuses, "
+      "an exit with a stray 'in' still closes.")
+
 # -----------------------------------------------------------------------------
 if fails:
     print("FAILED %d check(s):" % len(fails))
