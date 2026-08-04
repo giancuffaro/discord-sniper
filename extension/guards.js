@@ -391,6 +391,15 @@ async function resolveLoaded(sig, author, cfg) {
               "it didn't name a full contract either — nothing was sent";
     return sig;
   }
+  if (sig.named_symbol && String(sig.named_symbol).toUpperCase() !== String(cand.symbol).toUpperCase()) {
+    // "In meta 6.10 avg" while their last load was TSLA — they named a ticker
+    // that disagrees with the load. Buying the load buys the WRONG ticker (the
+    // Aug 4 TSLA-for-META bug). Refuse.
+    sig.why = "they said " + String(sig.named_symbol).toUpperCase() + " but the " +
+              "last LOADING I have for them is " + cand.symbol + " — I won't buy " +
+              "a different ticker than the one they named, so nothing was sent";
+    return sig;
+  }
   if (cand.used) {
     // A second price on the same loading call is them averaging into the trade
     // they already put you in — "Filled 4.20 more" after "Filled 3.95

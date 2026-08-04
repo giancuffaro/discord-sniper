@@ -419,7 +419,7 @@ function parseSignalInner(text, cfg) {
   const raw = String(text || "").trim();
   const s = { fire: false, why: "", action: null, symbol: null, side: null,
               strike: null, expiry: null, limit: null, pct: null, qty: null,
-              caller: "", reenter: false, reenter_limit: null,
+              caller: "", reenter: false, reenter_limit: null, named_symbol: null,
               needs_position: false, needs_loaded: false, needs_add: false,
               // Futures and his-levels support. kind is "future" on a futures
               // call and "" otherwise; direction is LONG/SHORT; their_stop and
@@ -1146,6 +1146,9 @@ function parseSignalInner(text, cfg) {
       if (RE_LOOSE_IN.test(t) && RE_IN_CUE.test(t)) {
         s.action = "OPEN"; s.matched = "loose in on a loaded contract";
         s.needs_loaded = true;
+        // If they named a ticker ("In meta 6.10 avg"), pin it so resolveLoaded
+        // won't pair it with a different ticker's load.
+        s.named_symbol = bareSymbol(t, allowed);
         const mp = RE_IN_PRICE.exec(t);
         let lim = mp ? parseFloat(mp[1]) : null;
         if (lim === null) {

@@ -355,6 +355,15 @@ class Guards:
                        "before it didn't name a full contract either — nothing "
                        "was sent")
             return sig
+        named = getattr(sig, "named_symbol", None)
+        if named and str(named).upper() != str(cand["symbol"]).upper():
+            # "In meta 6.10 avg" while their last load was TSLA. They named a
+            # ticker; it disagrees with the load. Buying the load here buys the
+            # WRONG ticker — the Aug 4 TSLA-for-META bug. Refuse.
+            sig.why = ("they said %s but the last LOADING I have for them is %s — "
+                       "I won't buy a different ticker than the one they named, so "
+                       "nothing was sent" % (str(named).upper(), cand["symbol"]))
+            return sig
         if cand.get("used"):
             # A second price on the same loading call is them averaging into the
             # trade they already put you in — "Filled 4.20 more" after "Filled

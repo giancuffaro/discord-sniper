@@ -439,6 +439,11 @@ class Signal:
     # the loading call that goes with this"; guards.resolve_loaded does it, and
     # nothing fires until it succeeds.
     needs_loaded: bool = False
+    # A ticker named in an otherwise-bare "in" ("In meta 6.10 avg"). When set,
+    # resolve_loaded REFUSES to pair it with a loading of a different ticker —
+    # on Aug 4 "In meta..." bought TSLA off a stale load. Never buy the ticker
+    # they didn't say.
+    named_symbol: Optional[str] = None
     # "added to SPY, new avg 2.8" — a second contract on a trade you're already
     # in. Nothing about that can be decided from the line alone: it depends on
     # whether averaging is switched on, whether you're actually in it, and how
@@ -1463,6 +1468,9 @@ def _parse_inner(text, author="", channel="", cfg=None):
                 sig.action = "OPEN"
                 sig.matched = "loose in on a loaded contract"
                 sig.needs_loaded = True
+                # If they named a ticker ("In meta 6.10 avg"), pin it so
+                # resolve_loaded won't pair it with a different ticker's load.
+                sig.named_symbol = _bare_symbol(t, allowed)
                 mp = RE_IN_PRICE.search(t)
                 lim = float(mp.group(1)) if mp else None
                 if lim is None:
