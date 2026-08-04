@@ -161,6 +161,7 @@ async function refreshMode() {
   paintProps();
   paintSim();
   paintPaper();
+  paintAi(modeStatus);
 }
 
 let paperOn = false;
@@ -335,6 +336,41 @@ $("savepaperkeys").onclick = async () => {
       "START HERE first, then try again.";
   }
   $("savepaperkeys").textContent = "Save paper keys to this PC";
+};
+
+/* ---- AI reader — reading intelligence on the misses ---------------------- */
+function paintAi(st) {
+  const on = !!(st && st.ai_enabled);
+  const el = $("aiState");
+  if (el) { el.textContent = on ? "ON" : "off"; el.style.color = on ? "#34d399" : "#9aa"; }
+}
+$("saveaikey").onclick = async () => {
+  const key = $("aiKey").value.trim();
+  const el = $("aikeystate");
+  if (!key) { el.textContent = "Paste your Claude API key first."; return; }
+  $("saveaikey").textContent = "Turning on…";
+  try {
+    const r = await askBridge("/config", { ai_api_key: key, ai_enabled: true });
+    modeStatus = r;
+    el.textContent = r.ai_enabled ? "AI reading is ON — it'll read the misses." :
+                     (r.message || "saved");
+    if (r.ai_enabled) $("aiKey").value = "";
+    paintAi(r);
+  } catch (e) {
+    el.textContent = "Couldn't reach the bridge — double-click START HERE first.";
+  }
+  $("saveaikey").textContent = "Turn on AI reading";
+};
+$("aioff").onclick = async () => {
+  const el = $("aikeystate");
+  try {
+    const r = await askBridge("/config", { ai_enabled: false });
+    modeStatus = r;
+    el.textContent = "AI reading is off.";
+    paintAi(r);
+  } catch (e) {
+    el.textContent = "Couldn't reach the bridge — double-click START HERE first.";
+  }
 };
 
 

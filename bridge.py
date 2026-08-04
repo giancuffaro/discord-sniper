@@ -1007,6 +1007,9 @@ class Handler(BaseHTTPRequestHandler):
                 # Why paper isn't running, in plain words (missing sandbox key).
                 "paper_warning": getattr(WB, "paper_warning", "") if WB is not None else "",
                 "paper_keys_in": bool((EXEC.get("webull") or {}).get("paper_app_key")),
+                # AI reader on/off (never returns the key itself).
+                "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("enabled")
+                                   and (EXEC.get("ai_reader") or {}).get("api_key")),
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}
@@ -1278,6 +1281,38 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, dict(self._status(), ok=ok_all,
                                     message=" ".join(msgs)))
 
+    def _ai_read(self):
+        """READING intelligence for a message the regex parser gave up on.
+        The extension only calls this on a miss. We hand the one message to
+        Claude, validate its read against the literal text (anti-hallucination),
+        and return a CLEAN canonical call for the extension to run back through
+        the same parser + guards. We never trade here — we only read."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:                                   # noqa: BLE001
+            return self._json(400, {"ok": False, "why": "unreadable"})
+        text = str(body.get("text") or "").strip()
+        if not text:
+            return self._json(200, {"ok": False, "why": "no text"})
+        try:
+            import ai_reader
+        except Exception as e:                              # noqa: BLE001
+            return self._json(200, {"off": True, "why": "ai_reader missing: %s" % e})
+        if not ai_reader.available(CFG):
+            return self._json(200, {"off": True})
+        allowed = CFG.get("allowed_symbols", []) or []
+        read = ai_reader.read_signal(text, allowed, CFG)
+        ok, why, cleaned = ai_reader.validate(read, text, allowed)
+        if not ok:
+            note("AI READ  no call — %s" % (why or "")[:80])
+            return self._json(200, {"ok": False, "why": why})
+        canon = ai_reader.canonical(cleaned)
+        note("AI READ  '%s'  ->  %s" % (text[:50], canon))
+        return self._json(200, {"ok": True, "canonical": canon,
+                                "read": cleaned,
+                                "confidence": cleaned.get("confidence", 0)})
+
     def _self_update(self):
         """Pull the latest build from GitHub and restart the bridge onto it —
         this is the popup's Update button, so he never has to open START HERE
@@ -1344,7 +1379,9 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(n) or b"{}")
         except Exception:                                   # noqa: BLE001
             return self._json(400, {"ok": False, "message": "unreadable"})
-        if "futures_enabled" not in body and "simulation" not in body:
+        _known = ("futures_enabled", "simulation", "paper_trading",
+                  "ai_enabled", "ai_api_key", "ai_model")
+        if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
         try:
@@ -1382,6 +1419,23 @@ class Handler(BaseHTTPRequestHandler):
                 BOOK.auto_be_on = bool(ab.get("enabled", False))
                 BOOK.auto_be_pct = float(ab.get("at_pct", 10.0))
                 BOOK.auto_be_frac = float(ab.get("sell_fraction", 0.10))
+
+        # AI reader — reading intelligence on the misses. The key is a secret,
+        # so it lives in settings.json (gitignored, chmod 600), never the
+        # browser. Empty key just turns it off.
+        if any(k in body for k in ("ai_enabled", "ai_api_key", "ai_model")):
+            ar = data.setdefault("execution", {}).setdefault("ai_reader", {})
+            if "ai_api_key" in body:
+                ar["api_key"] = str(body.get("ai_api_key") or "").strip()
+            if "ai_model" in body:
+                ar["model"] = str(body.get("ai_model") or "").strip()
+            if "ai_enabled" in body:
+                ar["enabled"] = bool(body["ai_enabled"])
+            # Can't be on without a key.
+            if not ar.get("api_key"):
+                ar["enabled"] = False
+            CFG.setdefault("execution", {})["ai_reader"] = dict(ar)
+            note("AI READ  reader %s" % ("ON" if ar.get("enabled") else "off"))
 
         try:
             with open(path, "w", encoding="utf-8") as f:
@@ -1472,6 +1526,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._set_props()
         if self.path.startswith("/update"):
             return self._self_update()
+        if self.path.startswith("/read"):
+            return self._ai_read()
 
         if os.path.exists(os.path.join(HERE, "STOP")) or \
            os.path.exists(os.path.join(HERE, "STOP.txt")):

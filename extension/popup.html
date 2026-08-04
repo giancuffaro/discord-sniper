@@ -280,6 +280,21 @@
          these boxes are wiped the moment they're sent, and the only thing
          that ever comes back is the last four characters. -->
 
+    <label style="margin-top:12px">AI reader — <b id="aiState">off</b></label>
+    <input id="aiKey" type="password" autocomplete="off"
+           placeholder="paste your Claude (Anthropic) API key">
+    <div class="row" style="margin-top:8px">
+      <button id="saveaikey" class="grow">Turn on AI reading</button>
+      <button id="aioff" style="max-width:90px">Off</button>
+    </div>
+    <div class="note">Reading intelligence for the calls the normal reader can't
+      crack. It ONLY runs on a message that was missed, hands that one line to
+      Claude to read into a clean call, and that call still goes through every
+      guard — a made-up ticker is refused. It never decides to trade, only
+      reads. Key from console.anthropic.com; pennies since it only runs on
+      misses. Saved to this PC, never the browser.</div>
+    <div class="note" id="aikeystate">&nbsp;</div>
+
     <label>Bridge on your PC</label>
     <input id="bridge" placeholder="http://127.0.0.1:8787/order">
 

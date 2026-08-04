@@ -518,6 +518,31 @@ function bridgeBaseFrom(url) {
   return (url || BRIDGE_DEFAULT).replace(/\/order\/?$/, "").replace(/\/$/, "");
 }
 
+/* A cheap gate so the AI reader only ever sees plausible calls, not chatter —
+ * it needs a ticker-ish token, a number, and a trading verb all present. Keeps
+ * the model (and the round-trip) off the thousands of lines that aren't trades. */
+function looksTradeLike(t) {
+  if (!t || t.length > 400) return false;
+  if (!/\d/.test(t)) return false;
+  if (!/(^|[^A-Za-z])\$?[A-Za-z]{1,5}([^A-Za-z]|$)/.test(t)) return false;
+  return /\b(in|out|sold|sell|selling|buy|bought|bto|stc|trim(?:med|ming)?|clos(?:e|ed|ing)|long|short|calls?|puts?|add(?:ed|ing)?|stopped|filled|entry|exit|took|target|tp|sl)\b/i.test(t);
+}
+
+/* Ask the bridge (which holds your Claude key) to READ one missed message into
+ * a clean call. Returns the canonical string, or null if the AI is off, can't
+ * read it, or anything at all goes wrong — a miss stays a miss, never a crash. */
+async function aiRead(text, c) {
+  try {
+    const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/read", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return (j && j.ok && j.canonical) ? j.canonical : null;
+  } catch (e) { return null; }
+}
+
 /* Is New York trading right now? Used only to decide when a reload is safe.
  * The bot is ON 24/7 by design, so "waits until you turn it OFF" would mean
  * updates wait forever — instead they land the moment the session isn't on.
@@ -835,6 +860,26 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     }
 
     let sig = parseSignal(msg.text, c);
+
+    // AI READER — reading intelligence, nothing else. ONLY when the regex gave
+    // up (no action) and the line looks like it might be a call. The message is
+    // handed to the bridge, which holds the key and asks Claude to read it into
+    // a CLEAN call; that clean call is then run back through THIS same parser,
+    // so every guard (dedupe, position resolve, live/test routing) still
+    // applies. A hallucinated ticker was already refused bridge-side. Off (and
+    // free) unless you've saved a Claude API key.
+    if (!sig.action && !msg.history && !msg.reply && looksTradeLike(msg.text)) {
+      const canon = await aiRead(msg.text, c);
+      if (canon) {
+        const sig2 = parseSignal(canon, c);
+        if (sig2.action) {
+          await addLog({ kind: "update",
+                         why: "AI read this as “" + canon + "”",
+                         text: msg.text, author: msg.author });
+          sig = sig2;
+        }
+      }
+    }
     // Their new blended average, off the raw parse, BEFORE the resolvers get
     // to it — resolveAdd deliberately strips the average out of the limit
     // field (it isn't a tradeable price), but the bridge's reverse math needs
