@@ -572,7 +572,11 @@ async function checkBuild() {
     return;
   }
 
-  await chrome.storage.local.set({ build_stamp: stamp, build_waiting: "" });
+  // Mark that this restart is from a code update, so on the way back up the
+  // Discord/Whop tabs get a clean auto-refresh (not just a re-inject) — that's
+  // what clears the orphaned "context invalidated" copy for good.
+  await chrome.storage.local.set({ build_stamp: stamp, build_waiting: "",
+                                   just_updated: stamp });
   await addLog({ kind: "update", why: "picked up a new version by itself and reloaded" });
   chrome.runtime.reload();
 }
@@ -582,25 +586,37 @@ async function checkBuild() {
  * until that tab navigates. Since you're not going to reload Discord every time,
  * put it back here. */
 async function reinject() {
-  let tabs;
+  // If we just came up from a code UPDATE, give the Discord/Whop tabs a clean
+  // full refresh instead of a re-inject — a fresh page load can't leave an
+  // orphaned old content.js throwing "context invalidated," and it means you
+  // never have to hit F5 yourself after an update. One time, only on update.
+  let justUpdated = "";
   try {
-    tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
-                                           "https://*.discord.com/channels/*"] });
-  } catch (e) { return; }
-  for (const t of tabs) {
-    try {
-      await chrome.scripting.executeScript({ target: { tabId: t.id }, files: ["content.js"] });
-    } catch (e) { /* tab closed or mid-navigation; the next attach picks it up */ }
+    justUpdated = (await chrome.storage.local.get("just_updated")).just_updated || "";
+  } catch (e) { /* storage not ready */ }
+
+  const urls = ["https://discord.com/channels/*", "https://*.discord.com/channels/*",
+                "https://whop.com/*", "https://*.whop.com/*"];
+  let tabs = [];
+  try { tabs = await chrome.tabs.query({ url: urls }); } catch (e) { return; }
+
+  if (justUpdated) {
+    try { await chrome.storage.local.set({ just_updated: "" }); } catch (e) {}
+    for (const t of tabs) {
+      try { await chrome.tabs.reload(t.id, { bypassCache: true }); }
+      catch (e) { /* tab closed; nothing to do */ }
+    }
+    return;   // the fresh page loads content.js on its own
   }
-  // The Whop reader gets put back the same way, into any Whop tab that's open.
-  try {
-    tabs = await chrome.tabs.query({ url: ["https://whop.com/*",
-                                           "https://*.whop.com/*"] });
-  } catch (e) { return; }
+
+  // Normal startup (browser open, not an update): re-inject without disturbing
+  // the page, so you don't lose your place in a room you're watching.
   for (const t of tabs) {
+    const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
     try {
-      await chrome.scripting.executeScript({ target: { tabId: t.id }, files: ["whop.js"] });
-    } catch (e) { /* same story */ }
+      await chrome.scripting.executeScript({ target: { tabId: t.id },
+        files: [isWhop ? "whop.js" : "content.js"] });
+    } catch (e) { /* tab closed or mid-navigation; the next attach picks it up */ }
   }
 }
 

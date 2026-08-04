@@ -910,6 +910,20 @@ $("updateapp").onclick = async () => {
   btn.textContent = "Update to the latest version";
 };
 
+/* Show the version right on the panel so you never have to go hunting for it.
+ * Reads the loaded extension's own manifest — after an update reloads the
+ * extension, reopening the popup shows the new number. */
+function showVersion() {
+  try {
+    const v = (chrome.runtime.getManifest() || {}).version || "?";
+    const el = $("appVersion");
+    if (el) el.textContent = "v" + v;
+    const btn = $("updateapp");
+    if (btn && !btn.disabled) btn.textContent = "Update to the latest version (on v" + v + ")";
+  } catch (e) { /* not in an extension context */ }
+}
+showVersion();
+
 /* The previous-days picker. "today" is the live feed; a date is a file the
  * bridge saved, frozen until you pick something else. */
 $("dayspick").onchange = async () => {

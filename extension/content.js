@@ -86,16 +86,27 @@ function handle(li) {
   // pattern, so they're flagged here and the worker refuses to trade them.
   const isReply = !!li.querySelector('[id^="message-reply-context"]');
 
-  chrome.runtime.sendMessage({
-    type: "MESSAGE",
-    text,
-    author: authorOf(li),
-    channelId: channelId(),
-    postedAt,
-    history,
-    reply: isReply,
-    url: location.href
-  }).catch(() => { /* worker asleep mid-send; the next one wakes it */ });
+  // When the extension reloads (an update landed), THIS orphaned copy's
+  // sendMessage throws "Extension context invalidated" — synchronously, so a
+  // .catch() alone doesn't stop the console error. Wrap it, and when it fires,
+  // shut this dead copy down so it stops trying; the fresh copy the background
+  // re-injects (and the tab auto-refresh) takes over the reading.
+  try {
+    chrome.runtime.sendMessage({
+      type: "MESSAGE",
+      text,
+      author: authorOf(li),
+      channelId: channelId(),
+      postedAt,
+      history,
+      reply: isReply,
+      url: location.href
+    }).catch(() => { /* worker asleep mid-send; the next one wakes it */ });
+  } catch (e) {
+    // Context gone — this copy is done. Stop the observer/timer quietly.
+    try { if (typeof window.__SNIPER_STOP__ === "function") window.__SNIPER_STOP__(); }
+    catch (e2) { /* already gone */ }
+  }
 }
 
 function onMutations(records) {
