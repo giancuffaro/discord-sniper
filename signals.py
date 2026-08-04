@@ -155,8 +155,17 @@ RE_FUT_ENTRY = re.compile(
     # The @ is optional now — his Day Trades channel writes "Short nq
     # 28240.50" with nothing between the symbol and the price. The number
     # keeps it honest: "long NQ into the close" has no price, so no entry.
-    r"\b(short|long)\s+\$?([A-Za-z0-9]{1,4})\s*(?:@|at\b)?\s*"
-    r"\$?(\d[\d,]*(?:\.\d{1,2})?)\b",
+    # [\$/]? on the symbol because the rooms write /NQ as often as $NQ or
+    # bare NQ. \.\d{1,3} because NG quotes "3.412" and CL "66.405" — two
+    # decimals used to truncate those to 3 and 66, and a wrong entry price
+    # then computes a wrong stop. The trailing lookahead refuses a count
+    # posing as a price: "short NQ 2 contracts here" is a size, "long ES 4
+    # lots" is a size, "I've been long NQ 3 times" is a war story. A number
+    # followed by a unit word is never the price.
+    r"\b(short|long)\s+[\$/]?([A-Za-z0-9]{1,4})\s*(?:@|at\b)?\s*"
+    r"\$?(\d[\d,]*(?:\.\d{1,3})?)\b"
+    r"(?!\s*(?:times?|contracts?|cons?|lots?|handles?|cents?|ticks?|"
+    r"points?|pts?|mins?|minutes?)\b)",
     re.IGNORECASE)
 RE_THEIR_STOP = re.compile(
     # "SL 28302" is the same stop as "Stop 28302" — Whop shorthand. "St0p"
@@ -191,12 +200,59 @@ RE_FUT_AVG = re.compile(
     r"|\b(\d[\d,]*(?:\.\d{1,2})?)\s+(?:avg|average)\b", re.IGNORECASE)
 # The room says "gold"/"silver" as often as GC/SI.
 FUT_NICKNAMES = {"GOLD": "GC", "SILVER": "SI", "PLATINUM": "PL"}
+# A number outside these bands isn't a price, whatever the sentence says.
+# Wide on purpose — they exist to catch counts ("2 contracts"), zeros and
+# fat fingers, not to judge the market. An unlisted symbol gets an almost
+# no-opinion band that still refuses a zero. Sell-side matters most: a
+# "short NQ @ 2" limit is BELOW the market, so it fills instantly — a
+# phantom price becomes a real position on the wrong side.
+FUT_PRICE_BAND = {
+    "NQ": (5000, 60000), "MNQ": (5000, 60000),
+    "ES": (1500, 20000), "MES": (1500, 20000),
+    "YM": (10000, 100000), "MYM": (10000, 100000),
+    "RTY": (800, 10000), "M2K": (800, 10000),
+    "CL": (10, 300), "MCL": (10, 300),
+    "GC": (1000, 20000), "MGC": (1000, 20000),
+    "SI": (10, 300), "SIL": (10, 300),
+    "NG": (0.5, 30),
+}
+
+
+def _fut_price_ok(sym, px):
+    lo, hi = FUT_PRICE_BAND.get(sym, (0.1, 1e6))
+    return lo <= px <= hi
+
+
+# "Felony posted Jul 30, 2026 Entered NVDA 205C 7/31 @ 2.05" — read on
+# Aug 3. A date stamp INSIDE the body means the scraper picked up an old
+# post rendered on screen (Whop draws them that way), not a live message.
+# Live messages carry their date in the export header, never in the text.
+# This is what let a July 30 call buy a July 31 expiry three days dead.
+RE_STALE_STAMP = re.compile(
+    r"\bposted\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
+    r"[a-z]*\.?\s+\d{1,2}\b"
+    r"|·\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
+    r"[a-z]*\.?\s+\d{1,2}\b"
+    r"|·\s*\d+\s*[dhw]\b",
+    re.IGNORECASE)
+# "stopped out of my personal trade, room trade still on" — HIS other
+# account, not the call the room followed. Exit wording that says so is
+# about a trade you were never in.
+RE_NOT_ROOM_TRADE = re.compile(
+    r"\bpersonal\b|\broom\s+trade\s+still\b|\bnot\s+the\s+room\b",
+    re.IGNORECASE)
 # "Stopped" alone at the start of a message, "Eh stopped", "Stop got hit",
 # "BE stop hit", "Trailing stop hit on RTY" — their stop fired, said seven
 # different ways. Start-anchored so "if we get stopped" inside an entry's
-# rationale never reads as an exit.
+# rationale never reads as an exit. An everyday preposition after the word
+# kills the start-anchored read: "Stopped by the store, back in 20" and
+# "Stopping for lunch" are errands, and each of them closed a live position
+# in the Aug 3 drill. Kept loose past that on purpose — the corpus has
+# "Stopped\nCouldn't update was busy earlier" as a real exit, so requiring
+# a trading word after "Stopped" breaks the room's actual usage.
 RE_STOP_HIT = re.compile(
     r"^(?:eh\s+|welp\s+)?stopp(?:ed|ing)\b"
+    r"(?!\s+(?:by|for|to|into|off|at\s+the)\b)"
     r"|\b(?:be\s+|trailing\s+)?stop\s+(?:got\s+|was\s+)?hit\b",
     re.IGNORECASE)
 # "Taking paper cut" / "Locking in a 8 point loss" — an early exit by hand.
@@ -303,7 +359,23 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               # — Midas narrating a PLAN. Day two the reader bought the verb:
               # OPEN TAKE 742C. Announced intent is not an entry; his entry
               # is the fill that follows.
-              "going to", "gonna")
+              "going to", "gonna",
+              # "Short NQ @ 28660 — actually cancel that, no fill" fired the
+              # order and ignored the retraction. The retraction wins. Same
+              # for "(paper account only, not my real one)", a P&L line
+              # ("My PnL: long NQ 28660 -> 28720"), and "Last week's long ES
+              # 7400" — a war story with a parseable entry inside it, same
+              # family as "yesterday" above.
+              "cancel", "no fill", "never filled", "paper account",
+              "last week", "pnl", "p&l", "p/l",
+              # Aug 3 options drill. "Was in NVDA 205c earlier" is a war
+              # story and "Almost went in NVDA 205c but passed" is a pass.
+              # NOT "earlier" or "if we" alone — the suite proved both live
+              # inside real calls ("Stopped ... was busy earlier",
+              # "Short NQ @ 29792 ... If we get stopped"). "tomorrow if"
+              # is the future-intent shape: "buying NVDA tomorrow if we
+              # gap up" is a plan, not an order.
+              "was in", "almost", "tomorrow if")
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
@@ -322,7 +394,12 @@ NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                # Trader shorthand that looks exactly like a ticker once
                # uppercase counts.
                "OPEX", "ORB", "HOD", "LOD", "EMA", "VWAP", "ATH", "RSI",
-               "FIB", "PREP", "LOL", "SMH", "LFG", "PDT"}
+               "FIB", "PREP", "LOL", "SMH", "LFG", "PDT",
+               # "WIN!!" in a victory lap read as ticker WIN and turned a
+               # celebration into a trim on a stock nobody holds. WIN, GAIN
+               # and LOSS are real tickers somewhere, but in these rooms
+               # they are always the words.
+               "WIN", "GAIN", "LOSS"}
 
 
 @dataclass
@@ -529,6 +606,51 @@ def _bare_symbol(text, allowed):
 
 
 def parse(text, author="", channel="", cfg=None):
+    """The reader, wrapped in the last set of no-matter-what checks. The
+    inner function stays exactly the battle-tested paths; this wrapper only
+    gets to turn a would-be OPEN into a loud refusal, never to create one.
+
+    Aug 3 options drill, what each check paid for:
+      - sell-guard: "SPX 7565 C SELL FUNDED ACCOUNT ONLY" was read as a BUY
+        of the call HE is selling — direction inverted end to end.
+      - bounds: "BTO @0.00", strike "0c", and "@105" on a $2 contract all
+        went through untouched.
+      - dot-tickers: "$BRK.B 480c" parsed as ticker B — a real company,
+        the wrong one."""
+    s = _parse_inner(text, author=author, channel=channel, cfg=cfg)
+    if s.action != "OPEN" or s.kind == "future":
+        return s
+    low = (s.clean or "").lower()
+    is_option = s.side in ("CALLS", "PUTS") or s.strike is not None
+    if is_option and re.search(r"\b(sell|selling|sold|sto)\b", low) \
+            and not re.search(r"\b(bto|buy|buying|bought)\b", low):
+        s.fire = False
+        s.action = None
+        s.why = ("they're SELLING that option — this bot only ever buys, "
+                 "so nothing was sent")
+        return s
+    if is_option and s.strike is not None and float(s.strike) <= 0:
+        s.fire = False
+        s.action = None
+        s.why = "a strike of 0 isn't a contract — refused, not guessed"
+        return s
+    if is_option and s.limit is not None \
+            and (float(s.limit) <= 0 or float(s.limit) >= 1000):
+        s.fire = False
+        s.action = None
+        s.why = ("%g isn't a plausible option premium — refused, not "
+                 "guessed" % float(s.limit))
+        return s
+    if re.search(r"\$[A-Za-z]{1,5}\.[A-Za-z]\b", s.raw or ""):
+        s.fire = False
+        s.action = None
+        s.why = ("a dot-class ticker (BRK.B style) — the reader mangles "
+                 "these into the wrong symbol, so nothing was sent")
+        return s
+    return s
+
+
+def _parse_inner(text, author="", channel="", cfg=None):
     cfg = cfg or {}
     allowed = [s.upper() for s in cfg.get("allowed_symbols", [])]
     raw = (text or "").strip()
@@ -540,6 +662,16 @@ def parse(text, author="", channel="", cfg=None):
     t = clean_text(raw)
     sig.clean = t
     low = t.lower()
+
+    # A date stamp inside the body means this is an old post the scraper
+    # picked up rendered on screen, not a live message. This check comes
+    # before every format reader on purpose: on Aug 3 a "Felony posted
+    # Jul 30" scrape bought an expired NVDA contract because the entry
+    # grammar got to it first.
+    if RE_STALE_STAMP.search(t):
+        sig.why = ("carries its own date stamp — a rendered old post the "
+                   "scraper picked up, not a live call")
+        return sig
 
     # Who said it. Two shapes: the scribe relaying somebody ("@Brett (Admin)
     # ..."), and the admin posting straight into the room ("Brett (Admin) —
@@ -964,8 +1096,15 @@ def parse(text, author="", channel="", cfg=None):
     #     Resolved by whose position it is, exactly like a bare trim. The
     #     anchored regex is what keeps "Damn it actually worked out" from
     #     reading as an exit — a bare out IS the whole message, or it's chatter.
-    if RE_STOPPED_OUT.search(low) or RE_STOP_HIT.search(t) \
-            or RE_PAPERCUT.search(low):
+    if (RE_STOPPED_OUT.search(low) or RE_STOP_HIT.search(t)
+            or RE_PAPERCUT.search(low)):
+        if RE_NOT_ROOM_TRADE.search(low):
+            # "stopped out of my personal trade, room trade still on" —
+            # his OTHER account. The room's position is explicitly alive;
+            # closing it here is the exact wrong read.
+            sig.why = ("their stop fired on a personal trade, not the room's "
+                       "— the room trade is still on")
+            return sig
         sig.symbol = _bare_symbol(t, allowed)
         sig.action = "TRIM" if RE_PARTIAL.search(low) else "CLOSE"
         sig.matched = "stopped out"
@@ -1117,8 +1256,17 @@ def parse(text, author="", channel="", cfg=None):
     fut_dir = fut_sym = fut_px = None
     fut_end = 0
     if mfut and mfut.group(2).upper() in FUT_SYMS:
+        _px = _num(mfut.group(3))
+        if not _fut_price_ok(mfut.group(2).upper(), _px):
+            # "Long NQ @ 0", "Long NQ @ 286600000", or a count the unit-word
+            # lookahead didn't know. Refused loudly, never guessed — a short
+            # at a nonsense-low price is a marketable order.
+            sig.why = ("looks like a futures entry but %g isn't a plausible "
+                       "%s price — refused, not guessed"
+                       % (_px, mfut.group(2).upper()))
+            return sig
         fut_dir, fut_sym = mfut.group(1).upper(), mfut.group(2).upper()
-        fut_px, fut_end = _num(mfut.group(3)), mfut.end()
+        fut_px, fut_end = _px, mfut.end()
     else:
         # "Long NQ - AVG 24015" / "Entered NQ short 23477 average" — no
         # inline price, direction and symbol either way round, the price
@@ -1148,10 +1296,15 @@ def parse(text, author="", channel="", cfg=None):
                 ma_f = RE_FUT_AVG.search(t)
                 ml_f = RE_LIMIT.search(t)
                 if ma_f or ml_f:
-                    fut_dir, fut_sym = d0, s0
-                    fut_px = _num(ma_f.group(1) or ma_f.group(2)) if ma_f \
+                    _px2 = _num(ma_f.group(1) or ma_f.group(2)) if ma_f \
                         else float(ml_f.group(1))
-                    fut_end = md.end()
+                    if not _fut_price_ok(s0, _px2):
+                        sig.why = ("looks like a futures entry but %g isn't "
+                                   "a plausible %s price — refused, not "
+                                   "guessed" % (_px2, s0))
+                        return sig
+                    fut_dir, fut_sym = d0, s0
+                    fut_px, fut_end = _px2, md.end()
                 elif RE_THEIR_STOP.search(t) and RE_ENTRY.search(low):
                     # "Short NQ - Light / Stop 23400 / Target 23300" — a
                     # real call with no price anywhere. Recorded as a

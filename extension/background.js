@@ -261,13 +261,53 @@ async function sendOrder(sig, qty, c, author) {
       body: JSON.stringify(order)
     });
   } catch (e) {
-    return { ok: false, msg: "couldn't reach the bridge on your PC — did you " +
+    return { ok: false, unreachable: true,
+             msg: "couldn't reach the bridge on your PC — did you " +
              "double-click START HERE? The trade did NOT go out." };
   }
   const ms = Math.round(performance.now() - t0);
   const body = (await r.text()).slice(0, 200);
   if (!r.ok) return { ok: false, msg: "the bridge refused it: HTTP " + r.status + " " + body };
   return { ok: true, msg: "sent in " + ms + " ms — " + (body || "accepted") };
+}
+
+/* Consecutive can't-reach-the-bridge failures. One is a hiccup. Three in a
+ * row means the bridge is down and every call the rooms post is being read
+ * and then lost — the Aug 3 dry run half-executed a whole session that way:
+ * entries vanished, the book stayed flat, and later trims got refused for
+ * positions that were never opened. A bot that can't deliver orders must
+ * stop taking them. NOTE an HTTP refusal is the bridge WORKING — only a
+ * connection failure counts as a strike. */
+let bridgeStrikes = 0;
+const BRIDGE_STRIKES_OUT = 3;
+
+async function bridgeStrike(res) {
+  if (res.ok) { bridgeStrikes = 0; return; }
+  if (!res.unreachable) return;
+  bridgeStrikes++;
+  if (bridgeStrikes < BRIDGE_STRIKES_OUT) return;
+  const { settings } = await chrome.storage.local.get("settings");
+  if (settings && settings.armed === false) return;   // already off
+  await chrome.storage.local.set({
+    settings: Object.assign({}, settings, { armed: false })
+  });
+  await addLog({
+    kind: "failed", what: "AUTO-DISARMED", action: "HALT",
+    why: "the bridge couldn't be reached " + BRIDGE_STRIKES_OUT + " times " +
+         "in a row — calls were being read and lost, which is worse than " +
+         "missing them. Start the bridge (🎯 START HERE.bat), then flip the " +
+         "switch back ON in the popup.",
+    text: "", author: ""
+  });
+  badge();
+  try {
+    chrome.notifications.create({
+      type: "basic", iconUrl: "icon128.png",
+      title: "AUTO-DISARMED — bridge unreachable",
+      message: "3 orders in a row couldn't reach the bridge. The bot is OFF " +
+               "until you start the bridge and re-arm it."
+    });
+  } catch (e) { /* notifications are a nicety, never a blocker */ }
 }
 
 /* What is the contract worth this second, and what is that to you. Read-only —
@@ -670,7 +710,14 @@ chrome.alarms.onAlarm.addListener(a => {
 // Going from ON back to OFF is the moment a held-back update can land, so
 // don't make it wait out the rest of the half minute.
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && changes.settings) checkBuild();
+  if (area === "local" && changes.settings) {
+    checkBuild();
+    // Re-arming by hand is a statement that the bridge is back — the
+    // strike count starts over instead of instantly disarming again.
+    const was = (changes.settings.oldValue || {}).armed;
+    const now = (changes.settings.newValue || {}).armed;
+    if (now && !was) bridgeStrikes = 0;
+  }
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
@@ -876,6 +923,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         let r1;
         try { r1 = await sendOrder(one, one.qty || 1, c, msg.author); }
         finally { inFlight--; }
+        await bridgeStrike(r1);
         if (r1.ok) watchFills();
         await addLog({ kind: r1.ok ? "sent" : "failed",
                        what: human(one) + " x" + (one.qty || 1), action: "CLOSE",
@@ -952,6 +1000,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     } finally {
       inFlight--;     // must drop even if that threw, or updates stall forever
     }
+    await bridgeStrike(res);
     // An entry is now an offer, not a purchase. Watch for what became of it —
     // this is what turns "bid is in" into "filled" or "nobody sold to you".
     if (res.ok) watchFills();

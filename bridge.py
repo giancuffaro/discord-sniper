@@ -649,6 +649,44 @@ def plan_exit(order, key):
     return True, True, None
 
 
+def _expiry_recently_past(exp):
+    """'' or a reason string. "7/31" read on Aug 3 is 3 days dead — refuse.
+    "1/15" read in August most recently passed ~200 days ago, which means
+    the caller means NEXT January — roll forward, allow. The line between
+    the two is 60 days: nobody posts a two-month-old weekly by accident and
+    means it. Unparseable dates return '' — the SDK's contract resolution
+    is the authority on formats this doesn't know."""
+    import eastern
+    try:
+        s = str(exp).strip()
+        m = None
+        for fmt in ("%m/%d/%Y", "%m/%d/%y", "%m/%d"):
+            try:
+                m = datetime.strptime(s, fmt)
+                break
+            except ValueError:
+                continue
+        if m is None:
+            return ""
+        today = eastern.now()
+        if "%Y" in fmt or "%y" in fmt:
+            d = m.date()
+            days = (today.date() - d).days
+            return ("expired %d day(s) ago" % days) if days > 0 else ""
+        # Month/day only: how long ago did it most recently pass?
+        d = m.replace(year=today.year).date()
+        if d > today.date():
+            return ""                       # later this year — fine
+        days = (today.date() - d).days
+        if days == 0:
+            return ""                       # 0DTE, expires today — fine
+        if days <= 60:
+            return "expired %d day(s) ago" % days
+        return ""                           # long past = next year's date
+    except Exception:                       # noqa: BLE001
+        return ""
+
+
 def place(order):
     """Returns (ok, message). Never raises — a crash here would look to the
     extension exactly like a rejected order, and you'd never know which."""
@@ -1505,6 +1543,28 @@ class Handler(BaseHTTPRequestHandler):
             return self._reply(400,
                 "that order didn't say which contract (no strike or expiry), so "
                 "nothing was sent. Close it in the Webull app if you're in it.")
+
+        # An expiry in the recent past is never a real call — it's a stale
+        # repost, a scrape of an old message, or a typo. On Aug 3 a July 31
+        # contract got bought three days dead in the dry run. Recent-past
+        # only: "1/15" posted in August correctly means NEXT January (the
+        # rooms trade LEAPs), so a date more than 60 days gone rolls forward
+        # instead of refusing. One copy of this calendar, here, so every
+        # source that can reach the bridge — extension, replay, anything —
+        # goes through it in dry run and real alike.
+        if order.get("action") in ("OPEN", "ADD") and order.get("expiry") \
+                and order.get("kind") != "future":
+            stale = _expiry_recently_past(order.get("expiry"))
+            if stale:
+                note("BLOCKED  %s %s %s — expiry %s already passed (%s)" %
+                     (order.get("action"), sym, order.get("strike"),
+                      order.get("expiry"), stale))
+            if stale:
+                return self._reply(400,
+                    "that contract's expiry (%s) %s — an expired option can't "
+                    "be opened, so nothing was sent. If this was a fresh call, "
+                    "the date was a typo; take it by hand if you mean it."
+                    % (order.get("expiry"), stale))
 
         ok, msg = place(order)
         self._reply(200 if ok else 502, msg)

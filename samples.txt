@@ -374,3 +374,56 @@ QQQ 708C 7/21 1.03 2 CONTRACTS
 SPY 757P 8/3 1.13 4 CONS - Looking for 7600 on ES
 lotto yolo SPX 7460C 0dte @0.25 QUICK SCALP LOTTO!!
 Close STC NVDA 07/31/2026 200c @ 1.36 all out of my runner
+# ------------------------------------------------------------------
+# Aug 3 futures drill — adversarial lines both parsers must refuse,
+# and the formats they must keep reading. Parity holds these forever.
+# Counts posing as prices: a unit word after the number is never a price.
+short NQ 2 contracts here
+long ES 4 lots
+I've been long NQ 3 times this week and it keeps working
+went long MNQ 1 con only
+long CL 2 handles from here
+# Implausible prices: refused loudly, never guessed.
+Long NQ @ 0
+Long NQ @ 286600000
+# Retractions and war stories with a parseable entry inside them.
+Short NQ @ 28660 — actually cancel that, no fill
+Short NQ @ 28660 (paper account only, not my real one)
+Last week's long ES 7400 is still my best trade
+My PnL: long NQ 28660 -> 28720 = +60
+# A date stamp inside the body is a rendered old post, not a live call.
+Felony posted Jul 30, 2026 Entered NVDA 205C 7/31 @ 2.05
+# Errands are not exits; a personal-account stop is not the room's exit.
+Stopped by the store, back in 20
+Stopping for lunch, back at 1
+stopped out of my personal trade, room trade still on
+# Still-real calls that must keep firing exactly as before.
+Short NQ @ 28660  Stop 28700  Target 28550
+Short nq 28240.50
+Long NG @ 3.412 Stop 3.395
+Long /NQ @ 28660
+Long NQ - AVG 24015
+Entered NQ short 23477 average
+Stopped out -20 Points
+Trailing stop hit on RTY
+# ------------------------------------------------------------------
+# Aug 3 options drill — the wrapper's no-matter-what checks, held by
+# parity in both parsers forever.
+# Selling premium is never a buy signal for a bot that only buys.
+SPX 7565 C SELL FUNDED ACCOUNT ONLY TOO DANGEROUS IN REAL ONE @everyone
+# Bounds: zero premium, zero strike, four-digit premium — refused loudly.
+BTO $NVDA 205c 08/03 @0.00 @everyone
+BTO $NVDA 0c 08/07 @1.05 @everyone
+BTO $NVDA 205c 08/07 @1050 @everyone
+# Dot-class tickers mangle into the wrong symbol — refused.
+BTO $BRK.B 480c 08/21 @2.10 @everyone
+# War stories, passes, and future-intent plans are not orders.
+Was in NVDA 205c earlier, great trade
+Almost went in NVDA 205c but passed
+buying NVDA 205c tomorrow if we gap up
+# "WIN!!" is a celebration, not a ticker.
+sell 1/4 Z Aug 21st 35$ calls from 1.62 to 2.35 for 45-50% Gain WIN!! @everyone we have 1/4 left
+# Still-real calls that must keep firing exactly as before.
+BTO $NVDA 205c 08/07 @1.05 @everyone
+In JNJ 260 C 7/31 lightly @everyone
+STC $NVDA 205c 08/07 @2.10 @everyone

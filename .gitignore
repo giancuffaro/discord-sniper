@@ -12,6 +12,11 @@ webull_trade_sdk.log
 trades.log
 
 bridge.log
+# Rotated generations: bridge.log.1/.2 from the launcher's rotation, and the
+# dated files the Webull SDK leaves behind. "*.log" doesn't match a name
+# that ends in ".1" or a date, so they need their own lines.
+bridge.log.*
+webull_trade_sdk.log.*
 
 # The day files the bridge writes for backtesting - one per trading day.
 # They're his trading record, not code, so they stay on the PC.

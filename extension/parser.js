@@ -80,7 +80,29 @@ const FUT_SYMS = new Set(["NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K",
 // with nothing between the symbol and the price. "SL 28302" is Whop
 // shorthand for the same stop ("SL at be" carries no number and stays
 // unmatched), and "$800 a con" is "a contract" with the end bitten off.
-const RE_FUT_ENTRY = /\b(short|long)\s+\$?([A-Za-z0-9]{1,4})\s*(?:@|at\b)?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
+// [\$/]? because the rooms write /NQ as often as $NQ; \.\d{1,3} because NG
+// quotes "3.412" and two decimals truncated it to 3; the lookahead refuses
+// a count posing as a price ("short NQ 2 contracts here" is a size).
+// Mirrors signals.py exactly — test_parity holds the two together.
+const RE_FUT_ENTRY = /\b(short|long)\s+[\$/]?([A-Za-z0-9]{1,4})\s*(?:@|at\b)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?)\b(?!\s*(?:times?|contracts?|cons?|lots?|handles?|cents?|ticks?|points?|pts?|mins?|minutes?)\b)/i;
+// A number outside these bands isn't a price, whatever the sentence says.
+// Wide on purpose — they catch counts, zeros and fat fingers, not judge the
+// market. A "short NQ @ 2" limit is BELOW the market and fills instantly,
+// so the sell side is where a phantom price becomes a real position.
+const FUT_PRICE_BAND = {
+  NQ: [5000, 60000], MNQ: [5000, 60000],
+  ES: [1500, 20000], MES: [1500, 20000],
+  YM: [10000, 100000], MYM: [10000, 100000],
+  RTY: [800, 10000], M2K: [800, 10000],
+  CL: [10, 300], MCL: [10, 300],
+  GC: [1000, 20000], MGC: [1000, 20000],
+  SI: [10, 300], SIL: [10, 300],
+  NG: [0.5, 30]
+};
+function futPriceOk(sym, px) {
+  const b = FUT_PRICE_BAND[sym] || [0.1, 1e6];
+  return px >= b[0] && px <= b[1];
+}
 // "St0p" with a zero is a real High Risk channel typo; "Target 1: 7600"
 // numbers its targets — the label only counts when a colon follows.
 const RE_THEIR_STOP = /\b(?:st[o0]p(?:\s*loss)?|sl)\s*[:=@]?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)\b/i;
@@ -101,8 +123,17 @@ const FUT_NICKNAMES = { GOLD: "GC", SILVER: "SI", PLATINUM: "PL" };
 // "Stopped" alone at the start of a message, "Eh stopped", "Stop got hit",
 // "BE stop hit", "Trailing stop hit on RTY" — their stop fired, said seven
 // ways. Start-anchored so "if we get stopped" inside an entry's rationale
-// never reads as an exit.
-const RE_STOP_HIT = /^(?:eh\s+|welp\s+)?stopp(?:ed|ing)\b|\b(?:be\s+|trailing\s+)?stop\s+(?:got\s+|was\s+)?hit\b/i;
+// never reads as an exit. An everyday preposition after the word kills the
+// read: "Stopped by the store" and "Stopping for lunch" are errands, and
+// each closed a live position in the Aug 3 drill. Mirrors signals.py.
+const RE_STOP_HIT = /^(?:eh\s+|welp\s+)?stopp(?:ed|ing)\b(?!\s+(?:by|for|to|into|off|at\s+the)\b)|\b(?:be\s+|trailing\s+)?stop\s+(?:got\s+|was\s+)?hit\b/i;
+// "stopped out of my personal trade, room trade still on" — HIS other
+// account, not the call the room followed.
+const RE_NOT_ROOM_TRADE = /\bpersonal\b|\broom\s+trade\s+still\b|\bnot\s+the\s+room\b/i;
+// "Felony posted Jul 30, 2026 ..." — a date stamp INSIDE the body is an old
+// post rendered on screen that the scraper picked up, never a live message.
+// On Aug 3 one of these bought an expired contract. Mirrors signals.py.
+const RE_STALE_STAMP = /\bposted\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b|·\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b|·\s*\d+\s*[dhw]\b/i;
 // "Taking paper cut" / "Locking in a 8 point loss" — an early exit by hand.
 // Verb-led on purpose: "those paper cuts we took yesterday" is a war story,
 // "Taking papercut" is a sale.
@@ -188,7 +219,16 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   // "I'm going to take 742c starters and add full size at 741.60" — Midas
   // narrating a PLAN. Day two the reader bought the verb: OPEN TAKE 742C.
   // Announced intent is not an entry; his entry is the fill that follows.
-  "going to", "gonna"];
+  "going to", "gonna",
+  // "Short NQ @ 28660 — actually cancel that, no fill" fired the order and
+  // ignored the retraction. The retraction wins. Same for "(paper account
+  // only)", P&L lines and "Last week's long ES 7400" — a war story with a
+  // parseable entry inside it. Mirrors signals.py.
+  "cancel", "no fill", "never filled", "paper account", "last week",
+  "pnl", "p&l", "p/l",
+  // Aug 3 options drill: war stories and future-intent plans. NOT "earlier"
+  // or "if we" alone — both live inside real calls. Mirrors signals.py.
+  "was in", "almost", "tomorrow if"];
 
 const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
@@ -205,7 +245,9 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "TAKE", "KEEP",
   // Trader shorthand that looks exactly like a ticker once uppercase counts.
   "OPEX", "ORB", "HOD", "LOD", "EMA", "VWAP", "ATH", "RSI", "FIB", "PREP",
-  "OK", "LOL", "SMH", "LFG", "BE", "PDT"]);
+  "OK", "LOL", "SMH", "LFG", "BE", "PDT",
+  // "WIN!!" in a victory lap read as ticker WIN. Mirrors signals.py.
+  "WIN", "GAIN", "LOSS"]);
 
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_HDR, "");
@@ -331,7 +373,44 @@ function signalKey(s) {
           String(s.caller || "").toLowerCase()].join("|");
 }
 
+/* The reader, wrapped in the last set of no-matter-what checks. The inner
+ * function stays exactly the battle-tested paths; this wrapper only gets to
+ * turn a would-be OPEN into a loud refusal, never to create one. Mirrors
+ * signals.py word for word — test_parity holds the two together. */
 function parseSignal(text, cfg) {
+  const s = parseSignalInner(text, cfg);
+  if (s.action !== "OPEN" || s.kind === "future") return s;
+  const low = (s.clean || "").toLowerCase();
+  const isOption = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
+  if (isOption && /\b(sell|selling|sold|sto)\b/.test(low)
+      && !/\b(bto|buy|buying|bought)\b/.test(low)) {
+    s.fire = false; s.action = null;
+    s.why = "they're SELLING that option — this bot only ever buys, so " +
+            "nothing was sent";
+    return s;
+  }
+  if (isOption && s.strike !== null && Number(s.strike) <= 0) {
+    s.fire = false; s.action = null;
+    s.why = "a strike of 0 isn't a contract — refused, not guessed";
+    return s;
+  }
+  if (isOption && s.limit !== null
+      && (Number(s.limit) <= 0 || Number(s.limit) >= 1000)) {
+    s.fire = false; s.action = null;
+    s.why = Number(s.limit) + " isn't a plausible option premium — refused, " +
+            "not guessed";
+    return s;
+  }
+  if (/\$[A-Za-z]{1,5}\.[A-Za-z]\b/.test(s.raw || "")) {
+    s.fire = false; s.action = null;
+    s.why = "a dot-class ticker (BRK.B style) — the reader mangles these " +
+            "into the wrong symbol, so nothing was sent";
+    return s;
+  }
+  return s;
+}
+
+function parseSignalInner(text, cfg) {
   cfg = cfg || {};
   const allowed = (cfg.allowed_symbols || []).map(x => String(x).toUpperCase());
   const raw = String(text || "").trim();
@@ -354,6 +433,15 @@ function parseSignal(text, cfg) {
   const t = cleanText(raw);
   s.clean = t;
   const low = t.toLowerCase();
+
+  // Before every format reader on purpose: on Aug 3 a "Felony posted
+  // Jul 30" scrape bought an expired NVDA contract because the entry
+  // grammar got to it first. Mirrors signals.py.
+  if (RE_STALE_STAMP.test(t)) {
+    s.why = "carries its own date stamp — a rendered old post the scraper " +
+            "picked up, not a live call";
+    return s;
+  }
 
   // Who said it. Two shapes: the scribe relaying somebody ("@Brett (Admin)
   // ..."), and the admin posting straight into the room ("Brett (Admin) —
@@ -727,6 +815,14 @@ function parseSignal(text, cfg) {
   //     anchored regex is what keeps "Damn it actually worked out" from
   //     reading as an exit — a bare out IS the whole message, or it's chatter.
   if (RE_STOPPED_OUT.test(low) || RE_STOP_HIT.test(t) || RE_PAPERCUT.test(low)) {
+    if (RE_NOT_ROOM_TRADE.test(low)) {
+      // "stopped out of my personal trade, room trade still on" — his OTHER
+      // account. The room's position is explicitly alive; closing it here
+      // is the exact wrong read. Mirrors signals.py.
+      s.why = "their stop fired on a personal trade, not the room's — the " +
+              "room trade is still on";
+      return s;
+    }
     s.symbol = bareSymbol(t, allowed);
     s.action = RE_PARTIAL.test(low) ? "TRIM" : "CLOSE";
     s.matched = "stopped out";
@@ -864,8 +960,17 @@ function parseSignal(text, cfg) {
   const mf = RE_FUT_ENTRY.exec(t);
   let futDir = null, futSym = null, futPx = null, futEnd = 0;
   if (mf && FUT_SYMS.has(mf[2].toUpperCase())) {
+    const px0 = num(mf[3]);
+    if (!futPriceOk(mf[2].toUpperCase(), px0)) {
+      // "Long NQ @ 0", "Long NQ @ 286600000", or a count the unit-word
+      // lookahead didn't know. Refused loudly, never guessed — a short at
+      // a nonsense-low price is a marketable order. Mirrors signals.py.
+      s.why = "looks like a futures entry but " + px0 + " isn't a plausible " +
+              mf[2].toUpperCase() + " price — refused, not guessed";
+      return s;
+    }
     futDir = mf[1].toUpperCase(); futSym = mf[2].toUpperCase();
-    futPx = num(mf[3]); futEnd = (mf.index || 0) + mf[0].length;
+    futPx = px0; futEnd = (mf.index || 0) + mf[0].length;
   } else {
     // "Long NQ - AVG 24015" / "Entered NQ short 23477 average" — no inline
     // price, direction and symbol either way round, the price arriving as
@@ -894,8 +999,14 @@ function parseSignal(text, cfg) {
         const maF = RE_FUT_AVG.exec(t);
         const mlF = RE_LIMIT.exec(t);
         if (maF || mlF) {
+          const px1 = maF ? num(maF[1] || maF[2]) : parseFloat(mlF[1]);
+          if (!futPriceOk(s0, px1)) {
+            s.why = "looks like a futures entry but " + px1 + " isn't a " +
+                    "plausible " + s0 + " price — refused, not guessed";
+            return s;
+          }
           futDir = d0; futSym = s0;
-          futPx = maF ? num(maF[1] || maF[2]) : parseFloat(mlF[1]);
+          futPx = px1;
           futEnd = (md.index || 0) + md[0].length;
         } else if (RE_THEIR_STOP.test(t) && RE_ENTRY.test(low)) {
           futDir = d0; futSym = s0; futEnd = (md.index || 0) + md[0].length;

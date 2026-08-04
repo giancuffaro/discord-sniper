@@ -129,6 +129,11 @@ class Book:
         self.reserved = 0.0             # bids that are out but haven't filled
         self.peak = 0.0                 # most money committed at once
         self.realised = 0.0             # profit and loss on trades that are over
+        # The slice of realised that rests on ASSUMED fills — entries taken
+        # with no broker connected, where nothing ever checked that a seller
+        # existed at that price. Tracked separately so the day total can say
+        # out loud how much of itself is assumption rather than evidence.
+        self.realised_assumed = 0.0
         self.wins = 0
         self.losses = 0
         self.closed_trades = []         # [{key, who, symbol, qty, fill, exit, pl}]
@@ -671,6 +676,13 @@ class Book:
         # With no broker at all there is nothing to ask, so the dry run assumed
         # this filled. Said out loud every single time, because an assumed fill
         # is the one number in the log that is not evidence of anything.
+        # The flag rides on the position so the day total can keep assumed
+        # money separate from checked money all the way to the close.
+        if self.wb is None:
+            with self._lock:
+                _pa = self._pos.get(key)
+                if _pa is not None:
+                    _pa["assumed"] = True
         assumed = ("" if self.wb is not None else
                    "  (assumed — no keys saved, so nothing checked whether "
                    "anyone would actually have sold to you)")
@@ -989,6 +1001,8 @@ class Book:
             if self.cash is not None and not p.get("live"):
                 self.cash += got
                 self.realised += pl
+                if p.get("assumed"):
+                    self.realised_assumed += pl
             left = p["qty"]
             sym = p["symbol"]
         self._event(key, "trimmed",
@@ -1121,6 +1135,8 @@ class Book:
                 if not p_live:
                     self.cash += got
                     self.realised += pl
+                    if (self._pos.get(key) or {}).get("assumed"):
+                        self.realised_assumed += pl
                 p = self._pos.get(key)
                 if p is not None:
                     p.setdefault("exits", []).append(
@@ -1140,11 +1156,21 @@ class Book:
                          "room": (p or {}).get("room"),
                          "pl": round(total, 2), "t": time.time()})
                 pot = self.cash
+            day = ""
+            if self.unlimited:
+                day = ("day so far %s$%.0f"
+                       % ("+" if self.realised >= 0 else "-",
+                          abs(self.realised)))
+                # Honesty tax: how much of that number was never checked
+                # against a real seller. If the whole day is assumed, the
+                # whole day is a hypothesis, and the log should say so.
+                if abs(self.realised_assumed) >= 0.5:
+                    day += (" (of which %s$%.0f rests on assumed fills)"
+                            % ("+" if self.realised_assumed >= 0 else "-",
+                               abs(self.realised_assumed)))
             money = (" · %s$%.0f on the trade · %s"
                      % ("+" if pl >= 0 else "-", abs(pl),
-                        ("day so far %s$%.0f"
-                         % ("+" if self.realised >= 0 else "-",
-                            abs(self.realised))) if self.unlimited
+                        day if self.unlimited
                         else "account $%.0f" % pot))
         elif not settle:
             # trim() already banked the money chunk by chunk; just count it.
@@ -1203,6 +1229,7 @@ class Book:
             return {"pos": keep,
                     "archive": [dict(a) for a in self._archive],
                     "wallet": {"cash": self.cash, "realised": self.realised,
+                               "realised_assumed": self.realised_assumed,
                                "wins": self.wins, "losses": self.losses,
                                "peak": self.peak,
                                "trades": list(self.closed_trades)}}
@@ -1233,6 +1260,7 @@ class Book:
                 w = data.get("wallet") or {}
                 self.cash = float(w.get("cash") or 0.0)
                 self.realised = float(w.get("realised") or 0.0)
+                self.realised_assumed = float(w.get("realised_assumed") or 0.0)
                 self.wins = int(w.get("wins") or 0)
                 self.losses = int(w.get("losses") or 0)
                 self.peak = float(w.get("peak") or 0.0)
@@ -1264,6 +1292,7 @@ class Book:
         with self._lock:
             self._archive = []
             self.realised = 0.0
+            self.realised_assumed = 0.0
             self.wins = 0
             self.losses = 0
             self.closed_trades = []

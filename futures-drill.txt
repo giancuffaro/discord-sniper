@@ -1,0 +1,30 @@
+8/3/2026, 9:31:02 AM  [midas]  Felony: Short NQ @ 28660  Stop 28700  Target 28550
+8/3/2026, 9:33:10 AM  [midas]  Felony: Long MNQ @ 28490 Stop 28455 Target 28560
+8/3/2026, 9:35:44 AM  [midas]  Felony: Short nq 28240.50
+8/3/2026, 9:38:01 AM  [midas]  Felony: Long ES at 7455.25  SL 7448  Target 1: 7470
+8/3/2026, 9:41:17 AM  [midas]  Felony: Re-entered long here @ 23480 on NQ
+8/3/2026, 9:44:52 AM  [midas]  Felony: Long NQ - AVG 24015
+8/3/2026, 9:47:23 AM  [midas]  Felony: Short RTY AVG - 2398.4
+8/3/2026, 9:49:38 AM  [midas]  Felony: Entered NQ short 23477 average
+8/3/2026, 9:52:05 AM  [midas]  Felony: Long GOLD @ 3455.20  Stop 3448
+8/3/2026, 9:54:41 AM  [midas]  Felony: Short SILVER @ 41.85 St0p 42.10
+8/3/2026, 9:56:12 AM  [midas]  Felony: Long CL @ 66.40 Stop 65.95 Target 67.20
+8/3/2026, 9:58:30 AM  [midas]  Felony: Target hit $1700 a contract - 2nd trim
+8/3/2026, 10:01:14 AM  [midas]  Felony: $1,100 a contract on NQ short
+8/3/2026, 10:03:47 AM  [midas]  Felony: $800 a con
+8/3/2026, 10:06:22 AM  [midas]  Felony: Stopped
+8/3/2026, 10:08:55 AM  [midas]  Felony: Eh stopped
+8/3/2026, 10:11:03 AM  [midas]  Felony: BE stop hit
+8/3/2026, 10:13:39 AM  [midas]  Felony: Trailing stop hit on RTY
+8/3/2026, 10:16:20 AM  [1251181965252755517]  Market Guru™ Alerts: @everyone Ticker: `MNQ SHORT SMALL RISKY TRADE`  Entry: 28590  Stoploss: 28620  Target: 28480
+8/3/2026, 10:19:08 AM  [1251181965252755517]  Market Guru™ Alerts: @everyone Ticker: `MES LONG`  Entry: 7452.75  Stoploss: 7446.50
+8/3/2026, 10:22:44 AM  [1375454591755489341]  Bullwinkle: /MES | LONG HERE @everyone
+8/3/2026, 10:25:19 AM  [1375454591755489341]  Bullwinkle: MES | SHORT HERE @everyone
+8/3/2026, 10:28:02 AM  [1375454591755489341]  Bullwinkle: /MES OUT | BE ON VOICE FOR THESE
+8/3/2026, 10:31:37 AM  [midas]  Felony: Longs MNQ 450s
+8/3/2026, 10:34:11 AM  [midas]  Felony: long NQ into the close
+8/3/2026, 10:36:48 AM  [midas]  Felony: Short MYM @ 47250 Stop 47310
+8/3/2026, 10:39:25 AM  [midas]  Felony: Long M2K 2401.8 SL at be
+8/3/2026, 10:42:06 AM  [midas]  Felony: I'm watching NQ here, if we get stopped on this level I'll reassess
+8/3/2026, 10:44:52 AM  [midas]  Felony: Long NG @ 3.412 Stop 3.395
+8/3/2026, 10:47:30 AM  [midas]  Felony: Short MCL 66.15 Target 65.40
