@@ -162,6 +162,36 @@ async function refreshMode() {
   paintSim();
   paintPaper();
   paintAi(modeStatus);
+  paintStatus();
+}
+
+/* One-glance status bar — the whole setup on a single line, plus the one thing
+ * to fix if anything's red. No more hunting through the panel. */
+function _dot(ok) { return ok ? "✅" : "⛔"; }
+async function paintStatus() {
+  const bar = $("stBar"), fix = $("stFix");
+  if (!bar) return;
+  const st = modeStatus;
+  const bridge = !!st;
+  const paperKeys = !!(st && st.paper_keys_in);
+  const paper = !!(st && st.paper);
+  const ai = !!(st && st.ai_enabled);
+  let voiceN = 0;
+  try { const r = await chrome.runtime.sendMessage({ type: "VOICE_STATE" });
+        voiceN = (r && r.listening || []).length; } catch (e) {}
+  let v = "?"; try { v = (chrome.runtime.getManifest() || {}).version || "?"; } catch (e) {}
+  bar.textContent = [
+    "Bridge " + _dot(bridge),
+    "Webull " + (paper ? "PAPER ✅" : (paperKeys ? "paper ⛔" : "—")),
+    "AI " + (ai ? "✅" : "off"),
+    "Voice " + (voiceN ? (voiceN + " 🎙") : "off"),
+    "v" + v
+  ].join("  ·  ");
+  let hint = "";
+  if (!bridge) hint = "Bridge is down — double-click 🎯 START HERE.";
+  else if (paperKeys && !paper) hint = "Sandbox key saved but not connected — hit Update, or reconnect it.";
+  else if (!paperKeys) hint = "Add your Webull sandbox key below to start paper trading.";
+  fix.textContent = hint;
 }
 
 let paperOn = false;
