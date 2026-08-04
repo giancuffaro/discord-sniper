@@ -287,6 +287,15 @@ $("savekeys").onclick = async () => {
   const secret = $("wbsecret").value.trim();
   const el = $("keystate");
   if (!key || !secret) {
+    // The recurring trap: keys pasted into the PAPER boxes below, but this
+    // (LIVE) button pressed. Point them at the right button instead of the
+    // baffling "both boxes are empty" when they clearly typed something.
+    const pk = ($("wbpkey") || {}).value, ps = ($("wbpsecret") || {}).value;
+    if ((pk && pk.trim()) || (ps && ps.trim())) {
+      el.textContent = "Those are your SANDBOX keys — hit \"Save paper keys to " +
+        "this PC\" just below, not this one. (This top button is for LIVE keys.)";
+      return;
+    }
     el.textContent = "Both boxes need something in them — the key and the secret.";
     return;
   }
