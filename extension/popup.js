@@ -187,11 +187,20 @@ async function paintStatus() {
     "Voice " + (voiceN ? (voiceN + " 🎙") : "off"),
     "v" + v
   ].join("  ·  ");
-  let hint = "";
-  if (!bridge) hint = "Bridge is down — double-click 🎯 START HERE.";
-  else if (paperKeys && !paper) hint = "Sandbox key saved but not connected — hit Update, or reconnect it.";
-  else if (!paperKeys) hint = "Add your Webull sandbox key below to start paper trading.";
-  fix.textContent = hint;
+  // A short "what to do next" checklist — only the steps not done yet, in
+  // order. Empty when you're fully set up, so it disappears once you're ready.
+  const steps = [];
+  if (!bridge) steps.push("① Start the bridge — double-click 🎯 START HERE on your PC.");
+  else {
+    if (!paperKeys) steps.push("② Paper trading — add your Webull SANDBOX key in the Keys tab.");
+    else if (!paper) steps.push("② Sandbox key saved but not connected — hit Update, or reconnect it.");
+    if (!ai) steps.push("③ Smarter reads (optional) — add your Claude key in the Keys tab.");
+    if (!voiceN) steps.push("④ Voice rooms (optional) — add your Deepgram key in the Keys tab.");
+  }
+  fix.innerHTML = steps.length
+    ? "<b style='color:#e6edf6'>Set up:</b><br>" + steps.join("<br>")
+    : "✅ All set — you're ready.";
+  fix.style.color = steps.length ? "#fbbf24" : "#34d399";
 }
 
 let paperOn = false;
