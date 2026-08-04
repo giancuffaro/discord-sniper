@@ -193,9 +193,10 @@ async function capture(text, author, channel, at) {
   // sentences would be worse than not tuning at all. The timestamp is the
   // message's own, not the moment it was scraped — scrolled-in history
   // should read as the day it happened. 8000 lines is a couple of weeks of
-  // three rooms; older ones fall off the back.
+  // three rooms; older ones fall off the back. Raised to 25k so a couple of
+  // MONTHS of one room (grabbed with the auto-scroll history button) fits.
   c.push({ t: at || Date.now(), author, text, channel: String(channel || "") });
-  await chrome.storage.local.set({ captured: c.slice(-8000) });
+  await chrome.storage.local.set({ captured: c.slice(-25000) });
 }
 
 async function badge() {
@@ -867,6 +868,24 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg && msg.type === "VOICE_STOP_ALL") { stopAllListening().then(() => reply({ ok: true })); return true; }
   if (msg && msg.type === "VOICE_STATE") {
     reply({ ok: true, listening: Array.from(LISTENING.entries()).map(([id, v]) => ({ id, ...v })) });
+    return true;
+  }
+  // ---- History grabber progress (from content.js auto-scroll) ----
+  if (msg && msg.type === "GRAB_PROGRESS") {
+    (async () => {
+      const room = ROOM_LABELS[String(msg.channelId || "")] || String(msg.channelId || "");
+      if (msg.started) await addLog({ kind: "update", why: "⏳ grabbing " + room + "'s history — scrolling it up, sit tight" });
+      else if (msg.done) {
+        const how = msg.why ? msg.why
+          : (msg.reached === "date" ? "reached your date" :
+             msg.reached === "top" ? "reached the top of the channel" :
+             msg.reached === "limit" ? "hit the safety limit" : "stopped");
+        await addLog({ kind: "update", why: "✅ done grabbing " + room + " — " + how + ". Export it from the Logs tab." });
+      } else if (msg.oldest) {
+        await addLog({ kind: "ignored", why: "…grabbing " + room + " — back to " + new Date(msg.oldest).toLocaleDateString() });
+      }
+    })();
+    reply({ ok: true });
     return true;
   }
   if (msg.type !== "MESSAGE") { reply({ ok: false }); return true; }

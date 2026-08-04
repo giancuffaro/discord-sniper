@@ -180,6 +180,29 @@
     <div class="note">One click flips a room between TESTING (pretend money)
       and LIVE (your Webull account). Applies instantly. Everything falls
       back to TESTING when Chrome restarts.</div>
+
+    <label style="margin-top:14px">Grab this room's history (for tuning)</label>
+    <div class="half">
+      <div>
+        <label>Back to (date)</label>
+        <input id="grabDate" type="date">
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button id="grabStop" class="grow" style="max-width:100%">Stop</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="grabHistory" class="grow">⏳ Grab this room's history</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button id="exportRoom" class="grow">Export THIS room's messages</button>
+    </div>
+    <div class="note" id="grabState">Open the room's tab, pick how far back, and
+      hit Grab — it scrolls the room up on its own and captures every message
+      (never trades them). Then Export this room and send me the file. Watch the
+      Logs tab for progress. Only reads what's on your screen — no API, safe for
+      your account.</div>
   </div>
 
   <!-- ===== STRATEGIES ===== -->

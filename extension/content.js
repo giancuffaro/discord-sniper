@@ -133,7 +133,67 @@ function attach() {
     .catch(() => {});
 }
 
+/* ---- History grabber -------------------------------------------------------
+ * Scroll this room UP on its own, so the reader captures a couple of months of
+ * its wording without you dragging the scrollbar for an hour. Everything it
+ * sees this way is history (filed for tuning, never traded), same as if you'd
+ * scrolled by hand. Stops at the date you set, or when the channel runs out.
+ */
+let grabbing = false;
+
+function findScroller(el) {
+  let n = el;
+  while (n && n !== document.body) {
+    const s = getComputedStyle(n);
+    if ((s.overflowY === "auto" || s.overflowY === "scroll") &&
+        n.scrollHeight > n.clientHeight + 40) return n;
+    n = n.parentElement;
+  }
+  return document.querySelector('div[class*="scroller"]') || null;
+}
+
+function grabReport(obj) {
+  try { chrome.runtime.sendMessage(Object.assign({ type: "GRAB_PROGRESS", channelId: channelId() }, obj)); }
+  catch (e) {}
+}
+
+async function grabHistory(untilTs) {
+  if (grabbing) return;
+  const list = document.querySelector('[data-list-id="chat-messages"]');
+  const scroller = list && findScroller(list);
+  if (!scroller) { grabReport({ done: true, why: "couldn't find the message pane — open the room first" }); return; }
+  grabbing = true;
+  let stagnant = 0, lastH = -1, rounds = 0;
+  grabReport({ started: true });
+  while (grabbing && rounds < 6000) {
+    rounds++;
+    scroller.scrollTop = 0;                 // force Discord to load the older batch
+    await new Promise(r => setTimeout(r, 750));
+    const times = list.querySelectorAll('time[datetime]');
+    const oldestEl = times[0];
+    const oldest = oldestEl ? Date.parse(oldestEl.getAttribute("datetime")) : null;
+    const h = scroller.scrollHeight;
+    if (rounds % 4 === 0 || (untilTs && oldest && oldest <= untilTs)) {
+      grabReport({ oldest: oldest || null, rounds });
+    }
+    if (untilTs && oldest && oldest <= untilTs) { grabReport({ done: true, reached: "date", oldest }); break; }
+    if (h === lastH) { if (++stagnant >= 6) { grabReport({ done: true, reached: "top" }); break; } }
+    else { stagnant = 0; lastH = h; }
+  }
+  grabbing = false;
+  if (rounds >= 6000) grabReport({ done: true, reached: "limit" });
+}
+
+try {
+  chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+    if (!msg) return;
+    if (msg.type === "GRAB_HISTORY") { grabHistory(msg.untilTs || 0); reply && reply({ ok: true }); }
+    else if (msg.type === "STOP_GRAB") { grabbing = false; reply && reply({ ok: true }); }
+  });
+} catch (e) { /* orphaned copy after an update; the fresh one registers instead */ }
+
 window.__SNIPER_STOP__ = function () {
+  grabbing = false;
   if (observer) observer.disconnect();
   if (timer) clearInterval(timer);
   observer = null;
