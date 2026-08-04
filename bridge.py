@@ -756,7 +756,11 @@ def place(order):
             return False, ("couldn't put a price on that trim (no quote, no "
                            "percentage), so nothing was sold — still holding "
                            "%d" % held)
-        return True, "dry run — sold %d, holding the rest" % sold
+        # BOOK.trim places the real sandbox sell for a paper position (paper is
+        # no longer simulated), or the real sell for a live one; only a pure
+        # dry-run book with no broker models it.
+        where = ("sandbox" if paper else ("LIVE" if live_order else "dry run"))
+        return True, "%s — sold %d, holding the rest" % (where, sold)
 
     if paper and action in ("OPEN", "ADD"):
         # Paper uses the same test size as the dry book, so the two are
@@ -772,38 +776,27 @@ def place(order):
                                    else DRY_ENTRY_QTY))
     if MODE == "webhook":
         pass          # falls through to the webhook branch below
-    elif not live_order and not (paper and action in ("OPEN", "ADD")):
-        # Money is never the reason a test trade gets refused any more. The
-        # unlimited book keeps the high-water mark instead — the answer to
-        # "how much would I need" — and every entry goes through at the
-        # standard test size.
-        if action in ("OPEN", "ADD"):
-            if order.get("kind") == "future":
-                order["qty"] = DRY_FUT_QTY
-            elif order.get("kind") == "equity":
-                # ~$1,000 of stock per entry, whatever the share price.
-                px = float(order.get("limit") or 0)
-                order["qty"] = max(1, int(round(DRY_EQ_USD / px))) if px else 100
-            else:
-                order["qty"] = int(order.get("qty")
-                                   or (DRY_ADD_QTY if action == "ADD"
-                                       else DRY_ENTRY_QTY))
-        note("DRY RUN  %s   (nothing was sent to a broker)" % what)
-        if action in ("OPEN", "ADD"):
-            dry_entry(order)
-            if action == "ADD" and order.get("avg"):
-                BOOK.their_add(key, order["avg"])
-        if claimed:
-            got, how = exit_price(order, key)
-            BOOK.finish(key, positions.CLOSED,
-                        "sold on their call (dry run)" + how, price=got)
-        if order.get("reenter"):
-            note("DRY RUN  then straight back in on the same contract%s"
-                 % ("" if not order.get("reenter_limit")
-                    else " around %.2f" % float(order["reenter_limit"])))
-            dry_entry(dict(order, action="OPEN",
-                           limit=order.get("reenter_limit")))
-        return True, "dry run — logged, not sent"
+    elif not live_order and not (paper and action in ("OPEN", "ADD", "CLOSE")):
+        # THE IN-HOUSE SIM IS OFF — his word: "kill all the fake simulations,
+        # from now on only Webull paper for options and futures." So a real
+        # order with no sandbox behind it is REFUSED, never faked. (With the
+        # sandbox connected this branch isn't reached; paper routes below.)
+        if action in ("OPEN", "ADD", "CLOSE", "TRIM"):
+            if claimed:
+                BOOK.release(key)
+            w = EXEC.get("webull") or {}
+            has_key = bool(w.get("paper_app_key") and w.get("paper_app_secret"))
+            note("REFUSED  %s  ->  no Webull paper connection" % what)
+            if has_key:
+                return False, ("your Webull PAPER (sandbox) key is saved but not "
+                               "connected right now — reconnect and try again. "
+                               "The in-house sim is off, so nothing was faked. "
+                               "(%s)" % (WB_ERROR or "sandbox unreachable"))
+            return False, ("nothing was sent: connect your Webull PAPER "
+                           "(sandbox) key in the popup. The in-house sim is off "
+                           "— it's Webull paper only now, for options and "
+                           "futures.")
+        return True, "read and logged"
 
     if MODE == "webhook":
         url = EXEC.get("webhook_url", "")
@@ -821,10 +814,11 @@ def place(order):
             note("FAILED  %s  ->  %s" % (what, e))
             return False, "the webhook didn't answer: %s" % e
 
-    if live_order or (paper and action in ("OPEN", "ADD")):
+    if live_order or (paper and action in ("OPEN", "ADD", "CLOSE")):
         # Route to the right connection: real account for a live order, sandbox
         # for a paper one. This is the money-safety fork — a live order can only
-        # ever reach WB_LIVE.
+        # ever reach WB_LIVE. Paper entries AND exits both go to the sandbox now
+        # (no in-house model for the exit).
         client = WB_LIVE if live_order else WB_PAPER
         if client is None:
             if live_order:

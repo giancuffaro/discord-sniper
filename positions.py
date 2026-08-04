@@ -579,14 +579,15 @@ class Book:
         return self.wb
 
     def _sim(self, p):
-        """Is THIS position managed in simulation? The book as a whole can be
-        simulated (dry run / paper test) and still hold a LIVE position that
-        must get a REAL resting stop and a REAL stop-sell on the real account.
-        A live position is therefore NEVER simulated; everything else follows
-        the book's simulated flag. Keyed on the same p["live"] the broker
-        router uses, so the client and the sim-flag can never disagree — a live
-        position gets the live client AND real management, together."""
-        if p and p.get("live"):
+        """Is THIS position managed in simulation? A LIVE position is never
+        simulated — real resting stop and real stop-sell on the real account.
+        A PAPER position is ALSO never simulated now: paper is Webull's sandbox,
+        a real broker, so its stops/trims/closes are placed there too (options
+        AND futures), not modelled in-house. Only a position with no broker at
+        all (pure dry run, no keys) follows the book's simulated flag. Keyed on
+        the same p["live"]/p["paper"] the broker router uses, so the client and
+        the sim-flag can never disagree."""
+        if p and (p.get("live") or p.get("paper")):
             return False
         return self.simulated
 
