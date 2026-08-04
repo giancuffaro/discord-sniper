@@ -748,6 +748,103 @@ chrome.alarms.onAlarm.addListener(a => {
   if (a.name === "whop-watchdog") whopWatchdog();
 });
 
+/* ===== VOICE LISTENER =======================================================
+ * Listen to a Discord voice room and write every word down FAST, and turn any
+ * spoken call into the same clean format as a typed one. Several rooms at once:
+ * Discord allows one voice channel per account, so you open each in its own tab
+ * (a second account / profile) and start listening on each — they run in
+ * parallel, tagged by tab. The audio work lives in offscreen.js; this side just
+ * starts/stops it and files what comes back. It never trades — it writes down.
+ */
+const LISTENING = new Map();   // tabId -> { label, state }
+
+async function ensureOffscreen() {
+  try { if (chrome.offscreen.hasDocument && await chrome.offscreen.hasDocument()) return; }
+  catch (e) { /* fall through and try to create */ }
+  try {
+    await chrome.offscreen.createDocument({
+      url: "offscreen.html",
+      reasons: ["USER_MEDIA"],
+      justification: "Transcribe a Discord voice channel you chose to listen to."
+    });
+  } catch (e) { /* already exists, or a race — fine */ }
+}
+
+async function dgKey() {
+  try { return (await chrome.storage.local.get("deepgram_key")).deepgram_key || ""; }
+  catch (e) { return ""; }
+}
+async function dgModel() {
+  try { return (await chrome.storage.local.get("deepgram_model")).deepgram_model || "nova-2"; }
+  catch (e) { return "nova-2"; }
+}
+async function saveListening() {
+  const arr = Array.from(LISTENING.entries()).map(([id, v]) => ({ id, ...v }));
+  try { await chrome.storage.local.set({ listening: arr }); } catch (e) {}
+  badge();
+}
+
+async function startListening(tabId, label) {
+  const key = await dgKey();
+  if (!key) return { ok: false, why: "paste your Deepgram key in the popup first" };
+  await ensureOffscreen();
+  let streamId;
+  try { streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId }); }
+  catch (e) { return { ok: false, why: "couldn't grab that tab's audio — click the extension while the Discord tab is focused: " + (e && e.message || e) }; }
+  LISTENING.set(tabId, { label: label || ("tab " + tabId), state: "starting" });
+  await saveListening();
+  chrome.runtime.sendMessage({ target: "offscreen", type: "START_LISTEN",
+    id: tabId, label: label || ("tab " + tabId), streamId, dgKey: key, model: await dgModel() });
+  return { ok: true };
+}
+async function stopListening(tabId) {
+  chrome.runtime.sendMessage({ target: "offscreen", type: "STOP_LISTEN", id: tabId });
+  LISTENING.delete(tabId);
+  await saveListening();
+  return { ok: true };
+}
+async function stopAllListening() {
+  chrome.runtime.sendMessage({ target: "offscreen", type: "STOP_ALL" });
+  LISTENING.clear();
+  await saveListening();
+}
+
+async function handleOffscreen(msg) {
+  if (msg.type === "LISTEN_STATE") {
+    if (msg.state === "stopped") LISTENING.delete(msg.id);
+    else { const cur = LISTENING.get(msg.id); if (cur) cur.state = msg.state; }
+    await saveListening();
+    return;
+  }
+  if (msg.type === "LISTEN_ERROR") {
+    await addLog({ kind: "ignored", why: "voice (" + (msg.label || "") + "): " + msg.why,
+                   text: "" });
+    LISTENING.delete(msg.id); await saveListening();
+    return;
+  }
+  if (msg.type === "TRANSCRIPT") {
+    if (!msg.isFinal) return;              // write down only finalized segments
+    const label = msg.label || ("tab " + msg.id);
+    // 1) write EVERYTHING down, fast — the transcript itself, tagged by room.
+    capture(msg.text, "🎙 " + label, String(msg.id), Date.now());
+    await addLog({ kind: "voice", why: "🎙 " + label + ": " + msg.text, text: msg.text,
+                   author: label });
+    // 2) turn a spoken call into the SAME clean format as a typed one, so it's
+    //    easy to read and execute. The AI reader gives one uniform shape; the
+    //    regex is the free fast path when it already reads it.
+    if (!looksTradeLike(msg.text)) return;
+    const c = await cfg();
+    let canon = null;
+    const sig = parseSignal(msg.text, c);
+    if (sig.action && sig.symbol) canon = msg.text.trim();
+    if (!canon) canon = await aiRead(msg.text, c);
+    if (canon) {
+      await addLog({ kind: "update", why: "🎙 VOICE CALL (" + label + ") → " + canon,
+                     text: msg.text, author: label });
+    }
+  }
+}
+
 // Going from ON back to OFF is the moment a held-back update can land, so
 // don't make it wait out the rest of the half minute.
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -763,6 +860,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "ATTACHED") { badge(); reply({ ok: true }); return; }
+  // ---- VOICE LISTENER control + transcripts ----
+  if (msg && msg.from === "offscreen") { handleOffscreen(msg); reply({ ok: true }); return; }
+  if (msg && msg.type === "VOICE_START") { startListening(msg.tabId, msg.label).then(reply); return true; }
+  if (msg && msg.type === "VOICE_STOP") { stopListening(msg.tabId).then(reply); return true; }
+  if (msg && msg.type === "VOICE_STOP_ALL") { stopAllListening().then(() => reply({ ok: true })); return true; }
+  if (msg && msg.type === "VOICE_STATE") {
+    reply({ ok: true, listening: Array.from(LISTENING.entries()).map(([id, v]) => ({ id, ...v })) });
+    return true;
+  }
   if (msg.type !== "MESSAGE") { reply({ ok: false }); return true; }
 
   (async () => {

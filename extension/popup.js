@@ -373,6 +373,51 @@ $("aioff").onclick = async () => {
   }
 };
 
+/* ---- Voice listener — Deepgram, per tab, several at once ------------------ */
+function paintVoice(list) {
+  list = list || [];
+  const el = $("voiceState");
+  if (el) { el.textContent = list.length ? (list.length + " listening") : "off";
+            el.style.color = list.length ? "#34d399" : "#9aa"; }
+  const box = $("voiceList");
+  if (box) box.innerHTML = list.map(v =>
+    "🎙 " + (v.label || v.id) + " — " + (v.state || "…")).join("<br>");
+}
+async function refreshVoice() {
+  try { const r = await chrome.runtime.sendMessage({ type: "VOICE_STATE" });
+        paintVoice(r && r.listening); }
+  catch (e) { paintVoice([]); }
+}
+$("savedg").onclick = async () => {
+  const key = $("dgKey").value.trim();
+  const el = $("dgstate");
+  if (!key) { el.textContent = "Paste your Deepgram key first."; return; }
+  try { await chrome.storage.local.set({ deepgram_key: key });
+        el.textContent = "Deepgram key saved to this PC."; $("dgKey").value = ""; }
+  catch (e) { el.textContent = "couldn't save it"; }
+};
+$("listenTab").onclick = async () => {
+  const el = $("dgstate");
+  let tab;
+  try { [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); }
+  catch (e) {}
+  if (!tab) { el.textContent = "couldn't find the active tab"; return; }
+  const label = ((tab.title || "").replace(/ \| Discord.*/, "").trim() || tab.url || "tab").slice(0, 40);
+  el.textContent = "starting…";
+  try {
+    const r = await chrome.runtime.sendMessage({ type: "VOICE_START", tabId: tab.id, label });
+    el.textContent = (r && r.ok) ? "listening — every word is being written down"
+                                 : ("couldn't start: " + (r && r.why || "?"));
+  } catch (e) { el.textContent = "couldn't reach the background worker"; }
+  refreshVoice();
+};
+$("stopAllVoice").onclick = async () => {
+  try { await chrome.runtime.sendMessage({ type: "VOICE_STOP_ALL" }); } catch (e) {}
+  $("dgstate").textContent = "stopped all listening.";
+  refreshVoice();
+};
+refreshVoice();
+
 
 /* ---- the day as a table ---------------------------------------------------
  * One row per trade: who called it, the contract, what you paid, every

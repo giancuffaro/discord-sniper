@@ -1,13 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Discord Sniper",
-  "version": "1.25.0",
+  "version": "1.26.0",
   "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
   "permissions": ["storage", "notifications", "downloads", "alarms", "scripting",
-                  "clipboardWrite"],
+                  "clipboardWrite", "tabCapture", "offscreen", "activeTab"],
   "host_permissions": ["http://127.0.0.1/*", "http://localhost/*",
                        "https://discord.com/*", "https://*.discord.com/*",
-                       "https://whop.com/*", "https://*.whop.com/*"],
+                       "https://whop.com/*", "https://*.whop.com/*",
+                       "https://zoom.us/*", "https://*.zoom.us/*",
+                       "wss://api.deepgram.com/*", "https://api.deepgram.com/*"],
   "background": { "service_worker": "background.js" },
   "content_scripts": [
     {

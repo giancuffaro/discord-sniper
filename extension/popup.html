@@ -295,6 +295,26 @@
       misses. Saved to this PC, never the browser.</div>
     <div class="note" id="aikeystate">&nbsp;</div>
 
+    <label style="margin-top:12px">Voice listener — <b id="voiceState">off</b></label>
+    <input id="dgKey" type="password" autocomplete="off"
+           placeholder="paste your Deepgram API key">
+    <div class="row" style="margin-top:8px">
+      <button id="savedg" class="grow">Save Deepgram key</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="listenTab" class="grow">🎙 Listen to this tab (Discord / Zoom)</button>
+      <button id="stopAllVoice" style="max-width:90px">Stop all</button>
+    </div>
+    <div id="voiceList" class="note"></div>
+    <div class="note">Listens to a VOICE room — Discord or a Zoom web tab
+      (zoom.us in the browser) — in the tab you're on, and writes every word
+      down fast; any spoken call is normalized into the same clean format as a
+      typed one. Several rooms at once: open each in its own tab (a second
+      account/profile) and press Listen on each. Needs a Deepgram key
+      (console.deepgram.com). Saved to this PC. The desktop Zoom app can't be
+      captured this way. It never trades — it writes down.</div>
+    <div class="note" id="dgstate">&nbsp;</div>
+
     <label>Bridge on your PC</label>
     <input id="bridge" placeholder="http://127.0.0.1:8787/order">
 
