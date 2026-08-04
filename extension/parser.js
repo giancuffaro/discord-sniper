@@ -137,7 +137,10 @@ const RE_STALE_STAMP = /\bposted\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|no
 // "Taking paper cut" / "Locking in a 8 point loss" — an early exit by hand.
 // Verb-led on purpose: "those paper cuts we took yesterday" is a war story,
 // "Taking papercut" is a sale.
-const RE_PAPERCUT = /\btak(?:e|ing)\s+(?:a\s+|this\s+|the\s+)?paper\s*cut|\btak(?:e|ing)\s+be\b|\btaking\s+the\s+loss\b|\block(?:ing)?\s+in\s+an?\s+\d+\s+point\s+loss\b/i;
+// "Took an L" / "take the L" / "big L on this" — trader slang for a loss, i.e.
+// they closed it red. Verb- or size-anchored so "cool", "LOL", a stray "l"
+// never fire. Bullwinkle's "we took an L" on COIN went unread before this.
+const RE_PAPERCUT = /\btak(?:e|ing)\s+(?:a\s+|this\s+|the\s+)?paper\s*cut|\btak(?:e|ing)\s+be\b|\btaking\s+the\s+loss\b|\block(?:ing)?\s+in\s+an?\s+\d+\s+point\s+loss\b|\b(?:took|tak(?:e|ing))\s+(?:a\s+|an\s+|the\s+|this\s+|that\s+)?l\b|\bthat'?s\s+(?:a\s+|an\s+|the\s+)?l\b|\b(?:big|small|tough|rough|another)\s+l\b|\bl\s+on\s+(?:this|that|the)\b/i;
 
 function num(s) { return parseFloat(String(s).replace(/,/g, "")); }
 

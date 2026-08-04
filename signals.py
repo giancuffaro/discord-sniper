@@ -262,7 +262,14 @@ RE_PAPERCUT = re.compile(
     r"\btak(?:e|ing)\s+(?:a\s+|this\s+|the\s+)?paper\s*cut"
     r"|\btak(?:e|ing)\s+be\b"          # "Taking BE" — out at breakeven
     r"|\btaking\s+the\s+loss\b"
-    r"|\block(?:ing)?\s+in\s+an?\s+\d+\s+point\s+loss\b", re.IGNORECASE)
+    r"|\block(?:ing)?\s+in\s+an?\s+\d+\s+point\s+loss\b"
+    # "Took an L" / "take the L" / "big L on this" — slang for a loss, i.e.
+    # they closed it red. Verb- or size-anchored so "cool"/"LOL"/stray "l"
+    # never fire. Bullwinkle's "we took an L" on COIN went unread before this.
+    r"|\b(?:took|tak(?:e|ing))\s+(?:a\s+|an\s+|the\s+|this\s+|that\s+)?l\b"
+    r"|\bthat'?s\s+(?:a\s+|an\s+|the\s+)?l\b"
+    r"|\b(?:big|small|tough|rough|another)\s+l\b"
+    r"|\bl\s+on\s+(?:this|that|the)\b", re.IGNORECASE)
 
 
 def _num(s):
