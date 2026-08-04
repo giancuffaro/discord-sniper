@@ -250,7 +250,12 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "OPEX", "ORB", "HOD", "LOD", "EMA", "VWAP", "ATH", "RSI", "FIB", "PREP",
   "OK", "LOL", "SMH", "LFG", "BE", "PDT",
   // "WIN!!" in a victory lap read as ticker WIN. Mirrors signals.py.
-  "WIN", "GAIN", "LOSS"]);
+  "WIN", "GAIN", "LOSS",
+  // Whop role badges + repost boilerplate. "Trademorewiser (MOD) posted ...
+  // Full sold NQ" read the (MOD) moderator badge as ticker MOD and MISSED the
+  // NQ exit. MOD is the room's scribe, never a ticker. Mirrors signals.py.
+  "MOD", "VIP", "POSTED", "FINAL", "CON", "CONS", "PDH", "PDL", "FTGH",
+  "LH", "HH"]);
 
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_HDR, "");

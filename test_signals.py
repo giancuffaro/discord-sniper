@@ -486,6 +486,12 @@ ok(_g2.resolve_loaded(_en2, "Unraveller").fire,
 # Vero: "QQQ OUT 2.10 In one runner on MNQ futures" is a QQQ exit, not an entry.
 check("QQQ OUT 2.10 In one runner on MNQ futures.", action="CLOSE", symbol="QQQ")
 check("QQQ 717C 8/4 1.50 4 CONTRACTS", action="OPEN", symbol="QQQ")
+
+# Whop (MOD) badge: "Full sold NQ" is an NQ exit, NOT a close on ticker 'MOD'.
+_CFGF = {"allowed_symbols": ["SPY", "QQQ", "NQ", "MNQ", "ES", "SLV"]}
+_m = sigmod.parse("Full sold NQ $3000 a contract", cfg=_CFGF)
+ok(_m.action == "CLOSE" and _m.symbol == "NQ",
+   "'(MOD) ... Full sold NQ' must close NQ, never ticker MOD")
 print("Aug 4 fixes read: took-an-L closes, wrong-ticker refuses, "
       "an exit with a stray 'in' still closes.")
 

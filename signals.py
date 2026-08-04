@@ -406,7 +406,13 @@ NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                # celebration into a trim on a stock nobody holds. WIN, GAIN
                # and LOSS are real tickers somewhere, but in these rooms
                # they are always the words.
-               "WIN", "GAIN", "LOSS"}
+               "WIN", "GAIN", "LOSS",
+               # Whop role badges and prose. "Trademorewiser (MOD) posted ...
+               # Full sold NQ" read the (MOD) badge as ticker MOD and MISSED the
+               # NQ exit. MOD/mod is never a ticker in these rooms; nor are these
+               # bits of the Whop repost boilerplate.
+               "MOD", "VIP", "POSTED", "FULL", "FINAL", "CON", "CONS", "PDH",
+               "PDL", "BE", "FTGH", "LH", "HH"}
 
 
 @dataclass
