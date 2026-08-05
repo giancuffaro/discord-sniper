@@ -177,8 +177,8 @@ function grabReport(obj) {
 
 async function grabHistory(untilTs) {
   if (grabbing) return;
-  // No date given -> go THREE YEARS back from the real date, right now.
-  if (!untilTs) untilTs = Date.now() - 3 * 365 * 24 * 60 * 60 * 1000;
+  // No date given -> go ONE YEAR back from the real date, right now.
+  if (!untilTs) untilTs = Date.now() - 1 * 365 * 24 * 60 * 60 * 1000;
   const list = document.querySelector('[data-list-id="chat-messages"]');
   const scroller = list && findScroller(list);
   if (!scroller) { grabReport({ done: true, why: "couldn't find the message pane — open the room first" }); return; }
@@ -189,7 +189,10 @@ async function grabHistory(untilTs) {
   // tab on a long pull. Instead we nudge up about one screenful at a time and
   // wait a beat, so Discord loads the next batch and settles before the next
   // nudge. Slower, but it survives a 3-year scroll.
-  const WAIT = 1500;                          // ms between nudges — was 750
+  const WAIT = 750;                           // ms between nudges — twice as fast
+                                              // as 1500; safe because we nudge
+                                              // gently (a screen at a time), not
+                                              // yank to the very top.
   grabReport({ started: true });
   while (grabbing && rounds < 20000) {
     rounds++;

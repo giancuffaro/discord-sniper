@@ -1082,9 +1082,9 @@ function channelOf(tab) {
   return m ? m[1] : "";
 }
 // Grab ADDS this room to the queue. The background works the line one room at a
-// time — brings each to the front, scrolls its whole history, saves to
-// Downloads, closes the tab, next. Queue several with the button or Ctrl+Shift+X
-// and walk away. No date, no stop; each goes 3 years back.
+// time — brings each to the front, scrolls its history, saves to Downloads,
+// closes the tab, next. Queue several with the button or Ctrl+Shift+X and walk
+// away. Each goes 1 year back.
 $("grabHistory").onclick = async () => {
   const el = $("grabState");
   const tab = await activeTab();
@@ -1094,6 +1094,17 @@ $("grabHistory").onclick = async () => {
   el.textContent = "added to the queue — the extension will bring it to the front, grab it, save it, close the tab, and move to the next. Watch the Logs tab.";
   try { await chrome.runtime.sendMessage({ type: "ENQUEUE_GRAB", tabId: tab.id }); }
   catch (e) { el.textContent = "couldn't reach the extension — reopen the popup and try again."; }
+};
+// Stop the run early: halt the current grab, save whatever it caught, and clear
+// the rest of the queue.
+$("grabStop").onclick = async () => {
+  const el = $("grabState");
+  try {
+    await chrome.runtime.sendMessage({ type: "STOP_ALL_GRABS" });
+    el.textContent = "stopping — saving whatever's been caught so far, and clearing the queue. Check your Downloads and the Logs tab.";
+  } catch (e) {
+    el.textContent = "couldn't reach the extension — reopen the popup and try again.";
+  }
 };
 
 /* The previous-days picker. "today" is the live feed; a date is a file the

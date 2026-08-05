@@ -300,14 +300,41 @@ async function advanceQueue(tabId, closeTab) {
 }
 
 /* If you close a queued/running tab yourself, take it out of the line and,
- * if it was the one grabbing, move on to the next. */
+ * if it was the one grabbing, SAVE whatever it caught so far, then move on to
+ * the next. (Normal completion sets running=null before closing the tab, so
+ * that path doesn't re-download here.) */
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   const running = await getRunning();
   const q = await getQueue();
-  if ((running && running.tabId === tabId) || q.some(x => x.tabId === tabId)) {
+  const wasRunning = running && running.tabId === tabId;
+  if (wasRunning) {
+    const room = roomName(running.channelId);
+    const n = await downloadRoom(running.channelId, room);
+    await addLog({ kind: "update", why: "💾 " + room + " tab closed mid-grab — saved " +
+      (n ? n + " messages caught so far to your Downloads." : "nothing (nothing captured yet).") });
+  }
+  if (wasRunning || q.some(x => x.tabId === tabId)) {
     await advanceQueue(tabId, false);
   }
 });
+
+/* Stop everything: halt the running grab, save what it caught, and empty the
+ * queue so it doesn't advance. Leaves the tab open (a manual stop isn't a
+ * finish). */
+async function stopAllGrabs() {
+  const running = await getRunning();
+  if (running) {
+    try { await chrome.tabs.sendMessage(running.tabId, { type: "STOP_GRAB" }); } catch (e) {}
+    const room = roomName(running.channelId);
+    const n = await downloadRoom(running.channelId, room);
+    await addLog({ kind: "update", why: "⏹️ stopped " + room + " — saved " +
+      (n ? n + " messages caught so far to your Downloads." : "nothing (nothing captured yet).") });
+  }
+  const left = (await getQueue()).length;
+  await setQueue([]);
+  await setRunning(null);
+  if (left > 1) await addLog({ kind: "update", why: "cleared the rest of the queue (" + (left - 1) + " room" + (left - 1 === 1 ? "" : "s") + " removed)." });
+}
 
 /* Ctrl+Shift+X — queue whatever room tab is in front. */
 try {
@@ -1015,6 +1042,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     reply({ ok: true, listening: Array.from(LISTENING.entries()).map(([id, v]) => ({ id, ...v })) });
     return true;
   }
+  // ---- Grab queue: popup asks to stop everything and save partials ----
+  if (msg && msg.type === "STOP_ALL_GRABS") {
+    stopAllGrabs().then(() => reply({ ok: true }));
+    return true;
+  }
   // ---- Grab queue: popup asks to add the active room to the line ----
   if (msg && msg.type === "ENQUEUE_GRAB") {
     (async () => {
@@ -1033,7 +1065,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       if (msg.started) await addLog({ kind: "update", why: "⏳ grabbing " + room + "'s history — scrolling it up, sit tight" });
       else if (msg.done) {
         const how = msg.why ? msg.why
-          : (msg.reached === "date" ? "reached 3 years back" :
+          : (msg.reached === "date" ? "reached 1 year back" :
              msg.reached === "top" ? "reached the top of the channel" :
              msg.reached === "limit" ? "hit the safety limit" : "stopped");
         // Auto-download THIS room's messages the instant it's done — no button.
