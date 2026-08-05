@@ -162,6 +162,25 @@ def occ_symbol(symbol, expiration, option_type, strike):
     return "%s%s%s%08d" % (symbol.upper(), d, cp, int(round(float(strike) * 1000)))
 
 
+def tick_round(px):
+    """Snap an option price to the exchange's legal increment. Webull rejects a
+    limit that isn't on the price step — HTTP 417 OPTION_PRICE_STEP_LT — and the
+    rooms post odd-cent premiums all the time (AAOI 170C @ 2.38, QQQ @ 4.66).
+    The rule: $0.05 steps below $3.00, $0.10 at or above. Snapping to the
+    nearest legal tick is the difference between an accepted order and a reject.
+    A price that rounds to 0 is floored to one tick so it's still a real
+    order."""
+    try:
+        p = float(px)
+    except (TypeError, ValueError):
+        return px
+    if p <= 0:
+        return 0.05
+    step = 0.05 if p < 3.0 else 0.10
+    snapped = round(round(p / step) * step, 2)
+    return snapped if snapped > 0 else step
+
+
 def affordability(limit, qty, have, buffer=0.0):
     """(cost, ok, message). One options contract is 100 shares, so a $2.80
     contract costs $280 — which is the whole reason this exists.
@@ -627,6 +646,10 @@ class WebullOptions:
         limit on it. Webull does not accept market orders on options — there is
         no code path here that could send one even by accident.
         """
+        # Snap every price to a legal exchange tick right before it goes out —
+        # the single choke point every order passes through, so no odd-cent
+        # premium (2.38, 4.66) can ever reach Webull and 417 on the price step.
+        limit = tick_round(limit)
         leg = {"side": side, "quantity": str(qty), "symbol": symbol,
                "strike_price": "%.2f" % float(strike),
                "option_expire_date": expiration, "instrument_type": "OPTION",
@@ -643,7 +666,7 @@ class WebullOptions:
             # so it clears in a fast drop instead of resting above the market
             # while the contract keeps falling.
             o["order_type"] = "STOP_LOSS_LIMIT"
-            o["stop_price"] = "%.2f" % float(stop)
+            o["stop_price"] = "%.2f" % float(tick_round(stop))
             o["time_in_force"] = "GTC"
         return [o]
 
