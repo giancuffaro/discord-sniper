@@ -495,6 +495,16 @@ function parseSignalInner(text, cfg) {
     return s;
   }
 
+  // Credit/debit spreads and iron condors are MULTI-LEG — a buy-only bot can't
+  // follow them, and he dropped credit spreads on purpose. "Put Credit Spread
+  // (PCS) ... SPX PCS 7720/7710 ... Target: 30%+" used to read as TRIM PCS.
+  // Vetoed here, before any format reader, so no spread reaches the book.
+  if (/\bcredit\s+spread\b|\bdebit\s+spread\b|\biron\s+condor\b|\bput\s+credit\b|\bcall\s+credit\b|\b(?:pcs|ccs)\b/.test(low)) {
+    s.why = "a credit/debit spread (multi-leg) — the buy-only bot doesn't " +
+            "trade these, so nothing was sent";
+    return s;
+  }
+
   // Who said it. Two shapes: the scribe relaying somebody ("@Brett (Admin)
   // ..."), and the admin posting straight into the room ("Brett (Admin) —
   // 10:20 AM ..."). The relay wins when both are there.
