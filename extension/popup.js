@@ -134,16 +134,48 @@ function paintProps() {
   });
 }
 
+/* Show the paste boxes only when they're needed. Keys already saved? Collapse
+ * to a one-line summary with a Replace link — his ask: "only let paste keys if
+ * they are needed, otherwise hide the entry key areas." */
+function _toggleKeyGroup(entryId, savedId, saved, summaryHtml) {
+  const entry = $(entryId), box = $(savedId);
+  if (!entry || !box) return false;
+  if (saved && !entry.dataset.forceOpen) {
+    entry.style.display = "none";
+    box.style.display = "";
+    box.innerHTML = summaryHtml +
+      ' &nbsp;<a href="#" data-openkeys="' + entryId + '" ' +
+      'style="color:#60a5fa;text-decoration:none">Replace</a>';
+    const a = box.querySelector("a[data-openkeys]");
+    if (a) a.onclick = (e) => {
+      e.preventDefault();
+      entry.dataset.forceOpen = "1";
+      entry.style.display = ""; box.style.display = "none";
+    };
+    return true;
+  }
+  entry.style.display = "";
+  box.style.display = "none";
+  return false;
+}
+
 function paintKeys() {
   const el = $("keystate");
+  const has = !!(modeStatus && modeStatus.has_keys);
+  const collapsed = _toggleKeyGroup("keyEntry", "keySaved", has,
+    "<b>✓ Live keys saved</b> (…" + ((modeStatus || {}).key_tail || "????") + ")" +
+    ((modeStatus || {}).connected ? " — connected to Webull."
+      : " — not connected" + ((modeStatus || {}).error ? ": " + modeStatus.error : ".")));
+  // Paper keys: same treatment. There's no tail for these, just in/out.
+  _toggleKeyGroup("paperKeyEntry", "paperKeySaved",
+    !!(modeStatus && modeStatus.paper_keys_in),
+    "<b>✓ Paper (sandbox) keys saved</b> — fills your $1M paper books when " +
+    "Webull PAPER is on.");
   if (!el) return;
   if (!modeStatus) {
     el.textContent = "Can't check your keys — the bridge isn't running.";
-  } else if (modeStatus.has_keys) {
-    el.textContent = "Keys are in (…" + (modeStatus.key_tail || "????") + ")" +
-      (modeStatus.connected ? " and connected to Webull."
-                            : ", but not connected" +
-                              (modeStatus.error ? ": " + modeStatus.error : "."));
+  } else if (collapsed) {
+    el.textContent = "";        // the summary line says it; no need to repeat
   } else {
     el.textContent = "No keys saved yet. Get them from the Webull developer " +
       "page, paste both boxes, hit save. They stay on your PC, never in Chrome.";
@@ -344,8 +376,12 @@ $("savekeys").onclick = async () => {
     const r = await askBridge("/keys", { app_key: key, app_secret: secret });
     modeStatus = r;
     el.textContent = r.message || "saved";
-    if (r.ok) { $("wbkey").value = ""; $("wbsecret").value = ""; }
+    if (r.ok) {
+      $("wbkey").value = ""; $("wbsecret").value = "";
+      const ke = $("keyEntry"); if (ke) delete ke.dataset.forceOpen;
+    }
     paintMode();
+    paintKeys();     // collapse back to the saved summary
   } catch (e) {
     el.textContent = "Couldn't reach the bridge on your PC — double-click " +
       "START HERE first, then try again.";
@@ -367,9 +403,13 @@ $("savepaperkeys").onclick = async () => {
       { paper_app_key: key, paper_app_secret: secret });
     modeStatus = r;
     el.textContent = r.message || "saved";
-    if (r.ok) { $("wbpkey").value = ""; $("wbpsecret").value = ""; }
+    if (r.ok) {
+      $("wbpkey").value = ""; $("wbpsecret").value = "";
+      const pe = $("paperKeyEntry"); if (pe) delete pe.dataset.forceOpen;
+    }
     paintMode();
     paintPaper();
+    paintKeys();     // collapse the paper key group back to its summary
   } catch (e) {
     el.textContent = "Couldn't reach the bridge on your PC — double-click " +
       "START HERE first, then try again.";
