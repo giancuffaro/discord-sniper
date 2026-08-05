@@ -465,7 +465,10 @@ NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                "LIGHT", "STARTER", "PENDING", "PICKED", "MARKETING", "LOTTO",
                "IDEA", "WATCH", "OPTION", "OPTIONS", "TRADE", "ALERT", "SETUP",
                "AFTER", "STOP", "RIDE", "TA", "WIL", "SIDELINES", "STRONG",
-               "SMALL", "NEXT", "THIS", "THAT", "LETTING"}
+               # "OUT FOLKS" (Bullwinkle sign-off) -> phantom CLOSE FOLKS. Not a
+               # ticker; the real position is resolved from what's held.
+               "SMALL", "NEXT", "THIS", "THAT", "LETTING", "FOLKS", "GUYS",
+               "EVERYONE", "EVERYBODY", "TODAY", "HERE", "NOW", "DONE"}
 
 
 @dataclass

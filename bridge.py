@@ -897,8 +897,28 @@ def place(order):
                 return True, entry_words(ticket)
 
             if action == "CLOSE":
+                # "OUT HALF" / "all out" often carry no strike or expiry — the
+                # position they mean is the one on the book. Backfill from it so
+                # the sell knows which contract, instead of refusing with
+                # "they didn't say which expiry". The book is the authority on
+                # what's actually held.
+                held_pos = (BOOK.info(key) or {}) if BOOK is not None else {}
+                if not order.get("expiry") and held_pos.get("expiry"):
+                    order["expiry"] = held_pos.get("expiry")
+                if order.get("strike") in (None, "") and held_pos.get("strike") is not None:
+                    order["strike"] = held_pos.get("strike")
+                if not order.get("side") and held_pos.get("side"):
+                    order["side"] = held_pos.get("side")
+                # An exit reference so the sell never hinges on a live quote:
+                # their posted %, the last bid the watchdog saw, or — failing
+                # everything — the entry fill, so the exit records ~breakeven
+                # rather than refusing. Getting out is the point.
+                exref, _hownote = exit_price(order, key)
+                if exref is None:
+                    exref = held_pos.get("fill") or held_pos.get("their_price")
                 res = client.sell(order["symbol"], order.get("side"),
-                                  order.get("strike"), order.get("expiry"), qty)
+                                  order.get("strike"), order.get("expiry"), qty,
+                                  ref_price=exref)
                 msg = res["what"]
                 note("SOLD     %s" % msg)
                 if claimed:

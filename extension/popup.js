@@ -879,6 +879,33 @@ async function render() {
                   '<span style="display:block">' + ago(e.t) + " · " +
                   (e.author || "") + ": " +
                   String(e.text || "").slice(0, 90) + "</span>";
+    // Click any line to copy the WHOLE thing — the head, the reason, and the
+    // FULL untruncated message. Drag-selecting inside a popup is unreliable (it
+    // can close on you) and the row only shows the first 90 chars anyway, so
+    // "things don't copy" was really "I can't get the full line out." One click
+    // now does it. The whole-log button still lives up top for everything.
+    const full = head + (e.what ? " · " + e.what : "") +
+                 (e.why ? "  |  " + e.why : "") +
+                 "  |  " + (e.author || "") +
+                 (e.text ? ": " + e.text : "");
+    d.title = "click to copy this line";
+    d.style.cursor = "copy";
+    d.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(full);
+      } catch (_) {
+        // Clipboard API blocked in some popup states — fall back to a hidden
+        // textarea + execCommand so the copy still lands.
+        const ta = document.createElement("textarea");
+        ta.value = full; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); } catch (__) {}
+        ta.remove();
+      }
+      const b = d.querySelector("b");
+      if (b) { const keep = b.textContent; b.textContent = "✓ copied";
+               setTimeout(() => { b.textContent = keep; }, 1200); }
+    });
     box.appendChild(d);
   }
 }

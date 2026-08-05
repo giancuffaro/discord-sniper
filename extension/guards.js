@@ -196,12 +196,13 @@ async function guardCheck(sig, ctx, cfg) {
     return { allowed: false, reason: "already acted on that exact call " +
       Math.round((now - last) / 1000) + "s ago" };
 
-  if (sig.action === "OPEN" || sig.action === "ADD") {
-    if ((now - st.lastFire) / 1000 < g.cooldown_seconds)
-      return { allowed: false, reason: "still in the " + g.cooldown_seconds +
-        "s cooldown after the last fire" };
-    // The daily trade cap is gone — he follows every call they make.
-  }
+  // No time cooldown, on his word: "don't have cool downs. Just have a
+  // verification, and if it's exactly the same thing, just skip it." A blunt
+  // timer dropped a real NVDA call because a QQQ order fired 3s earlier — the
+  // exact miss he can't afford in a fast room. The only thing that stops a
+  // fire now is that it's genuinely a REPEAT of one already acted on: the echo
+  // guard above (same contract + same price, all day) and the exact-call
+  // dedupe above (identical signal). Different calls always go through.
 
   return { allowed: true, reason: "allowed" };
 }

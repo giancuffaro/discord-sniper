@@ -12,6 +12,30 @@ importScripts("parser.js", "guards.js");
 const BRIDGE_DEFAULT = "http://127.0.0.1:8787/order";
 const LOG_MAX = 400;   // a full trading day, not just the last hour
 
+/* One message, one pass. The reader re-scans the DOM on every mutation sweep,
+ * a room can be open in two tabs at once, and content.js's own SEEN set clears
+ * at 3000 — so the SAME Discord message reaches the worker again and again.
+ * Every re-read used to be logged (and re-evaluated) afresh, which is why the
+ * log wrote everything two and three times. This remembers a message by its
+ * stable id and drops the repeats. In-memory only: if the worker is evicted the
+ * map resets, which is harmless — worst case one duplicate right after a
+ * restart. Live path only; history/capture is untouched. */
+const RECENT_MSGS = new Map();
+const MSG_TTL_MS = 5 * 60 * 1000;
+function seenMessage(msg) {
+  const key = String(msg.mid ||
+    (msg.channelId + "|" + msg.postedAt + "|" + (msg.author || "") + "|" + msg.text));
+  const now = Date.now();
+  const prev = RECENT_MSGS.get(key);
+  if (prev && (now - prev) < MSG_TTL_MS) return true;
+  RECENT_MSGS.set(key, now);
+  if (RECENT_MSGS.size > 5000) {
+    const cut = now - MSG_TTL_MS;
+    for (const [k, v] of RECENT_MSGS) if (v < cut) RECENT_MSGS.delete(k);
+  }
+  return false;
+}
+
 /* Rooms that are being RECORDED, never traded. Aristotle's and Midas post the
  * same kind of calls but with messier wording, and the parser hasn't been
  * tuned on their sentences yet — a half-understood call is worse than none.
@@ -1108,6 +1132,13 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // Grabber export stores the FULL row text (embeds and all); trading still
     // reads the clean msg.text below.
     if (c.capture) capture(msg.full || msg.text, msg.author, msg.channelId, msg.postedAt);
+
+    // Drop a message we've already handled. Capture ran first (above), so the
+    // grabber's export still sees every row; this only stops the LIVE path —
+    // parse, guards, logging, firing — from running twice on one message.
+    // History is exempt: it returns below without logging or trading anyway,
+    // and re-reads of it while scrolling are expected.
+    if (!msg.history && seenMessage(msg)) { reply({ ok: true }); return; }
 
     // Whop stops here too, and harder: the Whop reader is a wide net that
     // hasn't been taught the room's shape yet, so EVERYTHING it sends is

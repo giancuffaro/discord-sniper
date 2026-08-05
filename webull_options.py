@@ -822,24 +822,46 @@ class WebullOptions:
             return max(0.01, round((bid + ask) / 2, 2))
         return max(0.01, round(bid, 2))
 
-    def sell(self, symbol, side, strike, expiry, qty):
+    def sell(self, symbol, side, strike, expiry, qty, ref_price=None):
+        """Exit a position. Getting OUT matters more than pricing it to the
+        cent — when the room says "all out", you're out.
+
+        The exit must NOT hinge on a live quote. The sandbox has no OPRA
+        entitlement, so ask_bid 403s all day, and the old code refused every
+        single "all out" because of it — the position just sat there while the
+        room was long gone. Now: use the live quote if it comes, else the
+        reference the bridge worked out (their posted %, the last bid the
+        watchdog saw, or the entry as breakeven), else a floor limit that still
+        clears at the market. A sell LIMIT below the market fills at the bid,
+        not at the limit, so a low number means "get me out", not "sell for a
+        penny"."""
         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
         expiration = expiry_to_date(expiry)
         occ = occ_symbol(symbol, expiration, option_type, strike)
-        ask, bid, _ = self.ask_bid(occ)
-        ref = bid or ask
-        if not ref or ref <= 0:
-            raise Refused("no live bid on %s to price the exit against. Nothing "
-                          "was sent — close it in the Webull app." % occ)
-        # Sell a shade under the bid. Getting out matters more than the last
-        # cent, and a limit sitting above the bid is how you end up still
-        # holding it at 4pm.
-        limit = max(0.01, round(ref * (1 - self.buffer_pct / 100) - 0.01, 2))
+        ask = bid = None
+        try:
+            ask, bid, _ = self.ask_bid(occ)
+        except Refused:
+            pass                # no live quote — we still get out, see below
+        ref = bid or ask or ref_price
+        if ref and ref > 0:
+            # Sell a shade under the reference so the limit is marketable and
+            # doesn't rest above the bid while the move happens without you.
+            limit = max(0.01, round(float(ref) * (1 - self.buffer_pct / 100)
+                                    - 0.01, 2))
+        else:
+            # No quote and nothing to reference at all. Place a floor limit that
+            # is marketable against any real bid, so the exit clears instead of
+            # refusing. The recorded price is honest about being unknown.
+            limit = 0.01
         what = "SELL %d %s %g%s %s @ %.2f" % (qty, symbol, float(strike),
                                               option_type[0], expiration, limit)
         body = self._send(self._order(symbol, expiration, option_type, strike,
                                       "SELL", qty, limit), what)
         oid = _find(body, "order_id", "orderId", "client_order_id", "clientOrderId")
+        # For the book's P&L, the honest exit price is the live bid if we had
+        # one, otherwise the reference the bridge handed in. Never the floor.
+        recorded = bid or ask or ref_price or limit
         return {"ok": True, "state": "sent", "order_id": str(oid) if oid else None,
-                "occ": occ, "what": what, "limit": limit, "bid": bid, "ask": ask,
-                "symbol": symbol, "qty": qty}
+                "occ": occ, "what": what, "limit": recorded, "order_limit": limit,
+                "bid": bid, "ask": ask, "symbol": symbol, "qty": qty}

@@ -296,7 +296,10 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "STARTER", "PENDING", "PICKED", "MARKETING", "LOTTO", "IDEA", "WATCH",
   "OPTION", "OPTIONS", "TRADE", "ALERT", "SETUP", "AFTER", "STOP", "RIDE",
   "TA", "WIL", "SIDELINES", "STRONG", "SMALL", "NEXT", "THIS", "THAT",
-  "LETTING"]);
+  // "OUT FOLKS" (Bullwinkle sign-off) -> phantom CLOSE FOLKS. Sign-off words,
+  // never tickers; the real position is resolved from what's held.
+  "LETTING", "FOLKS", "GUYS", "EVERYONE", "EVERYBODY", "TODAY", "HERE",
+  "NOW", "DONE"]);
 
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_HDR, "");

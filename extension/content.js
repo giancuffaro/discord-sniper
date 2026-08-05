@@ -111,6 +111,10 @@ function handle(li) {
   try {
     chrome.runtime.sendMessage({
       type: "MESSAGE",
+      mid: li.id,             // the Discord message id — stable identity so the
+                              // worker can drop a re-read instead of logging it
+                              // again (the reader re-scans on every sweep, and a
+                              // room can be open in two tabs)
       text,
       full: fullTextOf(li),   // everything in the row — for the grabber's export
       author: authorOf(li),
