@@ -305,6 +305,12 @@ class WebullOptions:
         # Webull takes no market orders on options at all, so all three of these
         # are limit orders; this only decides the number on it.
         self.entry_price = str(w.get("entry_price", "bid")).lower()
+        # When a call posts NO price and there's no quote either, take it at the
+        # market that instant rather than miss it — a marketable buy capped at
+        # this ceiling (dollars per contract). The cap is a fat-finger guard,
+        # not the price paid; the broker's real fill is read back afterward. Set
+        # 0 to go back to refusing a price-less, quote-less entry.
+        self.blind_entry_max = float(w.get("blind_entry_max", 15.0))
         # Quotes can be borrowed from ANOTHER client. Webull's options data
         # (OPRA) rides on the LIVE account, not the sandbox — so the paper
         # client asks the live client for the ask/bid (read-only, no orders),
@@ -767,23 +773,33 @@ class WebullOptions:
             ask, bid, _ = self.ask_bid(occ)
         except Refused:
             # No live quote — most often the OpenAPI options-data (OPRA)
-            # subscription isn't active on the keys. Rather than miss the trade,
-            # fall back to the price the room posted and follow them to the tee.
-            # Only if they actually gave one; otherwise there's nothing to price.
-            if not their_price:
-                raise
+            # subscription isn't active on the keys. We do NOT refuse for lack of
+            # a quote: fall back to the posted price, or — his call — take it at
+            # the market that instant. See the blind-entry branch below.
+            pass
 
         # The chase limit that used to sit here is DELETED, on his word:
         # "no filters wanted. id like to follow everything to the tee as they
         # do." If the room is in it, he's in it, whatever the ask has done
-        # since — the bid-sitting entry style is still what protects the
-        # price actually paid.
+        # since. Entries are marketable (priced at the ask) so they fill the
+        # moment they go out instead of resting on the bid.
 
+        blind = False
         if ask and ask > 0:
             limit = self.entry_limit(bid, ask)
         elif their_price:
             # No live ask: take the room's posted premium as the limit.
             limit = max(0.01, round(float(their_price), 2))
+        elif self.blind_entry_max and self.blind_entry_max > 0:
+            # No quote AND no posted price — "make the entry instant, a bid at
+            # that moment." Place a marketable BUY at a bounded ceiling: a limit
+            # ABOVE the market fills at the current ask right now, so this takes
+            # the trade immediately instead of missing it. The ceiling only
+            # stops a fat-finger contract from costing a fortune; the watchdog
+            # reads the broker's ACTUAL fill afterward, so the price on record
+            # is what the market gave, not the ceiling.
+            limit = float(self.blind_entry_max)
+            blind = True
         else:
             raise Refused("no live ask on %s and no posted price to fall back "
                           "on. Nothing was sent." % occ)
@@ -791,8 +807,12 @@ class WebullOptions:
         # real price is known — their quoted 2.80 and the live ask are not the
         # same number, and it's the live one you'd be paying.
         self.afford_check(limit, qty)
-        what = "BUY %d %s %g%s %s @ %.2f" % (qty, symbol, float(strike),
-                                             option_type[0], expiration, limit)
+        if blind:
+            what = "BUY %d %s %g%s %s @ market (take it now, ≤%.2f)" % (
+                qty, symbol, float(strike), option_type[0], expiration, limit)
+        else:
+            what = "BUY %d %s %g%s %s @ %.2f" % (qty, symbol, float(strike),
+                                                 option_type[0], expiration, limit)
         body = self._send(self._order(symbol, expiration, option_type, strike,
                                       "BUY", qty, limit), what)
         oid = _find(body, "order_id", "orderId", "client_order_id", "clientOrderId")
@@ -802,7 +822,7 @@ class WebullOptions:
         # allowed to read this as "you own it". bridge.py watches the ticket.
         return {"ok": True, "state": "working", "order_id": str(oid) if oid else None,
                 "occ": occ, "what": what, "limit": limit, "bid": bid, "ask": ask,
-                "symbol": symbol, "side": side, "strike": strike,
+                "blind": blind, "symbol": symbol, "side": side, "strike": strike,
                 "expiry": expiry, "qty": qty}
 
     def entry_limit(self, bid, ask):
