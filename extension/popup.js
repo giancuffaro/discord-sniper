@@ -1050,7 +1050,7 @@ function nextTradingDay() {
 $("testtrade").onclick = async () => {
   const btn = $("testtrade");
   const tk = ((($("testticker") || {}).value || "SPY").trim() || "SPY").toUpperCase();
-  const strike = ((($("teststrike") || {}).value || "600").trim() || "600");
+  const strike = ((($("teststrike") || {}).value || "800").trim() || "800");
   const cp = (($("testtype") || {}).value === "P") ? "P" : "C";
   const exp = ((($("testexp") || {}).value || "").trim()) || nextTradingDay();
   // A normal PAPER trading room id, so the message flows through the ordinary
