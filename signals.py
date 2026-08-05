@@ -378,6 +378,11 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               # as a 10% TRIM. "hold runners for breakeven" is coaching, not a
               # sale — both are advice/recap, never firm orders.
               "probably", "hold runners", "take trims",
+              # "we have been SPOT on with direction ... getting stopped out"
+              # read SPOT as the ticker and fired a CLOSE. "spot on" is the
+              # idiom, not Spotify. "on watch" is a Nitro/are-alerts watchlist
+              # note ("TSLA $400c on watch"), never an entry.
+              "spot on", "on watch",
               "looking at", "thinking", "maybe", "might", "if it", "if you",
               "waiting", "wait for", "heads up", "scanner", "idea", "consider",
               "recap", "example", "congrats", "missed", "sorry", "pissed",
@@ -445,7 +450,11 @@ NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                # NQ exit. MOD/mod is never a ticker in these rooms; nor are these
                # bits of the Whop repost boilerplate.
                "MOD", "VIP", "POSTED", "FULL", "FINAL", "CON", "CONS", "PDH",
-               "PDL", "BE", "FTGH", "LH", "HH"}
+               "PDL", "BE", "FTGH", "LH", "HH",
+               # The Discord bot badge. "stockguy007 APP — 9/26 ... Stopping
+               # out here" and "Nitro Trades APP — ... Closed SPY" read the
+               # APP badge as ticker APP and fired CLOSE APP. Never a ticker.
+               "APP", "COMMENT", "ENTRY", "PRICE", "SWING"}
 
 
 @dataclass
@@ -790,8 +799,12 @@ def _parse_inner(text, author="", channel="", cfg=None):
     #      and must NEVER read as a trim; they're just tracking the runner.
     #      "Closed"/"Close" is the exit. Gated on a readable contract so a stray
     #      "close the door" can't do anything.
-    jm = re.match(r"^(open|update|closed|close)\b\s*(.*)$", t,
-                  re.IGNORECASE | re.DOTALL)
+    # A short lead-in before the label is allowed: are-alerts writes
+    # "For my small fries : OPEN $HPE $30 call 5/15 @ 0.50 (swing)". The prefix
+    # must be a single short clause ending in a colon so a whole sentence can't
+    # sneak a label out of the middle of prose.
+    jm = re.match(r"^(?:[^:\n]{1,40}:\s+)?(open|update|closed|close)\b\s*(.*)$",
+                  t, re.IGNORECASE | re.DOTALL)
     if jm and _contract(jm.group(2).strip()):
         label = jm.group(1).lower()
         rest = jm.group(2).strip()
@@ -883,6 +896,51 @@ def _parse_inner(text, author="", channel="", cfg=None):
                 sig.warn = "no entry price posted — it pays the market."
             sig.why = "entry: %s" % sig.human()
             return sig
+
+    # ---- Nitro Trades: "Entry Contract: TSLA $390p Price: $1.75 Comments:none".
+    #      A fully labeled entry — the "Entry Contract:" tag and "Price:" make it
+    #      unambiguous. Anything led by "Comment" is a watch/recap/exit, handled
+    #      by the normal reader (and "on watch" is vetoed above).
+    ntr = re.search(
+        r"\bentry\s+contract:?\s*\$?([A-Za-z]{1,5})\s+\$?"
+        r"(\d{1,5}(?:\.\d{1,2})?)\s*([CcPp])\b"
+        r"(?:.*?\bprice:?\s*\$?(\d+(?:\.\d{1,2})?))?", t, re.IGNORECASE)
+    if ntr and ntr.group(1).upper() not in NOT_TICKERS:
+        sig.symbol = ntr.group(1).upper()
+        sig.strike = float(ntr.group(2))
+        sig.side = "CALLS" if ntr.group(3).upper() == "C" else "PUTS"
+        if ntr.group(4):
+            sig.limit = float(ntr.group(4))
+        sig.action, sig.matched = "OPEN", "nitro entry"
+        sig.fire = True
+        if sig.limit is None:
+            sig.warn = "no entry price posted — it pays the market."
+        sig.why = "entry: %s" % sig.human()
+        return sig
+
+    # ---- stockguy007: "USO Calls Jul 18th exp 74" / "SPY Puts Aug 6th exp 630s"
+    #      / "ROKU Calls May 15th 120s". Ticker, side spelled out, a month+day
+    #      expiry, then the strike (often with a trailing "s"). No premium — it
+    #      pays the market. The spelled-out Calls/Puts + month name + day + strike
+    #      is the fingerprint; chatter almost never lines those up in that order.
+    sgm = re.search(
+        r"(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+(calls?|puts?)\s+"
+        r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+"
+        r"(\d{1,2})(?:st|nd|rd|th|dn)?\s+(?:exp\.?\s+)?\$?(\d{1,4})s?\b",
+        t, re.IGNORECASE)
+    if sgm and sgm.group(1).upper() not in NOT_TICKERS:
+        _mo = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+               "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11,
+               "dec": 12}[sgm.group(3).lower()]
+        sig.symbol = sgm.group(1).upper()
+        sig.side = "CALLS" if sgm.group(2).lower().startswith("call") else "PUTS"
+        sig.expiry = "%d/%d" % (_mo, int(sgm.group(4)))
+        sig.strike = float(sgm.group(5))
+        sig.action, sig.matched = "OPEN", "stockguy entry"
+        sig.fire = True
+        sig.warn = "no premium posted — it pays the market."
+        sig.why = "entry: %s" % sig.human()
+        return sig
 
     # ---- Vero: "QQQ 708C 7/21 1.03 2 CONTRACTS" / "SPY 757P 8/3 1.13 4 CONS".
     #      Symbol, strike+side, date, premium, size — the "N CONTRACTS/CONS" tail

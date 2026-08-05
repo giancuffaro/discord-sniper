@@ -848,3 +848,60 @@ if fails:
 print("Boka reads: JonnyOptions 'added/adding' entries (share level never the "
       "premium, 'filled'/'avg' is), trims/exits, Sir Goldman ENTRY vs COMMENT, "
       "and advice/recap lines fire nothing.")
+
+
+# --- ZT opt rooms: are alerts, stockguy007, Nitro Trades --------------------
+ZT = {"allowed_symbols": ["SPY", "QQQ", "NVDA", "AAPL", "HPE", "SLV", "GLD",
+                          "USO", "XLY", "ROKU", "TSLA", "AMZN", "PLTR"]}
+
+
+def zcheck(text, action=None, fire=None, **want):
+    s = sigmod.parse(text, cfg=ZT)
+    if fire is not None:
+        ok(s.fire == fire, "%r: fire was %s, expected %s (%s)"
+           % (text[:52], s.fire, fire, s.why))
+    if action is not None:
+        ok(s.action == action, "%r: action was %s, expected %s (%s)"
+           % (text[:52], s.action, action, s.why))
+    for k, v in want.items():
+        ok(getattr(s, k) == v, "%r: %s was %r, expected %r"
+           % (text[:52], k, getattr(s, k), v))
+    return s
+
+
+# are alerts: OPEN with a short lead-in, and the "SPOT on" non-ticker
+zcheck("For my small fries : OPEN $HPE $30 call 5/15 @ 0.50 (swing)",
+       action="OPEN", fire=True, symbol="HPE", strike=30.0, side="CALLS",
+       expiry="5/15", limit=0.50)
+zcheck("OPEN $NVDA $205 call 7/20 @ 4.28 (swing)", action="OPEN", fire=True,
+       symbol="NVDA", strike=205.0, expiry="7/20", limit=4.28)
+zcheck("Past few positions we have been SPOT on with direction, just early and "
+       "getting stopped out", fire=False, action=None)
+# stockguy007: spelled-out entries, the " APP " badge is not a ticker
+zcheck("USO Calls Jul 18th exp 74 Might swing overnight", action="OPEN",
+       fire=True, symbol="USO", strike=74.0, side="CALLS", expiry="7/18")
+zcheck("SPY Puts Aug 6th exp 630s", action="OPEN", fire=True, symbol="SPY",
+       strike=630.0, side="PUTS", expiry="8/6")
+zcheck("AAPL Calls Aug 22dn exp 235s", action="OPEN", fire=True, symbol="AAPL",
+       strike=235.0, expiry="8/22")
+zcheck("ROKU Calls May 15th 120s", action="OPEN", fire=True, symbol="ROKU",
+       strike=120.0, expiry="5/15")
+zcheck("stockguy007 APP — 9/26/25, 10:28 AM Friday, September 26, 2025 at "
+       "10:28 AM Stopping out here guys", symbol=None)  # not CLOSE APP
+# Nitro Trades: labeled entry with price, and "on watch" fires nothing
+zcheck("Entry Contract: TSLA $390p Price: $1.75 Comments:none", action="OPEN",
+       fire=True, symbol="TSLA", strike=390.0, side="PUTS", limit=1.75)
+zcheck("Entry Contract: TSLA $412.5c Price: $2.22 Comments:none", action="OPEN",
+       fire=True, symbol="TSLA", strike=412.5, side="CALLS", limit=2.22)
+zcheck("Comment TSLA $400c on watch", fire=False, action=None)
+zcheck("Comment NVDA $187.5c on watch, will be quarter sized again", fire=False,
+       action=None)
+
+if fails:
+    print("FAILED %d ZT-opt check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("ZT opt reads: are-alerts OPEN with a lead-in (SPOT-on ignored), "
+      "stockguy007 spelled-out entries (APP badge never a ticker), Nitro "
+      "'Entry Contract' buys with price, and 'on watch' fires nothing.")

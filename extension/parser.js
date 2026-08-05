@@ -230,6 +230,9 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   // TRIM. "hold runners for breakeven" is coaching, not a sale — both are
   // advice/recap, never firm orders.
   "probably", "hold runners", "take trims",
+  // "we have been SPOT on ... getting stopped out" read SPOT as a ticker and
+  // fired CLOSE. "on watch" is a Nitro/are-alerts watchlist note, never a buy.
+  "spot on", "on watch",
   "looking at", "thinking", "maybe", "might", "if it", "if you", "waiting",
   "wait for", "heads up", "scanner", "idea", "consider", "recap", "example",
   "congrats", "missed", "sorry", "pissed", "sets the tone", "session",
@@ -282,7 +285,10 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // Full sold NQ" read the (MOD) moderator badge as ticker MOD and MISSED the
   // NQ exit. MOD is the room's scribe, never a ticker. Mirrors signals.py.
   "MOD", "VIP", "POSTED", "FINAL", "CON", "CONS", "PDH", "PDL", "FTGH",
-  "LH", "HH"]);
+  "LH", "HH",
+  // The Discord bot badge. "stockguy007 APP — ... Stopping out" and "Nitro
+  // Trades APP — ... Closed SPY" read APP as ticker APP and fired CLOSE APP.
+  "APP", "COMMENT", "ENTRY", "PRICE", "SWING"]);
 
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_HDR, "");
@@ -535,7 +541,9 @@ function parseSignalInner(text, cfg) {
   //      "Open  SPY 08/03 753C @.92" enters; "Update ... (+40%)" is a running
   //      P&L post and must NEVER read as a trim; "Closed"/"Close" exits. Gated
   //      on a readable contract so a stray "close the door" does nothing.
-  const jm = /^(open|update|closed|close)\b\s*([\s\S]*)$/i.exec(t);
+  // A short lead-in before the label is allowed: are-alerts writes "For my
+  // small fries : OPEN $HPE $30 call 5/15 @ 0.50 (swing)".
+  const jm = /^(?:[^:\n]{1,40}:\s+)?(open|update|closed|close)\b\s*([\s\S]*)$/i.exec(t);
   if (jm && findContract((jm[2] || "").trim())) {
     const label = jm[1].toLowerCase();
     const rest = (jm[2] || "").trim();
@@ -607,6 +615,39 @@ function parseSignalInner(text, cfg) {
       s.why = "entry: " + human(s);
       return s;
     }
+  }
+
+  // ---- Nitro Trades: "Entry Contract: TSLA $390p Price: $1.75 Comments:none".
+  //      Fully labeled — the "Entry Contract:" / "Price:" tags make it
+  //      unambiguous. "Comment ... on watch" is a watch (vetoed above).
+  const ntr = /\bentry\s+contract:?\s*\$?([A-Za-z]{1,5})\s+\$?(\d{1,5}(?:\.\d{1,2})?)\s*([CcPp])\b(?:[\s\S]*?\bprice:?\s*\$?(\d+(?:\.\d{1,2})?))?/i.exec(t);
+  if (ntr && !NOT_TICKERS.has(ntr[1].toUpperCase())) {
+    s.symbol = ntr[1].toUpperCase();
+    s.strike = parseFloat(ntr[2]);
+    s.side = ntr[3].toUpperCase() === "C" ? "CALLS" : "PUTS";
+    if (ntr[4]) s.limit = parseFloat(ntr[4]);
+    s.action = "OPEN"; s.matched = "nitro entry"; s.fire = true;
+    if (s.limit === null || isNaN(s.limit))
+      s.warn = "no entry price posted — it pays the market.";
+    s.why = "entry: " + human(s);
+    return s;
+  }
+
+  // ---- stockguy007: "USO Calls Jul 18th exp 74" / "SPY Puts Aug 6th exp 630s"
+  //      / "ROKU Calls May 15th 120s". Ticker, spelled-out side, month+day
+  //      expiry, then the strike (often a trailing "s"). No premium.
+  const sgm = /(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+(calls?|puts?)\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th|dn)?\s+(?:exp\.?\s+)?\$?(\d{1,4})s?\b/i.exec(t);
+  if (sgm && !NOT_TICKERS.has(sgm[1].toUpperCase())) {
+    const MO = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7,
+                 aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+    s.symbol = sgm[1].toUpperCase();
+    s.side = sgm[2].toLowerCase().startsWith("call") ? "CALLS" : "PUTS";
+    s.expiry = MO[sgm[3].toLowerCase()] + "/" + parseInt(sgm[4], 10);
+    s.strike = parseFloat(sgm[5]);
+    s.action = "OPEN"; s.matched = "stockguy entry"; s.fire = true;
+    s.warn = "no premium posted — it pays the market.";
+    s.why = "entry: " + human(s);
+    return s;
   }
 
   // ---- Vero: "QQQ 708C 7/21 1.03 2 CONTRACTS". The "N CONTRACTS/CONS" tail is
