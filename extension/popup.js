@@ -1045,6 +1045,19 @@ $("copylog").onclick = async () => {
   setTimeout(() => { btn.textContent = "Copy log"; }, 2500);
 };
 
+$("savelognow").onclick = async () => {
+  const btn = $("savelognow");
+  btn.disabled = true; btn.textContent = "💾 Saving…";
+  try {
+    await chrome.runtime.sendMessage({ type: "EXPORT_NOW" });
+    btn.textContent = "💾 Saved — tell Claude to check";
+  } catch (e) {
+    btn.textContent = "💾 Save failed — is the bot on?";
+  }
+  setTimeout(() => { btn.disabled = false;
+    btn.textContent = "💾 Save log now (for Claude)"; }, 2500);
+};
+
 $("export").onclick = async () => {
   const { captured } = await chrome.storage.local.get("captured");
   // Which room each line came from. Three rooms export into one file, and the

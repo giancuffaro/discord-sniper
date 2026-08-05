@@ -954,7 +954,19 @@ chrome.alarms.create("watch-build", { periodInMinutes: 0.5 });
 // syncs up on its own; the scheduled reader picks it up, sees what the parser
 // missed, tunes it, and pushes. One file per day, overwritten each pass, so it
 // stays current without piling up.
-chrome.alarms.create("auto-export", { periodInMinutes: 30, delayInMinutes: 1 });
+// Fire the export at :05 and :35 past the hour, so there's always a fresh file
+// five minutes before the top-of-hour :40 log check (and once mid-hour). Anchor
+// to the next :05/:35 so it stays on the clock even across worker restarts.
+function _nextExportTime() {
+  const now = new Date();
+  const m = now.getMinutes();
+  const d = new Date(now); d.setSeconds(0, 0);
+  if (m < 5) d.setMinutes(5);
+  else if (m < 35) d.setMinutes(35);
+  else { d.setHours(d.getHours() + 1); d.setMinutes(5); }
+  return d.getTime();
+}
+chrome.alarms.create("auto-export", { when: _nextExportTime(), periodInMinutes: 30 });
 chrome.alarms.onAlarm.addListener(a => {
   if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); }
   if (a.name === "whop-watchdog") whopWatchdog();
@@ -1112,6 +1124,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "ATTACHED") { badge(); reply({ ok: true }); return; }
   // ---- VOICE LISTENER control + transcripts ----
   if (msg && msg.from === "offscreen") { handleOffscreen(msg); reply({ ok: true }); return; }
+  if (msg && msg.type === "EXPORT_NOW") { autoExportForLearning().then(() => reply({ ok: true })).catch(() => reply({ ok: false })); return true; }
   if (msg && msg.type === "VOICE_START") { startListening(msg.tabId, msg.label).then(reply); return true; }
   if (msg && msg.type === "VOICE_STOP") { stopListening(msg.tabId).then(reply); return true; }
   if (msg && msg.type === "VOICE_STOP_ALL") { stopAllListening().then(() => reply({ ok: true })); return true; }
