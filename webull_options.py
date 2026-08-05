@@ -323,7 +323,10 @@ class WebullOptions:
         # crosses the spread and fills nearly every time. "mid" splits it.
         # Webull takes no market orders on options at all, so all three of these
         # are limit orders; this only decides the number on it.
-        self.entry_price = str(w.get("entry_price", "bid")).lower()
+        # DEFAULT is "ask" now, on his word — "we are still biding in." A resting
+        # bid that never fills is a missed trade, and missing trades is the one
+        # thing this can't do. Crossing the ask gets in at the real market price.
+        self.entry_price = str(w.get("entry_price", "ask")).lower()
         # When a call posts NO price and there's no quote either, take it at the
         # market that instant rather than miss it — a marketable buy capped at
         # this ceiling (dollars per contract). The cap is a fat-finger guard,

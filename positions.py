@@ -471,6 +471,10 @@ class Book:
                 "sent_at": (prev.get("sent_at") if adding else time.time()),
                 "closing": False,
                 "watching": prev.get("watching", False),
+                # A blind entry (no quote, no posted price) was priced at a
+                # ceiling, not a real market price — so it must NOT be assumed
+                # filled at that ceiling; it waits for the broker's real fill.
+                "blind": bool(ticket.get("blind")),
             }
         # Money out of the door the moment the bid is out, not when it fills.
         # It isn't spent yet, but it is promised, and it can't be promised
@@ -506,8 +510,9 @@ class Book:
                     oid, occ, limit = p["order_id"], p["occ"], p["limit"]
                     want = p["want_qty"]
 
-                state, filled_qty, avg = self._probe(oid, occ, limit,
-                                                     live=p.get("live") or p.get("paper"))
+                state, filled_qty, avg = self._probe(
+                    oid, occ, limit, live=p.get("live"),
+                    paper=p.get("paper"), blind=p.get("blind"))
                 if state == FILLED:
                     self._became_filled(key, filled_qty or want, avg or limit)
                     return
@@ -553,9 +558,9 @@ class Book:
                 pass
         with self._lock:
             p_l = self._pos.get(key) or {}
-        state, filled_qty, avg = self._probe(oid, occ, limit,
-                                             live=p_l.get("live") or p_l.get("paper"),
-                                             wb=wb)
+        state, filled_qty, avg = self._probe(
+            oid, occ, limit, live=p_l.get("live"),
+            paper=p_l.get("paper"), blind=p_l.get("blind"), wb=wb)
         if state == FILLED or (filled_qty or 0) > 0:
             self._became_filled(key, filled_qty or want, avg or limit)
         else:
@@ -591,12 +596,25 @@ class Book:
             return False
         return self.simulated
 
-    def _probe(self, oid, occ, limit, live=False, wb=None):
+    def _probe(self, oid, occ, limit, live=False, wb=None, paper=False,
+               blind=False):
         """(state, filled_qty, avg_price) — from the broker for real money,
         or from the live quote for a test position. `wb` is the broker that owns
         this position; falls back to the default when the caller didn't route."""
         if wb is None:
             wb = self.wb
+        if paper and not live and not blind:
+            # PAPER fills the moment it's placed. The entry crosses the ask (a
+            # real, marketable quote), so in the real world it fills instantly —
+            # "we are still biding in" is the exact miss he can't have. Don't sit
+            # waiting on the sandbox's fill engine to match a resting order:
+            # assume the fill at the marketable price we sent, so trims and exits
+            # act on a real position. A price of None can't be filled — dead.
+            # Blind entries are excluded above (their limit is a ceiling, not a
+            # market price) and fall through to the real broker check.
+            if limit is None:
+                return "dead", 0, None
+            return FILLED, None, limit
         if live:
             # Real money: Webull is the only honest answer.
             if wb is None:
