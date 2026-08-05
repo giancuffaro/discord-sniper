@@ -287,6 +287,12 @@ class WebullOptions:
         # Webull takes no market orders on options at all, so all three of these
         # are limit orders; this only decides the number on it.
         self.entry_price = str(w.get("entry_price", "bid")).lower()
+        # Quotes can be borrowed from ANOTHER client. Webull's options data
+        # (OPRA) rides on the LIVE account, not the sandbox — so the paper
+        # client asks the live client for the ask/bid (read-only, no orders),
+        # then fills on the sandbox. Real prices, pretend money. Left None on a
+        # client that quotes for itself.
+        self.quote_client = None
         # How long an unfilled entry is allowed to sit there before it's pulled.
         # This is the number that stops a bid from filling at 3:55pm into a
         # trade the room called at 9:40 and closed at 10:05.
@@ -459,6 +465,11 @@ class WebullOptions:
         return found
 
     def ask_bid(self, occ):
+        # Borrow quotes from the live client when this one can't get them (the
+        # sandbox has no OPRA entitlement). Read-only — it never places an order
+        # through the live connection, only reads the ask/bid.
+        if self.quote_client is not None and self.quote_client is not self:
+            return self.quote_client.ask_bid(occ)
         fns = self._quote_fns()
         if not fns:
             raise Refused("couldn't find Webull's option-quote method in the SDK. "
