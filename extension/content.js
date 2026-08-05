@@ -166,8 +166,14 @@ async function grabHistory(untilTs) {
   if (!scroller) { grabReport({ done: true, why: "couldn't find the message pane — open the room first" }); return; }
   grabbing = true;
   let stagnant = 0, lastH = -1, rounds = 0, parked = false, lastOldest = null;
+  // GENTLE by design. Yanking straight to scrollTop=0 makes Discord fetch
+  // batches faster than it can render them, which spikes CPU and crashes the
+  // tab on a long pull. Instead we nudge up about one screenful at a time and
+  // wait a beat, so Discord loads the next batch and settles before the next
+  // nudge. Slower, but it survives a 3-year scroll.
+  const WAIT = 1500;                          // ms between nudges — was 750
   grabReport({ started: true });
-  while (grabbing && rounds < 6000) {
+  while (grabbing && rounds < 20000) {
     rounds++;
     // Chrome slows hidden tabs to a crawl AND Discord stops loading older
     // messages when its tab isn't on screen. If we kept scrolling we'd see no
@@ -182,22 +188,29 @@ async function grabHistory(untilTs) {
       continue;
     }
     if (parked) { grabReport({ resumed: true }); parked = false; }
-    scroller.scrollTop = 0;                 // force Discord to load the older batch
-    await new Promise(r => setTimeout(r, 750));
+    // Nudge up ~80% of a screen rather than jumping to the very top.
+    const step = Math.max(200, Math.floor(scroller.clientHeight * 0.8));
+    scroller.scrollTop = Math.max(0, scroller.scrollTop - step);
+    await new Promise(r => setTimeout(r, WAIT));
     const times = list.querySelectorAll('time[datetime]');
     const oldestEl = times[0];
     const oldest = oldestEl ? Date.parse(oldestEl.getAttribute("datetime")) : null;
     if (oldest) lastOldest = oldest;
     const h = scroller.scrollHeight;
+    const atTop = scroller.scrollTop <= 4;   // pinned at the top of what's loaded
     if (rounds % 4 === 0 || (untilTs && oldest && oldest <= untilTs)) {
       grabReport({ oldest: oldest || null, rounds });
     }
     if (untilTs && oldest && oldest <= untilTs) { grabReport({ done: true, reached: "date", oldest }); break; }
-    if (h === lastH) { if (++stagnant >= 6) { grabReport({ done: true, reached: "top" }); break; } }
-    else { stagnant = 0; lastH = h; }
+    // Only call it "the top" when we're pinned at the top AND nothing new has
+    // loaded for several waits. While we're still scrolling down through
+    // already-loaded messages (not at top), that's not stagnation.
+    if (atTop && h === lastH) { if (++stagnant >= 8) { grabReport({ done: true, reached: "top" }); break; } }
+    else { stagnant = 0; }
+    lastH = h;
   }
   grabbing = false;
-  if (rounds >= 6000) grabReport({ done: true, reached: "limit" });
+  if (rounds >= 20000) grabReport({ done: true, reached: "limit" });
 }
 
 try {
