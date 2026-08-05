@@ -40,39 +40,128 @@ def _try(wb, holders, verbs, *args, **kw):
         return None, str(e)
 
 
+# CME month codes and the quarterly cycle the index futures roll on (Mar, Jun,
+# Sep, Dec = H, M, U, Z). Used both to read the SDK's contract codes and to
+# compute a front month when the SDK says nothing.
+_MONTH_CODE = {1: "F", 2: "G", 3: "H", 4: "J", 5: "K", 6: "M",
+               7: "N", 8: "Q", 9: "U", 10: "V", 11: "X", 12: "Z"}
+_QUARTERLY = {3, 6, 9, 12}
+# The index futures the rooms actually call. These roll on the quarterly cycle,
+# so a code can be computed for them safely. Anything else (CL, GC, …) has its
+# own cycle and is left to the SDK — guessing there could pick the wrong month.
+_INDEX_ROOTS = {"NQ", "MNQ", "ES", "MES", "RTY", "M2K", "YM", "MYM"}
+
+
+def _fut_rows(wb, root):
+    """Pull this root's contract list from the SDK. The futures-instrument call
+    lives on the DATA client (market data), not the trade client, and it wants
+    category=US_FUTURES plus a code/symbols — the old code passed a bare symbol
+    to the trade client, which is why it came back with nothing. Probe both
+    clients, every plausible method name, every plausible arg shape."""
+    objs = []
+    for attr in ("_data", "trade", "_api"):
+        o = getattr(wb, attr, None)
+        if o is not None:
+            objs.append(o)
+    objs.append(wb)
+    holders = []
+    for o in objs:
+        holders.append(o)
+        for a in dir(o):
+            if a.startswith("_"):
+                continue
+            low = a.lower()
+            if "futur" in low or "instrument" in low or "market" in low:
+                try:
+                    holders.append(getattr(o, a))
+                except Exception:                       # noqa: BLE001
+                    pass
+    shapes = [((), {"category": "US_FUTURES", "code": root}),
+              ((), {"category": "US_FUTURES", "symbols": root}),
+              (("US_FUTURES",), {"code": root}),
+              (("US_FUTURES", root), {}),
+              ((root,), {})]
+    for h in holders:
+        for m in dir(h):
+            low = m.lower()
+            if m.startswith("_") or "futur" not in low or "instrument" not in low:
+                continue
+            fn = getattr(h, m, None)
+            if not callable(fn):
+                continue
+            for args, kw in shapes:
+                try:
+                    res = fn(*args, **kw)
+                except TypeError:
+                    continue
+                except Exception:                       # noqa: BLE001
+                    continue
+                body = res.json() if hasattr(res, "json") else res
+                rows = body.get("data") if isinstance(body, dict) else body
+                if rows:
+                    return rows
+    return []
+
+
+def _computed_front(root):
+    """The standard quarterly front-month code for an index root, from today's
+    date. As of Aug 2026 MNQ -> MNQU6 (Sep). Only used as a fallback when the
+    SDK won't answer, and only for the quarterly index roots — so a real call
+    goes out instead of being missed for a data hiccup."""
+    if root not in _INDEX_ROOTS:
+        return None
+    now = datetime.utcnow()
+    for add in range(0, 13):
+        m = (now.month - 1 + add) % 12 + 1
+        yy = now.year + (now.month - 1 + add) // 12
+        if m in _QUARTERLY:
+            # If we're already past this quarter's expiry (~3rd Friday, day 18),
+            # it's rolling — skip to the next quarter.
+            if add == 0 and now.day > 18:
+                continue
+            return "%s%s%d" % (root, _MONTH_CODE[m], yy % 10)
+    return None
+
+
 def front_month(wb, symbol):
-    """The contract code actually trading right now for this root — NQ means
-    NQZ5 or NQH6 depending on the week. Nearest expiry that is still in the
-    future wins. Refuses when the SDK won't say."""
-    body, why = _try(wb, ["quote", "market_data", "instrument", "futures"],
-                     ["get_futures_instruments", "futures_instruments",
-                      "get_instruments", "instruments"], symbol)
-    rows = []
-    if isinstance(body, dict):
-        rows = body.get("data") or body.get("instruments") or []
-    elif isinstance(body, list):
-        rows = body
+    """The contract code actually trading right now for this root — MNQ means
+    MNQU6 or MNQZ6 depending on the week. Nearest tradable expiry in the future
+    wins; if the SDK won't say, the quarterly code is computed for index roots so
+    the trade still goes out."""
+    root = str(symbol).upper()
+    rows = _fut_rows(wb, root)
     best = None
     today = datetime.utcnow().strftime("%Y-%m-%d")
     for r in rows:
         if not isinstance(r, dict):
             continue
+        # Tradable only: OC = open/tradable, CO = liquidate-only, NT = no-trade.
+        if str(r.get("status", "OC")).upper() not in ("OC", ""):
+            continue
         code = (r.get("symbol") or r.get("contract_code") or
                 r.get("instrument_id") or "")
-        exp = str(r.get("expire_date") or r.get("expiration_date") or
-                  r.get("last_trade_date") or "")
-        if not code or not str(code).upper().startswith(str(symbol).upper()):
+        if not code:
             continue
+        rc = str(r.get("code", "")).upper()
+        if rc and rc != root and not str(code).upper().startswith(root):
+            continue
+        exp = str(r.get("last_trading_date") or r.get("settlement_date") or
+                  r.get("expire_date") or r.get("expiration_date") or
+                  r.get("last_trade_date") or "")
         if exp and exp < today:
             continue
         if best is None or (exp and exp < best[1]):
             best = (code, exp or "9999-99-99")
-    if not best:
-        raise FuturesRefused(
-            "couldn't work out which %s contract is front month (%s). No "
-            "order was sent — trading the wrong month is a real position in "
-            "the wrong thing." % (symbol, why or "SDK gave nothing usable"))
-    return best[0]
+    if best:
+        return best[0]
+    comp = _computed_front(root)
+    if comp:
+        return comp
+    raise FuturesRefused(
+        "couldn't work out which %s contract is front month (SDK gave nothing "
+        "usable and it's not a quarterly index root I can compute). No order "
+        "was sent — trading the wrong month is a real position in the wrong "
+        "thing." % symbol)
 
 
 def _place(wb, contract, side, qty, limit=None):
