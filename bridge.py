@@ -1715,6 +1715,16 @@ def connect_broker(quiet=False):
             except Exception as e:                      # noqa: BLE001
                 errs.append("live: %s" % str(e)[:90])
 
+    # Options data (OPRA) rides on the LIVE account, not the sandbox. So when
+    # both are connected, the paper client borrows the live client's quotes —
+    # real ask/bid — while still filling on the sandbox. This is what makes
+    # paper an honest test instead of a data-starved one. Read-only: quotes
+    # only, never an order through the live connection.
+    if WB_PAPER is not None and WB_LIVE is not None:
+        WB_PAPER.quote_client = WB_LIVE
+        note("paper quotes now come from the LIVE data feed (real OPRA prices, "
+             "sandbox fills)")
+
     # Primary: prefer paper while testing, else live, else None (pure sim).
     WB = WB_PAPER or WB_LIVE
     WB_ACCOUNT = str(getattr(WB, "account_id", "") or "") if WB is not None else ""
