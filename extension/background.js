@@ -218,7 +218,7 @@ async function downloadRoom(channelId, roomLabel) {
   return rows.length;
 }
 
-/* Ctrl+Alt+X — start a grab on whatever room tab is in front, same as the
+/* Ctrl+Shift+X — start a grab on whatever room tab is in front, same as the
  * Channels-tab button. Lets you scan a room without opening the popup, and
  * because each tab grabs on its own, you can hop tabs and fire it on each. */
 try {
@@ -228,14 +228,14 @@ try {
     try { tabs = await chrome.tabs.query({ active: true, currentWindow: true }); } catch (e) { return; }
     const tab = tabs[0];
     if (!tab || !/discord\.com\/channels\//.test(tab.url || "")) {
-      await addLog({ kind: "update", why: "Ctrl+Alt+X ignored — open a Discord room tab first, then press it there." });
+      await addLog({ kind: "update", why: "Ctrl+Shift+X ignored — open a Discord room tab first, then press it there." });
       return;
     }
     try {
       await chrome.tabs.sendMessage(tab.id, { type: "GRAB_HISTORY" });
       const cm = ((tab.url) || "").match(/channels\/[^/]+\/(\d+)/);
       const room = (cm && ROOM_LABELS[cm[1]]) || "this room";
-      await addLog({ kind: "update", why: "⏳ grabbing " + room + " (Ctrl+Alt+X) — saves to Downloads when done." });
+      await addLog({ kind: "update", why: "⏳ grabbing " + room + " (Ctrl+Shift+X) — saves to Downloads when done." });
     } catch (e) {
       await addLog({ kind: "update", why: "couldn't start the grab — reload the Discord tab and try again." });
     }

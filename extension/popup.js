@@ -1083,7 +1083,7 @@ function channelOf(tab) {
 }
 // Grab starts on whatever room tab is in front. No date, no stop — it runs 3
 // years back and auto-saves to Downloads when done. Start one, switch tabs,
-// start another; they run in parallel. Same thing happens on Ctrl+Alt+X.
+// start another; they run in parallel. Same thing happens on Ctrl+Shift+X.
 $("grabHistory").onclick = async () => {
   const el = $("grabState");
   const tab = await activeTab();
