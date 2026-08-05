@@ -1081,19 +1081,19 @@ function channelOf(tab) {
   const m = ((tab && tab.url) || "").match(/channels\/[^/]+\/(\d+)/);
   return m ? m[1] : "";
 }
-// Grab starts on whatever room tab is in front. No date, no stop — it runs 3
-// years back and auto-saves to Downloads when done. Keep the tab in front:
-// Chrome freezes background tabs, so a backgrounded grab parks and holds its
-// place until you return. Same thing happens on Ctrl+Shift+X.
+// Grab ADDS this room to the queue. The background works the line one room at a
+// time — brings each to the front, scrolls its whole history, saves to
+// Downloads, closes the tab, next. Queue several with the button or Ctrl+Shift+X
+// and walk away. No date, no stop; each goes 3 years back.
 $("grabHistory").onclick = async () => {
   const el = $("grabState");
   const tab = await activeTab();
   if (!tab || !/discord\.com\/channels\//.test(tab.url || "")) {
     el.textContent = "Open the Discord room's tab first, then hit Grab."; return;
   }
-  el.textContent = "grabbing… keep THIS tab in front (Chrome freezes background tabs — it'll pause and hold its place if you switch away). Saves to Downloads when done.";
-  try { await chrome.tabs.sendMessage(tab.id, { type: "GRAB_HISTORY" }); }
-  catch (e) { el.textContent = "couldn't reach the room — reload the Discord tab and try again."; }
+  el.textContent = "added to the queue — the extension will bring it to the front, grab it, save it, close the tab, and move to the next. Watch the Logs tab.";
+  try { await chrome.runtime.sendMessage({ type: "ENQUEUE_GRAB", tabId: tab.id }); }
+  catch (e) { el.textContent = "couldn't reach the extension — reopen the popup and try again."; }
 };
 
 /* The previous-days picker. "today" is the live feed; a date is a file the
