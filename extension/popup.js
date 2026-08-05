@@ -412,6 +412,21 @@ $("aioff").onclick = async () => {
   }
 };
 
+/* Double-check entries — a browser-side toggle; the key stays on the bridge. */
+async function paintVerify() {
+  let on = false;
+  try { on = !!(await chrome.storage.local.get("ai_verify")).ai_verify; } catch (e) {}
+  const b = $("aiVerifyBtn");
+  if (b) { b.textContent = on ? "on" : "off"; b.className = "tgl " + (on ? "live" : "safe"); }
+}
+if ($("aiVerifyBtn")) $("aiVerifyBtn").onclick = async () => {
+  let on = false;
+  try { on = !!(await chrome.storage.local.get("ai_verify")).ai_verify; } catch (e) {}
+  try { await chrome.storage.local.set({ ai_verify: !on }); } catch (e) {}
+  paintVerify();
+};
+paintVerify();
+
 /* ---- Voice listener — Deepgram, per tab, several at once ------------------ */
 function paintVoice(list) {
   list = list || [];

@@ -315,6 +315,14 @@
       reads. Key from console.anthropic.com; pennies since it only runs on
       misses. Saved to this PC, never the browser.</div>
     <div class="note" id="aikeystate">&nbsp;</div>
+    <div class="row" style="margin-top:6px;margin-bottom:2px">
+      <span class="grow" style="font-size:12px">Double-check entries (AI verifies ticker/strike)</span>
+      <button id="aiVerifyBtn" class="tgl safe">off</button>
+    </div>
+    <div class="note">On: before any BUY, the AI reads the same message and must
+      agree with what was pulled out — a mismatch is held for review, not bought.
+      Safest, but adds ~1–2s to each entry and uses a little more credit. Needs
+      the Claude key above. Exits are never blocked.</div>
 
     <label style="margin-top:12px">Voice listener — <b id="voiceState">off</b></label>
     <input id="dgKey" type="password" autocomplete="off"

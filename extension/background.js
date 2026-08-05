@@ -540,7 +540,31 @@ async function aiRead(text, c) {
     });
     if (!r.ok) return null;
     const j = await r.json();
-    return (j && j.ok && j.canonical) ? j.canonical : null;
+    if (!(j && j.ok && j.canonical)) return null;
+    return { canonical: j.canonical,
+             confidence: Number(j.confidence || (j.read && j.read.confidence) || 0) };
+  } catch (e) { return null; }
+}
+
+/* SMARTER READS — the double-check. Ask the AI to read the SAME message
+ * independently and see if it agrees with the regex on the things that pick the
+ * contract: ticker, strike, side. Returns {agree, ai} — or null when the AI is
+ * off or couldn't read, in which case we DON'T block (the regex read stands, as
+ * it does today). Only an ACTIVE disagreement holds the trade. */
+async function aiVerify(text, sig, c) {
+  try {
+    const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/read", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j || j.off || !j.ok || !j.read) return null;   // no opinion -> don't block
+    const a = j.read;
+    const tOk = !a.ticker || String(a.ticker).toUpperCase() === String(sig.symbol || "").toUpperCase();
+    const kOk = a.strike == null || sig.strike == null || Number(a.strike) === Number(sig.strike);
+    const sOk = !a.side || !sig.side || String(a.side).toUpperCase() === String(sig.side).toUpperCase();
+    return { agree: tOk && kOk && sOk, ai: a };
   } catch (e) { return null; }
 }
 
@@ -835,12 +859,13 @@ async function handleOffscreen(msg) {
     //    regex is the free fast path when it already reads it.
     if (!looksTradeLike(msg.text)) return;
     const c = await cfg();
-    let canon = null;
+    let canon = null, conf = 0;
     const sig = parseSignal(msg.text, c);
     if (sig.action && sig.symbol) canon = msg.text.trim();
-    if (!canon) canon = await aiRead(msg.text, c);
+    if (!canon) { const rd = await aiRead(msg.text, c); if (rd) { canon = rd.canonical; conf = rd.confidence; } }
     if (canon) {
-      await addLog({ kind: "update", why: "🎙 VOICE CALL (" + label + ") → " + canon,
+      const pct = conf ? " (" + Math.round(conf * 100) + "%)" : "";
+      await addLog({ kind: "update", why: "🎙 VOICE CALL (" + label + ") → " + canon + pct,
                      text: msg.text, author: label });
     }
   }
@@ -994,14 +1019,25 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // applies. A hallucinated ticker was already refused bridge-side. Off (and
     // free) unless you've saved a Claude API key.
     if (!sig.action && !msg.history && !msg.reply && looksTradeLike(msg.text)) {
-      const canon = await aiRead(msg.text, c);
-      if (canon) {
-        const sig2 = parseSignal(canon, c);
+      const rd = await aiRead(msg.text, c);
+      if (rd && rd.canonical) {
+        const sig2 = parseSignal(rd.canonical, c);
         if (sig2.action) {
-          await addLog({ kind: "update",
-                         why: "AI read this as “" + canon + "”",
-                         text: msg.text, author: msg.author });
-          sig = sig2;
+          const conf = rd.confidence;
+          const pct = conf ? " (" + Math.round(conf * 100) + "%)" : "";
+          // Confidence gate: a shaky read is written down for you to eyeball,
+          // never auto-fired. Only a confident read becomes a live signal.
+          if (conf && conf < 0.6) {
+            await addLog({ kind: "skipped",
+              why: "AI read this as “" + rd.canonical + "” but wasn't sure" + pct +
+                   " — held for review, nothing sent. Fire it by hand if it's right.",
+              text: msg.text, author: msg.author });
+          } else {
+            await addLog({ kind: "update",
+                           why: "AI read this as “" + rd.canonical + "”" + pct,
+                           text: msg.text, author: msg.author });
+            sig = sig2;
+          }
         }
       }
     }
@@ -1181,6 +1217,28 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
                      text: msg.text, author: msg.author });
       reply({ ok: true });
       return;
+    }
+
+    // SMARTER READS — optional double-check on ENTRIES. If it's on, the AI reads
+    // the message independently and must agree with what the regex pulled out
+    // (ticker/strike/side); a disagreement is HELD FOR REVIEW, not bought. Catches
+    // the wrong-ticker/strike class (meta->TSLA) even when the regex was sure.
+    if (sig.action === "OPEN" || sig.action === "ADD") {
+      let verifyOn = false;
+      try { verifyOn = !!(await chrome.storage.local.get("ai_verify")).ai_verify; } catch (e) {}
+      if (verifyOn && sig.symbol) {
+        const v = await aiVerify(msg.text, sig, c);
+        if (v && !v.agree) {
+          await addLog({ kind: "skipped",
+            why: "⚠ double-check disagrees — I read " + sig.symbol + " " +
+                 (sig.strike || "") + ", the AI read " + (v.ai.ticker || "?") + " " +
+                 (v.ai.strike || "") + ". Held for review — nothing sent. Fire it by " +
+                 "hand in Webull if the room really meant it.",
+            what: human(sig), text: msg.text, author: msg.author });
+          reply({ ok: true });
+          return;
+        }
+      }
     }
 
     // The room says "all out of AMD" — no strike, no expiry, because everyone
