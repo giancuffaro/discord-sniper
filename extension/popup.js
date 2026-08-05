@@ -22,9 +22,9 @@ const DEFAULTS = {
   armed: true, stopped: false, capture: true,   // ON is the resting state
   bridge_url: "http://127.0.0.1:8787/order",
   channel_ids: [], follow_admins: [],
-  // THE futures switch. Off = his NQ/ES calls are read and logged, nothing
-  // fires. Deliberately off out of the box.
-  futures_enabled: false,
+  // Futures fire like every other room now (per its TESTING/LIVE toggle). On
+  // out of the box — set to false only if you ever want to park futures.
+  futures_enabled: true,
   // The old filter knobs (trim modes, symbol lists, add limits, daily caps)
   // are deleted from the code — "no filters wanted. id like to follow
   // everything to the tee as they do." What's left is safety, not filtering.
