@@ -1034,6 +1034,56 @@ $("export").onclick = async () => {
     });
 };
 
+/* The test-trade button. Fires a real entry, a trim, then a full exit — as
+ * three synthetic messages pushed through the EXACT path a typed Discord call
+ * takes: the same MESSAGE handler, the same parser, the same guards, the same
+ * position book, the same bridge and paper broker. Nothing is special-cased, so
+ * what you see is what a real room would get. It routes to PAPER only (no "live"
+ * flag, a test room id), so it can never touch real money. */
+function nextTradingDay() {
+  // m/d for the next weekday (Mon–Fri). Options need a real trading day, and a
+  // weekend expiry doesn't exist — roll to Monday.
+  const d = new Date();
+  do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6);
+  return (d.getMonth() + 1) + "/" + d.getDate();
+}
+$("testtrade").onclick = async () => {
+  const btn = $("testtrade");
+  const tk = ((($("testticker") || {}).value || "SPY").trim() || "SPY").toUpperCase();
+  const strike = ((($("teststrike") || {}).value || "600").trim() || "600");
+  const cp = (($("testtype") || {}).value === "P") ? "P" : "C";
+  const exp = ((($("testexp") || {}).value || "").trim()) || nextTradingDay();
+  // A normal PAPER trading room id, so the message flows through the ordinary
+  // (non-whop, non-shadow) path. postedAt = now so it's never treated as
+  // history. A fresh mid each run so the one-message-one-pass dedupe lets you
+  // re-test.
+  const room = "829754942817828884";
+  const base = Date.now();
+  const steps = [
+    { text: "in " + tk + " " + exp + " " + strike + cp, label: "① entry" },
+    { text: "trimming " + tk + " @ 25%",                 label: "② trim"  },
+    { text: "all out of " + tk,                          label: "③ exit"  }
+  ];
+  const fire = (text, i) => chrome.runtime.sendMessage({
+    type: "MESSAGE", mid: "test-" + base + "-" + i, text, full: text,
+    author: "🧪 TEST", channelId: room, postedAt: Date.now(),
+    history: false, reply: false, url: "https://discord.com/channels/test/" + room
+  }).catch(() => {});
+
+  // Entry now; trim after the entry has had time to fill on the sandbox; exit
+  // after the trim. The gaps let the fill-watcher actually see a fill, so the
+  // trim and exit act on a real position instead of a resting bid.
+  btn.disabled = true; btn.textContent = "① entry sent…";
+  fire(steps[0].text, 0);
+  setTimeout(() => { btn.textContent = "② trim sent…"; fire(steps[1].text, 1); }, 9000);
+  setTimeout(() => { btn.textContent = "③ exit sent…"; fire(steps[2].text, 2); }, 18000);
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = "🧪 Run test trade (entry → trim → exit)";
+    render();
+  }, 22000);
+};
+
 /* Update the app from the popup — pulls the newest build and restarts the
  * bridge on the PC, so START HERE is never needed just for an update. The
  * bridge goes away for a few seconds while it re-execs onto the new code, so

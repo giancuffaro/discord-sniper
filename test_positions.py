@@ -604,8 +604,10 @@ print("Two-connection routing: live positions go to the real account, "
 # broker router uses, so client and management can never disagree.
 sb = book(FakeWB(), simulated=True)
 ok(sb._sim({"live": True}) is False, "a live position is never simulated")
-ok(sb._sim({"paper": True}) is True, "a paper position follows the book's sim flag")
-ok(sb._sim({}) is True, "an unmarked position follows the sim flag")
+ok(sb._sim({"paper": True}) is False,
+   "a paper position is NOT simulated — paper is the Webull sandbox, a real "
+   "broker, so its fills/stops/exits are placed there")
+ok(sb._sim({}) is True, "an unmarked (pure dry-run) position follows the sim flag")
 
 # A LIVE entry, in a simulated book, fills and gets a REAL resting stop.
 LWB = FakeWB(fills=True, ask=2.00, bid=2.00)
@@ -620,7 +622,9 @@ ok(lb.state_of(LKEY) == positions.FILLED, "the live entry fills, got %s" % lb.st
 ok(any(c[0] == "stop" for c in LWB.calls),
    "a LIVE position gets a REAL resting stop even in a simulated book")
 
-# A PAPER entry, same simulated book, fills but gets NO real stop (sim-managed).
+# A PAPER entry, same simulated book, fills AND gets a real resting stop — paper
+# is the sandbox now, a real broker, so it's managed there just like live (only
+# the account differs). No in-house sim for paper any more.
 PWB = FakeWB(fills=True, ask=2.00, bid=2.00)
 pb = book(PWB, simulated=True)
 pb.broker_resolver = lambda p: PWB
@@ -630,11 +634,11 @@ pb.entry_sent(dict(ORDER, trader="PaperGuy"), ptk)
 PKEY = positions.key_of("PaperGuy", "SPY")
 settle(pb, PKEY)
 ok(pb.state_of(PKEY) == positions.FILLED, "the paper entry fills, got %s" % pb.state_of(PKEY))
-ok(not any(c[0] == "stop" for c in PWB.calls),
-   "a PAPER position gets NO real resting stop — it stays sim-managed")
+ok(any(c[0] == "stop" for c in PWB.calls),
+   "a PAPER position gets a REAL resting stop on the sandbox — broker-managed")
 
 if bad:
     print("\n%d live-exit check(s) failed." % bad)
     raise SystemExit(1)
-print("Live-exit: a live position gets a real resting stop and real management "
-      "even inside a simulated book, while paper positions stay simulated.")
+print("Live-exit: live AND paper positions both get real resting stops and real "
+      "management on their own accounts; only a pure dry-run book simulates.")

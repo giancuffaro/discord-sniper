@@ -369,6 +369,25 @@
     <div class="note">"Copy log" grabs today's activity as text. "Export chat"
       downloads every message this extension has seen — send it to me and I'll
       tune the reader to your room's exact wording.</div>
+
+    <div class="row" style="margin-top:10px">
+      <button id="testtrade" class="grow safe">🧪 Run test trade (entry → trim → exit)</button>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <input id="testticker" value="SPY" placeholder="ticker" style="max-width:66px">
+      <input id="teststrike" value="600" placeholder="strike" style="max-width:66px">
+      <select id="testtype" style="max-width:74px">
+        <option value="C">Call</option>
+        <option value="P">Put</option>
+      </select>
+      <input id="testexp" placeholder="exp (blank=Fri)" class="grow">
+    </div>
+    <div class="note">Fires a real entry, then a trim, then a full exit through the
+      WHOLE pipeline — the parser, every guard, the position book, and the paper
+      broker — so you can watch get-in → trim → exit end to end and prove nothing
+      gets skipped. It routes to PAPER only (never real money). No price means it
+      takes the market. A real fill needs the bridge running and the market open;
+      out of hours you'll still see the entry go out and the guards run.</div>
     <div id="log"></div>
   </div>
 
