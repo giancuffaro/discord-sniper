@@ -165,15 +165,29 @@ async function grabHistory(untilTs) {
   const scroller = list && findScroller(list);
   if (!scroller) { grabReport({ done: true, why: "couldn't find the message pane — open the room first" }); return; }
   grabbing = true;
-  let stagnant = 0, lastH = -1, rounds = 0;
+  let stagnant = 0, lastH = -1, rounds = 0, parked = false, lastOldest = null;
   grabReport({ started: true });
   while (grabbing && rounds < 6000) {
     rounds++;
+    // Chrome slows hidden tabs to a crawl AND Discord stops loading older
+    // messages when its tab isn't on screen. If we kept scrolling we'd see no
+    // new height, wrongly decide we hit the top, and auto-download a partial
+    // file. So while this tab is in the background we PARK: hold our place,
+    // don't touch the stagnation counter, and wait for it to come back to the
+    // front. The grab resumes exactly where it left off — nothing is lost.
+    if (document.visibilityState !== "visible") {
+      if (!parked) { grabReport({ parked: true, oldest: lastOldest }); parked = true; }
+      await new Promise(r => setTimeout(r, 1000));
+      rounds--;                              // a parked round doesn't count
+      continue;
+    }
+    if (parked) { grabReport({ resumed: true }); parked = false; }
     scroller.scrollTop = 0;                 // force Discord to load the older batch
     await new Promise(r => setTimeout(r, 750));
     const times = list.querySelectorAll('time[datetime]');
     const oldestEl = times[0];
     const oldest = oldestEl ? Date.parse(oldestEl.getAttribute("datetime")) : null;
+    if (oldest) lastOldest = oldest;
     const h = scroller.scrollHeight;
     if (rounds % 4 === 0 || (untilTs && oldest && oldest <= untilTs)) {
       grabReport({ oldest: oldest || null, rounds });

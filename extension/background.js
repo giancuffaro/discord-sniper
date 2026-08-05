@@ -952,6 +952,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         const n = await downloadRoom(msg.channelId, room);
         await addLog({ kind: "update", why: "✅ done grabbing " + room + " — " + how +
           (n ? ". Downloaded " + n + " messages to your Downloads." : ". Nothing captured.") });
+      } else if (msg.parked) {
+        await addLog({ kind: "ignored", why: "⏸️ " + room + " paused — it's in a background tab. Click back onto that tab to keep grabbing (it held its place" +
+          (msg.oldest ? ", at " + new Date(msg.oldest).toLocaleDateString() : "") + ")." });
+      } else if (msg.resumed) {
+        await addLog({ kind: "update", why: "▶️ " + room + " back in front — grabbing again." });
       } else if (msg.oldest) {
         await addLog({ kind: "ignored", why: "…grabbing " + room + " — back to " + new Date(msg.oldest).toLocaleDateString() });
       }

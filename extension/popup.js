@@ -1082,15 +1082,16 @@ function channelOf(tab) {
   return m ? m[1] : "";
 }
 // Grab starts on whatever room tab is in front. No date, no stop — it runs 3
-// years back and auto-saves to Downloads when done. Start one, switch tabs,
-// start another; they run in parallel. Same thing happens on Ctrl+Shift+X.
+// years back and auto-saves to Downloads when done. Keep the tab in front:
+// Chrome freezes background tabs, so a backgrounded grab parks and holds its
+// place until you return. Same thing happens on Ctrl+Shift+X.
 $("grabHistory").onclick = async () => {
   const el = $("grabState");
   const tab = await activeTab();
   if (!tab || !/discord\.com\/channels\//.test(tab.url || "")) {
     el.textContent = "Open the Discord room's tab first, then hit Grab."; return;
   }
-  el.textContent = "grabbing… watch the Logs tab. Switch to another room and start it too — they run at once. Saves to Downloads when done.";
+  el.textContent = "grabbing… keep THIS tab in front (Chrome freezes background tabs — it'll pause and hold its place if you switch away). Saves to Downloads when done.";
   try { await chrome.tabs.sendMessage(tab.id, { type: "GRAB_HISTORY" }); }
   catch (e) { el.textContent = "couldn't reach the room — reload the Discord tab and try again."; }
 };
