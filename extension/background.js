@@ -1386,13 +1386,15 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       return;
     }
 
-    // THE futures switch. Until it's on, his NQ/ES calls are read, priced and
-    // logged — and nothing fires, in either mode. Flipping it in Settings is
-    // the one thing left to do when the data subscription is live.
-    if (sig.fire && sig.kind === "future" && !c.futures_enabled) {
+    // Futures fire like every other room now — read, priced, and sent per the
+    // room's own TESTING/LIVE toggle, same as options. (The old separate
+    // futures switch is retired on both sides: "everything should be either
+    // testing or live." CME data is live.) Left as a one-line guard only so an
+    // explicit futures_enabled:false still parks them if you ever want that.
+    if (sig.fire && sig.kind === "future" && c.futures_enabled === false) {
       await addLog({ kind: "skipped", what: human(sig),
-                     why: "futures switch is off — read and logged, nothing " +
-                          "sent. Flip it in Settings when you're ready.",
+                     why: "futures switch is explicitly off — read and logged, " +
+                          "nothing sent. Turn it back on in Settings.",
                      text: msg.text, author: msg.author });
       reply({ ok: true });
       return;

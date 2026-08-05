@@ -733,10 +733,16 @@ class WebullOptions:
         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
         expiration = expiry_to_date(expiry)
         occ = occ_symbol(symbol, expiration, option_type, strike)
-        ask, bid, _ = self.ask_bid(occ)
-        if not ask or ask <= 0:
-            raise Refused("no live ask on %s, so there's nothing safe to price "
-                          "against. Nothing was sent." % occ)
+        ask = bid = None
+        try:
+            ask, bid, _ = self.ask_bid(occ)
+        except Refused:
+            # No live quote — most often the OpenAPI options-data (OPRA)
+            # subscription isn't active on the keys. Rather than miss the trade,
+            # fall back to the price the room posted and follow them to the tee.
+            # Only if they actually gave one; otherwise there's nothing to price.
+            if not their_price:
+                raise
 
         # The chase limit that used to sit here is DELETED, on his word:
         # "no filters wanted. id like to follow everything to the tee as they
@@ -744,7 +750,14 @@ class WebullOptions:
         # since — the bid-sitting entry style is still what protects the
         # price actually paid.
 
-        limit = self.entry_limit(bid, ask)
+        if ask and ask > 0:
+            limit = self.entry_limit(bid, ask)
+        elif their_price:
+            # No live ask: take the room's posted premium as the limit.
+            limit = max(0.01, round(float(their_price), 2))
+        else:
+            raise Refused("no live ask on %s and no posted price to fall back "
+                          "on. Nothing was sent." % occ)
         # Checked here rather than earlier because this is the first point the
         # real price is known — their quoted 2.80 and the live ask are not the
         # same number, and it's the live one you'd be paying.
