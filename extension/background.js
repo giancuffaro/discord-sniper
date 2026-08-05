@@ -948,10 +948,51 @@ async function whopWatchdog() {
 
 chrome.alarms.create("whop-watchdog", { periodInMinutes: 1 });
 chrome.alarms.create("watch-build", { periodInMinutes: 0.5 });
+// The self-learning pipe: every 30 minutes, drop the whole day — every raw
+// message the reader saw AND what the bot did with each — into a fixed file in
+// Downloads/discord-sniper-logs/. Point Google Drive at that folder and it
+// syncs up on its own; the scheduled reader picks it up, sees what the parser
+// missed, tunes it, and pushes. One file per day, overwritten each pass, so it
+// stays current without piling up.
+chrome.alarms.create("auto-export", { periodInMinutes: 30, delayInMinutes: 1 });
 chrome.alarms.onAlarm.addListener(a => {
   if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); }
   if (a.name === "whop-watchdog") whopWatchdog();
+  if (a.name === "auto-export") autoExportForLearning();
 });
+
+/* Build one plain-text file of the day — raw captures + activity — and save it
+ * to Downloads/discord-sniper-logs/, overwriting the same-day file each pass.
+ * A service worker has no Blob URLs, so it goes out as a data: URL. */
+async function autoExportForLearning() {
+  let captured = [], log = [];
+  try { captured = (await chrome.storage.local.get("captured")).captured || []; } catch (e) {}
+  try { log = (await chrome.storage.local.get("log")).log || []; } catch (e) {}
+  if (!captured.length && !log.length) return;
+  const stamp = t => { try { return new Intl.DateTimeFormat("en-CA",
+    { timeZone: "America/New_York", year: "numeric", month: "2-digit",
+      day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hour12: false }).format(new Date(t)).replace(",", ""); } catch (e) { return ""; } };
+  const day = (stamp(Date.now()).slice(0, 10) || "today");
+  const caps = captured.slice().sort((a, b) => a.t - b.t).map(c =>
+    stamp(c.t) + "  [" + (roomName(c.channel) || c.channel || "?") + "]  " +
+    (c.author || "?") + ": " + String(c.text || "").replace(/\s+/g, " ").trim());
+  const acts = log.slice().reverse().map(e =>
+    stamp(e.t) + "  <" + (e.kind || "?") + ">  " +
+    (e.what ? e.what + " — " : "") + String(e.why || "").replace(/\s+/g, " ").trim() +
+    (e.text ? "  |  " + (e.author || "") + ": " + String(e.text).replace(/\s+/g, " ").trim() : ""));
+  const text =
+    "Discord Sniper — self-learning export (" + day + ", refreshed " + stamp(Date.now()) + " ET)\n\n" +
+    "=== RAW MESSAGES THE READER SAW (" + caps.length + ") ===\n" + caps.join("\n") +
+    "\n\n=== WHAT THE BOT DID (" + acts.length + ") ===\n" + acts.join("\n") + "\n";
+  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
+  try {
+    await chrome.downloads.download({
+      url, filename: "discord-sniper-logs/sniper-" + day + ".txt",
+      conflictAction: "overwrite", saveAs: false
+    });
+  } catch (e) { /* downloads busy or blocked — next pass tries again */ }
+}
 
 /* ===== VOICE LISTENER =======================================================
  * Listen to a Discord voice room and write every word down FAST, and turn any
