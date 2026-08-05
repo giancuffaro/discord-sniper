@@ -196,7 +196,8 @@ async function cfg() {
                "1323708708374450247", "760694103401955378", "1095502893559316482",
                // added on request
                "1527044644796366888",   // Options Insider (embed room)
-               "1471700027662405712"])  // ZT fut-6 (name TBD)
+               "1471700027662405712",   // ZT fut-6 (name TBD)
+               "1135947475912495216"])  // added on request
       .map(String)));
   return c;
 }
