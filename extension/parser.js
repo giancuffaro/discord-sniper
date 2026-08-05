@@ -1237,7 +1237,17 @@ function parseSignalInner(text, cfg) {
     return s;
   }
   const barePctOk = cfg && cfg.bare_pct_trims === false ? false : true;
-  if (RE_TRIM.test(low) || (pctM && !findContract(t) && barePctOk)) {
+  // A BARE percentage with no "trim" verb and no ticker is only a trim when the
+  // line is terse — "37%", "50% here". A recap like "3 10-12% trades today lol,
+  // green is green" carries a percentage but is an end-of-day summary; acting on
+  // it would trim a live position on a reflection. A percentage RANGE ("10-12%")
+  // or a long sentence is the tell. A percentage WITH a ticker stays a real trim.
+  let barePct = !!pctM && !findContract(t) && barePctOk;
+  if (barePct && !RE_TRIM.test(low) && !bareSymbol(t, allowed)) {
+    const isRange = /\d{1,3}\s*[-–]\s*\d{1,3}\s*%/.test(t);
+    if (isRange || t.split(/\s+/).length > 6) barePct = false;
+  }
+  if (RE_TRIM.test(low) || barePct) {
     s.symbol = bareSymbol(t, allowed);
     s.action = "TRIM"; s.matched = "trim";
     if (pctM) s.pct = parseFloat(pctM[1]);

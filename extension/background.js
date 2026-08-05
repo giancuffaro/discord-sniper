@@ -1028,7 +1028,10 @@ async function handleOffscreen(msg) {
     const label = msg.label || ("tab " + msg.id);
     // 1) write EVERYTHING down, fast — the transcript itself, tagged by room.
     capture(msg.text, "🎙 " + label, String(msg.id), Date.now());
-    await addLog({ kind: "voice", why: "🎙 " + label + ": " + msg.text, text: msg.text,
+    // The transcript lives in `why` (with the 🎙 tag). It used to ALSO go in
+    // `text`, and the log renders both — so every spoken line was written down
+    // twice. Keep it in one place; the author still tags the room.
+    await addLog({ kind: "voice", why: "🎙 " + label + ": " + msg.text, text: "",
                    author: label });
     // 2) turn a spoken call into the SAME clean format as a typed one, so it's
     //    easy to read and execute. The AI reader gives one uniform shape; the
@@ -1140,22 +1143,16 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // and re-reads of it while scrolling are expected.
     if (!msg.history && seenMessage(msg)) { reply({ ok: true }); return; }
 
-    // Whop stops here too, and harder: the Whop reader is a wide net that
-    // hasn't been taught the room's shape yet, so EVERYTHING it sends is
-    // capture material and none of it may touch the parser. When the Whop
-    // room's export has been studied and its reader made precise, this gate
-    // is where trading would be switched on — deliberately one line, in one
-    // place.
+    // Every channel trades now — his call: "no channels should be capture
+    // only, every channel should be trade." A Whop room used to stop here as
+    // capture-only until its reader was tuned; that's why Felony's room read
+    // messages but never took a trade. Now a named Whop room uses its canonical
+    // id and an UNNAMED one still parses and fires with the default profile.
+    // Bare percentages are progress updates in every Whop room (the verb
+    // decides), so that profile applies whether or not the room is named.
     if (String(msg.platform || "") === "whop") {
       const wroom = whopRoomOf(msg.channelId);
-      if (!wroom) {
-        reply({ ok: true });   // unknown whop room: captured, nothing more
-        return;
-      }
-      // A graduated Felony room. Canonical id so toggles/guards don't care
-      // about URL hashes, and his grammar profile: bare percents are
-      // progress updates here, never trims — the verb decides.
-      msg.channelId = wroom.id;
+      if (wroom) msg.channelId = wroom.id;   // canonical id when we know it
       c.bare_pct_trims = false;
     }
 

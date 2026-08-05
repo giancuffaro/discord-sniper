@@ -1599,7 +1599,19 @@ def _parse_inner(text, author="", channel="", cfg=None):
         sig.why = "full exit on %s" % sig.symbol
         return sig
     bare_pct_ok = cfg.get("bare_pct_trims", True) if cfg else True
-    if RE_TRIM.search(low) or (pct_m and not _contract(t) and bare_pct_ok):
+    # A BARE percentage with no "trim" verb and no ticker is only a trim when
+    # the line is terse — "37%", "50% here". A recap like "3 10-12% trades
+    # today lol, green is green" carries a percentage but is an end-of-day
+    # summary, and acting on it would trim a live position on a reflection. A
+    # percentage RANGE ("10-12%") or a long sentence is the tell. A percentage
+    # WITH a ticker ("110% NVDA taking profits") is still a real trim, so this
+    # only guards the symbol-less case.
+    bare_pct = bool(pct_m) and not _contract(t) and bare_pct_ok
+    if bare_pct and not RE_TRIM.search(low) and not _bare_symbol(t, allowed):
+        _is_range = re.search(r"\d{1,3}\s*[-–]\s*\d{1,3}\s*%", t)
+        if _is_range or len(t.split()) > 6:
+            bare_pct = False
+    if RE_TRIM.search(low) or bare_pct:
         sig.symbol = _bare_symbol(t, allowed)
         sig.action, sig.matched = "TRIM", "trim"
         if pct_m:
