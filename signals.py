@@ -373,6 +373,14 @@ RE_PCT_COUNT = re.compile(r"-?\d{1,3}(?:\.\d+)?\s*%")
 
 
 # Lines that must never fire no matter what else is in them.
+# Boilerplate footers rooms staple to a call — cut from the first marker to the
+# end so their words (idea, p/l, disclaimer) can't veto the order in front.
+RE_FOOTER = re.compile(
+    r"\s*(?:how i trade\b|trade\s+idea'?s?\s+disclaimer|\bp/?l\s*[:=]|"
+    r"\bdisclaimer\b|for\s+information(?:al)?\s+purposes\s+only|"
+    r"not\s+financial\s+advice|educational\s+only|©).*$",
+    re.IGNORECASE | re.DOTALL)
+
 VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               # "Probably only got 10% out of that" is a P&L musing that read
               # as a 10% TRIM. "hold runners for breakeven" is coaching, not a
@@ -734,6 +742,14 @@ def _parse_inner(text, author="", channel="", cfg=None):
         return sig
 
     t = clean_text(raw)
+    # Strip the boilerplate FOOTER some rooms staple to every call — a
+    # disclaimer or a running P/L line. Market Bishop's "Trimming CRWD 220 C
+    # 7/31 ... How I Trade The Market Bishop Trade Idea's Disclaimer" was
+    # vetoed on the word "idea" in that footer, and Namrood's trims died on the
+    # "P/L:" in theirs. The order is at the FRONT; cut the boilerplate off the
+    # end so it can't veto a real call. Only cuts from a known footer marker to
+    # the end, so it never touches the order itself.
+    t = RE_FOOTER.sub("", t).strip() or t
     sig.clean = t
     low = t.lower()
 

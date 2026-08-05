@@ -134,6 +134,10 @@ const RE_NOT_ROOM_TRADE = /\bpersonal\b|\broom\s+trade\s+still\b|\bnot\s+the\s+r
 // post rendered on screen that the scraper picked up, never a live message.
 // On Aug 3 one of these bought an expired contract. Mirrors signals.py.
 const RE_STALE_STAMP = /\bposted\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b|·\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b|·\s*\d+\s*[dhw]\b/i;
+// Boilerplate footer some rooms staple to a call — cut from the first marker to
+// the end so its words (idea, p/l, disclaimer) can't veto the order. Mirrors
+// RE_FOOTER in signals.py.
+const RE_FOOTER = /\s*(?:how i trade\b|trade\s+idea'?s?\s+disclaimer|\bp\/?l\s*[:=]|\bdisclaimer\b|for\s+information(?:al)?\s+purposes\s+only|not\s+financial\s+advice|educational\s+only|©)[\s\S]*$/i;
 // "Taking paper cut" / "Locking in a 8 point loss" — an early exit by hand.
 // Verb-led on purpose: "those paper cuts we took yesterday" is a war story,
 // "Taking papercut" is a sale.
@@ -482,7 +486,12 @@ function parseSignalInner(text, cfg) {
               warn: "", raw, clean: "", matched: "" };
   if (!raw) { s.why = "empty message"; return s; }
 
-  const t = cleanText(raw);
+  let t = cleanText(raw);
+  // Strip the boilerplate FOOTER some rooms staple to a call (a disclaimer or a
+  // running P/L line) so its words can't veto the order in front. Mirrors
+  // signals.py — Market Bishop's "idea" and Namrood's "P/L:" were killing real
+  // trims. Cuts from a known marker to the end only.
+  t = (t.replace(RE_FOOTER, "").trim()) || t;
   s.clean = t;
   const low = t.toLowerCase();
 
