@@ -118,8 +118,37 @@ RE_ENTRY = re.compile(
 # decision: the parser only says "this is an add", and guards.resolve_add has
 # the final word, because only the guards know whether you're even in it.
 RE_ADD = re.compile(r"\badd(?:ed|ing|s)?\s+(?:to|more|into)\b|\badding\b"
+                    # "added $ONDS 10c 7/17" — past-tense add straight onto a
+                    # contract. "adding" alone matched but "added <contract>"
+                    # slipped through and read as nothing (a missed entry).
+                    r"|\badd(?:ed|ing)?\s+\$?[A-Za-z]{1,5}\s+\$?\d{1,4}(?:\.\d{1,2})?\s*[cp]\b"
                     r"|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b"
                     r"|\b(?:new|updated)\s+(?:avg|average)\b", re.IGNORECASE)
+# The premium on an add, read in priority order and NEVER off a stock level.
+# "adding $LMND 65c ... off strong support @ $52" was reading $52 (the share
+# support price) as the contract premium. A real premium arrives as "filled
+# 10.00", "avg 8.70", or a bare "@ 1.2" — small, usually with a decimal, and
+# not written as "$<whole number>".
+RE_FILL_PRICE = re.compile(
+    r"\b(?:filled|fill|fills|filling|bought)\s+\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)",
+    re.IGNORECASE)
+def _add_premium(t):
+    m = RE_FILL_PRICE.search(t)
+    if m:
+        return float(m.group(1))
+    m = RE_AVG_PRICE.search(t)
+    if m:
+        return float(m.group(1))
+    for m in re.finditer(r"@\s*(\$?)(\d+(?:\.\d{1,4})?)(?![\d.]*\s*%)", t):
+        dollar, num = m.group(1), m.group(2)
+        val = float(num)
+        # "@ $52" (dollar sign + whole number) is a share price, not a premium.
+        if dollar and "." not in num:
+            continue
+        if val >= 100:                       # no option here trades at 100+
+            continue
+        return val
+    return None
 # The price out of "new avg is 2.8", "avg 3.05", "average: $2.90". Their new
 # average is what you'd be paying up to, so it becomes the limit. Never a
 # percentage — "avg gain 30%" is a result, not a price.
@@ -345,6 +374,10 @@ RE_PCT_COUNT = re.compile(r"-?\d{1,3}(?:\.\d+)?\s*%")
 
 # Lines that must never fire no matter what else is in them.
 VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
+              # "Probably only got 10% out of that" is a P&L musing that read
+              # as a 10% TRIM. "hold runners for breakeven" is coaching, not a
+              # sale — both are advice/recap, never firm orders.
+              "probably", "hold runners", "take trims",
               "looking at", "thinking", "maybe", "might", "if it", "if you",
               "waiting", "wait for", "heads up", "scanner", "idea", "consider",
               "recap", "example", "congrats", "missed", "sorry", "pissed",
@@ -1242,9 +1275,9 @@ def _parse_inner(text, author="", channel="", cfg=None):
         sig.symbol = c["symbol"] if c else _bare_symbol(t, allowed)
         if c:
             sig.strike, sig.side, sig.expiry = c["strike"], c["side"], c["expiry"]
-        m = RE_LIMIT.search(t) or RE_AVG_PRICE.search(t)
-        if m:
-            sig.limit = float(m.group(1))
+        p = _add_premium(t)
+        if p is not None:
+            sig.limit = p
         mq = RE_QTY.search(t)
         if mq:
             sig.qty = int(mq.group(1))

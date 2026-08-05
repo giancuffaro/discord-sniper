@@ -784,3 +784,67 @@ if fails:
 print("Market Bishop / Vero / MR.TOPHAT / EvaPanda read: labeled 'Entering "
       "Option' buys, 'N CONTRACTS' buys, a lotto lead buys, STC closes, and "
       "analysis Updates and lotto recaps do nothing.")
+
+
+# --- Boka: JonnyOptions (adding_is_entry) + Sir Goldman ENTRY/COMMENT ---------
+# JonnyOptions writes both "adding" and "added" for a fresh entry, sometimes
+# with the fill price, sometimes only a share-support level that must NOT become
+# the premium.
+BOKA = {"allowed_symbols": ["SPY", "SPX", "LMND", "ONDS", "MRVL", "HOOD",
+                            "CIFR", "USAR", "NVTS", "INOD", "ORCL", "ZETA",
+                            "ASTS", "SOFI", "RIVN"],
+        "adding_is_entry": True}
+
+
+def bcheck(text, action=None, fire=None, **want):
+    s = sigmod.parse(text, cfg=BOKA)
+    if fire is not None:
+        ok(s.fire == fire, "%r: fire was %s, expected %s (%s)"
+           % (text[:52], s.fire, fire, s.why))
+    if action is not None:
+        ok(s.action == action, "%r: action was %s, expected %s (%s)"
+           % (text[:52], s.action, action, s.why))
+    for k, v in want.items():
+        ok(getattr(s, k) == v, "%r: %s was %r, expected %r"
+           % (text[:52], k, getattr(s, k), v))
+    return s
+
+
+# past-tense "added <contract>" was a silent miss — now a fresh entry
+bcheck("added $ONDS 10c 7/17 @Premium", action="OPEN", fire=True,
+       symbol="ONDS", strike=10.0, side="CALLS", expiry="7/17")
+# a share-support "@ $52" must never be read as the option premium
+bcheck("adding $LMND 65c 6/18 @Premium,buying this off strong support @ $52 + "
+       "we are sweeping the swing low filling the mid because the spread is "
+       "like .50", action="OPEN", fire=True, symbol="LMND", strike=65.0,
+       side="CALLS", expiry="6/18", limit=None)
+# "filled 10.00" IS the premium
+bcheck("adding $MRVL 250c 7/17 filled 10.00 @Premium", action="OPEN", fire=True,
+       symbol="MRVL", strike=250.0, expiry="7/17", limit=10.0)
+# "avg 8.70" still read as premium
+bcheck("adding $HOOD 115c 8/7 @Premium avg 8.70", action="OPEN", fire=True,
+       symbol="HOOD", strike=115.0, expiry="8/7", limit=8.7)
+# trims / exits unchanged
+bcheck("stopped out $USAR @Premium", action="CLOSE", fire=True, symbol="USAR")
+bcheck("all out of $NVTS here at 600% @Premium", action="CLOSE", fire=True,
+       symbol="NVTS")
+bcheck("30% $CIFR taking my first trim here @Premium", action="TRIM",
+       symbol="CIFR")
+# Sir Goldman: ENTRY fires, COMMENT never does
+bcheck("@Premium ENTRY $SPX 7575c @ 1.2 LOTTO no Sl, holding this for "
+       "afternoon rally", action="OPEN", fire=True, symbol="SPX",
+       strike=7575.0, side="CALLS", limit=1.2)
+bcheck("@Premium COMMENT Calls off the 5m", fire=False, action=None)
+# advice / P&L musings must not read as trims
+bcheck("Make sure u take trims and hold runners for breakeven", fire=False,
+       action=None)
+bcheck("Probably only got 10% out of that", fire=False, action=None)
+
+if fails:
+    print("FAILED %d Boka check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("Boka reads: JonnyOptions 'added/adding' entries (share level never the "
+      "premium, 'filled'/'avg' is), trims/exits, Sir Goldman ENTRY vs COMMENT, "
+      "and advice/recap lines fire nothing.")

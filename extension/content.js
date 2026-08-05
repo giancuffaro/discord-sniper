@@ -50,14 +50,31 @@ function authorOf(li) {
   return "unknown";
 }
 
+// A bot posts its call inside an embed — a colored box with an author line, a
+// title, a description, name/value field pairs, and a footer. The ticker can
+// live in ANY of those (Options Insider puts "CLOSED — CAT 950C" on the author
+// line), so read them all. Missing one of these is how a whole call goes dark.
+const EMBED_SEL = '[class*="embedAuthor"], [class*="embedTitle"], ' +
+  '[class*="embedDescription"], [class*="embedFieldName"], ' +
+  '[class*="embedFieldValue"], [class*="embedFooter"]';
+
 function textOf(li) {
   const parts = [];
   const body = li.querySelector('[id^="message-content-"]');
   if (body) parts.push(body.textContent);
-  // some rooms post their calls inside embeds rather than as plain text
-  li.querySelectorAll('[class*="embedTitle"], [class*="embedDescription"], [class*="embedFieldValue"]')
-    .forEach(e => parts.push(e.textContent));
+  li.querySelectorAll(EMBED_SEL).forEach(e => parts.push(e.textContent));
   return parts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+// For the history grabber we want EVERY line, no matter how the room formats
+// it. If the structured read above comes back shorter than the whole row's
+// visible text (an embed shape we didn't name), fall back to the full row so
+// nothing is silently dropped from a tuning export.
+function fullTextOf(li) {
+  const t = textOf(li);
+  let all = "";
+  try { all = (li.innerText || "").replace(/\s+/g, " ").trim(); } catch (e) {}
+  return all.length > t.length ? all : t;
 }
 
 function handle(li) {
@@ -95,6 +112,7 @@ function handle(li) {
     chrome.runtime.sendMessage({
       type: "MESSAGE",
       text,
+      full: fullTextOf(li),   // everything in the row — for the grabber's export
       author: authorOf(li),
       channelId: channelId(),
       postedAt,
@@ -192,6 +210,11 @@ async function grabHistory(untilTs) {
     const step = Math.max(200, Math.floor(scroller.clientHeight * 0.8));
     scroller.scrollTop = Math.max(0, scroller.scrollTop - step);
     await new Promise(r => setTimeout(r, WAIT));
+    // SWEEP every message currently on screen, don't wait for Discord's
+    // "new message" event — during a fast scroll those events skip rows, which
+    // is how whole embed calls went missing. handle() dedupes via SEEN, so
+    // re-sweeping the same rows is cheap and nothing gets dropped.
+    list.querySelectorAll('li[id^="chat-messages-"]').forEach(handle);
     const times = list.querySelectorAll('time[datetime]');
     const oldestEl = times[0];
     const oldest = oldestEl ? Date.parse(oldestEl.getAttribute("datetime")) : null;

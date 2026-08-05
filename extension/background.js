@@ -1068,7 +1068,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     if (sender && sender.tab && String(msg.platform || "") === "whop") {
       whopTabSeen[sender.tab.id] = Date.now();   // this tab is alive
     }
-    if (c.capture) capture(msg.text, msg.author, msg.channelId, msg.postedAt);
+    // Grabber export stores the FULL row text (embeds and all); trading still
+    // reads the clean msg.text below.
+    if (c.capture) capture(msg.full || msg.text, msg.author, msg.channelId, msg.postedAt);
 
     // Whop stops here too, and harder: the Whop reader is a wide net that
     // hasn't been taught the room's shape yet, so EVERYTHING it sends is

@@ -197,12 +197,39 @@ const RE_BARE_FILL = /^(?:just\s+|we\s+|i\s+|i've\s+|ive\s+|we've\s+)*(?:filled|
 // moved. Whether that buys you a second contract is a setting, not a parser
 // decision: resolveAdd in guards.js has the final word, because only the guards
 // know whether you're even in it.
-const RE_ADD = /\badd(?:ed|ing|s)?\s+(?:to|more|into)\b|\badding\b|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b|\b(?:new|updated)\s+(?:avg|average)\b/i;
+// "added $ONDS 10c 7/17" — past-tense add straight onto a contract. "adding"
+// alone matched but "added <contract>" slipped through and read as nothing (a
+// missed entry).
+const RE_ADD = /\badd(?:ed|ing|s)?\s+(?:to|more|into)\b|\badding\b|\badd(?:ed|ing)?\s+\$?[A-Za-z]{1,5}\s+\$?\d{1,4}(?:\.\d{1,2})?\s*[cp]\b|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b|\b(?:new|updated)\s+(?:avg|average)\b/i;
 // The price out of "new avg is 2.8", "avg 3.05", "average: $2.90". Never a
 // percentage — "avg gain 30%" is a result, not a price.
 const RE_AVG_PRICE = /\b(?:avg|average)\w*\s*(?:is|of|at|around|near|:|=|@)?\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)/i;
+// The premium on an add, in priority order and NEVER off a stock level.
+// "adding $LMND 65c ... off strong support @ $52" read $52 (the share price)
+// as the premium. A real premium is "filled 10.00", "avg 8.70", or a bare
+// "@ 1.2" — small, usually a decimal, never "$<whole number>".
+const RE_FILL_PRICE = /\b(?:filled|fill|fills|filling|bought)\s+\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)/i;
+function addPremium(t) {
+  let m = RE_FILL_PRICE.exec(t);
+  if (m) return parseFloat(m[1]);
+  m = RE_AVG_PRICE.exec(t);
+  if (m) return parseFloat(m[1]);
+  const re = /@\s*(\$?)(\d+(?:\.\d{1,4})?)(?![\d.]*\s*%)/g;
+  let mm;
+  while ((mm = re.exec(t)) !== null) {
+    const dollar = mm[1], numStr = mm[2], val = parseFloat(numStr);
+    if (dollar && numStr.indexOf(".") === -1) continue; // "@ $52" is a share price
+    if (val >= 100) continue;                            // no option trades at 100+
+    return val;
+  }
+  return null;
+}
 
 const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
+  // "Probably only got 10% out of that" is a P&L musing that read as a 10%
+  // TRIM. "hold runners for breakeven" is coaching, not a sale — both are
+  // advice/recap, never firm orders.
+  "probably", "hold runners", "take trims",
   "looking at", "thinking", "maybe", "might", "if it", "if you", "waiting",
   "wait for", "heads up", "scanner", "idea", "consider", "recap", "example",
   "congrats", "missed", "sorry", "pissed", "sets the tone", "session",
@@ -940,8 +967,8 @@ function parseSignalInner(text, cfg) {
     const c = findContract(t);
     s.symbol = c ? c.symbol : bareSymbol(t, allowed);
     if (c) { s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
-    const m = RE_LIMIT.exec(t) || RE_AVG_PRICE.exec(t);
-    if (m) s.limit = parseFloat(m[1]);
+    const p = addPremium(t);
+    if (p !== null) s.limit = p;
     const mq = RE_QTY.exec(t);
     if (mq) s.qty = parseInt(mq[1], 10);
     // JonnyOptions [BOKA]: "adding $WULF 17c 4/17" = OPEN, not average up.
