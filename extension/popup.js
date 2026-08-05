@@ -538,7 +538,9 @@ const ROOM_NAMES = { "829754942817828884": "Honeydrip daytrades",
                      "1387459050505240597": "Boka 4",
                      "1323708708374450247": "Vero 1",
                      "760694103401955378": "Vero 2",
-                     "1095502893559316482": "Vero 3" };
+                     "1095502893559316482": "Vero 3",
+                     "1527044644796366888": "Options Insider",
+                     "1471700027662405712": "ZT fut-6" };
 
 /* The per-room scoreboard he asked for: "trade information, won, lost,
  * profits, from each individual channel just to have good data to see where
