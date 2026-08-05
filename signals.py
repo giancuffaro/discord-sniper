@@ -454,7 +454,18 @@ NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                # The Discord bot badge. "stockguy007 APP — 9/26 ... Stopping
                # out here" and "Nitro Trades APP — ... Closed SPY" read the
                # APP badge as ticker APP and fired CLOSE APP. Never a ticker.
-               "APP", "COMMENT", "ENTRY", "PRICE", "SWING"}
+               "APP", "COMMENT", "ENTRY", "PRICE", "SWING",
+               # Bullwinkle's exit/management lingo fired phantom CLOSEs on the
+               # word directly before/after OUT: "OUT ALL BUT 1" -> CLOSE BUT,
+               # "OUT HALF" -> CLOSE HALF, "Bullwinkle EDU — ... OUT" -> CLOSE
+               # EDU, "WILL STOP OUT" -> CLOSE WILL, "TRIMMED FORM THE ADD" ->
+               # TRIM FORM. None of these are the ticker; the real position is
+               # resolved from what's held (needs_position) instead.
+               "BUT", "HALF", "MORE", "EDU", "TOO", "LAST", "WILL", "FORM",
+               "LIGHT", "STARTER", "PENDING", "PICKED", "MARKETING", "LOTTO",
+               "IDEA", "WATCH", "OPTION", "OPTIONS", "TRADE", "ALERT", "SETUP",
+               "AFTER", "STOP", "RIDE", "TA", "WIL", "SIDELINES", "STRONG",
+               "SMALL", "NEXT", "THIS", "THAT", "LETTING"}
 
 
 @dataclass
@@ -941,6 +952,109 @@ def _parse_inner(text, author="", channel="", cfg=None):
         sig.warn = "no premium posted — it pays the market."
         sig.why = "entry: %s" % sig.human()
         return sig
+
+    # ---- Namrood-Trades (ZTRADEZ): "Buy To Open MSFT 400C 1DTE $2.6" /
+    #      "Buy To Open GOOGL 345C 08/21/2026 $4.6" / "Lotto Trade — RISKY TSLA
+    #      402.5C 7/17/2026 $3.35". The label is the buy; "Close or Trim & Set
+    #      SL to BE ..." and "Idea ..." are exits/watches, read elsewhere.
+    if re.search(r"\bbuy\s+to\s+open\b|\blotto\s+trade\b", low):
+        c = _contract(t)
+        if c and c["symbol"] not in NOT_TICKERS:
+            sig.symbol, sig.strike = c["symbol"], c["strike"]
+            sig.side, sig.expiry = c["side"], c["expiry"]
+            mps = re.findall(r"\$\s*(\d+(?:\.\d{1,2})?)\b(?!\s*%)", t)
+            # premium is the LAST $-number (a $-strike like "$900.0 CALL" comes
+            # first); ignore it if it's the strike itself.
+            if mps and float(mps[-1]) != sig.strike:
+                sig.limit = float(mps[-1])
+            sig.action, sig.matched = "OPEN", "namrood entry"
+            sig.fire = True
+            if sig.limit is None:
+                sig.warn = "no entry price I could read — it pays the market."
+            sig.why = "entry: %s" % sig.human()
+            return sig
+
+    # ---- Adex Swing: "Entering $MA 535C 6/18 @4.5" / "Entering: $LOW 230C 8/21
+    #      @3.30". A "TRIM $WMT CALLS 23%" and the big "Options Analysis ·" table
+    #      are not entries (the table is vetoed; TRIM reads as a trim).
+    if re.search(r"\bentering\b", low) and not re.search(r"\boptions?\s+analysis\b", low):
+        c = _contract(t)
+        if c and c["symbol"] not in NOT_TICKERS:
+            sig.symbol, sig.strike = c["symbol"], c["strike"]
+            sig.side, sig.expiry = c["side"], c["expiry"]
+            mp = re.search(r"@\s*\$?(\d+(?:\.\d{1,2})?)\b(?!\s*%)", t)
+            if mp:
+                sig.limit = float(mp.group(1))
+            sig.action, sig.matched = "OPEN", "adex entry"
+            sig.fire = True
+            if sig.limit is None:
+                sig.warn = "no entry price posted — it pays the market."
+            sig.why = "entry: %s" % sig.human()
+            return sig
+
+    # ---- King Maker Bot: "TWLO 11/21 $140 Calls @$1.49 SL: TWLO < $128.50" /
+    #      "AMPX 02/20/26 $11 Call @$0.90". Ticker, MM/DD expiry, $strike, side,
+    #      @premium. A line with a % gain or "trimming/booking/took" is an
+    #      update, not an entry, so those are left to the trim reader.
+    km = re.match(
+        r"^(?:@everyone\s+)?([A-Za-z]{1,5})\s+(\d{1,2}[/.]\d{1,2}(?:[/.]\d{2,4})?)\s+"
+        r"\$(\d{1,5}(?:\.\d{1,2})?)\s+(calls?|puts?)\s+@\s*\$?(\d+(?:\.\d{1,2})?)",
+        t, re.IGNORECASE)
+    if km and km.group(1).upper() not in NOT_TICKERS \
+            and not RE_PCT_ANY.search(t) \
+            and not re.search(r"\b(trimming|booking|took|book\b|profits?)\b", low):
+        p = re.findall(r"\d+", km.group(2))
+        sig.symbol = km.group(1).upper()
+        sig.expiry = "%d/%d" % (int(p[0]), int(p[1]))
+        sig.strike = float(km.group(3))
+        sig.side = "CALLS" if km.group(4).lower().startswith("call") else "PUTS"
+        sig.limit = float(km.group(5))
+        sig.action, sig.matched = "OPEN", "kingmaker entry"
+        sig.fire = True
+        sig.why = "entry: %s" % sig.human()
+        return sig
+
+    # ---- KuMo Bot: "Weekly CAVA 07/17/26 $100 Call @$1.50-$1.60 PT1:..." /
+    #      "Monthly TJX 05/15/26 $165 Call @$1.55 SL:...". Single-leg only —
+    #      a "Debit Spread"/"Credit Spread" is two legs the buy-only bot skips.
+    kumo = re.search(
+        r"\b(?:weekly|monthly)\s+([A-Za-z]{1,5})\s+(\d{1,2}/\d{1,2}(?:/\d{2,4})?)\s+"
+        r"\$(\d{1,5}(?:\.\d{1,2})?)\s+(calls?|puts?)\s+@\s*\$?(\d+(?:\.\d{1,2})?)",
+        t, re.IGNORECASE)
+    if kumo and kumo.group(1).upper() not in NOT_TICKERS \
+            and not re.search(r"\bspread\b", low) and not RE_PCT_ANY.search(t):
+        p = re.findall(r"\d+", kumo.group(2))
+        sig.symbol = kumo.group(1).upper()
+        sig.expiry = "%d/%d" % (int(p[0]), int(p[1]))
+        sig.strike = float(kumo.group(3))
+        sig.side = "CALLS" if kumo.group(4).lower().startswith("call") else "PUTS"
+        sig.limit = float(kumo.group(5))
+        sig.action, sig.matched = "OPEN", "kumo entry"
+        sig.fire = True
+        sig.why = "entry: %s" % sig.human()
+        return sig
+
+    # ---- Stormzy (futures): "TRADE ENTRY - MNQ Shorts - 1/4 Size Position
+    #      Entry: 28163.75 Sl: 28194.50". Symbol, direction, entry price; the
+    #      "Trade Alert TP 1 : ..." and "SETUP ON WATCH" lines are not entries.
+    sz = re.search(
+        r"\btrade\s+entry\b[^\n]{0,40}?\b(MNQ|NQ|MES|ES|MYM|YM|M2K|RTY|MCL|CL|MGC|GC)\b"
+        r"[^\n]{0,20}?\b(short|long)s?\b[^\n]{0,40}?\bentry:?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)",
+        t, re.IGNORECASE)
+    if sz:
+        _px = _num(sz.group(3))
+        if _fut_price_ok(sz.group(1).upper(), _px):
+            sig.symbol = sz.group(1).upper()
+            sig.kind = "future"
+            sig.direction = sz.group(2).upper()
+            sig.limit = _px
+            ms = RE_THEIR_STOP.search(t)
+            if ms:
+                sig.their_stop = _num(ms.group(1))
+            sig.action, sig.matched = "OPEN", "stormzy futures entry"
+            sig.fire = True
+            sig.why = "entry: %s %s" % (sig.direction, sig.symbol)
+            return sig
 
     # ---- Vero: "QQQ 708C 7/21 1.03 2 CONTRACTS" / "SPY 757P 8/3 1.13 4 CONS".
     #      Symbol, strike+side, date, premium, size — the "N CONTRACTS/CONS" tail

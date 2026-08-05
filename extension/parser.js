@@ -288,7 +288,15 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "LH", "HH",
   // The Discord bot badge. "stockguy007 APP — ... Stopping out" and "Nitro
   // Trades APP — ... Closed SPY" read APP as ticker APP and fired CLOSE APP.
-  "APP", "COMMENT", "ENTRY", "PRICE", "SWING"]);
+  "APP", "COMMENT", "ENTRY", "PRICE", "SWING",
+  // Bullwinkle exit/management lingo that fired phantom CLOSEs on the word by
+  // OUT ("OUT ALL BUT 1", "OUT HALF", "Bullwinkle EDU — ... OUT", "WILL STOP
+  // OUT", "letting it RIDE", "NO MORE AFTER THIS"). None are the ticker.
+  "BUT", "HALF", "MORE", "EDU", "TOO", "LAST", "WILL", "FORM", "LIGHT",
+  "STARTER", "PENDING", "PICKED", "MARKETING", "LOTTO", "IDEA", "WATCH",
+  "OPTION", "OPTIONS", "TRADE", "ALERT", "SETUP", "AFTER", "STOP", "RIDE",
+  "TA", "WIL", "SIDELINES", "STRONG", "SMALL", "NEXT", "THIS", "THAT",
+  "LETTING"]);
 
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_HDR, "");
@@ -648,6 +656,86 @@ function parseSignalInner(text, cfg) {
     s.warn = "no premium posted — it pays the market.";
     s.why = "entry: " + human(s);
     return s;
+  }
+
+  // ---- Namrood-Trades: "Buy To Open MSFT 400C 1DTE $2.6" / "Lotto Trade —
+  //      RISKY TSLA 402.5C 7/17/2026 $3.35". The label is the buy.
+  if (/\bbuy\s+to\s+open\b|\blotto\s+trade\b/i.test(low)) {
+    const c = findContract(t);
+    if (c && !NOT_TICKERS.has(c.symbol)) {
+      s.symbol = c.symbol; s.strike = c.strike; s.side = c.side; s.expiry = c.expiry;
+      const mps = t.match(/\$\s*(\d+(?:\.\d{1,2})?)\b(?!\s*%)/g);
+      if (mps) {
+        const last = parseFloat(mps[mps.length - 1].replace(/[^\d.]/g, ""));
+        if (last !== s.strike) s.limit = last;
+      }
+      s.action = "OPEN"; s.matched = "namrood entry"; s.fire = true;
+      if (s.limit === null || isNaN(s.limit)) s.warn = "no entry price I could read — it pays the market.";
+      s.why = "entry: " + human(s);
+      return s;
+    }
+  }
+
+  // ---- Adex Swing: "Entering $MA 535C 6/18 @4.5" / "Entering: $LOW 230C 8/21
+  //      @3.30". The big "Options Analysis ·" table is not an entry.
+  if (/\bentering\b/i.test(low) && !/\boptions?\s+analysis\b/i.test(low)) {
+    const c = findContract(t);
+    if (c && !NOT_TICKERS.has(c.symbol)) {
+      s.symbol = c.symbol; s.strike = c.strike; s.side = c.side; s.expiry = c.expiry;
+      const mp = /@\s*\$?(\d+(?:\.\d{1,2})?)\b(?!\s*%)/.exec(t);
+      if (mp) s.limit = parseFloat(mp[1]);
+      s.action = "OPEN"; s.matched = "adex entry"; s.fire = true;
+      if (s.limit === null || isNaN(s.limit)) s.warn = "no entry price posted — it pays the market.";
+      s.why = "entry: " + human(s);
+      return s;
+    }
+  }
+
+  // ---- King Maker Bot: "TWLO 11/21 $140 Calls @$1.49 SL: ...". A % gain or
+  //      "trimming/booking/took" makes it an update, not an entry.
+  const km = /^(?:@everyone\s+)?([A-Za-z]{1,5})\s+(\d{1,2}[/.]\d{1,2}(?:[/.]\d{2,4})?)\s+\$(\d{1,5}(?:\.\d{1,2})?)\s+(calls?|puts?)\s+@\s*\$?(\d+(?:\.\d{1,2})?)/i.exec(t);
+  if (km && !NOT_TICKERS.has(km[1].toUpperCase()) && !RE_PCT_ANY.test(t)
+      && !/\b(trimming|booking|took|book|profits?)\b/i.test(low)) {
+    const p = km[2].match(/\d+/g);
+    s.symbol = km[1].toUpperCase();
+    s.expiry = parseInt(p[0], 10) + "/" + parseInt(p[1], 10);
+    s.strike = parseFloat(km[3]);
+    s.side = km[4].toLowerCase().startsWith("call") ? "CALLS" : "PUTS";
+    s.limit = parseFloat(km[5]);
+    s.action = "OPEN"; s.matched = "kingmaker entry"; s.fire = true;
+    s.why = "entry: " + human(s);
+    return s;
+  }
+
+  // ---- KuMo Bot: "Weekly CAVA 07/17/26 $100 Call @$1.50-$1.60 PT1:...".
+  //      Single-leg only — a Debit/Credit Spread is two legs, skipped.
+  const kumo = /\b(?:weekly|monthly)\s+([A-Za-z]{1,5})\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s+\$(\d{1,5}(?:\.\d{1,2})?)\s+(calls?|puts?)\s+@\s*\$?(\d+(?:\.\d{1,2})?)/i.exec(t);
+  if (kumo && !NOT_TICKERS.has(kumo[1].toUpperCase()) && !/\bspread\b/i.test(low) && !RE_PCT_ANY.test(t)) {
+    const p = kumo[2].match(/\d+/g);
+    s.symbol = kumo[1].toUpperCase();
+    s.expiry = parseInt(p[0], 10) + "/" + parseInt(p[1], 10);
+    s.strike = parseFloat(kumo[3]);
+    s.side = kumo[4].toLowerCase().startsWith("call") ? "CALLS" : "PUTS";
+    s.limit = parseFloat(kumo[5]);
+    s.action = "OPEN"; s.matched = "kumo entry"; s.fire = true;
+    s.why = "entry: " + human(s);
+    return s;
+  }
+
+  // ---- Stormzy (futures): "TRADE ENTRY - MNQ Shorts - 1/4 Size Position
+  //      Entry: 28163.75 Sl: 28194.50".
+  const sz = /\btrade\s+entry\b[^\n]{0,40}?\b(MNQ|NQ|MES|ES|MYM|YM|M2K|RTY|MCL|CL|MGC|GC)\b[^\n]{0,20}?\b(short|long)s?\b[^\n]{0,40}?\bentry:?\s*\$?(\d[\d,]*(?:\.\d{1,2})?)/i.exec(t);
+  if (sz) {
+    const px = num(sz[3]);
+    if (futPriceOk(sz[1].toUpperCase(), px)) {
+      s.symbol = sz[1].toUpperCase(); s.kind = "future";
+      s.direction = sz[2].toUpperCase(); s.limit = px;
+      const ms = RE_THEIR_STOP.exec(t);
+      if (ms) s.their_stop = num(ms[1]);
+      s.action = "OPEN"; s.matched = "stormzy futures entry"; s.fire = true;
+      s.why = "entry: " + s.direction + " " + s.symbol;
+      return s;
+    }
   }
 
   // ---- Vero: "QQQ 708C 7/21 1.03 2 CONTRACTS". The "N CONTRACTS/CONS" tail is

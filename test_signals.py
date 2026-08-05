@@ -905,3 +905,63 @@ if fails:
 print("ZT opt reads: are-alerts OPEN with a lead-in (SPOT-on ignored), "
       "stockguy007 spelled-out entries (APP badge never a ticker), Nitro "
       "'Entry Contract' buys with price, and 'on watch' fires nothing.")
+
+
+# --- ZT batch 2: King Maker, KuMo, Adex, Namrood, Stormzy + safety -----------
+ZB = {"allowed_symbols": ["SPY", "QQQ", "NVDA", "TSLA", "AMD", "MU", "GOOGL",
+                          "MSFT", "MA", "COST", "LOW", "TJX", "CAVA", "TWLO",
+                          "RILY", "AIRS", "MNQ"]}
+
+
+def bch(text, action=None, fire=None, **want):
+    s = sigmod.parse(text, cfg=ZB)
+    if fire is not None:
+        ok(s.fire == fire, "%r: fire was %s, expected %s (%s)"
+           % (text[:52], s.fire, fire, s.why))
+    if action is not None:
+        ok(s.action == action, "%r: action was %s, expected %s (%s)"
+           % (text[:52], s.action, action, s.why))
+    for k, v in want.items():
+        ok(getattr(s, k) == v, "%r: %s was %r, expected %r"
+           % (text[:52], k, getattr(s, k), v))
+    return s
+
+
+# King Maker: entry fires; a % update is a trim, not an entry
+bch("@everyone RILY 07/17 $8 Call @$0.60 SL: RILY < $7.10", action="OPEN",
+    fire=True, symbol="RILY", strike=8.0, side="CALLS", expiry="7/17", limit=0.60)
+bch("@everyone SYY 06/18 $80 Calls @$1.40, up +22%! trimming some for profits!",
+    fire=False)  # update, not an entry
+# KuMo: single-leg entry fires; a debit spread does NOT
+bch("@everyone Weekly CAVA 07/17/26 $100 Call @$1.50-$1.60 PT1: $2.10",
+    action="OPEN", fire=True, symbol="CAVA", strike=100.0, expiry="7/17", limit=1.50)
+bch("@everyone Update KSS 08/21/26 $18.5/$20 Call Debit Spread close to PT2",
+    fire=False)  # spread, skipped
+# Adex: Entering fires as an OPEN (was mis-reading as ADD)
+bch("Entering $MA 535C 6/18 @4.5", action="OPEN", fire=True, symbol="MA",
+    strike=535.0, side="CALLS", expiry="6/18", limit=4.5)
+bch("Entering: $LOW 230C 8/21 @3.30", action="OPEN", fire=True, symbol="LOW",
+    strike=230.0, limit=3.30)
+# Namrood: Buy To Open fires
+bch("@everyone Buy To Open MSFT 400C 1DTE $2.6", action="OPEN", fire=True,
+    symbol="MSFT", strike=400.0, side="CALLS", limit=2.6)
+bch("@everyone Lotto Trade — RISKY TSLA 402.5C 7/17/2026 $3.35", action="OPEN",
+    fire=True, symbol="TSLA", strike=402.5, limit=3.35)
+# Stormzy futures: entry fires with direction
+sz = bch("@everyone Trade Alert TRADE ENTRY - MNQ Shorts - 1/4 Size Position "
+         "Entry: 28163.75 Sl: 28194.50", action="OPEN", fire=True, symbol="MNQ")
+ok(sz.kind == "future" and sz.direction == "SHORT" and sz.limit == 28163.75,
+   "Stormzy MNQ short entry price")
+# Safety: garbage words by OUT never become a ticker that fires
+bch("OUT ALL BUT 1 SL ENTRY LETTING IT RIDE", symbol=None)
+bch("WILL STOP OUT @ .97", symbol=None)
+bch("OUT HALF", symbol=None)
+
+if fails:
+    print("FAILED %d ZT-batch-2 check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    raise SystemExit(1)
+print("ZT batch 2 reads: King Maker/KuMo/Adex/Namrood option entries and "
+      "Stormzy futures fire; % updates and debit spreads don't; and 'OUT ALL "
+      "BUT 1' / 'WILL STOP OUT' never invent a ticker.")
