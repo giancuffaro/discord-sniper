@@ -468,7 +468,7 @@ NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                # "OUT FOLKS" (Bullwinkle sign-off) -> phantom CLOSE FOLKS. Not a
                # ticker; the real position is resolved from what's held.
                "SMALL", "NEXT", "THIS", "THAT", "LETTING", "FOLKS", "GUYS",
-               "EVERYONE", "EVERYBODY", "TODAY", "HERE", "NOW", "DONE"}
+               "EVERYONE", "EVERYBODY", "TODAY", "HERE", "NOW", "DONE", "OFF"}
 
 
 @dataclass
@@ -753,9 +753,17 @@ def _parse_inner(text, author="", channel="", cfg=None):
     # to read as TRIM PCS — "PCS" taken for a ticker and the 30% for a trim.
     # Vetoed here, before any format reader, so no spread ever reaches the book.
     if re.search(r"\bcredit\s+spread\b|\bdebit\s+spread\b|\biron\s+condor\b"
-                 r"|\bput\s+credit\b|\bcall\s+credit\b|\b(?:pcs|ccs)\b", low):
-        sig.why = ("a credit/debit spread (multi-leg) — the buy-only bot doesn't "
-                   "trade these, so nothing was sent")
+                 r"|\bput\s+credit\b|\bcall\s+credit\b|\b(?:pcs|ccs|csp)\b", low):
+        sig.why = ("a credit/debit spread or cash-secured put (a selling "
+                   "strategy) — the buy-only bot doesn't trade these")
+        return sig
+
+    # Promo / recruitment spam a room drops in the feed: "50% OFF A FUNDED PORT
+    # ($50K) WHEN USING CODE ZTRADEZ https://…". It carried a percent and "OFF",
+    # so it read as TRIM OFF. It's an ad, not a call — veto on the ad tells.
+    if re.search(r"\d{1,3}\s*%\s*off\b|\busing\s+code\b|\bfunded\s+(?:port|"
+                 r"account|trader)\b|\bprop\s+firm\s+funding\b|\bsign\s*up\b", low):
+        sig.why = "promotional / recruitment message, not a trade call"
         return sig
 
     # Who said it. Two shapes: the scribe relaying somebody ("@Brett (Admin)

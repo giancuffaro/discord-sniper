@@ -164,36 +164,85 @@ def front_month(wb, symbol):
         "thing." % symbol)
 
 
+def _order_id_of(body):
+    if not isinstance(body, dict):
+        return None
+    data = body.get("data")
+    if isinstance(data, dict):
+        got = data.get("order_id") or data.get("orderId")
+        if got:
+            return got
+    return body.get("order_id") or body.get("orderId") or body.get("client_order_id")
+
+
 def _place(wb, contract, side, qty, limit=None):
-    """One order, probed across the plausible endpoint names. Returns the
-    order id, or raises FuturesRefused with every reason collected."""
-    shapes = []
-    base = {"symbol": contract, "qty": int(qty), "quantity": int(qty),
-            "side": side, "order_type": "LIMIT" if limit else "MARKET"}
-    # The FUTURES account, picked automatically when the keys went in — his
-    # rule: options ride the MARGIN account, futures ride the FUTURES one,
-    # nobody picks anything twice.
-    fut_acct = getattr(wb, "futures_account_id", None)
+    """Send one futures order. The old code passed a bare dict as the only
+    argument and every endpoint 'answered' with a TypeError — 'no endpoint
+    answered'. The options path proves the SDK wants place_order(account_id,
+    [order]); futures share it. So build a proper order and try that signature
+    first, then probe broadly across the trade client's order holders and the
+    other plausible arg shapes. Still refuses cleanly if nothing takes it — a
+    futures order is never sent blind."""
+    import uuid
+    fut_acct = getattr(wb, "futures_account_id", None) or \
+        getattr(wb, "account_id", None)
+    order = {"client_order_id": uuid.uuid4().hex[:32], "symbol": contract,
+             "instrument_type": "FUTURES", "market": "US", "side": side,
+             "quantity": str(int(qty)), "qty": str(int(qty)),
+             "order_type": "LIMIT" if limit else "MARKET",
+             "time_in_force": "DAY", "entrust_type": "QTY"}
     if fut_acct:
-        base["account_id"] = base["accountId"] = str(fut_acct)
+        order["account_id"] = order["accountId"] = str(fut_acct)
     if limit:
-        base["limit_price"] = base["price"] = float(limit)
-    shapes.append((base,))
-    body, why = _try(wb, ["trade", "order_v3", "order", "futures"],
-                     ["place_futures_order", "futures_place_order",
-                      "place_order_v3", "place_order"], *shapes[0])
-    if body is None:
-        raise FuturesRefused(
-            "Webull wouldn't take the futures order the ways I know how to "
-            "send one (%s). Nothing went out. This is exactly why the first "
-            "live futures trade is a supervised one — send me what the "
-            "bridge log says." % (why or "no endpoint answered")[:200])
-    oid = None
-    if isinstance(body, dict):
-        oid = (body.get("order_id") or body.get("orderId") or
-               (body.get("data") or {}).get("order_id")
-               if isinstance(body.get("data"), dict) else body.get("order_id"))
-    return oid or "unknown"
+        order["limit_price"] = order["price"] = "%.2f" % float(limit)
+
+    # Every place/submit/create-order method on the trade client and its
+    # sub-objects, each tried with the account+list signature first.
+    tr = getattr(wb, "trade", None)
+    holders = []
+    if tr is not None:
+        holders.append(tr)
+        for a in dir(tr):
+            if a.startswith("_"):
+                continue
+            low = a.lower()
+            if "order" in low or "futur" in low or "trade" in low:
+                try:
+                    holders.append(getattr(tr, a))
+                except Exception:                       # noqa: BLE001
+                    pass
+    shapes = [(fut_acct, [order]), (fut_acct, order), ([order],), (order,)] \
+        if fut_acct else [([order],), (order,)]
+    errors = []
+    for h in holders:
+        for m in dir(h):
+            low = m.lower()
+            if m.startswith("_"):
+                continue
+            if not ((("place" in low or "submit" in low or "create" in low)
+                     and "order" in low) or ("futur" in low and "order" in low)):
+                continue
+            fn = getattr(h, m, None)
+            if not callable(fn):
+                continue
+            for args in shapes:
+                try:
+                    res = fn(*args)
+                except TypeError:
+                    continue
+                except Exception as e:                  # noqa: BLE001
+                    errors.append("%s: %s" % (m, str(e)[:60]))
+                    continue
+                if getattr(res, "status_code", 200) != 200:
+                    errors.append("%s: HTTP %s" % (m, getattr(res, "status_code", "?")))
+                    continue
+                body = res.json() if hasattr(res, "json") else res
+                return _order_id_of(body) or "unknown"
+    raise FuturesRefused(
+        "Webull wouldn't take the futures order the ways I know how to send one "
+        "(%s). Nothing went out — the first live futures trade is a supervised "
+        "one; send me the bridge log line." % (" | ".join(errors[:3]) or
+                                               "no endpoint answered"))
 
 
 def execute(wb, book, order, key, note):

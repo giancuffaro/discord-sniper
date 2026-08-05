@@ -299,7 +299,7 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // "OUT FOLKS" (Bullwinkle sign-off) -> phantom CLOSE FOLKS. Sign-off words,
   // never tickers; the real position is resolved from what's held.
   "LETTING", "FOLKS", "GUYS", "EVERYONE", "EVERYBODY", "TODAY", "HERE",
-  "NOW", "DONE"]);
+  "NOW", "DONE", "OFF"]);
 
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_HDR, "");
@@ -499,9 +499,16 @@ function parseSignalInner(text, cfg) {
   // follow them, and he dropped credit spreads on purpose. "Put Credit Spread
   // (PCS) ... SPX PCS 7720/7710 ... Target: 30%+" used to read as TRIM PCS.
   // Vetoed here, before any format reader, so no spread reaches the book.
-  if (/\bcredit\s+spread\b|\bdebit\s+spread\b|\biron\s+condor\b|\bput\s+credit\b|\bcall\s+credit\b|\b(?:pcs|ccs)\b/.test(low)) {
-    s.why = "a credit/debit spread (multi-leg) — the buy-only bot doesn't " +
-            "trade these, so nothing was sent";
+  if (/\bcredit\s+spread\b|\bdebit\s+spread\b|\biron\s+condor\b|\bput\s+credit\b|\bcall\s+credit\b|\b(?:pcs|ccs|csp)\b/.test(low)) {
+    s.why = "a credit/debit spread or cash-secured put (a selling strategy) — " +
+            "the buy-only bot doesn't trade these";
+    return s;
+  }
+
+  // Promo / recruitment spam ("50% OFF A FUNDED PORT ... USING CODE ..."): it
+  // carries a percent and "OFF" so it read as TRIM OFF. An ad, not a call.
+  if (/\d{1,3}\s*%\s*off\b|\busing\s+code\b|\bfunded\s+(?:port|account|trader)\b|\bprop\s+firm\s+funding\b|\bsign\s*up\b/.test(low)) {
+    s.why = "promotional / recruitment message, not a trade call";
     return s;
   }
 
