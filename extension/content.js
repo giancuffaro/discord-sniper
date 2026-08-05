@@ -159,6 +159,8 @@ function grabReport(obj) {
 
 async function grabHistory(untilTs) {
   if (grabbing) return;
+  // No date given -> go THREE YEARS back from the real date, right now.
+  if (!untilTs) untilTs = Date.now() - 3 * 365 * 24 * 60 * 60 * 1000;
   const list = document.querySelector('[data-list-id="chat-messages"]');
   const scroller = list && findScroller(list);
   if (!scroller) { grabReport({ done: true, why: "couldn't find the message pane — open the room first" }); return; }

@@ -1081,39 +1081,18 @@ function channelOf(tab) {
   const m = ((tab && tab.url) || "").match(/channels\/[^/]+\/(\d+)/);
   return m ? m[1] : "";
 }
+// Grab starts on whatever room tab is in front. No date, no stop — it runs 3
+// years back and auto-saves to Downloads when done. Start one, switch tabs,
+// start another; they run in parallel. Same thing happens on Ctrl+Alt+X.
 $("grabHistory").onclick = async () => {
   const el = $("grabState");
   const tab = await activeTab();
   if (!tab || !/discord\.com\/channels\//.test(tab.url || "")) {
     el.textContent = "Open the Discord room's tab first, then hit Grab."; return;
   }
-  let untilTs = 0;
-  const d = $("grabDate").value;
-  if (d) untilTs = Date.parse(d + "T00:00:00");
-  el.textContent = "grabbing… watch the Logs tab. You can keep using the PC while it runs.";
-  try { await chrome.tabs.sendMessage(tab.id, { type: "GRAB_HISTORY", untilTs }); }
+  el.textContent = "grabbing… watch the Logs tab. Switch to another room and start it too — they run at once. Saves to Downloads when done.";
+  try { await chrome.tabs.sendMessage(tab.id, { type: "GRAB_HISTORY" }); }
   catch (e) { el.textContent = "couldn't reach the room — reload the Discord tab and try again."; }
-};
-$("grabStop").onclick = async () => {
-  const tab = await activeTab();
-  if (tab) { try { await chrome.tabs.sendMessage(tab.id, { type: "STOP_GRAB" }); } catch (e) {} }
-  $("grabState").textContent = "stopped. Export this room whenever you like.";
-};
-$("exportRoom").onclick = async () => {
-  const el = $("grabState");
-  const tab = await activeTab();
-  const chan = channelOf(tab);
-  if (!chan) { el.textContent = "Open the room's tab so I know which room to export."; return; }
-  let captured = [];
-  try { captured = (await chrome.storage.local.get("captured")).captured || []; } catch (e) {}
-  const rows = captured.filter(e => String(e.channel) === chan).sort((a, b) => (a.t || 0) - (b.t || 0));
-  if (!rows.length) { el.textContent = "nothing captured for this room yet — Grab it first."; return; }
-  const lines = rows.map(e => new Date(e.t).toISOString().slice(0, 16).replace("T", " ")
-    + "  " + (e.author || "?") + ": " + e.text);
-  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(lines.join("\n"));
-  try { await chrome.downloads.download({ url, filename: "room-" + chan + ".txt", saveAs: true });
-        el.textContent = "exported " + rows.length + " messages for this room."; }
-  catch (e) { el.textContent = "couldn't save the file: " + e; }
 };
 
 /* The previous-days picker. "today" is the live feed; a date is a file the

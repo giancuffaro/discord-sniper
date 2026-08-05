@@ -196,8 +196,51 @@ async function capture(text, author, channel, at) {
   // three rooms; older ones fall off the back. Raised to 25k so a couple of
   // MONTHS of one room (grabbed with the auto-scroll history button) fits.
   c.push({ t: at || Date.now(), author, text, channel: String(channel || "") });
-  await chrome.storage.local.set({ captured: c.slice(-25000) });
+  await chrome.storage.local.set({ captured: c.slice(-50000) });
 }
+
+/* Save one room's captured messages straight to Downloads — called the moment a
+ * grab finishes, so there's no button to press. Returns how many it wrote. */
+async function downloadRoom(channelId, roomLabel) {
+  let captured = [];
+  try { captured = (await chrome.storage.local.get("captured")).captured || []; } catch (e) {}
+  const rows = captured.filter(e => String(e.channel) === String(channelId))
+                       .sort((a, b) => (a.t || 0) - (b.t || 0));
+  if (!rows.length) return 0;
+  const lines = rows.map(e => new Date(e.t).toISOString().slice(0, 16).replace("T", " ")
+    + "  " + (e.author || "?") + ": " + e.text);
+  const safe = String(roomLabel || channelId).replace(/[^a-z0-9]+/gi, "-").slice(0, 40) || "room";
+  const stamp = new Date().toISOString().slice(0, 10);
+  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(lines.join("\n"));
+  try {
+    await chrome.downloads.download({ url, filename: safe + "-" + stamp + ".txt" });
+  } catch (e) { return 0; }
+  return rows.length;
+}
+
+/* Ctrl+Alt+X — start a grab on whatever room tab is in front, same as the
+ * Channels-tab button. Lets you scan a room without opening the popup, and
+ * because each tab grabs on its own, you can hop tabs and fire it on each. */
+try {
+  chrome.commands.onCommand.addListener(async (cmd) => {
+    if (cmd !== "grab-history") return;
+    let tabs = [];
+    try { tabs = await chrome.tabs.query({ active: true, currentWindow: true }); } catch (e) { return; }
+    const tab = tabs[0];
+    if (!tab || !/discord\.com\/channels\//.test(tab.url || "")) {
+      await addLog({ kind: "update", why: "Ctrl+Alt+X ignored — open a Discord room tab first, then press it there." });
+      return;
+    }
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: "GRAB_HISTORY" });
+      const cm = ((tab.url) || "").match(/channels\/[^/]+\/(\d+)/);
+      const room = (cm && ROOM_LABELS[cm[1]]) || "this room";
+      await addLog({ kind: "update", why: "⏳ grabbing " + room + " (Ctrl+Alt+X) — saves to Downloads when done." });
+    } catch (e) {
+      await addLog({ kind: "update", why: "couldn't start the grab — reload the Discord tab and try again." });
+    }
+  });
+} catch (e) { /* commands API unavailable */ }
 
 async function badge() {
   const c = await cfg();
@@ -902,10 +945,13 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       if (msg.started) await addLog({ kind: "update", why: "⏳ grabbing " + room + "'s history — scrolling it up, sit tight" });
       else if (msg.done) {
         const how = msg.why ? msg.why
-          : (msg.reached === "date" ? "reached your date" :
+          : (msg.reached === "date" ? "reached 3 years back" :
              msg.reached === "top" ? "reached the top of the channel" :
              msg.reached === "limit" ? "hit the safety limit" : "stopped");
-        await addLog({ kind: "update", why: "✅ done grabbing " + room + " — " + how + ". Export it from the Logs tab." });
+        // Auto-download THIS room's messages the instant it's done — no button.
+        const n = await downloadRoom(msg.channelId, room);
+        await addLog({ kind: "update", why: "✅ done grabbing " + room + " — " + how +
+          (n ? ". Downloaded " + n + " messages to your Downloads." : ". Nothing captured.") });
       } else if (msg.oldest) {
         await addLog({ kind: "ignored", why: "…grabbing " + room + " — back to " + new Date(msg.oldest).toLocaleDateString() });
       }
