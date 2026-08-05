@@ -104,6 +104,24 @@ def expiry_to_date(expiry, today=None):
         days = int(n) if n.isdigit() else 0
         return (today + dt.timedelta(days=days)).isoformat()
 
+    # ISO date, year first: "2026-08-07". The parser hands back a fully
+    # resolved date this way for calls like Bullwinkle's "NEXT WEEK", so we
+    # have to be able to read it straight back or we refuse a real contract.
+    iso = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", e)
+    if iso:
+        y, mo, day = int(iso.group(1)), int(iso.group(2)), int(iso.group(3))
+        try:
+            d = dt.date(y, mo, day)
+        except ValueError:
+            raise Refused("%s isn't a real date. Nothing was sent." % expiry)
+        if d < today:
+            raise Refused("that expiry (%s) is already in the past. Nothing "
+                          "was sent." % d.isoformat())
+        if d.weekday() > 4 or d.isoformat() in HOLIDAYS:
+            raise Refused("%s is not a trading day, so that contract doesn't "
+                          "exist. Nothing was sent." % d.isoformat())
+        return d.isoformat()
+
     m = re.match(r"^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?$", e)
     if not m:
         raise Refused("couldn't make sense of the expiry \"%s\". Nothing was sent."
