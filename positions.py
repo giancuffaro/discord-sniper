@@ -498,6 +498,75 @@ class Book:
         t = threading.Thread(target=self._watch_fill, args=(key,), daemon=True)
         t.start()
 
+    def adopt(self, broker_rows, note=None):
+        """Take the account's REAL open positions (read from the broker) into the
+        book as FILLED, live positions the bot can SEE and EXIT — even ones it
+        never placed, or ones it lost track of across a restart. This is what lets
+        a room's 'all out of SPY' actually flatten a SPY you're holding after a
+        bridge restart wiped the in-memory book.
+
+        Keyed under an UNKNOWN owner ('?') on purpose: a close from any admin
+        ('all out of SPY') matches by symbol, and it never collides with a live
+        trade the bot is itself running under a named owner. Skips anything the
+        book already tracks so it can't double a position. Deliberately does NOT
+        start the stop/take-profit watchdog — an adopted position is the room's
+        (or the user's) to manage; the bot only makes it visible and closeable,
+        it doesn't impose its own stop on a trade it didn't open. Returns the
+        number newly adopted."""
+        rows = broker_rows or []
+        added = 0
+        with self._lock:
+            have = set()
+            for p in self._pos.values():
+                if p.get("state") in (WORKING, FILLED):
+                    have.add(str(p.get("symbol") or "").upper())
+        for b in rows:
+            sym = str(b.get("symbol") or "").upper()
+            if not sym or sym in have:
+                continue
+            qty = int(b.get("qty") or 0)
+            if qty <= 0:
+                continue
+            is_fut = b.get("kind") == "future"
+            fill = b.get("fill")
+            try:
+                fill = float(fill) if fill not in (None, "") else None
+            except (TypeError, ValueError):
+                fill = None
+            key = key_of("?", sym)
+            with self._lock:
+                if self._pos.get(key, {}).get("state") in (WORKING, FILLED):
+                    continue
+                self._pos[key] = {
+                    "key": key, "live": True, "paper": False, "room": None,
+                    "who": "?", "symbol": sym,
+                    "kind": b.get("kind") or "option",
+                    "mult": 1.0 if is_fut else 100.0,
+                    "direction": 1,
+                    "their_stop": None, "their_target": None,
+                    "state": FILLED, "order_id": None, "occ": None,
+                    "side": b.get("side"), "strike": b.get("strike"),
+                    "expiry": b.get("expiry"),
+                    "want_qty": qty, "qty": qty, "adds": 0,
+                    "limit": fill, "fill": fill, "stop": None,
+                    "stop_order_id": None, "their_price": fill,
+                    "their_avg": fill, "their_units": 1,
+                    "cost": (fill or 0) * 100 * qty if not is_fut else 0.0,
+                    "entries": [], "exits": [], "trade_pl": 0.0,
+                    "last_bid": None, "reserved": 0.0, "sent_at": time.time(),
+                    "closing": False, "watching": False, "blind": False,
+                    "adopted": True,
+                }
+            have.add(sym)
+            added += 1
+            self._event(key, "adopted",
+                        "%s x%d picked up from your Webull account — the bot can "
+                        "see it and exit it on the room's call now" % (sym, qty))
+            if note:
+                note("ADOPTED  %s x%d from Webull (fill %s)"
+                     % (sym, qty, fill))
+        return added
+
     # -- did it fill? ---------------------------------------------------------
     def _watch_fill(self, key):
         """Polls until the order fills or the deadline runs out.

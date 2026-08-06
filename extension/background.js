@@ -661,7 +661,24 @@ async function syncFillsInner() {
   for (const [sym, p] of Object.entries(data.positions || {})) {
     const mine = st.positions[sym];
     if (p.state === "filled") {
-      if (!mine) continue;              // reloaded mid-trade; leave it be
+      if (!mine) {
+        // A position the bridge ADOPTED from the real Webull account — one the
+        // bot never placed, or lost track of on a restart. Add it so the popup
+        // shows it AND a room's "all out" can actually flatten it. Only true
+        // broker-adopted positions are added here; a bare mid-reload with no
+        // adopt flag still says "leave it be".
+        if (p.adopted) {
+          st.positions[sym] = {
+            side: p.side, strike: p.strike, expiry: p.expiry,
+            ts: Date.now(), author: keyWho(sym) || "?",
+            qty: Math.max(1, parseInt(p.qty || 1, 10) || 1), adds: 0,
+            pending: false, live: !!p.live, kind: p.kind || "",
+            channelId: "", fill: p.fill || null, stop: p.stop || null,
+            adopted: true };
+          changed = true;
+        }
+        continue;
+      }
       const qty = Math.max(1, parseInt(p.qty || 1, 10) || 1);
       if (mine.pending || mine.qty !== qty) {
         mine.pending = false;

@@ -2047,6 +2047,18 @@ def main():
     print("  symbols: everything trades - no filters, his rule")
     print("  panic button: make a file called STOP in this folder")
     connect_broker()
+    # Keep the book in step with the REAL Webull account: adopt any open position
+    # the book doesn't know about (one it never placed, or lost on a restart) so
+    # a room's "all out" can actually flatten it. Runs once now and every 20s.
+    def _reconcile_loop():
+        while True:
+            try:
+                if BOOK is not None and WB is not None:
+                    BOOK.adopt(broker_positions(), note)
+            except Exception:                           # noqa: BLE001
+                pass
+            time.sleep(20)
+    threading.Thread(target=_reconcile_loop, daemon=True).start()
     print("=" * 62)
     print("Leave this window open. Close it and the extension can't trade.")
     try:
