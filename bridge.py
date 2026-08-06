@@ -827,13 +827,11 @@ def _place_impl(order):
     if paper:
         order["paper"] = True
 
-    # TRIM — sell some, keep the rest. Test rooms only for now: in a LIVE
-    # room he's still set to hold until "all out", and a browser message must
-    # not gain the power to sell real contracts before he's said so.
+    # TRIM — sell some, keep the rest. His call, reversed: trims now DO sell in a
+    # LIVE room ("they trimmed 10% and it didn't fire on my broker — I want the
+    # trim to trigger"). A room's trim is the take-profit, so it sells a contract
+    # at the broker the moment they call it, and the runners ride on.
     if action == "TRIM":
-        if live_order:
-            return False, ("trims don't sell in a LIVE room yet — you're set "
-                           "to hold until \"all out\". Nothing was sent.")
         if BOOK is None:
             return False, "no book yet, nothing to trim"
         st = BOOK.state_of(key)

@@ -1494,7 +1494,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     sig.room = ROOM_LABELS[String(msg.channelId || "")] ||
                String(msg.channelId || "");
     const testing = !roomLive;
-    if (testing && sig.action === "TRIM" && !sig.fire) {
+    // Follow their trims to the tee — in LIVE rooms too, not just testing. His
+    // call: "they trimmed 10% and it didn't trigger on my broker; I want the
+    // trim to fire." A room's trim IS the take-profit, so when they sell some,
+    // the bot sells some at the broker (one contract, runners stay on).
+    if (sig.action === "TRIM" && !sig.fire) {
       if (!sig.symbol) {
         sig.needs_position = true;
         sig = await resolveSymbol(sig, msg.author);
@@ -1508,7 +1512,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
                   (sig.pct != null ? " (they're up " + sig.pct + "%)" : "");
       }
     }
-    if (testing && sig.action === "ADD") {
+    // Adds follow to the tee in LIVE rooms too, not just testing — same reason
+    // trims do. When they add to a position you're in, the bot adds too.
+    if (sig.action === "ADD") {
       const stAdd = await guardState();
       const whoAdd = String(sig.caller || msg.author || "").toLowerCase();
       if (!sig.symbol) {
@@ -1522,7 +1528,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         sig.expiry = posAdd.expiry;
         sig.avg = postedAvg;      // the bridge back-solves the real add price
         sig.limit = null;         // their average is not a price you can pay
-        sig.qty = 5;
+        // Test buys 5 more; live adds 1 (the bracket clamps to 1 anyway).
+        sig.qty = testing ? 5 : 1;
         sig.fire = true;
         sig.why = "their add — test mode buys 5 more" +
                   (postedAvg ? ", and their new average " +
