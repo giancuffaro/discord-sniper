@@ -816,31 +816,22 @@ async function checkBuild() {
  * until that tab navigates. Since you're not going to reload Discord every time,
  * put it back here. */
 async function reinject() {
-  // If we just came up from a code UPDATE, give the Discord/Whop tabs a clean
-  // full refresh instead of a re-inject — a fresh page load can't leave an
-  // orphaned old content.js throwing "context invalidated," and it means you
-  // never have to hit F5 yourself after an update. One time, only on update.
-  let justUpdated = "";
-  try {
-    justUpdated = (await chrome.storage.local.get("just_updated")).just_updated || "";
-  } catch (e) { /* storage not ready */ }
+  // On EVERY come-up — a normal browser open OR a code update — put a fresh
+  // content.js back into the tabs WITHOUT reloading the page. His rule: he
+  // doesn't want every room's tab refreshing under him every time a version
+  // lands, least of all going into a live session. It's safe to skip the
+  // reload because content.js is idempotent: the first thing a fresh copy does
+  // is call the old copy's __SNIPER_STOP__() (content.js line ~23), which kills
+  // the previous observer/timer before the new one starts — so there's no
+  // double-reading and no orphaned "context invalidated" copy left running.
+  // You keep your scroll position in every room, and reading never stops.
+  try { await chrome.storage.local.set({ just_updated: "" }); } catch (e) {}
 
   const urls = ["https://discord.com/channels/*", "https://*.discord.com/channels/*",
                 "https://whop.com/*", "https://*.whop.com/*"];
   let tabs = [];
   try { tabs = await chrome.tabs.query({ url: urls }); } catch (e) { return; }
 
-  if (justUpdated) {
-    try { await chrome.storage.local.set({ just_updated: "" }); } catch (e) {}
-    for (const t of tabs) {
-      try { await chrome.tabs.reload(t.id, { bypassCache: true }); }
-      catch (e) { /* tab closed; nothing to do */ }
-    }
-    return;   // the fresh page loads content.js on its own
-  }
-
-  // Normal startup (browser open, not an update): re-inject without disturbing
-  // the page, so you don't lose your place in a room you're watching.
   for (const t of tabs) {
     const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
     try {
