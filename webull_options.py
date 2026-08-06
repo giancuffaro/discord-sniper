@@ -710,6 +710,15 @@ class WebullOptions:
                     "account -> apply for/enable OPTIONS trading (you need the "
                     "level that allows buying calls & puts), then retry. Nothing "
                     "was sent. (%s)" % blob[:120])
+            # Cash-index options (SPX/NDX/RUT/VIX/XSP) aren't tradeable on Webull
+            # the standard way — the room posts them but Webull returns a param
+            # error every time. Say so plainly instead of a raw machine code.
+            if ("PARAM_ERR" in blob or "invalid market" in blob.lower()) \
+                    and "OPTION" in blob:
+                raise Refused(
+                    "that's a cash-index option (SPX/NDX/RUT-style) — Webull "
+                    "doesn't offer those to trade the normal way, so it can't be "
+                    "placed. Nothing was sent; skip that room's index calls.")
             raise Refused("Webull rejected %s (HTTP %s): %s"
                           % (what, code, blob[:180]))
         return body if isinstance(body, (dict, list)) else {}
@@ -979,6 +988,30 @@ class WebullOptions:
         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
         expiration = expiry_to_date(expiry)
         occ = occ_symbol(symbol, expiration, option_type, strike)
+        # Never sell more than the account actually holds of THIS contract — a
+        # book/broker drift (or a "trim half" of one contract) otherwise trips
+        # Webull's "order in excess of current holding" reject and the exit
+        # fails. Clamp to the real holding.
+        try:
+            want = int(qty)
+            side_word = "CALLS" if option_type == "CALL" else "PUTS"
+            for p in (self.positions() or []):
+                if str(p.get("symbol") or "").upper() != str(symbol).upper():
+                    continue
+                if p.get("side") and p.get("side") != side_word:
+                    continue
+                try:
+                    if p.get("strike") is not None and \
+                            abs(float(p["strike"]) - float(strike)) > 0.001:
+                        continue
+                except (TypeError, ValueError):
+                    pass
+                held = int(p.get("qty") or 0)
+                if held > 0 and want > held:
+                    qty = held           # sell exactly what you hold, no more
+                break
+        except Exception:                                   # noqa: BLE001
+            pass
         ask = bid = None
         try:
             ask, bid, _ = self.ask_bid(occ)

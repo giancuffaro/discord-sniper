@@ -1355,27 +1355,19 @@ $("savelognow").onclick = async () => {
     btn.textContent = "💾 Save log now (for Claude)"; }, 2500);
 };
 
-/* Live countdown to the next auto-save. The schedule is :05 and :35 past every
- * hour (mirrors _nextExportTime in the worker), so the popup can compute it
- * without asking. Also shows when it last saved, if it has. */
-function _nextExportMs() {
-  const now = new Date();
-  const m = now.getMinutes();
-  const d = new Date(now); d.setSeconds(0, 0);
-  if (m < 5) d.setMinutes(5);
-  else if (m < 35) d.setMinutes(35);
-  else { d.setHours(d.getHours() + 1); d.setMinutes(5); }
-  return d.getTime() - Date.now();
-}
+/* Live countdown to the next auto-save. Now every 4 minutes — reckoned from the
+ * last save (last_export), so it stays honest without knowing the worker's exact
+ * alarm tick. Also shows when it last saved. */
+const EXPORT_EVERY_MS = 4 * 60 * 1000;
 async function tickExportTimer() {
   const el = $("exportTimer");
   if (!el) return;
-  let ms = _nextExportMs();
+  let last = 0;
+  try { last = (await chrome.storage.local.get("last_export")).last_export || 0; } catch (e) {}
+  let ms = last ? (last + EXPORT_EVERY_MS - Date.now()) : 0;
   if (ms < 0) ms = 0;
   const mm = Math.floor(ms / 60000);
   const ss = Math.floor((ms % 60000) / 1000);
-  let last = 0;
-  try { last = (await chrome.storage.local.get("last_export")).last_export || 0; } catch (e) {}
   const lastBit = last ? " · last saved " + ago(last) : "";
   el.textContent = "Next auto-save in " + mm + ":" +
     String(ss).padStart(2, "0") + lastBit;
