@@ -851,9 +851,16 @@ function parseSignalInner(text, cfg) {
 
   if (t.includes("?")) { s.why = "it's a question, not a call"; return s; }
 
+  // An explicit buy-to-open with a real contract is an ORDER, not chatter — a
+  // stray soft word in a risk note ("BTO $MSFT 400c @0.43 cheapie, watch
+  // sizing") must not be vetoed by "watch". Hard "don't/do not" still fire, and
+  // the sell-guard downstream still catches a genuine SELL. Mirrors signals.py.
+  const _explicitBuy = /\b(?:bto|bought)\b/i.test(low) && !!findContract(t);
   const veto = VETO_WORDS.concat(cfg.extra_veto_words || []);
   for (const w of veto) {
     if (low.includes(String(w).toLowerCase()) && !RE_PAPERCUT.test(low)) {
+      const wl = String(w).toLowerCase();
+      if (_explicitBuy && wl !== "do not" && wl !== "don't" && wl !== "dont ") continue;
       s.why = 'chatter, not an order (it contains "' + String(w).trim() + '")';
       return s;
     }

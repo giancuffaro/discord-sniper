@@ -1191,8 +1191,15 @@ def _parse_inner(text, author="", channel="", cfg=None):
         sig.why = "it's a question, not a call"
         return sig
 
+    # An explicit buy-to-open with a real contract is an ORDER, not chatter. A
+    # stray soft word in a risk note — "BTO $MSFT 400c @0.43 cheapie, watch
+    # sizing" — must not be vetoed by "watch". The hard "don't/do not" vetoes
+    # still fire, and the sell-guard downstream still catches a genuine SELL.
+    _explicit_buy = bool(re.search(r"\b(?:bto|bought)\b", low)) and bool(_contract(t))
     for w in tuple(VETO_WORDS) + tuple(cfg.get("extra_veto_words", ())):
         if w.lower() in low and not RE_PAPERCUT.search(low):
+            if _explicit_buy and w.lower() not in ("do not", "don't", "dont "):
+                continue
             sig.why = 'chatter, not an order (it contains "%s")' % w.strip()
             return sig
 
