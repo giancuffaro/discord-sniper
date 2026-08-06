@@ -456,22 +456,41 @@ async function sendOrder(sig, qty, c, author) {
     their_target: (sig.their_target === 0 || sig.their_target) ? sig.their_target : null,
     usd: (sig.usd === 0 || sig.usd) ? sig.usd : null,
     source: "discord-extension", raw: sig.raw, ts: Date.now(),
+    // A stable id for THIS order across retries. If the bridge is mid-restart
+    // when a call lands, the first POST is refused at the socket (nothing was
+    // delivered) and we retry — the bridge dedupes on this id so a retry can
+    // never place the same trade twice.
+    coid: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
     // Real money or pretend, decided by the ROOM's toggle, not a global.
     live: !!sig.live,
     // Which room called it — the per-room scoreboard keys off this.
     room: sig.room || null
   };
   const t0 = performance.now();
-  let r;
-  try {
-    r = await fetch(c.bridge_url || BRIDGE_DEFAULT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(order)
-    });
-  } catch (e) {
+  const url = c.bridge_url || BRIDGE_DEFAULT;
+  const payload = JSON.stringify(order);
+  // A brief bridge restart (an update, or he double-clicks START HERE again)
+  // used to lose the trade outright, and then every follow-up trim was refused
+  // for a position that never opened. A THROWN fetch means the request never
+  // reached the bridge — safe to retry. An HTTP status back means it DID reach
+  // the bridge (working, just answering) — never retried. Up to 3 tries across
+  // ~2s covers a normal restart without ever double-sending.
+  let r, lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise(res => setTimeout(res, 800));
+    try {
+      r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload
+      });
+      lastErr = null;
+      break;                       // reached the bridge (ok or refusal) — stop
+    } catch (e) { lastErr = e; }   // connection failure — nothing delivered, retry
+  }
+  if (lastErr) {
     return { ok: false, unreachable: true,
-             msg: "couldn't reach the bridge on your PC — did you " +
+             msg: "couldn't reach the bridge on your PC (tried 3×) — did you " +
              "double-click START HERE? The trade did NOT go out." };
   }
   const ms = Math.round(performance.now() - t0);

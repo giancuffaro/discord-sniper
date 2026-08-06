@@ -759,7 +759,36 @@ def _book_futures(order, key):
                         "closed on their call (futures)", price=None)
 
 
+_RECENT_COIDS = {}          # coid -> (timestamp, (ok, msg)) — retry dedup
+
+
 def place(order):
+    """Retry-safe wrapper around the real placement. The extension retries an
+    order the socket refused (a bridge restart). If a retry lands after a first
+    copy was already handled, return that first result instead of placing the
+    same real trade twice. Only OPEN/ADD are deduped — trims/closes are already
+    idempotent against the book (nothing to sell twice)."""
+    coid = str(order.get("coid") or "").strip()
+    dedupe = coid and order.get("action") in ("OPEN", "ADD")
+    if dedupe:
+        now = time.time()
+        for _c in [c for c, (t, _r) in list(_RECENT_COIDS.items()) if now - t > 60]:
+            _RECENT_COIDS.pop(_c, None)
+        prior = _RECENT_COIDS.get(coid)
+        if prior is not None:
+            note("DEDUP    ignored a repeat of %s (retry) — not placed twice"
+                 % coid)
+            return prior[1]
+    result = _place_impl(order)
+    if dedupe:
+        try:
+            _RECENT_COIDS[coid] = (time.time(), result)
+        except Exception:                               # noqa: BLE001
+            pass
+    return result
+
+
+def _place_impl(order):
     """Returns (ok, message). Never raises — a crash here would look to the
     extension exactly like a rejected order, and you'd never know which."""
     sym = str(order.get("symbol", "")).upper()
