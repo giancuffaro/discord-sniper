@@ -1398,6 +1398,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 
     const roomLive = !!((c.channel_live || {})[String(msg.channelId || "")]);
     sig.live = roomLive;
+    sig.channelId = String(msg.channelId || "");
     sig.room = ROOM_LABELS[String(msg.channelId || "")] ||
                String(msg.channelId || "");
     const testing = !roomLive;

@@ -491,6 +491,12 @@ async function guardRecord(sig, cfg, author, isTest) {
     st.positions[k] = { side: sig.side, strike: sig.strike,
                         expiry: sig.expiry, ts: now, author: who,
                         qty: parseInt(sig.qty || 1, 10) || 1, adds: 0,
+                        // The room this was opened in, and whether that room is
+                        // LIVE — so a one-click ✕ closes it in the SAME mode it
+                        // was opened. Closing a live position with a paper order
+                        // would leave the real one open; this prevents that.
+                        channelId: sig.channelId || "",
+                        live: !!sig.live, kind: sig.kind || "",
                         pending: !assumeFilled };
     st.lastFire = now;
     st.count += 1;

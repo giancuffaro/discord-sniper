@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Discord Sniper",
-  "version": "1.57.0",
+  "version": "1.57.1",
   "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
   "permissions": ["storage", "notifications", "downloads", "alarms", "scripting",
                   "clipboardWrite", "tabCapture", "offscreen", "activeTab"],

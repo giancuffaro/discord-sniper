@@ -1021,15 +1021,18 @@ async function render() {
         const k = decodeURIComponent(btn.dataset.close);
         btn.disabled = true; btn.textContent = "…";
         const sym = keySym(k), who = keyWho(k);
-        // Fire a CLOSE straight through the pipeline, pinned to this position's
-        // author so it exits the right one; tagged manual so hours can't block
-        // getting out. fillFromPosition fills in the contract from the book.
+        // Close through the SAME room the position was opened in, so its live/
+        // paper mode is preserved — closing a live position must send a live
+        // order, never a paper one. Fall back to a listened room only if the
+        // position never recorded its channel. Pinned to the author so it exits
+        // the right one; tagged manual so the hours guard can't trap you in.
+        const room = (pos[k] && pos[k].channelId) || "829754942817828884";
         try {
           await chrome.runtime.sendMessage({
             type: "MESSAGE", mid: "manualclose-" + Date.now(),
             text: "all out of " + sym, full: "all out of " + sym,
             author: who && who !== "?" ? who : "🎯 MANUAL",
-            channelId: "829754942817828884", postedAt: Date.now(), test: true,
+            channelId: room, postedAt: Date.now(), test: true,
             history: false, reply: false,
             url: "https://discord.com/channels/manual/close" });
         } catch (e) {}
