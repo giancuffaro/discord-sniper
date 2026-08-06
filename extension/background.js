@@ -1612,18 +1612,13 @@ async function scrubOldBanners() {
 }
 
 async function allRoomsTesting() {
-  // "as soon as app starts everyone is testing obviously" — LIVE is a
-  // decision he makes fresh, per room, per session. Nothing stays armed
-  // for real money across a browser restart.
-  const { settings } = await chrome.storage.local.get("settings");
-  if (settings && settings.channel_live &&
-      Object.keys(settings.channel_live).length) {
-    settings.channel_live = {};
-    await chrome.storage.local.set({ settings });
-    await addLog({ kind: "update",
-                   why: "Chrome restarted — every room is back to TESTING. " +
-                        "LIVE is flipped per room, per session, in Settings." });
-  }
+  // His call, reversed: LIVE now STAYS live across updates and restarts —
+  // "everytime i push a new update my channels go all back to testing, i need
+  // the popup to keep the live on." So this no longer wipes channel_live. A
+  // room only leaves LIVE when he flips it himself, or via the STOP file /
+  // master OFF, which still halt everything instantly. Kept as a named function
+  // so the install/startup hooks don't need touching.
+  return;
 }
 
 chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); ensureArmed(); badge(); reinject(); });
