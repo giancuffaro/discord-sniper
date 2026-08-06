@@ -40,17 +40,27 @@ function channelId() {
 // honest sources: the channel header Discord paints at the top of the message
 // pane, and the page title. Whichever gives a clean name wins; empty if the
 // page hasn't painted yet (the next message will carry it).
+function _cleanChannel(s) {
+  // Only ever the channel, never the server. "#chan | Server", "chan - Server",
+  // "(3) #chan" all collapse to just "chan".
+  s = String(s || "").split(" | ")[0].split(" — ")[0];
+  s = s.replace(/\s[-–]\s.*$/, "");           // "chan - Server" -> "chan"
+  s = s.replace(/^\(\d+\)\s*/, "");           // drop unread count
+  s = s.replace(/^[#﹟＃｜|\s]+/, "").trim();    // drop leading hash / divider
+  return s;
+}
 function channelName() {
   // 1) The header title beside the # — Discord keeps a stable "title" hook here.
   try {
     const h = document.querySelector('[class*="title"] h1, section[aria-label] h1, h1[class*="title"]');
-    if (h && h.textContent.trim()) return h.textContent.trim().replace(/^#+\s*/, "");
+    if (h && h.textContent.trim()) {
+      const c = _cleanChannel(h.textContent);
+      if (c) return c;
+    }
   } catch (e) {}
   // 2) The tab title: "(3) #signals | Server Name" -> "signals".
   try {
-    let t = (document.title || "").replace(/^\(\d+\)\s*/, "");   // drop unread count
-    t = t.split(" | ")[0].trim();                                // drop server name
-    t = t.replace(/^[#﹟＃\s]+/, "").trim();                       // drop leading #
+    const t = _cleanChannel(document.title || "");
     if (t && !/^discord$/i.test(t)) return t;
   } catch (e) {}
   return "";

@@ -88,6 +88,14 @@
   .holding .in { color: #4ade80; }
   /* Amber for a bid that's still resting. Green only ever means you own it. */
   .holding .in.wait { color: #fbbf24; }
+  /* Each entry is its own row with a get-out X on the right. */
+  .posrow { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+  .posrow .grow { flex: 1; min-width: 0; }
+  .posx { flex: none; width: 22px; height: 22px; padding: 0; font-size: 12px;
+          line-height: 1; border: 1px solid #3a2530; background: #2a1720;
+          color: #f87171; border-radius: 5px; cursor: pointer; }
+  .posx:hover { background: #7f1d1d; color: #fff; }
+  .posx:disabled { opacity: .5; }
   .note { font-size: 11px; color: #7d8697; margin-top: 8px; }
   /* The pretend account. Same box as "what you're holding" because it answers
      the other half of the same question. Dry run only — it hides itself in
@@ -171,6 +179,24 @@
       </div>
       <div id="daytable"><div class="note">No trades yet today.</div></div>
     </div>
+
+    <div class="tablebox" style="margin-top:8px">
+      <div class="tablehead"><b>Manual futures</b></div>
+      <div class="row" style="margin-top:4px">
+        <input id="mfSym" value="MNQ" placeholder="symbol" style="max-width:80px">
+        <input id="mfPrice" placeholder="price (blank=market)" class="grow" inputmode="decimal">
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button id="mfLong" class="grow" style="background:#14532d;border-color:#166534;color:#fff">Buy / Long</button>
+        <button id="mfShort" class="grow" style="background:#7f1d1d;border-color:#991b1b;color:#fff">Sell / Short</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button id="mfClose" class="grow">Close / flat this symbol</button>
+      </div>
+      <div class="note" id="mfState">Fires a futures order to whatever brokers you
+        turned on under Strategies → “Trade futures from”. Use a Sim/paper
+        NinjaTrader account to practice. Works any time.</div>
+    </div>
   </div>
 
   <!-- ===== CHANNELS ===== -->
@@ -245,7 +271,45 @@
     </div>
     <div class="note" id="simstate">&nbsp;</div>
 
-    <label>Prop firms (futures orders go here when armed)</label>
+    <label>Trade futures from</label>
+    <div class="note" style="margin-top:2px">Turn on one or more. A futures alert
+      fires to every one that's ON — trade from all of them or just one.</div>
+    <div class="row" style="margin-top:6px;margin-bottom:4px">
+      <span class="grow" style="font-size:12px">Webull</span>
+      <button id="fbWebull" class="tgl safe">off</button>
+    </div>
+    <div class="row" style="margin-bottom:4px">
+      <span class="grow" style="font-size:12px">NinjaTrader</span>
+      <button id="fbNinja" class="tgl safe">off</button>
+    </div>
+    <div id="ninjaFields" style="display:none;margin-bottom:6px">
+      <input id="ninjaAccount" placeholder="NinjaTrader account (e.g. Sim101)"
+             autocomplete="off" style="margin-top:4px">
+      <input id="ninjaDir" placeholder="Incoming folder (blank = default NT8 path)"
+             autocomplete="off" style="margin-top:6px">
+      <div class="note">Blank folder uses Documents/NinjaTrader 8/incoming. In
+        NinjaTrader: Tools &gt; Options &gt; General &gt; make sure the ATI is on.
+        Use a Sim account to paper-test.</div>
+    </div>
+    <div class="row" style="margin-bottom:4px">
+      <span class="grow" style="font-size:12px">Tradovate</span>
+      <button id="fbTradovate" class="tgl safe">off</button>
+    </div>
+    <div id="tradovateFields" style="display:none;margin-bottom:6px">
+      <input id="tvUser" placeholder="Tradovate username / email"
+             autocomplete="off" style="margin-top:4px">
+      <input id="tvPass" type="password" placeholder="Tradovate password"
+             autocomplete="off" style="margin-top:6px">
+      <label style="font-size:11px;display:flex;align-items:center;gap:6px;margin-top:6px">
+        <input id="tvDemo" type="checkbox"> Demo account (uncheck for live)
+      </label>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button id="fbSave" class="grow">Save futures brokers</button>
+    </div>
+    <div class="note" id="fbState">&nbsp;</div>
+
+    <label style="margin-top:12px">Prop firms (advanced — extra futures accounts)</label>
     <div id="proplist"></div>
     <div class="half">
       <div><input id="propname" placeholder="Name (Apex 50K)"></div>
@@ -383,6 +447,7 @@
     <div class="row" style="margin-top:4px">
       <button id="savelognow" class="grow safe">💾 Save log now (for Claude)</button>
     </div>
+    <div class="note" id="exportTimer" style="color:#9aa4b5">Next auto-save in …</div>
     <div class="note">Saves today's log to Downloads/discord-sniper-logs so it
       syncs to your Drive — the same file the bot auto-saves at :05 and :35 each
       hour. Hit this any time you want me to check it right now.</div>

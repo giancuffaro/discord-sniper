@@ -162,9 +162,72 @@ def _send_projectx(prop, order, note):
     return "sent to %s" % prop.get("name")
 
 
+# ---- ninjatrader: OIF file drop (NinjaTrader 8 ATI) -------------------------
+def _ninjatrader_dir(prop):
+    """The folder NinjaTrader 8 watches for Order Instruction Files. `extra`
+    overrides it; otherwise the standard per-user location. Works whether the
+    bridge runs on Windows (the usual NinjaTrader host) or a mac test box."""
+    import os
+    d = str(prop.get("extra") or "").strip()
+    if d:
+        return os.path.expanduser(d)
+    return os.path.join(os.path.expanduser("~"), "Documents",
+                        "NinjaTrader 8", "incoming")
+
+
+def _send_ninjatrader(prop, order, note):
+    """Fire a futures order into NinjaTrader 8 by writing its native OIF file
+    into the incoming folder. No socket, no DLL — NinjaTrader picks the file up,
+    places the order, and deletes it. `username` is the NinjaTrader account name
+    (Sim101, or the prop account); `extra` is the incoming folder if it isn't in
+    the default spot. The first order is supervised — watch it hit the DOM."""
+    import os, time, uuid
+    account = str(prop.get("username") or "").strip()
+    if not account:
+        raise PropRefused("%s has no NinjaTrader account name saved (Settings -> "
+                          "the username field, e.g. Sim101) — nothing was sent"
+                          % prop.get("name"))
+    folder = _ninjatrader_dir(prop)
+    if not os.path.isdir(folder):
+        raise PropRefused("%s: NinjaTrader's incoming folder isn't there (%s). "
+                          "Open NinjaTrader 8, and in Tools > Options > General "
+                          "make sure the ATI 'incoming' folder exists, or set the "
+                          "path in the extra field. Nothing was sent."
+                          % (prop.get("name"), folder))
+    # BUY opens a long / covers a short; SELL opens a short / sells a long.
+    is_short = str(order.get("direction") or "").upper() == "SHORT"
+    if order.get("action") in ("CLOSE", "TRIM"):
+        is_short = not is_short          # exiting is the opposite side
+    side = "SELL" if is_short else "BUY"
+    instrument = str(order.get("symbol") or "").upper()
+    qty = int(order.get("qty") or 1)
+    limit = order.get("limit")
+    otype = "LIMIT" if limit else "MARKET"
+    lim = ("%.2f" % float(limit)) if limit else ""
+    oid = "DS" + uuid.uuid4().hex[:10]
+    # PLACE;ACCOUNT;INSTRUMENT;ACTION;QTY;TYPE;LIMIT;STOP;TIF;OCO;ORDERID;STRAT;STRATID
+    line = "PLACE;%s;%s;%s;%d;%s;%s;;DAY;;%s;;" % (
+        account, instrument, side, qty, otype, lim, oid)
+    # A unique filename per order; NinjaTrader consumes and removes it.
+    fname = "oif_%s.txt" % oid
+    tmp = os.path.join(folder, "." + fname)         # write-then-rename, so
+    dst = os.path.join(folder, fname)               # NT never reads a half file
+    try:
+        with open(tmp, "w", encoding="ascii") as f:
+            f.write(line + "\n")
+        os.replace(tmp, dst)
+    except OSError as e:
+        raise PropRefused("%s: couldn't write the NinjaTrader order file (%s) — "
+                          "nothing was sent" % (prop.get("name"), str(e)[:100]))
+    note("PROP     %s <- %s %s x%d (NinjaTrader OIF %s)"
+         % (prop.get("name"), side, instrument, qty, oid))
+    return "sent to %s (NinjaTrader)" % prop.get("name")
+
+
 ADAPTERS = {"webhook": _send_webhook,
             "tradovate": _send_tradovate,
-            "projectx": _send_projectx}
+            "projectx": _send_projectx,
+            "ninjatrader": _send_ninjatrader}
 
 
 def execute_all(props, order, note):

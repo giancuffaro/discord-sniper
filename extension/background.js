@@ -1005,6 +1005,17 @@ async function autoExportForLearning() {
       day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
       hour12: false }).format(new Date(t)).replace(",", ""); } catch (e) { return ""; } };
   const day = (stamp(Date.now()).slice(0, 10) || "today");
+  // The filename he wants: "signal-room-chat Aug-6-2026.txt". One file per ET
+  // day — the same day overwrites itself (conflictAction below), a new day is a
+  // new file, so no day's log ever clobbers another's.
+  const fileDay = (() => {
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York",
+        month: "short", day: "numeric", year: "numeric" }).formatToParts(new Date());
+      const g = t => (parts.find(p => p.type === t) || {}).value || "";
+      return g("month") + "-" + g("day") + "-" + g("year");   // Aug-6-2026
+    } catch (e) { return day; }
+  })();
   const caps = captured.slice().sort((a, b) => a.t - b.t).map(c =>
     stamp(c.t) + "  [" + (roomName(c.channel) || c.channel || "?") + "]  " +
     (c.author || "?") + ": " + String(c.text || "").replace(/\s+/g, " ").trim());
@@ -1019,9 +1030,10 @@ async function autoExportForLearning() {
   const url = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
   try {
     await chrome.downloads.download({
-      url, filename: "discord-sniper-logs/sniper-" + day + ".txt",
+      url, filename: "discord-sniper-logs/signal-room-chat " + fileDay + ".txt",
       conflictAction: "overwrite", saveAs: false
     });
+    try { await chrome.storage.local.set({ last_export: Date.now() }); } catch (e) {}
   } catch (e) { /* downloads busy or blocked — next pass tries again */ }
 }
 
@@ -1449,7 +1461,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         const one = Object.assign({}, sig, {
           all: false, symbol: keySymbol(k), fire: true, needs_position: false });
         await fillFromPosition(one, msg.author);
-        await guardRecord(one, c, msg.author);
+        await guardRecord(one, c, msg.author, msg.test);
         inFlight++;
         let r1;
         try { r1 = await sendOrder(one, one.qty || 1, c, msg.author); }
@@ -1553,7 +1565,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         ? (sig.kind === "future" ? 3 : (sig.qty || 5))
         : clampQty(sig.qty || 1, c, sig.action));
     // Recorded before the order goes out, so a crash mid-send can't double-fire.
-    await guardRecord(sig, c, msg.author);
+    await guardRecord(sig, c, msg.author, msg.test);
     inFlight++;
     let res;
     try {

@@ -452,10 +452,15 @@ async function fillFromPosition(sig, author) {
   return sig;
 }
 
-async function guardRecord(sig, cfg, author) {
+async function guardRecord(sig, cfg, author, isTest) {
   const g = Object.assign({}, GUARD_DEFAULTS, cfg.guards || {});
   const now = Date.now();
   const st = await guardState();
+  // A test or manual trade is assumed filled the instant it goes out — his
+  // rule: don't leave it sitting on the bid waiting for a seller that a dry run
+  // will never produce. So its position is written down as owned, not pending.
+  const assumeFilled = !!(isTest || sig.test ||
+                          /^(🧪|🎯)/.test(String(sig.caller || author || "")));
   const who = String(sig.caller || author || "");
 
   // Anything older about this ticker is history now. Without this, the room
@@ -486,7 +491,7 @@ async function guardRecord(sig, cfg, author) {
     st.positions[k] = { side: sig.side, strike: sig.strike,
                         expiry: sig.expiry, ts: now, author: who,
                         qty: parseInt(sig.qty || 1, 10) || 1, adds: 0,
-                        pending: true };
+                        pending: !assumeFilled };
     st.lastFire = now;
     st.count += 1;
   } else if (sig.action === "ADD") {
@@ -500,8 +505,8 @@ async function guardRecord(sig, cfg, author) {
       p.ts = now;
       // The add is a resting bid like any other entry, so the extra contracts
       // aren't yours yet either. The bridge corrects this count when it fills,
-      // or when it doesn't.
-      p.pending = true;
+      // or when it doesn't — unless it's a test/manual, assumed filled at once.
+      p.pending = !assumeFilled;
     }
     st.lastFire = now;
     st.count += 1;

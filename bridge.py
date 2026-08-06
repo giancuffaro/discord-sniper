@@ -717,6 +717,48 @@ def _expiry_recently_past(exp):
         return ""
 
 
+def _futures_brokers_safe():
+    """The futures-broker config for the popup, with every password/secret
+    stripped — the browser sees which brokers are on and the non-secret fields
+    (account name, folder, demo flag), never a credential."""
+    fb = CFG.get("futures_brokers") or {}
+    out = {"webull": bool(fb.get("webull"))}
+    nt = fb.get("ninjatrader") or {}
+    out["ninjatrader"] = {"enabled": bool(nt.get("enabled")),
+                          "account": nt.get("account", ""),
+                          "incoming_dir": nt.get("incoming_dir", "")}
+    tv = fb.get("tradovate") or {}
+    out["tradovate"] = {"enabled": bool(tv.get("enabled")),
+                        "username": tv.get("username", ""),
+                        "demo": bool(tv.get("demo")),
+                        "has_password": bool(tv.get("password"))}
+    return out
+
+
+def _book_futures(order, key):
+    """Keep the book in step for a futures order that went to a prop broker
+    (NinjaTrader/Tradovate) rather than Webull. Webull's own path updates the
+    book itself; this covers the prop legs so a NinjaTrader-only trader still
+    sees the position open, trim down, and close on the room's calls."""
+    if BOOK is None:
+        return
+    act = order.get("action")
+    if act in ("OPEN", "ADD"):
+        BOOK.entry_sent(order, {"order_id": None, "occ": None,
+                                "limit": order.get("limit"), "bid": None,
+                                "ask": None, "qty": int(order.get("qty") or 1),
+                                "live": True})
+    elif act == "TRIM":
+        held = int((BOOK.info(key) or {}).get("qty") or 0)
+        if held > 0:
+            BOOK.trim(key, 1, None, "their trim (futures) —")
+    elif act == "CLOSE":
+        if BOOK.claim(key):
+            import positions
+            BOOK.finish(key, positions.CLOSED,
+                        "closed on their call (futures)", price=None)
+
+
 def place(order):
     """Returns (ok, message). Never raises — a crash here would look to the
     extension exactly like a rejected order, and you'd never know which."""
@@ -873,37 +915,70 @@ def place(order):
                                "futures switch is off. Flip it in the popup's "
                                "Settings once your Webull futures data "
                                "subscription is live.")
-            # Prop firms first — his design: "id like felonys trades to be
-            # executed on some prop firms". Any ARMED prop account takes the
-            # futures order INSTEAD of Webull; Webull only trades futures
-            # when no prop is armed. Refusals are sentences, never silence.
-            armed_props = [p for p in (CFG.get("props") or [])
-                           if p.get("enabled")]
+            # Where futures trade, his call: Webull, NinjaTrader, Tradovate —
+            # each an independent toggle, so an order fans out to all of them or
+            # just one. futures_brokers holds it all; when it's unset we keep the
+            # old rule (Webull unless a legacy prop is armed). Refusals are
+            # always sentences, never silence.
+            fb = CFG.get("futures_brokers") or {}
+            armed_props = []
+            if fb:
+                use_webull = bool(fb.get("webull"))
+                nt = fb.get("ninjatrader") or {}
+                if nt.get("enabled"):
+                    armed_props.append({"name": "NinjaTrader",
+                        "platform": "ninjatrader",
+                        "username": nt.get("account", ""),
+                        "extra": nt.get("incoming_dir", ""), "enabled": True})
+                tv = fb.get("tradovate") or {}
+                if tv.get("enabled"):
+                    armed_props.append({"name": "Tradovate",
+                        "platform": "tradovate",
+                        "username": tv.get("username", ""),
+                        "password": tv.get("password", ""),
+                        "extra": "demo" if tv.get("demo") else "",
+                        "enabled": True})
+                # Any hand-added prop accounts still ride along when armed.
+                armed_props += [p for p in (CFG.get("props") or [])
+                                if p.get("enabled")]
+            else:
+                armed_props = [p for p in (CFG.get("props") or [])
+                               if p.get("enabled")]
+                use_webull = not armed_props        # legacy default
+
+            results, any_sent, book_done = [], False, False
+
+            # Webull leg first — it's the book-of-record when it's on.
+            if use_webull:
+                try:
+                    import webull_futures
+                    ok, msg = webull_futures.execute(client, BOOK, order, key, note)
+                    results.append(msg)
+                    if ok:
+                        any_sent, book_done = True, True
+                except Exception as e:                  # noqa: BLE001
+                    note("FUTURES  Webull ERROR %s -> %s" % (what, e))
+                    results.append("Webull futures didn't take it: %s" % str(e)[:120])
+
+            # NinjaTrader / Tradovate legs — also send; they only touch the book
+            # if Webull didn't already (so the position is never counted twice).
             if armed_props:
                 import props as prop_mod
                 sent, refused = prop_mod.execute_all(armed_props, order, note)
-                if claimed and not sent:
-                    BOOK.release(key)
-                if sent and BOOK is not None and order.get("action") in ("OPEN", "ADD"):
-                    BOOK.entry_sent(order, {"order_id": None, "occ": None,
-                                            "limit": order.get("limit"),
-                                            "bid": None, "ask": None,
-                                            "qty": int(order.get("qty") or 1),
-                                            "live": True})
-                summary = "; ".join(sent + refused)
-                return bool(sent), (summary or "no prop account took it")
-            try:
-                import webull_futures
-                ok, msg = webull_futures.execute(client, BOOK, order, key, note)
-                if not ok and claimed:
-                    BOOK.release(key)
-                return ok, msg
-            except Exception as e:                      # noqa: BLE001
-                if claimed:
-                    BOOK.release(key)
-                note("FUTURES  ERROR %s -> %s" % (what, e))
-                return False, ("the futures order did not go out: %s. Check "
-                               "the Webull app." % str(e)[:160])
+                results += sent + refused
+                if sent:
+                    any_sent = True
+                    if BOOK is not None and not book_done:
+                        _book_futures(order, key)
+                        book_done = True
+
+            if not any_sent and claimed:
+                BOOK.release(key)
+            summary = "; ".join(r for r in results if r)
+            if not any_sent and not summary:
+                summary = ("no futures broker is turned on — pick Webull, "
+                           "NinjaTrader or Tradovate under 'Trade futures from'.")
+            return any_sent, summary
 
         from webull_options import Refused
         qty = int(order.get("qty") or 1)
@@ -1077,6 +1152,10 @@ class Handler(BaseHTTPRequestHandler):
                 # The one-click bracket strategy (1 contract, +15%/-15%), so the
                 # popup toggle can show its true state after a reload.
                 "strategy": CFG.get("strategy", {}),
+                # Where futures route (Webull/NinjaTrader/Tradovate), so the
+                # popup toggles show their true state after a reload. Passwords
+                # are stripped — never send a credential back to a browser.
+                "futures_brokers": _futures_brokers_safe(),
                 "paper": paper_on(),
                 "paper_available": (WB is not None and getattr(WB, "paper", False)),
                 # Why paper isn't running, in plain words (missing sandbox key).
@@ -1456,7 +1535,8 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:                                   # noqa: BLE001
             return self._json(400, {"ok": False, "message": "unreadable"})
         _known = ("futures_enabled", "simulation", "paper_trading",
-                  "ai_enabled", "ai_api_key", "ai_model", "strategy")
+                  "ai_enabled", "ai_api_key", "ai_model", "strategy",
+                  "futures_brokers")
         if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
@@ -1512,6 +1592,28 @@ class Handler(BaseHTTPRequestHandler):
                  % ("ON" if st.get("enabled") else "off",
                     float(st.get("take_profit_pct", 15)),
                     float(st.get("stop_loss_pct", 15))))
+
+        # Where futures trade: Webull / NinjaTrader / Tradovate toggles plus
+        # each one's account details. Merged (not replaced) so toggling one
+        # broker never wipes another's saved credentials. Effective immediately.
+        if isinstance(body.get("futures_brokers"), dict):
+            fb = dict(CFG.get("futures_brokers") or {})
+            incoming = body["futures_brokers"]
+            if "webull" in incoming:
+                fb["webull"] = bool(incoming["webull"])
+            for bk in ("ninjatrader", "tradovate"):
+                if bk in incoming and isinstance(incoming[bk], dict):
+                    cur = dict(fb.get(bk) or {})
+                    cur.update(incoming[bk])
+                    fb[bk] = cur
+            data["futures_brokers"] = fb
+            CFG["futures_brokers"] = fb
+            _on = ["webull"] if fb.get("webull") else []
+            if (fb.get("ninjatrader") or {}).get("enabled"):
+                _on.append("ninjatrader")
+            if (fb.get("tradovate") or {}).get("enabled"):
+                _on.append("tradovate")
+            note("FUTURES  trade from: %s" % (", ".join(_on) or "nothing selected"))
 
         # AI reader — reading intelligence on the misses. The key is a secret,
         # so it lives in settings.json (gitignored, chmod 600), never the

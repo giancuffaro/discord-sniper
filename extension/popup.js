@@ -200,10 +200,121 @@ async function refreshMode() {
   paintProps();
   paintSim();
   paintStrat();
+  paintFuturesBrokers();
   paintPaper();
   paintAi(modeStatus);
   paintStatus();
 }
+
+/* ---- where futures trade: Webull / NinjaTrader / Tradovate ----------------
+ * Independent toggles, saved on the bridge. An alert fans out to every one
+ * that's ON. Painted from the bridge's reported state so a reload is honest;
+ * passwords are never sent back, only whether one is on file. */
+function _fbBtn(id, on) {
+  const b = $(id);
+  if (!b) return;
+  b.textContent = on ? "ON" : "off";
+  b.className = "tgl " + (on ? "live" : "safe");
+}
+function paintFuturesBrokers() {
+  const fb = (modeStatus || {}).futures_brokers || {};
+  const nt = fb.ninjatrader || {}, tv = fb.tradovate || {};
+  // Keep the local toggle state in step with the truth, so Save never flips a
+  // broker the user didn't touch.
+  _fbLocal = { webull: !!fb.webull, ninja: !!nt.enabled, tradovate: !!tv.enabled };
+  _fbBtn("fbWebull", !!fb.webull);
+  _fbBtn("fbNinja", !!nt.enabled);
+  _fbBtn("fbTradovate", !!tv.enabled);
+  if ($("ninjaFields")) $("ninjaFields").style.display = nt.enabled ? "block" : "none";
+  if ($("tradovateFields")) $("tradovateFields").style.display = tv.enabled ? "block" : "none";
+  if ($("ninjaAccount") && document.activeElement !== $("ninjaAccount"))
+    $("ninjaAccount").value = nt.account || "";
+  if ($("ninjaDir") && document.activeElement !== $("ninjaDir"))
+    $("ninjaDir").value = nt.incoming_dir || "";
+  if ($("tvUser") && document.activeElement !== $("tvUser"))
+    $("tvUser").value = tv.username || "";
+  if ($("tvDemo")) $("tvDemo").checked = !!tv.demo;
+  if ($("tvPass") && tv.has_password && !$("tvPass").value)
+    $("tvPass").placeholder = "•••••• (saved — leave blank to keep)";
+}
+// The three toggles just flip a local ON/off and reveal their fields; Save is
+// what actually persists to the bridge (so you can fill the account in first).
+let _fbLocal = { webull: false, ninja: false, tradovate: false };
+function _wireFb(id, key, fieldsId) {
+  const b = $(id);
+  if (!b) return;
+  b.onclick = () => {
+    _fbLocal[key] = !_fbLocal[key];
+    _fbBtn(id, _fbLocal[key]);
+    if (fieldsId && $(fieldsId)) $(fieldsId).style.display = _fbLocal[key] ? "block" : "none";
+  };
+}
+_wireFb("fbWebull", "webull", null);
+_wireFb("fbNinja", "ninja", "ninjaFields");
+_wireFb("fbTradovate", "tradovate", "tradovateFields");
+if ($("fbSave")) $("fbSave").onclick = async () => {
+  // Seed local toggles from what's painted, then apply this save.
+  const fb = (modeStatus || {}).futures_brokers || {};
+  const payload = {
+    webull: _fbLocal.webull != null ? _fbLocal.webull : !!fb.webull,
+    ninjatrader: {
+      enabled: _fbLocal.ninja,
+      account: ($("ninjaAccount") || {}).value || "",
+      incoming_dir: ($("ninjaDir") || {}).value || ""
+    },
+    tradovate: {
+      enabled: _fbLocal.tradovate,
+      username: ($("tvUser") || {}).value || "",
+      demo: !!($("tvDemo") || {}).checked
+    }
+  };
+  const pw = ($("tvPass") || {}).value || "";
+  if (pw) payload.tradovate.password = pw;   // only send when set, keep otherwise
+  try {
+    modeStatus = await askBridge("/config", { futures_brokers: payload });
+    if ($("fbState")) $("fbState").textContent = "saved — futures route there now";
+  } catch (e) {
+    if ($("fbState")) $("fbState").textContent = "couldn't reach the bridge — START HERE first";
+  }
+  paintFuturesBrokers();
+};
+
+/* ---- manual futures trigger — fire a buy/sell/close by hand ----------------
+ * Sends a futures order through the SAME pipeline as a room alert, so it fans
+ * out to whatever brokers are on under "Trade futures from". Tagged manual so
+ * it fills at once and the hours guard can't block it. With a price it's a
+ * labeled entry the parser reads as a limit; blank price = market. */
+async function _fireManualFutures(text, label) {
+  const st = $("mfState");
+  if (st) st.textContent = "sending " + label + "…";
+  try {
+    await chrome.runtime.sendMessage({
+      type: "MESSAGE", mid: "manualfut-" + Date.now(),
+      text: text, full: text, author: "🎯 MANUAL",
+      channelId: "829754942817828884", postedAt: Date.now(), test: true,
+      history: false, reply: false,
+      url: "https://discord.com/channels/manual/futures" });
+    if (st) st.textContent = label + " sent — check the log and your broker.";
+  } catch (e) {
+    if (st) st.textContent = "couldn't send it — is the extension awake?";
+  }
+  setTimeout(render, 800);
+}
+function _mfEntry(dir) {
+  const sym = (($("mfSym") || {}).value || "MNQ").trim().toUpperCase() || "MNQ";
+  const price = (($("mfPrice") || {}).value || "").trim();
+  // A price makes it a labeled entry the parser reads as a limit; blank = market.
+  const text = price
+    ? "Ticker: " + sym + " " + dir + " Entry: " + price
+    : sym + " | " + dir + " HERE";
+  return _fireManualFutures(text, sym + " " + dir + (price ? " @ " + price : " (market)"));
+}
+if ($("mfLong")) $("mfLong").onclick = () => _mfEntry("LONG");
+if ($("mfShort")) $("mfShort").onclick = () => _mfEntry("SHORT");
+if ($("mfClose")) $("mfClose").onclick = () => {
+  const sym = (($("mfSym") || {}).value || "MNQ").trim().toUpperCase() || "MNQ";
+  return _fireManualFutures("all out of " + sym, "close " + sym);
+};
 
 /* One-glance status bar — the whole setup on a single line, plus the one thing
  * to fix if anything's red. No more hunting through the panel. */
@@ -601,9 +712,20 @@ async function loadCapNames() {
   try { CAP_NAMES = (await chrome.storage.local.get("chan_names")).chan_names || {}; }
   catch (e) { CAP_NAMES = {}; }
 }
+// Just the channel, never the server. Discord/Whop names arrive as
+// "#channel | Server Name" or "channel - Server - Discord"; keep only the part
+// before the first separator, drop a leading "(3)" unread count and any "#".
+function _channelOnly(name) {
+  let s = String(name || "");
+  s = s.split(" | ")[0].split(" — ")[0];
+  s = s.replace(/\s[-–]\s.*$/, "");          // "channel - Server" -> "channel"
+  s = s.replace(/^\(\d+\)\s*/, "");          // drop unread count
+  s = s.replace(/^[#﹟＃｜|\s]+/, "").trim();   // drop leading hash / divider
+  return s || String(name || "").trim();
+}
 function chanLabel(id) {
   const k = String(id || "");
-  return CAP_NAMES[k] || ROOM_NAMES[k] || k || "this room";
+  return _channelOnly(CAP_NAMES[k] || ROOM_NAMES[k] || k || "this room");
 }
 const ROOM_NAMES = { "829754942817828884": "Honeydrip daytrades",
                      "987515353670221834": "Aristotle",
@@ -871,21 +993,49 @@ async function render() {
                         (p.side === "PUTS" ? "P" : p.side === "CALLS" ? "C" : "")]
                        .filter(Boolean).join(" ");
       const n = parseInt(p.qty || 1, 10) || 1;
+      // A one-click X on every entry — sells it out right now, no matter who
+      // called it or whether it's an option or a future. His ask: always a way
+      // to get out.
+      const x = '<button class="posx" data-close="' + encodeURIComponent(k) +
+                '" title="Close this now">✕</button>';
+      let body;
       if (p.pending) {
         // The order is out and nobody has taken it. You own nothing here yet,
         // and on the fast ones you never will — that's the trade-off of sitting
         // on the bid, and it should look different on screen.
-        return '<span class="in wait">BID IN</span> <b>' + contract + "</b>" +
+        body = '<span class="in wait">BID IN</span> <b>' + contract + "</b>" +
                who + (p.ts ? " — since " + clock(p.ts) : "") +
                " · nobody has sold to you yet";
+      } else {
+        body = '<span class="in">IN</span> <b>' + contract + "</b>" +
+               " <b>x" + n + "</b>" + who +
+               (p.ts ? " — since " + clock(p.ts) : "") +
+               (p.fill ? " · paid " + Number(p.fill).toFixed(2) : "") +
+               (p.stop ? " · stop " + Number(p.stop).toFixed(2) : "");
       }
-      return '<span class="in">IN</span> <b>' + contract + "</b>" +
-             " <b>x" + n + "</b>" + who +
-             (p.ts ? " — since " + clock(p.ts) : "") +
-             (p.fill ? " · paid " + Number(p.fill).toFixed(2) : "") +
-             (p.stop ? " · stop " + Number(p.stop).toFixed(2) : "");
+      return '<div class="posrow"><span class="grow">' + body + "</span>" + x + "</div>";
     });
-    $("holding").innerHTML = rows.join("<br>");
+    $("holding").innerHTML = rows.join("");
+    $("holding").querySelectorAll("button[data-close]").forEach(btn => {
+      btn.onclick = async () => {
+        const k = decodeURIComponent(btn.dataset.close);
+        btn.disabled = true; btn.textContent = "…";
+        const sym = keySym(k), who = keyWho(k);
+        // Fire a CLOSE straight through the pipeline, pinned to this position's
+        // author so it exits the right one; tagged manual so hours can't block
+        // getting out. fillFromPosition fills in the contract from the book.
+        try {
+          await chrome.runtime.sendMessage({
+            type: "MESSAGE", mid: "manualclose-" + Date.now(),
+            text: "all out of " + sym, full: "all out of " + sym,
+            author: who && who !== "?" ? who : "🎯 MANUAL",
+            channelId: "829754942817828884", postedAt: Date.now(), test: true,
+            history: false, reply: false,
+            url: "https://discord.com/channels/manual/close" });
+        } catch (e) {}
+        setTimeout(render, 800);
+      };
+    });
   }
 
   // The pretend account. It only exists on a dry run — in live mode Webull
@@ -1132,6 +1282,34 @@ $("savelognow").onclick = async () => {
   setTimeout(() => { btn.disabled = false;
     btn.textContent = "💾 Save log now (for Claude)"; }, 2500);
 };
+
+/* Live countdown to the next auto-save. The schedule is :05 and :35 past every
+ * hour (mirrors _nextExportTime in the worker), so the popup can compute it
+ * without asking. Also shows when it last saved, if it has. */
+function _nextExportMs() {
+  const now = new Date();
+  const m = now.getMinutes();
+  const d = new Date(now); d.setSeconds(0, 0);
+  if (m < 5) d.setMinutes(5);
+  else if (m < 35) d.setMinutes(35);
+  else { d.setHours(d.getHours() + 1); d.setMinutes(5); }
+  return d.getTime() - Date.now();
+}
+async function tickExportTimer() {
+  const el = $("exportTimer");
+  if (!el) return;
+  let ms = _nextExportMs();
+  if (ms < 0) ms = 0;
+  const mm = Math.floor(ms / 60000);
+  const ss = Math.floor((ms % 60000) / 1000);
+  let last = 0;
+  try { last = (await chrome.storage.local.get("last_export")).last_export || 0; } catch (e) {}
+  const lastBit = last ? " · last saved " + ago(last) : "";
+  el.textContent = "Next auto-save in " + mm + ":" +
+    String(ss).padStart(2, "0") + lastBit;
+}
+setInterval(tickExportTimer, 1000);
+tickExportTimer();
 
 $("export").onclick = async () => {
   const { captured } = await chrome.storage.local.get("captured");
