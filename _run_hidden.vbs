@@ -31,7 +31,11 @@ If fso.FileExists(logf) Then
 End If
 
 shell.CurrentDirectory = here
-cmd = "cmd /c python """ & here & "\bridge.py"" >> """ & here & "\bridge.log"" 2>&1"
+' Run the keep-alive loop, not python directly, so a bridge that crashes mid-
+' session revives itself instead of leaving every call failing. The loop honours
+' the STOP file and is port-safe against a second copy. (execv self-updates stay
+' in the same process, so the loop never even sees them.)
+cmd = "cmd /c """ & here & "\_bridge_loop.bat"""
 
 ' 0 = hidden window. False = don't wait for it to finish.
 shell.Run cmd, 0, False

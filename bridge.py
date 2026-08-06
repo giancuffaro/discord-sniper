@@ -1110,6 +1110,25 @@ def _place_impl(order):
 
 _BP = {"t": 0.0, "v": None}
 _FBP = {"t": 0.0, "v": None}
+_POS = {"t": 0.0, "v": []}
+
+
+def broker_positions():
+    """The account's REAL open positions from Webull, cached ~8s so the popup
+    can poll every few seconds without hammering the broker. Empty list when
+    there's no connection or nothing honest to report — the popup then falls
+    back to its own view. This is what lets the popup mirror Webull."""
+    if WB is None:
+        return []
+    now = time.time()
+    if now - _POS["t"] < 8:
+        return _POS["v"]
+    try:
+        v = WB.positions() if hasattr(WB, "positions") else []
+    except Exception:                                   # noqa: BLE001
+        v = []
+    _POS["t"], _POS["v"] = now, v if isinstance(v, list) else []
+    return _POS["v"]
 
 
 def real_buying_power():
@@ -1214,9 +1233,50 @@ class Handler(BaseHTTPRequestHandler):
                 "stopped": os.path.exists(os.path.join(HERE, "STOP")) or
                            os.path.exists(os.path.join(HERE, "STOP.txt"))}
 
+    def _flatten(self):
+        """Close a REAL Webull position by symbol — the popup's one-click exit of
+        a position the book may have lost track of (a restart). Sells at the
+        market via the broker directly; also clears it from the book so the popup
+        updates. Local-only (127.0.0.1)."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:                                   # noqa: BLE001
+            return self._json(400, {"ok": False, "message": "unreadable"})
+        sym = str(body.get("symbol") or "").upper()
+        if not sym:
+            return self._json(400, {"ok": False, "message": "no symbol"})
+        wb = WB_LIVE or WB
+        if wb is None or not hasattr(wb, "flatten"):
+            return self._json(200, {"ok": False,
+                "message": "no Webull connection to close it — do it in the app."})
+        try:
+            msg = wb.flatten(sym)
+            _POS["t"] = 0.0                     # force the next /positions to refetch
+            # If the book is tracking it, mark it closed too so the popup agrees.
+            if BOOK is not None:
+                try:
+                    for k in [k for k, p in list(getattr(BOOK, "_pos", {}).items())
+                              if str((p or {}).get("symbol") or "").upper() == sym]:
+                        if BOOK.claim(k):
+                            BOOK.finish(k, positions.CLOSED,
+                                        "closed from the popup", price=None)
+                except Exception:               # noqa: BLE001
+                    pass
+            note("FLATTEN  %s -> %s" % (sym, msg))
+            return self._json(200, {"ok": True, "message": msg})
+        except Exception as e:                              # noqa: BLE001
+            note("FLATTEN  %s FAILED -> %s" % (sym, e))
+            return self._json(200, {"ok": False,
+                "message": "couldn't close %s: %s" % (sym, str(e)[:140])})
+
     def do_GET(self):
         if self.path.startswith("/mode"):
             return self._json(200, self._status())
+        if self.path.startswith("/positions"):
+            # The real Webull account positions, so the popup mirrors the broker.
+            return self._json(200, {"positions": broker_positions(),
+                                    "connected": WB is not None})
         if self.path.startswith("/fills"):
             # What actually happened to the orders the browser sent. It asks
             # with the id of the last thing it saw, so it only gets what's new.
@@ -1740,6 +1800,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path.startswith("/mode"):
             return self._set_mode()
+        if self.path.startswith("/flatten"):
+            return self._flatten()
         if self.path.startswith("/mark"):
             return self._mark()
         if self.path.startswith("/keys"):

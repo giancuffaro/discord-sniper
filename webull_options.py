@@ -797,6 +797,72 @@ class WebullOptions:
             body, _why = self._try_calls(["order_v3", "order"], ["cancel"], order_id)
         return body is not None
 
+    def positions(self):
+        """The account's REAL open positions, straight from Webull, normalised to
+        the shape the popup and book use — so the popup can mirror the broker
+        instead of only what the bot itself placed. Never raises: on any trouble
+        it returns an empty list and the caller keeps its own view."""
+        body, _why = self._try_calls(
+            ["position_v2", "position", "account_v2", "trade"],
+            ["position"], self.account_id)
+        if body is None:
+            body, _why = self._try_calls(
+                ["position_v2", "position", "account_v2", "trade"], ["position"])
+        items = body if isinstance(body, list) else \
+            ((body or {}).get("positions") or (body or {}).get("data") or [])
+        rows = []
+        for it in (items or []):
+            try:
+                legs = it.get("legs") or [it]
+                leg = legs[0] if legs else {}
+                sym = str(it.get("symbol") or leg.get("symbol") or "").upper()
+                if not sym:
+                    continue
+                qty = int(float(it.get("quantity") or leg.get("quantity") or 0))
+                if qty == 0:
+                    continue
+                otype = str(leg.get("option_type") or it.get("option_type") or "").upper()
+                strike = (leg.get("option_exercise_price") or leg.get("strike")
+                          or it.get("option_exercise_price"))
+                expiry = leg.get("option_expire_date") or it.get("option_expire_date")
+                is_opt = bool(otype) or bool(strike)
+                fill = float(it.get("cost_price") or leg.get("cost") or 0) or None
+                last = float(it.get("last_price") or leg.get("last_price") or 0) or None
+                pl = it.get("unrealized_profit_loss")
+                plr = it.get("unrealized_profit_loss_rate")
+                rows.append({
+                    "symbol": sym,
+                    "side": (("CALLS" if otype.startswith("C") else "PUTS")
+                             if is_opt else None),
+                    "strike": float(strike) if strike else None,
+                    "expiry": expiry, "qty": qty, "fill": fill, "last": last,
+                    "pl": float(pl) if pl not in (None, "") else None,
+                    "pl_pct": (float(plr) * 100) if plr not in (None, "") else None,
+                    "kind": "option" if is_opt else "stock"})
+            except Exception:                              # noqa: BLE001
+                continue
+        return rows
+
+    def flatten(self, symbol):
+        """Sell whatever the account is holding of `symbol`, right now — the
+        popup's one-click close of a REAL Webull position, including one the book
+        lost track of on a restart. Reads the live position for its exact
+        contract, then exits it at the market. Returns a short message."""
+        symbol = str(symbol or "").upper()
+        for p in self.positions():
+            if str(p.get("symbol") or "").upper() != symbol:
+                continue
+            qty = int(p.get("qty") or 0)
+            if qty <= 0:
+                continue
+            if p.get("kind") == "future":
+                raise Refused("that's a futures position — close it in NinjaTrader "
+                              "or the broker; the Webull close path is options only")
+            self.sell(symbol, p.get("side") or "CALLS", p.get("strike"),
+                      p.get("expiry"), qty, ref_price=p.get("last"))
+            return "closed %s x%d at Webull" % (symbol, qty)
+        return "no open %s position at Webull to close" % symbol
+
     def place_stop(self, symbol, side, strike, expiry, qty, fill_price):
         """The resting 20% stop, sent right after an entry fills.
 

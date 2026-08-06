@@ -189,12 +189,17 @@ function paintKeys() {
   }
 }
 
+let brokerPos = [];        // real Webull account positions, so the popup mirrors it
 async function refreshMode() {
   try {
     modeStatus = await askBridge("/mode");
   } catch (e) {
     modeStatus = null;      // bridge isn't running, which is a normal state
   }
+  try {
+    const pr = await askBridge("/positions");
+    brokerPos = (pr && pr.positions) || [];
+  } catch (e) { brokerPos = []; }
   paintMode();
   paintKeys();
   paintProps();
@@ -204,7 +209,28 @@ async function refreshMode() {
   paintPaper();
   paintAi(modeStatus);
   paintStatus();
+  paintBridgeDown();
 }
+
+/* The big red bridge-OFF banner. modeStatus is null only when the bridge didn't
+ * answer at all — which is the one state where NOTHING can trade, so it gets the
+ * loudest signal in the popup. */
+function paintBridgeDown() {
+  const el = $("bridgeDown");
+  if (el) el.style.display = modeStatus ? "none" : "flex";
+}
+if ($("bridgeRetry")) $("bridgeRetry").onclick = async () => {
+  const b = $("bridgeRetry");
+  b.disabled = true; b.textContent = "…";
+  await refreshMode();
+  b.disabled = false; b.textContent = "Retry";
+};
+if ($("botOffOn")) $("botOffOn").onclick = async () => {
+  const b = $("botOffOn");
+  b.disabled = true; b.textContent = "…";
+  try { await patch({ armed: true, stopped: false }); } catch (e) {}
+  b.disabled = false; b.textContent = "Turn ON";
+};
 
 /* ---- where futures trade: Webull / NinjaTrader / Tradovate ----------------
  * Independent toggles, saved on the bridge. An alert fans out to every one
@@ -949,6 +975,20 @@ async function render() {
     arm.innerHTML = "OFF";
     arm.className = "grow safe big";
   }
+  // The loud OFF banner — same red treatment as the bridge being down, because
+  // an OFF bot is the other state where nothing trades. If it went OFF by itself
+  // (auto-disarm after the bridge vanished), say so, since he didn't do it.
+  const offEl = $("botOff");
+  if (offEl) {
+    offEl.style.display = s.armed ? "none" : "flex";
+    if (!s.armed && $("botOffWhy")) {
+      const autoOff = (log || []).some(e => String(e.what || "").includes("AUTO-DISARMED") &&
+                                            (Date.now() - (e.t || 0)) < 90 * 60 * 1000);
+      $("botOffWhy").textContent = autoOff
+        ? "It auto-disarmed after the bridge went missing. Bring the bridge back, then turn it ON."
+        : "Tap the big OFF button below to turn it back ON.";
+    }
+  }
 
   const held = Object.keys((gs && gs.positions) || {});
   const cap = parseInt(s.guards.max_trades_per_day, 10) || 0;
@@ -981,51 +1021,72 @@ async function render() {
   // The tracker already knows this — it has to, or it couldn't turn "all out of
   // AMD" into an order. This just puts it on screen.
   const pos = (gs && gs.positions) || {};
-  if (!held.length) {
+  const bpos = Array.isArray(brokerPos) ? brokerPos : [];
+  // What Webull ACTUALLY holds wins — the popup mirrors the broker. A resting
+  // bid the browser recorded but Webull hasn't shown as filled yet is drawn too,
+  // as long as its symbol isn't already a real Webull position.
+  const bsyms = new Set(bpos.map(b => String(b.symbol || "").toUpperCase()));
+  const pendKeys = held.filter(k => (pos[k] || {}).pending &&
+                                    !bsyms.has(keySym(k).toUpperCase()));
+  if (!bpos.length && !pendKeys.length) {
     $("holding").innerHTML = "No active trades";
   } else {
-    const rows = held.map(k => {
-      const p = pos[k] || {};
-      const who = keyWho(k) !== "?" ? " · " + keyWho(k) + "'s call" : "";
-      const contract = [keySym(k),
-                        p.expiry || "",
-                        (p.strike != null ? p.strike : "") +
-                        (p.side === "PUTS" ? "P" : p.side === "CALLS" ? "C" : "")]
-                       .filter(Boolean).join(" ");
-      const n = parseInt(p.qty || 1, 10) || 1;
-      // A one-click X on every entry — sells it out right now, no matter who
-      // called it or whether it's an option or a future. His ask: always a way
-      // to get out.
-      const x = '<button class="posx" data-close="' + encodeURIComponent(k) +
-                '" title="Close this now">✕</button>';
-      let body;
-      if (p.pending) {
-        // The order is out and nobody has taken it. You own nothing here yet,
-        // and on the fast ones you never will — that's the trade-off of sitting
-        // on the bid, and it should look different on screen.
-        body = '<span class="in wait">BID IN</span> <b>' + contract + "</b>" +
-               who + (p.ts ? " — since " + clock(p.ts) : "") +
-               " · nobody has sold to you yet";
-      } else {
-        body = '<span class="in">IN</span> <b>' + contract + "</b>" +
-               " <b>x" + n + "</b>" + who +
-               (p.ts ? " — since " + clock(p.ts) : "") +
-               (p.fill ? " · paid " + Number(p.fill).toFixed(2) : "") +
-               (p.stop ? " · stop " + Number(p.stop).toFixed(2) : "");
+    const rows = [];
+    // 1) REAL Webull positions — live price and P&L, straight from the broker.
+    for (const b of bpos) {
+      const sym = String(b.symbol || "").toUpperCase();
+      const contract = [sym, b.expiry || "",
+        (b.strike != null ? b.strike : "") +
+        (b.side === "PUTS" ? "P" : b.side === "CALLS" ? "C" : "")]
+        .filter(Boolean).join(" ");
+      const n = parseInt(b.qty || 1, 10) || 1;
+      const paid = (b.fill != null) ? " · paid " + Number(b.fill).toFixed(2) : "";
+      const now = (b.last != null) ? " · now " + Number(b.last).toFixed(2) : "";
+      let plTxt = "";
+      if (b.pl != null) {
+        const up = b.pl >= 0;
+        plTxt = ' <span style="color:' + (up ? "#4ade80" : "#f87171") + '">' +
+          (up ? "+$" : "-$") + Math.abs(b.pl).toFixed(0) +
+          (b.pl_pct != null ? " (" + (b.pl_pct >= 0 ? "+" : "") +
+             b.pl_pct.toFixed(0) + "%)" : "") + "</span>";
       }
-      return '<div class="posrow"><span class="grow">' + body + "</span>" + x + "</div>";
-    });
+      const x = '<button class="posx" data-flat="' + encodeURIComponent(sym) +
+                '" title="Close this at Webull now">✕</button>';
+      rows.push('<div class="posrow"><span class="grow"><span class="in">IN</span> <b>' +
+        contract + '</b> <b>x' + n + "</b>" + paid + now + plTxt +
+        "</span>" + x + "</div>");
+    }
+    // 2) Resting bids Webull hasn't confirmed filled yet.
+    for (const k of pendKeys) {
+      const p = pos[k] || {};
+      const contract = [keySym(k), p.expiry || "",
+        (p.strike != null ? p.strike : "") +
+        (p.side === "PUTS" ? "P" : p.side === "CALLS" ? "C" : "")]
+        .filter(Boolean).join(" ");
+      const x = '<button class="posx" data-close="' + encodeURIComponent(k) +
+                '" title="Cancel this">✕</button>';
+      rows.push('<div class="posrow"><span class="grow"><span class="in wait">BID IN</span> <b>' +
+        contract + "</b>" + (keyWho(k) !== "?" ? " · " + keyWho(k) + "'s call" : "") +
+        (p.ts ? " — since " + clock(p.ts) : "") +
+        " · nobody has sold to you yet</span>" + x + "</div>");
+    }
     $("holding").innerHTML = rows.join("");
+    // ✕ on a REAL Webull position closes it straight at the broker (/flatten),
+    // so it works even for a position the book lost track of on a restart.
+    $("holding").querySelectorAll("button[data-flat]").forEach(btn => {
+      btn.onclick = async () => {
+        btn.disabled = true; btn.textContent = "…";
+        const sym = decodeURIComponent(btn.dataset.flat);
+        try { await askBridge("/flatten", { symbol: sym }); } catch (e) {}
+        setTimeout(render, 1000);
+      };
+    });
+    // ✕ on a resting bid cancels it through the normal path.
     $("holding").querySelectorAll("button[data-close]").forEach(btn => {
       btn.onclick = async () => {
         const k = decodeURIComponent(btn.dataset.close);
         btn.disabled = true; btn.textContent = "…";
         const sym = keySym(k), who = keyWho(k);
-        // Close through the SAME room the position was opened in, so its live/
-        // paper mode is preserved — closing a live position must send a live
-        // order, never a paper one. Fall back to a listened room only if the
-        // position never recorded its channel. Pinned to the author so it exits
-        // the right one; tagged manual so the hours guard can't trap you in.
         const room = (pos[k] && pos[k].channelId) || "829754942817828884";
         try {
           await chrome.runtime.sendMessage({
