@@ -216,14 +216,10 @@
       <button id="paperbtn" class="tgl safe">off</button>
     </div>
     <div class="note" id="paperstate">On: orders fill in your Webull paper
-      account for true prices, still scored per room. Off: the built-in
-      honest-fill model below. Needs keys + a Webull paper account.</div>
+      account for true prices, still scored per room. Needs keys + a Webull
+      paper account.</div>
 
-    <label>Realism &amp; tactics (test money)</label>
-    <div class="row" style="margin-bottom:4px">
-      <span class="grow" style="font-size:12px">Honest fills (spread + fees)</span>
-      <button id="simreal" class="tgl safe">off</button>
-    </div>
+    <label>Tactics (test money)</label>
     <div class="half">
       <div>
         <label>Bid under their price ($)</label>
@@ -403,15 +399,19 @@
       <select id="testtype" style="max-width:74px">
         <option value="C">Call</option>
         <option value="P">Put</option>
+        <option value="LONG">Long (fut)</option>
+        <option value="SHORT">Short (fut)</option>
       </select>
       <input id="testexp" placeholder="exp (blank=Fri)" class="grow">
     </div>
     <div class="note">Fires a real entry, then a trim, then a full exit through the
       WHOLE pipeline — the parser, every guard, the position book, and the paper
-      broker — so you can watch get-in → trim → exit end to end and prove nothing
-      gets skipped. It routes to PAPER only (never real money). No price means it
-      takes the market. A real fill needs the bridge running and the market open;
-      out of hours you'll still see the entry go out and the guards run.</div>
+      broker — so you can watch get-in → trim → exit end to end. Pick Call/Put for
+      an options test, or Long/Short (fut) for a futures test (put a futures symbol
+      like MNQ or MES in the ticker box; strike/exp are ignored). It routes to
+      PAPER only (never real money) and runs ANY time — the market-hours guard is
+      skipped for tests, so a real fill still needs the market open, but you can
+      always watch the pipeline run.</div>
     <div id="log"></div>
   </div>
 

@@ -107,6 +107,10 @@ function sessionPhase(g) {
 /* Returns {allowed, reason}. Reasons are written for a human at 9:31am. */
 async function guardCheck(sig, ctx, cfg) {
   const g = Object.assign({}, GUARD_DEFAULTS, cfg.guards || {});
+  // Old saved settings pinned a conservative 15:45 options close; options
+  // really trade to 4:00 (indices to 4:15, handled below). Lift the stale value
+  // so end-of-day entries aren't refused. One line, the single trading gate.
+  if (g.close_time === "15:45") g.close_time = "16:00";
   const now = Date.now();
   const st = await guardState();
 
@@ -130,7 +134,12 @@ async function guardCheck(sig, ctx, cfg) {
   if (g.max_message_age_seconds && age > g.max_message_age_seconds)
     return { allowed: false, reason: "that call is " + Math.round(age) + " seconds old — too stale to chase" };
 
-  if (g.regular_hours_only && (sig.action === "OPEN" || sig.action === "ADD")) {
+  // A manual test trade is allowed to run any time — it's how he proves the
+  // pipeline end to end, and blocking it at 10PM makes the button useless. It
+  // routes to paper only, so the worst case out of hours is Webull not filling.
+  const isTest = !!(sig.test || ctx.test ||
+                    /^🧪/.test(String(sig.caller || ctx.author || "")));
+  if (!isTest && g.regular_hours_only && (sig.action === "OPEN" || sig.action === "ADD")) {
     const t = etNow();
     const mins = t.h * 60 + t.m;
     if (sig.kind === "future") {
@@ -150,10 +159,16 @@ async function guardCheck(sig, ctx, cfg) {
     } else {
       if (t.wd === "Sat" || t.wd === "Sun")
         return { allowed: false, reason: "it's the weekend — the market is shut" };
-      if (mins < hm(g.open_time) || mins > hm(g.close_time))
+      // Equity & ETF options (SPY, QQQ, TSLA, NVDA...) close at 4:00 ET. The
+      // cash-settled broad indices (SPX, NDX, RUT, XSP, VIX) trade to 4:15 ET,
+      // so those get the later bell. Open is the same 9:30 for all.
+      const LATE = /^(SPX|SPXW|XSP|NDX|NDXP|RUT|RUTW|VIX|VIXW|MRUT|XND)$/;
+      const closeStr = LATE.test(String(sig.symbol || "").toUpperCase())
+        ? "16:15" : g.close_time;
+      if (mins < hm(g.open_time) || mins > hm(closeStr))
         return { allowed: false, reason: "it's " + String(t.h).padStart(2, "0") + ":" +
-          String(t.m).padStart(2, "0") + " ET — new trades are only allowed between " +
-          g.open_time + " and " + g.close_time };
+          String(t.m).padStart(2, "0") + " ET — new option trades are only allowed between " +
+          g.open_time + " and " + closeStr };
     }
   }
 

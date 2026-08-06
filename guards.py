@@ -131,11 +131,19 @@ class Guards:
                 return False, "it's the weekend — the market is shut"
             mins = t.hour * 60 + t.minute
             o = self.open_hm[0] * 60 + self.open_hm[1]
-            c = self.close_hm[0] * 60 + self.close_hm[1]
+            # Equity & ETF options close 4:00 ET; cash-index options (SPX, NDX,
+            # RUT, XSP, VIX) trade to 4:15 ET, so those get the later bell.
+            LATE = {"SPX", "SPXW", "XSP", "NDX", "NDXP", "RUT", "RUTW",
+                    "VIX", "VIXW", "MRUT", "XND"}
+            ch, cm = self.close_hm
+            if str(getattr(sig, "symbol", "") or "").upper() in LATE:
+                ch, cm = 16, 15
+            c = ch * 60 + cm
             if not (o <= mins <= c):
-                return False, ("it's %s ET — new trades are only allowed between "
-                               "%02d:%02d and %02d:%02d"
-                               % (t.strftime("%H:%M"), *self.open_hm, *self.close_hm))
+                return False, ("it's %s ET — new option trades are only allowed "
+                               "between %02d:%02d and %02d:%02d"
+                               % (t.strftime("%H:%M"), self.open_hm[0],
+                                  self.open_hm[1], ch, cm))
 
         # dedupe: the same call posted twice in a couple of minutes is one trade
         # What you're holding is checked before anything else, because "you're

@@ -597,12 +597,27 @@ class WebullOptions:
         should not quietly stop him trading. Webull will still reject an order
         he can't afford; this check exists to catch it earlier and say so in
         English, not to be the only thing standing in the way."""
+        return self._balance_for(self.account_id, "_bal")
+
+    def futures_buying_power(self):
+        """Same read for the FUTURES account, or None if Webull won't say or
+        there's no futures account. Never blocks a trade — it's a readout."""
+        acct = getattr(self, "futures_account_id", None)
+        if not acct:
+            return None
+        return self._balance_for(acct, "_fbal")
+
+    def _balance_for(self, account_id, cache_key):
+        """Buying power for one account id, cached ~8s per account. Factored out
+        so the margin and futures accounts can each be read without stepping on
+        the other's cache."""
         now = time.time()
-        if self._bal_at and now - self._bal_at < 8:
-            return self._bal
+        at = getattr(self, cache_key + "_at", 0)
+        if at and now - at < 8:
+            return getattr(self, cache_key, None)
         val = None
         for _name, fn in self._balance_fns():
-            for args in ((self.account_id,), (), (self.account_id, "USD")):
+            for args in ((account_id,), (), (account_id, "USD")):
                 try:
                     res = fn(*args)
                 except TypeError:
@@ -627,7 +642,8 @@ class WebullOptions:
                     continue
             if val is not None:
                 break
-        self._bal, self._bal_at = val, now
+        setattr(self, cache_key, val)
+        setattr(self, cache_key + "_at", now)
         return val
 
     def afford_check(self, limit, qty):

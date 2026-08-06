@@ -30,7 +30,7 @@ const DEFAULTS = {
   // everything to the tee as they do." What's left is safety, not filtering.
   guards: { cooldown_seconds: 5, dedupe_seconds: 120,
             regular_hours_only: true, open_time: "09:30",
-            close_time: "15:45", max_message_age_seconds: 20 }
+            close_time: "16:00", max_message_age_seconds: 20 }
 };
 
 const listToText = a => (a || []).join(", ");
@@ -41,6 +41,10 @@ async function getSettings() {
   const { settings } = await chrome.storage.local.get("settings");
   const s = Object.assign({}, DEFAULTS, settings || {});
   s.guards = Object.assign({}, DEFAULTS.guards, (settings || {}).guards || {});
+  // Old builds saved a conservative 15:45 close. Options actually trade to
+  // 4:00 (and the cash indices to 4:15, handled in the guard), so lift the
+  // stale value once so his end-of-day entries aren't refused.
+  if (s.guards.close_time === "15:45") s.guards.close_time = "16:00";
   return s;
 }
 
@@ -96,12 +100,15 @@ function paintMode() {
   }
   const bp = modeStatus.buying_power;
   const bpBit = (bp === null || bp === undefined)
-    ? "" : " &nbsp;·&nbsp; $" + Math.round(bp).toLocaleString() + " buying power";
+    ? "" : " &nbsp;·&nbsp; $" + Math.round(bp).toLocaleString() + " margin BP";
+  const fbp = modeStatus.futures_buying_power;
+  const fbpBit = (fbp === null || fbp === undefined)
+    ? "" : " &nbsp;·&nbsp; $" + Math.round(fbp).toLocaleString() + " futures BP";
   const fut = modeStatus.futures_account
     ? " &nbsp; " + dot(true) + "Futures acct" : "";
   sub.innerHTML = dot(true) + "Bridge &nbsp; " +
     dot(!!(modeStatus.has_keys && modeStatus.connected)) + "Webull keys" +
-    fut + bpBit;
+    fut + bpBit + fbpBit;
 }
 
 
@@ -212,12 +219,17 @@ async function paintStatus() {
   let voiceN = 0;
   try { const r = await chrome.runtime.sendMessage({ type: "VOICE_STATE" });
         voiceN = (r && r.listening || []).length; } catch (e) {}
+  // The key being SAVED is what "set up" means — listening in a room is a
+  // per-room action you take live, not part of setup. So the step is done the
+  // moment the Deepgram key is in, same as the Webull/Claude keys.
+  let dgKey = "";
+  try { dgKey = (await chrome.storage.local.get("deepgram_key")).deepgram_key || ""; } catch (e) {}
   let v = "?"; try { v = (chrome.runtime.getManifest() || {}).version || "?"; } catch (e) {}
   bar.textContent = [
     "Bridge " + _dot(bridge),
     "Webull " + (paper ? "PAPER ✅" : (paperKeys ? "paper ⛔" : "—")),
     "AI " + (ai ? "✅" : "off"),
-    "Voice " + (voiceN ? (voiceN + " 🎙") : "off"),
+    "Voice " + (voiceN ? (voiceN + " 🎙") : (dgKey ? "✅" : "off")),
     "v" + v
   ].join("  ·  ");
   // A short "what to do next" checklist — only the steps not done yet, in
@@ -228,7 +240,7 @@ async function paintStatus() {
     if (!paperKeys) steps.push("② Paper trading — add your Webull SANDBOX key in the Keys tab.");
     else if (!paper) steps.push("② Sandbox key saved but not connected — hit Update, or reconnect it.");
     if (!ai) steps.push("③ Smarter reads (optional) — add your Claude key in the Keys tab.");
-    if (!voiceN) steps.push("④ Voice rooms (optional) — add your Deepgram key in the Keys tab.");
+    if (!dgKey) steps.push("④ Voice rooms (optional) — add your Deepgram key in the Keys tab.");
   }
   fix.innerHTML = steps.length
     ? "<b style='color:#e6edf6'>Set up:</b><br>" + steps.join("<br>")
@@ -297,13 +309,17 @@ $("paperbtn").onclick = async () => {
   paintPaper();
 };
 
-$("simreal").onclick = async () => {
+// The "Honest fills" toggle was a knob on the OLD in-house simulator, which is
+// off now (Webull paper gives real fills). The button is gone from the UI;
+// guard the handler so its absence can't throw at popup load.
+if ($("simreal")) $("simreal").onclick = async () => {
   simRealistic = !simRealistic;
   paintSimQuick();
   await saveSim();
 };
 function paintSimQuick() {
   const btn = $("simreal");
+  if (!btn) return;            // toggle removed from the UI
   btn.textContent = simRealistic ? "ON" : "off";
   btn.className = "tgl " + (simRealistic ? "live" : "safe");
 }
@@ -576,6 +592,19 @@ function contractStr(r) {
 /* The rooms and their toggle rows. Every room starts (and stays) TESTING
  * until HE flips it — LIVE is a per-room decision on top of the big REAL
  * switch, never instead of it. */
+// The real Discord/Whop names the reader captured on the page (channelId ->
+// name), loaded from storage each time the popup renders. These WIN over the
+// hand-typed ROOM_NAMES below — those are only a fallback for a room that
+// hasn't been opened in a tab yet, so its real name hasn't been seen.
+let CAP_NAMES = {};
+async function loadCapNames() {
+  try { CAP_NAMES = (await chrome.storage.local.get("chan_names")).chan_names || {}; }
+  catch (e) { CAP_NAMES = {}; }
+}
+function chanLabel(id) {
+  const k = String(id || "");
+  return CAP_NAMES[k] || ROOM_NAMES[k] || k || "this room";
+}
 const ROOM_NAMES = { "829754942817828884": "Honeydrip daytrades",
                      "987515353670221834": "Aristotle",
                      "1144369893760831489": "Midas",
@@ -671,7 +700,7 @@ function renderRoomStats(wallet, dayTable) {
         ? " &nbsp;·&nbsp; all time " + a.w + "-" + a.l + " " + money(a.pl) +
           " (" + a.days + "d)"
         : "";
-      return '<div class="trow"><b>' + n + "</b>" +
+      return '<div class="trow"><b>' + chanLabel(n) + "</b>" +
         '<span class="sub">' + today + ever + "</span></div>";
     }).join("");
 }
@@ -684,7 +713,7 @@ function renderRoomToggles(channelLive) {
     // ONE button, one click, flips and saves instantly. No dropdown, no
     // confirm, no Save step — his word. Red is reserved for real money.
     return '<div class="row" style="margin-bottom:4px">' +
-           '<span class="grow" style="font-size:12px">' + ROOM_NAMES[id] +
+           '<span class="grow" style="font-size:12px">' + chanLabel(id) +
            '</span><span style="font-size:11px;letter-spacing:.04em;width:52px;' +
            'text-align:right;color:' + (live ? "#f87171" : "#7d8697") + '">' +
            (live ? "LIVE" : "testing") + '</span>' +
@@ -783,19 +812,19 @@ async function loadDays() {
 
 async function render() {
   const s = await getSettings();
+  await loadCapNames();     // real room names the reader has seen, freshest first
   const { guardState: gs, log, wallet, day_table } =
     await chrome.storage.local.get(["guardState", "log", "wallet",
                                     "day_table"]);
 
-  // The big word is what it IS right now. The small line is what a click does.
-  // Getting those two the wrong way round is how somebody turns a bot on while
-  // trying to turn it off.
+  // The big word is what it IS right now. His call: drop the "click to turn it
+  // off/on" sub-line — the button state speaks for itself.
   const arm = $("arm");
   if (s.armed) {
-    arm.innerHTML = "ON<small>click to turn it off</small>";
+    arm.innerHTML = "ON";
     arm.className = "grow armed big";
   } else {
-    arm.innerHTML = "OFF<small>click to turn it on</small>";
+    arm.innerHTML = "OFF";
     arm.className = "grow safe big";
   }
 
@@ -1148,24 +1177,38 @@ function nextTradingDay() {
 }
 $("testtrade").onclick = async () => {
   const btn = $("testtrade");
-  const tk = ((($("testticker") || {}).value || "SPY").trim() || "SPY").toUpperCase();
+  const type = (($("testtype") || {}).value || "C");
+  const isFut = (type === "LONG" || type === "SHORT");
+  // Futures use a futures symbol (MNQ, MES, ES, NQ...) and no strike/expiry.
+  // If the box still has the options default "SPY", stand in a real micro so
+  // the test actually parses as a future.
+  let tk = ((($("testticker") || {}).value || "").trim()).toUpperCase();
+  if (isFut && (!tk || tk === "SPY")) tk = "MNQ";
+  if (!tk) tk = "SPY";
   const strike = ((($("teststrike") || {}).value || "800").trim() || "800");
-  const cp = (($("testtype") || {}).value === "P") ? "P" : "C";
+  const cp = (type === "P") ? "P" : "C";
   const exp = ((($("testexp") || {}).value || "").trim()) || nextTradingDay();
-  // A normal PAPER trading room id, so the message flows through the ordinary
-  // (non-whop, non-shadow) path. postedAt = now so it's never treated as
-  // history. A fresh mid each run so the one-message-one-pass dedupe lets you
-  // re-test.
+  // A PAPER room id that's always in the listened list, so the channel gate
+  // never blocks the test. The parser reads a future from the text itself
+  // ("MNQ | LONG HERE"), so the room doesn't need to be a "futures" room.
+  // postedAt = now so it's never history; a fresh mid each run for re-tests.
   const room = "829754942817828884";
   const base = Date.now();
-  const steps = [
+  // Futures speak the room's own syntax: "MNQ | LONG HERE" is the entry the
+  // parser reads as a futures OPEN with a direction; trims/closes are the same
+  // shape as options. Options keep the "in TICKER EXP STRIKEC" entry.
+  const steps = isFut ? [
+    { text: tk + " | " + type + " HERE",  label: "① entry" },
+    { text: "trimming " + tk + " @ 25%",  label: "② trim"  },
+    { text: "all out of " + tk,           label: "③ exit"  }
+  ] : [
     { text: "in " + tk + " " + exp + " " + strike + cp, label: "① entry" },
     { text: "trimming " + tk + " @ 25%",                 label: "② trim"  },
     { text: "all out of " + tk,                          label: "③ exit"  }
   ];
   const fire = (text, i) => chrome.runtime.sendMessage({
     type: "MESSAGE", mid: "test-" + base + "-" + i, text, full: text,
-    author: "🧪 TEST", channelId: room, postedAt: Date.now(),
+    author: "🧪 TEST", channelId: room, postedAt: Date.now(), test: true,
     history: false, reply: false, url: "https://discord.com/channels/test/" + room
   }).catch(() => {});
 

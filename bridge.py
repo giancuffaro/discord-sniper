@@ -1005,6 +1005,7 @@ def place(order):
 
 
 _BP = {"t": 0.0, "v": None}
+_FBP = {"t": 0.0, "v": None}
 
 
 def real_buying_power():
@@ -1021,6 +1022,22 @@ def real_buying_power():
     except Exception:                                   # noqa: BLE001
         v = None
     _BP["t"], _BP["v"] = now, v
+    return v
+
+
+def real_futures_buying_power():
+    """The FUTURES account's buying power, or None. Same 30s cache idea, so the
+    popup can show margin and futures side by side without hammering Webull."""
+    if WB is None:
+        return None
+    now = time.time()
+    if now - _FBP["t"] < 30:
+        return _FBP["v"]
+    try:
+        v = WB.futures_buying_power() if hasattr(WB, "futures_buying_power") else None
+    except Exception:                                   # noqa: BLE001
+        v = None
+    _FBP["t"], _FBP["v"] = now, v
     return v
 
 
@@ -1083,6 +1100,7 @@ class Handler(BaseHTTPRequestHandler):
                 # seconds and the broker doesn't need to hear from us that
                 # often. None whenever there's nothing honest to say.
                 "buying_power": real_buying_power(),
+                "futures_buying_power": real_futures_buying_power(),
                 # The futures switch, so the popup can show which side it's on.
                 "futures": futures_on(),
                 "stopped": os.path.exists(os.path.join(HERE, "STOP")) or

@@ -186,35 +186,89 @@ def _place(wb, contract, side, qty, limit=None):
     import uuid
     fut_acct = getattr(wb, "futures_account_id", None) or \
         getattr(wb, "account_id", None)
-    order = {"client_order_id": uuid.uuid4().hex[:32], "symbol": contract,
-             "instrument_type": "FUTURES", "market": "US", "side": side,
-             "quantity": str(int(qty)), "qty": str(int(qty)),
-             "order_type": "LIMIT" if limit else "MARKET",
-             "time_in_force": "DAY", "entrust_type": "QTY"}
-    if fut_acct:
-        order["account_id"] = order["accountId"] = str(fut_acct)
-    if limit:
-        order["limit_price"] = order["price"] = "%.2f" % float(limit)
+    cid = uuid.uuid4().hex[:32]
+    otype = "LIMIT" if limit else "MARKET"
 
-    # Every place/submit/create-order method on the trade client and its
-    # sub-objects, each tried with the account+list signature first.
+    # Two order shapes, tried in order. The FIRST mirrors the OPTIONS order this
+    # SDK already accepts every day — a combo/legs envelope sent through
+    # order_v3.place_order(account_id, [order]). If futures ride the same
+    # endpoint (they share the trade client), this is the one that takes. The
+    # SECOND is the flat place_order_v2 dict, kept as a fallback.
+    leg = {"side": side, "quantity": str(int(qty)), "symbol": contract,
+           "instrument_type": "FUTURES", "market": "US"}
+    combo = {"client_order_id": cid, "combo_type": "NORMAL",
+             "order_type": otype, "quantity": str(int(qty)), "side": side,
+             "time_in_force": "DAY", "entrust_type": "QTY",
+             "instrument_type": "FUTURES", "market": "US", "symbol": contract,
+             "legs": [leg]}
+    flat = {"client_order_id": cid, "symbol": contract,
+            "instrument_type": "FUTURES", "market": "US", "side": side,
+            "quantity": str(int(qty)), "qty": str(int(qty)),
+            "order_type": otype, "time_in_force": "DAY", "entrust_type": "QTY"}
+    if fut_acct:
+        flat["account_id"] = flat["accountId"] = str(fut_acct)
+        combo["account_id"] = str(fut_acct)
+    if limit:
+        px = "%.2f" % float(limit)
+        for d in (combo, leg, flat):
+            d["limit_price"] = px
+        flat["price"] = px
+
+    # Prefer the exact method+signature options uses, then broaden. Each attempt
+    # captures Webull's REAL response body on rejection (not just the status) so
+    # a supervised first trade tells us precisely which field it dislikes.
     tr = getattr(wb, "trade", None)
+    errors = []
+
+    def _run(fn, mname, *args):
+        try:
+            res = fn(*args)
+        except TypeError:
+            return None                                 # wrong signature, skip
+        except Exception as e:                          # noqa: BLE001
+            errors.append("%s: %s" % (mname, str(e)[:70]))
+            return None
+        code = getattr(res, "status_code", 200)
+        try:
+            body = res.json() if hasattr(res, "json") else res
+        except Exception:                               # noqa: BLE001
+            body = {}
+        if code != 200:
+            # The body is where Webull says WHY — keep it, that's the whole point.
+            errors.append("%s: HTTP %s %s" % (mname, code, str(body)[:150]))
+            return None
+        oid = _order_id_of(body)
+        # A 200 with an error message inside is still a rejection.
+        if not oid and isinstance(body, dict) and (body.get("code") or body.get("msg")):
+            errors.append("%s: %s" % (mname, str(body)[:150]))
+            return None
+        return oid or "unknown"
+
+    # 1) The proven options path first: order_v3.place_order(account, [combo]).
+    ov3 = getattr(tr, "order_v3", None) if tr is not None else None
+    if ov3 is not None and hasattr(ov3, "place_order"):
+        got = _run(ov3.place_order, "order_v3.place_order", fut_acct, [combo])
+        if got:
+            return got
+
+    # 2) Broad probe: every place/submit/create-order method, options-style
+    # (account, [combo]) first, then the flat place_order_v2 dict shapes.
     holders = []
     if tr is not None:
-        holders.append(tr)
+        holders.append(("trade", tr))
         for a in dir(tr):
             if a.startswith("_"):
                 continue
             low = a.lower()
             if "order" in low or "futur" in low or "trade" in low:
                 try:
-                    holders.append(getattr(tr, a))
+                    holders.append((a, getattr(tr, a)))
                 except Exception:                       # noqa: BLE001
                     pass
-    shapes = [(fut_acct, [order]), (fut_acct, order), ([order],), (order,)] \
-        if fut_acct else [([order],), (order,)]
-    errors = []
-    for h in holders:
+    shapes = [(fut_acct, [combo]), (fut_acct, combo), (fut_acct, flat),
+              ([combo],), (combo,), (flat,)] if fut_acct else \
+             [([combo],), (combo,), (flat,)]
+    for hname, h in holders:
         for m in dir(h):
             low = m.lower()
             if m.startswith("_"):
@@ -226,18 +280,9 @@ def _place(wb, contract, side, qty, limit=None):
             if not callable(fn):
                 continue
             for args in shapes:
-                try:
-                    res = fn(*args)
-                except TypeError:
-                    continue
-                except Exception as e:                  # noqa: BLE001
-                    errors.append("%s: %s" % (m, str(e)[:60]))
-                    continue
-                if getattr(res, "status_code", 200) != 200:
-                    errors.append("%s: HTTP %s" % (m, getattr(res, "status_code", "?")))
-                    continue
-                body = res.json() if hasattr(res, "json") else res
-                return _order_id_of(body) or "unknown"
+                got = _run(fn, "%s.%s" % (hname, m), *args)
+                if got:
+                    return got
     raise FuturesRefused(
         "Webull wouldn't take the futures order the ways I know how to send one "
         "(%s). Nothing went out — the first live futures trade is a supervised "

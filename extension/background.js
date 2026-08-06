@@ -272,7 +272,35 @@ async function setRunning(v) {
   if (v) await chrome.storage.local.set({ grabRunning: v });
   else await chrome.storage.local.remove("grabRunning");
 }
-function roomName(channelId) { return (channelId && ROOM_LABELS[channelId]) || "this room"; }
+// The REAL Discord/Whop names, as the reader saw them on the page. This is the
+// source of truth for a room's label now — the hand-typed ROOM_LABELS above are
+// only a fallback for a room you haven't opened yet this session. Loaded once
+// on startup, updated whenever a tab reports a name, persisted so the popup and
+// the logs keep the real name even after a restart.
+let CHAN_NAMES = {};
+(async () => {
+  try { CHAN_NAMES = (await chrome.storage.local.get("chan_names")).chan_names || {}; }
+  catch (e) { /* storage not ready; fills in as messages arrive */ }
+})();
+let _chanSaveTimer = null;
+function noteChannelName(channelId, name) {
+  const id = String(channelId || "");
+  const nm = String(name || "").trim();
+  if (!id || !nm || nm.length > 80) return;
+  if (CHAN_NAMES[id] === nm) return;
+  CHAN_NAMES[id] = nm;
+  // Debounced write — a burst of messages shouldn't be a burst of disk writes.
+  if (_chanSaveTimer) return;
+  _chanSaveTimer = setTimeout(() => {
+    _chanSaveTimer = null;
+    try { chrome.storage.local.set({ chan_names: CHAN_NAMES }); } catch (e) {}
+  }, 2000);
+}
+// Real captured name wins; the hand label is the fallback; then a bare id.
+function roomName(channelId) {
+  const id = String(channelId || "");
+  return (id && (CHAN_NAMES[id] || ROOM_LABELS[id])) || "this room";
+}
 
 async function enqueueGrab(tab) {
   if (!tab || !/discord\.com\/channels\//.test(tab.url || "")) {
@@ -1112,7 +1140,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
-  if (msg.type === "ATTACHED") { badge(); reply({ ok: true }); return; }
+  if (msg.type === "ATTACHED") { noteChannelName(msg.channelId, msg.channelName); badge(); reply({ ok: true }); return; }
   // ---- VOICE LISTENER control + transcripts ----
   if (msg && msg.from === "offscreen") { handleOffscreen(msg); reply({ ok: true }); return; }
   if (msg && msg.type === "EXPORT_NOW") { autoExportForLearning().then(() => reply({ ok: true })).catch(() => reply({ ok: false })); return true; }
@@ -1178,6 +1206,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 
   (async () => {
     const c = await cfg();
+    noteChannelName(msg.channelId, msg.channelName);   // learn the room's real name
     if (sender && sender.tab && String(msg.platform || "") === "whop") {
       whopTabSeen[sender.tab.id] = Date.now();   // this tab is alive
     }

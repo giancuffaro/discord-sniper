@@ -36,6 +36,22 @@ function roomId() {
   return "whop:" + location.pathname.replace(/\/+$/, "");
 }
 
+// The room's real name the way Whop shows it, for the popup's channel list.
+// Whop has no stable ids, so this is best-effort: the page title first (Whop
+// puts the room/app name there), then any visible heading. Empty is fine —
+// the next message re-reports it once the page has painted.
+function roomName() {
+  try {
+    let t = (document.title || "").split(" | ")[0].split(" - ")[0].trim();
+    if (t && !/^whop$/i.test(t)) return t;
+  } catch (e) {}
+  try {
+    const h = document.querySelector("h1, h2, [class*='title']");
+    if (h && h.textContent.trim()) return h.textContent.trim().slice(0, 60);
+  } catch (e) {}
+  return "";
+}
+
 function clean(s) {
   return String(s || "").replace(/\s+/g, " ").trim();
 }
@@ -125,6 +141,7 @@ function handle(el) {
       text,
       author: lastAuthor,
       channelId: roomId(),
+      channelName: roomName(),
       postedAt: at,
       // The first 15 seconds after a (re)load are the page painting what
       // already happened. Whop doesn't always stamp messages with a time,

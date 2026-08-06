@@ -35,6 +35,27 @@ function channelId() {
   return m ? m[1] : "";
 }
 
+// The room's REAL name, the way Discord shows it, so the popup can label each
+// channel with what it actually is instead of a hand-typed placeholder. Two
+// honest sources: the channel header Discord paints at the top of the message
+// pane, and the page title. Whichever gives a clean name wins; empty if the
+// page hasn't painted yet (the next message will carry it).
+function channelName() {
+  // 1) The header title beside the # — Discord keeps a stable "title" hook here.
+  try {
+    const h = document.querySelector('[class*="title"] h1, section[aria-label] h1, h1[class*="title"]');
+    if (h && h.textContent.trim()) return h.textContent.trim().replace(/^#+\s*/, "");
+  } catch (e) {}
+  // 2) The tab title: "(3) #signals | Server Name" -> "signals".
+  try {
+    let t = (document.title || "").replace(/^\(\d+\)\s*/, "");   // drop unread count
+    t = t.split(" | ")[0].trim();                                // drop server name
+    t = t.replace(/^[#﹟＃\s]+/, "").trim();                       // drop leading #
+    if (t && !/^discord$/i.test(t)) return t;
+  } catch (e) {}
+  return "";
+}
+
 function authorOf(li) {
   const own = li.querySelector('[id^="message-username-"] [class*="username"]')
            || li.querySelector('[class*="username"]');
@@ -119,6 +140,7 @@ function handle(li) {
       full: fullTextOf(li),   // everything in the row — for the grabber's export
       author: authorOf(li),
       channelId: channelId(),
+      channelName: channelName(),
       postedAt,
       history,
       reply: isReply,
@@ -151,7 +173,8 @@ function attach() {
   watching = list;
   observer = new MutationObserver(onMutations);
   observer.observe(list, { childList: true, subtree: true });
-  chrome.runtime.sendMessage({ type: "ATTACHED", channelId: channelId() })
+  chrome.runtime.sendMessage({ type: "ATTACHED", channelId: channelId(),
+                               channelName: channelName() })
     .catch(() => {});
 }
 
