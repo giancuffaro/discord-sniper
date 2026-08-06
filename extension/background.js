@@ -1049,7 +1049,10 @@ async function autoExportForLearning() {
   const url = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
   try {
     await chrome.downloads.download({
-      url, filename: "discord-sniper-logs/signal-room-chat " + fileDay + ".txt",
+      // Saved into Chrome's download folder directly — NO subfolder — so when
+      // he points Chrome at "G:\My Drive\discord sniper logs" the file lands
+      // right there and syncs to Drive, instead of nesting a level deeper.
+      url, filename: "signal-room-chat " + fileDay + ".txt",
       conflictAction: "overwrite", saveAs: false
     });
     try { await chrome.storage.local.set({ last_export: Date.now() }); } catch (e) {}
