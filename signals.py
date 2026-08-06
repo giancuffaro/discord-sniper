@@ -687,6 +687,50 @@ def _bare_symbol(text, allowed):
     return None
 
 
+# Cash-settled index options can't be traded on Webull, but their ETF proxy is
+# the same directional bet at 1/10 the strike (SPX 7770 ≈ SPY 777). Rather than
+# refuse Sir Goldman's SPX calls, retarget them to the tradeable ETF. The index
+# premium doesn't carry over, so the limit is cleared and the ETF's own market
+# prices the entry.
+INDEX_ETF = {"SPX": ("SPY", 10.0), "SPXW": ("SPY", 10.0), "XSP": ("SPY", 1.0),
+             "RUT": ("IWM", 10.0), "RUTW": ("IWM", 10.0)}
+
+
+def _index_to_etf(s):
+    if s is None:
+        return
+    sym = str(getattr(s, "symbol", "") or "").upper()
+    m = INDEX_ETF.get(sym)
+    if not m:
+        return
+    # Retarget an actual order — an option entry OR an exit (trim/close) on the
+    # index, so the exit matches the SPY position the entry became. A bare index
+    # mention in chatter (no action, no strike) is left alone.
+    has_action = getattr(s, "action", None) in ("OPEN", "ADD", "TRIM", "CLOSE")
+    is_opt = (getattr(s, "side", None) in ("CALLS", "PUTS")
+              or getattr(s, "strike", None) is not None)
+    if not (has_action or is_opt):
+        return
+    etf, ratio = m
+    if getattr(s, "strike", None) is not None:
+        try:
+            # round-half-UP to match JS Math.round exactly (strikes are positive),
+            # so signals.py and parser.js never disagree on 756.5-style cases.
+            s.strike = float(int(float(s.strike) / ratio + 0.5))   # 7770 -> 777
+        except (TypeError, ValueError):
+            return
+    s.symbol = etf
+    s.limit = None                # index premium ≠ ETF premium; bid the ETF market
+    try:
+        s.why = ("%s isn't tradeable on Webull — following it as %s %s%s instead"
+                 % (sym, etf,
+                    ("%g" % s.strike) if getattr(s, "strike", None) is not None else "",
+                    ("C" if getattr(s, "side", "") == "CALLS" else
+                     "P" if getattr(s, "side", "") == "PUTS" else "")))
+    except Exception:                                       # noqa: BLE001
+        pass
+
+
 def parse(text, author="", channel="", cfg=None):
     """The reader, wrapped in the last set of no-matter-what checks. The
     inner function stays exactly the battle-tested paths; this wrapper only
@@ -700,6 +744,7 @@ def parse(text, author="", channel="", cfg=None):
       - dot-tickers: "$BRK.B 480c" parsed as ticker B — a real company,
         the wrong one."""
     s = _parse_inner(text, author=author, channel=channel, cfg=cfg)
+    _index_to_etf(s)
     if s.action != "OPEN" or s.kind == "future":
         return s
     low = (s.clean or "").lower()

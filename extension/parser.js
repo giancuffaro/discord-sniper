@@ -433,8 +433,35 @@ function signalKey(s) {
  * function stays exactly the battle-tested paths; this wrapper only gets to
  * turn a would-be OPEN into a loud refusal, never to create one. Mirrors
  * signals.py word for word — test_parity holds the two together. */
+// Cash-settled index options can't trade on Webull, but their ETF proxy is the
+// same directional bet at 1/10 the strike (SPX 7770 ≈ SPY 777). Retarget them so
+// the room's SPX call becomes a tradeable SPY one. Mirrors signals.py.
+const INDEX_ETF = { SPX: ["SPY", 10], SPXW: ["SPY", 10], XSP: ["SPY", 1],
+                    RUT: ["IWM", 10], RUTW: ["IWM", 10] };
+function indexToEtf(s) {
+  if (!s || !s.symbol) return;
+  const m = INDEX_ETF[String(s.symbol).toUpperCase()];
+  if (!m) return;
+  const hasAction = s.action === "OPEN" || s.action === "ADD" ||
+                    s.action === "TRIM" || s.action === "CLOSE";
+  const isOpt = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
+  if (!hasAction && !isOpt) return;
+  const etf = m[0], ratio = m[1];
+  if (s.strike !== null && s.strike !== undefined) {
+    const k = parseFloat(s.strike);
+    if (!isNaN(k)) s.strike = Math.round(k / ratio);   // 7770 -> 777
+  }
+  const was = String(s.symbol).toUpperCase();
+  s.symbol = etf;
+  s.limit = null;                 // index premium ≠ ETF premium; bid the ETF market
+  s.why = was + " isn't tradeable on Webull — following it as " + etf +
+          (s.strike != null ? " " + s.strike : "") +
+          (s.side === "CALLS" ? "C" : s.side === "PUTS" ? "P" : "") + " instead";
+}
+
 function parseSignal(text, cfg) {
   const s = parseSignalInner(text, cfg);
+  indexToEtf(s);
   if (s.action !== "OPEN" || s.kind === "future") return s;
   const low = (s.clean || "").toLowerCase();
   const isOption = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
