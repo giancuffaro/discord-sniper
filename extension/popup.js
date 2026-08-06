@@ -1051,8 +1051,15 @@ async function render() {
              b.pl_pct.toFixed(0) + "%)" : "") + "</span>";
       }
       const x = '<button class="posx" data-flat="' + encodeURIComponent(sym) +
+                '" data-flatlive="' + (b.live ? "1" : "0") +
                 '" title="Close this at Webull now">✕</button>';
-      rows.push('<div class="posrow"><span class="grow"><span class="in">IN</span> <b>' +
+      // LIVE (real money) vs PAPER (sandbox) — so a sandbox MSFT is never
+      // mistaken for a real one. b.live comes tagged from the bridge.
+      const tag = b.live
+        ? '<span style="color:#f87171;font-size:10px;font-weight:700">LIVE</span> '
+        : '<span style="color:#7d8697;font-size:10px;font-weight:700">PAPER</span> ';
+      rows.push('<div class="posrow"><span class="grow">' + tag +
+        '<span class="in">IN</span> <b>' +
         contract + '</b> <b>x' + n + "</b>" + paid + now + plTxt +
         "</span>" + x + "</div>");
     }
@@ -1077,7 +1084,8 @@ async function render() {
       btn.onclick = async () => {
         btn.disabled = true; btn.textContent = "…";
         const sym = decodeURIComponent(btn.dataset.flat);
-        try { await askBridge("/flatten", { symbol: sym }); } catch (e) {}
+        const live = btn.dataset.flatlive === "1";
+        try { await askBridge("/flatten", { symbol: sym, live: live }); } catch (e) {}
         setTimeout(render, 1000);
       };
     });

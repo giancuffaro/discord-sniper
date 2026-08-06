@@ -1114,21 +1114,30 @@ _POS = {"t": 0.0, "v": []}
 
 
 def broker_positions():
-    """The account's REAL open positions from Webull, cached ~8s so the popup
-    can poll every few seconds without hammering the broker. Empty list when
-    there's no connection or nothing honest to report — the popup then falls
-    back to its own view. This is what lets the popup mirror Webull."""
+    """The REAL open positions from Webull — BOTH accounts, each tagged live vs
+    paper, so the popup shows a live MSFT and a sandbox MSFT for what they are
+    instead of one confusing blob. Cached ~8s so a 4s poll doesn't hammer the
+    broker. Empty list when there's no connection."""
     if WB is None:
         return []
     now = time.time()
     if now - _POS["t"] < 8:
         return _POS["v"]
-    try:
-        v = WB.positions() if hasattr(WB, "positions") else []
-    except Exception:                                   # noqa: BLE001
-        v = []
-    _POS["t"], _POS["v"] = now, v if isinstance(v, list) else []
-    return _POS["v"]
+    rows = []
+    seen = set()
+    for wb, is_live in ((WB_LIVE, True), (WB_PAPER, False)):
+        if wb is None or id(wb) in seen or not hasattr(wb, "positions"):
+            continue
+        seen.add(id(wb))
+        try:
+            for p in (wb.positions() or []):
+                d = dict(p)
+                d["live"] = is_live          # which Webull account it's in
+                rows.append(d)
+        except Exception:                               # noqa: BLE001
+            pass
+    _POS["t"], _POS["v"] = now, rows
+    return rows
 
 
 def real_buying_power():
@@ -1246,7 +1255,10 @@ class Handler(BaseHTTPRequestHandler):
         sym = str(body.get("symbol") or "").upper()
         if not sym:
             return self._json(400, {"ok": False, "message": "no symbol"})
-        wb = WB_LIVE or WB
+        # Close on the SAME account it lives in — a paper ✕ must not fire a real
+        # order, and a live ✕ must not hit the sandbox. Falls back sensibly.
+        want_live = bool(body.get("live"))
+        wb = (WB_LIVE if want_live else WB_PAPER) or WB
         if wb is None or not hasattr(wb, "flatten"):
             return self._json(200, {"ok": False,
                 "message": "no Webull connection to close it — do it in the app."})
