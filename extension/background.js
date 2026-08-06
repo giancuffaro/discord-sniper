@@ -1059,8 +1059,61 @@ async function autoExportForLearning() {
     stamp(e.t) + "  <" + (e.kind || "?") + ">  " +
     (e.what ? e.what + " — " : "") + String(e.why || "").replace(/\s+/g, " ").trim() +
     (e.text ? "  |  " + (e.author || "") + ": " + String(e.text).replace(/\s+/g, " ").trim() : ""));
+
+  // The whole popup state, so a remote read of this file sees exactly what's on
+  // and off without reaching the PC: connections, keys, toggles, LIVE rooms, and
+  // every active position on both accounts. This is what makes "poll what's on
+  // the popup" possible from the log alone.
+  let state = "";
+  try {
+    const c = await cfg();
+    const base = bridgeBaseFrom(c.bridge_url);
+    let mode = null, posData = null, dg = "";
+    try { mode = await (await fetch(base + "/mode", { cache: "no-store" })).json(); } catch (e) {}
+    try { posData = await (await fetch(base + "/positions", { cache: "no-store" })).json(); } catch (e) {}
+    try { dg = (await chrome.storage.local.get("deepgram_key")).deepgram_key || ""; } catch (e) {}
+    let ver = "?"; try { ver = (chrome.runtime.getManifest() || {}).version || "?"; } catch (e) {}
+    const fb = (mode && mode.futures_brokers) || {};
+    const strat = (mode && mode.strategy) || {};
+    const liveRooms = Object.keys((c.channel_live) || {})
+      .map(id => roomName(id) || id);
+    const posLines = ((posData && posData.positions) || []).map(p => {
+      const contract = [String(p.symbol || "").toUpperCase(), p.expiry || "",
+        (p.strike != null ? p.strike : "") +
+        (p.side === "PUTS" ? "P" : p.side === "CALLS" ? "C" : "")]
+        .filter(Boolean).join(" ");
+      const plp = (p.pl != null) ? " " + (p.pl >= 0 ? "+$" : "-$") + Math.abs(p.pl).toFixed(0) +
+        (p.pl_pct != null ? " (" + (p.pl_pct >= 0 ? "+" : "") + p.pl_pct.toFixed(0) + "%)" : "") : "";
+      return "    [" + (p.live ? "LIVE " : "PAPER") + "] " + contract + " x" + (p.qty || 1) +
+        (p.fill != null ? " paid " + Number(p.fill).toFixed(2) : "") +
+        (p.last != null ? " now " + Number(p.last).toFixed(2) : "") + plp;
+    });
+    const onoff = b => b ? "ON" : "off";
+    state =
+      "=== CURRENT STATE (as of " + stamp(Date.now()) + " ET) ===\n" +
+      "  version:        v" + ver + "\n" +
+      "  bot armed:      " + onoff(c.armed !== false && !c.stopped) + "\n" +
+      "  bridge:         " + (mode ? "connected" : "NOT REACHABLE") + "\n" +
+      "  webull:         " + (mode ? ("live keys " + onoff(mode.has_keys && mode.connected) +
+        ", paper " + (mode.paper ? "ON" : "off") +
+        ", paper keys " + onoff(mode.paper_keys_in)) : "unknown") + "\n" +
+      "  margin BP:      " + (mode && mode.buying_power != null ? "$" + Math.round(mode.buying_power).toLocaleString() : "—") + "\n" +
+      "  futures BP:     " + (mode && mode.futures_buying_power != null ? "$" + Math.round(mode.futures_buying_power).toLocaleString() : "—") + "\n" +
+      "  futures from:   webull " + onoff(fb.webull) +
+        ", ninjatrader " + onoff((fb.ninjatrader || {}).enabled) +
+        ", tradovate " + onoff((fb.tradovate || {}).enabled) + "\n" +
+      "  bracket strat:  " + onoff(strat.enabled) +
+        (strat.enabled ? " (+" + (strat.take_profit_pct || 15) + "% / -" + (strat.stop_loss_pct || 15) + "%, 1 contract)" : "") + "\n" +
+      "  AI reader:      " + onoff(mode && mode.ai_enabled) + "\n" +
+      "  voice key:      " + onoff(dg) + "\n" +
+      "  LIVE rooms:     " + (liveRooms.length ? liveRooms.join(", ") : "none (all testing)") + "\n" +
+      "  open positions (" + ((posData && posData.positions) || []).length + "):\n" +
+      (posLines.length ? posLines.join("\n") : "    (none)") + "\n\n";
+  } catch (e) { state = ""; }
+
   const text =
     "Discord Sniper — self-learning export (" + day + ", refreshed " + stamp(Date.now()) + " ET)\n\n" +
+    state +
     "=== RAW MESSAGES THE READER SAW (" + caps.length + ") ===\n" + caps.join("\n") +
     "\n\n=== WHAT THE BOT DID (" + acts.length + ") ===\n" + acts.join("\n") + "\n";
   const url = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
