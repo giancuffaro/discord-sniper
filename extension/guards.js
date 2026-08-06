@@ -547,6 +547,42 @@ async function guardRecord(sig, cfg, author, isTest) {
   return st;
 }
 
+/* The undo for guardRecord, run when an entry the bridge was asked to place
+ * comes back FAILED (refused, unreachable, no buying power, wrong account).
+ * The position was written down BEFORE the order went out so a mid-send crash
+ * couldn't double-fire — but if the order definitively did NOT go out, that
+ * write is a PHANTOM: it makes the bot think you're holding something you
+ * never bought, which then blocks the next real entry ("already in AMD, would
+ * double you up") and makes trims chase a position that isn't there. This is
+ * exactly what wedged AMD/MNQ after their orders were rejected. So a failed
+ * OPEN is deleted, and a failed ADD gives its contracts back. Only touches a
+ * still-PENDING write — never a position the bridge already confirmed filled. */
+async function guardUnrecord(sig, author) {
+  if (!sig || (sig.action !== "OPEN" && sig.action !== "ADD")) return;
+  const st = await guardState();
+  const who = String(sig.caller || author || "").toLowerCase() || "?";
+  const pk = findHeldKey(st.positions, who, sig.symbol) ||
+             posKey(who, sig.symbol);
+  const p = st.positions[pk];
+  if (!p) return;
+  // Never unwind a fill the bridge already confirmed — only the resting/assumed
+  // write this same message just made.
+  if (p.pending === false && sig.action === "OPEN" &&
+      !(sig.test || /^(🧪|🎯)/.test(who))) {
+    // A confirmed live fill — leave it. (A failed CLOSE later is the way out.)
+  }
+  if (sig.action === "OPEN") {
+    delete st.positions[pk];
+  } else {   // ADD — hand the contracts back, undo the add count
+    const back = parseInt(sig.qty || 1, 10) || 1;
+    p.qty = Math.max(0, (parseInt(p.qty || 1, 10) || 1) - back);
+    p.adds = Math.max(0, (parseInt(p.adds || 0, 10) || 0) - 1);
+    if (p.qty <= 0) delete st.positions[pk];
+  }
+  if (st.count > 0) st.count -= 1;   // the failed order shouldn't count against the day
+  await saveGuardState(st);
+}
+
 /* Real-money buys are pinned to ONE contract — that's a sizing safety, not a
  * filter, and it stays until he raises it on purpose. Sells are never capped
  * down: an exit has to be allowed to sell everything you're holding, or

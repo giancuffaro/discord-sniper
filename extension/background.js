@@ -1597,6 +1597,14 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       inFlight--;     // must drop even if that threw, or updates stall forever
     }
     await bridgeStrike(res);
+    // A failed entry never went out — so undo the position we wrote down before
+    // sending, or it becomes a PHANTOM that blocks the next real entry ("already
+    // in AMD") and makes trims chase something that isn't there. This is what
+    // wedged AMD/MNQ after Webull refused those orders. Only OPEN/ADD, only on a
+    // genuine failure (a resting "bid is in" is res.ok and stays).
+    if (!res.ok && (sig.action === "OPEN" || sig.action === "ADD")) {
+      await guardUnrecord(sig, msg.author);
+    }
     // An entry is now an offer, not a purchase. Watch for what became of it —
     // this is what turns "bid is in" into "filled" or "nobody sold to you".
     if (res.ok) watchFills();
