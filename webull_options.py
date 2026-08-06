@@ -697,8 +697,21 @@ class WebullOptions:
             body = {}
         code = getattr(res, "status_code", "?")
         if code != 200:
+            blob = str(body)
+            # Webull's account-eligibility rejections read like machine codes.
+            # Translate the common one into what to actually DO, since no retry
+            # or code change can place an order the account isn't approved for.
+            if ("OPTION_STRATEGY_NOT_MATCH_ANY" in blob
+                    or "not eligible to trade options" in blob.lower()):
+                raise Refused(
+                    "Webull won't let this account trade options yet — the order "
+                    "was read and priced correctly, but your Webull account isn't "
+                    "approved for options trading. Open the Webull app -> your "
+                    "account -> apply for/enable OPTIONS trading (you need the "
+                    "level that allows buying calls & puts), then retry. Nothing "
+                    "was sent. (%s)" % blob[:120])
             raise Refused("Webull rejected %s (HTTP %s): %s"
-                          % (what, code, str(body)[:180]))
+                          % (what, code, blob[:180]))
         return body if isinstance(body, (dict, list)) else {}
 
     # -- knowing what happened to an order ------------------------------------
