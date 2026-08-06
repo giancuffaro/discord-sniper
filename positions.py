@@ -145,6 +145,12 @@ class Book:
         self.auto_be_on = False         # sell a slice at +N%, stop to breakeven
         self.auto_be_pct = 10.0
         self.auto_be_frac = 0.10
+        # His one-click bracket: close the WHOLE position at +take_profit_pct.
+        # Works on LIVE and paper (a real sell), unlike the sim-only tactics
+        # above. The stop side of the bracket is the resting stop (stop_pct),
+        # so setting both to 15 gives a tight +15% / -15% exit on one contract.
+        self.take_profit_on = False
+        self.take_profit_pct = 15.0
         # HIS trim ladder — run our own exit on their entry, because the
         # rooms don't always call their trims. Each rung: sell some at +at_pct
         # and (optionally) drag the stop to entry*(1+stop_to_pct/100). Keep a
@@ -838,9 +844,12 @@ class Book:
                     q = self._pos.get(key)
                     if q:
                         q["last_bid"] = float(bid)
-                # His rule runs here, on the same live bid the stop watches:
-                # secure profit at +N%, drag stop to breakeven. May move the
-                # stop under us, which the check below then respects.
+                # His rule runs here, on the same live bid the stop watches.
+                # Take-profit first: if the position is up +N% it closes ALL of
+                # it and we're done — nothing else to manage. Then the sim-only
+                # secure/ladder tactics for a paper trade that's still open.
+                if self.auto_take_profit(key, float(bid)):
+                    return
                 self.auto_breakeven(key, float(bid))
                 self.auto_ladder(key, float(bid))
                 with self._lock:
@@ -879,6 +888,50 @@ class Book:
         if p.get("kind") == "equity":
             return 0.0
         return self.fee_option * n
+
+    def auto_take_profit(self, key, bid):
+        """His one-click bracket, run by the watchdog on the live bid: the moment
+        a position is up take_profit_pct, close ALL of it. Unlike breakeven/ladder
+        this fires on LIVE too, with a real sell, because it's a real exit — the
+        whole point is to bank +15% and be flat. Returns True if it closed."""
+        if not self.take_profit_on or bid is None:
+            return False
+        with self._lock:
+            p = self._pos.get(key)
+            if not p or p.get("state") != FILLED or p.get("closing"):
+                return False
+            fill = float(p.get("fill") or 0)
+            held = int(p.get("qty") or 0)
+            dirn = int(p.get("direction") or 1)
+            if not fill or held <= 0:
+                return False
+            gain = (float(bid) - fill) * dirn / fill * 100.0
+            if gain < self.take_profit_pct:
+                return False
+            sym, side = p["symbol"], p.get("side")
+            strike, expiry = p.get("strike"), p.get("expiry")
+            wb = self._wbfor(p)
+        if not self.claim(key):
+            return False        # their exit or the stop got there first
+        self._event(key, "update",
+                    "%s — up %.0f%%, hitting your +%.0f%% take-profit. Closing "
+                    "all %d." % (sym, gain, self.take_profit_pct, held))
+        if self._sim(p):
+            self.finish(key, CLOSED,
+                        "take-profit at %.2f (+%.0f%%)" % (float(bid), gain),
+                        price=float(bid))
+            return True
+        try:
+            wb.sell(sym, side, strike, expiry, held, ref_price=float(bid))
+            self.finish(key, CLOSED,
+                        "take-profit sold at %.2f (+%.0f%%)" % (float(bid), gain),
+                        price=float(bid))
+        except Exception as e:                              # noqa: BLE001
+            self._event(key, "failed",
+                        "%s — take-profit tried to sell and couldn't: %s. Close "
+                        "it in the Webull app." % (sym, str(e)[:110]))
+            self.finish(key, FAILED, "take-profit failed to sell")
+        return True
 
     def auto_breakeven(self, key, bid):
         """His secure-the-trade rule, run by the watchdog: once a live position

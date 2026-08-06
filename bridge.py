@@ -227,6 +227,24 @@ WB_LIVE = None      # the real-money client — only a room flipped LIVE routes 
 BOOK = None         # positions.Book — what filled, what didn't, and the stops
 
 
+def _sync_stop_pct(pct):
+    """The bracket's stop % lives in THREE places that must agree: the Book
+    (watchdog + the number it prints) and each Webull executor (which is what
+    actually places the resting stop order via place_stop). Set the strategy's
+    stop and the resting Webull stop drifts to its own default unless we push
+    it onto every live executor too."""
+    try:
+        pct = float(pct)
+    except (TypeError, ValueError):
+        return
+    for _w in (WB, WB_PAPER, WB_LIVE):
+        if _w is not None:
+            try:
+                _w.stop_pct = pct
+            except Exception:                               # noqa: BLE001
+                pass
+
+
 def build_book():
     """One book per run of this program.
 
@@ -275,6 +293,18 @@ def build_book():
     BOOK.auto_be_on = _abe_on
     BOOK.auto_be_pct = _abe_pct
     BOOK.auto_be_frac = _abe_frac
+    # One-click bracket strategy — LIVE-safe: 1 contract in, close the whole
+    # position at +take_profit_pct, stop at -stop_loss_pct. Applies on top of
+    # everything else; when it's on, that's the plan.
+    _strat = (CFG.get("strategy") or {})
+    BOOK.take_profit_on = bool(_strat.get("enabled"))
+    BOOK.take_profit_pct = float(_strat.get("take_profit_pct", 15.0))
+    if _strat.get("enabled") and _strat.get("stop_loss_pct"):
+        BOOK.stop_pct = float(_strat["stop_loss_pct"])
+        _sync_stop_pct(BOOK.stop_pct)
+    if _strat.get("enabled"):
+        note("STRATEGY on: 1 contract, +%.0f%% take-profit, -%.0f%% stop"
+             % (BOOK.take_profit_pct, BOOK.stop_pct))
     if MODE != "webull":
         note("test account: unlimited. Nothing is refused for money — instead "
              "I keep the most cash that was ever tied up at once, which is the "
@@ -877,6 +907,11 @@ def place(order):
 
         from webull_options import Refused
         qty = int(order.get("qty") or 1)
+        # One-click bracket strategy forces ONE contract on every entry, no
+        # matter what the alert or the browser said. Clamped here too (not just
+        # in the extension) so real money can never size up by accident.
+        if action in ("OPEN", "ADD") and (CFG.get("strategy") or {}).get("enabled"):
+            qty = 1
         try:
             # ADD is a buy like any other — a second contract of something
             # you're already holding. The averaging decision was made upstream;
@@ -1022,6 +1057,9 @@ class Handler(BaseHTTPRequestHandler):
                                    if WB is not None else None,
                 # Prop accounts: names only, never credentials.
                 "simulation": CFG.get("simulation", {}),
+                # The one-click bracket strategy (1 contract, +15%/-15%), so the
+                # popup toggle can show its true state after a reload.
+                "strategy": CFG.get("strategy", {}),
                 "paper": paper_on(),
                 "paper_available": (WB is not None and getattr(WB, "paper", False)),
                 # Why paper isn't running, in plain words (missing sandbox key).
@@ -1400,7 +1438,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:                                   # noqa: BLE001
             return self._json(400, {"ok": False, "message": "unreadable"})
         _known = ("futures_enabled", "simulation", "paper_trading",
-                  "ai_enabled", "ai_api_key", "ai_model")
+                  "ai_enabled", "ai_api_key", "ai_model", "strategy")
         if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
@@ -1439,6 +1477,23 @@ class Handler(BaseHTTPRequestHandler):
                 BOOK.auto_be_on = bool(ab.get("enabled", False))
                 BOOK.auto_be_pct = float(ab.get("at_pct", 10.0))
                 BOOK.auto_be_frac = float(ab.get("sell_fraction", 0.10))
+
+        # The one-click bracket strategy (LIVE-safe). Applied live so the next
+        # trade already obeys it: 1 contract, +N% take-profit, -N% stop.
+        if isinstance(body.get("strategy"), dict):
+            st = dict(CFG.get("strategy") or {}); st.update(body["strategy"])
+            data["strategy"] = st
+            CFG["strategy"] = st
+            if BOOK is not None:
+                BOOK.take_profit_on = bool(st.get("enabled"))
+                BOOK.take_profit_pct = float(st.get("take_profit_pct", 15.0))
+                if st.get("enabled") and st.get("stop_loss_pct"):
+                    BOOK.stop_pct = float(st["stop_loss_pct"])
+                    _sync_stop_pct(BOOK.stop_pct)
+            note("STRATEGY %s: 1 contract, +%.0f%% TP, -%.0f%% SL"
+                 % ("ON" if st.get("enabled") else "off",
+                    float(st.get("take_profit_pct", 15)),
+                    float(st.get("stop_loss_pct", 15))))
 
         # AI reader — reading intelligence on the misses. The key is a secret,
         # so it lives in settings.json (gitignored, chmod 600), never the
@@ -1747,6 +1802,11 @@ def connect_broker(quiet=False):
 
     # Primary: prefer paper while testing, else live, else None (pure sim).
     WB = WB_PAPER or WB_LIVE
+    # A fresh connection resets each executor's stop_pct to the config default,
+    # so if the bracket strategy is on, push its stop back onto the new clients.
+    _st = (CFG.get("strategy") or {})
+    if _st.get("enabled") and _st.get("stop_loss_pct"):
+        _sync_stop_pct(float(_st["stop_loss_pct"]))
     WB_ACCOUNT = str(getattr(WB, "account_id", "") or "") if WB is not None else ""
     WB_ERROR = "; ".join(errs)
     if not quiet:

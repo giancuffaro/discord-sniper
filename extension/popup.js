@@ -192,6 +192,7 @@ async function refreshMode() {
   paintKeys();
   paintProps();
   paintSim();
+  paintStrat();
   paintPaper();
   paintAi(modeStatus);
   paintStatus();
@@ -335,6 +336,51 @@ async function saveSim() {
   paintSim();
 }
 $("simsave").onclick = saveSim;
+
+/* ---- one-click bracket strategy (LIVE-safe) -------------------------------
+ * 1 contract on every entry, take profit at +15%, hard stop at -15%. It lives
+ * in TWO places on purpose: the bridge (so orders actually get the +/-15%
+ * bracket and the single-contract clamp) and the extension's settings (so the
+ * worker sizes every entry to 1 before the order even leaves the browser).
+ * Painted from the bridge's reported state so a reload always tells the truth.
+ */
+let bracketOn = false;
+function paintStrat() {
+  const s = (modeStatus || {}).strategy || {};
+  bracketOn = !!s.enabled;
+  const btn = $("bracketstrat");
+  if (btn) {
+    btn.textContent = bracketOn ? "ON" : "off";
+    btn.className = "tgl " + (bracketOn ? "live" : "safe");
+  }
+}
+if ($("bracketstrat")) $("bracketstrat").onclick = async () => {
+  bracketOn = !bracketOn;
+  const btn = $("bracketstrat");
+  btn.textContent = bracketOn ? "ON" : "off";
+  btn.className = "tgl " + (bracketOn ? "live" : "safe");
+  const strat = { enabled: bracketOn, take_profit_pct: 15,
+                  stop_loss_pct: 15, one_contract: true };
+  // Extension settings first — this is what the worker reads to force qty=1.
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const s = settings || {};
+    s.strategy = strat;
+    await chrome.storage.local.set({ settings: s });
+  } catch (e) {}
+  // Then the bridge, so live/paper orders get the actual +15%/-15% bracket.
+  try {
+    modeStatus = await askBridge("/config", { strategy: strat });
+    if ($("bracketstate"))
+      $("bracketstate").textContent = bracketOn
+        ? "ON — every entry is 1 contract, +15% take-profit, −15% stop. Live and paper."
+        : "Off — sizing and exits go back to the room's calls.";
+  } catch (e) {
+    if ($("bracketstate"))
+      $("bracketstate").textContent = "Saved in the browser, but couldn't reach the bridge — START HERE first.";
+  }
+  paintStrat();
+};
 
 $("propadd").onclick = async () => {
   const name = $("propname").value.trim();

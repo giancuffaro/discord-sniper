@@ -1521,11 +1521,17 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // position before this leaves the browser. This also sets the quantity on
     // an exit, which is why it has to happen before the line below.
     if (sig.action === "CLOSE") await fillFromPosition(sig, msg.author);
+    // One-click bracket strategy overrides sizing on the way in: always exactly
+    // 1 contract, no matter what the alert called for. Trims/closes still size
+    // off the open position so a full exit stays possible.
+    const stratOn = c && c.strategy && c.strategy.enabled;
     // Test mode's sizes are the pattern, not the settings: 5 on the way in,
     // 3 out on a trim, the rest on "all out". Real mode keeps the caps.
-    const qty = testing && (sig.action === "OPEN" || sig.action === "ADD")
-      ? (sig.kind === "future" ? 3 : (sig.qty || 5))
-      : clampQty(sig.qty || 1, c, sig.action);
+    const qty = (stratOn && (sig.action === "OPEN" || sig.action === "ADD"))
+      ? 1
+      : (testing && (sig.action === "OPEN" || sig.action === "ADD")
+        ? (sig.kind === "future" ? 3 : (sig.qty || 5))
+        : clampQty(sig.qty || 1, c, sig.action));
     // Recorded before the order goes out, so a crash mid-send can't double-fire.
     await guardRecord(sig, c, msg.author);
     inFlight++;

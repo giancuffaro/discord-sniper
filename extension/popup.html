@@ -201,6 +201,15 @@
 
   <!-- ===== STRATEGIES ===== -->
   <div class="tabpane" data-tab="strategies">
+    <label>One-click bracket (LIVE)</label>
+    <div class="row" style="margin-bottom:4px">
+      <span class="grow" style="font-size:12px">Bracket: 1 contract, +15% / −15%</span>
+      <button id="bracketstrat" class="tgl safe">off</button>
+    </div>
+    <div class="note" id="bracketstate">On: every entry is exactly ONE contract no
+      matter what the alert says. Takes profit the moment it's up +15%, hard stop
+      at −15%. Works on live and paper. Overrides sizing while it's on.</div>
+
     <label>Test fills</label>
     <div class="row" style="margin-bottom:4px">
       <span class="grow" style="font-size:12px">Webull Paper — the test engine</span>
