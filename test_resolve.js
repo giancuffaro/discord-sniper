@@ -25,7 +25,7 @@ const src = fs.readFileSync(path.join(__dirname, "extension", "guards.js"), "utf
 const load = new Function("chrome", "signalKey", "human",
   src + "\nreturn { resolveSymbol, guardRecord, guardState, " +
         "rememberLoading, resolveLoaded, resolveAdd, fillFromPosition, " +
-        "clampQty };");
+        "resolveReenter, clampQty };");
 // guardRecord builds a dedupe key and resolveLoaded writes a readable line; the
 // real versions of both live in parser.js and none of these cases depend on
 // their exact shape.

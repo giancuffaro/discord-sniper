@@ -107,6 +107,7 @@ class Book:
         self._events = []               # things the extension hasn't seen yet
         self._seq = 0
         self.save_day = None            # bridge sets this; writes the day file
+        self.reset_paper_daily = False  # bridge sets from settings; clear paper at NY midnight
 
         # The account, and there are now two kinds of pretend one.
         #
@@ -1430,6 +1431,7 @@ class Book:
         still being counted on Thursday and '+$196' was really two days.
         Open positions carry over untouched — a trade held overnight is still
         a trade — and whatever they cost re-marks the peak from zero."""
+        purged = 0
         with self._lock:
             self._archive = []
             self.realised = 0.0
@@ -1438,4 +1440,16 @@ class Book:
             self.losses = 0
             self.closed_trades = []
             self.peak = 0.0
+            # Clear the paper book so the popup starts each day clean. A LIVE
+            # (real-money) hold is NEVER touched - only paper/sim positions are
+            # dropped, and each one's watchdog stands down when its key vanishes.
+            if self.reset_paper_daily:
+                for k in list(self._pos):
+                    if not self._pos[k].get("live"):
+                        self._pos[k]["closing"] = True
+                        self._pos.pop(k, None)
+                        purged += 1
         self._mark_peak()
+        if purged:
+            self.note("NEW DAY  cleared %d paper position(s) for a clean slate "
+                      "- live positions untouched" % purged)

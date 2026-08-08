@@ -19,7 +19,10 @@ const GUARD_DEFAULTS = {
   // New trades are allowed right through to the closing bell. Exits are not
   // time-boxed at all — see guardCheck, which only applies this to OPEN.
   close_time: "16:00",
-  max_message_age_seconds: 20
+  max_message_age_seconds: 20,
+  // A3 - auto-follow "same ones" re-entries once the contract resolves. Safe:
+  // it never doubles up on a contract you already hold. false = log only.
+  follow_reentries: true
 };
 
 function etNow() {
@@ -452,6 +455,63 @@ async function fillFromPosition(sig, author) {
   return sig;
 }
 
+/* A3 - "SAME ONES" re-entry. The parser flags reenter and usually the
+ * spelled-out strike/side, but the line rarely carries the expiry. Fill it
+ * from what this caller holds, or last called, in that symbol, then fire the
+ * re-buy - but only once the contract fully resolves AND you are not already
+ * in it (that would be a double-up). Otherwise hold with a plain reason; never
+ * a silent drop. Off when follow_reentries is false. */
+async function resolveReenter(sig, author, cfg) {
+  if (!sig.reenter || sig.action !== "OPEN") return sig;
+  const g = Object.assign({}, GUARD_DEFAULTS, (cfg && cfg.guards) || {});
+  const sym = String(sig.symbol || "").toUpperCase();
+  if (g.follow_reentries === false) {
+    sig.fire = false; sig.needs_position = false;
+    sig.why = 'a re-entry ("same ones") - follow_reentries is off, nothing sent';
+    return sig;
+  }
+  const st = await guardState();
+  const who = String(sig.caller || author || "").toLowerCase();
+  const last = st.lastCall || {};
+  let ref = st.positions[posKey(who, sym)] || last[posKey(who, sym)] || null;
+  if (!ref && sym) {
+    const cand = Object.keys(st.positions).concat(Object.keys(last))
+      .filter(x => keySymbol(x) === sym);
+    cand.sort((a, b) => (((st.positions[b] || last[b] || {}).ts) || 0) -
+                        (((st.positions[a] || last[a] || {}).ts) || 0));
+    if (cand.length) ref = st.positions[cand[0]] || last[cand[0]];
+  }
+  if (ref) {
+    if (sig.side == null) sig.side = ref.side;
+    if (sig.strike == null) sig.strike = ref.strike;
+    if (!sig.expiry) sig.expiry = ref.expiry;
+    if (sig.limit == null && ref.limit != null) sig.limit = ref.limit;
+  }
+  sig.needs_position = false;
+  if (!sig.symbol || sig.strike == null || !sig.side || !sig.expiry) {
+    sig.fire = false;
+    sig.why = 'a "same ones" re-entry I could not complete - no earlier ' + sym +
+              " call on record to copy the contract from";
+    return sig;
+  }
+  const cur = st.positions[posKey(who, sym)];
+  if (cur && String(cur.side) === String(sig.side) &&
+      Number(cur.strike) === Number(sig.strike) &&
+      String(cur.expiry || "") === String(sig.expiry || "")) {
+    sig.fire = false;
+    sig.why = 'a "same ones" re-entry but you are already in ' + sym + " " +
+              sig.strike + (sig.side === "CALLS" ? "C" : "P") + " - not doubling up";
+    return sig;
+  }
+  sig.fire = true;
+  sig.why = "re-entry: " + sym + " " + sig.strike +
+            (sig.side === "CALLS" ? "C" : "P") +
+            (sig.expiry ? " " + sig.expiry : "") +
+            (sig.limit == null ? "" : " @ " + sig.limit) +
+            " - same contract they last called";
+  return sig;
+}
+
 async function guardRecord(sig, cfg, author, isTest) {
   const g = Object.assign({}, GUARD_DEFAULTS, cfg.guards || {});
   const now = Date.now();
@@ -498,6 +558,14 @@ async function guardRecord(sig, cfg, author, isTest) {
                         channelId: sig.channelId || "",
                         live: !!sig.live, kind: sig.kind || "",
                         pending: !assumeFilled };
+    // A3 - remember this caller's contract so a later "same ones" re-entry can
+    // copy the expiry even after the position is closed. Bounded to 60 entries.
+    st.lastCall = st.lastCall || {};
+    st.lastCall[k] = { side: sig.side, strike: sig.strike, expiry: sig.expiry,
+                       limit: (sig.limit == null ? null : sig.limit), ts: now };
+    { const lk = Object.keys(st.lastCall);
+      if (lk.length > 60) { lk.sort((a, b) => (st.lastCall[a].ts || 0) - (st.lastCall[b].ts || 0));
+        for (const d of lk.slice(0, lk.length - 60)) delete st.lastCall[d]; } }
     st.lastFire = now;
     st.count += 1;
   } else if (sig.action === "ADD") {

@@ -271,6 +271,11 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
   "DO", "NOT", "BUY", "SELL", "IE", "ADMIN", "HERE", "EOD", "CPI", "FOMC",
   "PT", "SL", "TP", "AVG", "GO", "UP", "WE", "US", "NO",
+  // A5 - timezone tokens + option-strategy shorthand that read as tickers on
+  // tickerless exits ("... 10:17 AM EDT" grabbed EDT). Blacklisted so a
+  // symbol-less exit resolves from the open position instead.
+  "EDT", "EST", "PST", "PDT", "CT", "MT", "UTC", "IV", "CSP", "CC", "CCS",
+  "PCS", "STO", "BTO", "STC",
   // The verbs themselves. "sold 205 calls on nvda" read SOLD as the ticker,
   // because a word directly in front of a strike looks exactly like a symbol.
   // None of these is ever a ticker he trades.
@@ -312,8 +317,32 @@ function cleanText(raw) {
   // is required: without it "206.5 need to clear now" becomes "5 need to clear
   // now", and "747.5 calls on SPY" would turn into a strike of 5.
   t = t.replace(/^\s*\d{1,3}\.\s+/, "");
+  // A1 - normalize smart quotes so a quoted premium ("2.21") parses.
+  t = t.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
   return t.replace(/\s+/g, " ").trim();
 }
+
+// A1 - after a contract is found, scan the whole message for the premium when
+// it isn't written "@ 1.23": a bare "3.20", a quoted "2.21", or a range
+// "13.25-13.40" (low end). Skips the strike, %-figures and anything >= 100.
+function loosePremium(text, strike) {
+  const mr = /(\d{1,3}(?:\.\d{1,2})?)\s*[-–]\s*(\d{1,3}(?:\.\d{1,2})?)(?!\s*%)/.exec(text);
+  if (mr) {
+    const lo = parseFloat(mr[1]);
+    if (lo > 0 && lo < 100 && lo !== strike) return lo;
+  }
+  const reP = /\b(\d{1,3}\.\d{1,2})\b(?!\s*%)/g;
+  let mp;
+  while ((mp = reP.exec(text)) !== null) {
+    const v = parseFloat(mp[1]);
+    if (v === strike || v <= 0 || v >= 100) continue;
+    return v;
+  }
+  return null;
+}
+// A1 - quantity-first entries ("2 cons QQQ 721 C 8/7 2.21") carry no verb; the
+// leading count is the entry cue. Stripped as size, it never blocks the read.
+const RE_QTY_LEAD = /^\s*\d{1,3}\s*(?:cons?|contracts?|lots?)\b/i;
 
 /* "to July 29th" -> "7/29". Only used when the contract itself didn't carry an
  * expiry, so it can never override one they actually wrote. */
@@ -519,6 +548,12 @@ function parseSignalInner(text, cfg) {
   // signals.py — Market Bishop's "idea" and Namrood's "P/L:" were killing real
   // trims. Cuts from a known marker to the end only.
   t = (t.replace(RE_FOOTER, "").trim()) || t;
+  // A2 - forwarded/relayed embed: "X (MOD) posted <Channel> - <Cat> Entered
+  //      ...". Unwrap to the trading verb and re-parse; drop lotto/yolo noise.
+  {
+    const rel = t.match(/\bposted\b\s+.+?\s+[-–]\s+.+?\s+((?:entered|in|bto|open(?:ed|ing)?|taking|buying|bought|trimming|trimmed|closed|sold|out)\b[\s\S]*)$/i);
+    if (rel) t = rel[1].replace(/\b(?:lotto|yolo)\b/gi, " ").replace(/\s+/g, " ").trim();
+  }
   s.clean = t;
   const low = t.toLowerCase();
 
@@ -1002,7 +1037,11 @@ function parseSignalInner(text, cfg) {
   }
 
   // 1. LOADING — get ready. Never buys; that is the room's own instruction.
-  if (RE_LOADING.test(low)) {
+  // A4 - exit/trim/all-out wins over LOADING. "all out of AMD ... keep same
+  //      cons loaded" must close, not read as a no-op PREPARE on the word
+  //      "loaded". Fall through so the exit branches below catch it.
+  if (RE_LOADING.test(low) && !RE_ALLOUT.test(low) && !RE_CLOSE_ALL.test(low)
+      && !RE_TRIM.test(low) && !RE_STOPPED_OUT.test(low) && !RE_EXIT.test(low)) {
     const c = findContract(t);
     s.action = "PREPARE"; s.matched = "loading";
     if (c) { s.symbol = c.symbol; s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
@@ -1099,6 +1138,35 @@ function parseSignalInner(text, cfg) {
   //     "Avg 1.61", "Taking more cons at 748.50". He is IN (or adding);
   //     fires on his last Loaded, and a second one on the same PREP goes
   //     down the averaging path like any other add.
+  // A3 - "SAME ONES" / "same cons": re-enter the caller's last posted
+  //      contract. If the contract is on the line ("AMD | SAME ONES 500 C
+  //      13.25-13.40") parse it and mark a re-entry - the spelled-out
+  //      strike/side stops "ONES" being read as the ticker. Full state (prior
+  //      expiry / anti-double-up) is the guards' call; never a silent drop -
+  //      it logs a decision and holds for resolution rather than blindly buying.
+  if (/\bsame\s+(?:ones?|cons?|contracts?)\b/i.test(low)) {
+    const tS = t.replace(/\bsame\s+(?:ones?|cons?|contracts?)\b/gi, " ")
+                 .replace(/\|/g, " ").replace(/\s+/g, " ").trim();
+    const lpS = loosePremium(tS, null);
+    // Strip price decimals/ranges before reading the contract so a range like
+    // "13.25-13.40" can't be misread as an expiry (25/13).
+    const tC = tS.replace(/\d{1,3}\.\d{1,2}\s*[-–]\s*\d{1,3}\.\d{1,2}/g, " ")
+                 .replace(/\b\d{1,3}\.\d{1,2}\b/g, " ").replace(/\s+/g, " ").trim();
+    const cS = findContract(tC);
+    s.reenter = true; s.matched = "same-ones re-entry"; s.needs_position = true;
+    if (cS) {
+      s.symbol = cS.symbol; s.strike = cS.strike; s.side = cS.side; s.expiry = cS.expiry;
+      s.action = "OPEN";
+      if (lpS !== null) { s.limit = lpS; s.reenter_limit = lpS; }
+      s.why = "re-entry of " + human(s) + " - same contract they just called; " +
+              "holding to confirm against your open position before it fires";
+    } else {
+      s.why = 'a "same ones" re-entry with no contract on the line - ' +
+              "resolving it from their last call";
+    }
+    return s;
+  }
+
   const mfc = RE_FILL_CONF.exec(t);
   if (mfc) {
     s.action = "OPEN"; s.matched = "fill confirmation on a loaded contract";
@@ -1349,7 +1417,13 @@ function parseSignalInner(text, cfg) {
   // is Vero closing QQQ; the stray "In" used to hijack it and drop the exit.
   const _strongEntry = /\b(?:entered|entering|filled|bto|bought|buying|grabbed)\b/i.test(low);
   const _exitWithWeakIn = RE_EXIT.test(low) && !_strongEntry;
-  if (RE_ENTRY.test(low) && !_exitWithWeakIn) {
+  // A1 - "taking" is an entry verb ("Also taking $AAPL 315c ... 3.20") but not
+  //      "taking profits/off" (a trim, handled above); a quantity-first line
+  //      has no verb at all - the leading count is the cue.
+  const _takingEntry = /\btaking\b/i.test(low)
+      && !/\btaking\s+(?:profits?|gains?|some|off|half|the\s+l)\b/i.test(low)
+      && !!findContract(t);
+  if ((RE_ENTRY.test(low) || _takingEntry || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
     const c = findContract(t);
     if (!c) {
       // The two-message entry: "Loading 205 calls Friday expiration on NVDA",
@@ -1411,6 +1485,11 @@ function parseSignalInner(text, cfg) {
       // price they paid — that's the limit.
       const ma = RE_AVG_PRICE.exec(t);
       if (ma) s.limit = parseFloat(ma[1]);
+    }
+    // A1 - price written anywhere, not just after "@".
+    if (s.limit === null) {
+      const lp = loosePremium(t, s.strike);
+      if (lp !== null) s.limit = lp;
     }
     const mq = RE_QTY.exec(t) || RE_QTY_PAREN.exec(t);
     if (mq) s.qty = parseInt(mq[1], 10);

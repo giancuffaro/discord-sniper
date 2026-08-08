@@ -277,6 +277,9 @@ def build_book():
         simulated=(MODE != "webull"),
         unlimited=(MODE != "webull"))
     BOOK.save_day = save_day
+    # Clear the paper/dry-run book at NY midnight so the popup starts each day
+    # clean; live (real-money) holds are never touched. Default ON.
+    BOOK.reset_paper_daily = bool((CFG.get("execution") or {}).get("reset_paper_daily", True))
     # Two-connection routing: a live position is managed on the real account, a
     # paper one on the sandbox. broker_for defaults everything not-explicitly-
     # live to paper, so the real account is never touched by accident.

@@ -432,6 +432,10 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
+               # A5 - timezone tokens + option-strategy shorthand that read as
+               # tickers on tickerless exits ("... 10:17 AM EDT" grabbed EDT).
+               "EDT", "EST", "PST", "PDT", "CT", "MT", "UTC", "IV", "CSP",
+               "CC", "CCS", "PCS", "STO", "BTO", "STC",
                "DO", "NOT", "BUY", "SELL", "IE", "ADMIN", "HERE", "EOD", "CPI",
                "FOMC", "PT", "SL", "TP", "AVG", "GO", "UP", "WE", "US", "NO",
                # The verbs themselves. "sold 205 calls on nvda" read SOLD as the
@@ -579,7 +583,34 @@ def clean_text(raw):
     # to clear now", and a line like "747.5 calls on SPY" would turn into a
     # contract at a strike of 5.
     t = re.sub(r"^\s*\d{1,3}\.\s+", "", t)
+    # A1 - normalize smart quotes so a quoted premium ("2.21") parses.
+    t = t.replace("“", '"').replace("”", '"')
+    t = t.replace("‘", "'").replace("’", "'")
     return re.sub(r"\s+", " ", t).strip()
+
+
+def _loose_premium(text, strike):
+    """A1 - scan the whole message for the premium when it isn't "@ 1.23":
+    a bare "3.20", a quoted "2.21" or a range "13.25-13.40" (low end). Skips
+    the strike, %-figures and anything >= 100."""
+    mr = re.search(r"(\d{1,3}(?:\.\d{1,2})?)\s*[-–]\s*"
+                   r"(\d{1,3}(?:\.\d{1,2})?)(?!\s*%)", text)
+    if mr:
+        lo = float(mr.group(1))
+        if 0 < lo < 100 and lo != strike:
+            return lo
+    for m in re.finditer(r"\b(\d{1,3}\.\d{1,2})\b(?!\s*%)", text):
+        v = float(m.group(1))
+        if v == strike or v <= 0 or v >= 100:
+            continue
+        return v
+    return None
+
+
+# A1 - quantity-first entries ("2 cons QQQ 721 C 8/7 2.21") carry no verb; the
+# leading count is the entry cue. Stripped as size, it never blocks the read.
+RE_QTY_LEAD = re.compile(r"^\s*\d{1,3}\s*(?:cons?|contracts?|lots?)\b",
+                         re.IGNORECASE)
 
 
 RE_TMRW_EXP = re.compile(r"\btomorrow\s+exp\w*", re.IGNORECASE)
@@ -795,6 +826,14 @@ def _parse_inner(text, author="", channel="", cfg=None):
     # end so it can't veto a real call. Only cuts from a known footer marker to
     # the end, so it never touches the order itself.
     t = RE_FOOTER.sub("", t).strip() or t
+    # A2 - forwarded/relayed embed: "X (MOD) posted <Channel> - <Cat> Entered
+    #      ...". Unwrap to the trading verb and re-parse; drop lotto/yolo noise.
+    rel = re.search(r"\bposted\b\s+.+?\s+[-–]\s+.+?\s+((?:entered|in|bto|"
+                    r"open(?:ed|ing)?|taking|buying|bought|trimming|trimmed|"
+                    r"closed|sold|out)\b[\s\S]*)$", t, re.IGNORECASE)
+    if rel:
+        t = re.sub(r"\b(?:lotto|yolo)\b", " ", rel.group(1), flags=re.IGNORECASE)
+        t = re.sub(r"\s+", " ", t).strip()
     sig.clean = t
     low = t.lower()
 
@@ -1362,7 +1401,11 @@ def _parse_inner(text, author="", channel="", cfg=None):
         return sig
 
     # 1. LOADING — get contracts ready. The room says outright: DO NOT BUY IN.
-    if RE_LOADING.search(low):
+    # A4 - exit/trim/all-out wins over LOADING. "all out of AMD ... keep same
+    #      cons loaded" must close, not read as a no-op PREPARE on "loaded".
+    if (RE_LOADING.search(low) and not RE_ALLOUT.search(low)
+            and not RE_CLOSE_ALL.search(low) and not RE_TRIM.search(low)
+            and not RE_STOPPED_OUT.search(low) and not RE_EXIT.search(low)):
         c = _contract(t)
         sig.action = "PREPARE"
         sig.matched = "loading"
@@ -1469,6 +1512,41 @@ def _parse_inner(text, author="", channel="", cfg=None):
     #     "Avg 1.61", "Taking more cons at 748.50". He is IN (or adding);
     #     fires on his last Loaded, and a second one on the same PREP goes
     #     down the averaging path like any other add.
+    # A3 - "SAME ONES" / "same cons": re-enter the caller's last posted
+    #      contract. If the contract is on the line ("AMD | SAME ONES 500 C
+    #      13.25-13.40") parse it and mark a re-entry - the spelled-out
+    #      strike/side stops "ONES" being read as the ticker. Full state (prior
+    #      expiry / anti-double-up) is the guards' call; never a silent drop.
+    if re.search(r"\bsame\s+(?:ones?|cons?|contracts?)\b", low):
+        t_s = re.sub(r"\bsame\s+(?:ones?|cons?|contracts?)\b", " ", t,
+                     flags=re.IGNORECASE)
+        t_s = re.sub(r"\|", " ", t_s)
+        t_s = re.sub(r"\s+", " ", t_s).strip()
+        lp_s = _loose_premium(t_s, None)
+        # Strip price decimals/ranges before reading the contract so a range
+        # like "13.25-13.40" can't be misread as an expiry (25/13).
+        t_c = re.sub(r"\d{1,3}\.\d{1,2}\s*[-–]\s*\d{1,3}\.\d{1,2}", " ", t_s)
+        t_c = re.sub(r"\b\d{1,3}\.\d{1,2}\b", " ", t_c)
+        t_c = re.sub(r"\s+", " ", t_c).strip()
+        c_s = _contract(t_c)
+        sig.reenter = True
+        sig.matched = "same-ones re-entry"
+        sig.needs_position = True
+        if c_s:
+            sig.symbol, sig.strike = c_s["symbol"], c_s["strike"]
+            sig.side, sig.expiry = c_s["side"], c_s["expiry"]
+            sig.action = "OPEN"
+            if lp_s is not None:
+                sig.limit = lp_s
+                sig.reenter_limit = lp_s
+            sig.why = ("re-entry of %s - same contract they just called; "
+                       "holding to confirm against your open position before "
+                       "it fires" % sig.human())
+        else:
+            sig.why = ('a "same ones" re-entry with no contract on the line - '
+                       "resolving it from their last call")
+        return sig
+
     mfc = RE_FILL_CONF.match(t)
     if mfc:
         sig.action = "OPEN"
@@ -1747,7 +1825,16 @@ def _parse_inner(text, author="", channel="", cfg=None):
     _strong_entry = re.search(
         r"\b(?:entered|entering|filled|bto|bought|buying|grabbed)\b", low)
     _exit_with_weak_in = bool(RE_EXIT.search(low)) and not _strong_entry
-    if RE_ENTRY.search(low) and not _exit_with_weak_in:
+    # A1 - "taking" is an entry verb ("Also taking $AAPL 315c ... 3.20") but not
+    #      "taking profits/off" (a trim, handled above); a quantity-first line
+    #      has no verb at all - the leading count is the cue.
+    _taking_entry = (bool(re.search(r"\btaking\b", low))
+                     and not re.search(
+                         r"\btaking\s+(?:profits?|gains?|some|off|half|the\s+l)\b",
+                         low)
+                     and bool(_contract(t)))
+    if ((RE_ENTRY.search(low) or _taking_entry or RE_QTY_LEAD.search(t))
+            and not _exit_with_weak_in):
         c = _contract(t)
         if not c:
             # The two-message entry: "Loading 205 calls Friday expiration on
@@ -1816,6 +1903,11 @@ def _parse_inner(text, author="", channel="", cfg=None):
             ma = RE_AVG_PRICE.search(t)
             if ma:
                 sig.limit = float(ma.group(1))
+        # A1 - price written anywhere, not just after "@".
+        if sig.limit is None:
+            lp = _loose_premium(t, sig.strike)
+            if lp is not None:
+                sig.limit = lp
         mq = RE_QTY.search(t) or RE_QTY_PAREN.search(t)
         if mq:
             sig.qty = int(mq.group(1))

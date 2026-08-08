@@ -44,6 +44,8 @@
     "futures_enabled": false,
     "_assume_weekly_expiry": "Their pinned rules say contracts are weekly unless they spell out 0DTE or a date, so a call like 'in SPY 747C @ 3.00' with no date on it means this Friday. true = fill that in. false = refuse those calls instead. Only ever used on an entry that already named a strike - an exit always uses the contract you are actually holding, never a guess.",
     "assume_weekly_expiry": true,
+    "_reset_paper_daily": "Clear all paper/dry-run positions at New York midnight so the popup starts each day with a clean paper book. Live (real-money) positions are never touched. true = clear daily, false = carry paper positions over.",
+    "reset_paper_daily": true,
     "_ai_reader": "READING intelligence for the calls the regex can't crack. Only runs on a MISSED message: hands that one line to Claude, which reads it into a clean call that still passes every guard (a made-up ticker is refused). It never decides to trade. enabled+api_key set it; the popup does this for you. Empty key = off, no cost.",
     "ai_reader": { "enabled": false, "api_key": "", "model": "claude-3-5-haiku-latest" },
     "webull": {
@@ -51,6 +53,8 @@
       "app_secret": "",
       "_account_id": "Blank means pick the options account automatically. It will never use a futures account.",
       "account_id": "",
+      "_futures_account_id": "Your Webull FUTURES account number, so MNQ/MES orders route there instead of your options account (Webull rejects futures on a non-futures account). Blank = auto-detect by type/suffix, which fails when Webull labels the futures account as MARGIN.",
+      "futures_account_id": "",
       "futures_account_suffixes": [
         "3T0B"
       ],

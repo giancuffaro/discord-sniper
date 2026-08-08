@@ -76,10 +76,16 @@ class Guards:
         # until the second one turns up. Per author, because both admins load
         # different things within minutes of each other.
         self.loaded = {}        # author (lowercased) -> {symbol, side, ...}
+        # A3 - each caller's last contract per symbol, kept even after the
+        # position closes, so a "same ones" re-entry can copy the expiry.
+        self.last_call = {}     # "trader|SYM" -> {side, strike, expiry, limit, ts}
         # Four hours — Midas rests his bid at his price and waits; the old
         # 30-minute window threw away his "Filled at 1.46" 97 minutes after
         # the Loaded call, which was his only real trade of day one.
         self.loaded_window_s = float(g.get("loading_window_seconds", 14400))
+        # A3 - auto-follow "same ones" re-entries once the contract resolves.
+        # Never doubles up on a contract already held. False = log only.
+        self.follow_reentries = bool(g.get("follow_reentries", True))
         # Checked again at resolve time: the LOADING rule doesn't check the
         # allowed list, so without this a two-message entry would be the one way
         # round it.
@@ -228,6 +234,61 @@ class Guards:
                    "it's the position %s put you in"
                    % (sig.symbol,
                       getattr(sig, "caller", "") or author_name or "they"))
+        return sig
+
+    def resolve_reenter(self, sig, author_name=""):
+        """A3 mirror of resolveReenter: complete a "same ones" re-entry from
+        the caller's held or last-called contract and fire it, unless
+        follow_reentries is off or you already hold that exact contract."""
+        if not getattr(sig, "reenter", False) or sig.action != "OPEN":
+            return sig
+        sym = str(sig.symbol or "").upper()
+        if not self.follow_reentries:
+            sig.fire = False
+            sig.needs_position = False
+            sig.why = ('a re-entry ("same ones") - follow_reentries is off, '
+                       "nothing sent")
+            return sig
+        who = str(getattr(sig, "caller", "") or author_name or "").lower()
+        ref = self.open_pos.get(key_of(who, sym)) or self.last_call.get(key_of(who, sym))
+        if not ref and sym:
+            cand = [k for k in list(self.open_pos) + list(self.last_call)
+                    if _key_sym(k) == sym]
+            cand.sort(key=lambda k: (self.open_pos.get(k)
+                                     or self.last_call.get(k) or {}).get("ts", 0),
+                      reverse=True)
+            if cand:
+                ref = self.open_pos.get(cand[0]) or self.last_call.get(cand[0])
+        if ref:
+            if sig.side is None:
+                sig.side = ref.get("side")
+            if sig.strike is None:
+                sig.strike = ref.get("strike")
+            if not sig.expiry:
+                sig.expiry = ref.get("expiry")
+            if getattr(sig, "limit", None) is None and ref.get("limit") is not None:
+                sig.limit = ref.get("limit")
+        sig.needs_position = False
+        if not sig.symbol or sig.strike is None or not sig.side or not sig.expiry:
+            sig.fire = False
+            sig.why = ('a "same ones" re-entry I could not complete - no earlier '
+                       "%s call on record to copy the contract from" % sym)
+            return sig
+        cur = self.open_pos.get(key_of(who, sym))
+        if cur and str(cur.get("side")) == str(sig.side) \
+                and float(cur.get("strike") or -1) == float(sig.strike) \
+                and str(cur.get("expiry") or "") == str(sig.expiry or ""):
+            sig.fire = False
+            sig.why = ('a "same ones" re-entry but you are already in %s %s%s '
+                       "- not doubling up"
+                       % (sym, sig.strike, "C" if sig.side == "CALLS" else "P"))
+            return sig
+        sig.fire = True
+        sig.why = ("re-entry: %s %s%s%s%s - same contract they last called"
+                   % (sym, sig.strike, "C" if sig.side == "CALLS" else "P",
+                      " " + sig.expiry if sig.expiry else "",
+                      "" if getattr(sig, "limit", None) is None
+                      else " @ %s" % sig.limit))
         return sig
 
     def _pick_held(self, who):
@@ -441,6 +502,14 @@ class Guards:
                                  "expiry": sig.expiry, "ts": now,
                                  "author": who, "qty": int(sig.qty or 1),
                                  "adds": 0, "pending": True}
+            self.last_call[pk] = {"side": sig.side, "strike": sig.strike,
+                                  "expiry": sig.expiry,
+                                  "limit": getattr(sig, "limit", None), "ts": now}
+            if len(self.last_call) > 60:
+                old = sorted(self.last_call,
+                             key=lambda kk: self.last_call[kk].get("ts", 0))
+                for d in old[:len(self.last_call) - 60]:
+                    self.last_call.pop(d, None)
         elif sig.action == "ADD":
             # More contracts of the same thing. The count is what an exit
             # sells, and the add count is what stops it happening all day.

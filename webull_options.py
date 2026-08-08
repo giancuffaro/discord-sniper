@@ -312,6 +312,10 @@ class WebullOptions:
         # here and it will never be picked.
         self.futures_suffixes = [str(s).upper() for s in
                                  w.get("futures_account_suffixes", ["3T0B"])]
+        # An explicit futures account id/suffix wins over guessing - the
+        # reliable way when Webull labels the futures account as MARGIN.
+        self.futures_account_id_cfg = (str(w.get("futures_account_id") or "")
+                                       .strip() or None)
         # How far above the price they quoted you're willing to pay. Their fill
         # is not your fill; by the time you see the message the ask has often
         # moved. Past this, it skips rather than chasing.
@@ -476,8 +480,38 @@ class WebullOptions:
         # And the FUTURES account rides along, picked automatically — "use
         # the futures one" — so MNQ/MES orders know where they live without
         # anyone choosing anything twice.
-        futs = [a for a in accounts if is_futures(a)]
-        self.futures_account_id = _acct_id(futs[0]) if futs else None
+        # Every account these keys can see - logged below so a missing or
+        # mislabeled futures account is visible instead of guessed at.
+        self.accounts_seen = [(_acct_id(a), _acct_kind(a)) for a in accounts]
+        if self.futures_account_id_cfg:
+            fmatch = [a for a in accounts
+                      if _acct_id(a) == self.futures_account_id_cfg
+                      or _acct_id(a).upper().endswith(
+                          self.futures_account_id_cfg.upper())]
+            self.futures_account_id = _acct_id(fmatch[0]) if fmatch else None
+        else:
+            futs = [a for a in accounts if is_futures(a)]
+            if not futs:
+                # Webull often labels the futures account MARGIN, just like the
+                # options one, so a type/suffix match finds nothing. Pick it by
+                # elimination: the account that is neither the options account
+                # we just chose nor a CASH/IRA one. With one margin (options),
+                # one cash and one futures linked, that leaves exactly futures.
+                leftover = [a for a in accounts
+                            if _acct_id(a) != self.account_id
+                            and _acct_kind(a) not in ("CASH", "IRA")]
+                futs = leftover if len(leftover) == 1 else []
+            self.futures_account_id = _acct_id(futs[0]) if futs else None
+        try:
+            print("[webull] accounts visible to these keys: " +
+                  ("; ".join("%s=%s" % (k, i) for i, k in self.accounts_seen)
+                   or "none"))
+            print("[webull] FUTURES account -> " +
+                  (self.futures_account_id or "NONE DETECTED - set "
+                   "execution.webull.futures_account_id to your futures "
+                   "account number"))
+        except Exception:                               # noqa: BLE001
+            pass
         if is_futures(chosen):
             raise Refused("account %s is a FUTURES account. This bot is options "
                           "only — nothing was sent. Run EXTRAS.bat, keys option, and "
@@ -884,8 +918,34 @@ class WebullOptions:
         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
         expiration = expiry_to_date(expiry)
         stop = max(0.01, round(float(fill_price) * (1 - self.stop_pct / 100), 2))
-        what = "STOP %d %s %g%s %s @ %.2f" % (qty, symbol, float(strike),
-                                              option_type[0], expiration, stop)
+        # Webull validates a SELL stop against the LIVE market, not your fill.
+        # On a wide options spread the bid right after you buy at the ask is
+        # often already below a fill-based stop, so Webull 417s it
+        # (STOP_PRICE_MUST_BE_LESS_THAN_MARKET_PRICE) and you are left with only
+        # the PC watchdog. Clamp the stop to sit one tick under the live market
+        # so the broker holds a REAL resting stop that survives the PC going
+        # down. This only ever TIGHTENS the stop; it never loosens the intended
+        # one, and with no quote it behaves exactly as before.
+        occ = occ_symbol(symbol, expiration, option_type, strike)
+        mkt = None
+        try:
+            ask_q, bid_q, _ = self.ask_bid(occ)
+            mkt = bid_q if (bid_q and float(bid_q) > 0) else (
+                  ask_q if (ask_q and float(ask_q) > 0) else None)
+        except Exception:                               # noqa: BLE001
+            mkt = None
+        stop_clamped = False
+        if mkt and float(mkt) > 0:
+            step = 0.10 if float(mkt) >= 3 else 0.05
+            ceiling = round(float(mkt) - step, 2)
+            if ceiling < 0.01:
+                ceiling = 0.01
+            if stop >= ceiling:
+                stop = max(0.01, float(tick_round(ceiling)))
+                stop_clamped = True
+        what = "STOP %d %s %g%s %s @ %.2f%s" % (qty, symbol, float(strike),
+                                                option_type[0], expiration, stop,
+                                                " (clamped under market)" if stop_clamped else "")
         # The limit sits under the trigger so a fast drop still clears.
         limit = max(0.01, round(stop * 0.90, 2))
         body = self._send(self._order(symbol, expiration, option_type, strike,

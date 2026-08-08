@@ -184,8 +184,14 @@ def _place(wb, contract, side, qty, limit=None):
     other plausible arg shapes. Still refuses cleanly if nothing takes it — a
     futures order is never sent blind."""
     import uuid
-    fut_acct = getattr(wb, "futures_account_id", None) or \
-        getattr(wb, "account_id", None)
+    fut_acct = getattr(wb, "futures_account_id", None)
+    if not fut_acct:
+        # Never fall back to the options account - Webull rejects a futures
+        # order there (NON_FUTURES_ACCOUNT), the exact loop we are fixing.
+        raise FuturesRefused(
+            "no Webull FUTURES account is set, so nothing was sent. Set "
+            "execution.webull.futures_account_id to your futures account "
+            "number so MNQ/MES route there instead of your options account.")
     cid = uuid.uuid4().hex[:32]
     otype = "LIMIT" if limit else "MARKET"
 

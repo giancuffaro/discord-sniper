@@ -134,6 +134,7 @@ async function cfg() {
     stopped: false,
     capture: true,
     bridge_url: BRIDGE_DEFAULT,
+    auto_rearm: true,   // B3 - re-arm automatically once the bridge is back
     author_names: [],
     channel_ids: [],   // merged with the graduated rooms below
     extra_veto_words: [],
@@ -509,6 +510,47 @@ async function sendOrder(sig, qty, c, author) {
 let bridgeStrikes = 0;
 const BRIDGE_STRIKES_OUT = 3;
 
+/* B3 - auto-re-arm. AUTO-DISARM correctly stops the bot firing when the bridge
+ * is unreachable, but it then needed a hand to turn back on - so a brief blip (a
+ * restart or self-update) left it OFF for the rest of the session with calls
+ * read and lost. This brings it back the moment the bridge answers again. Only
+ * re-arms what auto-disarm turned off (never a manual OFF), never overrides the
+ * STOP brake, and only when the bridge is genuinely healthy. Off if auto_rearm
+ * is false. Runs on the existing 30s watch-build alarm. */
+async function tryReArm() {
+  const { auto_disarmed } = await chrome.storage.local.get("auto_disarmed");
+  if (!auto_disarmed) return;
+  const c = await cfg();
+  if (c.auto_rearm === false) return;
+  let healthy = false;
+  try {
+    const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/build", { cache: "no-store" });
+    healthy = r.ok;
+  } catch (e) { healthy = false; }
+  if (!healthy) return;                       // bridge still down - keep waiting
+  const { settings } = await chrome.storage.local.get("settings");
+  if (settings && settings.stopped) return;   // the STOP brake is separate - honour it
+  await chrome.storage.local.set({
+    settings: Object.assign({}, settings, { armed: true }),
+    auto_disarmed: false
+  });
+  bridgeStrikes = 0;
+  await addLog({
+    kind: "update", what: "AUTO-RE-ARMED", action: "ARM",
+    why: "the bridge is reachable again - the bot re-armed itself and is " +
+         "watching the rooms. It was OFF only while the bridge was unreachable.",
+    text: "", author: ""
+  });
+  badge();
+  try {
+    chrome.notifications.create({
+      type: "basic", iconUrl: "icon128.png",
+      title: "AUTO-RE-ARMED - bridge is back",
+      message: "The bridge is reachable again, so the bot turned itself back ON."
+    });
+  } catch (e) { /* notifications are a nicety, never a blocker */ }
+}
+
 async function bridgeStrike(res) {
   if (res.ok) { bridgeStrikes = 0; return; }
   if (!res.unreachable) return;
@@ -517,7 +559,8 @@ async function bridgeStrike(res) {
   const { settings } = await chrome.storage.local.get("settings");
   if (settings && settings.armed === false) return;   // already off
   await chrome.storage.local.set({
-    settings: Object.assign({}, settings, { armed: false })
+    settings: Object.assign({}, settings, { armed: false }),
+    auto_disarmed: true          // B3 - marks this as OURS to undo when the bridge returns
   });
   await addLog({
     kind: "failed", what: "AUTO-DISARMED", action: "HALT",
@@ -1018,7 +1061,7 @@ chrome.alarms.create("watch-build", { periodInMinutes: 0.5 });
 const EXPORT_EVERY_MIN = 4;
 chrome.alarms.create("auto-export", { when: Date.now() + 60000, periodInMinutes: EXPORT_EVERY_MIN });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); tryReArm(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "auto-export") autoExportForLearning();
 });
@@ -1234,7 +1277,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     // strike count starts over instead of instantly disarming again.
     const was = (changes.settings.oldValue || {}).armed;
     const now = (changes.settings.newValue || {}).armed;
-    if (now && !was) bridgeStrikes = 0;
+    if (now && !was) { bridgeStrikes = 0; chrome.storage.local.set({ auto_disarmed: false }); }
   }
 });
 
@@ -1442,6 +1485,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // — only the position tracker knows what you're holding and who put you in
     // it — so the ticker gets filled in here, before anything decides to fire.
     if (sig.needs_position) sig = await resolveSymbol(sig, msg.author);
+    // A3 - "same ones" re-entry: complete the contract from memory and fire it
+    // (never doubling up on something you already hold).
+    if (sig.reenter) sig = await resolveReenter(sig, msg.author, c);
     // A LOADING notice buys nothing, but it names the contract their next
     // message is only going to give a price for. Remembered here so that
     // "Filled 3.95 starters" a minute later has something to attach to.

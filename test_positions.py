@@ -459,6 +459,17 @@ ok(b.open_count() == before_open,
    "but what you're holding carries over: %s -> %s"
    % (before_open, b.open_count()))
 
+# --- reset_paper_daily clears the paper book, never a live hold -------------
+b.reset_paper_daily = True
+b._pos["papertrader|AAPL"] = {"state": positions.FILLED, "live": False,
+                              "paper": True, "closing": False, "symbol": "AAPL"}
+b._pos["livetrader|SPY"] = {"state": positions.FILLED, "live": True,
+                            "paper": False, "closing": False, "symbol": "SPY"}
+b.new_day()
+left = sorted(b._pos)
+ok("livetrader|SPY" in left and "papertrader|AAPL" not in left,
+   "midnight clears paper AAPL but keeps live SPY, left with %s" % left)
+
 if bad:
     print("\n%d day-book check(s) failed." % bad)
     raise SystemExit(1)
