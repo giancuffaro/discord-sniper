@@ -28,3 +28,7 @@ signal-room-chat.txt
 
 # The book's memory across restarts - trading record, not code.
 state.json
+
+# helper: local-only junk
+_to_delete/
+/discord-sniper/

@@ -296,6 +296,22 @@ def _place(wb, contract, side, qty, limit=None):
                                                "no endpoint answered"))
 
 
+# Index futures trade on a clean 25-point grid, so snap the entry there: an
+# alert "Short NQ @ 29723" becomes 29725. ONLY the index symbols - snapping oil
+# (70) or gas (3.4) to 25 would send a wildly wrong price, so those pass through.
+FUT_ROUND25 = {"NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K"}
+
+
+def _round_entry(sym, px):
+    try:
+        v = float(px)
+    except (TypeError, ValueError):
+        return px
+    if str(sym).upper() in FUT_ROUND25:
+        return round(v / 25.0) * 25.0
+    return v
+
+
 def execute(wb, book, order, key, note):
     """The whole live futures path: entry, trim, or close. Returns (ok, msg).
     Sizing is pinned to one contract on purpose — see the file docstring."""
@@ -306,16 +322,21 @@ def execute(wb, book, order, key, note):
 
     if action == "OPEN":
         side = "SELL" if direction == "SHORT" else "BUY"
-        oid = _place(wb, contract, side, 1, order.get("limit"))
-        note("FUTURES  ORDER IN %s %s x1 (%s), their stop %s target %s"
-             % (side, contract, oid, order.get("their_stop"),
+        raw_px = order.get("limit")
+        entry_px = _round_entry(sym, raw_px)     # snap index-futures entry to the 25-pt grid
+        if entry_px is not None and raw_px is not None and float(entry_px) != float(raw_px):
+            note("FUTURES  %s entry snapped to the 25-pt grid: %s -> %g"
+                 % (sym, raw_px, entry_px))
+        oid = _place(wb, contract, side, 1, entry_px)
+        note("FUTURES  ORDER IN %s %s x1 (%s) @ %s, their stop %s target %s"
+             % (side, contract, oid, entry_px, order.get("their_stop"),
                 order.get("their_target")))
         if book is not None:
-            order = dict(order, mult=None)
+            order = dict(order, mult=None, limit=entry_px)
             from bridge import FUT_MULT
             order["mult"] = FUT_MULT.get(sym, 1.0)
             book.entry_sent(order, {"order_id": oid, "occ": None,
-                                    "limit": order.get("limit"),
+                                    "limit": entry_px,
                                     "bid": None, "ask": None, "qty": 1})
         return True, ("futures order in: %s %s, one contract. Their stop is "
                       "%s — watch it, the room's calls are the stop for now."
