@@ -301,7 +301,7 @@ def build_book():
     # everything else; when it's on, that's the plan.
     _strat = (CFG.get("strategy") or {})
     BOOK.take_profit_on = bool(_strat.get("enabled"))
-    BOOK.take_profit_pct = float(_strat.get("take_profit_pct", 15.0))
+    BOOK.take_profit_pct = float(_strat.get("take_profit_pct", 20.0))
     if _strat.get("enabled") and _strat.get("stop_loss_pct"):
         BOOK.stop_pct = float(_strat["stop_loss_pct"])
         _sync_stop_pct(BOOK.stop_pct)
@@ -735,6 +735,11 @@ def _futures_brokers_safe():
                         "username": tv.get("username", ""),
                         "demo": bool(tv.get("demo")),
                         "has_password": bool(tv.get("password"))}
+    ts = fb.get("topstep") or {}
+    out["topstep"] = {"enabled": bool(ts.get("enabled")),
+                      "username": ts.get("username", ""),
+                      "base_url": ts.get("base_url", "https://api.topstepx.com"),
+                      "has_password": bool(ts.get("api_key"))}
     return out
 
 
@@ -967,6 +972,14 @@ def _place_impl(order):
                         "username": tv.get("username", ""),
                         "password": tv.get("password", ""),
                         "extra": "demo" if tv.get("demo") else "",
+                        "enabled": True})
+                ts = fb.get("topstep") or {}
+                if ts.get("enabled"):
+                    armed_props.append({"name": "Topstep",
+                        "platform": "projectx",
+                        "username": ts.get("username", ""),
+                        "password": ts.get("api_key", ""),
+                        "extra": ts.get("base_url") or "https://api.topstepx.com",
                         "enabled": True})
                 # Any hand-added prop accounts still ride along when armed.
                 armed_props += [p for p in (CFG.get("props") or [])
@@ -1686,14 +1699,14 @@ class Handler(BaseHTTPRequestHandler):
             CFG["strategy"] = st
             if BOOK is not None:
                 BOOK.take_profit_on = bool(st.get("enabled"))
-                BOOK.take_profit_pct = float(st.get("take_profit_pct", 15.0))
+                BOOK.take_profit_pct = float(st.get("take_profit_pct", 20.0))
                 if st.get("enabled") and st.get("stop_loss_pct"):
                     BOOK.stop_pct = float(st["stop_loss_pct"])
                     _sync_stop_pct(BOOK.stop_pct)
             note("STRATEGY %s: 1 contract, +%.0f%% TP, -%.0f%% SL"
                  % ("ON" if st.get("enabled") else "off",
-                    float(st.get("take_profit_pct", 15)),
-                    float(st.get("stop_loss_pct", 15))))
+                    float(st.get("take_profit_pct", 20)),
+                    float(st.get("stop_loss_pct", 10))))
 
         # Where futures trade: Webull / NinjaTrader / Tradovate toggles plus
         # each one's account details. Merged (not replaced) so toggling one
@@ -1703,7 +1716,7 @@ class Handler(BaseHTTPRequestHandler):
             incoming = body["futures_brokers"]
             if "webull" in incoming:
                 fb["webull"] = bool(incoming["webull"])
-            for bk in ("ninjatrader", "tradovate"):
+            for bk in ("ninjatrader", "tradovate", "topstep"):
                 if bk in incoming and isinstance(incoming[bk], dict):
                     cur = dict(fb.get(bk) or {})
                     cur.update(incoming[bk])
@@ -1715,6 +1728,8 @@ class Handler(BaseHTTPRequestHandler):
                 _on.append("ninjatrader")
             if (fb.get("tradovate") or {}).get("enabled"):
                 _on.append("tradovate")
+            if (fb.get("topstep") or {}).get("enabled"):
+                _on.append("topstep")
             note("FUTURES  trade from: %s" % (", ".join(_on) or "nothing selected"))
 
         # AI reader — reading intelligence on the misses. The key is a secret,

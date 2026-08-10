@@ -427,3 +427,10 @@ sell 1/4 Z Aug 21st 35$ calls from 1.62 to 2.35 for 45-50% Gain WIN!! @everyone 
 BTO $NVDA 205c 08/07 @1.05 @everyone
 In JNJ 260 C 7/31 lightly @everyone
 STC $NVDA 205c 08/07 @2.10 @everyone
+
+# --- RWGates / TradeLikeGates ($STS) — ThinkorSwim dotted contracts ---
+$HOOD Took entry .HOOD260702C118 Fill: 1.77
+$TSLA took entry .TSLA260717P382.5 Fill: 2.36
+$F took entry .F260731C15.5 Fill: 0.72
+Loaded .AAPL260710C310 $AAPL no position yet
+$MSFT entry / exit for a 20% gain. Waited for proper break of trigger

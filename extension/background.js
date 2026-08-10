@@ -70,6 +70,11 @@ const ROOM_LABELS = {
   "987515353670221834": "Aristotle",
   "1144369893760831489": "Midas",
   "1433933203302776852": "Aristotle small",
+  "642437862930907158": "RWGates",
+  "769797179992571914": "Option Alerts",
+  "880503518878892143": "Lotto Alerts",
+  "769797819770732554": "Options Watchlist",
+  "1137873895832174672": "Futures Alerts",
   "whop:day-trades": "Whop Day Trades", "whop:futures": "Whop Futures",
   "whop:high-risk": "Whop High Risk", "whop:2k-challenge": "Whop 2K Challenge",
   "whop:swing": "Whop Swing Trades", "whop:long-term": "Whop Long Term",
@@ -160,6 +165,11 @@ async function cfg() {
                "987515353670221834",     // Aristotle — testing, his word
                "1144369893760831489",    // Midas — testing, his word
                "1433933203302776852",    // Aristotle's small-account challenge
+               "642437862930907158",    // RWGates / TradeLikeGates ($STS) alert room
+               "769797179992571914",    // Option Alerts
+               "880503518878892143",    // Lotto Alerts
+               "769797819770732554",    // Options Watchlist
+               "1137873895832174672",    // Futures Alerts
                // Felony's Whop rooms — canonical ids, matched by slug below
                "whop:day-trades", "whop:futures", "whop:high-risk",
                "whop:2k-challenge", "whop:swing", "whop:long-term",
@@ -1141,7 +1151,7 @@ async function autoExportForLearning() {
         ", ninjatrader " + onoff((fb.ninjatrader || {}).enabled) +
         ", tradovate " + onoff((fb.tradovate || {}).enabled) + "\n" +
       "  bracket strat:  " + onoff(strat.enabled) +
-        (strat.enabled ? " (+" + (strat.take_profit_pct || 15) + "% / -" + (strat.stop_loss_pct || 15) + "%, 1 contract)" : "") + "\n" +
+        (strat.enabled ? " (+" + (strat.take_profit_pct || 20) + "% / -" + (strat.stop_loss_pct || 10) + "%, 1 contract)" : "") + "\n" +
       "  AI reader:      " + onoff(mode && mode.ai_enabled) + "\n" +
       "  voice key:      " + onoff(dg) + "\n" +
       "  LIVE rooms:     " + (liveRooms.length ? liveRooms.join(", ") : "none (all testing)") + "\n" +

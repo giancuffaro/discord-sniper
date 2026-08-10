@@ -32,3 +32,6 @@ state.json
 # helper: local-only junk
 _to_delete/
 /discord-sniper/
+
+# FUSE mount junk (created when a file is held open over the bridge)
+.fuse_hidden*

@@ -167,26 +167,20 @@ function _toggleKeyGroup(entryId, savedId, saved, summaryHtml) {
 }
 
 function paintKeys() {
-  const el = $("keystate");
   const has = !!(modeStatus && modeStatus.has_keys);
-  const collapsed = _toggleKeyGroup("keyEntry", "keySaved", has,
-    "<b>✓ Live keys saved</b> (…" + ((modeStatus || {}).key_tail || "????") + ")" +
-    ((modeStatus || {}).connected ? " — connected to Webull."
-      : " — not connected" + ((modeStatus || {}).error ? ": " + modeStatus.error : ".")));
-  // Paper keys: same treatment. There's no tail for these, just in/out.
-  _toggleKeyGroup("paperKeyEntry", "paperKeySaved",
-    !!(modeStatus && modeStatus.paper_keys_in),
-    "<b>✓ Paper (sandbox) keys saved</b> — fills your $1M paper books when " +
-    "Webull PAPER is on.");
+  _okbox("keySaved", has, "Webull connected");
+  _okbox("paperKeySaved", !!(modeStatus && modeStatus.paper_keys_in),
+         "Webull paper keys saved");
+  const el = $("keystate");
   if (!el) return;
-  if (!modeStatus) {
-    el.textContent = "Can't check your keys — the bridge isn't running.";
-  } else if (collapsed) {
-    el.textContent = "";        // the summary line says it; no need to repeat
-  } else {
-    el.textContent = "No keys saved yet. Get them from the Webull developer " +
-      "page, paste both boxes, hit save. They stay on your PC, never in Chrome.";
-  }
+  el.textContent = (!modeStatus || has) ? ""
+    : "No key yet — tap the pencil on Webull to add it.";
+}
+function _okbox(id, ok, label) {
+  const b = $(id);
+  if (!b) return;
+  if (ok) { b.style.display = "flex"; b.innerHTML = "<b>\u2713</b> " + label; }
+  else b.style.display = "none";
 }
 
 let brokerPos = [];        // real Webull account positions, so the popup mirrors it
@@ -242,17 +236,43 @@ function _fbBtn(id, on) {
   b.textContent = on ? "ON" : "off";
   b.className = "tgl " + (on ? "live" : "safe");
 }
+
+// The toggle ON/off intent lives in the BROWSER, so a status refresh (or the
+// bridge being momentarily down) can never flip a switch the user just set.
+// The bridge still ROUTES the orders, so every change is also pushed to it.
+let _fbLocal = { webull: false, ninja: false, tradovate: false, topstep: false };
+let _fbSeeded = false;
+try {
+  chrome.storage.local.get("fb_toggles", r => {
+    if (r && r.fb_toggles) {
+      _fbLocal = Object.assign(_fbLocal, r.fb_toggles);
+      _fbSeeded = true;
+      _fbPaintToggles();
+    }
+  });
+} catch (e) {}
+
+function _fbPaintToggles() {
+  _fbBtn("fbWebull", _fbLocal.webull);
+  _fbBtn("fbNinja", _fbLocal.ninja);
+  _fbBtn("fbTradovate", _fbLocal.tradovate);
+  _fbBtn("fbTopstep", _fbLocal.topstep);
+}
+
 function paintFuturesBrokers() {
   const fb = (modeStatus || {}).futures_brokers || {};
-  const nt = fb.ninjatrader || {}, tv = fb.tradovate || {};
-  // Keep the local toggle state in step with the truth, so Save never flips a
-  // broker the user didn't touch.
-  _fbLocal = { webull: !!fb.webull, ninja: !!nt.enabled, tradovate: !!tv.enabled };
-  _fbBtn("fbWebull", !!fb.webull);
-  _fbBtn("fbNinja", !!nt.enabled);
-  _fbBtn("fbTradovate", !!tv.enabled);
-  if ($("ninjaFields")) $("ninjaFields").style.display = nt.enabled ? "block" : "none";
-  if ($("tradovateFields")) $("tradovateFields").style.display = tv.enabled ? "block" : "none";
+  const nt = fb.ninjatrader || {}, tv = fb.tradovate || {}, ts = fb.topstep || {};
+  // Seed toggles from the bridge ONCE, only if the browser never stored an
+  // intent of its own. After that the browser copy wins — a refresh can't turn
+  // a switch off under the user.
+  if (!_fbSeeded && modeStatus) {
+    _fbLocal = { webull: !!fb.webull, ninja: !!nt.enabled,
+                 tradovate: !!tv.enabled, topstep: !!ts.enabled };
+    _fbSeeded = true;
+    try { chrome.storage.local.set({ fb_toggles: _fbLocal }); } catch (e) {}
+  }
+  _fbPaintToggles();
+  // Field values come from the bridge, but never stomp a field being typed in.
   if ($("ninjaAccount") && document.activeElement !== $("ninjaAccount"))
     $("ninjaAccount").value = nt.account || "";
   if ($("ninjaDir") && document.activeElement !== $("ninjaDir"))
@@ -262,48 +282,56 @@ function paintFuturesBrokers() {
   if ($("tvDemo")) $("tvDemo").checked = !!tv.demo;
   if ($("tvPass") && tv.has_password && !$("tvPass").value)
     $("tvPass").placeholder = "•••••• (saved — leave blank to keep)";
+  if ($("tsUser") && document.activeElement !== $("tsUser"))
+    $("tsUser").value = ts.username || "";
+  if ($("tsUrl") && document.activeElement !== $("tsUrl") && ts.base_url)
+    $("tsUrl").value = ts.base_url;
+  if ($("tsKey") && ts.has_password && !$("tsKey").value)
+    $("tsKey").placeholder = "•••••• (saved — leave blank to keep)";
 }
-// The three toggles just flip a local ON/off and reveal their fields; Save is
-// what actually persists to the bridge (so you can fill the account in first).
-let _fbLocal = { webull: false, ninja: false, tradovate: false };
+
+function _fbVal(id) { return ($(id) || {}).value || ""; }
+
+async function saveFuturesBrokers() {
+  const payload = {
+    webull: _fbLocal.webull,
+    ninjatrader: { enabled: _fbLocal.ninja,
+                   account: _fbVal("ninjaAccount"),
+                   incoming_dir: _fbVal("ninjaDir") },
+    tradovate: { enabled: _fbLocal.tradovate,
+                 username: _fbVal("tvUser"),
+                 demo: !!($("tvDemo") || {}).checked },
+    topstep: { enabled: _fbLocal.topstep,
+               username: _fbVal("tsUser"),
+               base_url: _fbVal("tsUrl") || "https://api.topstepx.com" }
+  };
+  const pw = _fbVal("tvPass"); if (pw) payload.tradovate.password = pw;
+  const tk = _fbVal("tsKey");  if (tk) payload.topstep.api_key = tk;
+  try {
+    modeStatus = await askBridge("/config", { futures_brokers: payload });
+    if ($("fbState")) $("fbState").textContent = "saved — futures route there now";
+  } catch (e) {
+    if ($("fbState")) $("fbState").textContent = "saved on this PC — it'll sync when the bridge is up";
+  }
+  paintFuturesBrokers();
+}
+
 function _wireFb(id, key, fieldsId) {
   const b = $(id);
   if (!b) return;
-  b.onclick = () => {
+  b.onclick = async () => {
     _fbLocal[key] = !_fbLocal[key];
+    _fbSeeded = true;
     _fbBtn(id, _fbLocal[key]);
-    if (fieldsId && $(fieldsId)) $(fieldsId).style.display = _fbLocal[key] ? "block" : "none";
+    try { chrome.storage.local.set({ fb_toggles: _fbLocal }); } catch (e) {}
+    await saveFuturesBrokers();   // persist to the bridge immediately
   };
 }
 _wireFb("fbWebull", "webull", null);
 _wireFb("fbNinja", "ninja", "ninjaFields");
 _wireFb("fbTradovate", "tradovate", "tradovateFields");
-if ($("fbSave")) $("fbSave").onclick = async () => {
-  // Seed local toggles from what's painted, then apply this save.
-  const fb = (modeStatus || {}).futures_brokers || {};
-  const payload = {
-    webull: _fbLocal.webull != null ? _fbLocal.webull : !!fb.webull,
-    ninjatrader: {
-      enabled: _fbLocal.ninja,
-      account: ($("ninjaAccount") || {}).value || "",
-      incoming_dir: ($("ninjaDir") || {}).value || ""
-    },
-    tradovate: {
-      enabled: _fbLocal.tradovate,
-      username: ($("tvUser") || {}).value || "",
-      demo: !!($("tvDemo") || {}).checked
-    }
-  };
-  const pw = ($("tvPass") || {}).value || "";
-  if (pw) payload.tradovate.password = pw;   // only send when set, keep otherwise
-  try {
-    modeStatus = await askBridge("/config", { futures_brokers: payload });
-    if ($("fbState")) $("fbState").textContent = "saved — futures route there now";
-  } catch (e) {
-    if ($("fbState")) $("fbState").textContent = "couldn't reach the bridge — START HERE first";
-  }
-  paintFuturesBrokers();
-};
+_wireFb("fbTopstep", "topstep", "topstepFields");
+if ($("fbSave")) $("fbSave").onclick = saveFuturesBrokers;
 
 /* ---- manual futures trigger — fire a buy/sell/close by hand ----------------
  * Sends a futures order through the SAME pipeline as a room alert, so it fans
@@ -362,13 +390,18 @@ async function paintStatus() {
   let dgKey = "";
   try { dgKey = (await chrome.storage.local.get("deepgram_key")).deepgram_key || ""; } catch (e) {}
   let v = "?"; try { v = (chrome.runtime.getManifest() || {}).version || "?"; } catch (e) {}
+  const money = [];
+  if (st && st.buying_power != null)
+    money.push("$" + Math.round(st.buying_power).toLocaleString() + " margin");
+  if (st && st.futures_buying_power != null)
+    money.push("$" + Math.round(st.futures_buying_power).toLocaleString() + " futures");
   bar.textContent = [
     "Bridge " + _dot(bridge),
-    "Webull " + (paper ? "PAPER ✅" : (paperKeys ? "paper ⛔" : "—")),
+    "Webull " + ((st && (st.connected || paperKeys)) ? "✅" : (st && st.has_keys ? "⛔" : "—")),
+    "Futures " + ((st && st.futures_account) ? "✅" : "—"),
     "AI " + (ai ? "✅" : "off"),
-    "Voice " + (voiceN ? (voiceN + " 🎙") : (dgKey ? "✅" : "off")),
-    "v" + v
-  ].join("  ·  ");
+    "Voice " + (voiceN ? (voiceN + " 🎙") : (dgKey ? "✅" : "off"))
+  ].join("  ·  ") + (money.length ? "   ·   " + money.join(" · ") : "");
   // A short "what to do next" checklist — only the steps not done yet, in
   // order. Empty when you're fully set up, so it disappears once you're ready.
   const steps = [];
@@ -512,8 +545,8 @@ if ($("bracketstrat")) $("bracketstrat").onclick = async () => {
   const btn = $("bracketstrat");
   btn.textContent = bracketOn ? "ON" : "off";
   btn.className = "tgl " + (bracketOn ? "live" : "safe");
-  const strat = { enabled: bracketOn, take_profit_pct: 15,
-                  stop_loss_pct: 15, one_contract: true };
+  const strat = { enabled: bracketOn, take_profit_pct: 20,
+                  stop_loss_pct: 10, one_contract: true };
   // Extension settings first — this is what the worker reads to force qty=1.
   try {
     const { settings } = await chrome.storage.local.get("settings");
@@ -526,7 +559,7 @@ if ($("bracketstrat")) $("bracketstrat").onclick = async () => {
     modeStatus = await askBridge("/config", { strategy: strat });
     if ($("bracketstate"))
       $("bracketstate").textContent = bracketOn
-        ? "ON — every entry is 1 contract, +15% take-profit, −15% stop. Live and paper."
+        ? "ON — every entry is 1 contract, +20% take-profit, −10% stop. Live and paper."
         : "Off — sizing and exits go back to the room's calls.";
   } catch (e) {
     if ($("bracketstate"))
@@ -535,7 +568,7 @@ if ($("bracketstrat")) $("bracketstrat").onclick = async () => {
   paintStrat();
 };
 
-$("propadd").onclick = async () => {
+if ($("propadd")) $("propadd").onclick = async () => {
   const name = $("propname").value.trim();
   if (!name) { $("propstate").textContent = "give it a name first"; return; }
   try {
@@ -757,6 +790,11 @@ const ROOM_NAMES = { "829754942817828884": "Honeydrip daytrades",
                      "987515353670221834": "Aristotle",
                      "1144369893760831489": "Midas",
                      "1433933203302776852": "Aristotle small acct",
+                     "642437862930907158": "RWGates",
+                     "769797179992571914": "Option Alerts",
+                     "880503518878892143": "Lotto Alerts",
+                     "769797819770732554": "Options Watchlist",
+                     "1137873895832174672": "Futures Alerts",
                      "whop:day-trades": "Whop Day Trades",
                      "whop:futures": "Whop Futures",
                      "whop:high-risk": "Whop High Risk",
@@ -1262,7 +1300,7 @@ $("arm").onclick = async () => {
   await patch({ armed: !s.armed, stopped: false });
 };
 
-$("save").onclick = async () => {
+if ($("save")) $("save").onclick = async () => {
   // The switch lives in TWO places on purpose: the extension (gates whether
   // a futures call fires at all) and the bridge's settings.json (second lock
   // on real orders). Saving sets both so they can't drift apart — and both
@@ -1382,20 +1420,33 @@ $("export").onclick = async () => {
   const ROOMS = { "829754942817828884": "main",
                   "987515353670221834": "aristotle",
                   "1144369893760831489": "midas",
+                  "642437862930907158": "rwgates",
+                  "769797179992571914": "option alerts",
+                  "880503518878892143": "lotto alerts",
+                  "769797819770732554": "options watchlist",
+                  "1137873895832174672": "futures alerts",
                   "1433933203302776852": "aristotle-small" };
   // Whop rooms tag themselves "whop:/their/path" — shown as-is, so two
   // different Whop rooms stay two different lexicons in the file.
   // Sorted by when the message was POSTED, not when it was scraped —
   // scrolling up paints newest-first, and a file in paint order would read
   // like a week played backwards.
-  const rows = (captured || []).slice().sort((a, b) => a.t - b.t).map(c =>
+  // Only export the window the user picked in the dropdown.
+  const sel = ($("exportRange") || {}).value || "60";
+  let cutoff = 0;
+  if (sel === "today") { const d = new Date(); d.setHours(0,0,0,0); cutoff = d.getTime(); }
+  else { const mins = parseFloat(sel); if (mins > 0) cutoff = Date.now() - mins*60*1000; }
+  const picked = (captured || []).filter(c => !cutoff || c.t >= cutoff);
+  const rows = picked.slice().sort((a, b) => a.t - b.t).map(c =>
     new Date(c.t).toLocaleString() +
     "  [" + (ROOMS[c.channel] || c.channel || "?") + "]" +
     "  " + (c.author || "?") + ": " + c.text);
   const blob = new Blob([rows.join("\n") || "nothing captured yet"],
                         { type: "text/plain" });
   const url = URL.createObjectURL(blob);
-  await chrome.downloads.download({ url, filename: "signal-room-chat.txt",
+  const tag = sel === "today" ? "today"
+    : (parseFloat(sel) >= 60 ? "last" + (parseFloat(sel)/60) + "h" : "last" + sel + "m");
+  await chrome.downloads.download({ url, filename: "signal-room-chat-" + tag + ".txt",
                                     saveAs: true })
     .catch(() => {
       // downloads permission missing or blocked — open it in a tab instead so
@@ -1476,12 +1527,12 @@ $("updateapp").onclick = async () => {
   const btn = $("updateapp");
   const el = $("updatestate");
   btn.disabled = true;
-  btn.textContent = "Checking GitHub…";
+  btn.textContent = "⏳";
   try {
     const r = await askBridge("/update", { go: true });
     el.textContent = r.message || (r.ok ? "updating…" : "couldn't update");
     if (r.ok && /restart/i.test(r.message || "")) {
-      btn.textContent = "Restarting the bridge…";
+      btn.textContent = "⏳";
       // Give the bridge time to re-exec, then confirm it's answering again.
       let back = false;
       for (let i = 0; i < 15 && !back; i++) {
@@ -1505,7 +1556,7 @@ $("updateapp").onclick = async () => {
       "START HERE first, then try again.";
   }
   btn.disabled = false;
-  btn.textContent = "Update to the latest version";
+  btn.textContent = "🔄";
 };
 
 /* Show the version right on the panel so you never have to go hunting for it.
@@ -1517,13 +1568,45 @@ function showVersion() {
     const el = $("appVersion");
     if (el) el.textContent = "v" + v;
     const btn = $("updateapp");
-    if (btn && !btn.disabled) btn.textContent = "Update to the latest version (on v" + v + ")";
+    if (btn) btn.title = "Update to the latest version (on v" + v + ")";
   } catch (e) { /* not in an extension context */ }
 }
 showVersion();
 
+/* Descriptions on hover — the gray help text under each control is hidden by
+ * default and only appears when you hover the control (or the text itself), so
+ * the panel reads clean. Status lines (the ones with an id, like fbState) keep
+ * showing — those report live state, not help. */
+(function descriptionsOnHover() {
+  document.querySelectorAll(".note").forEach(n => {
+    if (n.id) return;                         // status lines stay visible
+    const trigger = n.previousElementSibling; // the label/row it explains
+    if (!trigger) return;
+    n.style.display = "none";
+    const show = () => { n.style.display = "block"; };
+    const hide = () => { n.style.display = "none"; };
+    trigger.addEventListener("mouseenter", show);
+    trigger.addEventListener("mouseleave", hide);
+    n.addEventListener("mouseenter", show);
+    n.addEventListener("mouseleave", hide);
+  });
+})();
+
 /* Tabs — browse the panel by page. Every section kept its own id and handler;
  * switching a tab only changes which page is visible. */
+/* Pencil buttons: each opens/closes the credential box for its broker, so the
+ * ON switch only arms and the fields stay hidden until you want to edit. */
+(function wireEditButtons() {
+  document.querySelectorAll("button.edit[data-edit]").forEach(b => {
+    b.onclick = () => {
+      const t = $(b.dataset.edit);
+      if (!t) return;
+      const open = t.style.display && t.style.display !== "none";
+      t.style.display = open ? "none" : "block";
+    };
+  });
+})();
+
 (function setupTabs() {
   const btns = document.querySelectorAll('#tabbar .tabbtn');
   btns.forEach(b => b.addEventListener('click', () => {

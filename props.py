@@ -117,48 +117,141 @@ def _send_tradovate(prop, order, note):
     return "sent to %s" % prop.get("name")
 
 
-# ---- projectx ----------------------------------------------------------------
-def _send_projectx(prop, order, note):
-    """ProjectX Gateway (TopstepX, Bulenox and friends). `extra` holds the
-    firm's gateway base URL; username + API key log in."""
-    req = _requests()
-    base = str(prop.get("extra") or "").rstrip("/")
-    if not base.startswith("http"):
-        raise PropRefused("%s has no ProjectX gateway URL saved (Settings -> "
-                          "extra field) — nothing was sent" % prop.get("name"))
-    auth = req.post(base + "/api/Auth/loginKey", json={
-        "userName": prop.get("username"),
-        "apiKey": prop.get("password")}, timeout=8)
+# ---- projectx (TopstepX, Bulenox, and other ProjectX firms) -----------------
+# Docs: https://gateway.docs.projectx.com  |  TopstepX base = https://api.topstepx.com
+# Auth:  POST /api/Auth/loginKey {userName, apiKey} -> {token}  (Bearer, ~24h)
+# Order needs a ProjectX contractId like "CON.F.US.ENQ.U25", NOT a plain
+# symbol, so we look the symbol up first. Entries carry a server-side
+# stop+target bracket, so protection lives on the firm's servers, not the PC.
+
+_PX_TOKENS = {}     # (base, user)  -> (token, expires_epoch)
+_PX_CONTRACTS = {}  # (base, symbol)-> {"id":..., "tick":...}
+
+# His index-futures bracket, mirroring the Webull rule: stop 10 pts, take
+# profit 25 pts. Applied only to the e-mini / micro index set; anything else
+# enters with no auto-bracket rather than guess a tick size wrong.
+PX_BRACKET_PTS = {"stop": 10.0, "target": 25.0}
+PX_INDEX = {"ES", "MES", "NQ", "MNQ", "YM", "MYM", "RTY", "M2K"}
+PX_TICK = {"ES": 0.25, "MES": 0.25, "NQ": 0.25, "MNQ": 0.25,
+           "YM": 1.0, "MYM": 1.0, "RTY": 0.10, "M2K": 0.10}
+
+
+def _px_token(req, base, user, key):
+    import time
+    ck, now = (base, user), time.time()
+    cached = _PX_TOKENS.get(ck)
+    if cached and cached[1] > now + 60:
+        return cached[0]
+    auth = req.post(base + "/api/Auth/loginKey",
+                    json={"userName": user, "apiKey": key}, timeout=8)
     j = auth.json() if auth.status_code == 200 else {}
     if not j.get("token"):
-        raise PropRefused("%s: ProjectX wouldn't log in (HTTP %s %s)"
-                          % (prop.get("name"), auth.status_code,
-                             auth.text[:120]))
-    hdr = {"Authorization": "Bearer " + j["token"]}
-    accts = req.post(base + "/api/Account/search",
-                     headers=hdr, json={"onlyActiveAccounts": True},
-                     timeout=8).json()
-    acct_list = (accts or {}).get("accounts") or []
-    if not acct_list:
-        raise PropRefused("%s: logged in but no ProjectX account came back"
+        raise PropRefused("ProjectX wouldn't log in (HTTP %s %s) — check the "
+                          "username and API key" % (auth.status_code, auth.text[:120]))
+    _PX_TOKENS[ck] = (j["token"], now + 23 * 3600)
+    return j["token"]
+
+
+def _px_contract(req, base, hdr, symbol):
+    """Plain symbol (MNQ, MES) -> ProjectX contractId + tick size, front month."""
+    sym = str(symbol or "").upper().strip()
+    ck = (base, sym)
+    if ck in _PX_CONTRACTS:
+        return _PX_CONTRACTS[ck]
+    r = req.post(base + "/api/Contract/search", headers=hdr,
+                 json={"searchText": sym, "live": False}, timeout=8)
+    lst = ((r.json() or {}).get("contracts") or []) if r.status_code == 200 else []
+    def _score(c):
+        name = str(c.get("name") or c.get("symbolId") or "").upper()
+        return (bool(c.get("activeContract")), name.startswith(sym))
+    lst = sorted(lst, key=_score, reverse=True)
+    if not lst:
+        raise PropRefused("ProjectX has no contract matching %r" % sym)
+    c = lst[0]
+    info = {"id": c.get("id"),
+            "tick": float(c.get("tickSize") or PX_TICK.get(sym) or 0) or None}
+    _PX_CONTRACTS[ck] = info
+    return info
+
+
+def _send_projectx(prop, order, note):
+    req = _requests()
+    base = str(prop.get("extra") or "").rstrip("/")
+    # `extra` may be "URL" or "URL|AccountName" to pick a specific account.
+    acct_want = ""
+    if "|" in base:
+        base, acct_want = base.split("|", 1)
+        base, acct_want = base.rstrip("/"), acct_want.strip().upper()
+    if not base.startswith("http"):
+        raise PropRefused("%s has no ProjectX gateway URL saved (put "
+                          "https://api.topstepx.com in the extra field) — "
+                          "nothing was sent" % prop.get("name"))
+    tok = _px_token(req, base, prop.get("username"), prop.get("password"))
+    hdr = {"Authorization": "Bearer " + tok}
+
+    accts = ((req.post(base + "/api/Account/search", headers=hdr,
+                       json={"onlyActiveAccounts": True}, timeout=8).json())
+             or {}).get("accounts") or []
+    if not accts:
+        raise PropRefused("%s: logged in but no active ProjectX account came back"
                           % prop.get("name"))
-    acct = acct_list[0]
+    acct = accts[0]
+    if acct_want:
+        acct = next((a for a in accts
+                     if str(a.get("name") or "").upper() == acct_want), acct)
+    acct_id = acct.get("id")
+
+    con = _px_contract(req, base, hdr, order.get("symbol"))
+    contract_id, tick = con["id"], con.get("tick")
+    qty = int(order.get("qty") or 1)
     is_short = str(order.get("direction") or "").upper() == "SHORT"
-    if order.get("action") in ("CLOSE", "TRIM"):
-        is_short = not is_short
-    body = {"accountId": acct.get("id"),
-            "contractId": order.get("symbol"),
-            "type": 2,                       # market
-            "side": 1 if is_short else 0,    # 0 buy, 1 sell
-            "size": int(order.get("qty") or 1)}
+
+    # CLOSE / TRIM use ProjectX's own close endpoints, so we can never flip
+    # into a fresh position by sending an opposing order that's too big.
+    if order.get("action") == "CLOSE":
+        r = req.post(base + "/api/Position/closeContract", headers=hdr,
+                     json={"accountId": acct_id, "contractId": contract_id}, timeout=8)
+        ok = (r.json() or {}).get("success", False) if r.status_code == 200 else False
+        if not ok:
+            raise PropRefused("%s: ProjectX wouldn't close %s (HTTP %s %s)"
+                              % (prop.get("name"), order.get("symbol"), r.status_code, r.text[:140]))
+        note("PROP     %s <- CLOSE %s (ProjectX)" % (prop.get("name"), order.get("symbol")))
+        return "closed on %s" % prop.get("name")
+    if order.get("action") == "TRIM":
+        r = req.post(base + "/api/Position/partialCloseContract", headers=hdr,
+                     json={"accountId": acct_id, "contractId": contract_id, "size": qty}, timeout=8)
+        ok = (r.json() or {}).get("success", False) if r.status_code == 200 else False
+        if not ok:
+            raise PropRefused("%s: ProjectX wouldn't trim %s (HTTP %s %s)"
+                              % (prop.get("name"), order.get("symbol"), r.status_code, r.text[:140]))
+        note("PROP     %s <- TRIM %s x%s (ProjectX)" % (prop.get("name"), order.get("symbol"), qty))
+        return "trimmed on %s" % prop.get("name")
+
+    # Entry. Limit if a price came with the call, otherwise market.
+    limit = order.get("limit")
+    body = {"accountId": acct_id, "contractId": contract_id,
+            "side": 1 if is_short else 0,      # 0 = buy, 1 = sell
+            "size": qty}
+    if limit not in (None, "", 0):
+        body["type"], body["limitPrice"] = 1, float(limit)   # 1 = limit
+    else:
+        body["type"] = 2                                     # 2 = market
+
+    # Server-side bracket (ticks) = protection that survives the PC going dark.
+    sym = str(order.get("symbol") or "").upper()
+    if tick and sym in PX_INDEX:
+        body["stopLossBracket"] = {"ticks": int(round(PX_BRACKET_PTS["stop"] / tick)), "type": 1}
+        body["takeProfitBracket"] = {"ticks": int(round(PX_BRACKET_PTS["target"] / tick)), "type": 1}
+
     r = req.post(base + "/api/Order/place", headers=hdr, json=body, timeout=8)
     j2 = r.json() if r.status_code == 200 else {}
     if not j2.get("success", False):
         raise PropRefused("%s: ProjectX refused the order (HTTP %s %s)"
                           % (prop.get("name"), r.status_code, r.text[:160]))
-    note("PROP     %s <- %s %s x%s (ProjectX accepted)"
+    br = " +bracket" if "stopLossBracket" in body else ""
+    note("PROP     %s <- %s %s x%s (ProjectX accepted%s)"
          % (prop.get("name"), "SELL" if is_short else "BUY",
-            order.get("symbol"), body["size"]))
+            order.get("symbol"), qty, br))
     return "sent to %s" % prop.get("name")
 
 

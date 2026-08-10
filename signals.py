@@ -112,7 +112,7 @@ RE_TRIM = re.compile(r"\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b",
 RE_BACKIN = re.compile(r"\bback\s+in\b", re.IGNORECASE)
 RE_ENTRY = re.compile(
     r"\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b"
-    r"|\b(?:took|take|taking)\s+(?:some|a)\b", re.IGNORECASE)
+    r"|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b", re.IGNORECASE)
 # "added to SPY @everyone new avg is 2.8" — they doubled up and their average
 # moved. Whether that buys you a second contract is a setting, not a parser
 # decision: the parser only says "this is an add", and guards.resolve_add has
@@ -394,6 +394,9 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               "looking at", "thinking", "maybe", "might", "if it", "if you",
               "waiting", "wait for", "heads up", "scanner", "idea", "consider",
               "recap", "example", "congrats", "missed", "sorry", "pissed",
+              # AlertBot posts after-the-fact summaries like "$MSFT
+              # entry / exit for a 20% gain" — a recap, not a live call.
+              "entry / exit", "entry/exit",
               "sets the tone", "session", "overall", "read was", "look at that",
               "still holding", "use $", "as risk", "anyone", "lmk", "great job",
               # The victory-lap paragraph. It's full of percentages and prices
@@ -644,7 +647,21 @@ def _expiry_anywhere(text):
     return None
 
 
+# TradeLikeGates ($STS / RWGates) posts contracts in ThinkorSwim's dotted
+# form: ".HOOD260702C118" = HOOD, 2026-07-02, Call, strike 118. The leading dot
+# + letters + 6-digit YYMMDD + C/P + strike is unambiguous, so it wins first.
+RE_CONTRACT_OSI = re.compile(
+    r"\.([A-Za-z]{1,6})(\d{2})(\d{2})(\d{2})([CP])(\d{1,6}(?:\.\d{1,2})?)",
+    re.IGNORECASE)
+
+
 def _contract(text):
+    m = RE_CONTRACT_OSI.search(text)
+    if m and m.group(1).upper() not in NOT_TICKERS:
+        return {"symbol": m.group(1).upper(),
+                "strike": float(m.group(6)),
+                "side": "CALLS" if m.group(5).lower() == "c" else "PUTS",
+                "expiry": "%d/%d/%s" % (int(m.group(3)), int(m.group(4)), m.group(2))}
     for m in RE_CONTRACT.finditer(text):
         sym = m.group("symbol").upper()
         if sym in NOT_TICKERS:

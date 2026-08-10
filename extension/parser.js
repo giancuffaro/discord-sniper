@@ -32,6 +32,10 @@ const RE_CONTRACT = /(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+(?:(\d{1,2}[/-]\d{1,2}(?:
 // reading "10% on SPY" as a contract, and it's how they actually write it.
 const RE_CONTRACT_REV = /(?<![A-Za-z\d.])\$?(\d{1,5}(?:\.\d{1,2})?)\s*(calls?|puts?)\b([^.!?]{0,40}?)\bon\s+\$?([A-Za-z]{1,5})\b/gi;
 
+// TradeLikeGates ($STS / RWGates) posts in ThinkorSwim dotted form:
+// ".HOOD260702C118" = HOOD, 2026-07-02, Call, strike 118. Unambiguous, so first.
+const RE_CONTRACT_OSI = /\.([A-Za-z]{1,6})(\d{2})(\d{2})(\d{2})([CP])(\d{1,6}(?:\.\d{1,2})?)/i;
+
 // "Friday expiration" is not a missing date — it's the same weekly the room's
 // pinned rules already default to, said out loud. Kept as the token WEEKLY so
 // the log can say "this Friday" and so turning assume_weekly_expiry off doesn't
@@ -188,7 +192,7 @@ const RE_LOADING = /\b(?:load(?:ing|ed)?|prep(?:ping|ped)?)\b/i;
 const RE_ALLOUT = /\ball\s+out\b/i;
 const RE_TRIM = /\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b/i;
 const RE_BACKIN = /\bback\s+in\b/i;
-const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a)\b/i;
+const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b/i;
 const RE_EXIT = /\b(?:exited|exiting|closed|closing|stc|sold|selling|out|cutting)\b/i;
 // "Filled 3.95 starters" — their entry arrives as TWO messages. The contract was
 // named minutes earlier in a "Loading 205 calls Friday expiration on NVDA"
@@ -239,6 +243,7 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   "spot on", "on watch",
   "looking at", "thinking", "maybe", "might", "if it", "if you", "waiting",
   "wait for", "heads up", "scanner", "idea", "consider", "recap", "example",
+  "entry / exit", "entry/exit",
   "congrats", "missed", "sorry", "pissed", "sets the tone", "session",
   "overall", "read was", "look at that", "still holding", "use $", "as risk",
   "anyone", "lmk", "great job",
@@ -367,6 +372,12 @@ function expiryAnywhere(text) {
 }
 
 function findContract(text) {
+  const osi = RE_CONTRACT_OSI.exec(text);
+  if (osi && !NOT_TICKERS.has(osi[1].toUpperCase())) {
+    return { symbol: osi[1].toUpperCase(), strike: parseFloat(osi[6]),
+             side: osi[5].toLowerCase() === "c" ? "CALLS" : "PUTS",
+             expiry: parseInt(osi[3], 10) + "/" + parseInt(osi[4], 10) + "/" + osi[2] };
+  }
   RE_CONTRACT.lastIndex = 0;
   let m;
   while ((m = RE_CONTRACT.exec(text)) !== null) {

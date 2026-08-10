@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <style>
   :root { color-scheme: dark; }
-  body { width: 360px; margin: 0; padding: 12px 14px 16px;
+  body { width: 440px; min-height: 600px; margin: 0; padding: 12px 14px 16px;
          font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
          background: #0b0d12; color: #e6e8ee;
          /* Everything is copyable. The popup stays open while you drag a
@@ -68,7 +68,7 @@
   details { margin-top: 10px; border-top: 1px solid #1c212c; padding-top: 8px; }
   summary { cursor: pointer; color: #9aa3b5; font-size: 12px; }
   #log { margin-top: 10px; border-top: 1px solid #1c212c; padding-top: 8px;
-         max-height: 260px; overflow-y: auto; }
+         max-height: 340px; overflow-y: auto; }
   .e { padding: 5px 0; border-bottom: 1px solid #141922; }
   .e b { display: block; font-size: 12px; }
   .e span { color: #7d8697; font-size: 11px; }
@@ -136,10 +136,22 @@
                font-weight: 600; }
   .tabpane { display: none; }
   .tabpane.on { display: block; }
+  button.edit { flex:none; width:30px; min-width:30px; height:24px; padding:0;
+                font-size:12px; border-radius:6px; }
+  .okbox { display:flex; align-items:center; gap:6px; font-size:12px;
+           color:#86efac; background:#0f2417; border:1px solid #14532d;
+           border-radius:6px; padding:6px 9px; margin:0 0 6px; }
+  .okbox b { color:#4ade80; }
 </style>
 </head>
 <body>
-  <h1>Discord Sniper</h1>
+  <input id="bridge" type="hidden">
+  <div class="row" style="margin:0 0 8px;align-items:center;gap:8px">
+    <h1 style="margin:0;flex:1">Discord Sniper</h1>
+    <span style="font-size:11px;color:#9aa3b5;white-space:nowrap"><b id="appVersion">…</b></span>
+    <button id="updateapp" title="Update to the latest version" style="flex:none;width:34px;padding:6px 0;font-size:15px">🔄</button>
+  </div>
+  <div class="note" id="updatestate" style="margin-top:0">Pulls the newest build from GitHub and restarts the bridge itself — do it when you're not mid-trade.</div>
 
   <!-- Impossible to miss when the bridge is down: nothing can trade until it's
        back, so this sits above everything, blinking red, with the one action. -->
@@ -185,12 +197,6 @@
     <button id="arm" class="grow safe big">OFF</button>
   </div>
   <div class="state" id="state">Loading…</div>
-  <div class="bar">
-    <div class="state" id="modestate">Checking the bridge…</div>
-  </div>
-  <div class="holding" id="holding">No active trades</div>
-  <div class="purse" id="purse" style="display:none"></div>
-  <div class="tablebox" id="roomstats" style="display:none"></div>
 
   <!-- ===== TABS ===== -->
   <div class="tabbar" id="tabbar">
@@ -198,9 +204,9 @@
     <button data-tab="channels" class="tabbtn">Channels</button>
     <button data-tab="strategies" class="tabbtn">Strategies</button>
     <button data-tab="keys" class="tabbtn">Keys</button>
-    <button data-tab="connect" class="tabbtn">Connections</button>
     <button data-tab="logs" class="tabbtn">Logs</button>
   </div>
+
 
   <!-- ===== TRADES ===== -->
   <div class="tabpane on" data-tab="trades">
@@ -226,8 +232,30 @@
         <button id="mfClose" class="grow">Close / flat this symbol</button>
       </div>
       <div class="note" id="mfState">Fires a futures order to whatever brokers you
-        turned on under Strategies → “Trade futures from”. Use a Sim/paper
+        turned on under Keys → “Trade futures from”. Use a Sim/paper
         NinjaTrader account to practice. Works any time.</div>
+    </div>
+
+    <div class="tablebox" style="margin-top:8px">
+      <div class="tablehead"><b>Test a trade — options or futures</b></div>
+      <div class="row" style="margin-top:6px">
+        <button id="testtrade" class="grow safe">🧪 Run test (entry → trim → exit)</button>
+      </div>
+      <div class="row" style="margin-top:4px">
+        <input id="testticker" value="SPY" placeholder="ticker" style="max-width:66px">
+        <input id="teststrike" value="800" placeholder="strike" style="max-width:66px">
+        <select id="testtype" style="max-width:84px">
+          <option value="C">Call</option>
+          <option value="P">Put</option>
+          <option value="LONG">Long (fut)</option>
+          <option value="SHORT">Short (fut)</option>
+        </select>
+        <input id="testexp" placeholder="exp (blank=Fri)" class="grow">
+      </div>
+      <div class="note">Runs a full entry → trim → exit through the whole pipeline on
+        PAPER only (never real money). Pick Call/Put for an OPTIONS test, or
+        Long/Short (fut) for a futures test (use a futures symbol like MNQ/MES;
+        strike &amp; exp ignored). Runs any time — a real fill still needs the market open.</div>
     </div>
   </div>
 
@@ -262,21 +290,13 @@
   <div class="tabpane" data-tab="strategies">
     <label>One-click bracket (LIVE)</label>
     <div class="row" style="margin-bottom:4px">
-      <span class="grow" style="font-size:12px">Bracket: 1 contract, +15% / −15%</span>
+      <span class="grow" style="font-size:12px">Bracket: 1 contract, +20% / −10%</span>
       <button id="bracketstrat" class="tgl safe">off</button>
     </div>
     <div class="note" id="bracketstate">On: every entry is exactly ONE contract no
-      matter what the alert says. Takes profit the moment it's up +15%, hard stop
-      at −15%. Works on live and paper. Overrides sizing while it's on.</div>
+      matter what the alert says. Takes profit the moment it's up +20%, hard stop
+      at −10%. Works on live and paper. Overrides sizing while it's on.</div>
 
-    <label>Test fills</label>
-    <div class="row" style="margin-bottom:4px">
-      <span class="grow" style="font-size:12px">Webull Paper — the test engine</span>
-      <button id="paperbtn" class="tgl safe">off</button>
-    </div>
-    <div class="note" id="paperstate">On: orders fill in your Webull paper
-      account for true prices, still scored per room. Needs keys + a Webull
-      paper account.</div>
 
     <label>Tactics (test money)</label>
     <div class="half">
@@ -304,107 +324,94 @@
     </div>
     <div class="note" id="simstate">&nbsp;</div>
 
-    <label>Trade futures from</label>
-    <div class="note" style="margin-top:2px">Turn on one or more. A futures alert
-      fires to every one that's ON — trade from all of them or just one.</div>
-    <div class="row" style="margin-top:6px;margin-bottom:4px">
-      <span class="grow" style="font-size:12px">Webull</span>
-      <button id="fbWebull" class="tgl safe">off</button>
-    </div>
-    <div class="row" style="margin-bottom:4px">
-      <span class="grow" style="font-size:12px">NinjaTrader</span>
-      <button id="fbNinja" class="tgl safe">off</button>
-    </div>
-    <div id="ninjaFields" style="display:none;margin-bottom:6px">
-      <input id="ninjaAccount" placeholder="NinjaTrader account (e.g. Sim101)"
-             autocomplete="off" style="margin-top:4px">
-      <input id="ninjaDir" placeholder="Incoming folder (blank = default NT8 path)"
-             autocomplete="off" style="margin-top:6px">
-      <div class="note">Blank folder uses Documents/NinjaTrader 8/incoming. In
-        NinjaTrader: Tools &gt; Options &gt; General &gt; make sure the ATI is on.
-        Use a Sim account to paper-test.</div>
-    </div>
-    <div class="row" style="margin-bottom:4px">
-      <span class="grow" style="font-size:12px">Tradovate</span>
-      <button id="fbTradovate" class="tgl safe">off</button>
-    </div>
-    <div id="tradovateFields" style="display:none;margin-bottom:6px">
-      <input id="tvUser" placeholder="Tradovate username / email"
-             autocomplete="off" style="margin-top:4px">
-      <input id="tvPass" type="password" placeholder="Tradovate password"
-             autocomplete="off" style="margin-top:6px">
-      <label style="font-size:11px;display:flex;align-items:center;gap:6px;margin-top:6px">
-        <input id="tvDemo" type="checkbox"> Demo account (uncheck for live)
-      </label>
-    </div>
-    <div class="row" style="margin-top:6px">
-      <button id="fbSave" class="grow">Save futures brokers</button>
-    </div>
-    <div class="note" id="fbState">&nbsp;</div>
 
-    <label style="margin-top:12px">Prop firms (advanced — extra futures accounts)</label>
-    <div id="proplist"></div>
-    <div class="half">
-      <div><input id="propname" placeholder="Name (Apex 50K)"></div>
-      <div>
-        <select id="propplatform">
-          <option value="tradovate">Tradovate</option>
-          <option value="projectx">ProjectX (TopstepX...)</option>
-          <option value="webhook">Webhook (PickMyTrade...)</option>
-        </select>
-      </div>
-    </div>
-    <input id="propuser" placeholder="Username / email" autocomplete="off"
-           style="margin-top:6px">
-    <input id="proppass" type="password" autocomplete="off"
-           placeholder="Password / API key" style="margin-top:6px">
-    <input id="propextra" placeholder="Extra: gateway URL, webhook URL, or demo/live"
-           style="margin-top:6px">
-    <div class="row" style="margin-top:6px">
-      <button id="propadd" class="grow">Add prop firm</button>
-    </div>
-    <div class="note" id="propstate">When any prop is ARMED, live futures
-      orders go to it instead of Webull. Everything stays pretend until a
-      room is LIVE anyway.</div>
   </div>
 
   <!-- ===== KEYS ===== -->
   <div class="tabpane" data-tab="keys">
-    <!-- When keys are already saved, the paste boxes collapse to a one-line
-         "saved" summary with a Replace link — no need to look at empty fields
-         for keys that are already in. -->
-    <div id="keySaved" class="holding" style="display:none"></div>
-    <div id="keyEntry">
-      <label>Webull App Key</label>
-      <input id="wbkey" type="password" autocomplete="off"
-             placeholder="paste your App Key">
-      <label>Webull App Secret</label>
-      <input id="wbsecret" type="password" autocomplete="off"
-             placeholder="paste your App Secret">
-      <div class="row" style="margin-top:8px">
-        <button id="savekeys" class="grow">Save keys to this PC</button>
-      </div>
-    </div>
-    <div class="note" id="keystate">&nbsp;</div>
+    <label>Trade futures from — connect your accounts</label>
+    <div class="note" style="margin-top:2px">Flip a switch to arm it. Tap the pencil to enter or replace that account's key.</div>
 
-    <div id="paperKeySaved" class="holding" style="display:none"></div>
-    <div id="paperKeyEntry">
-      <label>Webull PAPER (sandbox) App Key</label>
-      <input id="wbpkey" type="password" autocomplete="off"
-             placeholder="paste your Sandbox App Key">
-      <label>Webull PAPER (sandbox) App Secret</label>
-      <input id="wbpsecret" type="password" autocomplete="off"
-             placeholder="paste your Sandbox App Secret">
-      <div class="row" style="margin-top:8px">
-        <button id="savepaperkeys" class="grow">Save paper keys to this PC</button>
-      </div>
+    <div class="row" style="margin-top:6px;margin-bottom:2px">
+      <span class="grow" style="font-size:12px">Webull</span>
+      <button class="edit" data-edit="webullFields" title="Enter Webull API key">✏️</button>
+      <button id="fbWebull" class="tgl safe">off</button>
     </div>
-    <div class="note">Webull's paper account is a separate, walled-off
-      environment, so it needs its OWN key — apply for a SANDBOX API key at
-      developer.webull.com (auto-approved in minutes). These fill your $1M paper
-      books when Webull Paper is ON. Saved straight to this PC, never the
-      browser.</div>
-    <div class="note" id="paperkeystate">&nbsp;</div>
+    <div id="keySaved" class="okbox" style="display:none"></div>
+    <div id="webullFields" style="display:none;margin-bottom:6px">
+      <div id="keyEntry">
+        <label>Webull App Key</label>
+        <input id="wbkey" type="password" autocomplete="off" placeholder="paste your App Key">
+        <label>Webull App Secret</label>
+        <input id="wbsecret" type="password" autocomplete="off" placeholder="paste your App Secret">
+        <div class="row" style="margin-top:8px">
+          <button id="savekeys" class="grow">Save keys to this PC</button>
+        </div>
+      </div>
+      <div class="note" id="keystate">&nbsp;</div>
+    </div>
+
+    <div class="row" style="margin-bottom:2px">
+      <span class="grow" style="font-size:12px">Webull paper — test engine</span>
+      <button class="edit" data-edit="paperFields" title="Enter Webull paper key">✏️</button>
+      <button id="paperbtn" class="tgl safe">off</button>
+    </div>
+    <div id="paperKeySaved" class="okbox" style="display:none"></div>
+    <div id="paperFields" style="display:none;margin-bottom:6px">
+      <div id="paperKeyEntry">
+        <label>Webull PAPER (sandbox) App Key</label>
+        <input id="wbpkey" type="password" autocomplete="off" placeholder="paste your Sandbox App Key">
+        <label>Webull PAPER (sandbox) App Secret</label>
+        <input id="wbpsecret" type="password" autocomplete="off" placeholder="paste your Sandbox App Secret">
+        <div class="row" style="margin-top:8px">
+          <button id="savepaperkeys" class="grow">Save paper keys to this PC</button>
+        </div>
+      </div>
+      <div class="note">Webull's paper account is separate — apply for a SANDBOX API key at developer.webull.com (auto-approved in minutes). Fills your $1M paper books when this is ON.</div>
+      <div class="note" id="paperstate">&nbsp;</div>
+      <div class="note" id="paperkeystate">&nbsp;</div>
+    </div>
+
+    <div class="row" style="margin-bottom:2px">
+      <span class="grow" style="font-size:12px">NinjaTrader</span>
+      <button class="edit" data-edit="ninjaFields" title="NinjaTrader settings">✏️</button>
+      <button id="fbNinja" class="tgl safe">off</button>
+    </div>
+    <div id="ninjaFields" style="display:none;margin-bottom:6px">
+      <input id="ninjaAccount" placeholder="NinjaTrader account (e.g. Sim101)" autocomplete="off" style="margin-top:4px">
+      <input id="ninjaDir" placeholder="Incoming folder (blank = default NT8 path)" autocomplete="off" style="margin-top:6px">
+      <div class="note">Blank folder uses Documents/NinjaTrader 8/incoming. In NinjaTrader: Tools &gt; Options &gt; General &gt; make sure the ATI is on. Use a Sim account to paper-test.</div>
+    </div>
+
+    <div class="row" style="margin-bottom:2px">
+      <span class="grow" style="font-size:12px">Tradovate</span>
+      <button class="edit" data-edit="tradovateFields" title="Tradovate login">✏️</button>
+      <button id="fbTradovate" class="tgl safe">off</button>
+    </div>
+    <div id="tradovateFields" style="display:none;margin-bottom:6px">
+      <input id="tvUser" placeholder="Tradovate username / email" autocomplete="off" style="margin-top:4px">
+      <input id="tvPass" type="password" placeholder="Tradovate password" autocomplete="off" style="margin-top:6px">
+      <label style="font-size:11px;display:flex;align-items:center;gap:6px;margin-top:6px">
+        <input id="tvDemo" type="checkbox"> Demo account (uncheck for live)
+      </label>
+    </div>
+
+    <div class="row" style="margin-bottom:2px">
+      <span class="grow" style="font-size:12px">Topstep (TopstepX)</span>
+      <button class="edit" data-edit="topstepFields" title="TopstepX API key">✏️</button>
+      <button id="fbTopstep" class="tgl safe">off</button>
+    </div>
+    <div id="topstepFields" style="display:none;margin-bottom:6px">
+      <input id="tsUser" placeholder="TopstepX username" autocomplete="off" style="margin-top:4px">
+      <input id="tsKey" type="password" placeholder="TopstepX API key" autocomplete="off" style="margin-top:6px">
+      <input id="tsUrl" placeholder="https://api.topstepx.com" value="https://api.topstepx.com" autocomplete="off" style="margin-top:6px">
+      <div class="note">Generate the key in TopstepX &rarr; Settings (gear) &rarr; API. Needs the TopstepX API add-on ($14.50/mo with code topstep). Leave the URL as-is.</div>
+    </div>
+
+    <div class="row" style="margin-top:6px">
+      <button id="fbSave" class="grow">Save futures brokers</button>
+    </div>
+    <div class="note" id="fbState">&nbsp;</div>
 
     <label style="margin-top:12px">AI reader — <b id="aiState">off</b></label>
     <input id="aiKey" type="password" autocomplete="off"
@@ -450,32 +457,25 @@
     <div class="note" id="dgstate">&nbsp;</div>
   </div>
 
-  <!-- ===== CONNECTIONS ===== -->
-  <div class="tabpane" data-tab="connect">
-    <div class="note" id="connmode">The bridge is the program that runs on your
-      PC and actually places the orders. "Bridge ✅" in the status bar at the
-      top means it's up. If it's down, double-click 🎯 START HERE.</div>
-    <label>Bridge on your PC</label>
-    <input id="bridge" placeholder="http://127.0.0.1:8787/order">
-    <div class="row" style="margin-top:10px">
-      <button id="save" class="grow">Save settings</button>
-    </div>
-
-    <label style="margin-top:12px">App version — <b id="appVersion">…</b></label>
-    <div class="row" style="margin-top:4px">
-      <button id="updateapp" class="grow">Update to the latest version</button>
-    </div>
-    <div class="note" id="updatestate">Pulls the newest build from GitHub and
-      restarts the bridge on your PC by itself — no need to open START HERE. The
-      bridge blinks for about 10 seconds while it swaps over, so do it when
-      you're not mid-trade.</div>
-  </div>
-
   <!-- ===== LOGS ===== -->
   <div class="tabpane" data-tab="logs">
     <div class="row" style="margin-top:4px">
       <button id="copylog" class="grow">Copy log</button>
-      <button id="export">Export chat</button>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <select id="exportRange" style="max-width:150px">
+        <option value="5">Last 5 min</option>
+        <option value="10">Last 10 min</option>
+        <option value="15">Last 15 min</option>
+        <option value="20">Last 20 min</option>
+        <option value="30">Last 30 min</option>
+        <option value="45">Last 45 min</option>
+        <option value="60">Last 1 hour</option>
+        <option value="120">Last 2 hours</option>
+        <option value="240">Last 4 hours</option>
+        <option value="today">Daily (today)</option>
+      </select>
+      <button id="export" class="grow">Export chat</button>
     </div>
     <div class="row" style="margin-top:4px">
       <button id="savelognow" class="grow safe">💾 Save log now (for Claude)</button>
@@ -488,30 +488,18 @@
       downloads every message this extension has seen — send it to me and I'll
       tune the reader to your room's exact wording.</div>
 
-    <div class="row" style="margin-top:10px">
-      <button id="testtrade" class="grow safe">🧪 Run test trade (entry → trim → exit)</button>
-    </div>
-    <div class="row" style="margin-top:4px">
-      <input id="testticker" value="SPY" placeholder="ticker" style="max-width:66px">
-      <input id="teststrike" value="800" placeholder="strike" style="max-width:66px">
-      <select id="testtype" style="max-width:74px">
-        <option value="C">Call</option>
-        <option value="P">Put</option>
-        <option value="LONG">Long (fut)</option>
-        <option value="SHORT">Short (fut)</option>
-      </select>
-      <input id="testexp" placeholder="exp (blank=Fri)" class="grow">
-    </div>
-    <div class="note">Fires a real entry, then a trim, then a full exit through the
-      WHOLE pipeline — the parser, every guard, the position book, and the paper
-      broker — so you can watch get-in → trim → exit end to end. Pick Call/Put for
-      an options test, or Long/Short (fut) for a futures test (put a futures symbol
-      like MNQ or MES in the ticker box; strike/exp are ignored). It routes to
-      PAPER only (never real money) and runs ANY time — the market-hours guard is
-      skipped for tests, so a real fill still needs the market open, but you can
-      always watch the pipeline run.</div>
     <div id="log"></div>
   </div>
+
+
+  <!-- Bridge status + what you are holding (kept at the bottom so the tab
+       content shows the instant you click a tab). -->
+  <div class="bar">
+    <div class="state" id="modestate">Checking the bridge…</div>
+  </div>
+  <div class="holding" id="holding">No active trades</div>
+  <div class="purse" id="purse" style="display:none"></div>
+  <div class="tablebox" id="roomstats" style="display:none"></div>
 
   <script src="popup.js"></script>
 </body>

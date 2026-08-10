@@ -151,7 +151,7 @@ class Book:
         # above. The stop side of the bracket is the resting stop (stop_pct),
         # so setting both to 15 gives a tight +15% / -15% exit on one contract.
         self.take_profit_on = False
-        self.take_profit_pct = 15.0
+        self.take_profit_pct = 20.0
         # HIS trim ladder — run our own exit on their entry, because the
         # rooms don't always call their trims. Each rung: sell some at +at_pct
         # and (optionally) drag the stop to entry*(1+stop_to_pct/100). Keep a
