@@ -80,11 +80,8 @@ const ROOM_LABELS = {
   "whop:swing": "Whop Swing Trades", "whop:long-term": "Whop Long Term",
   "829352738239414332": "ZT top-flow",
   "721821717328298066": "ZT scalps",
-  "1504469469844738158": "ZT uoa-data",
   "1174393224253681674": "ZT long-swings",
   "748266924122570882": "ZT uoa-swings",
-  "1343408561803362374": "ZT 5k-challenge",
-  "1151897689185861632": "ZT strategy-testing",
   "1356793611420958732": "ZT opt-1",
   "1248264554886991893": "ZT opt-2",
   "1470409110288601282": "ZT opt-3",
@@ -173,7 +170,7 @@ async function cfg() {
                "whop:day-trades", "whop:futures", "whop:high-risk",
                "whop:2k-challenge", "whop:swing", "whop:long-term",
                // z trades (ZTRADEZ) — the free-trial week, all testing
-               "829352738239414332", "721821717328298066", "1504469469844738158", "1174393224253681674", "748266924122570882", "1343408561803362374", "1151897689185861632",
+               "829352738239414332", "721821717328298066", "1174393224253681674", "748266924122570882",
                // z trades batch two — his links, his groupings
                "1356793611420958732",
                "1248264554886991893",
