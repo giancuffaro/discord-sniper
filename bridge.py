@@ -1291,21 +1291,38 @@ def broker_positions():
     now = time.time()
     if now - _POS["t"] < 8:
         return _POS["v"]
-    rows = []
-    seen = set()
-    for wb, is_live in ((WB_LIVE, True), (WB_PAPER, False)):
-        if wb is None or id(wb) in seen or not hasattr(wb, "positions"):
-            continue
-        seen.add(id(wb))
+
+    def _refresh():
+        rows = []
+        seen = set()
         try:
-            for p in (wb.positions() or []):
-                d = dict(p)
-                d["live"] = is_live          # which Webull account it's in
-                rows.append(d)
-        except Exception:                               # noqa: BLE001
-            pass
-    _POS["t"], _POS["v"] = now, rows
-    return rows
+            for wb, is_live in ((WB_LIVE, True), (WB_PAPER, False)):
+                if wb is None or id(wb) in seen or not hasattr(wb, "positions"):
+                    continue
+                seen.add(id(wb))
+                try:
+                    for p in (wb.positions() or []):
+                        d = dict(p)
+                        d["live"] = is_live  # which Webull account it's in
+                        rows.append(d)
+                except Exception:                       # noqa: BLE001
+                    pass
+            _POS["t"], _POS["v"] = time.time(), rows
+        finally:
+            _POS["busy"] = False
+
+    # Serve what we have and fetch fresh in the background — the popup's
+    # poll must never sit inside a broker call (8/11: a network blip turned
+    # that into a 4-minute hang and "couldn't reach the bridge"). Only the
+    # very first call, with nothing cached yet, waits for the answer.
+    if _POS.get("busy"):
+        return _POS["v"]
+    _POS["busy"] = True
+    if _POS["t"] == 0:
+        _refresh()
+    else:
+        threading.Thread(target=_refresh, daemon=True).start()
+    return _POS["v"]
 
 
 def real_buying_power():
@@ -1317,12 +1334,23 @@ def real_buying_power():
     now = time.time()
     if now - _BP["t"] < 30:
         return _BP["v"]
-    try:
-        v = WB.buying_power()
-    except Exception:                                   # noqa: BLE001
-        v = None
-    _BP["t"], _BP["v"] = now, v
-    return v
+
+    def _refresh():
+        try:
+            v = WB.buying_power()
+        except Exception:                               # noqa: BLE001
+            v = None
+        _BP["t"], _BP["v"] = time.time(), v
+        _BP["busy"] = False
+
+    if _BP.get("busy"):
+        return _BP["v"]
+    _BP["busy"] = True
+    if _BP["t"] == 0:
+        _refresh()
+    else:
+        threading.Thread(target=_refresh, daemon=True).start()
+    return _BP["v"]
 
 
 def real_futures_buying_power():
@@ -1333,12 +1361,24 @@ def real_futures_buying_power():
     now = time.time()
     if now - _FBP["t"] < 30:
         return _FBP["v"]
-    try:
-        v = WB.futures_buying_power() if hasattr(WB, "futures_buying_power") else None
-    except Exception:                                   # noqa: BLE001
-        v = None
-    _FBP["t"], _FBP["v"] = now, v
-    return v
+
+    def _refresh():
+        try:
+            v = (WB.futures_buying_power()
+                 if hasattr(WB, "futures_buying_power") else None)
+        except Exception:                               # noqa: BLE001
+            v = None
+        _FBP["t"], _FBP["v"] = time.time(), v
+        _FBP["busy"] = False
+
+    if _FBP.get("busy"):
+        return _FBP["v"]
+    _FBP["busy"] = True
+    if _FBP["t"] == 0:
+        _refresh()
+    else:
+        threading.Thread(target=_refresh, daemon=True).start()
+    return _FBP["v"]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -2215,8 +2255,34 @@ def connect_broker(quiet=False):
     load_state()      # swings survive restarts
 
 
+def _install_network_failfast():
+    """8/11: his internet blipped at 10:05 and 10:20 (DNS dead, host
+    unreachable). Every Webull call then hung ~4 MINUTES inside the SDK — no
+    default timeout — the popup's polls wedged behind them, the extension
+    said "couldn't reach the bridge", and the XOM and GM entries died waiting.
+    A connection that can't be made in 4 seconds isn't going to be made; a
+    fast honest error beats a frozen bridge. This puts a default timeout on
+    every requests call in the process (the Webull SDK rides on requests).
+    Anything that passes its own timeout keeps it."""
+    try:
+        import requests
+        if getattr(requests.sessions.Session.request, "_failfast", False):
+            return
+        _orig = requests.sessions.Session.request
+
+        def _timed(self, method, url, **kw):
+            if kw.get("timeout") is None:
+                kw["timeout"] = (4, 8)          # connect, read — seconds
+            return _orig(self, method, url, **kw)
+        _timed._failfast = True
+        requests.sessions.Session.request = _timed
+    except Exception:                                   # noqa: BLE001
+        pass
+
+
 def main():
     import eastern
+    _install_network_failfast()
     print("=" * 62)
     print("  DISCORD SNIPER BRIDGE")
     print("  started %s New York time" % eastern.now().strftime("%a %d %b %H:%M:%S"))
