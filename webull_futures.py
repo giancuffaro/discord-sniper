@@ -175,6 +175,37 @@ def _order_id_of(body):
     return body.get("order_id") or body.get("orderId") or body.get("client_order_id")
 
 
+# Business answers: Webull UNDERSTOOD the order and rejected it for a real-
+# world reason — money, permissions. Probing other endpoint shapes after one
+# of these is pure noise (same account, same money, same no), and it buried
+# the one line that mattered on 8/11 under two fallback errors. Translate to
+# plain English and stop immediately.
+_BUSINESS = (
+    ("BUYING_POWER", "your Webull FUTURES account doesn't have enough money "
+     "in it for one {contract}. The order itself was fine - Webull checked "
+     "it and only rejected the funds. Move money into the Futures account "
+     "(Webull app: Transfer Money -> to your Futures account), and the next "
+     "call fires."),
+    ("ACCOUNT_NOT_SUPPORT", "Webull says this account can't take futures "
+     "orders - the futures account may still be pending approval. Check "
+     "Account Management in the Webull app."),
+    ("NON_FUTURES_ACCOUNT", "the order was routed at a non-futures account - "
+     "check execution.webull.futures_account_id."),
+    ("TRADE_NOT_ALLOWED", "Webull refused: futures trading not allowed on "
+     "this contract or account right now."),
+)
+
+
+def _business_stop(text, contract):
+    """Raise the plain-English refusal if this error is a business answer."""
+    up = str(text).upper()
+    if "417" not in up and "OAUTH_OPENAPI" not in up:
+        return
+    for key, msg in _BUSINESS:
+        if key in up:
+            raise FuturesRefused(msg.format(contract=contract))
+
+
 def _place(wb, contract, side, qty, limit=None):
     """Send one futures order. The old code passed a bare dict as the only
     argument and every endpoint 'answered' with a TypeError — 'no endpoint
@@ -232,7 +263,8 @@ def _place(wb, contract, side, qty, limit=None):
         except TypeError:
             return None                                 # wrong signature, skip
         except Exception as e:                          # noqa: BLE001
-            errors.append("%s: %s" % (mname, str(e)[:70]))
+            _business_stop(e, contract)     # a real answer ends the probing
+            errors.append("%s: %s" % (mname, str(e)[:110]))
             return None
         code = getattr(res, "status_code", 200)
         try:
@@ -241,6 +273,7 @@ def _place(wb, contract, side, qty, limit=None):
             body = {}
         if code != 200:
             # The body is where Webull says WHY — keep it, that's the whole point.
+            _business_stop(body, contract)  # a real answer ends the probing
             errors.append("%s: HTTP %s %s" % (mname, code, str(body)[:150]))
             return None
         oid = _order_id_of(body)
@@ -285,7 +318,13 @@ def _place(wb, contract, side, qty, limit=None):
             fn = getattr(h, m, None)
             if not callable(fn):
                 continue
-            for args in shapes:
+            use = shapes
+            if "v2" in low:
+                # place_order_v2 wants a flat dict; a [combo] list crashes it
+                # inside the SDK ('list' object has no attribute 'items').
+                use = [a for a in shapes
+                       if not any(isinstance(x, list) for x in a)]
+            for args in use:
                 got = _run(fn, "%s.%s" % (hname, m), *args)
                 if got:
                     return got

@@ -35,3 +35,6 @@ _to_delete/
 
 # FUSE mount junk (created when a file is held open over the bridge)
 .fuse_hidden*
+
+# the per-trade journal - rebuilt from days/ constantly, data not code
+journal.csv
