@@ -156,11 +156,27 @@ class Guards:
         # already in AMD" tells you far more than "that looked like a repeat".
         # Per TRADER now: Brett being in SPY doesn't block Unraveler's SPY call.
         who = str(getattr(sig, "caller", "") or author_name or "").lower()
-        already = self.open_pos.get(key_of(who, sig.symbol)) or next(
+
+        # Double-up is per-CONTRACT, not per-ticker: holding QQQ 720P must NOT
+        # block a fresh QQQ 717P call. Only the exact strike+expiry+side you
+        # already hold counts as a double-up. Equity/futures carry no strike,
+        # so for them the name IS the whole contract and the ticker match stays.
+        def _same_ct(p):
+            if sig.strike is None:
+                return True
+            try:
+                return (str(p.get("side")) == str(sig.side)
+                        and float(p.get("strike") or -1) == float(sig.strike)
+                        and str(p.get("expiry") or "") == str(sig.expiry or ""))
+            except Exception:  # noqa: BLE001
+                return False
+        _keyed = self.open_pos.get(key_of(who, sig.symbol))
+        already = (_keyed if (_keyed and _same_ct(_keyed)) else next(
             # A position whose owner was never known blocks anyone's re-entry
-            # in that name — better one missed trade than one doubled one.
+            # in that same contract — better one missed trade than a doubled one.
             (p for k, p in self.open_pos.items()
-             if _key_sym(k) == sig.symbol and _key_who(k) == "?"), None)
+             if _key_sym(k) == sig.symbol and _key_who(k) == "?"
+             and _same_ct(p)), None))
         if sig.action == "OPEN" and already:
             return False, ("you're already in %s from their earlier call — "
                            "this one would double you up" % sig.symbol)
