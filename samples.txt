@@ -434,3 +434,10 @@ $TSLA took entry .TSLA260717P382.5 Fill: 2.36
 $F took entry .F260731C15.5 Fill: 0.72
 Loaded .AAPL260710C310 $AAPL no position yet
 $MSFT entry / exit for a 20% gain. Waited for proper break of trigger
+
+# --- Midas two-step entry (missed 8/11) ---
+Loaded $PLTR 175p 8/14 @everyone
+4.10 entry @here
+Full sized 3.80 avg
+Add level is 175.50
+My stop loss is 176

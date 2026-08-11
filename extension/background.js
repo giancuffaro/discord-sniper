@@ -769,6 +769,28 @@ async function syncFillsInner() {
                           "open orders once." });
     }
   }
+  // The other direction (8/11): a guard record the BRIDGE doesn't know AT
+  // ALL. Yesterday's MSFT/META survived a bridge restart inside extension
+  // storage, and this morning's fresh calls got refused as "already in it —
+  // would double you up" — a real missed entry. The bridge's book is the
+  // truth: if it's answering and holds no trace of a record (same key OR same
+  // symbol under any owner, adopted "?" included), and the record is older
+  // than 10 minutes (grace for an in-flight send), it's a leftover — drop it
+  // so today's call can fire.
+  const knownKeys = new Set(Object.keys(data.positions || {}));
+  const knownSyms = new Set([...knownKeys].map(keySymbol));
+  const staleCut = Date.now() - 10 * 60 * 1000;
+  for (const k of Object.keys(st.positions)) {
+    const p = st.positions[k] || {};
+    if ((p.ts || 0) >= staleCut) continue;
+    if (knownKeys.has(k) || knownSyms.has(keySymbol(k))) continue;
+    delete st.positions[k];
+    changed = true;
+    await addLog({ kind: "update", what: keySymbol(k),
+                   why: "cleared a leftover record from a previous session — " +
+                        "the bridge holds no such trade, and it was blocking " +
+                        "fresh entries as a double-up." });
+  }
   if (changed) await saveGuardState(st);
   // The test account and the day's trade table, straight from the bridge, so
   // the popup can draw the whole day instead of leaving you to reconstruct it
@@ -1747,7 +1769,12 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // An entry is now an offer, not a purchase. Watch for what became of it —
     // this is what turns "bid is in" into "filled" or "nobody sold to you".
     if (res.ok) watchFills();
-    await addLog({ kind: res.ok ? "sent" : "failed", what: human(sig) + " x" + qty,
+    // WHO called it and WHICH ROOM, right on the line (his ask, 8/11).
+    const _cid = String(msg.channelId || "");
+    const _room = CHAN_NAMES[_cid] || ROOM_LABELS[_cid] || sig.room || "";
+    const _from = (sig.caller || msg.author || "?") + (_room ? " · " + _room : "");
+    await addLog({ kind: res.ok ? "sent" : "failed",
+                   what: human(sig) + " x" + qty + " — " + _from,
                    // What kind of order it was. "BID IN" is only true of an
                    // entry — a sell doesn't sit on the bid waiting for a buyer,
                    // and calling an exit "BID IN" made closed trades read like
@@ -1762,7 +1789,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       chrome.notifications.create({
         type: "basic", iconUrl: "icon128.png",
         title: (res.ok ? "FIRED " : "FAILED ") + human(sig),
-        message: res.msg.slice(0, 140)
+        message: (_from + " — " + res.msg).slice(0, 140)
       });
     } catch (e) { /* notifications are a nicety, never a blocker */ }
     reply({ ok: true });

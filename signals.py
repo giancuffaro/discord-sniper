@@ -347,9 +347,13 @@ RE_IN_PRICE = re.compile(r"(?:\bat|@)\s*\$?(\d{1,2}\.\d{1,2})\b", re.IGNORECASE)
 # @here", a bare price with the word fill/avg ("1.97 fill", "Avg 1.61"),
 # or "Taking more cons". All of them mean HE IS IN — fire on his last PREP.
 RE_FILL_CONF = re.compile(
+    # Midas's two-step entry (missed 8/11): "Loaded $PLTR 175p 8/14" then
+    # "4.10 entry @here" — the entry line carries only the price, "entry" as
+    # a noun, and a trailing @here. Also "Full sized 3.80 avg" — his add to
+    # full size, same shape with a prefix. Both pin to the loaded contract.
     r"^(?:filled)\b(?:\s+(?:light\s+size|lightly|starters?))*[\s.!]*$"
-    r"|^\$?(\d{1,2}\.\d{1,2})\s+(?:is\s+my\s+)?(?:final\s+)?"
-    r"(?:fill|avg)\b[\s.!]*$"
+    r"|^(?:full\s+siz(?:e|ed)\s+)?\$?(\d{1,2}\.\d{1,2})\s+(?:is\s+my\s+)?(?:final\s+)?"
+    r"(?:fill|avg|entry)\b[\s.!]*(?:@\w+[\s.!]*)?$"
     r"|^avg\s+\$?(\d{1,2}\.\d{1,2})\b[\s.!]*$"
     r"|^tak(?:e|ing)\s+(?:first|more|some)?\s*(?:size|cons?)\b",
     re.IGNORECASE)
@@ -435,7 +439,8 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                # "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
-               "SOME",
+               # "SL HIT" — the stop got hit; HIT is a verb, not a ticker (8/11).
+               "SOME", "HIT",
                "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
                # A5 - timezone tokens + option-strategy shorthand that read as
                # tickers on tickerless exits ("... 10:17 AM EDT" grabbed EDT).

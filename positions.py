@@ -610,11 +610,17 @@ class Book:
             except (TypeError, ValueError):
                 fill = None
             key = key_of("?", sym)
+            # WHICH account the row came from decides everything downstream:
+            # a sandbox leftover adopted as "live" routes its trims/closes to
+            # the REAL account, which doesn't hold it — Webull reads the sell
+            # as opening a covered call and 417s (the whole morning of 8/11).
+            row_live = bool(b.get("live"))
             with self._lock:
                 if self._pos.get(key, {}).get("state") in (WORKING, FILLED):
                     continue
                 self._pos[key] = {
-                    "key": key, "live": True, "paper": False, "room": None,
+                    "key": key, "live": row_live, "paper": not row_live,
+                    "room": None,
                     "who": "?", "symbol": sym,
                     "kind": b.get("kind") or "option",
                     "mult": 1.0 if is_fut else 100.0,
@@ -636,11 +642,22 @@ class Book:
             have.add(sym)
             added += 1
             self._event(key, "adopted",
-                        "%s x%d picked up from your Webull account — the bot can "
-                        "see it and exit it on the room's call now" % (sym, qty))
+                        "%s x%d picked up from your Webull %s account — the bot "
+                        "can see it and exit it on the room's call now"
+                        % (sym, qty, "LIVE" if row_live else "paper"))
             if note:
-                note("ADOPTED  %s x%d from Webull (fill %s)"
-                     % (sym, qty, fill))
+                note("ADOPTED  %s x%d from Webull %s (fill %s)"
+                     % (sym, qty, "LIVE" if row_live else "paper", fill))
+            # A 1-2 lot WITH a known cost is the bot's own trade that slipped
+            # through a no-fill — his standing rule (+20%/-10%) applies to it
+            # like any other fill. Bigger lots / unknown cost stay unmanaged
+            # (the room's or his to run), exactly as before.
+            if (fill and qty <= 2 and not is_fut):
+                try:
+                    self._arm_stop(key, b.get("side"), b.get("strike"),
+                                   b.get("expiry"), qty, float(fill))
+                except Exception:                       # noqa: BLE001
+                    pass
         return added
 
     # -- did it fill? ---------------------------------------------------------

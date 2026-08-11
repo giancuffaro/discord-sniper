@@ -172,7 +172,10 @@ const RE_IN_PRICE = /(?:\bat|@)\s*\$?(\d{1,2}\.\d{1,2})\b/i;
 // Midas confirms his entry three ways after a Loaded: a bare "Filled
 // @here", a bare price with the word fill/avg ("1.97 fill", "Avg 1.61"),
 // or "Taking more cons". All of them mean HE IS IN — fire on his last PREP.
-const RE_FILL_CONF = /^(?:filled)\b(?:\s+(?:light\s+size|lightly|starters?))*[\s.!]*$|^\$?(\d{1,2}\.\d{1,2})\s+(?:is\s+my\s+)?(?:final\s+)?(?:fill|avg)\b[\s.!]*$|^avg\s+\$?(\d{1,2}\.\d{1,2})\b[\s.!]*$|^tak(?:e|ing)\s+(?:first|more|some)?\s*(?:size|cons?)\b/i;
+// Midas's two-step entry (missed 8/11): "Loaded $PLTR 175p 8/14" then
+// "4.10 entry @here" / "Full sized 3.80 avg" — price-only lines that pin to
+// the loaded contract. Mirrors signals.RE_FILL_CONF exactly.
+const RE_FILL_CONF = /^(?:filled)\b(?:\s+(?:light\s+size|lightly|starters?))*[\s.!]*$|^(?:full\s+siz(?:e|ed)\s+)?\$?(\d{1,2}\.\d{1,2})\s+(?:is\s+my\s+)?(?:final\s+)?(?:fill|avg|entry)\b[\s.!]*(?:@\w+[\s.!]*)?$|^avg\s+\$?(\d{1,2}\.\d{1,2})\b[\s.!]*$|^tak(?:e|ing)\s+(?:first|more|some)?\s*(?:size|cons?)\b/i;
 const RE_CLOSE_ALL = /\ball\s+positions?\s+(?:are\s+)?closed\b|\bclos(?:ed|ing)\s+all\s+positions?\b|\bout\s+of\s+all\s+trades\b|\bsold\s+everything\b/i;
 const RE_HALF = /\b(?:out\s+of|sold)\s+half\b/i;
 // "Stopped out of half my position" / "Stopping out of 2nd entry" — their
@@ -274,7 +277,8 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
 
 const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
-  "SOME",
+  // "SL HIT" — the stop got hit; HIT is a verb, not a ticker (8/11).
+  "SOME", "HIT",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
   "DO", "NOT", "BUY", "SELL", "IE", "ADMIN", "HERE", "EOD", "CPI", "FOMC",
   "PT", "SL", "TP", "AVG", "GO", "UP", "WE", "US", "NO",
