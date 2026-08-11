@@ -317,6 +317,7 @@ class Book:
             "opened": p.get("sent_at"),
             "closed": p.get("closed_at"),
             "all_out": p.get("state") in DONE,
+            "manual": bool(p.get("manual_close")),
         }
 
     def table(self):
@@ -883,6 +884,86 @@ class Book:
                 return FILLED, None, limit
             return WORKING, 0, None
         return wb.order_status(oid)
+
+
+    def reconcile_gone(self, broker_rows, note=None):
+        """The inverse of adopt(): the book says you're in it, the ACCOUNT
+        says you're not — he sold it himself in the Webull app. After 3
+        sweeps in a row missing (~60s) the trade is marked done instead of
+        the watchdog guarding a ghost all day. One flaky poll can't fake it,
+        and an account bucket that came back empty is skipped entirely,
+        because empty and unreachable look identical from here.
+        Returns how many trades were marked closed."""
+        buckets = {True: [], False: []}
+        for b in (broker_rows or []):
+            if b.get("kind") == "future":
+                continue
+            buckets[bool(b.get("live"))].append(b)
+
+        def _exp(e):
+            fn = getattr(self, "expiry_parser", None)
+            if fn is not None:
+                try:
+                    return str(fn(e))
+                except Exception:                       # noqa: BLE001
+                    return None
+            return str(e)
+
+        def _held(b, p_):
+            if str(b.get("symbol") or "").upper() != str(p_.get("symbol") or "").upper():
+                return False
+            try:
+                if p_.get("strike") is not None and b.get("strike") is not None \
+                        and abs(float(b["strike"]) - float(p_["strike"])) > 0.001:
+                    return False
+            except Exception:                           # noqa: BLE001
+                return False
+            bs = str(b.get("side") or "").upper()
+            ps = str(p_.get("side") or "").upper()
+            if bs and ps and bs[0] != ps[0]:
+                return False
+            be, pe = _exp(b.get("expiry")), _exp(p_.get("expiry"))
+            if be is None or pe is None:
+                # an expiry that won't parse -> call it held. Never close a
+                # trade over a date-format misunderstanding.
+                return True
+            return be == pe
+
+        closed = 0
+        with self._lock:
+            keys = list(self._pos.keys())
+        for key in keys:
+            with self._lock:
+                p_ = dict(self._pos.get(key) or {})
+            if not p_ or p_.get("state") != FILLED or int(p_.get("qty") or 0) <= 0:
+                continue
+            if p_.get("kind") == "future" or p_.get("closing"):
+                continue
+            acct = buckets[bool(p_.get("live"))]
+            if not acct:
+                continue        # no rows from that account — no verdict
+            if any(_held(b, p_) for b in acct):
+                with self._lock:
+                    q = self._pos.get(key)
+                    if q is not None:
+                        q["gone_misses"] = 0
+                continue
+            misses = 0
+            with self._lock:
+                q = self._pos.get(key)
+                if q is None:
+                    continue
+                q["gone_misses"] = int(q.get("gone_misses") or 0) + 1
+                misses = q["gone_misses"]
+                if misses >= 3:
+                    q["manual_close"] = True
+            if misses >= 3:
+                self.finish(key, CLOSED,
+                            "gone from your Webull account — you closed it "
+                            "yourself, so the trade is marked done",
+                            price=None)
+                closed += 1
+        return closed
 
     def _became_filled(self, key, qty, price):
         with self._lock:

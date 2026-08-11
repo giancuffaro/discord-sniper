@@ -928,16 +928,9 @@ async function checkBuild() {
     const { build_waiting } = await chrome.storage.local.get("build_waiting");
     if (build_waiting !== stamp) {
       await chrome.storage.local.set({ build_waiting: stamp });
-      await addLog({ kind: "update", why: "a new version is on this PC. It'll " +
-                     "load itself as soon as the market session is over (or " +
-                     "the moment you turn the bot OFF) — never mid-session." });
-      try {
-        chrome.notifications.create({
-          type: "basic", iconUrl: "icon128.png",
-          title: "Update ready",
-          message: "New version waiting. It applies itself after the close."
-        });
-      } catch (e) { /* nicety */ }
+      // (the "UPDATED — a new version is on this PC" banner lived here.
+      // Deleted 8/11 — his call: he restarts with RESTART BRIDGE.bat, the
+      // banner was noise. The build_waiting bookkeeping above still runs.)
     }
     return;
   }

@@ -478,6 +478,58 @@ def save_day():
                        "table": BOOK.table(), "wallet": BOOK.wallet()}, f)
     except OSError:
         pass        # a full disk must never take down the trading path
+    # journal.csv — the same record flattened to one line per trade, all days,
+    # openable in Excel: who called it, the contract, every exit, how it
+    # ended, and whether YOU closed it at Webull yourself.
+    try:
+        import csv
+        import datetime as _dt
+        allrows = []
+        for fn in sorted(os.listdir(DAYS)):
+            if not fn.endswith(".json"):
+                continue
+            try:
+                with open(os.path.join(DAYS, fn), encoding="utf-8") as f:
+                    d = json.load(f)
+            except (OSError, ValueError):
+                continue
+            for r in (d.get("table") or []):
+                allrows.append((d.get("date", fn[:-5]), r))
+
+        def _hhmm(t):
+            if not t:
+                return ""
+            return _dt.datetime.fromtimestamp(t).strftime("%H:%M")
+
+        with open(os.path.join(HERE, "journal.csv"), "w", newline="",
+                  encoding="utf-8-sig") as f:
+            w = csv.writer(f)
+            w.writerow(["date", "room", "caller", "symbol", "contract", "qty",
+                        "avg_in", "exits", "P&L", "opened", "closed", "status",
+                        "closed_by_you", "account"])
+            for date, r in allrows:
+                ct = ""
+                if r.get("strike") is not None:
+                    ct = "%s%s %s" % (
+                        r.get("strike"),
+                        "C" if str(r.get("side") or "").upper().startswith("C")
+                        else "P", r.get("expiry") or "")
+                elif r.get("kind") == "future":
+                    ct = "futures"
+                ex = "; ".join(
+                    "%s@%s%s" % (e.get("qty"), e.get("price"),
+                                 "" if e.get("pl") is None
+                                 else " (%+.0f)" % e["pl"])
+                    for e in (r.get("exits") or []))
+                w.writerow([date, r.get("room") or "", r.get("who") or "?",
+                            r.get("symbol") or "", ct, r.get("qty") or 0,
+                            r.get("avg") if r.get("avg") is not None else "",
+                            ex, r.get("pl"), _hhmm(r.get("opened")),
+                            _hhmm(r.get("closed")), r.get("state") or "",
+                            "YES" if r.get("manual") else "",
+                            "live" if r.get("live") else "paper"])
+    except Exception:                                   # noqa: BLE001
+        pass    # the journal must never take down the trading path
 
 
 def tkey(order):
@@ -2186,6 +2238,9 @@ def main():
                 if BOOK is not None and WB is not None:
                     BOOK.purge_expired(note)
                     BOOK.adopt(broker_positions(), note)
+                    # the other direction: positions HE closed at Webull
+                    if BOOK.reconcile_gone(broker_positions(), note):
+                        save_day()
             except Exception:                           # noqa: BLE001
                 pass
             time.sleep(20)
