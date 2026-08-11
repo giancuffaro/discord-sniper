@@ -46,11 +46,8 @@ rem  z trades (ZTRADEZ) - the free-trial week. Different Discord server.
 set "ZT_SERVER=496871546963492874"
 set "ZT1=https://discord.com/channels/%ZT_SERVER%/829352738239414332"
 set "ZT2=https://discord.com/channels/%ZT_SERVER%/721821717328298066"
-set "ZT3=https://discord.com/channels/%ZT_SERVER%/1504469469844738158"
 set "ZT4=https://discord.com/channels/%ZT_SERVER%/1174393224253681674"
 set "ZT5=https://discord.com/channels/%ZT_SERVER%/748266924122570882"
-set "ZT6=https://discord.com/channels/%ZT_SERVER%/1343408561803362374"
-set "ZT7=https://discord.com/channels/%ZT_SERVER%/1151897689185861632"
 
 set INTERACTIVE=1
 if /i "%~1"=="morning" set INTERACTIVE=0
@@ -214,7 +211,7 @@ if defined CHROME (
   rem  would otherwise pause a window you can't see. These apply to the whole
   rem  Chrome instance because we closed it first above, so this launch is what
   rem  starts it - the later windows inherit them.
-  start "" "!CHROME!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --process-per-site --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!" "!WHOP1!" "!WHOP2!" "!WHOP3!" "!WHOP4!" "!WHOP5!" "!WHOP6!" "!ZT1!" "!ZT2!" "!ZT3!" "!ZT4!" "!ZT5!" "!ZT6!" "!ZT7!"
+  start "" "!CHROME!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --process-per-site --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!" "!WHOP1!" "!WHOP2!" "!WHOP3!" "!WHOP4!" "!WHOP5!" "!WHOP6!" "!ZT1!" "!ZT2!" "!ZT4!" "!ZT5!"
   rem  z trades batch two opens as its own window - 25 more rooms
   start "" "!CHROME!" "https://discord.com/channels/496871546963492874/1356793611420958732" "https://discord.com/channels/496871546963492874/1248264554886991893" "https://discord.com/channels/496871546963492874/1470409110288601282" "https://discord.com/channels/496871546963492874/694197721430491266" "https://discord.com/channels/496871546963492874/777750637613416479" "https://discord.com/channels/496871546963492874/1331631786068938813" "https://discord.com/channels/496871546963492874/1239624229583061052" "https://discord.com/channels/496871546963492874/1209181195406024744" "https://discord.com/channels/496871546963492874/1332090335005900800" "https://discord.com/channels/496871546963492874/874280313038192670" "https://discord.com/channels/496871546963492874/1389300087829827745" "https://discord.com/channels/496871546963492874/862419656382873650" "https://discord.com/channels/496871546963492874/1061980561293443152" "https://discord.com/channels/496871546963492874/1179200811650252850" "https://discord.com/channels/496871546963492874/918665915103584327" "https://discord.com/channels/496871546963492874/1255279667489931325" "https://discord.com/channels/496871546963492874/1294812275668160613" "https://discord.com/channels/496871546963492874/1121391020148543631" "https://discord.com/channels/496871546963492874/1239561137914122240" "https://discord.com/channels/496871546963492874/552885275676639243" "https://discord.com/channels/496871546963492874/1525120298075029554" "https://discord.com/channels/496871546963492874/1251181965252755517" "https://discord.com/channels/496871546963492874/1472793065646325904" "https://discord.com/channels/496871546963492874/1213977047479754783" "https://discord.com/channels/496871546963492874/1375454591755489341"
   rem  boka trading opens as its own window
@@ -232,11 +229,8 @@ if defined CHROME (
   start "" "!WHOP6!"
   start "" "!ZT1!"
   start "" "!ZT2!"
-  start "" "!ZT3!"
   start "" "!ZT4!"
   start "" "!ZT5!"
-  start "" "!ZT6!"
-  start "" "!ZT7!"
   rem  boka trading
   start "" "https://discord.com/channels/1156381060108664884/1288291150083653652" "https://discord.com/channels/1156381060108664884/1499190814482632825" "https://discord.com/channels/1156381060108664884/1395159239164432515" "https://discord.com/channels/1156381060108664884/1387459050505240597"
   rem  z trades batch two - one more window's worth

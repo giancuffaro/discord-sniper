@@ -29,7 +29,7 @@ import urllib.error
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 API_VERSION = "2023-06-01"
 # Haiku: cheap and fast, and extraction is an easy task. Overridable in settings.
-DEFAULT_MODEL = "claude-3-5-haiku-latest"
+DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 
 SYSTEM = (
     "You read ONE message from a stock/options/futures trading signal room and "
