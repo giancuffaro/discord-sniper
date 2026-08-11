@@ -481,9 +481,14 @@
       <button id="savelognow" class="grow safe">💾 Save log now (for Claude)</button>
     </div>
     <div class="note" id="exportTimer" style="color:#9aa4b5">Next auto-save in …</div>
+    <div class="row" style="margin-top:4px">
+      <span class="note">Auto-save every</span>
+      <input id="exportEvery" type="number" min="1" max="240" step="1"
+             style="width:56px"> <span class="note">minutes — remembered.</span>
+    </div>
     <div class="note">Saves today's log to your Drive folder — the same file the
-      bot auto-saves every 4 minutes, overwriting it each pass so it stays current.
-      Hit this any time you want me to check it right now.</div>
+      bot auto-saves on the timer above, overwriting it each pass so it stays
+      current. Hit this any time you want me to check it right now.</div>
     <div class="note">"Copy log" grabs today's activity as text. "Export chat"
       downloads every message this extension has seen — send it to me and I'll
       tune the reader to your room's exact wording.</div>

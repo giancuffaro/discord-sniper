@@ -1081,8 +1081,24 @@ chrome.alarms.create("watch-build", { periodInMinutes: 0.5 });
 // Every 4 minutes now, his call — the daily file is overwritten each pass
 // (same filename, conflictAction:"overwrite"), so it stays current for a close
 // remote read without piling up. Kicks off a minute after startup, then every 4.
-const EXPORT_EVERY_MIN = 4;
-chrome.alarms.create("auto-export", { when: Date.now() + 60000, periodInMinutes: EXPORT_EVERY_MIN });
+// The interval is a SETTING now (popup -> Save chat section), not a constant:
+// the worker restarts all day, and a constant here stomped any change straight
+// back — "it'll just go back over and over", his words, 8/11. Stored value
+// wins; 30 is the default he asked for.
+const EXPORT_EVERY_MIN_DEFAULT = 30;
+async function armAutoExport() {
+  let mins = EXPORT_EVERY_MIN_DEFAULT;
+  try {
+    const { export_every_min } = await chrome.storage.local.get("export_every_min");
+    const v = parseFloat(export_every_min);
+    if (v >= 1 && v <= 240) mins = v;
+  } catch (e) { /* default stands */ }
+  chrome.alarms.create("auto-export", { when: Date.now() + 60000, periodInMinutes: mins });
+}
+armAutoExport();
+chrome.storage.onChanged.addListener((ch, area) => {
+  if (area === "local" && ch.export_every_min) armAutoExport();
+});
 chrome.alarms.onAlarm.addListener(a => {
   if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); tryReArm(); }
   if (a.name === "whop-watchdog") whopWatchdog();

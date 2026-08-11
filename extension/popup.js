@@ -1417,13 +1417,21 @@ $("savelognow").onclick = async () => {
 /* Live countdown to the next auto-save. Now every 4 minutes — reckoned from the
  * last save (last_export), so it stays honest without knowing the worker's exact
  * alarm tick. Also shows when it last saved. */
-const EXPORT_EVERY_MS = 4 * 60 * 1000;
+const EXPORT_EVERY_MIN_DEFAULT = 30;
+async function exportEveryMs() {
+  try {
+    const { export_every_min } = await chrome.storage.local.get("export_every_min");
+    const v = parseFloat(export_every_min);
+    if (v >= 1 && v <= 240) return v * 60 * 1000;
+  } catch (e) { /* default stands */ }
+  return EXPORT_EVERY_MIN_DEFAULT * 60 * 1000;
+}
 async function tickExportTimer() {
   const el = $("exportTimer");
   if (!el) return;
   let last = 0;
   try { last = (await chrome.storage.local.get("last_export")).last_export || 0; } catch (e) {}
-  let ms = last ? (last + EXPORT_EVERY_MS - Date.now()) : 0;
+  let ms = last ? (last + (await exportEveryMs()) - Date.now()) : 0;
   if (ms < 0) ms = 0;
   const mm = Math.floor(ms / 60000);
   const ss = Math.floor((ms % 60000) / 1000);
@@ -1433,6 +1441,24 @@ async function tickExportTimer() {
 }
 setInterval(tickExportTimer, 1000);
 tickExportTimer();
+
+/* The auto-save interval box: shows the remembered value, saves on change.
+ * The background worker re-arms its alarm the moment this is stored. */
+(async () => {
+  const inp = $("exportEvery");
+  if (!inp) return;
+  try {
+    const { export_every_min } = await chrome.storage.local.get("export_every_min");
+    inp.value = export_every_min || EXPORT_EVERY_MIN_DEFAULT;
+  } catch (e) { inp.value = EXPORT_EVERY_MIN_DEFAULT; }
+  inp.onchange = async () => {
+    let v = parseFloat(inp.value);
+    if (!(v >= 1)) v = EXPORT_EVERY_MIN_DEFAULT;
+    if (v > 240) v = 240;
+    inp.value = v;
+    await chrome.storage.local.set({ export_every_min: v });
+  };
+})();
 
 $("export").onclick = async () => {
   const { captured } = await chrome.storage.local.get("captured");
