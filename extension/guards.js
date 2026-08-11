@@ -243,7 +243,21 @@ async function resolveSymbol(sig, author) {
     return sig;
   }
   const who = String(sig.caller || author || "").toLowerCase();
-  const pick = pickHeld(held, who);
+  let pick = pickHeld(held, who);
+
+  // Second try (8/11/26): the trim came from an admin who LOADED a contract
+  // earlier — "Midas: Loaded $Spy 773p ... Midas: 11%". His positions all
+  // read owner "?" after a pickup, so the name match fails, but his own
+  // loading call says exactly which ticker he trades. One unambiguous match
+  // only, never a guess between two. Mirrors guards.resolve_symbol.
+  if (!pick) {
+    const ld = (st.loaded || {})[who] || {};
+    const ldSym = String(ld.symbol || "").toUpperCase();
+    if (ldSym) {
+      const cands = keys.filter(k => keySymbol(k) === ldSym);
+      if (cands.length === 1) pick = cands[0];
+    }
+  }
 
   if (!pick) {
     const what = keys.slice().sort().map(k =>

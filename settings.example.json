@@ -47,7 +47,11 @@
     "_reset_paper_daily": "Clear all paper/dry-run positions at New York midnight so the popup starts each day with a clean paper book. Live (real-money) positions are never touched. true = clear daily, false = carry paper positions over.",
     "reset_paper_daily": true,
     "_ai_reader": "READING intelligence for the calls the regex can't crack. Only runs on a MISSED message: hands that one line to Claude, which reads it into a clean call that still passes every guard (a made-up ticker is refused). It never decides to trade. enabled+api_key set it; the popup does this for you. Empty key = off, no cost.",
-    "ai_reader": { "enabled": false, "api_key": "", "model": "claude-3-5-haiku-latest" },
+    "ai_reader": {
+      "enabled": false,
+      "api_key": "",
+      "model": "claude-3-5-haiku-latest"
+    },
     "webull": {
       "app_key": "",
       "app_secret": "",
@@ -69,7 +73,7 @@
       "_keep_cash_buffer": "Dollars to never touch, in a live account. 0 spends everything available. 50 means an entry is skipped once it would leave you under $50.",
       "keep_cash_buffer": 0,
       "marketable_buffer_pct": 2,
-      "_paper_trading": "Paper is the TEST ENGINE: every non-live room fills in your Webull SIMULATED (sandbox) account for real prices, still scored per room. It turns on automatically the moment a sandbox key is saved (leave paper_trading unset for that auto behaviour, or set it false by hand to force the in-house sim instead). Webull's sandbox is FULLY ISOLATED from your live account and needs its OWN app key/secret (a separate developer application, auto-approved in minutes) — your live keys will NOT work there. Paste the sandbox keys as paper_app_key/paper_app_secret (popup PAPER boxes or setup_keys). paper_endpoint defaults to api.sandbox.webull.com; paper_account_id names a specific sim account if you have more than one.",
+      "_paper_trading": "Paper is the TEST ENGINE: every non-live room fills in your Webull SIMULATED (sandbox) account for real prices, still scored per room. It turns on automatically the moment a sandbox key is saved (leave paper_trading unset for that auto behaviour, or set it false by hand to force the in-house sim instead). Webull's sandbox is FULLY ISOLATED from your live account and needs its OWN app key/secret (a separate developer application, auto-approved in minutes) \u2014 your live keys will NOT work there. Paste the sandbox keys as paper_app_key/paper_app_secret (popup PAPER boxes or setup_keys). paper_endpoint defaults to api.sandbox.webull.com; paper_account_id names a specific sim account if you have more than one.",
       "paper_trading": false,
       "paper_app_key": "",
       "paper_app_secret": "",
@@ -93,10 +97,26 @@
       "enabled": false,
       "keep_runners": 2,
       "rungs": [
-        { "at": 10.0, "sell": 1, "stop_to": null },
-        { "at": 20.0, "sell": 1, "stop_to": 0.0 },
-        { "at": 30.0, "sell": 1, "stop_to": 10.0 }
+        {
+          "at": 10.0,
+          "sell": 1,
+          "stop_to": null
+        },
+        {
+          "at": 20.0,
+          "sell": 1,
+          "stop_to": 0.0
+        },
+        {
+          "at": 30.0,
+          "sell": 1,
+          "stop_to": 10.0
+        }
       ]
     }
+  },
+  "pullback": {
+    "timeout_seconds": 300,
+    "poll_seconds": 2
   }
 }

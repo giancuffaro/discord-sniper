@@ -544,7 +544,19 @@ class WebullOptions:
         self._fns = found
         return found
 
+    def _pace(self):
+        """Webull rate-limits bursts — the 8/9 log is wall-to-wall 429
+        TOO_MANY_REQUESTS from ten stops placed in one second. A breath of
+        spacing between calls on the same connection keeps every one of them
+        under the limit. Never retries anything — it only spaces."""
+        now = time.time()
+        wait = 0.15 - (now - getattr(self, "_last_call", 0.0))
+        if wait > 0:
+            time.sleep(wait)
+        self._last_call = time.time()
+
     def ask_bid(self, occ):
+        self._pace()
         # Borrow quotes from the live client when this one can't get them (the
         # sandbox has no OPRA entitlement). Read-only — it never places an order
         # through the live connection, only reads the ask/bid.
@@ -591,6 +603,85 @@ class WebullOptions:
                           "market is closed. Nothing was sent." % occ)
         raise Refused("couldn't get a quote for %s right now. Nothing was sent. (%s)"
                       % (occ, joined[:120]))
+
+    # -- underlying (stock) quote --------------------------------------------
+    # NEW (8/11/26) for the round-number pullback strategy: it needs the price
+    # of the UNDERLYING STOCK, which the option path never fetched. Built the
+    # same resilient "hunt the SDK by name" way as option quotes. NOT yet
+    # verified against the live Webull SDK — MUST be confirmed on-computer
+    # (call stock_price("AAPL") and check it returns a real number) before the
+    # strategy is trusted to enter.
+    def _stock_fns(self):
+        if getattr(self, "_sfns", None) is not None:
+            return self._sfns
+        found, holders = [], [("data_client", self._data)]
+        for attr in dir(self._data):
+            if attr.startswith("_"):
+                continue
+            low = attr.lower()
+            if any(w in low for w in ("market", "quote", "stock", "snapshot")):
+                try:
+                    holders.append((attr, getattr(self._data, attr)))
+                except Exception:                       # noqa: BLE001
+                    pass
+        for hname, h in holders:
+            for m in dir(h):
+                low = m.lower()
+                if m.startswith("_") or "option" in low:
+                    continue
+                if "quote" in low or "snapshot" in low:
+                    fn = getattr(h, m, None)
+                    if callable(fn):
+                        found.append(("%s.%s" % (hname, m), fn))
+        self._sfns = found
+        return found
+
+    def stock_price(self, symbol):
+        """Current price of the UNDERLYING stock (last, or bid/ask mid).
+        Read-only; paper borrows the live client, exactly like option quotes.
+        Returns a float, or raises Refused."""
+        if self.quote_client is not None and self.quote_client is not self:
+            return self.quote_client.stock_price(symbol)
+        self._pace()
+        sym = str(symbol).upper()
+        fns = self._stock_fns()
+        if not fns:
+            raise Refused("couldn't find Webull's stock-quote method in the SDK.")
+        errors = []
+        shapes = [((sym,), {}), (([sym],), {}), ((sym, "US_STOCK"), {}),
+                  (([sym], "US_STOCK"), {}), ((), {"symbols": sym}),
+                  ((), {"symbols": [sym]}),
+                  ((), {"symbols": [sym], "category": "US_STOCK"})]
+        for name, fn in fns:
+            for args, kw in shapes:
+                try:
+                    res = fn(*args, **kw)
+                except TypeError:
+                    continue
+                except Exception as e:                  # noqa: BLE001
+                    errors.append("%s: %s" % (name, str(e)[:100]))
+                    continue
+                if getattr(res, "status_code", 200) != 200:
+                    errors.append("%s: HTTP %s" % (name, getattr(res, "status_code", "?")))
+                    continue
+                body = res.json() if hasattr(res, "json") else res
+                row = body[0] if isinstance(body, list) and body else body
+                px = _find(row, "close", "last", "lastPrice", "price", "deal",
+                           "pPrice", "close_price", "last_price")
+                if px in (None, "", 0, "0", 0.0):
+                    a = _find(row, "ask", "askPrice", "ask_price")
+                    b = _find(row, "bid", "bidPrice", "bid_price")
+                    try:
+                        px = (float(a) + float(b)) / 2 if (a and b) else None
+                    except (TypeError, ValueError):
+                        px = None
+                try:
+                    if px not in (None, "", 0, "0", 0.0):
+                        return float(px)
+                except (TypeError, ValueError):
+                    continue
+        raise Refused("couldn't get a stock quote for %s. (%s)"
+                      % (sym, " | ".join(errors[:3])[:120]))
 
     # -- what you can actually afford -----------------------------------------
     def _balance_fns(self):
@@ -841,6 +932,7 @@ class WebullOptions:
         return body is not None
 
     def positions(self):
+        self._pace()
         """The account's REAL open positions, straight from Webull, normalised to
         the shape the popup and book use — so the popup can mirror the broker
         instead of only what the bot itself placed. Never raises: on any trouble
@@ -907,6 +999,7 @@ class WebullOptions:
         return "no open %s position at Webull to close" % symbol
 
     def place_stop(self, symbol, side, strike, expiry, qty, fill_price):
+        self._pace()
         """The resting 20% stop, sent right after an entry fills.
 
         Priced off what you actually paid, not off what the room said they paid.

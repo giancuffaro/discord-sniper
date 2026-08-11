@@ -9,7 +9,7 @@ rem
 rem  Every run does the whole morning by itself:
 rem    - installs anything missing (first run only)
 rem    - quietly pulls the latest build from GitHub
-rem    - sets the 9:25 weekday alarm if it isn't set
+rem    - removes the old 9:25 weekday alarm if Windows still has it
 rem    - starts the bridge, hidden
 rem    - opens your signal channel in Chrome
 rem
@@ -19,8 +19,8 @@ rem  Settings -> the two key boxes. Everything else that used to be
 rem  a number on a menu lives in "EXTRAS.bat", for the rare day
 rem  something needs poking.
 rem
-rem  The 9:25 alarm runs this same file with a word after it:
-rem      "START HERE.bat" morning
+rem  The 9:25 alarm is GONE (his call, 8/10) - mornings are his.
+rem  Re-running this file never touches tabs that are already open.
 rem ===========================================================
 
 set "SERVER_ID=525113944239767562"
@@ -133,28 +133,25 @@ if "!UPDATED!"=="1" (
   echo         today runs on what's already here.^)
 )
 
-rem ---- [3/5] the 9:25 alarm, set once, no questions ------------
+rem ---- [3/5] the 9:25 alarm - REMOVED, his call (8/10) ---------
+rem  It used to run this whole file at 9:25 every weekday, which
+rem  closed ALL of Chrome and reopened every room - every tab
+rem  "refreshed" out from under him. He runs his own mornings now.
+rem  This step only CLEANS UP: if the old alarm is still in
+rem  Windows, delete it. It is never created again.
 schtasks /query /tn "Discord Sniper morning" >nul 2>&1
 if not errorlevel 1 (
-  echo   [3/5] The 9:25 weekday alarm is already set.
-  goto alarmdone
-)
-rem  9:25 New York, converted to THIS PC's clock - worked out here
-rem  so nobody has to do timezone arithmetic at a prompt.
-set "WHEN=09:25"
-for /f "usebackq" %%a in (`powershell -NoProfile -Command "$et=[System.TimeZoneInfo]::FindSystemTimeZoneById('Eastern Standard Time');$d=[datetime]::SpecifyKind((Get-Date -Hour 9 -Minute 25 -Second 0),'Unspecified');[System.TimeZoneInfo]::ConvertTimeToUtc($d,$et).ToLocalTime().ToString('HH:mm')" 2^>nul`) do set "WHEN=%%a"
-schtasks /create /f /tn "Discord Sniper morning" /tr "\"%~f0\" morning" /sc weekly /d MON,TUE,WED,THU,FRI /st !WHEN! >nul 2>&1
-if errorlevel 1 (
-  echo   [3/5] Windows wouldn't set the 9:25 alarm without permission.
-  echo         Not a problem - double-clicking this file does the same
-  echo         job. To set it: right-click this file, "Run as
-  echo         administrator", once.
+  schtasks /delete /tn "Discord Sniper morning" /f >nul 2>&1
+  if errorlevel 1 (
+    echo   [3/5] The old 9:25 alarm is still set and Windows wouldn't
+    echo         drop it without permission. Right-click this file,
+    echo         "Run as administrator", once - or EXTRAS option 8.
+  ) else (
+    echo   [3/5] Removed the old 9:25 alarm. Mornings are yours now.
+  )
 ) else (
-  echo   [3/5] Set the alarm: weekdays at !WHEN! on this PC's clock,
-  echo         which is 9:25 in New York. It starts all of this by
-  echo         itself - a sleeping PC runs no alarms, though.
+  echo   [3/5] No 9:25 alarm - as it should be.
 )
-:alarmdone
 
 rem ---- [4/5] the bridge, hidden --------------------------------
 set RUNNING=0
@@ -190,21 +187,19 @@ if "!NEEDSTART!"=="0" (
 )
 
 rem ---- [5/5] Chrome, all the rooms ----------------------------
-echo   [5/5] Closing any open Chrome first, so re-running this ^(or the
-echo         9:25 alarm^) doesn't stack a SECOND copy of every room on
-echo         top of the ones already open. Then reopening them fresh...
-rem  Graceful close (no /F) so Chrome saves its session and never shows
-rem  the "restore pages?" bar. A short wait lets it actually finish before
-rem  we reopen, otherwise the new window lands before the old ones are gone.
-taskkill /IM chrome.exe >nul 2>&1
-timeout /t 3 /nobreak >nul
-rem  If anything stubbornly hung on, one firm nudge - by now the session is
-rem  already saved from the graceful try above.
+rem  His call (8/10): NEVER touch tabs that are already open. This
+rem  used to close ALL of Chrome and reopen every room on every run
+rem  - so restarting the bridge "refreshed" every single tab. Now:
+rem  Chrome already running -> leave it completely alone (the
+rem  extension's dupe-closer still tidies any room opened twice).
+rem  Only a cold start - no Chrome at all - opens the rooms fresh.
 tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
 if not errorlevel 1 (
-  taskkill /F /IM chrome.exe >nul 2>&1
-  timeout /t 1 /nobreak >nul
+  echo   [5/5] Chrome is already open - leaving every tab exactly as
+  echo         it is. Open any missing rooms yourself.
+  goto chromedone
 )
+echo   [5/5] Chrome isn't running - opening all the rooms fresh...
 set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
@@ -249,6 +244,8 @@ if defined CHROME (
   echo         Couldn't find Chrome in the usual folders - opened your
   echo         default browser. The extension only runs in Chrome.
 )
+
+:chromedone
 
 rem ---- anything left for a human? ------------------------------
 set HASKEYS=1

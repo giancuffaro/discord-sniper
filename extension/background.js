@@ -474,6 +474,9 @@ async function sendOrder(sig, qty, c, author) {
     coid: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
     // Real money or pretend, decided by the ROOM's toggle, not a global.
     live: !!sig.live,
+    // "instant" (null) or "pullback" — the room's entry-mode toggle. The
+    // bridge treats pullback as paper regardless of the live flag above.
+    entry_mode: sig.entry_mode || null,
     // Which room called it — the per-room scoreboard keys off this.
     room: sig.room || null
   };
@@ -1123,6 +1126,8 @@ async function autoExportForLearning() {
     let ver = "?"; try { ver = (chrome.runtime.getManifest() || {}).version || "?"; } catch (e) {}
     const fb = (mode && mode.futures_brokers) || {};
     const strat = (mode && mode.strategy) || {};
+    const pullRooms = Object.keys((c.channel_pullback) || {})
+      .map(id => CHAN_NAMES[id] || ROOM_LABELS[id] || id);
     const liveRooms = Object.keys((c.channel_live) || {})
       .map(id => roomName(id) || id);
     const posLines = ((posData && posData.positions) || []).map(p => {
@@ -1155,6 +1160,7 @@ async function autoExportForLearning() {
       "  AI reader:      " + onoff(mode && mode.ai_enabled) + "\n" +
       "  voice key:      " + onoff(dg) + "\n" +
       "  LIVE rooms:     " + (liveRooms.length ? liveRooms.join(", ") : "none (all testing)") + "\n" +
+      "  RN-pullback:    " + (pullRooms.length ? pullRooms.join(", ") : "none (all instant)") + "\n" +
       "  open positions (" + ((posData && posData.positions) || []).length + "):\n" +
       (posLines.length ? posLines.join("\n") : "    (none)") + "\n\n";
   } catch (e) { state = ""; }
@@ -1541,6 +1547,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 
     const roomLive = !!((c.channel_live || {})[String(msg.channelId || "")]);
     sig.live = roomLive;
+    // His second entry mode (8/11/26): rooms flipped to "RN wait" in the popup
+    // don't buy the alert instantly — the bridge waits for the STOCK to touch
+    // the next whole dollar first. Paper-only on the bridge side by design.
+    sig.entry_mode = ((c.channel_pullback || {})[String(msg.channelId || "")])
+      ? "pullback" : null;
     sig.channelId = String(msg.channelId || "");
     sig.room = ROOM_LABELS[String(msg.channelId || "")] ||
                String(msg.channelId || "");

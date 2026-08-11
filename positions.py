@@ -499,6 +499,46 @@ class Book:
         t = threading.Thread(target=self._watch_fill, args=(key,), daemon=True)
         t.start()
 
+    def purge_expired(self, note=None):
+        """Drop FILLED option positions whose expiry is already in the past.
+        They can't be sold (Webull refuses), they scare the ambiguity check,
+        and they sit in the popup looking like money. No broker orders — the
+        market already settled them; this only makes the book say so."""
+        pe = getattr(self, "expiry_parser", None)
+        if pe is None:
+            return 0
+        import datetime as _dt
+        today = _dt.date.today()
+        gone = 0
+        with self._lock:
+            items = list(self._pos.items())
+        for key, p in items:
+            if p.get("state") != FILLED or p.get("kind") == "future":
+                continue
+            exp = p.get("expiry")
+            if not exp:
+                continue
+            try:
+                if pe(exp) >= today:
+                    continue
+            except Exception:                           # noqa: BLE001
+                continue
+            with self._lock:
+                q = self._pos.get(key)
+                if not q or q.get("state") != FILLED:
+                    continue
+                q["state"] = CLOSED
+                q["qty"] = 0
+                q["closing"] = False
+                q["closed_at"] = time.time()
+            gone += 1
+            self._event(key, "closed",
+                        "%s — expired %s, already settled by the market. "
+                        "Cleared from the book." % (p.get("symbol"), exp))
+        if gone and note:
+            note("PURGED   %d expired position(s) out of the book" % gone)
+        return gone
+
     def adopt(self, broker_rows, note=None):
         """Take the account's REAL open positions (read from the broker) into the
         book as FILLED, live positions the bot can SEE and EXIT — even ones it
@@ -529,6 +569,41 @@ class Book:
             if qty <= 0:
                 continue
             is_fut = b.get("kind") == "future"
+            # HIS OWN hand trades share this account: 5-30 lot scalps next to
+            # the bot's 1-2 lot calls. Adopting a 30-lot means a room's "all
+            # out of SPY" can sell HIS position out from under him — so
+            # anything bigger than the bot would ever trade is left alone.
+            maxq = int(getattr(self, "adopt_max_qty", 3) or 0)
+            if maxq and not is_fut and qty > maxq:
+                seen = getattr(self, "_adopt_skips", None)
+                if seen is None:
+                    seen = self._adopt_skips = set()
+                if sym not in seen:
+                    seen.add(sym)
+                    if note:
+                        note("ADOPT    left %s x%d alone — bigger than anything "
+                             "the bot trades, so it's YOURS. Rooms can't touch "
+                             "it." % (sym, qty))
+                continue
+            # A contract that already EXPIRED is dead weight: it can't be sold
+            # (Webull refuses past expiries) and it bloats the "which one did
+            # they mean" list until every tickerless trim goes ambiguous.
+            pe = getattr(self, "expiry_parser", None)
+            if pe and not is_fut and b.get("expiry"):
+                try:
+                    import datetime as _dt
+                    if pe(b["expiry"]) < _dt.date.today():
+                        seen = getattr(self, "_adopt_skips", None)
+                        if seen is None:
+                            seen = self._adopt_skips = set()
+                        if sym not in seen:
+                            seen.add(sym)
+                            if note:
+                                note("ADOPT    left %s alone — that expiry is "
+                                     "already in the past" % sym)
+                        continue
+                except Exception:                       # noqa: BLE001
+                    pass
             fill = b.get("fill")
             try:
                 fill = float(fill) if fill not in (None, "") else None
@@ -637,6 +712,33 @@ class Book:
         state, filled_qty, avg = self._probe(
             oid, occ, limit, live=p_l.get("live"),
             paper=p_l.get("paper"), blind=p_l.get("blind"), wb=wb)
+        # On a LIVE Webull order a fill can land in the same instant the cancel
+        # goes out, and Webull can take a few seconds to REPORT it. The old code
+        # probed ONCE and, if that single probe hadn't caught up, declared "no
+        # fill" on a contract you now actually hold -- which then got adopted
+        # later with NO bracket. So on live, keep polling for a few more seconds
+        # before concluding nobody sold. Any partial/full fill routes through
+        # _became_filled, which arms the +TP/-stop bracket and keeps the
+        # room-owner link so trims still match. Sim/paper is untouched (no such
+        # report-lag), which also keeps the deadline tests' timing intact.
+        if (bool(p_l.get("live"))
+                and not (state == FILLED or (filled_qty or 0) > 0)
+                and state != "dead"):
+            for _settle in range(5):                 # ~5s live grace
+                time.sleep(1.0)
+                with self._lock:
+                    p_c = self._pos.get(key)
+                    if not p_c or p_c["state"] != WORKING:
+                        return                       # resolved elsewhere meanwhile
+                    p_c = dict(p_c)
+                try:
+                    state, filled_qty, avg = self._probe(
+                        oid, occ, limit, live=p_c.get("live"),
+                        paper=p_c.get("paper"), blind=p_c.get("blind"), wb=wb)
+                except Exception:                    # noqa: BLE001
+                    break
+                if state == FILLED or (filled_qty or 0) > 0 or state == "dead":
+                    break
         if state == FILLED or (filled_qty or 0) > 0:
             self._became_filled(key, filled_qty or want, avg or limit)
         else:
@@ -1120,6 +1222,38 @@ class Book:
                             % (p["symbol"], held))
                 return 0
             price = float(price)
+            sym0 = p["symbol"]
+            side0, strike0, expiry0 = p["side"], p["strike"], p["expiry"]
+            fut0 = p.get("kind") == "future"
+            real0 = not self._sim(p)
+            wb0 = self._wbfor(p)
+        # ANTI-PHANTOM (8/11/26). On 8/10 the book "sold" META at 7.88 for a
+        # +$158 trim that never existed at Webull — the trim was pure book
+        # arithmetic, no broker order behind it. A trim on a REAL position
+        # (live or sandbox) must now BE a real sale: the sell goes to the
+        # broker FIRST, and only a sell the broker accepted gets written into
+        # the book. Refused/unreachable -> nothing recorded, said out loud.
+        # Futures keep their own execution path; the dry-run sim is untouched.
+        if real0 and not fut0 and wb0 is not None:
+            try:
+                try:
+                    wb0.sell(sym0, side0, strike0, expiry0, n, ref_price=price)
+                except TypeError:
+                    wb0.sell(sym0, side0, strike0, expiry0, n)
+            except Exception as e:                      # noqa: BLE001
+                self._event(key, "stop-warn",
+                            "%s — their trim did NOT sell at the broker (%s). "
+                            "Nothing recorded — the book still shows what you "
+                            "really hold." % (sym0, str(e)[:120]))
+                return 0
+        with self._lock:
+            p = self._pos.get(key)
+            if not p or p["state"] != FILLED:
+                return 0
+            held = int(p.get("qty") or 0)
+            n = min(n, held)
+            if n <= 0:
+                return 0
             fill = float(p.get("fill") or price)
             # Futures: dollars = points moved x the contract multiplier, and
             # a short profits on the way DOWN — direction flips the sign.

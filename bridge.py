@@ -30,6 +30,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # out" and "you own it" are two different events, and only this file knows which
 # one has happened. Everything that closes a position asks it first.
 import positions
+import pullback as _pullback
 from urllib.parse import urlparse, parse_qs
 
 # Not `from zoneinfo import ZoneInfo` directly: Windows ships no timezone
@@ -254,6 +255,17 @@ def build_book():
     quotes but is not allowed to send anything.
     """
     global BOOK
+    # G's standing rule (Aug 2026): entries fill at the ASK for SPEED, not the
+    # bid. Bidding at the bid is what left orders resting and filling a minute
+    # late (or never) -- the root of the position desync. Forced onto every
+    # executor at each bridge start so a stale settings.json "bid" can't undo
+    # it. Trade-off he chose: pay the spread to actually get in.
+    for _w in (WB, WB_PAPER, WB_LIVE):
+        if _w is not None:
+            try:
+                _w.entry_price = "ask"
+            except Exception:                           # noqa: BLE001
+                pass
     # Flipping live/dry-run rebuilds this. It must not do that while something
     # is still open: the old book's watchdog is the only thing holding the stop
     # on that position, and a fresh book wouldn't know it existed. So an open
@@ -284,6 +296,17 @@ def build_book():
     # paper one on the sandbox. broker_for defaults everything not-explicitly-
     # live to paper, so the real account is never touched by accident.
     BOOK.broker_resolver = broker_for
+    # Manual-vs-bot guard: anything bigger than the bot would ever trade
+    # (1 contract in, a couple after adds) is HIS hand trade — never adopted,
+    # so a room's "all out" can never sell it. Tune with execution.adopt_max_qty.
+    BOOK.adopt_max_qty = int((CFG.get("execution") or {}).get("adopt_max_qty", 3))
+
+    # Lets the book recognise an already-expired option (adopt-skip + purge).
+    def _exp_date(e):
+        from webull_options import expiry_to_date as _e2d
+        import datetime as _d
+        return _d.date.fromisoformat(str(_e2d(e)))
+    BOOK.expiry_parser = _exp_date
     # Honest fills + his two tactics, read from settings (all default OFF).
     BOOK.realistic = realism_on()
     BOOK.fee_option = fee_per("option")
@@ -300,14 +323,21 @@ def build_book():
     # position at +take_profit_pct, stop at -stop_loss_pct. Applies on top of
     # everything else; when it's on, that's the plan.
     _strat = (CFG.get("strategy") or {})
-    BOOK.take_profit_on = bool(_strat.get("enabled"))
+    # G's standing rule: the one-click bracket must ALWAYS come up ON when the
+    # bridge starts. On 8/10 it booted OFF and left live positions with no stop.
+    # build_book() runs only at startup, so forcing it here sets the BOOT state
+    # (protected every time) while turning it OFF from the popup mid-session
+    # still works.
+    _strat["enabled"] = True
+    _strat.setdefault("take_profit_pct", 20.0)
+    _strat.setdefault("stop_loss_pct", 10.0)
+    CFG["strategy"] = _strat
+    BOOK.take_profit_on = True
     BOOK.take_profit_pct = float(_strat.get("take_profit_pct", 20.0))
-    if _strat.get("enabled") and _strat.get("stop_loss_pct"):
-        BOOK.stop_pct = float(_strat["stop_loss_pct"])
-        _sync_stop_pct(BOOK.stop_pct)
-    if _strat.get("enabled"):
-        note("STRATEGY on: 1 contract, +%.0f%% take-profit, -%.0f%% stop"
-             % (BOOK.take_profit_pct, BOOK.stop_pct))
+    BOOK.stop_pct = float(_strat.get("stop_loss_pct", 10.0))
+    _sync_stop_pct(BOOK.stop_pct)
+    note("STRATEGY forced ON at bridge start: 1 contract, +%.0f%% take-profit, "
+         "-%.0f%% stop" % (BOOK.take_profit_pct, BOOK.stop_pct))
     if MODE != "webull":
         note("test account: unlimited. Nothing is refused for money — instead "
              "I keep the most cash that was ever tied up at once, which is the "
@@ -770,6 +800,57 @@ def _book_futures(order, key):
 _RECENT_COIDS = {}          # coid -> (timestamp, (ok, msg)) — retry dedup
 
 
+# --- round-number pullback (HIS strategy, 8/11/26) ---------------------------
+# Two entry modes now, chosen PER ROOM in the popup: "instant" (the normal
+# at-the-ask fill) and "pullback" (wait for the stock to touch the next whole
+# dollar, then buy). A pullback order is PAPER no matter what the room's live
+# toggle says — his rule: off real money until he's watched it work.
+_PULLBACK = None
+
+
+def _pullback_quote(sym):
+    """Underlying stock price, borrowed from whichever client can answer."""
+    last = None
+    for c in (WB_LIVE, WB, WB_PAPER):
+        if c is None:
+            continue
+        fn = getattr(c, "stock_price", None)
+        if not callable(fn):
+            continue
+        try:
+            return fn(sym)
+        except Exception as e:                          # noqa: BLE001
+            last = e
+    raise RuntimeError(str(last) if last else "no Webull connection for stock quotes")
+
+
+def _pullback_enter(order):
+    o = dict(order)
+    o.pop("entry_mode", None)     # so it can't loop back into the watcher
+    o["live"] = False             # paper-only until proven, no exceptions
+    return _place_impl(o)
+
+
+def _pullback_close(order, why):
+    return _place_impl({
+        "action": "CLOSE", "symbol": order.get("symbol"),
+        "side": order.get("side"), "strike": order.get("strike"),
+        "expiry": order.get("expiry"), "trader": order.get("trader"),
+        "kind": order.get("kind") or "option", "live": False,
+        "raw": "pullback exit: " + str(why), "source": "pullback"})
+
+
+def pullback_manager():
+    global _PULLBACK
+    if _PULLBACK is None:
+        pcfg = (CFG.get("pullback") or {})
+        _PULLBACK = _pullback.Pullback(
+            _pullback_quote, _pullback_enter, _pullback_close, note,
+            timeout_seconds=float(pcfg.get("timeout_seconds", 300)),
+            poll_seconds=float(pcfg.get("poll_seconds", 2)))
+    return _PULLBACK
+
+
 def place(order):
     """Retry-safe wrapper around the real placement. The extension retries an
     order the socket refused (a bridge restart). If a retry lands after a first
@@ -802,6 +883,19 @@ def _place_impl(order):
     sym = str(order.get("symbol", "")).upper()
     action = order.get("action")
     key = find_key(order) if BOOK is not None else tkey(order)
+
+    # Round-number pullback mode, per-room. Only OPENs on the managed symbols
+    # are deferred to the watcher; anything else (futures, equities, unlisted
+    # tickers) falls straight through to the normal instant path — that IS the
+    # rule for them. The watcher enters (paper) when the stock touches the
+    # level, then manages the exit off the underlying.
+    if (action == "OPEN" and str(order.get("entry_mode") or "") == "pullback"
+            and order.get("kind") not in ("future", "equity")
+            and sym in _pullback.MANAGED):
+        order["live"] = False          # paper-only until proven
+        okp, msgp = pullback_manager().start(order)
+        note(("PULLBACK  " if okp else "PULLBACK refused  ") + msgp)
+        return okp, msgp
 
     # The reverse math, before any mode branch, because it improves the order
     # in both. They posted the new average their add produced; the add itself
@@ -2082,6 +2176,7 @@ def main():
         while True:
             try:
                 if BOOK is not None and WB is not None:
+                    BOOK.purge_expired(note)
                     BOOK.adopt(broker_positions(), note)
             except Exception:                           # noqa: BLE001
                 pass

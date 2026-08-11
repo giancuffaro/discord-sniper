@@ -218,6 +218,20 @@ class Guards:
 
         pick = self._pick_held(who)
 
+        # Second try (8/11/26): the trim came from an admin who LOADED a
+        # contract earlier — "Midas: Loaded $Spy 773p ... Midas: 11%". His
+        # positions all read owner "?" after a pickup, so the name match
+        # fails, but his own loading call says exactly which ticker he
+        # trades. One unambiguous match only, never a guess between two.
+        if not pick:
+            ld = (self.loaded.get(who) or {}) if isinstance(
+                getattr(self, "loaded", None), dict) else {}
+            ld_sym = str(ld.get("symbol") or "").upper()
+            if ld_sym:
+                cands = [k for k in held if _key_sym(k) == ld_sym]
+                if len(cands) == 1:
+                    pick = cands[0]
+
         if not pick:
             what = ", ".join("%s (%s's call)" % (_key_sym(k), _key_who(k))
                              for k in sorted(held))

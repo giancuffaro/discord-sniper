@@ -434,6 +434,8 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               "was in", "almost", "tomorrow if")
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
+               # "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
+               "SOME",
                "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
                # A5 - timezone tokens + option-strategy shorthand that read as
                # tickers on tickerless exits ("... 10:17 AM EDT" grabbed EDT).

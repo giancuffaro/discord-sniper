@@ -273,6 +273,8 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   "was in", "almost", "tomorrow if"];
 
 const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
+  // "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
+  "SOME",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
   "DO", "NOT", "BUY", "SELL", "IE", "ADMIN", "HERE", "EOD", "CPI", "FOMC",
   "PT", "SL", "TP", "AVG", "GO", "UP", "WE", "US", "NO",

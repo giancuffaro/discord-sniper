@@ -891,16 +891,29 @@ function renderRoomStats(wallet, dayTable) {
     }).join("");
 }
 
-function renderRoomToggles(channelLive) {
+function renderRoomToggles(channelLive, channelPull) {
   const box = $("roomtoggles");
   if (!box) return;
   box.innerHTML = Object.keys(ROOM_NAMES).map(id => {
     const live = !!(channelLive || {})[id];
+    const pull = !!(channelPull || {})[id];
     // ONE button, one click, flips and saves instantly. No dropdown, no
     // confirm, no Save step — his word. Red is reserved for real money.
+    // Second toggle (8/11/26): entry mode. "instant" buys the alert at the
+    // ask; "RN wait" hands it to the bridge's round-number pullback watcher
+    // (paper-only there until proven).
     return '<div class="row" style="margin-bottom:4px">' +
            '<span class="grow" style="font-size:12px">' + chanLabel(id) +
-           '</span><span style="font-size:11px;letter-spacing:.04em;width:52px;' +
+           '</span>' +
+           '<button data-pull="' + id + '" title="Entry mode: instant = buy the ' +
+           'alert at the ask. RN wait = wait for the stock to touch the next ' +
+           'whole dollar first (paper only until proven)." ' +
+           'style="font-size:10px;margin-right:6px;padding:1px 7px;border-radius:9px;' +
+           'cursor:pointer;border:1px solid ' + (pull ? "#60a5fa" : "#3a4254") +
+           ';background:' + (pull ? "#1d3a5f" : "transparent") +
+           ';color:' + (pull ? "#93c5fd" : "#7d8697") + '">' +
+           (pull ? "RN wait" : "instant") + '</button>' +
+           '<span style="font-size:11px;letter-spacing:.04em;width:52px;' +
            'text-align:right;color:' + (live ? "#f87171" : "#7d8697") + '">' +
            (live ? "LIVE" : "testing") + '</span>' +
            '<button data-room="' + id + '" class="tgl money ' +
@@ -915,7 +928,19 @@ function renderRoomToggles(channelLive) {
       if (s.channel_live[id]) delete s.channel_live[id];
       else s.channel_live[id] = true;
       await chrome.storage.local.set({ settings: s });
-      renderRoomToggles(s.channel_live);
+      renderRoomToggles(s.channel_live, s.channel_pullback);
+    };
+  });
+  box.querySelectorAll("button[data-pull]").forEach(btn => {
+    btn.onclick = async () => {
+      const { settings } = await chrome.storage.local.get("settings");
+      const s = settings || {};
+      s.channel_pullback = s.channel_pullback || {};
+      const id = btn.dataset.pull;
+      if (s.channel_pullback[id]) delete s.channel_pullback[id];
+      else s.channel_pullback[id] = true;
+      await chrome.storage.local.set({ settings: s });
+      renderRoomToggles(s.channel_live, s.channel_pullback);
     };
   });
 }
@@ -1220,7 +1245,7 @@ async function render() {
   }
   renderRoomStats(wallet, day_table);
 
-  renderRoomToggles(s.channel_live || {});
+  renderRoomToggles(s.channel_live || {}, s.channel_pullback || {});
   $("bridge").value = s.bridge_url;
 
   const box = $("log");
