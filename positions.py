@@ -499,6 +499,20 @@ class Book:
         t = threading.Thread(target=self._watch_fill, args=(key,), daemon=True)
         t.start()
 
+    def _occ_for(self, b):
+        """OCC symbol for a broker row, via the builder the bridge installs.
+        None when the parts are missing — the watchdog then simply can't watch
+        it, same as before, but says so instead of silently going blind."""
+        fn = getattr(self, "occ_builder", None)
+        if fn is None or b.get("kind") == "future":
+            return None
+        try:
+            if b.get("symbol") and b.get("side") and b.get("strike") is not None and b.get("expiry"):
+                return fn(b["symbol"], b["side"], b["strike"], b["expiry"])
+        except Exception:                               # noqa: BLE001
+            pass
+        return None
+
     def purge_expired(self, note=None):
         """Drop FILLED option positions whose expiry is already in the past.
         They can't be sold (Webull refuses), they scare the ambiguity check,
@@ -626,7 +640,11 @@ class Book:
                     "mult": 1.0 if is_fut else 100.0,
                     "direction": 1,
                     "their_stop": None, "their_target": None,
-                    "state": FILLED, "order_id": None, "occ": None,
+                    "state": FILLED, "order_id": None,
+                    # The occ is the watchdog's eyes: without it the TP/trim
+                    # price poll dies instantly (NVDA 8/11 hit +20% and nothing
+                    # fired). Build it from the row when the parts are there.
+                    "occ": self._occ_for(b),
                     "side": b.get("side"), "strike": b.get("strike"),
                     "expiry": b.get("expiry"),
                     "want_qty": qty, "qty": qty, "adds": 0,
@@ -756,6 +774,28 @@ class Book:
                     break
                 if state == FILLED or (filled_qty or 0) > 0 or state == "dead":
                     break
+        # Last resort on LIVE (8/11, NVDA): the order-status probe misses
+        # real fills entirely — every live entry was ending "no fill" and only
+        # coming back via adoption, blind. Before declaring nobody sold, ask
+        # the ACCOUNT: if it now holds this very contract, that IS the fill.
+        if (bool(p_l.get("live")) and wb is not None
+                and not (state == FILLED or (filled_qty or 0) > 0)):
+            try:
+                with self._lock:
+                    p_h = dict(self._pos.get(key) or {})
+                for row in (wb.positions() or []):
+                    if str(row.get("symbol") or "").upper() != str(p_h.get("symbol") or "").upper():
+                        continue
+                    if p_h.get("strike") is not None and row.get("strike") is not None and abs(float(row["strike"]) - float(p_h["strike"])) > 0.001:
+                        continue
+                    got = int(row.get("qty") or 0)
+                    px = row.get("fill")
+                    if got > 0:
+                        self._became_filled(key, min(got, want),
+                                            float(px) if px else (limit or 0))
+                        return
+            except Exception:                           # noqa: BLE001
+                pass
         if state == FILLED or (filled_qty or 0) > 0:
             self._became_filled(key, filled_qty or want, avg or limit)
         else:

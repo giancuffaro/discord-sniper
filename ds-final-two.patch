@@ -1,0 +1,201 @@
+From 0ff0e4095be26efd014ed586c28595bde84199bf Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 5 Aug 2026 02:11:44 +0000
+Subject: [PATCH] Smarter reads: AI double-check + confidence gate (v1.29.1)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Two read-quality guards, rebuilt after the session reset:
+- Double-check entries (toggle in Keys, off by default): before a BUY the AI
+  reads the message independently and must agree with the regex on
+  ticker/strike/side, or it's HELD FOR REVIEW, not bought — catches the
+  wrong-ticker/strike class (meta->TSLA) even when the regex was sure.
+  Fail-open: AI off or unsure -> the regex read stands (no missed trades).
+- Confidence gate: an AI read under 60% sure is written to the log for review
+  instead of auto-firing; confident reads trade and show their %. Same on voice.
+Exits are never blocked. Tested: match trades, wrong-ticker held, unsure held.
+---
+ extension/background.js | 80 +++++++++++++++++++++++++++++++++++------
+ extension/manifest.json |  2 +-
+ extension/popup.html    |  8 +++++
+ extension/popup.js      | 15 ++++++++
+ 4 files changed, 93 insertions(+), 12 deletions(-)
+
+diff --git a/extension/background.js b/extension/background.js
+index b2537d3..dd87001 100644
+--- a/extension/background.js
++++ b/extension/background.js
+@@ -540,7 +540,31 @@ async function aiRead(text, c) {
+     });
+     if (!r.ok) return null;
+     const j = await r.json();
+-    return (j && j.ok && j.canonical) ? j.canonical : null;
++    if (!(j && j.ok && j.canonical)) return null;
++    return { canonical: j.canonical,
++             confidence: Number(j.confidence || (j.read && j.read.confidence) || 0) };
++  } catch (e) { return null; }
++}
++
++/* SMARTER READS — the double-check. Ask the AI to read the SAME message
++ * independently and see if it agrees with the regex on the things that pick the
++ * contract: ticker, strike, side. Returns {agree, ai} — or null when the AI is
++ * off or couldn't read, in which case we DON'T block (the regex read stands, as
++ * it does today). Only an ACTIVE disagreement holds the trade. */
++async function aiVerify(text, sig, c) {
++  try {
++    const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/read", {
++      method: "POST", headers: { "Content-Type": "application/json" },
++      body: JSON.stringify({ text })
++    });
++    if (!r.ok) return null;
++    const j = await r.json();
++    if (!j || j.off || !j.ok || !j.read) return null;   // no opinion -> don't block
++    const a = j.read;
++    const tOk = !a.ticker || String(a.ticker).toUpperCase() === String(sig.symbol || "").toUpperCase();
++    const kOk = a.strike == null || sig.strike == null || Number(a.strike) === Number(sig.strike);
++    const sOk = !a.side || !sig.side || String(a.side).toUpperCase() === String(sig.side).toUpperCase();
++    return { agree: tOk && kOk && sOk, ai: a };
+   } catch (e) { return null; }
+ }
+ 
+@@ -835,12 +859,13 @@ async function handleOffscreen(msg) {
+     //    regex is the free fast path when it already reads it.
+     if (!looksTradeLike(msg.text)) return;
+     const c = await cfg();
+-    let canon = null;
++    let canon = null, conf = 0;
+     const sig = parseSignal(msg.text, c);
+     if (sig.action && sig.symbol) canon = msg.text.trim();
+-    if (!canon) canon = await aiRead(msg.text, c);
++    if (!canon) { const rd = await aiRead(msg.text, c); if (rd) { canon = rd.canonical; conf = rd.confidence; } }
+     if (canon) {
+-      await addLog({ kind: "update", why: "🎙 VOICE CALL (" + label + ") → " + canon,
++      const pct = conf ? " (" + Math.round(conf * 100) + "%)" : "";
++      await addLog({ kind: "update", why: "🎙 VOICE CALL (" + label + ") → " + canon + pct,
+                      text: msg.text, author: label });
+     }
+   }
+@@ -994,14 +1019,25 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+     // applies. A hallucinated ticker was already refused bridge-side. Off (and
+     // free) unless you've saved a Claude API key.
+     if (!sig.action && !msg.history && !msg.reply && looksTradeLike(msg.text)) {
+-      const canon = await aiRead(msg.text, c);
+-      if (canon) {
+-        const sig2 = parseSignal(canon, c);
++      const rd = await aiRead(msg.text, c);
++      if (rd && rd.canonical) {
++        const sig2 = parseSignal(rd.canonical, c);
+         if (sig2.action) {
+-          await addLog({ kind: "update",
+-                         why: "AI read this as “" + canon + "”",
+-                         text: msg.text, author: msg.author });
+-          sig = sig2;
++          const conf = rd.confidence;
++          const pct = conf ? " (" + Math.round(conf * 100) + "%)" : "";
++          // Confidence gate: a shaky read is written down for you to eyeball,
++          // never auto-fired. Only a confident read becomes a live signal.
++          if (conf && conf < 0.6) {
++            await addLog({ kind: "skipped",
++              why: "AI read this as “" + rd.canonical + "” but wasn't sure" + pct +
++                   " — held for review, nothing sent. Fire it by hand if it's right.",
++              text: msg.text, author: msg.author });
++          } else {
++            await addLog({ kind: "update",
++                           why: "AI read this as “" + rd.canonical + "”" + pct,
++                           text: msg.text, author: msg.author });
++            sig = sig2;
++          }
+         }
+       }
+     }
+@@ -1183,6 +1219,28 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+       return;
+     }
+ 
++    // SMARTER READS — optional double-check on ENTRIES. If it's on, the AI reads
++    // the message independently and must agree with what the regex pulled out
++    // (ticker/strike/side); a disagreement is HELD FOR REVIEW, not bought. Catches
++    // the wrong-ticker/strike class (meta->TSLA) even when the regex was sure.
++    if (sig.action === "OPEN" || sig.action === "ADD") {
++      let verifyOn = false;
++      try { verifyOn = !!(await chrome.storage.local.get("ai_verify")).ai_verify; } catch (e) {}
++      if (verifyOn && sig.symbol) {
++        const v = await aiVerify(msg.text, sig, c);
++        if (v && !v.agree) {
++          await addLog({ kind: "skipped",
++            why: "⚠ double-check disagrees — I read " + sig.symbol + " " +
++                 (sig.strike || "") + ", the AI read " + (v.ai.ticker || "?") + " " +
++                 (v.ai.strike || "") + ". Held for review — nothing sent. Fire it by " +
++                 "hand in Webull if the room really meant it.",
++            what: human(sig), text: msg.text, author: msg.author });
++          reply({ ok: true });
++          return;
++        }
++      }
++    }
++
+     // The room says "all out of AMD" — no strike, no expiry, because everyone
+     // there knows which contract. A broker doesn't, so fill it in from the
+     // position before this leaves the browser. This also sets the quantity on
+diff --git a/extension/manifest.json b/extension/manifest.json
+index 8442222..b891532 100644
+--- a/extension/manifest.json
++++ b/extension/manifest.json
+@@ -1,7 +1,7 @@
+ {
+   "manifest_version": 3,
+   "name": "Discord Sniper",
+-  "version": "1.28.1",
++  "version": "1.29.1",
+   "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
+   "permissions": ["storage", "notifications", "downloads", "alarms", "scripting",
+                   "clipboardWrite", "tabCapture", "offscreen", "activeTab"],
+diff --git a/extension/popup.html b/extension/popup.html
+index 6789d70..2ecdabd 100644
+--- a/extension/popup.html
++++ b/extension/popup.html
+@@ -315,6 +315,14 @@
+       reads. Key from console.anthropic.com; pennies since it only runs on
+       misses. Saved to this PC, never the browser.</div>
+     <div class="note" id="aikeystate">&nbsp;</div>
++    <div class="row" style="margin-top:6px;margin-bottom:2px">
++      <span class="grow" style="font-size:12px">Double-check entries (AI verifies ticker/strike)</span>
++      <button id="aiVerifyBtn" class="tgl safe">off</button>
++    </div>
++    <div class="note">On: before any BUY, the AI reads the same message and must
++      agree with what was pulled out — a mismatch is held for review, not bought.
++      Safest, but adds ~1–2s to each entry and uses a little more credit. Needs
++      the Claude key above. Exits are never blocked.</div>
+ 
+     <label style="margin-top:12px">Voice listener — <b id="voiceState">off</b></label>
+     <input id="dgKey" type="password" autocomplete="off"
+diff --git a/extension/popup.js b/extension/popup.js
+index f41fdeb..03f871c 100644
+--- a/extension/popup.js
++++ b/extension/popup.js
+@@ -412,6 +412,21 @@ $("aioff").onclick = async () => {
+   }
+ };
+ 
++/* Double-check entries — a browser-side toggle; the key stays on the bridge. */
++async function paintVerify() {
++  let on = false;
++  try { on = !!(await chrome.storage.local.get("ai_verify")).ai_verify; } catch (e) {}
++  const b = $("aiVerifyBtn");
++  if (b) { b.textContent = on ? "on" : "off"; b.className = "tgl " + (on ? "live" : "safe"); }
++}
++if ($("aiVerifyBtn")) $("aiVerifyBtn").onclick = async () => {
++  let on = false;
++  try { on = !!(await chrome.storage.local.get("ai_verify")).ai_verify; } catch (e) {}
++  try { await chrome.storage.local.set({ ai_verify: !on }); } catch (e) {}
++  paintVerify();
++};
++paintVerify();
++
+ /* ---- Voice listener — Deepgram, per tab, several at once ------------------ */
+ function paintVoice(list) {
+   list = list || [];
+-- 
+2.43.0
+

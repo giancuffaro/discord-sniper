@@ -1,0 +1,279 @@
+From f491cf8f90abda0f016878c0914942d38cedffb7 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 5 Aug 2026 13:53:04 +0000
+Subject: [PATCH 1/3] v1.37.0: futures on by default + entry falls back to
+ posted price when quote is unavailable
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Futures now fire per each room's TESTING/LIVE toggle like every other room
+  (the separate futures switch is retired on both sides). Default on; set
+  futures_enabled:false only to park them.
+- webull_options.buy() no longer hard-refuses when there's no live option
+  quote: if the OPRA data call fails, it falls back to the caller's posted
+  premium as the limit so the entry still goes out instead of being lost.
+  Normal path (quote present) is unchanged — paper still buys the ask.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+---
+ extension/background.js | 14 ++++++++------
+ extension/manifest.json |  2 +-
+ extension/popup.js      |  6 +++---
+ webull_options.py       | 23 ++++++++++++++++++-----
+ 4 files changed, 30 insertions(+), 15 deletions(-)
+
+diff --git a/extension/background.js b/extension/background.js
+index 49eb16c..a294ea7 100644
+--- a/extension/background.js
++++ b/extension/background.js
+@@ -1386,13 +1386,15 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+       return;
+     }
+ 
+-    // THE futures switch. Until it's on, his NQ/ES calls are read, priced and
+-    // logged — and nothing fires, in either mode. Flipping it in Settings is
+-    // the one thing left to do when the data subscription is live.
+-    if (sig.fire && sig.kind === "future" && !c.futures_enabled) {
++    // Futures fire like every other room now — read, priced, and sent per the
++    // room's own TESTING/LIVE toggle, same as options. (The old separate
++    // futures switch is retired on both sides: "everything should be either
++    // testing or live." CME data is live.) Left as a one-line guard only so an
++    // explicit futures_enabled:false still parks them if you ever want that.
++    if (sig.fire && sig.kind === "future" && c.futures_enabled === false) {
+       await addLog({ kind: "skipped", what: human(sig),
+-                     why: "futures switch is off — read and logged, nothing " +
+-                          "sent. Flip it in Settings when you're ready.",
++                     why: "futures switch is explicitly off — read and logged, " +
++                          "nothing sent. Turn it back on in Settings.",
+                      text: msg.text, author: msg.author });
+       reply({ ok: true });
+       return;
+diff --git a/extension/manifest.json b/extension/manifest.json
+index 21ff2b1..37adb50 100644
+--- a/extension/manifest.json
++++ b/extension/manifest.json
+@@ -1,7 +1,7 @@
+ {
+   "manifest_version": 3,
+   "name": "Discord Sniper",
+-  "version": "1.36.0",
++  "version": "1.37.0",
+   "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
+   "permissions": ["storage", "notifications", "downloads", "alarms", "scripting",
+                   "clipboardWrite", "tabCapture", "offscreen", "activeTab"],
+diff --git a/extension/popup.js b/extension/popup.js
+index b0d7093..4949d28 100644
+--- a/extension/popup.js
++++ b/extension/popup.js
+@@ -22,9 +22,9 @@ const DEFAULTS = {
+   armed: true, stopped: false, capture: true,   // ON is the resting state
+   bridge_url: "http://127.0.0.1:8787/order",
+   channel_ids: [], follow_admins: [],
+-  // THE futures switch. Off = his NQ/ES calls are read and logged, nothing
+-  // fires. Deliberately off out of the box.
+-  futures_enabled: false,
++  // Futures fire like every other room now (per its TESTING/LIVE toggle). On
++  // out of the box — set to false only if you ever want to park futures.
++  futures_enabled: true,
+   // The old filter knobs (trim modes, symbol lists, add limits, daily caps)
+   // are deleted from the code — "no filters wanted. id like to follow
+   // everything to the tee as they do." What's left is safety, not filtering.
+diff --git a/webull_options.py b/webull_options.py
+index a315332..5629e8b 100644
+--- a/webull_options.py
++++ b/webull_options.py
+@@ -733,10 +733,16 @@ class WebullOptions:
+         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
+         expiration = expiry_to_date(expiry)
+         occ = occ_symbol(symbol, expiration, option_type, strike)
+-        ask, bid, _ = self.ask_bid(occ)
+-        if not ask or ask <= 0:
+-            raise Refused("no live ask on %s, so there's nothing safe to price "
+-                          "against. Nothing was sent." % occ)
++        ask = bid = None
++        try:
++            ask, bid, _ = self.ask_bid(occ)
++        except Refused:
++            # No live quote — most often the OpenAPI options-data (OPRA)
++            # subscription isn't active on the keys. Rather than miss the trade,
++            # fall back to the price the room posted and follow them to the tee.
++            # Only if they actually gave one; otherwise there's nothing to price.
++            if not their_price:
++                raise
+ 
+         # The chase limit that used to sit here is DELETED, on his word:
+         # "no filters wanted. id like to follow everything to the tee as they
+@@ -744,7 +750,14 @@ class WebullOptions:
+         # since — the bid-sitting entry style is still what protects the
+         # price actually paid.
+ 
+-        limit = self.entry_limit(bid, ask)
++        if ask and ask > 0:
++            limit = self.entry_limit(bid, ask)
++        elif their_price:
++            # No live ask: take the room's posted premium as the limit.
++            limit = max(0.01, round(float(their_price), 2))
++        else:
++            raise Refused("no live ask on %s and no posted price to fall back "
++                          "on. Nothing was sent." % occ)
+         # Checked here rather than earlier because this is the first point the
+         # real price is known — their quoted 2.80 and the live ask are not the
+         # same number, and it's the live one you'd be paying.
+-- 
+2.43.0
+
+
+From 2e374f464fb32c9f5c279c9c1e666aa4455d83a1 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 5 Aug 2026 14:16:41 +0000
+Subject: [PATCH 2/3] v1.38.0: paper borrows real OPRA quotes from the live
+ data connection
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Webull's options market-data (OPRA) entitlement rides on the LIVE account, not
+the sandbox — so paper option quotes 403'd even with an active subscription.
+Now, when both connections are up, the paper client pulls its ask/bid from the
+live client (read-only, never an order through live) and still fills on the
+sandbox. Real prices, pretend money — an honest paper test instead of a
+data-starved one. Combined with paper's existing 'buy the ask', entries fill
+instantly instead of sitting 'bid in', and trims/exits price cleanly.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+---
+ bridge.py               | 10 ++++++++++
+ extension/manifest.json |  2 +-
+ webull_options.py       | 11 +++++++++++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/bridge.py b/bridge.py
+index e7c36b0..d448464 100644
+--- a/bridge.py
++++ b/bridge.py
+@@ -1715,6 +1715,16 @@ def connect_broker(quiet=False):
+             except Exception as e:                      # noqa: BLE001
+                 errs.append("live: %s" % str(e)[:90])
+ 
++    # Options data (OPRA) rides on the LIVE account, not the sandbox. So when
++    # both are connected, the paper client borrows the live client's quotes —
++    # real ask/bid — while still filling on the sandbox. This is what makes
++    # paper an honest test instead of a data-starved one. Read-only: quotes
++    # only, never an order through the live connection.
++    if WB_PAPER is not None and WB_LIVE is not None:
++        WB_PAPER.quote_client = WB_LIVE
++        note("paper quotes now come from the LIVE data feed (real OPRA prices, "
++             "sandbox fills)")
++
+     # Primary: prefer paper while testing, else live, else None (pure sim).
+     WB = WB_PAPER or WB_LIVE
+     WB_ACCOUNT = str(getattr(WB, "account_id", "") or "") if WB is not None else ""
+diff --git a/extension/manifest.json b/extension/manifest.json
+index 37adb50..d021076 100644
+--- a/extension/manifest.json
++++ b/extension/manifest.json
+@@ -1,7 +1,7 @@
+ {
+   "manifest_version": 3,
+   "name": "Discord Sniper",
+-  "version": "1.37.0",
++  "version": "1.38.0",
+   "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
+   "permissions": ["storage", "notifications", "downloads", "alarms", "scripting",
+                   "clipboardWrite", "tabCapture", "offscreen", "activeTab"],
+diff --git a/webull_options.py b/webull_options.py
+index 5629e8b..6a76dc0 100644
+--- a/webull_options.py
++++ b/webull_options.py
+@@ -287,6 +287,12 @@ class WebullOptions:
+         # Webull takes no market orders on options at all, so all three of these
+         # are limit orders; this only decides the number on it.
+         self.entry_price = str(w.get("entry_price", "bid")).lower()
++        # Quotes can be borrowed from ANOTHER client. Webull's options data
++        # (OPRA) rides on the LIVE account, not the sandbox — so the paper
++        # client asks the live client for the ask/bid (read-only, no orders),
++        # then fills on the sandbox. Real prices, pretend money. Left None on a
++        # client that quotes for itself.
++        self.quote_client = None
+         # How long an unfilled entry is allowed to sit there before it's pulled.
+         # This is the number that stops a bid from filling at 3:55pm into a
+         # trade the room called at 9:40 and closed at 10:05.
+@@ -459,6 +465,11 @@ class WebullOptions:
+         return found
+ 
+     def ask_bid(self, occ):
++        # Borrow quotes from the live client when this one can't get them (the
++        # sandbox has no OPRA entitlement). Read-only — it never places an order
++        # through the live connection, only reads the ask/bid.
++        if self.quote_client is not None and self.quote_client is not self:
++            return self.quote_client.ask_bid(occ)
+         fns = self._quote_fns()
+         if not fns:
+             raise Refused("couldn't find Webull's option-quote method in the SDK. "
+-- 
+2.43.0
+
+
+From 8f9c6777a0a9e553419f9c96f99808f542928c76 Mon Sep 17 00:00:00 2001
+From: discord-sniper <bot@local>
+Date: Wed, 5 Aug 2026 14:35:03 +0000
+Subject: [PATCH 3/3] v1.39.0: read ISO expiry (2026-08-07) so Bullwinkle NEXT
+ WEEK calls stop refusing
+
+The parser hands back a fully-resolved ISO date (year-first, 4-digit year)
+for calls like Bullwinkle's NEXT WEEK. expiry_to_date only accepted M/D, so
+every one of those refused with 'couldnt make sense of the expiry'. Added an
+ISO branch with the same past-date and trading-day guards.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+---
+ extension/manifest.json |  2 +-
+ webull_options.py       | 18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/extension/manifest.json b/extension/manifest.json
+index d021076..c32e610 100644
+--- a/extension/manifest.json
++++ b/extension/manifest.json
+@@ -1,7 +1,7 @@
+ {
+   "manifest_version": 3,
+   "name": "Discord Sniper",
+-  "version": "1.38.0",
++  "version": "1.39.0",
+   "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
+   "permissions": ["storage", "notifications", "downloads", "alarms", "scripting",
+                   "clipboardWrite", "tabCapture", "offscreen", "activeTab"],
+diff --git a/webull_options.py b/webull_options.py
+index 6a76dc0..1c7202a 100644
+--- a/webull_options.py
++++ b/webull_options.py
+@@ -104,6 +104,24 @@ def expiry_to_date(expiry, today=None):
+         days = int(n) if n.isdigit() else 0
+         return (today + dt.timedelta(days=days)).isoformat()
+ 
++    # ISO date, year first: "2026-08-07". The parser hands back a fully
++    # resolved date this way for calls like Bullwinkle's "NEXT WEEK", so we
++    # have to be able to read it straight back or we refuse a real contract.
++    iso = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", e)
++    if iso:
++        y, mo, day = int(iso.group(1)), int(iso.group(2)), int(iso.group(3))
++        try:
++            d = dt.date(y, mo, day)
++        except ValueError:
++            raise Refused("%s isn't a real date. Nothing was sent." % expiry)
++        if d < today:
++            raise Refused("that expiry (%s) is already in the past. Nothing "
++                          "was sent." % d.isoformat())
++        if d.weekday() > 4 or d.isoformat() in HOLIDAYS:
++            raise Refused("%s is not a trading day, so that contract doesn't "
++                          "exist. Nothing was sent." % d.isoformat())
++        return d.isoformat()
++
+     m = re.match(r"^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?$", e)
+     if not m:
+         raise Refused("couldn't make sense of the expiry \"%s\". Nothing was sent."
+-- 
+2.43.0
+

@@ -307,6 +307,14 @@ def build_book():
         import datetime as _d
         return _d.date.fromisoformat(str(_e2d(e)))
     BOOK.expiry_parser = _exp_date
+
+    # Adopted positions need a real OCC symbol or the TP/trim watchdog is
+    # blind (the 8/11 NVDA +20% that never fired).
+    def _occ_build(sym, side, strike, expiry):
+        from webull_options import occ_symbol, expiry_to_date
+        kind = "CALL" if str(side).upper().startswith("C") else "PUT"
+        return occ_symbol(sym, expiry_to_date(expiry), kind, strike)
+    BOOK.occ_builder = _occ_build
     # Honest fills + his two tactics, read from settings (all default OFF).
     BOOK.realistic = realism_on()
     BOOK.fee_option = fee_per("option")
