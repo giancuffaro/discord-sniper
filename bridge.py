@@ -315,6 +315,8 @@ def build_book():
         kind = "CALL" if str(side).upper().startswith("C") else "PUT"
         return occ_symbol(sym, expiry_to_date(expiry), kind, strike)
     BOOK.occ_builder = _occ_build
+    # Points x multiplier for adopted futures (MNQ 2, NQ 20, ES 50...).
+    BOOK.fut_mult = FUT_MULT
     # Honest fills + his two tactics, read from settings (all default OFF).
     BOOK.realistic = realism_on()
     BOOK.fee_option = fee_per("option")
@@ -1304,6 +1306,16 @@ def broker_positions():
                     for p in (wb.positions() or []):
                         d = dict(p)
                         d["live"] = is_live  # which Webull account it's in
+                        rows.append(d)
+                except Exception:                       # noqa: BLE001
+                    pass
+                # The FUTURES account is a separate Webull account, so it needs
+                # its own call — without this his futures positions were
+                # invisible everywhere (8/12). Always real money.
+                try:
+                    for p in (wb.futures_positions() or []):
+                        d = dict(p)
+                        d["live"] = True
                         rows.append(d)
                 except Exception:                       # noqa: BLE001
                     pass

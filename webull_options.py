@@ -978,6 +978,62 @@ class WebullOptions:
                 continue
         return rows
 
+    def futures_positions(self):
+        """Open positions in the FUTURES account.
+
+        Futures live in a DIFFERENT Webull account from options/margin, and
+        positions() only ever asked about self.account_id — which is why his
+        futures trades were invisible in the popup on 8/12: no display, no
+        watchdog, no bracket. Same probe style as positions(); never raises.
+
+        Shape differences that matter downstream: no strike, no expiry, no
+        option type, quantity can be NEGATIVE for a short, and the money is
+        points x multiplier rather than premium x 100. Rows come back tagged
+        kind="future" so the book and the popup can tell them apart."""
+        acct = getattr(self, "futures_account_id", None)
+        if not acct:
+            return []
+        self._pace()
+        body, _why = self._try_calls(
+            ["position_v2", "position", "account_v2", "trade"],
+            ["position"], acct)
+        if body is None:
+            return []
+        items = body if isinstance(body, list) else \
+            ((body or {}).get("positions") or (body or {}).get("data") or [])
+        rows = []
+        for it in (items or []):
+            try:
+                legs = it.get("legs") or [it]
+                leg = legs[0] if legs else {}
+                sym = str(it.get("symbol") or leg.get("symbol") or "").upper()
+                if not sym:
+                    continue
+                raw_q = (it.get("quantity") or leg.get("quantity") or
+                         it.get("position") or 0)
+                qty = int(float(raw_q))
+                if qty == 0:
+                    continue
+                # A short can arrive as a negative quantity OR as a side field.
+                side_txt = str(it.get("side") or it.get("direction") or
+                               leg.get("side") or "").upper()
+                direction = -1 if (qty < 0 or side_txt.startswith("S")) else 1
+                fill = float(it.get("cost_price") or leg.get("cost")
+                             or it.get("avg_price") or 0) or None
+                last = float(it.get("last_price") or leg.get("last_price") or 0) or None
+                pl = it.get("unrealized_profit_loss")
+                plr = it.get("unrealized_profit_loss_rate")
+                rows.append({
+                    "symbol": sym, "side": None, "strike": None, "expiry": None,
+                    "qty": abs(qty), "direction": direction,
+                    "fill": fill, "last": last,
+                    "pl": float(pl) if pl not in (None, "") else None,
+                    "pl_pct": (float(plr) * 100) if plr not in (None, "") else None,
+                    "kind": "future"})
+            except Exception:                              # noqa: BLE001
+                continue
+        return rows
+
     def flatten(self, symbol):
         """Sell whatever the account is holding of `symbol`, right now — the
         popup's one-click close of a REAL Webull position, including one the book

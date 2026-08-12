@@ -1148,7 +1148,15 @@ async function render() {
       const tag = b.live
         ? '<span style="color:#f87171;font-size:10px;font-weight:700">LIVE</span> '
         : '<span style="color:#7d8697;font-size:10px;font-weight:700">PAPER</span> ';
-      rows.push('<div class="posrow"><span class="grow">' + tag +
+      // Futures carry no strike or expiry, so the contract renders as just the
+      // code (MNQU6). What they DO carry is a direction, and a short shown as a
+      // long is a lie about which way you're leaning — so it's spelled out.
+      const dir = (b.kind === "future")
+        ? (Number(b.direction) < 0
+            ? '<span style="color:#f87171;font-size:10px;font-weight:700">SHORT</span> '
+            : '<span style="color:#4ade80;font-size:10px;font-weight:700">LONG</span> ')
+        : "";
+      rows.push('<div class="posrow"><span class="grow">' + tag + dir +
         '<span class="in">IN</span> <b>' +
         contract + '</b> <b>x' + n + "</b>" + paid + now + plTxt +
         creditFor(b) + "</span>" + x + "</div>");

@@ -523,6 +523,31 @@ class Book:
             pass
         return None
 
+    def _fut_mult_for(self, sym):
+        """Points-to-dollars for a futures symbol.
+
+        The broker reports the CONTRACT CODE ("MNQU6" = MNQ, Sep 2026) while the
+        multiplier table is keyed by ROOT ("MNQ"). Looking the code up directly
+        missed every time and silently fell back to 1.0, which understates an
+        MNQ move by 2x and an NQ move by 20x. So: exact match first, then strip
+        the trailing month letter + year digit(s) and match the root."""
+        table = getattr(self, "fut_mult", None) or {}
+        s = str(sym or "").upper()
+        if s in table:
+            return float(table[s])
+        # Strip a trailing month letter + year digits without needing re:
+        # "MNQU6" -> "MNQ", "ESZ26" -> "ES".
+        t = s
+        while t and t[-1].isdigit():
+            t = t[:-1]
+        if t and t != s and t[-1] in "FGHJKMNQUVXZ" and t[:-1] in table:
+            return float(table[t[:-1]])
+        # Longest known root that this code starts with (MNQU6 -> MNQ, not NQ).
+        for root in sorted(table, key=len, reverse=True):
+            if s.startswith(root):
+                return float(table[root])
+        return 1.0
+
     def purge_expired(self, note=None):
         """Drop FILLED option positions whose expiry is already in the past.
         They can't be sold (Webull refuses), they scare the ambiguity check,
@@ -647,8 +672,15 @@ class Book:
                     "room": None,
                     "who": "?", "symbol": sym,
                     "kind": b.get("kind") or "option",
-                    "mult": 1.0 if is_fut else 100.0,
-                    "direction": 1,
+                    # A futures contract is points x ITS OWN multiplier (MNQ 2,
+                    # NQ 20, ES 50). Hardcoding 1.0 made every adopted futures
+                    # P&L and stop wrong by that factor. The bridge installs the
+                    # table; 1.0 only if it never did.
+                    "mult": (self._fut_mult_for(sym) if is_fut else 100.0),
+                    # And a SHORT is direction -1. Hardcoding long meant a short
+                    # future showed a losing trade as winning and put the stop on
+                    # the wrong side of the market.
+                    "direction": int(b.get("direction") or 1) if is_fut else 1,
                     "their_stop": None, "their_target": None,
                     "state": FILLED, "order_id": None,
                     # The occ is the watchdog's eyes: without it the TP/trim
