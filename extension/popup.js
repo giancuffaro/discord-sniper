@@ -795,6 +795,10 @@ const ROOM_NAMES = { "829754942817828884": "Honeydrip daytrades",
                      "880503518878892143": "Lotto Alerts",
                      "769797819770732554": "Options Watchlist",
                      "1137873895832174672": "Futures Alerts",
+                     "808127664022880297": "Spread Alerts",
+                     "769797593316065280": "Stock Alerts",
+                     "771902435680845845": "Member Alerts",
+                     "800526679046225961": "Trade Log",
                      "whop:day-trades": "Whop Day Trades",
                      "whop:futures": "Whop Futures",
                      "whop:high-risk": "Whop High Risk",
@@ -1472,6 +1476,10 @@ $("export").onclick = async () => {
                   "880503518878892143": "lotto alerts",
                   "769797819770732554": "options watchlist",
                   "1137873895832174672": "futures alerts",
+                  "808127664022880297": "spread alerts",
+                  "769797593316065280": "stock alerts",
+                  "771902435680845845": "member alerts",
+                  "800526679046225961": "trade log",
                   "1433933203302776852": "aristotle-small" };
   // Whop rooms tag themselves "whop:/their/path" — shown as-is, so two
   // different Whop rooms stay two different lexicons in the file.

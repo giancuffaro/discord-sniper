@@ -75,6 +75,10 @@ const ROOM_LABELS = {
   "880503518878892143": "Lotto Alerts",
   "769797819770732554": "Options Watchlist",
   "1137873895832174672": "Futures Alerts",
+  "808127664022880297": "Spread Alerts",
+  "769797593316065280": "Stock Alerts",
+  "771902435680845845": "Member Alerts",
+  "800526679046225961": "Trade Log",
   "whop:day-trades": "Whop Day Trades", "whop:futures": "Whop Futures",
   "whop:high-risk": "Whop High Risk", "whop:2k-challenge": "Whop 2K Challenge",
   "whop:swing": "Whop Swing Trades", "whop:long-term": "Whop Long Term",
@@ -166,6 +170,10 @@ async function cfg() {
                "880503518878892143",    // Lotto Alerts
                "769797819770732554",    // Options Watchlist
                "1137873895832174672",    // Futures Alerts
+               "808127664022880297",    // Spread Alerts
+               "769797593316065280",    // Stock Alerts
+               "771902435680845845",    // Member Alerts
+               "800526679046225961",    // Trade Log
                // Felony's Whop rooms — canonical ids, matched by slug below
                "whop:day-trades", "whop:futures", "whop:high-risk",
                "whop:2k-challenge", "whop:swing", "whop:long-term",
