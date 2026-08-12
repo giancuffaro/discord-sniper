@@ -341,14 +341,50 @@ def _place(wb, contract, side, qty, limit=None):
 FUT_ROUND25 = {"NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K"}
 
 
-def _round_entry(sym, px):
+# His rule, 8/12, confirmed: snap the entry to the next 25 IN YOUR FAVOUR, not
+# to the nearest one. A short sells at the round number above (29,833 -> 29,850,
+# a better price than the 29,825 "nearest" used to give); a long buys at the
+# round number below (29,833 -> 29,825). Index futures respect these levels, so
+# the fill sits where the market actually turns instead of mid-air.
+def _round_entry(sym, px, direction=None):
     try:
         v = float(px)
     except (TypeError, ValueError):
         return px
-    if str(sym).upper() in FUT_ROUND25:
-        return round(v / 25.0) * 25.0
-    return v
+    if str(sym).upper() not in FUT_ROUND25:
+        return v            # oil at 70 or gold at 4475 has no 25-pt grid
+    import math
+    short = str(direction or "").upper().startswith("S")
+    if short:
+        return math.ceil(v / 25.0) * 25.0      # sell higher
+    return math.floor(v / 25.0) * 25.0         # buy lower
+
+
+# When the room posts no stop or target of his own, these are the defaults he
+# wants on every futures trade: 25 points of risk, 50 points of reward (1:2).
+FUT_STOP_PTS = 25.0
+FUT_TARGET_PTS = 50.0
+
+
+def _bracket(direction, entry, their_stop=None, their_target=None):
+    """(stop, target) for a futures entry.
+
+    THEIRS WINS when posted — his call: "theirs first, mine as fallback". The
+    fixed 25/50 only fills the gaps, so a room that posts a stop keeps its own
+    risk and a room that posts nothing still gets a bracket instead of running
+    naked. Direction decides which side each level sits on."""
+    try:
+        e = float(entry)
+    except (TypeError, ValueError):
+        return their_stop, their_target
+    short = str(direction or "").upper().startswith("S")
+    stop = their_stop
+    if stop is None:
+        stop = e + FUT_STOP_PTS if short else e - FUT_STOP_PTS
+    target = their_target
+    if target is None:
+        target = e - FUT_TARGET_PTS if short else e + FUT_TARGET_PTS
+    return stop, target
 
 
 def execute(wb, book, order, key, note):
@@ -362,14 +398,24 @@ def execute(wb, book, order, key, note):
     if action == "OPEN":
         side = "SELL" if direction == "SHORT" else "BUY"
         raw_px = order.get("limit")
-        entry_px = _round_entry(sym, raw_px)     # snap index-futures entry to the 25-pt grid
+        entry_px = _round_entry(sym, raw_px, direction)   # snap in his favour
         if entry_px is not None and raw_px is not None and float(entry_px) != float(raw_px):
             note("FUTURES  %s entry snapped to the 25-pt grid: %s -> %g"
                  % (sym, raw_px, entry_px))
+        stop_px, target_px = _bracket(direction, entry_px,
+                                      order.get("their_stop"),
+                                      order.get("their_target"))
+        if order.get("their_stop") is None or order.get("their_target") is None:
+            note("FUTURES  %s bracket: stop %g, target %g (%s)"
+                 % (sym, stop_px, target_px,
+                    "their levels" if (order.get("their_stop") is not None
+                                       and order.get("their_target") is not None)
+                    else "yours: %g-pt stop / %g-pt target where they posted none"
+                         % (FUT_STOP_PTS, FUT_TARGET_PTS)))
+        order = dict(order, their_stop=stop_px, their_target=target_px)
         oid = _place(wb, contract, side, 1, entry_px)
-        note("FUTURES  ORDER IN %s %s x1 (%s) @ %s, their stop %s target %s"
-             % (side, contract, oid, entry_px, order.get("their_stop"),
-                order.get("their_target")))
+        note("FUTURES  ORDER IN %s %s x1 (%s) @ %s, stop %s target %s"
+             % (side, contract, oid, entry_px, stop_px, target_px))
         if book is not None:
             order = dict(order, mult=None, limit=entry_px)
             from bridge import FUT_MULT

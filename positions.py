@@ -559,13 +559,31 @@ class Book:
         letter and year ("MESU6"); anything else claiming to be a future is
         wreckage from that bug and gets dropped. Returns how many went."""
         def _is_code(sym):
+            """A legitimate futures symbol is EITHER a contract code ("MNQU6")
+            or a known root ("MNQ").
+
+            Both shapes are real and both are used: the bot books its own
+            orders under the root it read from the alert, while adoption from
+            the broker uses the dated code. Checking only for the code shape
+            deleted the bot's own MNQ short 15 seconds after it filled
+            (8/12 11:45) — this function is a wrecking ball if it's wrong, so
+            it errs towards keeping anything it recognises."""
             t = str(sym or "").upper()
+            if t in (getattr(self, "fut_mult", None) or {}):
+                return True             # a known root - MNQ, MES, MGC, CL...
             digits = 0
             while t and t[-1].isdigit():
                 t = t[:-1]
                 digits += 1
-            return (1 <= digits <= 2 and len(t) >= 2
-                    and t[-1] in "FGHJKMNQUVXZ")
+            if not (1 <= digits <= 2 and len(t) >= 2
+                    and t[-1] in "FGHJKMNQUVXZ"):
+                return False
+            # "MNQU6" -> root "MNQ" must itself be recognisable, so a random
+            # option ticker that happens to end in a letter+digit is not
+            # mistaken for a contract.
+            root = t[:-1]
+            table = getattr(self, "fut_mult", None) or {}
+            return (not table) or root in table or t in table
         bad = []
         with self._lock:
             for k, p in list(self._pos.items()):
