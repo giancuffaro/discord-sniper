@@ -1225,9 +1225,13 @@ def _place_impl(order):
                 exref, _hownote = exit_price(order, key)
                 if exref is None:
                     exref = held_pos.get("fill") or held_pos.get("their_price")
-                res = client.sell(order["symbol"], order.get("side"),
-                                  order.get("strike"), order.get("expiry"), qty,
-                                  ref_price=exref)
+                # Through the book's retry, not straight at the broker: a
+                # room exit hitting a resting order used to just ERROR and
+                # leave him holding it ("all out of AAPL @ 3.75", 8/12).
+                res = BOOK._sell_retry(client, key, order["symbol"],
+                                       order.get("side"), order.get("strike"),
+                                       order.get("expiry"), qty,
+                                       ref_price=exref)
                 msg = res["what"]
                 note("SOLD     %s" % msg)
                 if claimed:

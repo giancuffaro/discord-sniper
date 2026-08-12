@@ -1311,9 +1311,23 @@ class Book:
             return wb.sell(sym, side, strike, expiry, qty, **kw)
         except Exception as e:                          # noqa: BLE001
             msg = str(e).upper()
+            # Webull says "something is in the way of this sell" in several
+            # different voices. All of them mean the same thing and all of them
+            # are cured the same way — let go of the resting order and ask
+            # again. Counted on 8/12: 121 + 79 + 3 rejections across three
+            # codes, and only the first was being retried.
             blocked = ("MUST_BE_CLOSE_THAN_SELL_SHORT" in msg
                        or "EXCESS OF CURRENT HOLDING" in msg
-                       or "CHECK YOUR OPEN ORDERS" in msg)
+                       or "CHECK YOUR OPEN ORDERS" in msg
+                       # "...it will reverse an existing position. You may need
+                       # to ... cancel an open order" (ORDER_NOT_SUPPORT_REVERSE_OPTION)
+                       or "REVERSE_OPTION" in msg
+                       or "REVERSE AN EXISTING POSITION" in msg
+                       # Webull reads a blocked long sale as opening a covered
+                       # call and complains about shares it never needed.
+                       or "CAVERED_CALL_STOCK_NO_ENOUGH" in msg
+                       or "COVERED_CALL_STOCK_NO_ENOUGH" in msg
+                       or "INSUFFICIENT NUMBER OF UNDERLYING" in msg)
             if not blocked:
                 raise
             with self._lock:
