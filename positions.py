@@ -588,6 +588,38 @@ class Book:
             note("PURGED   %d expired position(s) out of the book" % gone)
         return gone
 
+    def _inherit_credit(self, sym, strike, expiry):
+        """Who called this contract, if anyone did.
+
+        An adopted position is created with who="?" because the broker doesn't
+        know about Discord. But the SAME contract is very often one the bot
+        itself entered minutes earlier on someone's call and then re-adopted
+        (a failed stop-sell, a restart). Rebuilding it as "?" threw the caller
+        and room away, so "Active trades" stopped saying whose alert it was —
+        exactly what he noticed on 8/12. Look for the most recent record of
+        this contract that HAS a caller and carry it forward."""
+        best = None
+        with self._lock:
+            pool = list(self._pos.values()) + list(self._archive)
+        for q in pool:
+            if str(q.get("symbol") or "").upper() != str(sym or "").upper():
+                continue
+            who = q.get("who")
+            if not who or who == "?":
+                continue
+            try:
+                if (strike is not None and q.get("strike") is not None
+                        and abs(float(q["strike"]) - float(strike)) > 0.001):
+                    continue
+            except (TypeError, ValueError):
+                continue
+            if expiry and q.get("expiry") and str(q["expiry"]) != str(expiry):
+                continue
+            t = float(q.get("sent_at") or 0)
+            if best is None or t > best[0]:
+                best = (t, who, q.get("room"))
+        return (best[1], best[2]) if best else (None, None)
+
     def adopt(self, broker_rows, note=None):
         """Take the account's REAL open positions (read from the broker) into the
         book as FILLED, live positions the bot can SEE and EXIT — even ones it
@@ -664,13 +696,17 @@ class Book:
             # the REAL account, which doesn't hold it — Webull reads the sell
             # as opening a covered call and 417s (the whole morning of 8/11).
             row_live = bool(b.get("live"))
+            # If the bot was in this exact contract on someone's call, keep the
+            # credit — otherwise every re-adoption erases whose alert it was.
+            _who, _room = self._inherit_credit(sym, b.get("strike"),
+                                               b.get("expiry"))
             with self._lock:
                 if self._pos.get(key, {}).get("state") in (WORKING, FILLED):
                     continue
                 self._pos[key] = {
                     "key": key, "live": row_live, "paper": not row_live,
-                    "room": None,
-                    "who": "?", "symbol": sym,
+                    "room": _room,
+                    "who": _who or "?", "symbol": sym,
                     "kind": b.get("kind") or "option",
                     # A futures contract is points x ITS OWN multiplier (MNQ 2,
                     # NQ 20, ES 50). Hardcoding 1.0 made every adopted futures
