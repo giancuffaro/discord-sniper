@@ -657,11 +657,31 @@ class Book:
         and room away, so "Active trades" stopped saying whose alert it was —
         exactly what he noticed on 8/12. Look for the most recent record of
         this contract that HAS a caller and carry it forward."""
+        def _root(v):
+            """MNQU6 -> MNQ, so the broker's contract code and the root the
+            alert used are recognised as the same instrument. Without this a
+            futures trade loses its caller the instant it's adopted: the bot
+            books Stormzy's call as "MNQ" and Webull reports "MNQU6"."""
+            t = str(v or "").upper()
+            table = getattr(self, "fut_mult", None) or {}
+            if t in table:
+                return t
+            d = 0
+            while t and t[-1].isdigit():
+                t = t[:-1]
+                d += 1
+            if 1 <= d <= 2 and t and t[-1] in "FGHJKMNQUVXZ":
+                r = t[:-1]
+                if not table or r in table:
+                    return r
+            return str(v or "").upper()
+
+        want = _root(sym)
         best = None
         with self._lock:
             pool = list(self._pos.values()) + list(self._archive)
         for q in pool:
-            if str(q.get("symbol") or "").upper() != str(sym or "").upper():
+            if _root(q.get("symbol")) != want:
                 continue
             who = q.get("who")
             if not who or who == "?":
@@ -1243,8 +1263,25 @@ class Book:
                 except Exception:                       # noqa: BLE001
                     pass
             try:
-                oid, stop_price = wb.place_stop(sym, side, strike, expiry,
-                                                qty, fill)
+                try:
+                    oid, stop_price = wb.place_stop(sym, side, strike, expiry,
+                                                    qty, fill)
+                except Exception as e0:                 # noqa: BLE001
+                    # "can't hold a resting stop" is nearly always an older
+                    # order still sitting on the contract. Clear it and try
+                    # once more before giving up and going watchdog-only.
+                    up0 = str(e0).upper()
+                    if ("MUST_BE_CLOSE_THAN_SELL_SHORT" in up0
+                            or "CAVERED_CALL_STOCK_NO_ENOUGH" in up0
+                            or "REVERSE" in up0
+                            or "EXCESS OF CURRENT HOLDING" in up0):
+                        if self._clear_orphans(wb, key, sym, strike):
+                            oid, stop_price = wb.place_stop(sym, side, strike,
+                                                            expiry, qty, fill)
+                        else:
+                            raise
+                    else:
+                        raise
                 self._event(key, "stop-set",
                             "%s — stop resting at Webull at %.2f (-%.0f%% from "
                             "%.2f)" % (sym, stop_price, self.stop_pct, fill))
@@ -1402,12 +1439,55 @@ class Book:
                     q = self._pos.get(key)
                     if q is not None:
                         q["stop_order_id"] = None
-            else:
-                time.sleep(1.5)     # nothing of ours to pull — let it settle
+            # Whatever we knew about, ALSO clear anything else of ours resting
+            # on this contract. The bot can only cancel ids it holds, so an
+            # orphan from an earlier session blocked every sell and every stop
+            # that followed it — that's the SPCX +32% that would not close on
+            # 8/12, and the 233 rejections behind it. Ask the broker what is
+            # still working on this symbol and pull it.
+            pulled = self._clear_orphans(wb, key, sym, strike)
+            if not oid and not pulled:
+                time.sleep(1.5)     # nothing to pull — just let it settle
             self._event(key, "update",
                         "%s — Webull said an order was still on this contract; "
                         "cleared it and re-sent the sell" % sym)
             return wb.sell(sym, side, strike, expiry, qty, **kw)
+
+    def _clear_orphans(self, wb, key, sym, strike=None):
+        """Cancel every WORKING order the broker still has on this contract.
+
+        Returns how many were pulled. Silent and safe when the SDK has no
+        open-orders endpoint (returns []) — the caller falls back to waiting.
+        Only ever cancels SELL-side orders on the exact contract, so a resting
+        BUY entry somewhere else in the account is never touched."""
+        if wb is None or not hasattr(wb, "open_orders"):
+            return 0
+        try:
+            rows = wb.open_orders(sym) or []
+        except Exception:                               # noqa: BLE001
+            return 0
+        pulled = 0
+        for r in rows:
+            try:
+                if strike is not None and r.get("strike") is not None:
+                    if abs(float(r["strike"]) - float(strike)) > 0.001:
+                        continue
+                act = str(r.get("action") or "").upper()
+                if act and not act.startswith("S"):
+                    continue        # never pull a buy
+                oid = r.get("order_id")
+                if not oid:
+                    continue
+                wb.cancel(oid)
+                self._await_cancel(wb, oid)
+                pulled += 1
+            except Exception:                           # noqa: BLE001
+                continue
+        if pulled:
+            self._event(key, "update",
+                        "%s — pulled %d stale order(s) Webull still had resting "
+                        "on this contract" % (sym, pulled))
+        return pulled
 
     def _fee(self, p, qty):
         """Round-trip trading fees, per contract, for the honest sim — applied

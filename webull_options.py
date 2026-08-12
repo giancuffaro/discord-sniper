@@ -941,6 +941,66 @@ class WebullOptions:
             return "working", fq, avg
         return "unknown", fq, avg
 
+    def open_orders(self, symbol=None):
+        """Every order still WORKING at Webull, normalised to
+        [{order_id, symbol, strike, side, action, qty}].
+
+        This is the gap that cost him all day on 8/12: the bot can only cancel
+        an order it has the id of, so an orphan left by an earlier session (or
+        by a place_stop that half-succeeded) sat on the contract and refused
+        every sell and every new stop after it — 233 rejections, a +32% SPCX
+        winner that would not close. Same probe-and-refuse-quietly style as the
+        rest of this file: unknown endpoint names, so try the plausible ones and
+        return [] rather than raise."""
+        body = None
+        for holders, verbs in ((["order_v3", "order"],
+                                ["list_open_orders", "open_orders",
+                                 "list_orders", "orders", "query_open"]),
+                               (["trade", "account_v2"],
+                                ["list_open_orders", "open_orders",
+                                 "list_orders"])):
+            body, _why = self._try_calls(holders, verbs, self.account_id)
+            if body is not None:
+                break
+            body, _why = self._try_calls(holders, verbs)
+            if body is not None:
+                break
+        if body is None:
+            return []
+        items = body if isinstance(body, list) else \
+            ((body or {}).get("orders") or (body or {}).get("data") or [])
+        want = str(symbol or "").upper()
+        out = []
+        for it in (items or []):
+            try:
+                legs = it.get("legs") or [it]
+                leg = legs[0] if legs else {}
+                sym = str(it.get("symbol") or leg.get("symbol") or "").upper()
+                if want and sym != want:
+                    continue
+                st = str(_find(it, "status", "order_status", "orderStatus")
+                         or "").upper()
+                # Only things that can still block a new order.
+                if st and not any(k in st for k in
+                                  ("WORK", "PEND", "OPEN", "SUBMIT", "PART",
+                                   "QUEUE", "ACCEPT")):
+                    continue
+                oid = (_find(it, "order_id", "orderId", "client_order_id")
+                       or _find(leg, "order_id", "orderId"))
+                if not oid:
+                    continue
+                out.append({
+                    "order_id": oid, "symbol": sym,
+                    "strike": (leg.get("option_exercise_price")
+                               or leg.get("strike")
+                               or it.get("option_exercise_price")),
+                    "side": leg.get("option_type") or it.get("option_type"),
+                    "action": str(it.get("side") or leg.get("side") or "").upper(),
+                    "qty": leg.get("quantity") or it.get("quantity")})
+            except Exception:                              # noqa: BLE001
+                continue
+        return out
+
     def cancel(self, order_id):
         """True if Webull took the cancel. False is not a crisis on its own —
         it usually means the order already filled or was already gone."""

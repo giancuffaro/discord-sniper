@@ -1105,22 +1105,40 @@ async function render() {
     // Room and caller names come from Discord, so they never go into HTML raw.
     const esc = (v) => String(v).replace(/[&<>"']/g, ch => (
       { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    // "MNQU6" and "MNQ" are the same instrument: the alert names the root, the
+    // broker reports the dated contract. Without folding them together a
+    // futures trade shows no caller at all, which is exactly what he saw.
+    const futRoot = (v) => {
+      let t = String(v || "").toUpperCase();
+      let d = 0;
+      while (t && /[0-9]$/.test(t)) { t = t.slice(0, -1); d++; }
+      if (d >= 1 && d <= 2 && t && "FGHJKMNQUVXZ".includes(t.slice(-1))) {
+        return t.slice(0, -1);
+      }
+      return String(v || "").toUpperCase();
+    };
     const creditFor = (b) => {
-      const sym = String(b.symbol || "").toUpperCase();
+      const sym = futRoot(b.symbol);
       for (const k of Object.keys(pos)) {
         const p = pos[k] || {};
-        if (String(p.symbol || "").toUpperCase() !== sym) continue;
+        if (futRoot(p.symbol) !== sym) continue;
         if (b.strike != null && p.strike != null &&
             Math.abs(Number(p.strike) - Number(b.strike)) > 0.001) continue;
         if (b.side && p.side && String(b.side)[0] !== String(p.side)[0]) continue;
         const who = p.who && p.who !== "?" ? p.who : "";
         const room = p.room || "";
         if (!who && !room) continue;
-        return '<span style="color:#9aa4b5;font-size:10px"> · ' +
-               (who ? esc(who) : "") + (who && room ? " · " : "") +
-               (room ? esc(room) : "") + "</span>";
+        return (who ? esc(who) : "") + (who && room ? " · " : "") +
+               (room ? esc(room) : "");
       }
       return "";
+    };
+    // Its own line under the trade, his call 8/12: "put their name either
+    // under or on top - I just need to SEE it". An inline tail was getting
+    // lost at the end of a long row.
+    const creditLine = (b) => {
+      const c = creditFor(b);
+      return c ? '<div class="poscredit">\u21b3 ' + c + "</div>" : "";
     };
     // 1) REAL Webull positions — live price and P&L, straight from the broker.
     for (const b of bpos) {
@@ -1159,7 +1177,7 @@ async function render() {
       rows.push('<div class="posrow"><span class="grow">' + tag + dir +
         '<span class="in">IN</span> <b>' +
         contract + '</b> <b>x' + n + "</b>" + paid + now + plTxt +
-        creditFor(b) + "</span>" + x + "</div>");
+        "</span>" + x + "</div>" + creditLine(b));
     }
     // 2) Resting bids Webull hasn't confirmed filled yet.
     for (const k of pendKeys) {
