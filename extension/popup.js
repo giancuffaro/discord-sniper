@@ -184,6 +184,11 @@ function _okbox(id, ok, label) {
 }
 
 let brokerPos = [];        // real Webull account positions, so the popup mirrors it
+// The BRIDGE's book, keyed "caller|TICKER". This is the only place the caller
+// survives: the extension deletes its own guardState entry the moment a bid
+// fills, so a filled position has no caller on this side at all — which is
+// why the credit line stayed blank no matter what was fixed around it.
+let bookPos = {};
 async function refreshMode() {
   try {
     modeStatus = await askBridge("/mode");
@@ -194,6 +199,10 @@ async function refreshMode() {
     const pr = await askBridge("/positions");
     brokerPos = (pr && pr.positions) || [];
   } catch (e) { brokerPos = []; }
+  try {
+    const fr = await askBridge("/fills?since=0");
+    bookPos = (fr && fr.positions) || {};
+  } catch (e) { /* keep the last book we saw */ }
   paintMode();
   paintKeys();
   paintProps();
@@ -1119,8 +1128,12 @@ async function render() {
     };
     const creditFor = (b) => {
       const sym = futRoot(b.symbol);
-      for (const k of Object.keys(pos)) {
-        const p = pos[k] || {};
+      // Bridge book first (it keeps who/room for the life of the trade), then
+      // the extension's own pending entries as a fallback.
+      const sources = [bookPos || {}, pos || {}];
+      for (const src of sources)
+      for (const k of Object.keys(src)) {
+        const p = src[k] || {};
         // The extension's own store has no `symbol` field at all — the ticker
         // lives in the key ("tlm|QQQ"). Reading p.symbol alone matched nothing,
         // which is the other half of why this line never appeared.
@@ -1189,10 +1202,15 @@ async function render() {
             ? '<span style="color:#f87171;font-size:10px;font-weight:700">SHORT</span> '
             : '<span style="color:#4ade80;font-size:10px;font-weight:700">LONG</span> ')
         : "";
-      rows.push('<div class="posrow"><span class="grow">' + tag + dir +
+      const _cr = creditFor(b);
+      // Hover as well as the line under it — his call 8/12. A title works even
+      // if the extra line is ever clipped by the panel's scroll box.
+      const _tip = _cr ? ' title="' + _cr.replace(/"/g, "&quot;") + '"' : "";
+      rows.push('<div class="posrow"' + _tip + '><span class="grow">' + tag + dir +
         '<span class="in">IN</span> <b>' +
         contract + '</b> <b>x' + n + "</b>" + paid + now + plTxt +
-        "</span>" + x + "</div>" + creditLine(b));
+        "</span>" + x + "</div>" +
+        (_cr ? '<div class="poscredit">\u21b3 ' + _cr + "</div>" : ""));
     }
     // 2) Resting bids Webull hasn't confirmed filled yet.
     for (const k of pendKeys) {
