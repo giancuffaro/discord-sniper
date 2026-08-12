@@ -75,6 +75,8 @@ const ROOM_LABELS = {
   "880503518878892143": "Lotto Alerts",
   "769797819770732554": "Options Watchlist",
   "1137873895832174672": "Futures Alerts",
+  "1135947475912495216": "MR.TOPHAT",
+  "1276616766004658226": "Platinum Trading",
   "808127664022880297": "Spread Alerts",
   "769797593316065280": "Stock Alerts",
   "771902435680845845": "Member Alerts",
@@ -174,6 +176,7 @@ async function cfg() {
                "769797593316065280",    // Stock Alerts
                "771902435680845845",    // Member Alerts
                "800526679046225961",    // Trade Log
+               "1276616766004658226",    // Platinum Trading
                // Felony's Whop rooms — canonical ids, matched by slug below
                "whop:day-trades", "whop:futures", "whop:high-risk",
                "whop:2k-challenge", "whop:swing", "whop:long-term",
