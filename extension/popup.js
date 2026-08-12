@@ -1121,12 +1121,27 @@ async function render() {
       const sym = futRoot(b.symbol);
       for (const k of Object.keys(pos)) {
         const p = pos[k] || {};
-        if (futRoot(p.symbol) !== sym) continue;
+        // The extension's own store has no `symbol` field at all — the ticker
+        // lives in the key ("tlm|QQQ"). Reading p.symbol alone matched nothing,
+        // which is the other half of why this line never appeared.
+        if (futRoot(p.symbol || keySym(k)) !== sym) continue;
         if (b.strike != null && p.strike != null &&
             Math.abs(Number(p.strike) - Number(b.strike)) > 0.001) continue;
         if (b.side && p.side && String(b.side)[0] !== String(p.side)[0]) continue;
-        const who = p.who && p.who !== "?" ? p.who : "";
-        const room = p.room || "";
+        // The popup reads the EXTENSION's own position store, which names
+        // these fields differently from the bridge's book: `author` and
+        // `channelId`, not `who` and `room`. Reading only the bridge's names
+        // meant the credit line was always empty — the data was there the
+        // whole time under another name. Take whichever exists, and fall back
+        // to the trader encoded in the key ("tlm|QQQ").
+        const who = (() => {
+          const a = p.who && p.who !== "?" ? p.who
+                  : (p.author && p.author !== "?" ? p.author : "");
+          if (a) return a;
+          const fromKey = keyWho(k);
+          return fromKey && fromKey !== "?" ? fromKey : "";
+        })();
+        const room = p.room || (p.channelId ? chanLabel(p.channelId) : "");
         if (!who && !room) continue;
         return (who ? esc(who) : "") + (who && room ? " · " : "") +
                (room ? esc(room) : "");

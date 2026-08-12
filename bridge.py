@@ -1054,6 +1054,18 @@ def _place_impl(order):
                 BOOK.release(key)
             w = EXEC.get("webull") or {}
             has_key = bool(w.get("paper_app_key") and w.get("paper_app_secret"))
+            # Paper execution switched OFF on purpose (8/12) is not a fault.
+            # A test room simply has nowhere to send an order now — the
+            # in-house sim was retired at his request and the sandbox is
+            # deliberately not receiving trades. Say that plainly instead of
+            # "reconnect and try again", which reads like something broke.
+            if not w.get("paper_trading", False):
+                note("TEST     %s  ->  test room, nothing sent (paper "
+                     "execution is off)" % what)
+                return False, ("%s is a TEST room and paper execution is off, "
+                               "so nothing was sent. Flip this room to REAL in "
+                               "the Channels tab if you want it to trade."
+                               % (order.get("room") or "that room"))
             note("REFUSED  %s  ->  no Webull paper connection" % what)
             if has_key:
                 return False, ("your Webull PAPER (sandbox) key is saved but not "
