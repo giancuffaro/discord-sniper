@@ -952,17 +952,29 @@ class WebullOptions:
         winner that would not close. Same probe-and-refuse-quietly style as the
         rest of this file: unknown endpoint names, so try the plausible ones and
         return [] rather than raise."""
+        # The endpoint is real (/openapi/trade/order/open) — the trap is WHICH
+        # account id goes with it. On 8/12 the SDK's own default id came back
+        # 403 ACCOUNT_ACCESS_DENIED 716 times in one minute, so the orphan
+        # sweep silently found nothing. Try this client's account first, then
+        # every account these keys actually proved they can see.
+        tries = []
+        if self.account_id:
+            tries.append(self.account_id)
+        for _acct, _kind in (getattr(self, "accounts_seen", None) or []):
+            if _acct and _acct not in tries:
+                tries.append(_acct)
+        verbsets = ((["order_v3", "order"],
+                     ["list_open_orders", "open_orders", "list_orders",
+                      "orders", "query_open"]),
+                    (["trade", "account_v2"],
+                     ["list_open_orders", "open_orders", "list_orders"]))
         body = None
-        for holders, verbs in ((["order_v3", "order"],
-                                ["list_open_orders", "open_orders",
-                                 "list_orders", "orders", "query_open"]),
-                               (["trade", "account_v2"],
-                                ["list_open_orders", "open_orders",
-                                 "list_orders"])):
-            body, _why = self._try_calls(holders, verbs, self.account_id)
-            if body is not None:
-                break
-            body, _why = self._try_calls(holders, verbs)
+        for acct in (tries or [None]):
+            for holders, verbs in verbsets:
+                body, _why = self._try_calls(holders, verbs, acct) if acct \
+                    else self._try_calls(holders, verbs)
+                if body is not None:
+                    break
             if body is not None:
                 break
         if body is None:
