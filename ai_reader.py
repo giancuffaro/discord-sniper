@@ -177,8 +177,13 @@ def validate(read, text, allowed_symbols):
     # position resolves it downstream. But if the model DID name a ticker, it
     # has to be real and present.
     if ticker:
-        if allow and ticker not in allow:
-            return False, "the reader named %s, which isn't on your list" % ticker, None
+        # NO symbol whitelist. His rule is "follow everything to the tee" and
+        # the main parser has no filter — the AI path having one meant SPXW and
+        # NBIS calls were dropped as "not on your list" (8/12) while the same
+        # names traded fine through the parser. The list is spelling help for
+        # the model (see INSTRUCTION), never a gate. The real guard is below:
+        # the ticker must actually appear in the message, which is what stops a
+        # hallucinated symbol — that one stays.
         if not re.search(r"(?<![A-Za-z])%s(?![A-Za-z])" % re.escape(ticker), up):
             return False, "the reader named %s but it isn't in the message" % ticker, None
     elif action in ("OPEN", "ADD"):

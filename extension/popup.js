@@ -1095,6 +1095,33 @@ async function render() {
     $("holding").innerHTML = "No active trades";
   } else {
     const rows = [];
+    /* Who called it, and from which room. The broker row knows the contract
+     * but nothing about WHY you're in it — that lives in the book (keyed
+     * "caller|TICKER"). Match on symbol+strike+expiry and carry the caller
+     * and room onto the line, so an open position always answers "whose
+     * alert was this?" without digging through the log. An adopted position
+     * has no caller (nobody's alert opened it) and stays blank rather than
+     * guessing. */
+    // Room and caller names come from Discord, so they never go into HTML raw.
+    const esc = (v) => String(v).replace(/[&<>"']/g, ch => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    const creditFor = (b) => {
+      const sym = String(b.symbol || "").toUpperCase();
+      for (const k of Object.keys(pos)) {
+        const p = pos[k] || {};
+        if (String(p.symbol || "").toUpperCase() !== sym) continue;
+        if (b.strike != null && p.strike != null &&
+            Math.abs(Number(p.strike) - Number(b.strike)) > 0.001) continue;
+        if (b.side && p.side && String(b.side)[0] !== String(p.side)[0]) continue;
+        const who = p.who && p.who !== "?" ? p.who : "";
+        const room = p.room || "";
+        if (!who && !room) continue;
+        return '<span style="color:#9aa4b5;font-size:10px"> · ' +
+               (who ? esc(who) : "") + (who && room ? " · " : "") +
+               (room ? esc(room) : "") + "</span>";
+      }
+      return "";
+    };
     // 1) REAL Webull positions — live price and P&L, straight from the broker.
     for (const b of bpos) {
       const sym = String(b.symbol || "").toUpperCase();
@@ -1124,7 +1151,7 @@ async function render() {
       rows.push('<div class="posrow"><span class="grow">' + tag +
         '<span class="in">IN</span> <b>' +
         contract + '</b> <b>x' + n + "</b>" + paid + now + plTxt +
-        "</span>" + x + "</div>");
+        creditFor(b) + "</span>" + x + "</div>");
     }
     // 2) Resting bids Webull hasn't confirmed filled yet.
     for (const k of pendKeys) {
