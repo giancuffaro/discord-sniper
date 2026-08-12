@@ -508,9 +508,43 @@ function indexToEtf(s) {
           (s.side === "CALLS" ? "C" : s.side === "PUTS" ? "P" : "") + " instead";
 }
 
+/* Refuse a futures entry whose LEVELS contradict the word. Mirrors
+ * signals.py _direction_sanity. 8/12: "MNQ Shorts ... Entry 29868.25
+ * Sl: 29848.25 TP 1 : 29889.25" — stop below, target above, i.e. a LONG's
+ * shape. He'd mistyped "Shorts" and fixed it later, but the bot would have
+ * sold the trade the room was buying. Words vs numbers disagree = one is a
+ * typo and there's no telling which, so nothing goes out. */
+function directionSanity(s) {
+  if (s.action !== "OPEN" || !s.fire || s.kind !== "future") return;
+  const d = String(s.direction || "").toUpperCase();
+  if (!d) return;
+  const short = d.startsWith("S");
+  const entry = Number(s.limit);
+  if (!isFinite(entry)) return;
+  const bad = [];
+  [["stop", s.their_stop, short], ["target", s.their_target, !short]]
+    .forEach(([label, lvl, wantAbove]) => {
+      if (lvl === null || lvl === undefined) return;
+      const v = Number(lvl);
+      if (!isFinite(v) || Math.abs(v - entry) < 1e-9) return;
+      if ((v > entry) !== wantAbove) {
+        bad.push(label + " " + v + " is " + (v < entry ? "below" : "above") +
+                 " the " + entry + " entry");
+      }
+    });
+  if (bad.length) {
+    s.fire = false;
+    s.why = "they wrote " + (short ? "SHORT" : "LONG") + " but the levels say " +
+            "the opposite (" + bad.join("; ") + "). One of the two is a typo " +
+            "and I can't tell which, so nothing was sent — check the room and " +
+            "fire it by hand if it's real.";
+  }
+}
+
 function parseSignal(text, cfg) {
   const s = parseSignalInner(text, cfg);
   indexToEtf(s);
+  directionSanity(s);
   if (s.action !== "OPEN" || s.kind === "future") return s;
   const low = (s.clean || "").toLowerCase();
   const isOption = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;

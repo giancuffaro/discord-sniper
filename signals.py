@@ -794,6 +794,56 @@ def _index_to_etf(s):
         pass
 
 
+def _direction_sanity(s):
+    """Refuse a futures entry whose LEVELS contradict the word.
+
+    8/12, Stormzy: "TRADE ENTRY - MNQ Shorts ... Entry: 29868.25 Sl: 29848.25
+    TP 1 : 29889.25". The stop is BELOW the entry and the target is ABOVE it —
+    that is the shape of a LONG. He'd typed "Shorts" by mistake and corrected
+    it several messages later, but the bot would already have SOLD the exact
+    trade the room was buying.
+
+    A stop and a target are geometry, and geometry can be checked: a short is
+    protected above and takes profit below, a long the other way round. When
+    the words and the numbers disagree, ONE of them is a typo and there is no
+    way to know which — so nothing is sent. Guessing from the levels would be
+    just as likely to take the wrong side as trusting the word. It refuses out
+    loud, which is a message he can act on in seconds."""
+    if getattr(s, "action", None) != "OPEN" or not getattr(s, "fire", False):
+        return
+    if getattr(s, "kind", None) != "future":
+        return
+    d = str(getattr(s, "direction", "") or "").upper()
+    if not d:
+        return
+    short = d.startswith("S")
+    try:
+        entry = float(getattr(s, "limit", None))
+    except (TypeError, ValueError):
+        return
+    bad = []
+    for label, lvl, want_above in (("stop", getattr(s, "their_stop", None), short),
+                                   ("target", getattr(s, "their_target", None),
+                                    not short)):
+        if lvl is None:
+            continue
+        try:
+            v = float(lvl)
+        except (TypeError, ValueError):
+            continue
+        if abs(v - entry) < 1e-9:
+            continue
+        if (v > entry) != want_above:
+            bad.append("%s %g is %s the %g entry" %
+                       (label, v, "below" if v < entry else "above", entry))
+    if bad:
+        s.fire = False
+        s.why = ("they wrote %s but the levels say the opposite (%s). One of "
+                 "the two is a typo and I can't tell which, so nothing was "
+                 "sent — check the room and fire it by hand if it's real."
+                 % ("SHORT" if short else "LONG", "; ".join(bad)))
+
+
 def parse(text, author="", channel="", cfg=None):
     """The reader, wrapped in the last set of no-matter-what checks. The
     inner function stays exactly the battle-tested paths; this wrapper only
@@ -808,6 +858,7 @@ def parse(text, author="", channel="", cfg=None):
         the wrong one."""
     s = _parse_inner(text, author=author, channel=channel, cfg=cfg)
     _index_to_etf(s)
+    _direction_sanity(s)
     if s.action != "OPEN" or s.kind == "future":
         return s
     low = (s.clean or "").lower()
