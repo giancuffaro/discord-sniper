@@ -81,9 +81,13 @@
   .skipped b { color: #fbbf24; }
   .ignored b { color: #6b7383; }
   .update b { color: #60a5fa; }
-  .holding { font-size: 12px; color: #9aa4b5; background: #10151d;
-             border: 1px solid #1c2331; border-radius: 6px;
-             padding: 7px 9px; margin: 8px 0 2px; line-height: 1.45; }
+  /* Pinned at the top now, inside its own tablebox — so no outer border or
+     margin of its own, and it scrolls internally once several trades are on
+     rather than pushing the tabs off the screen. */
+  .holding { font-size: 12px; color: #9aa4b5; background: transparent;
+             border: 0; border-radius: 0;
+             padding: 4px 2px 2px; margin: 0; line-height: 1.45;
+             max-height: 210px; overflow-y: auto; }
   .holding b { color: #e6edf6; }
   .holding .in { color: #4ade80; }
   /* Amber for a bid that's still resting. Green only ever means you own it. */
@@ -199,6 +203,13 @@
   <div class="state" id="state">Loading…</div>
 
   <!-- ===== TABS ===== -->
+  <!-- ACTIVE TRADES — pinned above the tabs so it's visible on every tab,
+       all the time. This is the section he actually watches. -->
+  <div class="tablebox" style="margin-bottom:8px">
+    <div class="tablehead"><b>Active trades</b></div>
+    <div class="holding" id="holding">No active trades</div>
+  </div>
+
   <div class="tabbar" id="tabbar">
     <button data-tab="trades" class="tabbtn on">Trades</button>
     <button data-tab="channels" class="tabbtn">Channels</button>
@@ -210,7 +221,11 @@
 
   <!-- ===== TRADES ===== -->
   <div class="tabpane on" data-tab="trades">
-    <div class="tablebox">
+    <!-- The old day-by-day trades table lived here. Removed 8/12 - he doesn't
+         read it and Active trades above is what matters. The nodes stay in the
+         DOM, hidden, because popup.js still fills them (and the day picker is
+         what the Logs tab reads). -->
+    <div class="tablebox" style="display:none">
       <div class="tablehead">
         <b>Trades</b>
         <select id="dayspick"><option value="">today</option></select>
@@ -497,12 +512,12 @@
   </div>
 
 
-  <!-- Bridge status + what you are holding (kept at the bottom so the tab
-       content shows the instant you click a tab). -->
+  <!-- Bridge status stays at the bottom. What he's HOLDING moved to the top
+       (8/12, his call): open trades are the thing he needs on screen at all
+       times, not something to scroll to under the tabs. -->
   <div class="bar">
     <div class="state" id="modestate">Checking the bridge…</div>
   </div>
-  <div class="holding" id="holding">No active trades</div>
   <div class="purse" id="purse" style="display:none"></div>
   <div class="tablebox" id="roomstats" style="display:none"></div>
 

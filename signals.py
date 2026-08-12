@@ -110,9 +110,17 @@ RE_ALLOUT = re.compile(r"\ball\s+out\b", re.IGNORECASE)
 RE_TRIM = re.compile(r"\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b",
                      re.IGNORECASE)
 RE_BACKIN = re.compile(r"\bback\s+in\b", re.IGNORECASE)
+# "swinging" is an ENTRY verb in these rooms, not chatter (his words, 8/12:
+# "swinging means opening a position today and closing it tomorrow"). Aristotle
+# posting "I'm swinging SPCS 165 C 9/18" is in it right now — the same shape
+# that got him into SKHY on 8/11 for +$590. Only the present-progressive form
+# counts: "swinging <contract>" is a position, while "swing trade idea",
+# "that was a good swing" and "going to swing it" are not, and the chatter
+# guard below still vetoes the conditional ones.
 RE_ENTRY = re.compile(
     r"\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b"
-    r"|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b", re.IGNORECASE)
+    r"|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b"
+    r"|\bswinging\b(?!\s+(?:trade|idea|setup|watch))", re.IGNORECASE)
 # "added to SPY @everyone new avg is 2.8" — they doubled up and their average
 # moved. Whether that buys you a second contract is a setting, not a parser
 # decision: the parser only says "this is an add", and guards.resolve_add has

@@ -1230,7 +1230,7 @@ class Book:
                 self.finish(key, FAILED, "stop failed to sell")
             return
 
-    def _sell_retry(self, wb, key, sym, side, strike, expiry, qty):
+    def _sell_retry(self, wb, key, sym, side, strike, expiry, qty, **kw):
         """Sell, and if Webull refuses because something is still resting
         against the contract, clear it and try once more.
 
@@ -1240,7 +1240,7 @@ class Book:
         or an orphan from an earlier run) still has the contract committed.
         The cure is to let go and ask again, not to give up on the exit."""
         try:
-            return wb.sell(sym, side, strike, expiry, qty)
+            return wb.sell(sym, side, strike, expiry, qty, **kw)
         except Exception as e:                          # noqa: BLE001
             msg = str(e).upper()
             blocked = ("MUST_BE_CLOSE_THAN_SELL_SHORT" in msg
@@ -1266,7 +1266,7 @@ class Book:
             self._event(key, "update",
                         "%s — Webull said an order was still on this contract; "
                         "cleared it and re-sent the sell" % sym)
-            return wb.sell(sym, side, strike, expiry, qty)
+            return wb.sell(sym, side, strike, expiry, qty, **kw)
 
     def _fee(self, p, qty):
         """Round-trip trading fees, per contract, for the honest sim — applied
@@ -1311,14 +1311,37 @@ class Book:
                         price=float(bid))
             return True
         try:
-            wb.sell(sym, side, strike, expiry, held, ref_price=float(bid))
+            self._sell_retry(wb, key, sym, side, strike, expiry, held,
+                             ref_price=float(bid))
             self.finish(key, CLOSED,
                         "take-profit sold at %.2f (+%.0f%%)" % (float(bid), gain),
                         price=float(bid))
         except Exception as e:                              # noqa: BLE001
-            self._event(key, "failed",
-                        "%s — take-profit tried to sell and couldn't: %s. Close "
-                        "it in the Webull app." % (sym, str(e)[:110]))
+            # Same breaker as the stop: three refusals on one contract and we
+            # stop re-arming it, instead of re-adopting and re-failing every
+            # 20s while a +30% winner sits there (8/12 QQQ).
+            with self._lock:
+                q = self._pos.get(key) or {}
+                _ct = (str(q.get("symbol") or "").upper(), q.get("strike"),
+                       str(q.get("expiry") or ""))
+                n = int(self.sell_fail_counts.get(_ct) or 0) + 1
+                self.sell_fail_counts[_ct] = n
+            if n >= 3:
+                with self._lock:
+                    self.broker_blocked.add(_ct)
+                    q2 = self._pos.get(key)
+                    if q2 is not None:
+                        q2["no_auto_stop"] = True
+                self._event(key, "failed",
+                            "%s — the take-profit has tried %d times and Webull "
+                            "keeps refusing (%s). I've stopped retrying. SELL "
+                            "THIS ONE IN THE WEBULL APP — it's up %.0f%% — and "
+                            "cancel any leftover order on it."
+                            % (sym, n, str(e)[:60], gain))
+            else:
+                self._event(key, "failed",
+                            "%s — take-profit tried to sell and couldn't: %s. "
+                            "Retrying." % (sym, str(e)[:110]))
             self.finish(key, FAILED, "take-profit failed to sell")
         return True
 
@@ -1454,9 +1477,10 @@ class Book:
         if real0 and not fut0 and wb0 is not None:
             try:
                 try:
-                    wb0.sell(sym0, side0, strike0, expiry0, n, ref_price=price)
+                    self._sell_retry(wb0, key, sym0, side0, strike0, expiry0, n,
+                                     ref_price=price)
                 except TypeError:
-                    wb0.sell(sym0, side0, strike0, expiry0, n)
+                    self._sell_retry(wb0, key, sym0, side0, strike0, expiry0, n)
             except Exception as e:                      # noqa: BLE001
                 self._event(key, "stop-warn",
                             "%s — their trim did NOT sell at the broker (%s). "

@@ -195,7 +195,10 @@ const RE_LOADING = /\b(?:load(?:ing|ed)?|prep(?:ping|ped)?)\b/i;
 const RE_ALLOUT = /\ball\s+out\b/i;
 const RE_TRIM = /\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b/i;
 const RE_BACKIN = /\bback\s+in\b/i;
-const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b/i;
+// "swinging" is an ENTRY verb here (his rule, 8/12: open today, close
+// tomorrow) — mirrors signals.py RE_ENTRY. Present-progressive only, so
+// "swing trade idea" / "that was a good swing" stay chatter.
+const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b|\bswinging\b(?!\s+(?:trade|idea|setup|watch))/i;
 const RE_EXIT = /\b(?:exited|exiting|closed|closing|stc|sold|selling|out|cutting)\b/i;
 // "Filled 3.95 starters" — their entry arrives as TWO messages. The contract was
 // named minutes earlier in a "Loading 205 calls Friday expiration on NVDA"
