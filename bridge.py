@@ -1486,25 +1486,49 @@ class Handler(BaseHTTPRequestHandler):
         if wb is None or not hasattr(wb, "flatten"):
             return self._json(200, {"ok": False,
                 "message": "no Webull connection to close it — do it in the app."})
+        # Is the BROKER actually holding this? That decides what ✕ means:
+        # a real position has to be sold; a book-only ghost just has to go.
+        try:
+            held = any(str(r.get("symbol") or "").upper() == sym
+                       for r in (broker_positions() or []))
+        except Exception:                                   # noqa: BLE001
+            held = True         # can't tell -> assume real, never fake a sale
+        err = None
+        msg = ""
         try:
             msg = wb.flatten(sym)
-            _POS["t"] = 0.0                     # force the next /positions to refetch
-            # If the book is tracking it, mark it closed too so the popup agrees.
-            if BOOK is not None:
-                try:
-                    for k in [k for k, p in list(getattr(BOOK, "_pos", {}).items())
-                              if str((p or {}).get("symbol") or "").upper() == sym]:
-                        if BOOK.claim(k):
-                            BOOK.finish(k, positions.CLOSED,
-                                        "closed from the popup", price=None)
-                except Exception:               # noqa: BLE001
-                    pass
-            note("FLATTEN  %s -> %s" % (sym, msg))
-            return self._json(200, {"ok": True, "message": msg})
         except Exception as e:                              # noqa: BLE001
-            note("FLATTEN  %s FAILED -> %s" % (sym, e))
+            err = e
+        _POS["t"] = 0.0                         # force the next /positions refetch
+        if BOOK is not None:
+            try:
+                keys = [k for k, p in list(getattr(BOOK, "_pos", {}).items())
+                        if str((p or {}).get("symbol") or "").upper() == sym]
+                for k in keys:
+                    if BOOK.claim(k):
+                        BOOK.finish(k, positions.CLOSED,
+                                    "closed from the popup", price=None)
+                # Whatever the broker said, the book must not keep showing a
+                # position ✕ was pressed on. claim() refuses a stuck "closing"
+                # entry and flatten() REFUSES futures outright, which is how
+                # ghosts became unclickable — so sweep the remainder by force.
+                if not held or err is not None:
+                    dropped = BOOK.force_drop(sym)
+                    if dropped and not held:
+                        note("FLATTEN  %s wasn't at the broker — removed %d "
+                             "stale book entr%s" % (sym, dropped,
+                                                    "y" if dropped == 1 else "ies"))
+                        return self._json(200, {"ok": True,
+                            "message": "%s wasn't open at Webull — cleared it "
+                                       "from the book." % sym})
+            except Exception:                   # noqa: BLE001
+                pass
+        if err is not None:
+            note("FLATTEN  %s FAILED -> %s" % (sym, err))
             return self._json(200, {"ok": False,
-                "message": "couldn't close %s: %s" % (sym, str(e)[:140])})
+                "message": "couldn't close %s: %s" % (sym, str(err)[:140])})
+        note("FLATTEN  %s -> %s" % (sym, msg))
+        return self._json(200, {"ok": True, "message": msg})
 
     def do_GET(self):
         if self.path.startswith("/mode"):

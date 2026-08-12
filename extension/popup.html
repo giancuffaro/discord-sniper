@@ -233,44 +233,17 @@
       <div id="daytable"><div class="note">No trades yet today.</div></div>
     </div>
 
-    <div class="tablebox" style="margin-top:8px">
-      <div class="tablehead"><b>Manual futures</b></div>
-      <div class="row" style="margin-top:4px">
-        <input id="mfSym" value="MNQ" placeholder="symbol" style="max-width:80px">
-        <input id="mfPrice" placeholder="price (blank=market)" class="grow" inputmode="decimal">
-      </div>
-      <div class="row" style="margin-top:6px">
-        <button id="mfLong" class="grow" style="background:#14532d;border-color:#166534;color:#fff">Buy / Long</button>
-        <button id="mfShort" class="grow" style="background:#7f1d1d;border-color:#991b1b;color:#fff">Sell / Short</button>
-      </div>
-      <div class="row" style="margin-top:6px">
-        <button id="mfClose" class="grow">Close / flat this symbol</button>
-      </div>
-      <div class="note" id="mfState">Fires a futures order to whatever brokers you
-        turned on under Keys → “Trade futures from”. Use a Sim/paper
-        NinjaTrader account to practice. Works any time.</div>
-    </div>
-
-    <div class="tablebox" style="margin-top:8px">
-      <div class="tablehead"><b>Test a trade — options or futures</b></div>
-      <div class="row" style="margin-top:6px">
-        <button id="testtrade" class="grow safe">🧪 Run test (entry → trim → exit)</button>
-      </div>
-      <div class="row" style="margin-top:4px">
-        <input id="testticker" value="SPY" placeholder="ticker" style="max-width:66px">
-        <input id="teststrike" value="800" placeholder="strike" style="max-width:66px">
-        <select id="testtype" style="max-width:84px">
-          <option value="C">Call</option>
-          <option value="P">Put</option>
-          <option value="LONG">Long (fut)</option>
-          <option value="SHORT">Short (fut)</option>
-        </select>
-        <input id="testexp" placeholder="exp (blank=Fri)" class="grow">
-      </div>
-      <div class="note">Runs a full entry → trim → exit through the whole pipeline on
-        PAPER only (never real money). Pick Call/Put for an OPTIONS test, or
-        Long/Short (fut) for a futures test (use a futures symbol like MNQ/MES;
-        strike &amp; exp ignored). Runs any time — a real fill still needs the market open.</div>
+    <!-- Manual futures + "Test a trade" panels removed 8/12, his call: futures
+         work now and he's done testing. popup.js still binds these ids, so they
+         live on hidden rather than throwing on every popup open. -->
+    <div style="display:none">
+      <input id="mfSym" value="MNQ"><input id="mfPrice">
+      <button id="mfLong"></button><button id="mfShort"></button>
+      <button id="mfClose"></button><span id="mfState"></span>
+      <button id="testtrade"></button>
+      <input id="testticker" value="SPY"><input id="teststrike" value="800">
+      <select id="testtype"><option value="C">Call</option></select>
+      <input id="testexp">
     </div>
   </div>
 

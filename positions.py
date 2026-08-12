@@ -1819,6 +1819,35 @@ class Book:
             money = " · sold, but at a price I never saw — account left as it was"
         self._event(key, state, "%s — %s%s" % (sym, why, money))
 
+    def force_drop(self, symbol, why="removed from the popup"):
+        """Take a symbol out of the book, no questions asked.
+
+        This is the ✕ button's backstop. The normal close path goes through
+        claim(), which refuses when a position is already marked `closing` —
+        and a position left mid-exit by a failed sell stays that way forever,
+        so ✕ did nothing at all (8/12: a mislabelled SPY and a futures MESU6
+        that no amount of clicking would clear). Nothing is sent to the broker
+        here; this only makes the book agree with reality. Returns how many
+        entries it dropped."""
+        sym = str(symbol or "").upper()
+        gone = 0
+        with self._lock:
+            for k in list(self._pos.keys()):
+                p = self._pos.get(k) or {}
+                if str(p.get("symbol") or "").upper() != sym:
+                    continue
+                p["closing"] = False
+                p["watching"] = False
+                p["qty"] = 0
+                p["state"] = CLOSED
+                p["closed_at"] = time.time()
+                p["stop_order_id"] = None
+                self._archive.append(self._pos.pop(k))
+                gone += 1
+        if gone:
+            self._event("?|" + sym, "closed", "%s — %s" % (sym, why), qty=0)
+        return gone
+
     def sweep(self, older_than=1800):
         """Move finished positions out of the working book so it doesn't grow
         all day. They stay in the archive — the table still shows the whole

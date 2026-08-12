@@ -282,6 +282,25 @@ def list_accounts(app_key, app_secret):
 
 # --- the account -------------------------------------------------------------
 
+def _looks_like_futures_code(sym):
+    """"MESU6" / "MNQU6" / "ESZ26" yes; "SPY" / "AAPL" no.
+
+    A CME contract code is a root followed by a month letter (FGHJKMNQUVXZ)
+    and one or two year digits. Equity tickers never end that way, which is
+    what keeps an options row from being adopted as a phantom future."""
+    s = str(sym or "").upper()
+    if len(s) < 3:
+        return False
+    t = s
+    digits = 0
+    while t and t[-1].isdigit():
+        t = t[:-1]
+        digits += 1
+    if digits < 1 or digits > 2 or not t:
+        return False
+    return t[-1] in "FGHJKMNQUVXZ" and len(t) >= 2
+
+
 class WebullOptions:
     def __init__(self, cfg):
         w = (cfg.get("execution", {}) or {}).get("webull", {}) or {}
@@ -1008,6 +1027,23 @@ class WebullOptions:
                 leg = legs[0] if legs else {}
                 sym = str(it.get("symbol") or leg.get("symbol") or "").upper()
                 if not sym:
+                    continue
+                # PROVE it's a future before calling it one. Passing the futures
+                # account id doesn't always take — the SDK can answer with the
+                # OPTIONS account instead, and on 8/12 that relabelled a SPY
+                # option (premium 1.06) as a futures contract with no strike:
+                # an un-clearable ghost, because the reconciler skips futures.
+                # An option row carries a strike/type/expiry; a futures contract
+                # code is a root plus a month letter and year ("MESU6").
+                if (leg.get("option_type") or it.get("option_type")
+                        or leg.get("strike") or leg.get("option_exercise_price")
+                        or it.get("option_exercise_price")
+                        or leg.get("option_expire_date")
+                        or it.get("option_expire_date")):
+                    continue
+                itype = str(it.get("instrument_type") or it.get("asset_type")
+                            or leg.get("instrument_type") or "").upper()
+                if "FUTURE" not in itype and not _looks_like_futures_code(sym):
                     continue
                 raw_q = (it.get("quantity") or leg.get("quantity") or
                          it.get("position") or 0)
