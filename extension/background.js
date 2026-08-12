@@ -90,7 +90,6 @@ const ROOM_LABELS = {
   "748266924122570882": "ZT uoa-swings",
   "1356793611420958732": "ZT opt-1",
   "1248264554886991893": "ZT opt-2",
-  "1470409110288601282": "ZT opt-3",
   "694197721430491266": "ZT opt-4",
   "777750637613416479": "ZT opt-5",
   "1331631786068938813": "ZT opt-6",
@@ -106,7 +105,6 @@ const ROOM_LABELS = {
   "1255279667489931325": "ZT cc-2",
   "1294812275668160613": "ZT cc-3",
   "1121391020148543631": "ZT cc-4",
-  "1239561137914122240": "ZT cc-5",
   "552885275676639243": "ZT forex",
   "1525120298075029554": "ZT fut-1",
   "1251181965252755517": "ZT fut-2",
@@ -185,7 +183,6 @@ async function cfg() {
                // z trades batch two — his links, his groupings
                "1356793611420958732",
                "1248264554886991893",
-               "1470409110288601282",
                "694197721430491266",
                "777750637613416479",
                "1331631786068938813",
@@ -1141,7 +1138,12 @@ async function autoExportForLearning() {
     } catch (e) { return day; }
   })();
   const caps = captured.slice().sort((a, b) => a.t - b.t).map(c =>
-    stamp(c.t) + "  [" + (roomName(c.channel) || c.channel || "?") + "]  " +
+    // The channel ID rides along in the tag now. The display name alone can't
+    // be matched back to the watch list (internal labels like "ZT opt-7" vs
+    // Discord's "♟market-bishop"), so a dead-room cleanup was guesswork.
+    // With the id here it's exact.
+    stamp(c.t) + "  [" + (roomName(c.channel) || "?") +
+    (c.channel ? " #" + c.channel : "") + "]  " +
     (c.author || "?") + ": " + String(c.text || "").replace(/\s+/g, " ").trim());
   const acts = log.slice().reverse().map(e =>
     stamp(e.t) + "  <" + (e.kind || "?") + ">  " +
