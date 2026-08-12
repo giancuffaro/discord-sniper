@@ -548,6 +548,47 @@ class Book:
                 return float(table[root])
         return 1.0
 
+    def drop_corrupt(self, note=None):
+        """Throw out book rows that can't be real, and say so.
+
+        The 8/12 case: futures_positions() briefly mislabelled OPTION rows as
+        futures when the SDK ignored the futures account id, leaving "SPY" as a
+        futures contract with no strike, no expiry and an option premium for a
+        price. Nothing could shift it — reconcile_gone skips futures, flatten()
+        refuses them, so ✕ did nothing. A futures symbol is a root plus a month
+        letter and year ("MESU6"); anything else claiming to be a future is
+        wreckage from that bug and gets dropped. Returns how many went."""
+        def _is_code(sym):
+            t = str(sym or "").upper()
+            digits = 0
+            while t and t[-1].isdigit():
+                t = t[:-1]
+                digits += 1
+            return (1 <= digits <= 2 and len(t) >= 2
+                    and t[-1] in "FGHJKMNQUVXZ")
+        bad = []
+        with self._lock:
+            for k, p in list(self._pos.items()):
+                if p.get("kind") != "future":
+                    continue
+                sym = str(p.get("symbol") or "").upper()
+                if _is_code(sym):
+                    continue
+                bad.append((k, sym))
+        for k, sym in bad:
+            with self._lock:
+                p = self._pos.pop(k, None)
+                if p is not None:
+                    p.update(state=CLOSED, qty=0, closing=False,
+                             watching=False, closed_at=time.time())
+                    self._archive.append(p)
+            if note:
+                note("DROPPED  %s was recorded as a futures position but isn't "
+                     "a futures contract (a bug on 8/12 mislabelled it). "
+                     "Removed from the book; nothing was sent to the broker."
+                     % sym)
+        return len(bad)
+
     def purge_expired(self, note=None):
         """Drop FILLED option positions whose expiry is already in the past.
         They can't be sold (Webull refuses), they scare the ambiguity check,
@@ -1819,7 +1860,7 @@ class Book:
             money = " · sold, but at a price I never saw — account left as it was"
         self._event(key, state, "%s — %s%s" % (sym, why, money))
 
-    def force_drop(self, symbol, why="removed from the popup"):
+    def force_drop(self, symbol, why="removed from the popup", live=None):
         """Take a symbol out of the book, no questions asked.
 
         This is the ✕ button's backstop. The normal close path goes through
@@ -1835,6 +1876,10 @@ class Book:
             for k in list(self._pos.keys()):
                 p = self._pos.get(k) or {}
                 if str(p.get("symbol") or "").upper() != sym:
+                    continue
+                # ✕ on a LIVE row must not also delete the paper one of the
+                # same ticker, and vice versa.
+                if live is not None and bool(p.get("live")) != bool(live):
                     continue
                 p["closing"] = False
                 p["watching"] = False

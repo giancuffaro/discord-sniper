@@ -149,8 +149,13 @@ def paper_on():
     # automatically, no toggle needed. paper_trading can still be set false by
     # hand to force the in-house sim. Only actually "on" when the sandbox client
     # connected — otherwise the in-house sim carries it.
-    default_on = bool(w.get("paper_app_key") and w.get("paper_app_secret"))
-    return bool(w.get("paper_trading", default_on)) and WB_PAPER is not None
+    # 8/12, his call: "don't execute trades in paper, but keep paper for
+    # testing." So having sandbox keys is no longer enough to route real room
+    # calls there — paper_trading must be switched ON deliberately. The client
+    # still connects and the whole paper path stays intact, one flag away, for
+    # a supervised test. Untouched keys + no flag = test rooms use the in-house
+    # sim and the sandbox never sees an order it wasn't asked for.
+    return bool(w.get("paper_trading", False)) and WB_PAPER is not None
 
 
 def futures_on():
@@ -1302,7 +1307,13 @@ def broker_positions():
         rows = []
         seen = set()
         try:
-            for wb, is_live in ((WB_LIVE, True), (WB_PAPER, False)):
+            # With paper execution off there is nothing of ours in the
+            # sandbox, and polling it was 79% of all Webull traffic on 8/12
+            # (7,209 calls of 9,111). Skip it unless paper is actually on.
+            _accts = [(WB_LIVE, True)]
+            if paper_on():
+                _accts.append((WB_PAPER, False))
+            for wb, is_live in _accts:
                 if wb is None or id(wb) in seen or not hasattr(wb, "positions"):
                     continue
                 seen.add(id(wb))
@@ -1513,7 +1524,7 @@ class Handler(BaseHTTPRequestHandler):
                 # entry and flatten() REFUSES futures outright, which is how
                 # ghosts became unclickable — so sweep the remainder by force.
                 if not held or err is not None:
-                    dropped = BOOK.force_drop(sym)
+                    dropped = BOOK.force_drop(sym, live=want_live)
                     if dropped and not held:
                         note("FLATTEN  %s wasn't at the broker — removed %d "
                              "stale book entr%s" % (sym, dropped,
@@ -1746,7 +1757,7 @@ class Handler(BaseHTTPRequestHandler):
             # Paper is the test engine, so saving a sandbox key turns it ON —
             # overriding any leftover paper_trading:false from an old settings
             # file. He can still flip it off by hand later.
-            w["paper_trading"] = True
+            w["paper_trading"] = bool(w.get("paper_trading", False))
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
@@ -2342,6 +2353,7 @@ def main():
         while True:
             try:
                 if BOOK is not None and WB is not None:
+                    BOOK.drop_corrupt(note)
                     BOOK.purge_expired(note)
                     BOOK.adopt(broker_positions(), note)
                     # the other direction: positions HE closed at Webull
