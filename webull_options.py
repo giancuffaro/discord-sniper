@@ -817,7 +817,8 @@ class WebullOptions:
                "strike_price": "%.2f" % float(strike),
                "option_expire_date": expiration, "instrument_type": "OPTION",
                "option_type": option_type, "market": "US"}
-        o = {"client_order_id": uuid.uuid4().hex[:32], "combo_type": "NORMAL",
+        _cid = uuid.uuid4().hex[:32]
+        o = {"client_order_id": _cid, "combo_type": "NORMAL",
              "option_strategy": "SINGLE", "order_type": "LIMIT",
              "limit_price": "%.2f" % float(limit), "quantity": str(qty),
              "side": side, "time_in_force": "DAY", "entrust_type": "QTY",
@@ -1205,9 +1206,19 @@ class WebullOptions:
                                                 " (clamped under market)" if stop_clamped else "")
         # The limit sits under the trigger so a fast drop still clears.
         limit = max(0.01, round(stop * 0.90, 2))
-        body = self._send(self._order(symbol, expiration, option_type, strike,
-                                      "SELL", qty, limit, stop=stop), what)
-        oid = _find(body, "order_id", "orderId", "client_order_id", "clientOrderId")
+        _orders = self._order(symbol, expiration, option_type, strike,
+                                      "SELL", qty, limit, stop=stop)
+        body = self._send(_orders, what)
+        # Cancel looks an order up by the CLIENT id we generated —
+        # the SDK puts whatever it is handed into client_order_id.
+        # Returning Webull's own order_id here meant every cancel
+        # came back ORDER_NOT_FOUND, so the resting stop never died
+        # and then blocked every sell on that contract (8/12, all
+        # day: META, QQQ, NVDA, SPCX...). Prefer ours; fall back to
+        # whatever the response carries.
+        oid = ((_orders[0] or {}).get("client_order_id")
+               if _orders else None) or _find(
+            body, "client_order_id", "clientOrderId", "order_id", "orderId")
         return (str(oid) if oid else None), stop
 
     def buy(self, symbol, side, strike, expiry, qty, their_price=None):
@@ -1260,9 +1271,19 @@ class WebullOptions:
         else:
             what = "BUY %d %s %g%s %s @ %.2f" % (qty, symbol, float(strike),
                                                  option_type[0], expiration, limit)
-        body = self._send(self._order(symbol, expiration, option_type, strike,
-                                      "BUY", qty, limit), what)
-        oid = _find(body, "order_id", "orderId", "client_order_id", "clientOrderId")
+        _orders = self._order(symbol, expiration, option_type, strike,
+                                      "BUY", qty, limit)
+        body = self._send(_orders, what)
+        # Cancel looks an order up by the CLIENT id we generated —
+        # the SDK puts whatever it is handed into client_order_id.
+        # Returning Webull's own order_id here meant every cancel
+        # came back ORDER_NOT_FOUND, so the resting stop never died
+        # and then blocked every sell on that contract (8/12, all
+        # day: META, QQQ, NVDA, SPCX...). Prefer ours; fall back to
+        # whatever the response carries.
+        oid = ((_orders[0] or {}).get("client_order_id")
+               if _orders else None) or _find(
+            body, "client_order_id", "clientOrderId", "order_id", "orderId")
         # This returns the moment Webull accepts the order, NOT when it fills.
         # On a resting bid those are different events minutes apart, and
         # sometimes the second one never happens — so nothing downstream is
@@ -1347,9 +1368,19 @@ class WebullOptions:
             limit = 0.01
         what = "SELL %d %s %g%s %s @ %.2f" % (qty, symbol, float(strike),
                                               option_type[0], expiration, limit)
-        body = self._send(self._order(symbol, expiration, option_type, strike,
-                                      "SELL", qty, limit), what)
-        oid = _find(body, "order_id", "orderId", "client_order_id", "clientOrderId")
+        _orders = self._order(symbol, expiration, option_type, strike,
+                                      "SELL", qty, limit)
+        body = self._send(_orders, what)
+        # Cancel looks an order up by the CLIENT id we generated —
+        # the SDK puts whatever it is handed into client_order_id.
+        # Returning Webull's own order_id here meant every cancel
+        # came back ORDER_NOT_FOUND, so the resting stop never died
+        # and then blocked every sell on that contract (8/12, all
+        # day: META, QQQ, NVDA, SPCX...). Prefer ours; fall back to
+        # whatever the response carries.
+        oid = ((_orders[0] or {}).get("client_order_id")
+               if _orders else None) or _find(
+            body, "client_order_id", "clientOrderId", "order_id", "orderId")
         # For the book's P&L, the honest exit price is the live bid if we had
         # one, otherwise the reference the bridge handed in. Never the floor.
         recorded = bid or ask or ref_price or limit
