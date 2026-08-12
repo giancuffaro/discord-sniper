@@ -150,6 +150,15 @@ class Book:
         # Works on LIVE and paper (a real sell), unlike the sim-only tactics
         # above. The stop side of the bracket is the resting stop (stop_pct),
         # so setting both to 15 gives a tight +15% / -15% exit on one contract.
+        # Contracts the BROKER keeps refusing to sell (an order still resting
+        # on them that isn't ours to see). Keyed by contract, not by position
+        # key, because the position gets rebuilt on every adoption pass and a
+        # flag on it would be forgotten every 20 seconds.
+        self.broker_blocked = set()
+        # ...and how many times each contract has been refused. Same reason:
+        # a counter on the position is wiped by the next adoption pass, so it
+        # would never reach three and the loop would run all day.
+        self.sell_fail_counts = {}
         self.take_profit_on = False
         self.take_profit_pct = 20.0
         # HIS trim ladder — run our own exit on their entry, because the
@@ -1084,6 +1093,14 @@ class Book:
                                        "" if not pf.get("their_stop")
                                        else " at %g" % float(pf["their_stop"])))
                 return
+        # A position Webull keeps refusing to sell must not be re-armed on
+        # every adoption pass — that was the 8/12 loop (fail, adopt, arm,
+        # fail...). It stays in the book and visible; it just stops pretending
+        # a stop is going to work until he clears it at the broker.
+        with self._lock:
+            _p = self._pos.get(key) or {}
+            if _p.get("no_auto_stop") or (str(_p.get("symbol") or "").upper(), _p.get("strike"), str(_p.get("expiry") or "")) in self.broker_blocked:
+                return
         stop_price = max(0.01, round(float(fill) * (1 - self.stop_pct / 100), 2))
         oid = None
         with self._lock:
@@ -1179,15 +1196,77 @@ class Book:
                             price=float(bid))
                 return
             try:
-                wb.sell(sym, side, strike, expiry, qty)
+                self._sell_retry(wb, key, sym, side, strike, expiry, qty)
                 self.finish(key, STOPPED, "stopped out at %.2f" % float(bid),
                             price=float(bid))
             except Exception as e:                      # noqa: BLE001
-                self._event(key, "failed",
-                            "%s — the stop tried to sell and couldn't: %s. Go "
-                            "close it in the Webull app." % (sym, str(e)[:110]))
+                # Count it. The same rejection every 20s all morning (8/12:
+                # LYFT 15 times, META 8) is noise that hides the one thing he
+                # has to do, and re-adoption keeps feeding the loop. After
+                # three, say it once, plainly, and stop re-arming this one.
+                with self._lock:
+                    q = self._pos.get(key) or {}
+                    _ct = (str(q.get("symbol") or "").upper(), q.get("strike"),
+                           str(q.get("expiry") or ""))
+                    n = int(self.sell_fail_counts.get(_ct) or 0) + 1
+                    self.sell_fail_counts[_ct] = n
+                    q["sell_fails"] = n
+                if n >= 3:
+                    self._event(key, "failed",
+                                "%s — the stop has tried to sell %d times and "
+                                "Webull keeps refusing (%s). I've stopped "
+                                "retrying it. Close this one in the Webull app, "
+                                "and cancel any leftover order on it there."
+                                % (sym, n, str(e)[:70]))
+                    with self._lock:
+                        q = self._pos.get(key)
+                        if q is not None:
+                            q["no_auto_stop"] = True
+                            self.broker_blocked.add((str(q.get("symbol") or "").upper(), q.get("strike"), str(q.get("expiry") or "")))
+                else:
+                    self._event(key, "failed",
+                                "%s — the stop tried to sell and couldn't: %s. "
+                                "Retrying." % (sym, str(e)[:110]))
                 self.finish(key, FAILED, "stop failed to sell")
             return
+
+    def _sell_retry(self, wb, key, sym, side, strike, expiry, qty):
+        """Sell, and if Webull refuses because something is still resting
+        against the contract, clear it and try once more.
+
+        "You can not place order in excess of current holding quantity to
+        create a position on the other side of the market" does NOT mean you
+        can't sell — it means an order (usually the stop we just cancelled,
+        or an orphan from an earlier run) still has the contract committed.
+        The cure is to let go and ask again, not to give up on the exit."""
+        try:
+            return wb.sell(sym, side, strike, expiry, qty)
+        except Exception as e:                          # noqa: BLE001
+            msg = str(e).upper()
+            blocked = ("MUST_BE_CLOSE_THAN_SELL_SHORT" in msg
+                       or "EXCESS OF CURRENT HOLDING" in msg
+                       or "CHECK YOUR OPEN ORDERS" in msg)
+            if not blocked:
+                raise
+            with self._lock:
+                p = self._pos.get(key) or {}
+                oid = p.get("stop_order_id")
+            if oid:
+                try:
+                    wb.cancel(oid)
+                except Exception:                       # noqa: BLE001
+                    pass
+                self._await_cancel(wb, oid)
+                with self._lock:
+                    q = self._pos.get(key)
+                    if q is not None:
+                        q["stop_order_id"] = None
+            else:
+                time.sleep(1.5)     # nothing of ours to pull — let it settle
+            self._event(key, "update",
+                        "%s — Webull said an order was still on this contract; "
+                        "cleared it and re-sent the sell" % sym)
+            return wb.sell(sym, side, strike, expiry, qty)
 
     def _fee(self, p, qty):
         """Round-trip trading fees, per contract, for the honest sim — applied
@@ -1451,6 +1530,13 @@ class Book:
         if oid and wb is not None and not self._sim(p):
             try:
                 wb.cancel(oid)
+                # A cancel is a REQUEST, not an event. Webull keeps the
+                # contract committed to the dying order for a moment, and a
+                # sell sent into that window comes back "you can not place an
+                # order in excess of current holding quantity" — which is
+                # exactly what killed the 8/12 META and LYFT stops, one second
+                # after the pull. So wait for the broker to actually let go.
+                self._await_cancel(wb, oid)
                 self._event(key, "stop-pulled",
                             "%s — pulled the resting stop before selling" % sym)
             except Exception:                           # noqa: BLE001
@@ -1459,6 +1545,22 @@ class Book:
                             "in Webull after this sells, cancel it by hand."
                             % sym)
         return True
+
+    def _await_cancel(self, wb, oid, tries=6, pause=0.5):
+        """Block until the broker says that order is really gone (dead/filled),
+        up to ~3s. Returns True if confirmed. Never raises — an unconfirmed
+        cancel still lets the sell try; the retry below is the backstop."""
+        if wb is None or not oid or not hasattr(wb, "order_status"):
+            return False
+        for _ in range(int(tries)):
+            try:
+                st, _fq, _avg = wb.order_status(oid)
+            except Exception:                           # noqa: BLE001
+                return False
+            if st in ("dead", "filled"):
+                return True
+            time.sleep(pause)
+        return False
 
     def cancel_entry(self, key, why="pulled"):
         """Take a resting bid back off the book.
