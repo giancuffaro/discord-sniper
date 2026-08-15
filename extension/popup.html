@@ -224,30 +224,13 @@
 
   <!-- ===== TRADES ===== -->
   <div class="tabpane on" data-tab="trades">
-    <!-- The old day-by-day trades table lived here. Removed 8/12 - he doesn't
-         read it and Active trades above is what matters. The nodes stay in the
-         DOM, hidden, because popup.js still fills them (and the day picker is
-         what the Logs tab reads). -->
-    <div class="tablebox" style="display:none">
-      <div class="tablehead">
-        <b>Trades</b>
-        <select id="dayspick"><option value="">today</option></select>
-      </div>
-      <div id="daytable"><div class="note">No trades yet today.</div></div>
-    </div>
-
-    <!-- Manual futures + "Test a trade" panels removed 8/12, his call: futures
-         work now and he's done testing. popup.js still binds these ids, so they
-         live on hidden rather than throwing on every popup open. -->
-    <div style="display:none">
-      <input id="mfSym" value="MNQ"><input id="mfPrice">
-      <button id="mfLong"></button><button id="mfShort"></button>
-      <button id="mfClose"></button><span id="mfState"></span>
-      <button id="testtrade"></button>
-      <input id="testticker" value="SPY"><input id="teststrike" value="800">
-      <select id="testtype"><option value="C">Call</option></select>
-      <input id="testexp">
-    </div>
+    <!-- Day picker: what the Logs tab's day-by-day view reads. The old table
+         that used to sit next to it (removed 8/12 - Active trades above is
+         what matters) is gone for good now (8/15 cleanup), along with the
+         manual-futures and test-a-trade panels this file used to keep alive
+         hidden. Nothing in popup.js references those ids any more. -->
+    <select id="dayspick" style="display:none"><option value="">today</option></select>
+    <div id="daytable" style="display:none"></div>
   </div>
 
   <!-- ===== CHANNELS ===== -->
@@ -279,17 +262,31 @@
 
   <!-- ===== STRATEGIES ===== -->
   <div class="tabpane" data-tab="strategies">
-    <label>One-click bracket (LIVE)</label>
+    <label>One-click bracket — <span style="color:#fbbf24">real money, live &amp; paper</span></label>
     <div class="row" style="margin-bottom:4px">
-      <span class="grow" style="font-size:12px">Bracket: 1 contract, +20% / −10%</span>
+      <span class="grow" style="font-size:12px">Bracket: 1 contract, -10% stop to start</span>
       <button id="bracketstrat" class="tgl safe">off</button>
     </div>
     <div class="note" id="bracketstate">On: every entry is exactly ONE contract no
-      matter what the alert says. Takes profit the moment it's up +20%, hard stop
-      at −10%. Works on live and paper. Overrides sizing while it's on.</div>
+      matter what the alert says, with a -10% stop. Works on live and paper.
+      Overrides sizing while it's on.</div>
+
+    <div class="row" style="margin-top:8px;margin-bottom:2px">
+      <span class="grow" style="font-size:12px">At +20%, then —</span>
+      <select id="bracketexit" style="max-width:200px">
+        <option value="ratchet">ratchet the stop up (default)</option>
+        <option value="hardclose">close the whole position</option>
+      </select>
+    </div>
+    <div class="note" id="bracketexitstate"><b>Ratchet</b>: the stop stops sitting
+      at -10% and starts walking UP instead — locked at +10% first, then another
+      +10% for every further +10% of gain (up 20 locks +10, up 30 locks +20, up 40
+      locks +30…), no ceiling. Never sells outright, never comes back red once
+      it's locked. <b>Close whole position</b> is the old behaviour: sells
+      everything the instant it's up +20% and you're flat.</div>
 
 
-    <label>Tactics (test money)</label>
+    <label style="margin-top:14px">Paper-only tactics — <span style="color:#7d8697;text-transform:none;letter-spacing:0;font-size:11px">never touch live money</span></label>
     <div class="half">
       <div>
         <label>Bid under their price ($)</label>

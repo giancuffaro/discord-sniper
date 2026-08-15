@@ -343,43 +343,6 @@ _wireFb("fbTradovate", "tradovate", "tradovateFields");
 _wireFb("fbTopstep", "topstep", "topstepFields");
 if ($("fbSave")) $("fbSave").onclick = saveFuturesBrokers;
 
-/* ---- manual futures trigger — fire a buy/sell/close by hand ----------------
- * Sends a futures order through the SAME pipeline as a room alert, so it fans
- * out to whatever brokers are on under "Trade futures from". Tagged manual so
- * it fills at once and the hours guard can't block it. With a price it's a
- * labeled entry the parser reads as a limit; blank price = market. */
-async function _fireManualFutures(text, label) {
-  const st = $("mfState");
-  if (st) st.textContent = "sending " + label + "…";
-  try {
-    await chrome.runtime.sendMessage({
-      type: "MESSAGE", mid: "manualfut-" + Date.now(),
-      text: text, full: text, author: "🎯 MANUAL",
-      channelId: "829754942817828884", postedAt: Date.now(), test: true,
-      history: false, reply: false,
-      url: "https://discord.com/channels/manual/futures" });
-    if (st) st.textContent = label + " sent — check the log and your broker.";
-  } catch (e) {
-    if (st) st.textContent = "couldn't send it — is the extension awake?";
-  }
-  setTimeout(render, 800);
-}
-function _mfEntry(dir) {
-  const sym = (($("mfSym") || {}).value || "MNQ").trim().toUpperCase() || "MNQ";
-  const price = (($("mfPrice") || {}).value || "").trim();
-  // A price makes it a labeled entry the parser reads as a limit; blank = market.
-  const text = price
-    ? "Ticker: " + sym + " " + dir + " Entry: " + price
-    : sym + " | " + dir + " HERE";
-  return _fireManualFutures(text, sym + " " + dir + (price ? " @ " + price : " (market)"));
-}
-if ($("mfLong")) $("mfLong").onclick = () => _mfEntry("LONG");
-if ($("mfShort")) $("mfShort").onclick = () => _mfEntry("SHORT");
-if ($("mfClose")) $("mfClose").onclick = () => {
-  const sym = (($("mfSym") || {}).value || "MNQ").trim().toUpperCase() || "MNQ";
-  return _fireManualFutures("all out of " + sym, "close " + sym);
-};
-
 /* One-glance status bar — the whole setup on a single line, plus the one thing
  * to fix if anything's red. No more hunting through the panel. */
 function _dot(ok) { return ok ? "✅" : "⛔"; }
@@ -541,22 +504,44 @@ $("simsave").onclick = saveSim;
  * Painted from the bridge's reported state so a reload always tells the truth.
  */
 let bracketOn = false;
+// "ratchet" (default, 8/15): the stop walks up in +stop_loss_pct steps once
+// gain reaches take_profit_pct, never sells outright. "hardclose": the old
+// behaviour, sells everything the instant gain hits take_profit_pct.
+let bracketExit = "ratchet";
 function paintStrat() {
   const s = (modeStatus || {}).strategy || {};
   bracketOn = !!s.enabled;
+  bracketExit = s.take_profit_hard_close ? "hardclose" : "ratchet";
   const btn = $("bracketstrat");
   if (btn) {
     btn.textContent = bracketOn ? "ON" : "off";
     btn.className = "tgl " + (bracketOn ? "live" : "safe");
   }
+  const sel = $("bracketexit");
+  if (sel) sel.value = bracketExit;
+  const exitNote = $("bracketexitstate");
+  if (exitNote) {
+    exitNote.innerHTML = bracketExit === "hardclose"
+      ? "<b>Close whole position</b>: sells everything the instant it's up " +
+        "+20% and you're flat. The old behaviour, from before 8/15."
+      : "<b>Ratchet</b>: the stop stops sitting at -10% and starts walking UP " +
+        "instead — locked at +10% first, then another +10% for every further " +
+        "+10% of gain (up 20 locks +10, up 30 locks +20, up 40 locks +30…), " +
+        "no ceiling. Never sells outright, never comes back red once it's " +
+        "locked.";
+  }
 }
-if ($("bracketstrat")) $("bracketstrat").onclick = async () => {
-  bracketOn = !bracketOn;
+async function _saveBracket() {
   const btn = $("bracketstrat");
-  btn.textContent = bracketOn ? "ON" : "off";
-  btn.className = "tgl " + (bracketOn ? "live" : "safe");
+  if (btn) {
+    btn.textContent = bracketOn ? "ON" : "off";
+    btn.className = "tgl " + (bracketOn ? "live" : "safe");
+  }
+  const hardClose = bracketExit === "hardclose";
   const strat = { enabled: bracketOn, take_profit_pct: 20,
-                  stop_loss_pct: 10, one_contract: true };
+                  stop_loss_pct: 10, one_contract: true,
+                  ratchet_enabled: !hardClose,
+                  take_profit_hard_close: hardClose };
   // Extension settings first — this is what the worker reads to force qty=1.
   try {
     const { settings } = await chrome.storage.local.get("settings");
@@ -564,18 +549,28 @@ if ($("bracketstrat")) $("bracketstrat").onclick = async () => {
     s.strategy = strat;
     await chrome.storage.local.set({ settings: s });
   } catch (e) {}
-  // Then the bridge, so live/paper orders get the actual +15%/-15% bracket.
+  // Then the bridge, so live/paper orders get the actual bracket.
   try {
     modeStatus = await askBridge("/config", { strategy: strat });
     if ($("bracketstate"))
       $("bracketstate").textContent = bracketOn
-        ? "ON — every entry is 1 contract, +20% take-profit, −10% stop. Live and paper."
+        ? (hardClose
+           ? "ON — every entry is 1 contract, +20% take-profit, −10% stop. Live and paper."
+           : "ON — every entry is 1 contract, −10% stop to start, ratcheting up past +20%. Live and paper.")
         : "Off — sizing and exits go back to the room's calls.";
   } catch (e) {
     if ($("bracketstate"))
       $("bracketstate").textContent = "Saved in the browser, but couldn't reach the bridge — START HERE first.";
   }
   paintStrat();
+}
+if ($("bracketstrat")) $("bracketstrat").onclick = async () => {
+  bracketOn = !bracketOn;
+  await _saveBracket();
+};
+if ($("bracketexit")) $("bracketexit").onchange = async () => {
+  bracketExit = $("bracketexit").value;
+  await _saveBracket();
 };
 
 if ($("propadd")) $("propadd").onclick = async () => {
@@ -1656,70 +1651,6 @@ $("export").onclick = async () => {
       // you can still copy it out.
       chrome.tabs.create({ url });
     });
-};
-
-/* The test-trade button. Fires a real entry, a trim, then a full exit — as
- * three synthetic messages pushed through the EXACT path a typed Discord call
- * takes: the same MESSAGE handler, the same parser, the same guards, the same
- * position book, the same bridge and paper broker. Nothing is special-cased, so
- * what you see is what a real room would get. It routes to PAPER only (no "live"
- * flag, a test room id), so it can never touch real money. */
-function nextTradingDay() {
-  // m/d for the next weekday (Mon–Fri). Options need a real trading day, and a
-  // weekend expiry doesn't exist — roll to Monday.
-  const d = new Date();
-  do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6);
-  return (d.getMonth() + 1) + "/" + d.getDate();
-}
-$("testtrade").onclick = async () => {
-  const btn = $("testtrade");
-  const type = (($("testtype") || {}).value || "C");
-  const isFut = (type === "LONG" || type === "SHORT");
-  // Futures use a futures symbol (MNQ, MES, ES, NQ...) and no strike/expiry.
-  // If the box still has the options default "SPY", stand in a real micro so
-  // the test actually parses as a future.
-  let tk = ((($("testticker") || {}).value || "").trim()).toUpperCase();
-  if (isFut && (!tk || tk === "SPY")) tk = "MNQ";
-  if (!tk) tk = "SPY";
-  const strike = ((($("teststrike") || {}).value || "800").trim() || "800");
-  const cp = (type === "P") ? "P" : "C";
-  const exp = ((($("testexp") || {}).value || "").trim()) || nextTradingDay();
-  // A PAPER room id that's always in the listened list, so the channel gate
-  // never blocks the test. The parser reads a future from the text itself
-  // ("MNQ | LONG HERE"), so the room doesn't need to be a "futures" room.
-  // postedAt = now so it's never history; a fresh mid each run for re-tests.
-  const room = "829754942817828884";
-  const base = Date.now();
-  // Futures speak the room's own syntax: "MNQ | LONG HERE" is the entry the
-  // parser reads as a futures OPEN with a direction; trims/closes are the same
-  // shape as options. Options keep the "in TICKER EXP STRIKEC" entry.
-  const steps = isFut ? [
-    { text: tk + " | " + type + " HERE",  label: "① entry" },
-    { text: "trimming " + tk + " @ 25%",  label: "② trim"  },
-    { text: "all out of " + tk,           label: "③ exit"  }
-  ] : [
-    { text: "in " + tk + " " + exp + " " + strike + cp, label: "① entry" },
-    { text: "trimming " + tk + " @ 25%",                 label: "② trim"  },
-    { text: "all out of " + tk,                          label: "③ exit"  }
-  ];
-  const fire = (text, i) => chrome.runtime.sendMessage({
-    type: "MESSAGE", mid: "test-" + base + "-" + i, text, full: text,
-    author: "🧪 TEST", channelId: room, postedAt: Date.now(), test: true,
-    history: false, reply: false, url: "https://discord.com/channels/test/" + room
-  }).catch(() => {});
-
-  // Entry now; trim after the entry has had time to fill on the sandbox; exit
-  // after the trim. The gaps let the fill-watcher actually see a fill, so the
-  // trim and exit act on a real position instead of a resting bid.
-  btn.disabled = true; btn.textContent = "① entry sent…";
-  fire(steps[0].text, 0);
-  setTimeout(() => { btn.textContent = "② trim sent…"; fire(steps[1].text, 1); }, 9000);
-  setTimeout(() => { btn.textContent = "③ exit sent…"; fire(steps[2].text, 2); }, 18000);
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = "🧪 Run test trade (entry → trim → exit)";
-    render();
-  }, 22000);
 };
 
 /* Update the app from the popup — pulls the newest build and restarts the
