@@ -249,12 +249,13 @@ function _fbBtn(id, on) {
 // The toggle ON/off intent lives in the BROWSER, so a status refresh (or the
 // bridge being momentarily down) can never flip a switch the user just set.
 // The bridge still ROUTES the orders, so every change is also pushed to it.
-let _fbLocal = { webull: false, ninja: false, tradovate: false, topstep: false };
+let _fbLocal = { webull: true, ninja: false, tradovate: false, topstep: false };  // Webull futures ON always (8/13)
 let _fbSeeded = false;
 try {
   chrome.storage.local.get("fb_toggles", r => {
     if (r && r.fb_toggles) {
       _fbLocal = Object.assign(_fbLocal, r.fb_toggles);
+      _fbLocal.webull = true;   // Webull futures stays ON always (8/13)
       _fbSeeded = true;
       _fbPaintToggles();
     }
@@ -275,7 +276,7 @@ function paintFuturesBrokers() {
   // intent of its own. After that the browser copy wins — a refresh can't turn
   // a switch off under the user.
   if (!_fbSeeded && modeStatus) {
-    _fbLocal = { webull: !!fb.webull, ninja: !!nt.enabled,
+    _fbLocal = { webull: true, ninja: !!nt.enabled,   // Webull ON always (8/13)
                  tradovate: !!tv.enabled, topstep: !!ts.enabled };
     _fbSeeded = true;
     try { chrome.storage.local.set({ fb_toggles: _fbLocal }); } catch (e) {}
@@ -695,14 +696,14 @@ $("aioff").onclick = async () => {
 
 /* Double-check entries — a browser-side toggle; the key stays on the bridge. */
 async function paintVerify() {
-  let on = false;
-  try { on = !!(await chrome.storage.local.get("ai_verify")).ai_verify; } catch (e) {}
+  let on = true;   // ON by default now (8/13); still toggleable off
+  try { on = ((await chrome.storage.local.get("ai_verify")).ai_verify !== false); } catch (e) {}
   const b = $("aiVerifyBtn");
   if (b) { b.textContent = on ? "on" : "off"; b.className = "tgl " + (on ? "live" : "safe"); }
 }
 if ($("aiVerifyBtn")) $("aiVerifyBtn").onclick = async () => {
-  let on = false;
-  try { on = !!(await chrome.storage.local.get("ai_verify")).ai_verify; } catch (e) {}
+  let on = true;   // ON by default now (8/13); still toggleable off
+  try { on = ((await chrome.storage.local.get("ai_verify")).ai_verify !== false); } catch (e) {}
   try { await chrome.storage.local.set({ ai_verify: !on }); } catch (e) {}
   paintVerify();
 };
@@ -859,6 +860,7 @@ const ROOM_NAMES = { "829754942817828884": "Honeydrip daytrades",
 function renderRoomStats(wallet, dayTable) {
   const el = $("roomstats");
   if (!el) return;
+  el.style.display = "none"; return;   // "By room" board removed on his ask (8/13)
   const rows = {};
   for (const tr of ((wallet || {}).trades || [])) {
     const r = tr.room || "(before room tags)";
@@ -900,10 +902,29 @@ function renderRoomStats(wallet, dayTable) {
     }).join("");
 }
 
+let _allLiveArm = 0;            // two-tap arm for "all LIVE" (real money)
 function renderRoomToggles(channelLive, channelPull) {
   const box = $("roomtoggles");
   if (!box) return;
-  box.innerHTML = Object.keys(ROOM_NAMES).map(id => {
+  const ids = Object.keys(ROOM_NAMES);
+  const liveCount = ids.filter(id => !!(channelLive || {})[id]).length;
+  // Master row (his ask, 8/13): flip every room at once instead of clicking
+  // ~60 toggles. "all testing" is always safe and instant. "all LIVE" arms
+  // REAL money on every room, so it takes two taps — one to arm, one to fire,
+  // the same care as the main live switch.
+  const master =
+    '<div class="row" style="margin-bottom:8px;padding-bottom:6px;' +
+    'border-bottom:1px solid #2a303c">' +
+    '<span class="grow" style="font-size:12px;font-weight:600">All rooms ' +
+    '<span style="color:#7d8697;font-weight:400">(' + liveCount + '/' + ids.length +
+    ' live)</span></span>' +
+    '<button id="allTesting" style="font-size:10px;margin-right:6px;padding:1px 8px;' +
+    'border-radius:9px;cursor:pointer;border:1px solid #3a4254;background:transparent;' +
+    'color:#7d8697">all testing</button>' +
+    '<button id="allLive" style="font-size:10px;padding:1px 8px;border-radius:9px;' +
+    'cursor:pointer;border:1px solid #f87171;background:transparent;color:#f87171">' +
+    'all LIVE</button></div>';
+  box.innerHTML = master + ids.map(id => {
     const live = !!(channelLive || {})[id];
     const pull = !!(channelPull || {})[id];
     // ONE button, one click, flips and saves instantly. No dropdown, no
@@ -928,6 +949,45 @@ function renderRoomToggles(channelLive, channelPull) {
            '<button data-room="' + id + '" class="tgl money ' +
            (live ? "live" : "safe") + '"></button></div>';
   }).join("");
+  // "all testing" — every room back to paper. Always safe, no confirm.
+  const allOff = box.querySelector("#allTesting");
+  if (allOff) allOff.onclick = async () => {
+    _allLiveArm = 0;
+    const { settings } = await chrome.storage.local.get("settings");
+    const s = settings || {};
+    s.channel_live = {};
+    await chrome.storage.local.set({ settings: s });
+    renderRoomToggles(s.channel_live, s.channel_pullback);
+  };
+  // "all LIVE" — real money on every room. Two taps: arm, then fire.
+  const allOn = box.querySelector("#allLive");
+  if (allOn) allOn.onclick = async () => {
+    const now = Date.now();
+    if (now - _allLiveArm > 4000) {         // first tap: arm for 4s
+      _allLiveArm = now;
+      allOn.textContent = "tap again to confirm";
+      allOn.style.background = "#f87171";
+      allOn.style.color = "#0b0d12";
+      setTimeout(() => {                     // disarm + relabel if he waits
+        if (Date.now() - _allLiveArm >= 4000) {
+          _allLiveArm = 0;
+          if (allOn.isConnected) {
+            allOn.textContent = "all LIVE";
+            allOn.style.background = "transparent";
+            allOn.style.color = "#f87171";
+          }
+        }
+      }, 4100);
+      return;
+    }
+    _allLiveArm = 0;                         // second tap: apply
+    const { settings } = await chrome.storage.local.get("settings");
+    const s = settings || {};
+    s.channel_live = s.channel_live || {};
+    ids.forEach(id => { s.channel_live[id] = true; });
+    await chrome.storage.local.set({ settings: s });
+    renderRoomToggles(s.channel_live, s.channel_pullback);
+  };
   box.querySelectorAll("button[data-room]").forEach(btn => {
     btn.onclick = async () => {
       const { settings } = await chrome.storage.local.get("settings");
@@ -1271,7 +1331,7 @@ async function render() {
   if (!wallet) {
     purse.style.display = "none";
   } else {
-    purse.style.display = "";
+    purse.style.display = "none";   // TEST summary hidden on his ask (8/13)
     const money = n => (n < 0 ? "-$" : "$") + Math.abs(n).toFixed(0);
     const rows = [];
     if (wallet.unlimited) {

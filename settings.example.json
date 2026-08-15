@@ -81,6 +81,14 @@
       "paper_account_id": ""
     }
   },
+  "_strategy": "The one-click bracket. Starts every entry at -stop_loss_pct / +take_profit_pct. Default exit now (8/15) is the RATCHET, not a hard close: the moment gain reaches take_profit_pct the stop stops sitting at -stop_loss_pct and starts WALKING UP instead — first to +stop_loss_pct (locked, can't go red), then another +stop_loss_pct for every further take_profit_pct-stop_loss_pct of gain (10/20: up 20 locks +10, up 30 locks +20, up 40 locks +30...), with no ceiling. A position only ever sells when the climbing stop is finally hit, never automatically at a fixed target. Set take_profit_hard_close true to go back to the OLD behaviour instead — close the whole position outright the instant gain hits take_profit_pct, same as before 8/15. ratchet_enabled/enabled both true is the normal/default case; enabled false turns the whole bracket off (no ratchet, no hard close, just the flat stop).",
+  "strategy": {
+    "enabled": true,
+    "take_profit_pct": 20.0,
+    "stop_loss_pct": 10.0,
+    "ratchet_enabled": true,
+    "take_profit_hard_close": false
+  },
   "_simulation": "Honest test-mode fills and optional tactics, all OFF by default. realistic_fills subtracts real per-contract fees. entry_offset_dollars bids that much under their price (0.05 = $5/option). auto_breakeven sells sell_fraction at +at_pct and moves the stop to breakeven. auto_ladder runs YOUR own exit on their entry: trims at each rung's at%, keeps keep_runners contracts, and drags the stop to fill*(1+stop_to/100) (stop_to null = leave it). Default plan: +10% same stop, +20% breakeven, +30% lock +10%, keep 2. Flip these in the popup's Realism & tactics section.",
   "simulation": {
     "realistic_fills": false,

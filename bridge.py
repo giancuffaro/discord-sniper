@@ -343,16 +343,33 @@ def build_book():
     # build_book() runs only at startup, so forcing it here sets the BOOT state
     # (protected every time) while turning it OFF from the popup mid-session
     # still works.
+    #
+    # 8/15: the hard take-profit close (sell everything the instant gain hits
+    # +take_profit_pct) is replaced as the DEFAULT by the ratchet — the stop
+    # walks up instead of the position closing, so a winner can keep running
+    # and can never come back red once it locks in. take_profit_on stays a
+    # real, working switch (settings.json or the popup can still turn the old
+    # all-or-nothing close back on) — it's just no longer what boots by
+    # default.
     _strat["enabled"] = True
     _strat.setdefault("take_profit_pct", 20.0)
     _strat.setdefault("stop_loss_pct", 10.0)
+    _strat.setdefault("ratchet_enabled", True)
     CFG["strategy"] = _strat
-    BOOK.take_profit_on = True
+    BOOK.take_profit_on = bool(_strat.get("take_profit_hard_close", False))
+    BOOK.ratchet_on = bool(_strat.get("ratchet_enabled", True))
     BOOK.take_profit_pct = float(_strat.get("take_profit_pct", 20.0))
     BOOK.stop_pct = float(_strat.get("stop_loss_pct", 10.0))
     _sync_stop_pct(BOOK.stop_pct)
-    note("STRATEGY forced ON at bridge start: 1 contract, +%.0f%% take-profit, "
-         "-%.0f%% stop" % (BOOK.take_profit_pct, BOOK.stop_pct))
+    if BOOK.ratchet_on:
+        note("STRATEGY forced ON at bridge start: 1 contract, -%.0f%% stop to "
+             "start, ratcheting up in +%.0f%% steps once you're up %.0f%% — "
+             "never sells outright, never comes back red once it locks"
+             % (BOOK.stop_pct, BOOK.take_profit_pct - BOOK.stop_pct,
+                BOOK.take_profit_pct))
+    else:
+        note("STRATEGY forced ON at bridge start: 1 contract, +%.0f%% take-profit, "
+             "-%.0f%% stop" % (BOOK.take_profit_pct, BOOK.stop_pct))
     if MODE != "webull":
         note("test account: unlimited. Nothing is refused for money — instead "
              "I keep the most cash that was ever tied up at once, which is the "
@@ -1955,15 +1972,31 @@ class Handler(BaseHTTPRequestHandler):
             data["strategy"] = st
             CFG["strategy"] = st
             if BOOK is not None:
-                BOOK.take_profit_on = bool(st.get("enabled"))
+                # ratchet_enabled is the default exit now; take_profit_hard_close
+                # is the old all-or-nothing close, still available as an
+                # explicit opt-in. "enabled" keeps meaning "the bracket runs at
+                # all" — off, and neither one fires.
+                bracket_on = bool(st.get("enabled"))
+                BOOK.ratchet_on = bracket_on and bool(
+                    st.get("ratchet_enabled", True))
+                BOOK.take_profit_on = bracket_on and bool(
+                    st.get("take_profit_hard_close", False))
                 BOOK.take_profit_pct = float(st.get("take_profit_pct", 20.0))
-                if st.get("enabled") and st.get("stop_loss_pct"):
+                if bracket_on and st.get("stop_loss_pct"):
                     BOOK.stop_pct = float(st["stop_loss_pct"])
                     _sync_stop_pct(BOOK.stop_pct)
-            note("STRATEGY %s: 1 contract, +%.0f%% TP, -%.0f%% SL"
-                 % ("ON" if st.get("enabled") else "off",
-                    float(st.get("take_profit_pct", 20)),
-                    float(st.get("stop_loss_pct", 10))))
+            if BOOK is not None and BOOK.ratchet_on:
+                note("STRATEGY ON: 1 contract, -%.0f%% stop to start, "
+                     "ratcheting up in +%.0f%% steps once you're up %.0f%%"
+                     % (float(st.get("stop_loss_pct", 10)),
+                        float(st.get("take_profit_pct", 20))
+                            - float(st.get("stop_loss_pct", 10)),
+                        float(st.get("take_profit_pct", 20))))
+            else:
+                note("STRATEGY %s: 1 contract, +%.0f%% TP, -%.0f%% SL"
+                     % ("ON" if st.get("enabled") else "off",
+                        float(st.get("take_profit_pct", 20)),
+                        float(st.get("stop_loss_pct", 10))))
 
         # Where futures trade: Webull / NinjaTrader / Tradovate toggles plus
         # each one's account details. Merged (not replaced) so toggling one

@@ -346,10 +346,11 @@ class WebullOptions:
         # crosses the spread and fills nearly every time. "mid" splits it.
         # Webull takes no market orders on options at all, so all three of these
         # are limit orders; this only decides the number on it.
-        # DEFAULT is "ask" now, on his word — "we are still biding in." A resting
-        # bid that never fills is a missed trade, and missing trades is the one
-        # thing this can't do. Crossing the ask gets in at the real market price.
-        self.entry_price = str(w.get("entry_price", "ask")).lower()
+        # DEFAULT is "bid" now, his standing rule (8/13): "always buy the bid and
+        # sell the ask." Entries rest on the bid and wait for a seller to come
+        # down — you never overpay, at the cost of missing a call that runs
+        # straight off the message. Settings can still override to ask/mid.
+        self.entry_price = str(w.get("entry_price", "bid")).lower()
         # When a call posts NO price and there's no quote either, take it at the
         # market that instant rather than miss it — a marketable buy capped at
         # this ceiling (dollars per contract). The cap is a fat-finger guard,
@@ -1163,11 +1164,17 @@ class WebullOptions:
             return "closed %s x%d at Webull" % (symbol, qty)
         return "no open %s position at Webull to close" % symbol
 
-    def place_stop(self, symbol, side, strike, expiry, qty, fill_price):
+    def place_stop(self, symbol, side, strike, expiry, qty, fill_price,
+                    stop_price=None):
         self._pace()
-        """The resting 20% stop, sent right after an entry fills.
+        """The resting stop, sent right after an entry fills — or replaced at
+        a new price by the ratchet as a winning trade climbs.
 
         Priced off what you actually paid, not off what the room said they paid.
+        `stop_price` overrides the normal fill*(1-stop_pct/100) calculation
+        with an exact dollar price — used by the ratchet to move the stop to a
+        LOCKED-IN-PROFIT level as a position climbs; every other caller leaves
+        this None and gets the plain percentage-off-fill stop, unchanged.
         Returns (order_id, stop_price). Raises Refused if Webull won't take it —
         the caller keeps trading and leans on the watchdog, because a missing
         resting stop is a reason to warn you, not a reason to be in a position
@@ -1175,7 +1182,10 @@ class WebullOptions:
         """
         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
         expiration = expiry_to_date(expiry)
-        stop = max(0.01, round(float(fill_price) * (1 - self.stop_pct / 100), 2))
+        if stop_price is not None:
+            stop = max(0.01, round(float(stop_price), 2))
+        else:
+            stop = max(0.01, round(float(fill_price) * (1 - self.stop_pct / 100), 2))
         # Webull validates a SELL stop against the LIVE market, not your fill.
         # On a wide options spread the bid right after you buy at the ask is
         # often already below a fill-based stop, so Webull 417s it
@@ -1245,6 +1255,18 @@ class WebullOptions:
         blind = False
         if ask and ask > 0:
             limit = self.entry_limit(bid, ask)
+            # "Match their avg or better" (his ask, 8/13): never pay above the
+            # price the caller posted. entry_limit already rests at the bid, so
+            # this only bites when the bid has run ABOVE their avg — then we cap
+            # at their avg and wait for it to come to us. A resting entry, not a
+            # chase: it may not fill if price keeps running, the trade-off he
+            # chose over overpaying.
+            if their_price:
+                try:
+                    limit = min(limit, float(their_price))
+                except (TypeError, ValueError):
+                    pass
+            limit = max(0.01, round(limit, 2))
         elif their_price:
             # No live ask: take the room's posted premium as the limit.
             limit = max(0.01, round(float(their_price), 2))
@@ -1356,9 +1378,18 @@ class WebullOptions:
         except Refused:
             pass                # no live quote — we still get out, see below
         ref = bid or ask or ref_price
-        if ref and ref > 0:
-            # Sell a shade under the reference so the limit is marketable and
-            # doesn't rest above the bid while the move happens without you.
+        if ask and ask > 0:
+            # His call (8/13): exit AT the ask instead of discounting to the
+            # bid — stop handing the spread to the market maker on every trim.
+            # This is a resting limit at the offer: it captures the full ask
+            # when a buyer lifts it. Trade-off he accepted: on a fast move it
+            # can fill slower than the old bid-side exit, or not until price
+            # comes back up. Only applies when a live ask exists.
+            limit = max(0.01, round(float(ask), 2))
+        elif ref and ref > 0:
+            # No live ask (sandbox 403s, etc.): keep a marketable limit off the
+            # reference so the exit still clears instead of resting above the
+            # market and missing it.
             limit = max(0.01, round(float(ref) * (1 - self.buffer_pct / 100)
                                     - 0.01, 2))
         else:

@@ -68,6 +68,32 @@ def key_of(trader, symbol):
     return "%s|%s" % (who, str(symbol or "").upper())
 
 
+def ratchet_locked_pct(gain_pct, stop_loss_pct, take_profit_pct):
+    """His rule (8/15): the trade runs the normal -stop_loss_pct/+take_profit_pct
+    bracket to start, but once it reaches +take_profit_pct the stop WALKS UP
+    instead of closing the position — locked at +stop_loss_pct profit first,
+    then another +stop_loss_pct locked in for every further step of gain, where
+    a step is (take_profit_pct - stop_loss_pct). 10%/20%: gain 20 -> lock +10,
+    gain 30 -> lock +20, gain 40 -> lock +30, and so on with no ceiling — once a
+    trade reaches the first rung it can never come back red.
+
+    Returns the locked-in profit percentage (a positive number, the new stop
+    is that far ABOVE entry), or None while gain hasn't reached take_profit_pct
+    yet (the original bracket is still what's guarding it) or if the bracket
+    is set up wrong (step <= 0 — take-profit at or below the stop makes no
+    sense to ratchet, so this refuses rather than guess).
+
+    A tiny epsilon absorbs float noise on the boundary: (2.40 - 2.00) / 2.00
+    * 100 comes out 19.999999999999996 in real floating point, not a clean
+    20.0, and a bid landing EXACTLY on the take-profit price must still ratchet
+    — the alternative is silently skipping the very moment this exists for."""
+    step = take_profit_pct - stop_loss_pct
+    if step <= 0 or gain_pct is None or gain_pct < take_profit_pct - 1e-9:
+        return None
+    k = int((gain_pct - take_profit_pct + 1e-9) // step)
+    return stop_loss_pct + step * k
+
+
 class Book:
     """Every entry this program has sent today, and what became of it.
 
@@ -155,6 +181,12 @@ class Book:
         # key, because the position gets rebuilt on every adoption pass and a
         # flag on it would be forgotten every 20 seconds.
         self.broker_blocked = set()
+        # His replacement for the hard take-profit close (8/15): once a winner
+        # reaches +take_profit_pct the stop walks up instead of the position
+        # closing outright. See auto_ratchet() and ratchet_locked_pct(). Off
+        # by default like every other tactic here — the bridge switches it on
+        # from settings.
+        self.ratchet_on = False
         # ...and how many times each contract has been refused. Same reason:
         # a counter on the position is wiped by the next adoption pass, so it
         # would never reach three and the loop would run all day.
@@ -1341,6 +1373,7 @@ class Book:
                 # secure/ladder tactics for a paper trade that's still open.
                 if self.auto_take_profit(key, float(bid)):
                     return
+                self.auto_ratchet(key, float(bid))
                 self.auto_breakeven(key, float(bid))
                 self.auto_ladder(key, float(bid))
                 with self._lock:
@@ -1565,6 +1598,87 @@ class Book:
                             "Retrying." % (sym, str(e)[:110]))
             self.finish(key, FAILED, "take-profit failed to sell")
         return True
+
+    def auto_ratchet(self, key, bid):
+        """His replacement for the hard take-profit close (8/15): once a
+        position reaches +take_profit_pct it no longer gets sold outright —
+        instead the STOP walks up to lock in +stop_loss_pct, and every further
+        step of gain (another take_profit_pct - stop_loss_pct) walks the stop
+        up another notch, so a winner can run forever and can never come back
+        red once it's locked. Uses the same resting-stop-at-Webull +
+        watchdog-checks-the-bid pair every other stop uses — this only ever
+        decides a new price for that same mechanism, never a new one. Runs
+        AFTER auto_take_profit in the watchdog and only if that left the
+        position open (take_profit_on stays a separate, still-available hard
+        exit for anyone who wants the old all-or-nothing behaviour instead).
+        """
+        if not self.ratchet_on or bid is None:
+            return
+        with self._lock:
+            p = self._pos.get(key)
+            if not p or p.get("state") != FILLED or p.get("closing"):
+                return
+            fill = float(p.get("fill") or 0)
+            dirn = int(p.get("direction") or 1)
+            if not fill:
+                return
+            gain = (float(bid) - fill) * dirn / fill * 100.0
+            locked = ratchet_locked_pct(gain, self.stop_pct, self.take_profit_pct)
+            if locked is None:
+                return           # hasn't reached the first rung yet
+            already = p.get("ratchet_locked_pct")
+            if already is not None and locked <= float(already):
+                return           # never loosen a stop that's already this high
+            # Only long positions ratchet for now — every call site that arms
+            # this bracket is a long options buy; a short/futures ratchet
+            # would need the mirrored math and isn't part of what he asked for.
+            if dirn != 1:
+                return
+            new_stop = round(fill * (1 + locked / 100.0), 2)
+            sym, side = p["symbol"], p.get("side")
+            strike, expiry = p.get("strike"), p.get("expiry")
+            qty = int(p.get("qty") or 0)
+            old_oid = p.get("stop_order_id")
+            wb = self._wbfor(p)
+            if qty <= 0:
+                return
+        if self._sim(p):
+            with self._lock:
+                q = self._pos.get(key)
+                if q is not None:
+                    q["stop"] = new_stop
+                    q["ratchet_locked_pct"] = locked
+            self._event(key, "stop-set",
+                        "%s — up %.0f%%, ratchet moves the pretend stop to "
+                        "%.2f (locked +%.0f%%)" % (sym, gain, new_stop, locked))
+            return
+        if wb is None:
+            return
+        try:
+            if old_oid:
+                try:
+                    wb.cancel(old_oid)
+                except Exception:                       # noqa: BLE001
+                    pass
+            new_oid, placed = wb.place_stop(sym, side, strike, expiry, qty,
+                                            fill, stop_price=new_stop)
+        except Exception as e:                          # noqa: BLE001
+            self._event(key, "stop-warn",
+                        "%s — up %.0f%%, but the ratchet couldn't move the "
+                        "resting stop to %.2f (%s). The old stop is still in "
+                        "place; the watchdog on this PC covers the gap."
+                        % (sym, gain, new_stop, str(e)[:90]))
+            return
+        with self._lock:
+            q = self._pos.get(key)
+            if q is not None:
+                q["stop"] = placed
+                q["stop_order_id"] = new_oid
+                q["ratchet_locked_pct"] = locked
+        self._event(key, "stop-set",
+                    "%s — up %.0f%%, ratchet moved your stop to %.2f — locked "
+                    "in +%.0f%%, can't go red from here" % (sym, gain, placed,
+                                                            locked))
 
     def auto_breakeven(self, key, bid):
         """His secure-the-trade rule, run by the watchdog: once a live position

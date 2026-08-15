@@ -9,6 +9,7 @@ CFG = {"allowed_symbols": ["SPY", "AAPL", "AMD", "NVDA", "NFLX", "QQQ",
                            "AMZN", "MSFT"]}
 NOSTOP = "/tmp/__no_stop_here__"
 fails = []
+TOTAL_FAILS = 0
 
 
 def ok(cond, label):
@@ -500,7 +501,8 @@ if fails:
     print("FAILED %d check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    sys.exit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("All checks passed.")
 
 # --- the echo guard ----------------------------------------------------------
@@ -528,7 +530,8 @@ if fails:
     print("FAILED %d echo-guard check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("A repost is not a trade: the same call at the same price runs once.")
 
 
@@ -547,7 +550,8 @@ if fails:
     print("FAILED %d Midas-chatter check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("Planning talk is not an order: no adds, trim targets and "
       "from-percents all stay ignored.")
 
@@ -569,7 +573,8 @@ if fails:
     print("FAILED %d plan-talk check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("A plan is not an order: announced intent and confidence percentages "
       "stay ignored, and the challenge room's real entries still fire.")
 # --- Felony's Whop shorthand, from the channel survey ------------------------
@@ -590,7 +595,8 @@ if fails:
     print("FAILED %d Whop-shorthand check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("Felony's shorthand reads: bare shorts, SL stops, dollars a con.")
 
 
@@ -617,7 +623,8 @@ if fails:
     print("FAILED %d Day-Trades check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("Day Trades reads clean: verbs trade, updates and resting orders don't.")
 
 
@@ -642,7 +649,8 @@ if fails:
     print("FAILED %d Futures-channel check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("The Futures channel reads: AVG entries, seven ways of saying stopped, "
       "papercuts sell, war stories don't.")
 
@@ -674,7 +682,8 @@ if fails:
     print("FAILED %d High-Risk/2K check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("High Risk and the 2K challenge read clean — and a trim update can "
       "never turn into an entry.")
 
@@ -704,7 +713,8 @@ if fails:
     print("FAILED %d Market-Guru check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("Market Guru reads: labeled futures entry with the stop, point-count "
       "trims and exits resolve to the held position, brags stay quiet, and "
       "Felony's dollar exit is left untouched.")
@@ -724,7 +734,8 @@ if fails:
     print("FAILED %d JPM check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("JPM Options reads: Open buys, the +% Updates are ignored as P&L "
       "tracking, Closed exits, and a bare keyword with no contract is nothing.")
 
@@ -755,7 +766,8 @@ if fails:
     print("FAILED %d Bullwinkle check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("Bullwinkle reads: TICKER | $strike C/P premium buys (premium not the "
       "break level), /MES LONG HERE is a long future, and CC/CSP selling "
       "strategies are never bought.")
@@ -768,8 +780,12 @@ check("QQQ 708C 7/21 1.03 2 CONTRACTS", action="OPEN", fire=True, symbol="QQQ",
       strike=708.0, side="CALLS", expiry="7/21", limit=1.03)
 check("SPY 757P 8/3 1.13 4 CONS - Looking for 7600 on ES", action="OPEN",
       fire=True, symbol="SPY", strike=757.0, side="PUTS", limit=1.13)
+# SPX isn't tradeable on Webull. Normally retargeted to SPY at 1/10 the
+# strike (INDEX_ETF in signals.py), but SPX_ENTRIES_ENABLED was switched
+# off 8/15 ("for now") - a fresh SPX entry is refused outright instead,
+# symbol/strike/limit left exactly as the room posted them.
 check("lotto yolo SPX 7460C 0dte @0.25 QUICK SCALP LOTTO!!", action="OPEN",
-      fire=True, symbol="SPX", strike=7460.0, side="CALLS", limit=0.25)
+      fire=False, symbol="SPX", strike=7460.0, side="CALLS", limit=0.25)
 check("Close STC NVDA 07/31/2026 200c @ 1.36 all out", action="CLOSE",
       symbol="NVDA", strike=200.0)
 # guards: EvaPanda "Update:" analysis is ignored; a lotto recap with % is not a buy
@@ -780,7 +796,8 @@ if fails:
     print("FAILED %d z-bot check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("Market Bishop / Vero / MR.TOPHAT / EvaPanda read: labeled 'Entering "
       "Option' buys, 'N CONTRACTS' buys, a lotto lead buys, STC closes, and "
       "analysis Updates and lotto recaps do nothing.")
@@ -831,8 +848,11 @@ bcheck("all out of $NVTS here at 600% @Premium", action="CLOSE", fire=True,
 bcheck("30% $CIFR taking my first trim here @Premium", action="TRIM",
        symbol="CIFR")
 # Sir Goldman: ENTRY fires, COMMENT never does
+# SPX isn't tradeable on Webull. Normally retargeted to SPY at 1/10 the
+# strike (INDEX_ETF in signals.py), but SPX_ENTRIES_ENABLED was switched
+# off 8/15 ("for now") - a fresh SPX entry is refused outright instead.
 bcheck("@Premium ENTRY $SPX 7575c @ 1.2 LOTTO no Sl, holding this for "
-       "afternoon rally", action="OPEN", fire=True, symbol="SPX",
+       "afternoon rally", action="OPEN", fire=False, symbol="SPX",
        strike=7575.0, side="CALLS", limit=1.2)
 bcheck("@Premium COMMENT Calls off the 5m", fire=False, action=None)
 # advice / P&L musings must not read as trims
@@ -844,7 +864,8 @@ if fails:
     print("FAILED %d Boka check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("Boka reads: JonnyOptions 'added/adding' entries (share level never the "
       "premium, 'filled'/'avg' is), trims/exits, Sir Goldman ENTRY vs COMMENT, "
       "and advice/recap lines fire nothing.")
@@ -901,7 +922,8 @@ if fails:
     print("FAILED %d ZT-opt check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("ZT opt reads: are-alerts OPEN with a lead-in (SPOT-on ignored), "
       "stockguy007 spelled-out entries (APP badge never a ticker), Nitro "
       "'Entry Contract' buys with price, and 'on watch' fires nothing.")
@@ -961,7 +983,45 @@ if fails:
     print("FAILED %d ZT-batch-2 check(s):" % len(fails))
     for f in fails:
         print("  -", f)
-    raise SystemExit(1)
+    TOTAL_FAILS += len(fails)
+    fails = []
 print("ZT batch 2 reads: King Maker/KuMo/Adex/Namrood option entries and "
       "Stormzy futures fire; % updates and debit spreads don't; and 'OUT ALL "
       "BUT 1' / 'WILL STOP OUT' never invent a ticker.")
+
+
+# --- Aug 12 regression: AI-reader canonical text must keep its stated month --
+# 8/12 13:47: the AI reader read 'META | $585 C AUG 21 10.10 @everyone' fine
+# (expiry "AUG 21", 0.95 confidence) and handed back the canonical string
+# "BTO META $585C AUG 21 @ 10.1" for the regex parser to re-read - but the
+# expiry never made it into the order, so bridge.py's "no date in that call"
+# fallback silently substituted that week's Friday (8/14 instead of 8/21) and
+# bought the wrong contract. Same miss hit AMZN (twice) and SPCX and NVDA
+# that same morning. These four are the real canonical strings the AI reader
+# produced for those exact messages, straight from bridge.log.2 - if the
+# regex parser ever again lets the month drop out of one of these, this fails.
+check("BTO META $585C AUG 21 @ 10.1", action="OPEN", fire=True,
+      symbol="META", side="CALLS", strike=585.0, expiry="8/21", limit=10.1)
+check("BTO AMZN $277.5C AUG 21 @ 2.4", action="OPEN", fire=True,
+      symbol="AMZN", side="CALLS", strike=277.5, expiry="8/21", limit=2.4)
+check("BTO SPCX $155C AUG 21 @ 2.84", action="OPEN", fire=True,
+      symbol="SPCX", side="CALLS", strike=155.0, expiry="8/21", limit=2.84)
+check("BTO NVDA $217.5P AUG 21 @ 2.42", action="OPEN", fire=True,
+      symbol="NVDA", side="PUTS", strike=217.5, expiry="8/21", limit=2.42)
+
+if fails:
+    print("FAILED %d Aug-12 expiry-regression check(s):" % len(fails))
+    for f in fails:
+        print("  -", f)
+    TOTAL_FAILS += len(fails)
+    fails = []
+print("Aug 12 expiry regression: AI-reader canonical strings for META/AMZN/"
+      "SPCX/NVDA all keep their stated AUG 21 expiry through the regex parser "
+      "- none silently fall back to that week's Friday.")
+
+# --- final tally across every section ---------------------------------------
+TOTAL_FAILS += len(fails)
+if TOTAL_FAILS:
+    print("\nTOTAL: %d failing check(s) across the whole suite." % TOTAL_FAILS)
+    raise SystemExit(1)
+print("\nTOTAL: all checks passed across the whole suite.")

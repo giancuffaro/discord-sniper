@@ -1732,8 +1732,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // (ticker/strike/side); a disagreement is HELD FOR REVIEW, not bought. Catches
     // the wrong-ticker/strike class (meta->TSLA) even when the regex was sure.
     if (sig.action === "OPEN" || sig.action === "ADD") {
-      let verifyOn = false;
-      try { verifyOn = !!(await chrome.storage.local.get("ai_verify")).ai_verify; } catch (e) {}
+      let verifyOn = true;   // ON by default now, his standing rule (8/13)
+      try { verifyOn = ((await chrome.storage.local.get("ai_verify")).ai_verify !== false); } catch (e) {}
       if (verifyOn && sig.symbol) {
         const v = await aiVerify(msg.text, sig, c);
         if (v && !v.agree) {

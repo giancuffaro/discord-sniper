@@ -758,6 +758,13 @@ def _bare_symbol(text, allowed):
 INDEX_ETF = {"SPX": ("SPY", 10.0), "SPXW": ("SPY", 10.0), "XSP": ("SPY", 1.0),
              "RUT": ("IWM", 10.0), "RUTW": ("IWM", 10.0)}
 
+# Whether a fresh SPX/XSP/RUT-style entry is followed at all. True (default):
+# retarget to the tradeable ETF proxy above. False: refuse the entry outright,
+# nothing sent. Turned off 8/15 on his word - "for now", so flip this back to
+# True to resume the ETF substitution. Exits/trims always still work (see
+# below) so a position opened before this was flipped off can still be closed.
+SPX_ENTRIES_ENABLED = False
+
 
 def _index_to_etf(s):
     if s is None:
@@ -766,13 +773,22 @@ def _index_to_etf(s):
     m = INDEX_ETF.get(sym)
     if not m:
         return
-    # Retarget an actual order — an option entry OR an exit (trim/close) on the
+    # Retarget an actual order - an option entry OR an exit (trim/close) on the
     # index, so the exit matches the SPY position the entry became. A bare index
     # mention in chatter (no action, no strike) is left alone.
     has_action = getattr(s, "action", None) in ("OPEN", "ADD", "TRIM", "CLOSE")
     is_opt = (getattr(s, "side", None) in ("CALLS", "PUTS")
               or getattr(s, "strike", None) is not None)
     if not (has_action or is_opt):
+        return
+    if not SPX_ENTRIES_ENABLED and getattr(s, "action", None) in ("OPEN", "ADD"):
+        # Fresh entry on a cash-index option, and following it as the ETF is
+        # switched off for now - refuse it loudly rather than silently drop
+        # or silently substitute. Symbol/strike/etc. are left exactly as
+        # parsed so the log shows what was actually called.
+        s.fire = False
+        s.why = ("%s is a cash-index option - following it as an ETF is "
+                 "turned off for now, so nothing was sent" % sym)
         return
     etf, ratio = m
     if getattr(s, "strike", None) is not None:

@@ -77,9 +77,11 @@ class FakeWB:
         self.calls.append(("cancel", oid))
         return True
 
-    def place_stop(self, symbol, side, strike, expiry, qty, fill_price):
+    def place_stop(self, symbol, side, strike, expiry, qty, fill_price,
+                    stop_price=None):
         self.next_id += 1
-        stop = max(0.01, round(float(fill_price) * 0.80, 2))
+        stop = (max(0.01, round(float(stop_price), 2)) if stop_price is not None
+                else max(0.01, round(float(fill_price) * 0.80, 2)))
         self.calls.append(("stop", symbol, qty, stop))
         return str(self.next_id), stop
 
@@ -653,3 +655,74 @@ if bad:
     raise SystemExit(1)
 print("Live-exit: live AND paper positions both get real resting stops and real "
       "management on their own accounts; only a pure dry-run book simulates.")
+
+
+# --- the ratchet (8/15): ------------------------------------------------------
+# starts at -stop_pct like any other stop; once gain reaches take_profit_pct
+# the stop stops closing the position and starts WALKING UP instead, first to
+# +stop_pct locked, then another +stop_pct for every further step. Never sells
+# outright on the way up, never loosens once it's locked.
+ok(positions.ratchet_locked_pct(19.9, 10, 20) is None,
+   "below the first rung, nothing is locked yet")
+ok(positions.ratchet_locked_pct(20.0, 10, 20) == 10,
+   "right at +20%%, the stop locks at +10%%")
+ok(positions.ratchet_locked_pct(25.0, 10, 20) == 10,
+   "between rungs (+25%%) still locked at the last rung crossed, +10%%")
+ok(positions.ratchet_locked_pct(30.0, 10, 20) == 20,
+   "at +30%%, locked climbs to +20%%")
+ok(positions.ratchet_locked_pct(30.0, 10, 20) == 20,
+   "at +30%%, locked climbs to +20%%")
+ok(positions.ratchet_locked_pct(95.0, 10, 20) == 80,
+   "no ceiling: a +95%% runner locks +80%%")
+ok(positions.ratchet_locked_pct(15.0, 20, 20) is None,
+   "a broken bracket (take-profit <= stop) never ratchets, refuses instead")
+
+RWB = FakeWB(fills=True, ask=2.00, bid=2.00)
+rb = book(RWB)
+rb.ratchet_on = True
+rb.take_profit_pct = 20.0
+rb.stop_pct = 10.0
+RWB.limits["9"] = 2.00; RWB.qtys["9"] = 1
+rtk = ticket(RWB, limit=2.00, oid="9")
+rb.entry_sent(dict(ORDER, trader="RatchetGuy"), rtk)
+RKEY = positions.key_of("RatchetGuy", "SPY")
+settle(rb, RKEY)
+ok(rb.state_of(RKEY) == positions.FILLED, "ratchet test entry fills")
+# fill was 2.00 (RWB always fills at its own ask/bid). +20% is 2.40.
+rb.auto_ratchet(RKEY, 2.39)
+ok(rb.state_of(RKEY) == positions.FILLED,
+   "below the first rung (+19.5%%), the position is untouched and still open")
+stops_before = [c for c in RWB.calls if c[0] == "stop"]
+rb.auto_ratchet(RKEY, 2.40)          # exactly +20%
+ok(rb.state_of(RKEY) == positions.FILLED,
+   "hitting +20%% does NOT close the position — the ratchet moves the stop, "
+   "it never sells outright")
+stops_after = [c for c in RWB.calls if c[0] == "stop"]
+ok(len(stops_after) == len(stops_before) + 1,
+   "the ratchet cancels the old resting stop and places exactly one new one")
+new_stop = stops_after[-1][3]
+ok(abs(new_stop - 2.20) < 0.005,
+   "locked +10%% off a 2.00 fill is a 2.20 stop, got %s" % new_stop)
+ok(any(c[0] == "cancel" for c in RWB.calls),
+   "the old stop order gets cancelled before the new one goes in")
+# Price keeps climbing to +30% — the stop should walk up again, to +20%.
+rb.auto_ratchet(RKEY, 2.60)
+stops_30 = [c for c in RWB.calls if c[0] == "stop"]
+ok(len(stops_30) == len(stops_after) + 1,
+   "a further rung places another new stop")
+ok(abs(stops_30[-1][3] - 2.40) < 0.005,
+   "locked +20%% off a 2.00 fill is a 2.40 stop, got %s" % stops_30[-1][3])
+# Price dips back to +21% (still above the +20 rung, below the +30 rung) — the
+# already-locked +20% stop must NOT be loosened back down to +10%.
+rb.auto_ratchet(RKEY, 2.42)
+stops_dip = [c for c in RWB.calls if c[0] == "stop"]
+ok(len(stops_dip) == len(stops_30),
+   "a dip that's still above the last-hit rung places no new (and no "
+   "looser) stop")
+
+if bad:
+    print("\n%d ratchet check(s) failed." % bad)
+    raise SystemExit(1)
+print("Ratchet: below +20%% the position is untouched; +20%% walks the stop to "
+      "+10%% instead of closing; +30%% walks it to +20%%; a dip that's still "
+      "above the last rung never loosens the stop back down.")
