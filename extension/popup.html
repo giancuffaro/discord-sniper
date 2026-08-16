@@ -158,7 +158,7 @@
     <span style="font-size:11px;color:#9aa3b5;white-space:nowrap"><b id="appVersion">…</b></span>
     <button id="updateapp" title="Update to the latest version" style="flex:none;width:34px;padding:6px 0;font-size:15px">🔄</button>
   </div>
-  <div class="note" id="updatestate" style="margin-top:0">Pulls the newest build from GitHub and restarts the bridge itself — do it when you're not mid-trade.</div>
+  <div class="note" id="updatestate" style="margin-top:0">&nbsp;</div>
 
   <!-- Impossible to miss when the bridge is down: nothing can trade until it's
        back, so this sits above everything, blinking red, with the one action. -->
@@ -235,12 +235,21 @@
 
   <!-- ===== CHANNELS ===== -->
   <div class="tabpane" data-tab="channels">
-    <label>Rooms — each one is its own switch</label>
+    <label>Servers — turn off a whole server at once</label>
+    <div id="servertoggles"></div>
+    <div class="note">Each server groups the channels opened for it. OFF stops
+      reading every channel in that server — no capture, no trades, nothing.
+      Tap a server name to expand it and turn any ONE of its channels back on
+      by itself, without re-enabling the rest.</div>
+
+    <label style="margin-top:14px">Rooms — each one is its own switch</label>
     <div id="roomtoggles"></div>
     <div class="note">One click flips a room between TESTING (pretend money)
       and LIVE (your Webull account). Applies instantly and STAYS that way
       across updates and restarts — a room only leaves LIVE when you flip it,
-      or when you hit the master OFF / drop a STOP file.</div>
+      or when you hit the master OFF / drop a STOP file. A room turned off
+      above (in Servers) is skipped here — there's nothing to arm on a room
+      that isn't reading.</div>
 
     <label style="margin-top:14px">Grab this room's history (for tuning)</label>
     <div class="row" style="margin-top:8px">
@@ -446,25 +455,12 @@
   </div>
 
   <!-- ===== LOGS ===== -->
+  <!-- Copy log + Export chat removed (8/15, his call): both wrote the same
+       information Save-log-now already writes to Drive automatically, so
+       they were a second and third way to do one thing. The "last 5 min"
+       range picker went with Export chat. Auto-save every X is the one that
+       stays — it's the only one that runs itself. -->
   <div class="tabpane" data-tab="logs">
-    <div class="row" style="margin-top:4px">
-      <button id="copylog" class="grow">Copy log</button>
-    </div>
-    <div class="row" style="margin-top:4px">
-      <select id="exportRange" style="max-width:150px">
-        <option value="5">Last 5 min</option>
-        <option value="10">Last 10 min</option>
-        <option value="15">Last 15 min</option>
-        <option value="20">Last 20 min</option>
-        <option value="30">Last 30 min</option>
-        <option value="45">Last 45 min</option>
-        <option value="60">Last 1 hour</option>
-        <option value="120">Last 2 hours</option>
-        <option value="240">Last 4 hours</option>
-        <option value="today">Daily (today)</option>
-      </select>
-      <button id="export" class="grow">Export chat</button>
-    </div>
     <div class="row" style="margin-top:4px">
       <button id="savelognow" class="grow safe">💾 Save log now (for Claude)</button>
     </div>
@@ -474,23 +470,23 @@
       <input id="exportEvery" type="number" min="1" max="240" step="1"
              style="width:56px"> <span class="note">minutes — remembered.</span>
     </div>
-    <div class="note">Saves today's log to your Drive folder — the same file the
-      bot auto-saves on the timer above, overwriting it each pass so it stays
-      current. Hit this any time you want me to check it right now.</div>
-    <div class="note">"Copy log" grabs today's activity as text. "Export chat"
-      downloads every message this extension has seen — send it to me and I'll
-      tune the reader to your room's exact wording.</div>
+    <div class="note">Saves today's log to your Drive folder — the whole day's
+      raw messages, what the bot did, and its current state — overwriting the
+      same file each pass so it always reads current. Hit the button any time
+      you want a fresh save right now; otherwise it saves itself on the timer
+      above. Skips itself Friday 5pm–Sunday 7pm ET and market holidays —
+      nothing happens those hours, so there's nothing worth saving.</div>
 
     <div id="log"></div>
   </div>
 
 
-  <!-- Bridge status stays at the bottom. What he's HOLDING moved to the top
-       (8/12, his call): open trades are the thing he needs on screen at all
-       times, not something to scroll to under the tabs. -->
-  <div class="bar">
-    <div class="state" id="modestate">Checking the bridge…</div>
-  </div>
+  <!-- Bridge/keys/buying-power line removed from the bottom (8/15, his call):
+       it's the exact same info already on the status bar up top (Bridge ●
+       Webull ● Futures ● margin/futures BP), just repeated. modestate stays
+       in the DOM, hidden, so paintMode() (still called elsewhere) has nothing
+       to throw on. -->
+  <div class="state" id="modestate" style="display:none"></div>
   <div class="purse" id="purse" style="display:none"></div>
   <div class="tablebox" id="roomstats" style="display:none"></div>
 

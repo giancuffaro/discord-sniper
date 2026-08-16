@@ -363,18 +363,16 @@ async function paintStatus() {
   let dgKey = "";
   try { dgKey = (await chrome.storage.local.get("deepgram_key")).deepgram_key || ""; } catch (e) {}
   let v = "?"; try { v = (chrome.runtime.getManifest() || {}).version || "?"; } catch (e) {}
-  const money = [];
-  if (st && st.buying_power != null)
-    money.push("$" + Math.round(st.buying_power).toLocaleString() + " margin");
-  if (st && st.futures_buying_power != null)
-    money.push("$" + Math.round(st.futures_buying_power).toLocaleString() + " futures");
+  // Buying-power display removed from this line (his ask, 8/15) - he doesn't
+  // want it always visible. buying_power/futures_buying_power still ride in
+  // modeStatus for anything else that needs them, just not painted here.
   bar.textContent = [
     "Bridge " + _dot(bridge),
     "Webull " + ((st && (st.connected || paperKeys)) ? "✅" : (st && st.has_keys ? "⛔" : "—")),
     "Futures " + ((st && st.futures_account) ? "✅" : "—"),
     "AI " + (ai ? "✅" : "off"),
     "Voice " + (voiceN ? (voiceN + " 🎙") : (dgKey ? "✅" : "off"))
-  ].join("  ·  ") + (money.length ? "   ·   " + money.join(" · ") : "");
+  ].join("  ·  ");
   // A short "what to do next" checklist — only the steps not done yet, in
   // order. Empty when you're fully set up, so it disappears once you're ready.
   const steps = [];
@@ -387,7 +385,7 @@ async function paintStatus() {
   }
   fix.innerHTML = steps.length
     ? "<b style='color:#e6edf6'>Set up:</b><br>" + steps.join("<br>")
-    : "✅ All set — you're ready.";
+    : "";
   fix.style.color = steps.length ? "#fbbf24" : "#34d399";
 }
 
@@ -848,6 +846,131 @@ const ROOM_NAMES = { "829754942817828884": "Honeydrip daytrades",
                      "1527044644796366888": "Options Insider",
                      "1471700027662405712": "ZT fut-6" };
 
+/* Every channel grouped by the Discord/Whop SERVER it lives on — his ask
+ * (8/15): turn off a whole server ("all of honeydrip, etc") in one click, but
+ * still be able to keep any ONE of its channels on. Built straight from the
+ * server ids 🎯 START HERE.bat opens each channel under, so this and the
+ * startup script can never disagree about which channel belongs to which
+ * server. Whop rooms have no numeric server — firststeptrading is their
+ * shared "server" for this purpose, one group like any other. */
+const SERVER_GROUPS = [
+  { name: "Honeydrip / Aristotle (main)", ids: [
+      "829754942817828884", "987515353670221834", "1144369893760831489",
+      "1433933203302776852" ] },
+  { name: "firststeptrading (Whop)", ids: [
+      "whop:day-trades", "whop:futures", "whop:high-risk",
+      "whop:2k-challenge", "whop:swing", "whop:long-term" ] },
+  { name: "ZTRADEZ", ids: [
+      "829352738239414332", "721821717328298066", "1174393224253681674",
+      "748266924122570882", "1471700027662405712", "499045647580921887",
+      "1135947475912495216",
+      "1356793611420958732", "1248264554886991893", "694197721430491266",
+      "777750637613416479", "1331631786068938813", "1239624229583061052",
+      "1209181195406024744", "1332090335005900800", "874280313038192670",
+      "1389300087829827745", "862419656382873650", "1061980561293443152",
+      "1179200811650252850", "918665915103584327", "1255279667489931325",
+      "1294812275668160613", "1121391020148543631", "552885275676639243",
+      "1525120298075029554", "1251181965252755517", "1213977047479754783",
+      "1375454591755489341" ] },
+  { name: "Boka Trading", ids: [
+      "1288291150083653652", "1499190814482632825", "1395159239164432515",
+      "1387459050505240597" ] },
+  { name: "Alert servers (TTT / RWGates / Vero / Insider / Platinum)", ids: [
+      "769797179992571914", "808127664022880297", "880503518878892143",
+      "769797593316065280", "1137873895832174672", "771902435680845845",
+      "800526679046225961", "769797819770732554", "642437862930907158",
+      "1323708708374450247", "760694103401955378", "1095502893559316482",
+      "1527044644796366888", "1276616766004658226" ] }
+];
+// Any channel that's opened but doesn't fall in a named group above (a room
+// added later, or one of the many "added on request" ids in background.js's
+// channel_ids list) still needs a home so it isn't invisible in the Servers
+// list. Everything not claimed by a group goes in one catch-all row.
+function serverGroupsFor(allIds) {
+  const claimed = new Set(SERVER_GROUPS.flatMap(g => g.ids));
+  const leftover = allIds.filter(id => !claimed.has(id));
+  const groups = SERVER_GROUPS.map(g => ({ name: g.name,
+                                          ids: g.ids.filter(id => allIds.includes(id)) }))
+                              .filter(g => g.ids.length);
+  if (leftover.length) groups.push({ name: "Other rooms", ids: leftover });
+  return groups;
+}
+
+let _expandedServer = null;   // which group's channel list is open, if any
+function renderServerToggles(channelDisabled) {
+  const box = $("servertoggles");
+  if (!box) return;
+  const cd = channelDisabled || {};
+  const groups = serverGroupsFor(Object.keys(ROOM_NAMES));
+  box.innerHTML = groups.map((g, gi) => {
+    const offCount = g.ids.filter(id => cd[id]).length;
+    const allOff = offCount === g.ids.length;
+    const someOff = offCount > 0 && !allOff;
+    const expanded = _expandedServer === gi;
+    const rows = expanded ? g.ids.map(id => {
+      const on = !cd[id];
+      return '<div class="row" style="margin:2px 0 2px 14px">' +
+             '<span class="grow" style="font-size:11px;color:#9aa3b5">' +
+             chanLabel(id) + '</span>' +
+             '<button data-servchan="' + id + '" style="font-size:10px;' +
+             'padding:1px 8px;border-radius:9px;cursor:pointer;border:1px solid ' +
+             (on ? "#3a4254" : "#7f1d1d") + ';background:' +
+             (on ? "transparent" : "#2a1720") + ';color:' +
+             (on ? "#7d8697" : "#f87171") + '">' + (on ? "on" : "off") +
+             '</button></div>';
+    }).join("") : "";
+    return '<div class="row" style="margin-bottom:2px">' +
+           '<span class="grow" data-servexpand="' + gi + '" style="font-size:12px;' +
+           'cursor:pointer">' + (expanded ? "▾ " : "▸ ") + g.name +
+           (someOff ? ' <span style="color:#fbbf24;font-size:10px">(' + offCount +
+            '/' + g.ids.length + ' off)</span>' : "") + '</span>' +
+           '<button data-servtoggle="' + gi + '" style="font-size:10px;padding:1px 10px;' +
+           'border-radius:9px;cursor:pointer;border:1px solid ' +
+           (allOff ? "#7f1d1d" : "#3a4254") + ';background:' +
+           (allOff ? "#2a1720" : "transparent") + ';color:' +
+           (allOff ? "#f87171" : "#7d8697") + '">' +
+           (allOff ? "OFF" : (someOff ? "partial" : "on")) + '</button></div>' +
+           rows;
+  }).join("");
+
+  box.querySelectorAll("[data-servexpand]").forEach(el => {
+    el.onclick = () => {
+      const gi = parseInt(el.dataset.servexpand, 10);
+      _expandedServer = (_expandedServer === gi) ? null : gi;
+      renderServerToggles(cd);
+    };
+  });
+  box.querySelectorAll("button[data-servtoggle]").forEach(btn => {
+    btn.onclick = async () => {
+      const gi = parseInt(btn.dataset.servtoggle, 10);
+      const g = groups[gi];
+      const { settings } = await chrome.storage.local.get("settings");
+      const s = settings || {};
+      s.channel_disabled = s.channel_disabled || {};
+      const offCount = g.ids.filter(id => s.channel_disabled[id]).length;
+      const turnOff = offCount < g.ids.length;   // any on -> turn ALL off; all off -> turn ALL on
+      g.ids.forEach(id => {
+        if (turnOff) s.channel_disabled[id] = true;
+        else delete s.channel_disabled[id];
+      });
+      await chrome.storage.local.set({ settings: s });
+      renderServerToggles(s.channel_disabled);
+    };
+  });
+  box.querySelectorAll("button[data-servchan]").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.servchan;
+      const { settings } = await chrome.storage.local.get("settings");
+      const s = settings || {};
+      s.channel_disabled = s.channel_disabled || {};
+      if (s.channel_disabled[id]) delete s.channel_disabled[id];
+      else s.channel_disabled[id] = true;
+      await chrome.storage.local.set({ settings: s });
+      renderServerToggles(s.channel_disabled);
+    };
+  });
+}
+
 /* The per-room scoreboard he asked for: "trade information, won, lost,
  * profits, from each individual channel just to have good data to see where
  * everything comes from." Built from the day's finished trades (which carry
@@ -898,10 +1021,13 @@ function renderRoomStats(wallet, dayTable) {
 }
 
 let _allLiveArm = 0;            // two-tap arm for "all LIVE" (real money)
-function renderRoomToggles(channelLive, channelPull) {
+function renderRoomToggles(channelLive, channelPull, channelDisabled) {
   const box = $("roomtoggles");
   if (!box) return;
-  const ids = Object.keys(ROOM_NAMES);
+  const cd = channelDisabled || {};
+  // A room turned off up in Servers has nothing to arm here — it isn't
+  // reading, so LIVE/testing on it is meaningless until it's back on.
+  const ids = Object.keys(ROOM_NAMES).filter(id => !cd[id]);
   const liveCount = ids.filter(id => !!(channelLive || {})[id]).length;
   // Master row (his ask, 8/13): flip every room at once instead of clicking
   // ~60 toggles. "all testing" is always safe and instant. "all LIVE" arms
@@ -1386,7 +1512,8 @@ async function render() {
   }
   renderRoomStats(wallet, day_table);
 
-  renderRoomToggles(s.channel_live || {}, s.channel_pullback || {});
+  renderServerToggles(s.channel_disabled || {});
+  renderRoomToggles(s.channel_live || {}, s.channel_pullback || {}, s.channel_disabled || {});
   $("bridge").value = s.bridge_url;
 
   const box = $("log");
@@ -1486,66 +1613,6 @@ if ($("save")) $("save").onclick = async () => {
  * anywhere else, which is why a whole day's log once had to be sent as a
  * search URL. This puts it on the clipboard as plain text, oldest first so it
  * reads like a morning rather than backwards. */
-$("copylog").onclick = async () => {
-  const { log, wallet, day_table } =
-    await chrome.storage.local.get(["log", "wallet", "day_table"]);
-  const head = { sent: "BID IN", fired: "FILLED", failed: "FAILED",
-                 skipped: "SKIPPED", stopped: "STOPPED OUT",
-                 ignored: "not a trade", update: "UPDATED" };
-  const lines = (log || []).slice().reverse().map(e => {
-    const isExit = e.action === "CLOSE" || /^CLOSE\b/.test(String(e.what || ""));
-    const h = (e.kind === "sent" && isExit) ? "SOLD" : (head[e.kind] || e.kind);
-    return [clock(e.t), h + (e.what ? " · " + e.what : ""),
-            e.why || "", e.text ? (e.author || "?") + ": " + e.text : ""]
-           .filter(Boolean).join("  |  ");
-  });
-  if (wallet && wallet.unlimited) {
-    lines.unshift("test day " + (wallet.realised >= 0 ? "+" : "-") + "$" +
-                  Math.abs(wallet.realised).toFixed(0) + " (" + wallet.wins +
-                  " up / " + wallet.losses + " down, most tied up at once $" +
-                  (wallet.peak || 0).toFixed(0) + ")", "");
-  } else if (wallet) {
-    lines.unshift("account $" + wallet.equity.toFixed(0) + " (started $" +
-                  wallet.start.toFixed(0) + ", " + wallet.wins + " up / " +
-                  wallet.losses + " down, banked $" +
-                  wallet.realised.toFixed(0) + ")", "");
-  }
-  // The trade list up top — every trade of the day with its verdict, so the
-  // analysis never depends on how far back the log happens to reach.
-  const rows = (day_table || []).map(r => {
-    const ins = (r.entries || []).map(e => (e.t ? clock(e.t * 1000) + " " : "") +
-      e.qty + "@" + Number(e.price).toFixed(2)).join(" + ");
-    const outs = (r.exits || []).map(e => (e.t ? clock(e.t * 1000) + " " : "") +
-      e.qty + "@" + Number(e.price).toFixed(2)).join(", ");
-    const verdict = r.all_out
-      ? (r.state === "nofill" ? "NO FILL"
-         : (r.pl >= 0 ? "WIN +$" + Math.round(r.pl) : "LOSS -$" + Math.abs(Math.round(r.pl))))
-      : "STILL OPEN (" + r.qty + " held)";
-    return [r.opened ? clock(r.opened * 1000) : "?",
-            (r.who || "?") + " " + contractStr(r),
-            ins ? "in " + ins : "no fill",
-            outs ? "out " + outs : "", verdict].filter(Boolean).join("  |  ");
-  });
-  if (rows.length) {
-    lines.unshift("");
-    lines.unshift.apply(lines, ["THE DAY, TRADE BY TRADE:"].concat(rows, [""]));
-  }
-  const text = lines.join("\n") || "nothing logged yet";
-  const btn = $("copylog");
-  try {
-    await navigator.clipboard.writeText(text);
-    btn.textContent = "Copied — paste it anywhere";
-  } catch (e) {
-    // Clipboard blocked. Rather than fail quietly, hand it over as a file,
-    // which is the same thing one step further away.
-    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
-    chrome.downloads.download({ url, filename: "sniper-log.txt", saveAs: true })
-      .catch(() => chrome.tabs.create({ url }));
-    btn.textContent = "Saved it as a file instead";
-  }
-  setTimeout(() => { btn.textContent = "Copy log"; }, 2500);
-};
-
 $("savelognow").onclick = async () => {
   const btn = $("savelognow");
   btn.disabled = true; btn.textContent = "💾 Saving…";
@@ -1604,54 +1671,6 @@ tickExportTimer();
     await chrome.storage.local.set({ export_every_min: v });
   };
 })();
-
-$("export").onclick = async () => {
-  const { captured } = await chrome.storage.local.get("captured");
-  // Which room each line came from. Three rooms export into one file, and the
-  // tag is what keeps their three dialects apart when the parser gets tuned.
-  const ROOMS = { "829754942817828884": "main",
-                  "987515353670221834": "aristotle",
-                  "1144369893760831489": "midas",
-                  "642437862930907158": "rwgates",
-                  "769797179992571914": "option alerts",
-                  "880503518878892143": "lotto alerts",
-                  "769797819770732554": "options watchlist",
-                  "1137873895832174672": "futures alerts",
-                  "1135947475912495216": "mr.tophat",
-                  "1276616766004658226": "platinum trading",
-                  "808127664022880297": "spread alerts",
-                  "769797593316065280": "stock alerts",
-                  "771902435680845845": "member alerts",
-                  "800526679046225961": "trade log",
-                  "1433933203302776852": "aristotle-small" };
-  // Whop rooms tag themselves "whop:/their/path" — shown as-is, so two
-  // different Whop rooms stay two different lexicons in the file.
-  // Sorted by when the message was POSTED, not when it was scraped —
-  // scrolling up paints newest-first, and a file in paint order would read
-  // like a week played backwards.
-  // Only export the window the user picked in the dropdown.
-  const sel = ($("exportRange") || {}).value || "60";
-  let cutoff = 0;
-  if (sel === "today") { const d = new Date(); d.setHours(0,0,0,0); cutoff = d.getTime(); }
-  else { const mins = parseFloat(sel); if (mins > 0) cutoff = Date.now() - mins*60*1000; }
-  const picked = (captured || []).filter(c => !cutoff || c.t >= cutoff);
-  const rows = picked.slice().sort((a, b) => a.t - b.t).map(c =>
-    new Date(c.t).toLocaleString() +
-    "  [" + (ROOMS[c.channel] || c.channel || "?") + "]" +
-    "  " + (c.author || "?") + ": " + c.text);
-  const blob = new Blob([rows.join("\n") || "nothing captured yet"],
-                        { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const tag = sel === "today" ? "today"
-    : (parseFloat(sel) >= 60 ? "last" + (parseFloat(sel)/60) + "h" : "last" + sel + "m");
-  await chrome.downloads.download({ url, filename: "signal-room-chat-" + tag + ".txt",
-                                    saveAs: true })
-    .catch(() => {
-      // downloads permission missing or blocked — open it in a tab instead so
-      // you can still copy it out.
-      chrome.tabs.create({ url });
-    });
-};
 
 /* Update the app from the popup — pulls the newest build and restarts the
  * bridge on the PC, so START HERE is never needed just for an update. The

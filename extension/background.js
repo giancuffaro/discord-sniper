@@ -143,6 +143,12 @@ async function cfg() {
     author_names: [],
     channel_ids: [],   // merged with the graduated rooms below
     extra_veto_words: [],
+    // Whole-server off switch, per channel id: { "<channelId>": true } means
+    // that channel is deactivated — nothing read, nothing traded. The
+    // Channels tab groups these by Discord/Whop server so one click can flip
+    // every channel in a server, with a per-channel override to keep any one
+    // of them on anyway.
+    channel_disabled: {},
     guards: {}
   }, settings || {});
   // NOTHING is blocked by ticker any more — the refusal checks are deleted.
@@ -910,6 +916,40 @@ function marketOpenNow() {
   return mins >= 9 * 60 + 15 && mins <= 16 * 60 + 10;
 }
 
+// Market holidays (NYSE closed all day) — same list as the bridge's own
+// HOLIDAYS in webull_options.py, kept in sync by hand since this side has no
+// import from Python. Add a year here when you add one there.
+const MARKET_HOLIDAYS = new Set([
+  "2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03", "2026-05-25",
+  "2026-06-19", "2026-07-03", "2026-09-07", "2026-11-26", "2026-12-25",
+  "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31",
+  "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24",
+]);
+
+/* No signals fire Friday 5pm ET through Sunday 7pm ET — the weekend, plain
+ * and simple — or on a market holiday. His ask (8/15): the auto-export
+ * shouldn't bother writing a file for a stretch where nothing happened. This
+ * only gates the AUTOMATIC 30-minute export; the manual buttons (Copy log,
+ * Save log now, Export chat) still work any time you press them yourself —
+ * if you explicitly want a file, you get one. */
+function inExportBlackout() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", hour12: false,
+    weekday: "short", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit"
+  }).formatToParts(new Date());
+  const g = {};
+  for (const p of parts) g[p.type] = p.value;
+  const ymd = g.year + "-" + g.month + "-" + g.day;
+  if (MARKET_HOLIDAYS.has(ymd)) return true;
+  const mins = parseInt(g.hour, 10) * 60 + parseInt(g.minute, 10);
+  const FRI_1700 = 17 * 60, SUN_1900 = 19 * 60;
+  if (g.weekday === "Fri" && mins >= FRI_1700) return true;
+  if (g.weekday === "Sat") return true;
+  if (g.weekday === "Sun" && mins < SUN_1900) return true;
+  return false;
+}
+
 async function checkBuild() {
   const c = await cfg();
   let stamp;
@@ -1117,6 +1157,10 @@ chrome.alarms.onAlarm.addListener(a => {
  * to Downloads/discord-sniper-logs/, overwriting the same-day file each pass.
  * A service worker has no Blob URLs, so it goes out as a data: URL. */
 async function autoExportForLearning() {
+  // Weekend/holiday quiet: no signals fire then, so no point writing a file
+  // for it (his ask, 8/15). Manual buttons (Copy log / Save log now / Export
+  // chat) still work any time — this only skips the unattended 30-min pass.
+  if (inExportBlackout()) return;
   let captured = [], log = [];
   try { captured = (await chrome.storage.local.get("captured")).captured || []; } catch (e) {}
   try { log = (await chrome.storage.local.get("log")).log || []; } catch (e) {}
@@ -1406,6 +1450,16 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     noteChannelName(msg.channelId, msg.channelName);   // learn the room's real name
     if (sender && sender.tab && String(msg.platform || "") === "whop") {
       whopTabSeen[sender.tab.id] = Date.now();   // this tab is alive
+    }
+    // Deactivated (his ask, 8/15): a whole Discord/Whop SERVER can be turned
+    // off from the Channels tab in one click, with the option to keep any
+    // one of its channels on anyway. Checked before capture too — an OFF
+    // channel is off, full stop, not just "don't trade it".
+    {
+      const _cid = String(
+        (String(msg.platform || "") === "whop" && whopRoomOf(msg.channelId))
+          ? whopRoomOf(msg.channelId).id : msg.channelId || "");
+      if ((c.channel_disabled || {})[_cid]) { reply({ ok: true }); return; }
     }
     // Grabber export stores the FULL row text (embeds and all); trading still
     // reads the clean msg.text below.
