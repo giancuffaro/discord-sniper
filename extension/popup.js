@@ -432,28 +432,12 @@ function paintPaper() {
   }
 }
 
-let simRealistic = false;
-let simLadder = false;
-function paintSim() {
-  const s = (modeStatus || {}).simulation || {};
-  simRealistic = !!s.realistic_fills;
-  const btn = $("simreal");
-  if (btn) {
-    btn.textContent = simRealistic ? "ON" : "off";
-    btn.className = "tgl " + (simRealistic ? "live" : "safe");
-  }
-  if ($("simoffset") && document.activeElement !== $("simoffset"))
-    $("simoffset").value = s.entry_offset_dollars || "";
-  if ($("simbe") && document.activeElement !== $("simbe"))
-    $("simbe").value = (s.auto_breakeven && s.auto_breakeven.enabled)
-      ? (s.auto_breakeven.at_pct || 10) : "";
-  simLadder = !!(s.auto_ladder && s.auto_ladder.enabled);
-  const lb = $("simladder");
-  if (lb) {
-    lb.textContent = simLadder ? "ON" : "off";
-    lb.className = "tgl " + (simLadder ? "live" : "safe");
-  }
-}
+/* The "Paper-only tactics" panel (bid-under, auto-secure, auto-trim ladder)
+ * is DELETED from the UI (his call, 8/17: "i dont think we need this") —
+ * they were knobs on the old in-house paper simulator. paintSim stays as a
+ * guarded no-op so nothing else needs touching; the bridge-side simulation
+ * config is untouched and simply never set. */
+function paintSim() {}
 
 /* The keys go to the bridge and nowhere else. Nothing is written to
  * chrome.storage — the browser forgets them the moment they're sent, which is
@@ -471,49 +455,8 @@ $("paperbtn").onclick = async () => {
   paintPaper();
 };
 
-// The "Honest fills" toggle was a knob on the OLD in-house simulator, which is
-// off now (Webull paper gives real fills). The button is gone from the UI;
-// guard the handler so its absence can't throw at popup load.
-if ($("simreal")) $("simreal").onclick = async () => {
-  simRealistic = !simRealistic;
-  paintSimQuick();
-  await saveSim();
-};
-function paintSimQuick() {
-  const btn = $("simreal");
-  if (!btn) return;            // toggle removed from the UI
-  btn.textContent = simRealistic ? "ON" : "off";
-  btn.className = "tgl " + (simRealistic ? "live" : "safe");
-}
-$("simladder").onclick = async () => {
-  simLadder = !simLadder;
-  const b = $("simladder");
-  b.textContent = simLadder ? "ON" : "off";
-  b.className = "tgl " + (simLadder ? "live" : "safe");
-  await saveSim();
-};
-async function saveSim() {
-  const off = parseFloat($("simoffset").value);
-  const be = parseFloat($("simbe").value);
-  const sim = {
-    realistic_fills: simRealistic,
-    entry_offset_dollars: isNaN(off) ? 0 : off,
-    auto_breakeven: { enabled: !isNaN(be) && be > 0,
-                      at_pct: isNaN(be) ? 10 : be, sell_fraction: 0.10 },
-    auto_ladder: { enabled: simLadder, keep_runners: 2,
-                   rungs: [{ at: 10, sell: 1, stop_to: null },
-                           { at: 20, sell: 1, stop_to: 0 },
-                           { at: 30, sell: 1, stop_to: 10 }] }
-  };
-  try {
-    modeStatus = await askBridge("/config", { simulation: sim });
-    $("simstate").textContent = "saved — applies to the next trade";
-  } catch (e) {
-    $("simstate").textContent = "couldn't reach the bridge — START HERE first";
-  }
-  paintSim();
-}
-$("simsave").onclick = saveSim;
+// (the sim-tactics handlers — honest-fills, ladder, bid-under, auto-secure,
+// save — left with the panel, 8/17)
 
 /* ---- one-click bracket strategy (LIVE-safe) -------------------------------
  * 1 contract on every entry, take profit at +15%, hard stop at -15%. It lives

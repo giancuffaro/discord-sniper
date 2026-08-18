@@ -289,32 +289,9 @@
       the big names the watcher knows (SPY, QQQ, AAPL, NVDA, TSLA...); anything
       else enters instantly as normal. Uses each room's TESTING/LIVE setting.</div>
 
-    <label style="margin-top:14px">Paper-only tactics — <span style="color:#7d8697;text-transform:none;letter-spacing:0;font-size:11px">never touch live money</span></label>
-    <div class="half">
-      <div>
-        <label>Bid under their price ($)</label>
-        <input id="simoffset" placeholder="0.05" inputmode="decimal">
-      </div>
-      <div>
-        <label>Auto-secure at +%</label>
-        <input id="simbe" placeholder="10" inputmode="decimal">
-      </div>
-    </div>
-    <div class="note">Bid-under fights slippage — a resting limit that catches
-      pullbacks and skips the chases. Auto-secure sells a slice at +% and moves
-      the stop to breakeven so the trade can't lose. Blank = off. Save applies.</div>
-    <div class="row" style="margin-top:6px;margin-bottom:4px">
-      <span class="grow" style="font-size:12px">Auto-trim ladder</span>
-      <button id="simladder" class="tgl safe">off</button>
-    </div>
-    <div class="note">Takes their entry, runs YOUR exit: trim at +10 / +20 / +30%,
-      keep 2 runners. Stop rides with it — +10% same stop, +20% breakeven,
-      +30% locks +10%. Safety net for the trims they don't call out.</div>
-    <div class="row" style="margin-top:6px">
-      <button id="simsave" class="grow">Save realism settings</button>
-    </div>
-    <div class="note" id="simstate">&nbsp;</div>
-
+    <!-- The "Paper-only tactics" panel (bid-under / auto-secure / auto-trim
+         ladder / save) lived here until 8/17 — old in-house-simulator knobs,
+         deleted on his call: "i dont think we need this do we?" -->
 
   </div>
 
