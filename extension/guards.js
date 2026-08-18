@@ -135,8 +135,15 @@ async function guardCheck(sig, ctx, cfg) {
   if (admins.length && sig.caller && !admins.includes(String(sig.caller).toLowerCase()))
     return { allowed: false, reason: "that was " + sig.caller + "'s call, and you're only following " + (cfg.follow_admins || []).join(", ") };
 
+  // Whop's feed delivers with 30-60s of built-in lag (poll cycle + post
+  // rendering), so the 20s Discord rule was refusing EVERY Whop entry as
+  // stale — including the first real futures call after Topstep went live
+  // ("Short Nq 29640", 41s old, 8/18). Whop gets a lag-aware 90s window;
+  // Discord keeps the tight one.
+  const _maxAge = (String(ctx.platform || "") === "whop" ? 90
+                   : g.max_message_age_seconds);
   const age = (now - (ctx.postedAt || now)) / 1000;
-  if (g.max_message_age_seconds && age > g.max_message_age_seconds)
+  if (_maxAge && age > _maxAge)
     return { allowed: false, reason: "that call is " + Math.round(age) + " seconds old — too stale to chase" };
 
   // A manual test trade is allowed to run any time — it's how he proves the

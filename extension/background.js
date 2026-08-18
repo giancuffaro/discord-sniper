@@ -1222,14 +1222,27 @@ async function autoExportForLearning() {
     state +
     "=== RAW MESSAGES THE READER SAW (" + caps.length + ") ===\n" + caps.join("\n") +
     "\n\n=== WHAT THE BOT DID (" + acts.length + ") ===\n" + acts.join("\n") + "\n";
+  // Through the BRIDGE now, into <folder>\DS Logs (his ask, 8/18: "logs
+  // download here"). Chrome's download API can't write outside Downloads
+  // and kept minting "(1)(2)(3)" duplicates instead of overwriting — the
+  // bridge writes the real file properly, same name all day. Chrome
+  // download stays as the fallback for a bridge-down moment.
+  const fname = "signal-room-chat " + fileDay + ".txt";
+  try {
+    const c2 = await cfg();
+    const r = await fetch(bridgeBaseFrom(c2.bridge_url) + "/exportlog", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: fname, text: text })
+    });
+    if (r.ok) {
+      try { await chrome.storage.local.set({ last_export: Date.now() }); } catch (e) {}
+      return;
+    }
+  } catch (e) { /* bridge down — fall through to the old Downloads path */ }
   const url = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
   try {
     await chrome.downloads.download({
-      // Saved into Chrome's download folder directly — NO subfolder — so when
-      // he points Chrome at "G:\My Drive\discord sniper logs" the file lands
-      // right there and syncs to Drive, instead of nesting a level deeper.
-      url, filename: "signal-room-chat " + fileDay + ".txt",
-      conflictAction: "overwrite", saveAs: false
+      url, filename: fname, conflictAction: "overwrite", saveAs: false
     });
     try { await chrome.storage.local.set({ last_export: Date.now() }); } catch (e) {}
   } catch (e) { /* downloads busy or blocked — next pass tries again */ }

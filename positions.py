@@ -685,7 +685,12 @@ class Book:
         with self._lock:
             items = list(self._pos.items())
         for key, p in items:
-            if p.get("kind") != "future" or not p.get("adopted"):
+            # Any day-old futures row, adopted or not (8/18: the restored
+            # MESU6 ghost dodged the adopted-only check and got trims and
+            # stops booked against a position no broker holds). A REAL
+            # futures position a day old would be re-confirmed by its
+            # broker; these can't be, which is the whole point.
+            if p.get("kind") != "future":
                 continue
             if p.get("state") not in (WORKING, FILLED):
                 continue
@@ -1397,6 +1402,47 @@ class Book:
                     "%s — no fill (%s). You are NOT in this one." % (sym, why))
 
     # -- the stop -------------------------------------------------------------
+    def rearm_stop_after_failed_exit(self, key):
+        """A failed CLOSE/TRIM leaves the position ALIVE but its resting
+        stop PULLED (the exit pulls the stop before selling) — SPY 769C sat
+        0DTE with watchdog-only cover after the 8/18 collision. If the
+        position survived the failure, the broker-side stop goes straight
+        back in, at the SAME level it was guarding — a ratcheted stop must
+        never fall back to -10%-from-fill."""
+        with self._lock:
+            p = self._pos.get(key)
+            if (not p or p.get("state") != FILLED or p.get("closing")
+                    or p.get("kind") == "future" or self._sim(p)):
+                return
+            if p.get("stop_order_id"):
+                return                  # still resting — nothing to do
+            stop = p.get("stop")
+            fill = p.get("fill")
+            side = p.get("side")
+            strike = p.get("strike")
+            expiry = p.get("expiry")
+            qty = int(p.get("qty") or 0)
+        if qty <= 0:
+            return
+        base = fill
+        try:
+            if stop and self.stop_pct:
+                # a synthetic fill so "-stop_pct% of fill" recreates the
+                # CURRENT stop level exactly, ratchet progress included
+                base = float(stop) / (1.0 - self.stop_pct / 100.0)
+        except Exception:                               # noqa: BLE001
+            base = fill
+        if not base:
+            return
+        try:
+            self._arm_stop(key, side, strike, expiry, qty, float(base))
+            self._event(key, "stop-set",
+                        "%s — the exit failed but you still hold it, so the "
+                        "resting stop went straight back in."
+                        % key.split("|")[-1])
+        except Exception:                               # noqa: BLE001
+            pass
+
     def _arm_stop(self, key, side, strike, expiry, qty, fill):
         """Both halves of it. The resting order first, because that's the one
         that survives this program dying; the watchdog second, because that's
@@ -2019,10 +2065,29 @@ class Book:
                 except TypeError:
                     self._sell_retry(wb0, key, sym0, side0, strike0, expiry0, n)
             except Exception as e:                      # noqa: BLE001
+                # A trim can collide with a stop exactly like a close can
+                # (his pick #6, 8/18). If the broker shows nothing left, the
+                # stop won the race and sold EVERYTHING — record the trade
+                # done instead of warning as if the trim just vanished.
+                if self._gone_at_broker(wb0, sym0, side0, strike0):
+                    self._event(key, "stopped",
+                                "%s — their trim collided with the stop and "
+                                "the stop won; everything sold. Trade closed."
+                                % sym0)
+                    self.finish(key, STOPPED,
+                                "the resting stop sold it as their trim "
+                                "arrived", price=price)
+                    return 0
                 self._event(key, "stop-warn",
                             "%s — their trim did NOT sell at the broker (%s). "
                             "Nothing recorded — the book still shows what you "
                             "really hold." % (sym0, str(e)[:120]))
+                # The failed trim pulled the resting stop on the way in —
+                # put it straight back if the position survived (8/18).
+                try:
+                    self.rearm_stop_after_failed_exit(key)
+                except Exception:                       # noqa: BLE001
+                    pass
                 return 0
         with self._lock:
             p = self._pos.get(key)

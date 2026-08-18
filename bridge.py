@@ -577,6 +577,70 @@ def save_day():
                        "table": BOOK.table(), "wallet": BOOK.wallet()}, f)
     except OSError:
         pass        # a full disk must never take down the trading path
+    # HANDOFF-<date>.md — his ask (8/18): "make a file handoff every single
+    # day with the date on it." One page a fresh session (his, or a fresh
+    # Claude) can stand on: what ran today, what traded, what's still open,
+    # where the deeper records live. Rewritten on every event like the
+    # journal, into handoffs\, and the auto-push carries it to GitHub.
+    try:
+        os.makedirs(os.path.join(HERE, "handoffs"), exist_ok=True)
+        _rows = BOOK.table()
+        _w = BOOK.wallet() or {}
+        _open = [r for r in _rows if not r.get("all_out")]
+        _done = [r for r in _rows if r.get("all_out")]
+
+        def _ct(r):
+            if r.get("strike") is not None:
+                return "%g%s %s" % (r.get("strike"),
+                                    "C" if str(r.get("side") or "")
+                                    .upper().startswith("C") else "P",
+                                    r.get("expiry") or "")
+            return "futures" if r.get("kind") == "future" else "?"
+
+        def _line(r):
+            pl = r.get("pl")
+            pct = r.get("pl_pct")
+            return ("- %s **%s %s** x%s — %s%s · %s%s · %s" % (
+                ("(Swing) " if r.get("swing") else ""),
+                r.get("symbol") or "?", _ct(r), r.get("qty") or 0,
+                ("%+.0f$" % pl) if pl is not None else "?",
+                (" (%+.1f%%)" % pct) if pct is not None else "",
+                r.get("who") or "?",
+                (" · " + r.get("room")) if r.get("room") else "",
+                r.get("exit_by") or r.get("state") or ""))
+
+        _L = ["# Discord Sniper — handoff %s" % today_str(), ""]
+        _L.append("Mode: %s · realised today: %+.0f$ · %d closed / %d open"
+                  % (MODE, float(_w.get("realised") or 0),
+                     len(_done), len(_open)))
+        _L.append("")
+        if _open:
+            _L.append("## Still open")
+            _L += [_line(r) for r in _open]
+            _L.append("")
+        if _done:
+            _L.append("## Closed today")
+            _L += [_line(r) for r in _done]
+            _L.append("")
+        _L += ["## Where everything lives",
+               "- journal.csv — every trade, all days: who/room/side/%/exit_by/signal",
+               "- days/%s.json — today's full table for replay" % today_str(),
+               "- extension/rooms.txt — THE channel list (tabs + trading, one file)",
+               "- settings.json — keys and rules; gitignored, never leaves this PC",
+               "- trades.log / bridge.log — the raw story, minute by minute",
+               "",
+               "Rules of the house: entries bid at the caller's price or better; "
+               "exits at the ask; RN pullback is one Strategies toggle; manual "
+               "trades are never auto-stopped; Topstep obeys Combine rules with "
+               "the consistency lock; every popup checkmark is verified by a "
+               "real login."]
+        with open(os.path.join(HERE, "handoffs",
+                               "HANDOFF-%s.md" % today_str()),
+                  "w", encoding="utf-8") as f:
+            f.write("\n".join(_L) + "\n")
+    except Exception:                                   # noqa: BLE001
+        pass        # the handoff is a convenience, never a trading risk
+
     # journal.csv — the same record flattened to one line per trade, all days,
     # openable in Excel: who called it, the contract, every exit, how it
     # ended, and whether YOU closed it at Webull yourself.
@@ -1150,6 +1214,24 @@ def _place_impl(order):
     if (action == "OPEN" and str(order.get("entry_mode") or "") == "pullback"
             and order.get("kind") not in ("future", "equity")
             and sym in _pullback.MANAGED):
+        # Affordability is checked NOW, at arm time — not five minutes later
+        # at the touch (his pick #3, 8/18: MSFT and TSLA both waited, touched
+        # their level perfectly, then died on "$204 to spend"). If the money
+        # isn't there, say so up front and never arm the watcher.
+        try:
+            _cli = WB_LIVE if order.get("live") else (WB_LIVE or WB)
+            if (_cli is not None and order.get("limit")
+                    and hasattr(_cli, "afford_check")):
+                _cli.afford_check(float(order["limit"]),
+                                  int(order.get("qty") or 1))
+        except Exception as _e:                         # noqa: BLE001
+            # Refused = the honest "can't afford it" sentence. Matched by
+            # name because the class is imported further down this function.
+            if _e.__class__.__name__ == "Refused":
+                note("PULLBACK refused up front  %s — %s" % (sym, _e))
+                return False, ("not arming the round-number wait: %s" % _e)
+            # anything else (no quote, no client) -> arm anyway; the real
+            # entry at the touch still runs the full checks
         # live flag rides through untouched (8/17, his call): RN wait spends
         # whatever the room's TESTING/LIVE toggle says, same as instant.
         okp, msgp = pullback_manager().start(order)
@@ -1449,10 +1531,34 @@ def _place_impl(order):
                 # Through the book's retry, not straight at the broker: a
                 # room exit hitting a resting order used to just ERROR and
                 # leave him holding it ("all out of AAPL @ 3.75", 8/12).
-                res = BOOK._sell_retry(client, key, order["symbol"],
-                                       order.get("side"), order.get("strike"),
-                                       order.get("expiry"), qty,
-                                       ref_price=exref)
+                try:
+                    res = BOOK._sell_retry(client, key, order["symbol"],
+                                           order.get("side"), order.get("strike"),
+                                           order.get("expiry"), qty,
+                                           ref_price=exref)
+                except Exception:                       # noqa: BLE001
+                    # TWO sellers can collide on the same second — the room's
+                    # close and the pullback's stock-stop did exactly that on
+                    # SPY 769C (8/18, 11:10:18): the loser 417'd against a
+                    # position the winner had already sold, the ERROR read
+                    # like he was still holding, and the resting stop was
+                    # gone. If the broker shows nothing left, this trade is
+                    # DONE — record the close instead of erroring while flat.
+                    if BOOK is not None and BOOK._gone_at_broker(
+                            client, order["symbol"], order.get("side"),
+                            order.get("strike")):
+                        note("SOLD     %s — the other seller won the race "
+                             "(their close and a stop collided); nothing "
+                             "left to sell" % order["symbol"])
+                        if claimed:
+                            BOOK.finish(key, positions.CLOSED,
+                                        "sold in a two-seller collision — "
+                                        "the other order won",
+                                        price=exref)
+                        return True, ("already sold — a stop and their close "
+                                      "collided and the first one won. You "
+                                      "are FLAT on %s." % order["symbol"])
+                    raise
                 msg = res["what"]
                 note("SOLD     %s" % msg)
                 if claimed:
@@ -1495,6 +1601,14 @@ def _place_impl(order):
             if claimed:
                 BOOK.release(key)
             note("ERROR    %s  ->  %s" % (what, e))
+            # A failed EXIT pulled the resting stop on its way in — if the
+            # position survived, put the stop straight back (8/18: SPY 769C
+            # sat 0DTE watchdog-only after a failed close). His pick #1.
+            if action in ("CLOSE", "TRIM") and BOOK is not None:
+                try:
+                    BOOK.rearm_stop_after_failed_exit(key)
+                except Exception:                       # noqa: BLE001
+                    pass
             return False, ("something went wrong talking to Webull: %s. The "
                            "order may not have gone out — check the Webull app."
                            % str(e)[:160])
@@ -2016,6 +2130,36 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, dict(self._status(), ok=ok_all,
                                     message=" ".join(msgs)))
 
+    def _export_log(self):
+        """The extension hands over the day's export and this writes it to
+        <folder>\\DS Logs (his ask, 8/18: "logs download here"). Chrome's
+        download API can't write outside Downloads and kept minting
+        (1)(2)(3) duplicates; a plain file write overwrites properly, one
+        file per day, always current."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:                                   # noqa: BLE001
+            return self._json(400, {"ok": False, "why": "unreadable"})
+        name = str(body.get("name") or "").strip()
+        text = str(body.get("text") or "")
+        # filename hygiene: whatever arrives, it stays a plain .txt inside
+        # DS Logs — no path parts on ANY separator style, no surprises.
+        name = name.replace("\\", "/").rsplit("/", 1)[-1]
+        name = name.replace("..", "").strip() or "export.txt"
+        if not name.lower().endswith(".txt"):
+            name += ".txt"
+        if not text:
+            return self._json(400, {"ok": False, "why": "empty"})
+        try:
+            d = os.path.join(HERE, "DS Logs")
+            os.makedirs(d, exist_ok=True)
+            with open(os.path.join(d, name), "w", encoding="utf-8") as f:
+                f.write(text)
+            return self._json(200, {"ok": True, "saved": name})
+        except OSError as e:
+            return self._json(200, {"ok": False, "why": str(e)[:120]})
+
     def _ai_read(self):
         """READING intelligence for a message the regex parser gave up on.
         The extension only calls this on a miss. We hand the one message to
@@ -2331,6 +2475,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._self_update()
         if self.path.startswith("/read"):
             return self._ai_read()
+        if self.path.startswith("/exportlog"):
+            return self._export_log()
 
         if os.path.exists(os.path.join(HERE, "STOP")) or \
            os.path.exists(os.path.join(HERE, "STOP.txt")):
