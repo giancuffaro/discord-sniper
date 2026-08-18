@@ -376,6 +376,75 @@ def build_book():
              "number that tells you what funding this really takes.")
 
 
+AI_KEY_OK = None      # None = never probed; True/False = the last real answer
+
+
+def probe_ai_key():
+    """Actually ASK Anthropic whether the saved AI key works (his confusion,
+    8/17: the popup showed AI ✅ for a key the API rejects — a checkmark that
+    only meant "something is pasted in the box"). One tiny request, cached
+    until the key changes; the status line now tells the truth."""
+    global AI_KEY_OK
+    key = ((EXEC.get("ai_reader") or {}).get("api_key") or "").strip()
+    if not key:
+        AI_KEY_OK = None
+        return
+    try:
+        import requests
+        r = requests.post("https://api.anthropic.com/v1/messages",
+                          headers={"x-api-key": key,
+                                   "anthropic-version": "2023-06-01",
+                                   "Content-Type": "application/json"},
+                          json={"model": "claude-haiku-4-5-20251001",
+                                "max_tokens": 1,
+                                "messages": [{"role": "user", "content": "hi"}]},
+                          timeout=(4, 8))
+        AI_KEY_OK = bool(200 <= r.status_code < 300)
+        if AI_KEY_OK:
+            note("AI READ  key verified — reading is ON")
+        else:
+            note("AI READ  key INVALID (HTTP %s) — that's a pasted token, not "
+                 "an API key? Get one at console.anthropic.com -> API Keys "
+                 "(starts sk-ant-api03) and paste it in the popup."
+                 % r.status_code)
+    except Exception as e:                              # noqa: BLE001
+        AI_KEY_OK = None      # network blip — unknown, not "broken"
+        note("AI READ  couldn't verify the key (%s) — will act as if it "
+             "works until proven otherwise" % str(e)[:80])
+
+
+TS_KEY_OK = None      # None = never probed; True/False = Topstep's last answer
+
+
+def probe_topstep_key():
+    """Actually LOG IN to TopstepX with the saved username+key (his ask,
+    8/17: a green '✓ Topstep connected' he can trust, like the Webull one).
+    One request, cached until the credentials change."""
+    global TS_KEY_OK
+    ts = (CFG.get("futures_brokers") or {}).get("topstep") or {}
+    user = str(ts.get("username") or "").strip()
+    key = str(ts.get("api_key") or "").strip()
+    if not (user and key):
+        TS_KEY_OK = None
+        return
+    try:
+        import requests
+        base = str(ts.get("base_url") or "https://api.topstepx.com").rstrip("/")
+        r = requests.post(base + "/api/Auth/loginKey",
+                          json={"userName": user, "apiKey": key},
+                          timeout=(4, 8))
+        j = r.json() if r.status_code == 200 else {}
+        TS_KEY_OK = bool(j.get("token"))
+        note("TOPSTEP  key %s for %s"
+             % ("VERIFIED — connected" if TS_KEY_OK
+                else "REFUSED (errorCode %s) — check username/key on the "
+                     "TopstepX API page" % j.get("errorCode"), user))
+    except Exception as e:                              # noqa: BLE001
+        TS_KEY_OK = None
+        note("TOPSTEP  couldn't verify the key (%s) — network, not the key"
+             % str(e)[:80])
+
+
 def reload_settings():
     """Pick up the keys having been typed in while the bridge was running, so you
     don't have to restart it to see that they're in."""
@@ -874,7 +943,12 @@ def _futures_brokers_safe():
     out["topstep"] = {"enabled": bool(ts.get("enabled")),
                       "username": ts.get("username", ""),
                       "base_url": ts.get("base_url", "https://api.topstepx.com"),
-                      "has_password": bool(ts.get("api_key"))}
+                      "has_password": bool(ts.get("api_key")),
+                      # keys saved at all, and whether TopstepX actually
+                      # ACCEPTED them (probe_topstep_key) — the popup's
+                      # green box keys off these (8/17).
+                      "keys_in": bool(ts.get("api_key") and ts.get("username")),
+                      "verified": TS_KEY_OK}
     return out
 
 
@@ -1526,9 +1600,12 @@ class Handler(BaseHTTPRequestHandler):
                 "paper_warning": getattr(WB, "paper_warning", "") if WB is not None else "",
                 "paper_keys_in": bool((EXEC.get("webull") or {}).get("paper_app_key")),
                 # AI reader on/off (never returns the key itself).
-                # Always on when keyed (his call, 8/17) — mirrors
-                # ai_reader.available(): the enabled flag is ignored.
-                "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key")),
+                # Always on when keyed (his call, 8/17) — and the checkmark
+                # now means the key actually ANSWERED (probe_ai_key), not
+                # just that a box was filled. False the moment Anthropic
+                # says 401, whatever is pasted.
+                "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key"))
+                              and AI_KEY_OK is not False,
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}
@@ -2057,6 +2134,10 @@ class Handler(BaseHTTPRequestHandler):
                     fb[bk] = cur
             data["futures_brokers"] = fb
             CFG["futures_brokers"] = fb
+            # Fresh Topstep credentials get logged in RIGHT NOW, so the
+            # popup's green box means "TopstepX accepted them" (8/17).
+            if "topstep" in incoming:
+                probe_topstep_key()
             _on = ["webull"] if fb.get("webull") else []
             if (fb.get("ninjatrader") or {}).get("enabled"):
                 _on.append("ninjatrader")
@@ -2081,7 +2162,11 @@ class Handler(BaseHTTPRequestHandler):
             if not ar.get("api_key"):
                 ar["enabled"] = False
             CFG.setdefault("execution", {})["ai_reader"] = dict(ar)
-            note("AI READ  reader %s" % ("ON" if ar.get("enabled") else "off"))
+            EXEC["ai_reader"] = dict(ar)
+            # A fresh key gets tested against Anthropic RIGHT NOW, so the
+            # popup's ✅ means "works", never just "pasted" (8/17).
+            if "ai_api_key" in body:
+                probe_ai_key()
 
         try:
             with open(path, "w", encoding="utf-8") as f:
@@ -2435,6 +2520,17 @@ def main():
     print("  symbols: everything trades - no filters, his rule")
     print("  panic button: make a file called STOP in this folder")
     connect_broker()
+    # Test the AI key against Anthropic and the Topstep key against
+    # TopstepX once per boot — every popup ✅ means "the key answered",
+    # never just "a box is filled" (8/17).
+    try:
+        probe_ai_key()
+    except Exception:                                   # noqa: BLE001
+        pass
+    try:
+        probe_topstep_key()
+    except Exception:                                   # noqa: BLE001
+        pass
     # Keep the book in step with the REAL Webull account: adopt any open position
     # the book doesn't know about (one it never placed, or lost on a restart) so
     # a room's "all out" can actually flatten it. Runs once now and every 20s.

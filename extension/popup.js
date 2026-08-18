@@ -172,6 +172,14 @@ function paintKeys() {
   _okbox("keySaved", has, "Webull connected");
   _okbox("paperKeySaved", !!(modeStatus && modeStatus.paper_keys_in),
          "Webull paper keys saved");
+  // Topstep's green box (his ask, 8/17) — and it tells the TRUTH: the
+  // bridge logs in with the saved key, so "connected" means TopstepX
+  // said yes, "saved" alone means it hasn't answered yet.
+  const _ts = ((modeStatus || {}).futures_brokers || {}).topstep || {};
+  _okbox("topstepKeySaved", !!_ts.keys_in,
+         _ts.verified === true ? "Topstep connected (" + (_ts.username || "") + ")"
+       : _ts.verified === false ? "Topstep key saved — but REFUSED, recheck it"
+       : "Topstep key saved");
   const el = $("keystate");
   if (!el) return;
   el.textContent = (!modeStatus || has) ? ""

@@ -1,5 +1,0 @@
-date,room,caller,symbol,side,direction,contract,qty,avg_in,exits,P&L,P&L %,opened,closed,status,exit_by,account,signal
-2026-08-17,Honeydrip daytrades,Brett,AMD,CALL,,535C 8/21,1,4.80,1@6.00 (+120),120.0,+25.0%,10:26,11:26,closed,room call,live,@Brett (Admin) in AMD 8/21 535C @ 4.8 @everyone
-2026-08-17,MR.TOPHAT,MR.TOPHAT (OPTIONS/FUTURES),SPY,PUT,,776P 8/21,1,3.14,1@2.83 (-31),-31.0,-9.9%,09:30,10:01,stopped,bot stop,live,@everyone TAKING SPY 776P QUICK!
-2026-08-17,Vero 1,Vero,QQQ,PUT,,733P 8/17,2,1.67,1@2.10 (+43); 1@2.66 (+99),142.0,+42.5%,10:03,10:38,closed,bot take-profit,live,QQQ 733P 8/17 1.67 2 CONTRACTS @vero-alerts
-2026-08-17,ZT fut-1,Stormzy,MNQ,,SHORT,futures,1,30222.75,,-55.0,,11:01,11:20,closed,you at Webull,live,Short MNQ @ 30222 stop 30250 @everyone
