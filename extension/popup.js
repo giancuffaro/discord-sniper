@@ -297,19 +297,25 @@ function paintFuturesBrokers() {
     try { chrome.storage.local.set({ fb_toggles: _fbLocal }); } catch (e) {}
   }
   _fbPaintToggles();
-  // Field values come from the bridge, but never stomp a field being typed in.
-  if ($("ninjaAccount") && document.activeElement !== $("ninjaAccount"))
+  // Field values come from the bridge — but ONLY into EMPTY boxes. The old
+  // rule ("don't stomp a field being typed in") had a race his email fell
+  // into (8/17): type the new username, click Save — the click blurs the
+  // field, the 4-second repaint puts the OLD value back, and Save reads
+  // that. "the numbers and @gmail.com get deleted." Never overwrite a box
+  // that has anything in it; a wrong value is cleared by selecting it and
+  // deleting, same as any form.
+  if ($("ninjaAccount") && !$("ninjaAccount").value)
     $("ninjaAccount").value = nt.account || "";
-  if ($("ninjaDir") && document.activeElement !== $("ninjaDir"))
+  if ($("ninjaDir") && !$("ninjaDir").value)
     $("ninjaDir").value = nt.incoming_dir || "";
-  if ($("tvUser") && document.activeElement !== $("tvUser"))
+  if ($("tvUser") && !$("tvUser").value)
     $("tvUser").value = tv.username || "";
   if ($("tvDemo")) $("tvDemo").checked = !!tv.demo;
   if ($("tvPass") && tv.has_password && !$("tvPass").value)
     $("tvPass").placeholder = "•••••• (saved — leave blank to keep)";
-  if ($("tsUser") && document.activeElement !== $("tsUser"))
+  if ($("tsUser") && !$("tsUser").value)
     $("tsUser").value = ts.username || "";
-  if ($("tsUrl") && document.activeElement !== $("tsUrl") && ts.base_url)
+  if ($("tsUrl") && !$("tsUrl").value && ts.base_url)
     $("tsUrl").value = ts.base_url;
   if ($("tsKey") && ts.has_password && !$("tsKey").value)
     $("tsKey").placeholder = "•••••• (saved — leave blank to keep)";
@@ -698,6 +704,14 @@ if ($("saveaikey")) $("saveaikey").onclick = async () => {
 };
 if ($("aioff")) $("aioff").style.display = "none";   // no off switch — always on
 
+/* Round-number pullback — ONE toggle for every channel (his ask, 8/17),
+ * browser-side like the double-check below. background.js reads
+ * rn_pullback_all and stamps entry_mode on every entry it fires. */
+if ($("rnAll")) $("rnAll").onclick = async () => {
+  const s = await getSettings();
+  await patch({ rn_pullback_all: !s.rn_pullback_all });
+};
+
 /* Double-check entries — a browser-side toggle; the key stays on the bridge. */
 async function paintVerify() {
   let on = true;   // ON by default now (8/13); still toggleable off
@@ -1023,21 +1037,11 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
     }
     // ONE button, one click, flips and saves instantly. No dropdown, no
     // confirm, no Save step — his word. Red is reserved for real money.
-    // Second toggle (8/11/26): entry mode. "instant" buys the alert at the
-    // ask; "RN wait" hands it to the bridge's round-number pullback watcher.
-    // Paper-force lifted 8/17 — RN wait spends whatever the room's
-    // TESTING/LIVE switch says, same as instant.
+    // (The per-room "instant/RN wait" pill lived here 8/11-8/17. Replaced by
+    // ONE global Round-number toggle in the Strategies tab — his ask.)
     return '<div class="row" style="margin-bottom:4px">' +
            '<span class="grow" style="font-size:12px">' + chanLabel(id) +
            '</span>' +
-           '<button data-pull="' + id + '" title="Entry mode: instant = buy the ' +
-           'alert right away. RN wait = wait for the stock to touch the next ' +
-           'round number first. Uses the room\'s TESTING/LIVE setting either way." ' +
-           'style="font-size:10px;margin-right:6px;padding:1px 7px;border-radius:9px;' +
-           'cursor:pointer;border:1px solid ' + (pull ? "#60a5fa" : "#3a4254") +
-           ';background:' + (pull ? "#1d3a5f" : "transparent") +
-           ';color:' + (pull ? "#93c5fd" : "#7d8697") + '">' +
-           (pull ? "RN wait" : "instant") + '</button>' +
            '<span style="font-size:11px;letter-spacing:.04em;width:52px;' +
            'text-align:right;color:' + (live ? "#f87171" : "#7d8697") + '">' +
            (live ? "LIVE" : "testing") + '</span>' +
@@ -1095,18 +1099,8 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
       renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
     };
   });
-  box.querySelectorAll("button[data-pull]").forEach(btn => {
-    btn.onclick = async () => {
-      const { settings } = await chrome.storage.local.get("settings");
-      const s = settings || {};
-      s.channel_pullback = s.channel_pullback || {};
-      const id = btn.dataset.pull;
-      if (s.channel_pullback[id]) delete s.channel_pullback[id];
-      else s.channel_pullback[id] = true;
-      await chrome.storage.local.set({ settings: s });
-      renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
-    };
-  });
+  // (the per-room RN-pill click handler is gone with the pill — the ONE
+  // Round-number toggle lives in Strategies now, 8/17)
 }
 
 
@@ -1196,6 +1190,14 @@ async function render() {
   // only switch now. See paintBridgeLive() for the live connected/not-reachable
   // dot that replaces it.
   paintBridgeLive();
+
+  // The ONE Round-number toggle (Strategies tab) — painted every pass.
+  const rnBtn = $("rnAll");
+  if (rnBtn) {
+    const rnOn = !!s.rn_pullback_all;
+    rnBtn.textContent = rnOn ? "ON" : "off";
+    rnBtn.className = "tgl " + (rnOn ? "live" : "safe");
+  }
 
   const held = Object.keys((gs && gs.positions) || {});
   const cap = parseInt(s.guards.max_trades_per_day, 10) || 0;
