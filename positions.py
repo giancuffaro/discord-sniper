@@ -971,16 +971,45 @@ class Book:
             if note:
                 note("ADOPTED  %s x%d from Webull %s (fill %s)"
                      % (sym, qty, "LIVE" if row_live else "paper", fill))
-            # A 1-2 lot WITH a known cost is the bot's own trade that slipped
-            # through a no-fill — his standing rule (+20%/-10%) applies to it
-            # like any other fill. Bigger lots / unknown cost stay unmanaged
-            # (the room's or his to run), exactly as before.
-            if (fill and qty <= 2 and not is_fut):
+            # The old rule bracketed ANY adopted 1-2 lot with a known cost —
+            # which put stops on HIS OWN hand trades too ("why did my own
+            # qqq position have a stop loss?", 8/18). The bracket now arms
+            # ONLY when the book remembers the bot itself touching this
+            # exact contract in the last hour (an entry that slipped through
+            # as a no-fill — the naked-GOOGL case it was built for). A
+            # contract the bot never traded is HIS: visible, closeable on
+            # the room's call, never auto-stopped.
+            _bot_recent = False
+            if fill and qty <= 2 and not is_fut:
+                _cut_h = time.time() - 3600.0
+                with self._lock:
+                    for _r in list(self._pos.values()) + list(self._archive):
+                        if _r.get("adopted"):
+                            continue    # only the bot's own placed orders count
+                        if str(_r.get("symbol") or "").upper() != sym:
+                            continue
+                        if float(_r.get("sent_at") or 0) < _cut_h:
+                            continue
+                        try:
+                            if (_r.get("strike") is not None
+                                    and b.get("strike") is not None
+                                    and abs(float(_r["strike"])
+                                            - float(b["strike"])) > 0.001):
+                                continue
+                        except (TypeError, ValueError):
+                            pass
+                        _bot_recent = True
+                        break
+            if _bot_recent:
                 try:
                     self._arm_stop(key, b.get("side"), b.get("strike"),
                                    b.get("expiry"), qty, float(fill))
                 except Exception:                       # noqa: BLE001
                     pass
+            elif fill and qty <= 2 and not is_fut and note:
+                note("ADOPT    %s x%d looks like YOUR own trade (the bot "
+                     "never touched that contract) — no auto-stop put on it."
+                     % (sym, qty))
         return added
 
     # -- did it fill? ---------------------------------------------------------
