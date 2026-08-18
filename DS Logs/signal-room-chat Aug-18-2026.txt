@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 18:42:48 ET)
+Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 19:12:48 ET)
 
-=== CURRENT STATE (as of 2026-08-18 18:42:48 ET) ===
+=== CURRENT STATE (as of 2026-08-18 19:12:48 ET) ===
   version:        v2.9.6
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -18,7 +18,7 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 18:42:
     [LIVE ] TSLA 2026-09-18 300P x1 paid 3.21 now 3.25 +$4 (+1%)
     [LIVE ] BAC 2026-10-02 66C x1 paid 1.06 now 1.05 -$1 (-1%)
 
-=== RAW MESSAGES THE READER SAW (1158) ===
+=== RAW MESSAGES THE READER SAW (1160) ===
 2020-06-18 19:36:31  [Summit Trading Strategies: 🎉｜welcome #588478902775709696]  TradeLikeGates: TradeLikeGates [$STS], Server Tag: $STS $STS — 6/18/20, 7:36 PM Thursday, June 18, 2020 at 7:36 PM We are OFFICIAL! SCROLL UP FOR MORE INFORMATION ABOUT THE SERVER (edited) Tuesday, November 24, 2020 at 10:39 PM
 2020-12-15 03:17:50  [TradingTheTrend: intro-to-options-trading #787347359385911296]  TradingTheTrend: TradingTheTrend — 12/15/20, 3:17 AM Tuesday, December 15, 2020 at 3:17 AM What is an option? An option is a contract giving the buyer the right to buy or sell an underlying asset at a specific price, on or before a certain date. An option is a security, and constitutes a binding contract with strictly defined terms and properties. Every option contract represents 100 shares. Options are time decaying securities. They are much riskier than trading stock, but offer much higher rewards. The bigger risk/reward is what draws in most traders/investors. Calls You buy calls when you're expecting a stock to be bullish. When you buy a call, you’re buying the right to purchase 100 shares of a particular stock at a predetermined price, which is the “strike price.” To purchase a call, you pay the seller a fee, known as a “premium. Puts You buy puts when you are expecting a stock to be bearish. A put option gives you the right, but not the obligation, to sell a stock at a certain price in the future (exercise). When you purchase a put, you expect the underlying asset to decline in price.. As price declines, your contracts will gain value. Puts lose value as the underlying increases. You are not obligated to "exercise" call or put options, and can simply sell them to gain the premium." (edited) Saturday, December 19, 2020 at 1:23 AM
 2021-08-24 09:47:35  [Summit Trading Strategies: 🧹｜golden-sweeps #687491078823215153]  Spartan.Flows: Spartan.Flows APP — 8/24/21, 9:47 AM Tuesday, August 24, 2021 at 9:47 AM NNOX PUTS Time 09:46 AM Expiration 11/19/21 Strike Price 25 Details 2,500 @ 5.70 Spot 23.44 Type SWEEP Premium $1.4M 1-100 Rank 107 8/24/21, 9:46 AM
@@ -1177,6 +1177,8 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 18:42:
 2026-08-18 18:30:15  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: @everyone if run 150+ ticks let’s see Do not take this as financial advice! || ⏱︎ 18:30:15 EST Do not take this as financial advice! || ⏱︎ 18:30:15 EST
 2026-08-18 18:31:02  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: @everyone Ticker: MNQ LONG VERY SMALL ORDER Entry: 29550 Stoploss: 29525 I am not a financial advisor. For educational purposes only. || ⏱︎ 18:31:02 EST I am not a financial advisor. For educational purposes only. || ⏱︎ 18:31:02 EST
 2026-08-18 18:41:29  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 6:41 PM Tuesday, August 18, 2026 at 6:41 PM @everyone mnq stopped out Do not take this as financial advice! || ⏱︎ 18:41:29 EST
+2026-08-18 19:04:15  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  Unraveller (Admin)🔮: Unraveller (Admin)🔮 See yall at 7 PM EST @everyone https://www.youtube.com/live/dhrmVmDUBik?is=l0gtkubas2lz7QD2 Unraveller (Admin)🔮 ADMINS — 7:04 PM Tuesday, August 18, 2026 at 7:04 PM Live now on youtube @everyone
+2026-08-18 19:07:26  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 7:07 PM Tuesday, August 18, 2026 at 7:07 PM @everyone 15 ticks Do not take this as financial advice! || ⏱︎ 19:07:26 EST
 
 === WHAT THE BOT DID (400) ===
 2026-08-18 09:37:09  <update>  PLTR · Unraveller — no fill (nobody sold at 3.35 within 90s). You are NOT in this one.
