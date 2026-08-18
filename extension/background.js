@@ -22,6 +22,8 @@ const LOG_MAX = 400;   // a full trading day, not just the last hour
  * restart. Live path only; history/capture is untouched. */
 const RECENT_MSGS = new Map();
 const MSG_TTL_MS = 5 * 60 * 1000;
+// One entry in flight per CONTRACT — see the AAPL 315C double-buy (8/18).
+const OPEN_INFLIGHT = new Map();
 function seenMessage(msg) {
   const key = String(msg.mid ||
     (msg.channelId + "|" + msg.postedAt + "|" + (msg.author || "") + "|" + msg.text));
@@ -180,6 +182,8 @@ async function cfg() {
     // only ON/OFF there is. See guards.js guardCheck() for why.
     capture: true,
     bridge_url: BRIDGE_DEFAULT,
+    // ONE round-number switch for every channel (8/17) — Strategies tab.
+    rn_pullback_all: false,
     author_names: [],
     channel_ids: [],   // merged with the graduated rooms below
     extra_veto_words: [],
@@ -1175,8 +1179,6 @@ async function autoExportForLearning() {
     let ver = "?"; try { ver = (chrome.runtime.getManifest() || {}).version || "?"; } catch (e) {}
     const fb = (mode && mode.futures_brokers) || {};
     const strat = (mode && mode.strategy) || {};
-    const pullRooms = Object.keys((c.channel_pullback) || {})
-      .map(id => CHAN_NAMES[id] || ROOM_LABELS[id] || id);
     const liveRooms = Object.keys((c.channel_live) || {})
       .map(id => roomName(id) || id);
     const posLines = ((posData && posData.positions) || []).map(p => {
@@ -1210,7 +1212,7 @@ async function autoExportForLearning() {
       "  AI reader:      " + onoff(mode && mode.ai_enabled) + "\n" +
       "  voice key:      " + onoff(dg) + "\n" +
       "  LIVE rooms:     " + (liveRooms.length ? liveRooms.join(", ") : "none (all testing)") + "\n" +
-      "  RN-pullback:    " + (pullRooms.length ? pullRooms.join(", ") : "none (all instant)") + "\n" +
+      "  RN-pullback:    " + (c.rn_pullback_all ? "ON — all channels wait for the round number" : "off (all instant)") + "\n" +
       "  open positions (" + ((posData && posData.positions) || []).length + "):\n" +
       (posLines.length ? posLines.join("\n") : "    (none)") + "\n\n";
   } catch (e) { state = ""; }
@@ -1601,11 +1603,12 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 
     const roomLive = !!((c.channel_live || {})[String(msg.channelId || "")]);
     sig.live = roomLive;
-    // His second entry mode (8/11/26): rooms flipped to "RN wait" in the popup
-    // don't buy the alert instantly — the bridge waits for the STOCK to touch
-    // the next whole dollar first. Paper-only on the bridge side by design.
-    sig.entry_mode = ((c.channel_pullback || {})[String(msg.channelId || "")])
-      ? "pullback" : null;
+    // Round-number pullback is ONE global switch now (his ask, 8/17: "1
+    // toggle for all channels") — Strategies tab. ON = every entry waits
+    // for the stock to touch the round number (managed symbols only; the
+    // bridge routes anything else instant on its own). Spends whatever the
+    // room's TESTING/LIVE switch says.
+    sig.entry_mode = c.rn_pullback_all ? "pullback" : null;
     sig.channelId = String(msg.channelId || "");
     sig.room = ROOM_LABELS[String(msg.channelId || "")] ||
                String(msg.channelId || "");
@@ -1779,6 +1782,26 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       : (testing && (sig.action === "OPEN" || sig.action === "ADD")
         ? (sig.kind === "future" ? 3 : (sig.qty || 5))
         : clampQty(sig.qty || 1, c, sig.action));
+    // IN-FLIGHT CONTRACT LOCK (8/18, the AAPL 315C double-buy): the scribe's
+    // relay and the admin's own post land ~1s apart, and both passed the
+    // guards before either had recorded a position — two real buys at 1.10
+    // and 1.11. While an OPEN for a contract is mid-flight (and 15s after),
+    // a second OPEN for the SAME contract is the echo, whatever its price.
+    if (sig.action === "OPEN") {
+      const _ck = [String(sig.symbol || "").toUpperCase(), sig.side,
+                   sig.strike, sig.expiry].join("|");
+      const _prev = OPEN_INFLIGHT.get(_ck);
+      if (_prev && (Date.now() - _prev) < 15000) {
+        await addLog({ kind: "skipped",
+          why: "that exact contract's entry is already in flight from " +
+               "another relay of the same call — not buying it twice",
+          what: human(sig), text: msg.text, author: msg.author });
+        reply({ ok: true });
+        return;
+      }
+      OPEN_INFLIGHT.set(_ck, Date.now());
+      if (OPEN_INFLIGHT.size > 200) OPEN_INFLIGHT.clear();
+    }
     // Recorded before the order goes out, so a crash mid-send can't double-fire.
     await guardRecord(sig, c, msg.author, msg.test);
     inFlight++;
