@@ -888,6 +888,23 @@ def parse(text, author="", channel="", cfg=None):
         return s
     low = (s.clean or "").lower()
     is_option = s.side in ("CALLS", "PUTS") or s.strike is not None
+    # A PROGRESS UPDATE wearing an entry's clothes (8/18): "KO 08/21 $89
+    # Call @$0.62, up more than 90%!, my order filled little earlier for
+    # +100%!, will look to close the remaining later" — the contract line
+    # parses like a fresh call, but the rest of the sentence is a victory
+    # lap about a trade ALREADY made. A real entry never brags about its
+    # own gain in the same breath. Mirrors parser.js.
+    if s.action == "OPEN" and re.search(
+            r"\bup\s+(?:more\s+than\s+)?\d{1,4}\s*%"
+            r"|\bfilled\s+(?:a\s+)?(?:little\s+|bit\s+)?earlier"
+            r"|\bwill\s+look\s+to\s+close"
+            r"|\bclos(?:e|ed|ing)\s+the\s+remaining", low):
+        s.fire = False
+        s.action = None
+        s.why = ("that's a progress update on an EARLIER call (it brags "
+                 "about the gain / mentions closing the rest) — not a fresh "
+                 "entry, so nothing was sent")
+        return s
     # UNDERLYING hard stop on an options entry (his INTC alert, 8/18):
     # "stop loss under 97 hard stop" means INTC THE STOCK under $97 — not
     # the premium. The number rides in their_stop; the bridge's stock

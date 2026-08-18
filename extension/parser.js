@@ -565,6 +565,22 @@ function parseSignal(text, cfg) {
   if (s.action !== "OPEN" || s.kind === "future") return s;
   const low = (s.clean || "").toLowerCase();
   const isOption = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
+  // A PROGRESS UPDATE wearing an entry's clothes (8/18): "KO ... @$0.62,
+  // up more than 90%!, my order filled little earlier, will look to close
+  // the remaining" — parses like a fresh call, but it's a victory lap
+  // about a trade ALREADY made. A real entry never brags about its own
+  // gain in the same breath. Mirrors signals.py.
+  if (s.action === "OPEN" && (
+      /\bup\s+(?:more\s+than\s+)?\d{1,4}\s*%/.test(low)
+      || /\bfilled\s+(?:a\s+)?(?:little\s+|bit\s+)?earlier/.test(low)
+      || /\bwill\s+look\s+to\s+close/.test(low)
+      || /\bclos(?:e|ed|ing)\s+the\s+remaining/.test(low))) {
+    s.fire = false; s.action = null;
+    s.why = "that's a progress update on an EARLIER call (it brags about " +
+            "the gain / mentions closing the rest) — not a fresh entry, so " +
+            "nothing was sent";
+    return s;
+  }
   // UNDERLYING hard stop on an options entry (his INTC alert, 8/18):
   // "stop loss under 97 hard stop" = INTC THE STOCK under $97, not the
   // premium. Rides in their_stop; the bridge's stock watcher closes the
