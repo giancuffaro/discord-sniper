@@ -1259,6 +1259,22 @@ class WebullOptions:
         # since. Entries are marketable (priced at the ask) so they fill the
         # moment they go out instead of resting on the bid.
 
+        # SPREAD GUARD (8/18, the VXX lesson): bid 0.17 / ask ~1.50 on an
+        # illiquid strike — a resting bid there only fills when the price is
+        # collapsing through it, and the moment it fills you're marked -30%
+        # against the bid. A market that wide isn't a price, it's a trap:
+        # refuse the ENTRY loudly. Exits are never touched by this — getting
+        # out is allowed at any spread.
+        if ask and bid and float(ask) > 0 and float(bid) > 0:
+            _a, _b = float(ask), float(bid)
+            _mid = (_a + _b) / 2.0
+            if _mid > 0 and (_a - _b) / _mid > 0.35:
+                raise Refused(
+                    "the spread on %s is %.2f/%.2f — %.0f%% of the price. A "
+                    "fill inside that is an instant paper loss, so nothing "
+                    "was sent. (Their call may be fine; this contract just "
+                    "isn't tradeable at a sane price right now.)"
+                    % (occ, _b, _a, 100.0 * (_a - _b) / _mid))
         blind = False
         if ask and ask > 0:
             if price_mode == "ask":

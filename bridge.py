@@ -1026,6 +1026,63 @@ def _pullback_close(order, why):
         "raw": "pullback exit: " + str(why), "source": "pullback"})
 
 
+def _underlying_stop_watch(order):
+    """UNDERLYING hard stop for an OPTIONS position (his INTC alert, 8/18):
+    'BTO INTC 115C @ 0.77, stop loss under 97 hard stop' — the 97 is INTC
+    THE STOCK, not the premium. This watches the stock and closes the
+    option the moment it crosses the level: calls close at/below the stop,
+    puts at/above. Stands down by itself when the position is gone (their
+    exit, the premium bracket, or you at Webull got there first)."""
+    sym = str(order.get("symbol") or "").upper()
+    stop = float(order.get("their_stop") or 0)
+    side = str(order.get("side") or "").upper()
+    if not (sym and stop > 0):
+        return
+    is_call = side.startswith("C")
+    note("UNDER-STOP %s: watching the STOCK — the option closes if %s "
+         "prints %s %.2f (their hard stop)"
+         % (sym, sym, "at/under" if is_call else "at/over", stop))
+    misses = 0
+    while True:
+        time.sleep(2.0)
+        try:
+            if BOOK is None or not BOOK.holding(find_key(order)):
+                return          # closed some other way — stand down quietly
+        except Exception:                               # noqa: BLE001
+            return
+        try:
+            px = float(_pullback_quote(sym))
+            misses = 0
+        except Exception as e:                          # noqa: BLE001
+            misses += 1
+            if misses >= 30:    # ~a minute of dead quotes
+                note("UNDER-STOP %s: stock quotes stopped answering (%s) — "
+                     "watcher standing down; the premium bracket still "
+                     "guards the option." % (sym, str(e)[:60]))
+                return
+            continue
+        hit = (px <= stop) if is_call else (px >= stop)
+        if hit:
+            note("UNDER-STOP %s: the stock printed %.2f — through their "
+                 "%.2f hard stop. Closing the option now."
+                 % (sym, px, stop))
+            try:
+                _place_impl({"action": "CLOSE", "symbol": sym,
+                             "side": order.get("side"),
+                             "strike": order.get("strike"),
+                             "expiry": order.get("expiry"),
+                             "trader": order.get("trader"),
+                             "kind": order.get("kind") or "option",
+                             "live": bool(order.get("live")),
+                             "raw": "underlying hard stop %.2f hit "
+                                    "(stock at %.2f)" % (stop, px),
+                             "source": "under-stop"})
+            except Exception as e:                      # noqa: BLE001
+                note("UNDER-STOP %s: the close FAILED (%s) — go close it "
+                     "in Webull." % (sym, str(e)[:80]))
+            return
+
+
 def pullback_manager():
     global _PULLBACK
     if _PULLBACK is None:
@@ -1063,6 +1120,18 @@ def place(order):
             _RECENT_COIDS[coid] = (time.time(), result)
         except Exception:                               # noqa: BLE001
             pass
+    # UNDERLYING hard stop (his INTC alert, 8/18): an accepted OPTIONS entry
+    # that carried "stop loss under $X" gets a stock watcher — see
+    # _underlying_stop_watch. Futures keep their own broker-side levels.
+    try:
+        ok0 = bool(result[0]) if isinstance(result, tuple) else False
+        if (ok0 and order.get("action") == "OPEN"
+                and (order.get("kind") or "option") != "future"
+                and order.get("their_stop")):
+            threading.Thread(target=_underlying_stop_watch,
+                             args=(dict(order),), daemon=True).start()
+    except Exception:                                   # noqa: BLE001
+        pass
     return result
 
 
@@ -1081,7 +1150,8 @@ def _place_impl(order):
     if (action == "OPEN" and str(order.get("entry_mode") or "") == "pullback"
             and order.get("kind") not in ("future", "equity")
             and sym in _pullback.MANAGED):
-        order["live"] = False          # paper-only until proven
+        # live flag rides through untouched (8/17, his call): RN wait spends
+        # whatever the room's TESTING/LIVE toggle says, same as instant.
         okp, msgp = pullback_manager().start(order)
         note(("PULLBACK  " if okp else "PULLBACK refused  ") + msgp)
         return okp, msgp

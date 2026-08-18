@@ -842,7 +842,14 @@ class Book:
                 _cut = time.time() - _cool
                 _recent = False
                 with self._lock:
-                    for _q in self._archive:
+                    # BOTH places a finished trade can live: the archive, AND
+                    # still under its key in _pos (sweep only files it away
+                    # later). Checking only the archive is how VXX looped on
+                    # 8/18: stopped out -> still in _pos as STOPPED -> feed
+                    # lag re-showed it -> re-adopted -> stopped again, every
+                    # 20 seconds. A symbol closed in the last 2 minutes is
+                    # NOT re-adopted, wherever its record sits.
+                    for _q in list(self._pos.values()) + list(self._archive):
                         if str(_q.get("symbol") or "").upper() != sym:
                             continue
                         if float(_q.get("closed_at") or 0) >= _cut:
@@ -851,6 +858,25 @@ class Book:
                 if _recent:
                     continue
             is_fut = b.get("kind") == "future"
+            # Cash-settled index options (SPXW, XSP, NDX...) can't be SOLD
+            # through this account's API — Webull refuses every sell
+            # (INDEX_NAKED 8/17, MARGIN_TO_CASH 8/18, live both days), so an
+            # adopted one is a position the bot can see but never exit:
+            # endless stop-warn spam and phantom loss records. His index
+            # trades are HIS — left alone entirely.
+            if not is_fut and sym in ("SPX", "SPXW", "XSP", "NDX", "NDXP",
+                                      "RUT", "RUTW", "VIX", "VIXW", "MRUT",
+                                      "XND"):
+                seen = getattr(self, "_adopt_skips", None)
+                if seen is None:
+                    seen = self._adopt_skips = set()
+                if sym not in seen:
+                    seen.add(sym)
+                    if note:
+                        note("ADOPT    left %s alone — a cash-settled index "
+                             "option this account's API can't sell. It's "
+                             "yours to manage at Webull." % sym)
+                continue
             # HIS OWN hand trades share this account: 5-30 lot scalps next to
             # the bot's 1-2 lot calls. Adopting a 30-lot means a room's "all
             # out of SPY" can sell HIS position out from under him — so
@@ -1487,6 +1513,20 @@ class Book:
                 self.finish(key, STOPPED, "stopped out at %.2f" % float(bid),
                             price=float(bid))
             except Exception as e:                      # noqa: BLE001
+                # FIRST: is there anything left to sell? (8/18) The resting
+                # stop at Webull often fills a beat before the watchdog
+                # fires, and every "failure" after that is the watchdog
+                # racing a sale that already happened. If the broker shows
+                # nothing left, the trade is DONE — say so once, quietly,
+                # and stand down instead of counting phantom failures.
+                if self._gone_at_broker(wb, sym, side, strike):
+                    self._event(key, "stopped",
+                                "%s — the resting stop at Webull had already "
+                                "sold it; the watchdog stands down. Trade "
+                                "closed." % sym)
+                    self.finish(key, STOPPED,
+                                "the resting stop at Webull sold it first")
+                    return
                 # Count it. The same rejection every 20s all morning (8/12:
                 # LYFT 15 times, META 8) is noise that hides the one thing he
                 # has to do, and re-adoption keeps feeding the loop. After
@@ -1516,6 +1556,36 @@ class Book:
                                 "Retrying." % (sym, str(e)[:110]))
                 self.finish(key, FAILED, "stop failed to sell")
             return
+
+    def _gone_at_broker(self, wb, sym, side, strike):
+        """Does the broker still show this contract at all? The 8/18 morning
+        in one question: MSFT/NVDA/VXX 'stop FAILED to sell' walls were the
+        watchdog racing its own RESTING stop — the stop had already sold at
+        Webull, so every follow-up sell 417'd against a position that wasn't
+        there. A False positive here is dangerous (we'd stop guarding a real
+        position), so ANY doubt — no client, query error — counts as still
+        held and the failure keeps being treated as real."""
+        if wb is None:
+            return False
+        try:
+            side_word = ("CALLS" if str(side or "").upper().startswith("C")
+                         else "PUTS")
+            for p in (wb.positions() or []):
+                if str(p.get("symbol") or "").upper() != str(sym or "").upper():
+                    continue
+                if p.get("side") and p.get("side") != side_word:
+                    continue
+                try:
+                    if (p.get("strike") is not None and strike is not None
+                            and abs(float(p["strike"]) - float(strike)) > 0.001):
+                        continue
+                except (TypeError, ValueError):
+                    pass
+                if int(p.get("qty") or 0) > 0:
+                    return False    # still holding — the failure is real
+            return True             # nothing left — something already sold it
+        except Exception:                               # noqa: BLE001
+            return False            # can't tell -> assume held, keep trying
 
     def _sell_retry(self, wb, key, sym, side, strike, expiry, qty, **kw):
         """Sell, and if Webull refuses because something is still resting
@@ -1661,6 +1731,19 @@ class Book:
                         "take-profit sold at %.2f (+%.0f%%)" % (float(bid), gain),
                         price=float(bid))
         except Exception as e:                              # noqa: BLE001
+            # FIRST: anything left to sell? (8/18) — same race as the stop:
+            # a resting order can fill a beat ahead of the watchdog, and
+            # every "failure" after that is against a position that's gone.
+            if self._gone_at_broker(wb, sym, side, strike):
+                self._event(key, "update",
+                            "%s — already sold at Webull before the "
+                            "take-profit got there (a resting order beat "
+                            "it). Trade closed." % sym)
+                self.finish(key, CLOSED,
+                            "a resting order at Webull sold it first "
+                            "(+%.0f%% at the time)" % gain,
+                            price=float(bid))
+                return True
             # Same breaker as the stop: three refusals on one contract and we
             # stop re-arming it, instead of re-adopting and re-failing every
             # 20s while a +30% winner sits there (8/12 QQQ).

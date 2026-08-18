@@ -207,13 +207,26 @@ rem  - so restarting the bridge "refreshed" every single tab. Now:
 rem  Chrome already running -> leave it completely alone (the
 rem  extension's dupe-closer still tidies any room opened twice).
 rem  Only a cold start - no Chrome at all - opens the rooms fresh.
-tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
+rem  "Is Chrome open?" now means "does Chrome have an actual WINDOW?" (8/18).
+rem  On a fresh PC boot Chrome often starts a BACKGROUND process with no
+rem  windows at all, which fooled the old tasklist check into opening
+rem  nothing ("i was opening after turning on the pc, chrome shouldnt of
+rem  been opened"). Visible windows = his tabs, leave them alone. Background
+rem  only = kill it quietly and cold-start, so the performance flags apply.
+powershell -NoProfile -Command "$w = Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle }; if ($w) { exit 0 } else { exit 1 }"
 if not errorlevel 1 (
-  echo   [5/5] Chrome is already open - leaving every tab exactly as
-  echo         it is. Open any missing rooms yourself.
+  echo   [5/5] Chrome is already open with windows - leaving every tab
+  echo         exactly as it is. Open any missing rooms yourself.
   goto chromedone
 )
-echo   [5/5] Chrome isn't running - opening all the rooms fresh...
+tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
+if not errorlevel 1 (
+  echo   [5/5] Chrome was only running in the BACKGROUND - no windows,
+  echo         no tabs. Closing that ghost so the rooms open fresh...
+  taskkill /F /IM chrome.exe >nul 2>&1
+  timeout /t 2 /nobreak >nul
+)
+echo   [5/5] Opening all the rooms fresh...
 set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"

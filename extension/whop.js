@@ -68,7 +68,38 @@ function clean(s) {
   return String(s || "").replace(/\s+/g, " ").trim();
 }
 
-function send(text, author, historyExtra) {
+/* The post's own age, read from its header lines: "34s", "1m", "9h", "2d",
+ * "Jul 23". Stamping Date.now() on everything is how a JULY 23rd VXX post
+ * traded as fresh on AUGUST 18th — the reader must report the REAL time and
+ * let guardCheck's staleness rule ("too stale to chase") do the refusing,
+ * loudly, in the log. No age found = assume fresh; the 20s guard still rules. */
+function ageToTs(lines) {
+  const RE_REL = /^·?\s*(just now|now|(\d+)\s*([smhd]))$/i;
+  const RE_MON = /^·?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})$/i;
+  for (const l of (lines || []).slice(0, 6)) {
+    let m = RE_REL.exec(l);
+    if (m) {
+      if (!m[2]) return Date.now();
+      const mult = { s: 1e3, m: 6e4, h: 36e5, d: 864e5 }[m[3].toLowerCase()];
+      return Date.now() - parseInt(m[2], 10) * (mult || 6e4);
+    }
+    m = RE_MON.exec(l);
+    if (m) {
+      const mon = ["jan", "feb", "mar", "apr", "may", "jun",
+                   "jul", "aug", "sep", "oct", "nov", "dec"]
+                  .indexOf(m[1].toLowerCase());
+      const d = new Date();
+      d.setMonth(mon, parseInt(m[2], 10));
+      d.setHours(12, 0, 0, 0);
+      if (d.getTime() > Date.now()) d.setFullYear(d.getFullYear() - 1);
+      return d.getTime();
+    }
+  }
+  return Date.now();
+}
+
+function send(text, author, at) {
+  const ts = at || Date.now();
   chrome.runtime.sendMessage({
     type: "MESSAGE",
     platform: "whop",
@@ -76,12 +107,11 @@ function send(text, author, historyExtra) {
     author: author || "?",
     channelId: roomId(),
     channelName: roomName(),
-    postedAt: Date.now(),
-    // The first 15 seconds after a (re)load are the page painting what
-    // already happened — feed posts only carry relative ages ("9h"), so
-    // everything in the first sweep is history: captured, studied, never
-    // traded. After the grace, a newly appearing post is genuinely new.
-    history: !!historyExtra || (Date.now() - STARTED) < 15000,
+    postedAt: ts,
+    // History = the post's own age says it's old, OR the first 15 seconds
+    // after a (re)load (the page painting what already happened). History
+    // is captured, studied, never traded.
+    history: ts < STARTED - 5000 || (Date.now() - STARTED) < 15000,
     url: location.href
   }).catch(() => { /* worker asleep; the next send wakes it */ });
 }
@@ -105,14 +135,16 @@ function readFeedPosts() {
     } catch (e) { text = ""; }
     if (!text) continue;
     let author = "?";
+    let at = Date.now();
     try {
       const lines = String(c.innerText || "").split("\n")
         .map(s => s.trim()).filter(Boolean);
       author = lines[0] || "?";
+      at = ageToTs(lines);          // the post's REAL age (the VXX lesson)
     } catch (e) {}
     SEEN.add(id);
     if (SEEN.size > 6000) SEEN.clear();
-    send(text, author, false);
+    send(text, author, at);
   }
 }
 
@@ -141,7 +173,7 @@ function readChatMessages() {
       if (SEEN.has(key)) continue;
       SEEN.add(key);
       if (SEEN.size > 6000) SEEN.clear();
-      send(text, lastAuthor, false);
+      send(text, lastAuthor, Date.now());   // live chat = present tense
     } catch (e) { /* one bad row never stops the sweep */ }
   }
 }

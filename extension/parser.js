@@ -326,6 +326,10 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
 
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_HDR, "");
+  // ANSI color codes in Namrood's alerts ("[1;37;44mMETA") glued their
+  // trailing "m" onto the ticker — META became MMETA (live, 8/17-18).
+  // Strip them, with or without the ESC byte. Mirrors signals.py.
+  t = t.replace(/\x1b?\[[0-9;]{1,16}m/g, " ");
   t = t.replace(RE_PING, " ").replace(RE_CALLER, " ").replace(RE_EMOJI, " ");
   // Numbered paste lines ("14. Loading 205 calls..."). The space after the dot
   // is required: without it "206.5 need to clear now" becomes "5 need to clear
@@ -561,6 +565,14 @@ function parseSignal(text, cfg) {
   if (s.action !== "OPEN" || s.kind === "future") return s;
   const low = (s.clean || "").toLowerCase();
   const isOption = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
+  // UNDERLYING hard stop on an options entry (his INTC alert, 8/18):
+  // "stop loss under 97 hard stop" = INTC THE STOCK under $97, not the
+  // premium. Rides in their_stop; the bridge's stock watcher closes the
+  // option when the stock crosses it. Mirrors signals.py.
+  if (isOption && (s.their_stop === null || s.their_stop === undefined)) {
+    const mu = /\b(?:hard\s+)?(?:st[o0]p(?:\s*loss)?|sl)\s+(?:is\s+)?(?:under|below|above|over)\s+\$?(\d[\d,]*(?:\.\d+)?)\b/.exec(low);
+    if (mu) s.their_stop = parseFloat(mu[1].replace(/,/g, ""));
+  }
   if (isOption && /\b(sell|selling|sold|sto)\b/.test(low)
       && !/\b(bto|buy|buying|bought)\b/.test(low)) {
     s.fire = false; s.action = null;

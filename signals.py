@@ -597,6 +597,11 @@ class Signal:
 def clean_text(raw):
     """Strip the relay wrapper so the parser sees the call, not the plumbing."""
     t = RE_HDR.sub("", (raw or "").strip())
+    # ANSI color codes ride along in Namrood's alerts ("[1;37;44mMETA") and
+    # the trailing "m" glued onto the ticker — META became MMETA, SPY MSPY,
+    # SPCX MSPCX (seen live 8/17-18). Strip them, with or without the ESC
+    # byte the relay may have eaten. Mirrors parser.js.
+    t = re.sub(r"\x1b?\[[0-9;]{1,16}m", " ", t)
     t = RE_PING.sub(" ", t)
     t = RE_CALLER.sub(" ", t)
     t = RE_EMOJI.sub(" ", t)
@@ -883,6 +888,19 @@ def parse(text, author="", channel="", cfg=None):
         return s
     low = (s.clean or "").lower()
     is_option = s.side in ("CALLS", "PUTS") or s.strike is not None
+    # UNDERLYING hard stop on an options entry (his INTC alert, 8/18):
+    # "stop loss under 97 hard stop" means INTC THE STOCK under $97 — not
+    # the premium. The number rides in their_stop; the bridge's stock
+    # watcher closes the option when the stock crosses it. Mirrors parser.js.
+    if is_option and s.their_stop is None:
+        _mu = re.search(r"\b(?:hard\s+)?(?:st[o0]p(?:\s*loss)?|sl)\s+(?:is\s+)?"
+                        r"(?:under|below|above|over)\s+\$?"
+                        r"(\d[\d,]*(?:\.\d+)?)\b", low)
+        if _mu:
+            try:
+                s.their_stop = float(_mu.group(1).replace(",", ""))
+            except ValueError:
+                pass
     if is_option and re.search(r"\b(sell|selling|sold|sto)\b", low) \
             and not re.search(r"\b(bto|buy|buying|bought)\b", low):
         s.fire = False
