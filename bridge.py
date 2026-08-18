@@ -478,6 +478,12 @@ def load_state():
     except (OSError, ValueError):
         return
     BOOK.restore_state(d.get("state") or {}, d.get("date") == today_str())
+    # Day-old adopted futures the broker can't confirm are ghosts — his
+    # "why is it holding MESU6, MNQU6?" (8/17). Cleared once per boot.
+    try:
+        BOOK.purge_stale_futures(note)
+    except Exception:                                   # noqa: BLE001
+        pass
 
 
 def save_day():
@@ -528,30 +534,45 @@ def save_day():
         with open(os.path.join(HERE, "journal.csv"), "w", newline="",
                   encoding="utf-8-sig") as f:
             w = csv.writer(f)
-            w.writerow(["date", "room", "caller", "symbol", "contract", "qty",
-                        "avg_in", "exits", "P&L", "opened", "closed", "status",
-                        "closed_by_you", "account"])
+            # Built for filtering (his ask, 8/17): options fill "side"
+            # (CALL/PUT), futures fill "direction" (LONG/SHORT), P&L also as
+            # a percent, "exit_by" says what pulled the trigger (room call /
+            # bot stop / bot take-profit / you at Webull), and "signal" is
+            # the alert word for word.
+            w.writerow(["date", "room", "caller", "symbol", "side", "direction",
+                        "contract", "qty", "avg_in", "exits", "P&L", "P&L %",
+                        "opened", "closed", "status", "exit_by",
+                        "account", "signal"])
             for date, r in allrows:
+                is_call = str(r.get("side") or "").upper().startswith("C")
                 ct = ""
+                side_col = ""
+                direction = ""
                 if r.get("strike") is not None:
-                    ct = "%s%s %s" % (
-                        r.get("strike"),
-                        "C" if str(r.get("side") or "").upper().startswith("C")
-                        else "P", r.get("expiry") or "")
+                    ct = "%s%s %s" % (r.get("strike"), "C" if is_call else "P",
+                                       r.get("expiry") or "")
+                    side_col = "CALL" if is_call else "PUT"
                 elif r.get("kind") == "future":
                     ct = "futures"
+                    direction = ("SHORT" if int(r.get("direction") or 1) < 0
+                                 else "LONG")
                 ex = "; ".join(
                     "%s@%s%s" % (e.get("qty"), e.get("price"),
                                  "" if e.get("pl") is None
                                  else " (%+.0f)" % e["pl"])
                     for e in (r.get("exits") or []))
+                pl_pct = r.get("pl_pct")
                 w.writerow([date, r.get("room") or "", r.get("who") or "?",
-                            r.get("symbol") or "", ct, r.get("qty") or 0,
+                            r.get("symbol") or "", side_col, direction, ct,
+                            r.get("qty") or 0,
                             r.get("avg") if r.get("avg") is not None else "",
-                            ex, r.get("pl"), _hhmm(r.get("opened")),
-                            _hhmm(r.get("closed")), r.get("state") or "",
-                            "YES" if r.get("manual") else "",
-                            "live" if r.get("live") else "paper"])
+                            ex, r.get("pl"),
+                            ("%+.1f%%" % pl_pct) if pl_pct is not None else "",
+                            _hhmm(r.get("opened")), _hhmm(r.get("closed")),
+                            r.get("state") or "",
+                            r.get("exit_by") or "",
+                            "live" if r.get("live") else "paper",
+                            r.get("raw") or ""])
     except Exception:                                   # noqa: BLE001
         pass    # the journal must never take down the trading path
 
@@ -887,8 +908,9 @@ _RECENT_COIDS = {}          # coid -> (timestamp, (ok, msg)) — retry dedup
 # --- round-number pullback (HIS strategy, 8/11/26) ---------------------------
 # Two entry modes now, chosen PER ROOM in the popup: "instant" (the normal
 # at-the-ask fill) and "pullback" (wait for the stock to touch the next whole
-# dollar, then buy). A pullback order is PAPER no matter what the room's live
-# toggle says — his rule: off real money until he's watched it work.
+# dollar, then buy). The paper-force is LIFTED (his call, 8/17): a pullback
+# entry now spends whatever the room's own TESTING/LIVE toggle says, exactly
+# like an instant entry — RN wait on a LIVE room is real money.
 _PULLBACK = None
 
 
@@ -911,7 +933,13 @@ def _pullback_quote(sym):
 def _pullback_enter(order):
     o = dict(order)
     o.pop("entry_mode", None)     # so it can't loop back into the watcher
-    o["live"] = False             # paper-only until proven, no exceptions
+    # live flag carries through from the room's own toggle now (8/17) —
+    # the paper-force ("live"=False) is gone, his call.
+    # At the touch, CROSS THE ASK (his call, 8/17): "change it to the ask
+    # just in case — i would do market order but webull doesnt let you."
+    # Waiting for the pullback already earned the discount; when the level
+    # prints he wants the fill, not a resting bid that watches the bounce.
+    o["price_mode"] = "ask"
     return _place_impl(o)
 
 
@@ -931,7 +959,10 @@ def pullback_manager():
         _PULLBACK = _pullback.Pullback(
             _pullback_quote, _pullback_enter, _pullback_close, note,
             timeout_seconds=float(pcfg.get("timeout_seconds", 300)),
-            poll_seconds=float(pcfg.get("poll_seconds", 2)))
+            poll_seconds=float(pcfg.get("poll_seconds", 2)),
+            # Entry wait polls every second (his ask, 8/17) — the touch is
+            # the whole game there. Management keeps the calmer 2s above.
+            entry_poll_seconds=float(pcfg.get("entry_poll_seconds", 1)))
     return _PULLBACK
 
 
@@ -1170,6 +1201,14 @@ def _place_impl(order):
                         "username": ts.get("username", ""),
                         "password": ts.get("api_key", ""),
                         "extra": ts.get("base_url") or "https://api.topstepx.com",
+                        # The account-safety knobs (8/17): start_balance arms
+                        # the consistency lock (put the account size there,
+                        # e.g. 50000), daily_loss_stop is his own tighter
+                        # daily stop, consistency_pct defaults to Topstep's
+                        # 50% (set 0.40 on the stricter payout path).
+                        "start_balance": ts.get("start_balance"),
+                        "daily_loss_stop": ts.get("daily_loss_stop"),
+                        "consistency_pct": ts.get("consistency_pct"),
                         "enabled": True})
                 # Any hand-added prop accounts still ride along when armed.
                 armed_props += [p for p in (CFG.get("props") or [])
@@ -1227,7 +1266,11 @@ def _place_impl(order):
             if action in ("OPEN", "ADD"):
                 ticket = client.buy(order["symbol"], order.get("side"),
                                     order.get("strike"), order.get("expiry"), qty,
-                                    their_price=order.get("limit"))
+                                    their_price=order.get("limit"),
+                                    # "ask" only on pullback entries (8/17):
+                                    # the discount was earned waiting for the
+                                    # touch — at the trigger he wants IN.
+                                    price_mode=order.get("price_mode"))
                 ticket["live"] = bool(live_order)   # real money?
                 ticket["paper"] = bool(paper)       # or Webull's sim engine
                 # "ORDER IN", not "BOUGHT". Webull has accepted a resting bid;
@@ -1483,8 +1526,9 @@ class Handler(BaseHTTPRequestHandler):
                 "paper_warning": getattr(WB, "paper_warning", "") if WB is not None else "",
                 "paper_keys_in": bool((EXEC.get("webull") or {}).get("paper_app_key")),
                 # AI reader on/off (never returns the key itself).
-                "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("enabled")
-                                   and (EXEC.get("ai_reader") or {}).get("api_key")),
+                # Always on when keyed (his call, 8/17) — mirrors
+                # ai_reader.available(): the enabled flag is ignored.
+                "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key")),
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}

@@ -117,10 +117,12 @@ async function guardCheck(sig, ctx, cfg) {
   const now = Date.now();
   const st = await guardState();
 
-  if (cfg.stopped || cfg.armed === false)
-    return { allowed: false,
-             reason: "the bot is switched OFF — turn it ON in the popup to trade" };
-
+  // No manual ON/OFF any more (his ask, 8/17): a room tab being open in the
+  // browser IS the switch — content.js only reads while that tab exists, and
+  // the old toggle was a second, independent switch that could be left OFF
+  // by accident (8/17: a self-update reload waited for it to be OFF, then
+  // nothing ever turned it back ON — 90 minutes of every room silently
+  // skipped). One less state to get stuck in.
   const chans = (cfg.channel_ids || []).map(String).filter(Boolean);
   if (chans.length && !chans.includes(String(ctx.channelId)))
     return { allowed: false, reason: "that message wasn't in a channel you're listening to" };
@@ -571,6 +573,7 @@ async function guardRecord(sig, cfg, author, isTest) {
                         // would leave the real one open; this prevents that.
                         channelId: sig.channelId || "",
                         live: !!sig.live, kind: sig.kind || "",
+                        swing: !!sig.swing,   // display only (8/17)
                         pending: !assumeFilled };
     // A3 - remember this caller's contract so a later "same ones" re-entry can
     // copy the expiry even after the position is closed. Bounded to 60 entries.

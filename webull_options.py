@@ -1231,8 +1231,15 @@ class WebullOptions:
             body, "client_order_id", "clientOrderId", "order_id", "orderId")
         return (str(oid) if oid else None), stop
 
-    def buy(self, symbol, side, strike, expiry, qty, their_price=None):
-        """side is CALLS or PUTS, the way the room writes it."""
+    def buy(self, symbol, side, strike, expiry, qty, their_price=None,
+            price_mode=None):
+        """side is CALLS or PUTS, the way the room writes it.
+
+        price_mode overrides the global entry_price for THIS order only.
+        The one user today is the round-number pullback (8/17): its entries
+        cross the ask (marketable — Webull takes no true market orders on
+        options), because the discount was already earned waiting for the
+        touch. None = the normal setting (bid) applies."""
         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
         expiration = expiry_to_date(expiry)
         occ = occ_symbol(symbol, expiration, option_type, strike)
@@ -1254,19 +1261,27 @@ class WebullOptions:
 
         blind = False
         if ask and ask > 0:
-            limit = self.entry_limit(bid, ask)
-            # "Match their avg or better" (his ask, 8/13): never pay above the
-            # price the caller posted. entry_limit already rests at the bid, so
-            # this only bites when the bid has run ABOVE their avg — then we cap
-            # at their avg and wait for it to come to us. A resting entry, not a
-            # chase: it may not fill if price keeps running, the trade-off he
-            # chose over overpaying.
-            if their_price:
-                try:
-                    limit = min(limit, float(their_price))
-                except (TypeError, ValueError):
-                    pass
-            limit = max(0.01, round(limit, 2))
+            if price_mode == "ask":
+                # Pullback entry at the touch: marketable at the ask, no
+                # their-price cap — capping would turn it back into a resting
+                # bid, which is exactly what waiting for the level was meant
+                # to end. The buffer makes it fill through a moving quote.
+                limit = max(0.01, round(
+                    float(ask) * (1 + self.buffer_pct / 100) + 0.01, 2))
+            else:
+                limit = self.entry_limit(bid, ask)
+                # "Match their avg or better" (his ask, 8/13): never pay above
+                # the price the caller posted. entry_limit already rests at the
+                # bid, so this only bites when the bid has run ABOVE their avg —
+                # then we cap at their avg and wait for it to come to us. A
+                # resting entry, not a chase: it may not fill if price keeps
+                # running, the trade-off he chose over overpaying.
+                if their_price:
+                    try:
+                        limit = min(limit, float(their_price))
+                    except (TypeError, ValueError):
+                        pass
+                limit = max(0.01, round(limit, 2))
         elif their_price:
             # No live ask: take the room's posted premium as the limit.
             limit = max(0.01, round(float(their_price), 2))

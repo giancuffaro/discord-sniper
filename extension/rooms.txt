@@ -1,0 +1,59 @@
+# rooms.txt — the ONE list of channels that trade. This file is the whole
+# answer to "why is X still trading" or "why didn't X open a tab": if it's
+# not a line here, it doesn't open and it doesn't trade. If it IS a line
+# here, it does both. Nothing else — not the extension, not the popup's
+# Channels tab, not START HERE.bat — keeps its own separate copy of this
+# list any more (his ask, 8/17, after a channel removed from the tab-opener
+# kept trading anyway because the extension had its own copy of the list).
+#
+# Format, one room per line, pipe-separated:
+#   channel_id|full_url|label|group
+# Lines starting with # are comments. Blank lines are ignored.
+# To remove a room from EVERYWHERE: delete its line. To add one: add a line.
+# Whop rooms use their canonical "whop:xxx" id in the first field — that's
+# what background.js's whopRoomOf() matches on.
+# "group" is just the friendly bucket the popup's Channels/Servers tab
+# shows it under — it doesn't have to match the real Discord server name.
+
+829754942817828884|https://discord.com/channels/525113944239767562/829754942817828884|Honeydrip daytrades|Honeydrip / Aristotle (main)
+987515353670221834|https://discord.com/channels/525113944239767562/987515353670221834|Aristotle|Honeydrip / Aristotle (main)
+1433933203302776852|https://discord.com/channels/525113944239767562/1433933203302776852|Aristotle small|Honeydrip / Aristotle (main)
+
+whop:day-trades|https://whop.com/joined/firststeptrading/day-trades-cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)
+whop:futures|https://whop.com/joined/firststeptrading/futures-26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)
+whop:high-risk|https://whop.com/joined/firststeptrading/high-risk-hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)
+whop:2k-challenge|https://whop.com/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)
+whop:swing|https://whop.com/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/app/|Whop Swing Trades|firststeptrading (Whop)
+
+829352738239414332|https://discord.com/channels/496871546963492874/829352738239414332|ZT top-flow|ZTRADEZ
+721821717328298066|https://discord.com/channels/496871546963492874/721821717328298066|ZT scalps|ZTRADEZ
+1471700027662405712|https://discord.com/channels/496871546963492874/1471700027662405712|ZT fut-6|ZTRADEZ
+1135947475912495216|https://discord.com/channels/496871546963492874/1135947475912495216|MR.TOPHAT|ZTRADEZ
+1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ
+1248264554886991893|https://discord.com/channels/496871546963492874/1248264554886991893|ZT opt-2|ZTRADEZ
+694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ
+777750637613416479|https://discord.com/channels/496871546963492874/777750637613416479|ZT opt-5|ZTRADEZ
+1331631786068938813|https://discord.com/channels/496871546963492874/1331631786068938813|ZT opt-6|ZTRADEZ
+1239624229583061052|https://discord.com/channels/496871546963492874/1239624229583061052|ZT opt-7|ZTRADEZ
+1209181195406024744|https://discord.com/channels/496871546963492874/1209181195406024744|ZT opt-8|ZTRADEZ
+1332090335005900800|https://discord.com/channels/496871546963492874/1332090335005900800|ZT opt-9|ZTRADEZ
+874280313038192670|https://discord.com/channels/496871546963492874/874280313038192670|Demon Alerts|ZTRADEZ
+1389300087829827745|https://discord.com/channels/496871546963492874/1389300087829827745|ZT swing-1|ZTRADEZ
+862419656382873650|https://discord.com/channels/496871546963492874/862419656382873650|ZT swing-2|ZTRADEZ
+1061980561293443152|https://discord.com/channels/496871546963492874/1061980561293443152|ZT swing-3|ZTRADEZ
+1179200811650252850|https://discord.com/channels/496871546963492874/1179200811650252850|ZT swing-4|ZTRADEZ
+1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ
+1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ
+
+1288291150083653652|https://discord.com/channels/1156381060108664884/1288291150083653652|Boka 1|Boka Trading
+1499190814482632825|https://discord.com/channels/1156381060108664884/1499190814482632825|Boka 2|Boka Trading
+1395159239164432515|https://discord.com/channels/1156381060108664884/1395159239164432515|Boka 3|Boka Trading
+
+769797179992571914|https://discord.com/channels/769790224921395200/769797179992571914|Option Alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+769797819770732554|https://discord.com/channels/769790224921395200/769797819770732554|Options Watchlist|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+642437862930907158|https://discord.com/channels/588137369409159208/642437862930907158|RWGates|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+1323708708374450247|https://discord.com/channels/725117609275555851/1323708708374450247|Vero 1|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+760694103401955378|https://discord.com/channels/725117609275555851/760694103401955378|Vero 2|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+1095502893559316482|https://discord.com/channels/725117609275555851/1095502893559316482|Vero 3|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+1527044644796366888|https://discord.com/channels/719580371997556737/1527044644796366888|Options Insider|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+1276616766004658226|https://discord.com/channels/911385966864896081/1276616766004658226|Platinum Trading|Alert servers (TTT / RWGates / Vero / Insider / Platinum)

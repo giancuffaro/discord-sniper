@@ -70,9 +70,14 @@ class AIError(Exception):
 
 
 def available(cfg):
-    """Is the AI reader switched on and keyed? One place decides."""
+    """Is the AI reader usable? One place decides.
+
+    ALWAYS ON when a key exists (his call, 8/17: "make it always on, i need
+    every trade to go through AI reading") — the old enabled flag is ignored
+    so no toggle can quietly starve the reader. The only thing that turns it
+    off is having no API key at all."""
     a = ((cfg or {}).get("execution", {}) or {}).get("ai_reader", {}) or {}
-    return bool(a.get("enabled")) and bool(a.get("api_key"))
+    return bool(a.get("api_key"))
 
 
 def _cfg(cfg):

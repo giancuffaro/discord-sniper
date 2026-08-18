@@ -19,7 +19,8 @@
 const $ = id => document.getElementById(id);
 
 const DEFAULTS = {
-  armed: true, stopped: false, capture: true,   // ON is the resting state
+  // No armed/stopped any more (8/17) — a room tab open is the only switch.
+  capture: true,
   bridge_url: "http://127.0.0.1:8787/order",
   channel_ids: [], follow_admins: [],
   // Futures fire like every other room now (per its TESTING/LIVE toggle). On
@@ -195,6 +196,7 @@ async function refreshMode() {
   } catch (e) {
     modeStatus = null;      // bridge isn't running, which is a normal state
   }
+  _bridgeLastCheck = Date.now();
   try {
     const pr = await askBridge("/positions");
     brokerPos = (pr && pr.positions) || [];
@@ -213,6 +215,7 @@ async function refreshMode() {
   paintAi(modeStatus);
   paintStatus();
   paintBridgeDown();
+  paintBridgeLive();
 }
 
 /* The big red bridge-OFF banner. modeStatus is null only when the bridge didn't
@@ -228,12 +231,24 @@ if ($("bridgeRetry")) $("bridgeRetry").onclick = async () => {
   await refreshMode();
   b.disabled = false; b.textContent = "Retry";
 };
-if ($("botOffOn")) $("botOffOn").onclick = async () => {
-  const b = $("botOffOn");
-  b.disabled = true; b.textContent = "…";
-  try { await patch({ armed: true, stopped: false }); } catch (e) {}
-  b.disabled = false; b.textContent = "Turn ON";
-};
+
+/* LIVE bridge status dot (8/17, his ask): "something on the popup that shows
+ * if the bridge is connected, live." refreshMode() re-fetches modeStatus
+ * every 4s while this popup is open — this paints it, plus how long ago the
+ * last check was, so it visibly ticks instead of sitting static. Green =
+ * connected, red = not reachable, grey = first check still running. */
+let _bridgeLastCheck = 0;
+function paintBridgeLive() {
+  const dot = $("bridgeDot"), txt = $("bridgeLiveText");
+  if (!dot || !txt) return;
+  const ok = !!modeStatus;
+  dot.style.background = _bridgeLastCheck ? (ok ? "#4ade80" : "#dc2626") : "#52525b";
+  // Just the verdict, no clock (his ask, 8/17: "i dont need to know how
+  // many seconds passed"). refreshMode refreshes this every 4s regardless.
+  txt.textContent = !_bridgeLastCheck ? "checking bridge…"
+    : ok ? "✓ Bridge connected" : "✕ Bridge NOT reachable — run 🎯 START HERE";
+  txt.style.color = _bridgeLastCheck && !ok ? "#fca5a5" : "#9aa3b5";
+}
 
 /* ---- where futures trade: Webull / NinjaTrader / Tradovate ----------------
  * Independent toggles, saved on the bridge. An alert fans out to every one
@@ -652,40 +667,36 @@ $("savepaperkeys").onclick = async () => {
   $("savepaperkeys").textContent = "Save paper keys to this PC";
 };
 
-/* ---- AI reader — reading intelligence on the misses ---------------------- */
+/* ---- AI reader — ALWAYS ON when keyed (his call, 8/17) -------------------
+ * "make it always on, i need every trade to go through AI reading." No off
+ * button any more — the only states are "on" (a working key is saved) and
+ * "needs a key". The bridge ignores the old enabled flag to match. */
 function paintAi(st) {
   const on = !!(st && st.ai_enabled);
   const el = $("aiState");
-  if (el) { el.textContent = on ? "ON" : "off"; el.style.color = on ? "#34d399" : "#9aa"; }
+  if (el) {
+    el.textContent = on ? "always ON" : "needs a key";
+    el.style.color = on ? "#34d399" : "#fbbf24";
+  }
 }
-$("saveaikey").onclick = async () => {
+if ($("saveaikey")) $("saveaikey").onclick = async () => {
   const key = $("aiKey").value.trim();
   const el = $("aikeystate");
-  if (!key) { el.textContent = "Paste your Claude API key first."; return; }
-  $("saveaikey").textContent = "Turning on…";
+  if (!key) { el.textContent = "Paste your Claude API key first (starts sk-ant-)."; return; }
+  $("saveaikey").textContent = "Saving…";
   try {
     const r = await askBridge("/config", { ai_api_key: key, ai_enabled: true });
     modeStatus = r;
-    el.textContent = r.ai_enabled ? "AI reading is ON — it'll read the misses." :
+    el.textContent = r.ai_enabled ? "AI reading is ON — every call goes through it." :
                      (r.message || "saved");
     if (r.ai_enabled) $("aiKey").value = "";
     paintAi(r);
   } catch (e) {
     el.textContent = "Couldn't reach the bridge — double-click START HERE first.";
   }
-  $("saveaikey").textContent = "Turn on AI reading";
+  $("saveaikey").textContent = "Save AI key";
 };
-$("aioff").onclick = async () => {
-  const el = $("aikeystate");
-  try {
-    const r = await askBridge("/config", { ai_enabled: false });
-    modeStatus = r;
-    el.textContent = "AI reading is off.";
-    paintAi(r);
-  } catch (e) {
-    el.textContent = "Couldn't reach the bridge — double-click START HERE first.";
-  }
-};
+if ($("aioff")) $("aioff").style.display = "none";   // no off switch — always on
 
 /* Double-check entries — a browser-side toggle; the key stays on the bridge. */
 async function paintVerify() {
@@ -789,99 +800,51 @@ function chanLabel(id) {
   const k = String(id || "");
   return _channelOnly(CAP_NAMES[k] || ROOM_NAMES[k] || k || "this room");
 }
-const ROOM_NAMES = { "829754942817828884": "Honeydrip daytrades",
-                     "987515353670221834": "Aristotle",
-                     "1144369893760831489": "Midas",
-                     "1433933203302776852": "Aristotle small acct",
-                     "642437862930907158": "RWGates",
-                     "769797179992571914": "Option Alerts",
-                     "880503518878892143": "Lotto Alerts",
-                     "769797819770732554": "Options Watchlist",
-                     "1137873895832174672": "Futures Alerts",
-                     "1135947475912495216": "MR.TOPHAT",
-                     "1276616766004658226": "Platinum Trading",
-                     "808127664022880297": "Spread Alerts",
-                     "769797593316065280": "Stock Alerts",
-                     "771902435680845845": "Member Alerts",
-                     "800526679046225961": "Trade Log",
-                     "whop:day-trades": "Whop Day Trades",
-                     "whop:futures": "Whop Futures",
-                     "whop:high-risk": "Whop High Risk",
-                     "whop:2k-challenge": "Whop 2K Challenge",
-                     "whop:swing": "Whop Swing Trades",
-                     "whop:long-term": "Whop Long Term",
-                     "829352738239414332": "ZT top-flow",
-                     "721821717328298066": "ZT scalps",
-                     "1174393224253681674": "ZT long-swings",
-                     "748266924122570882": "ZT uoa-swings",
-                     "1356793611420958732": "ZT opt-1",
-                     "1248264554886991893": "ZT opt-2",
-                     "694197721430491266": "ZT opt-4",
-                     "777750637613416479": "ZT opt-5",
-                     "1331631786068938813": "ZT opt-6",
-                     "1239624229583061052": "ZT opt-7",
-                     "1209181195406024744": "ZT opt-8",
-                     "1332090335005900800": "ZT opt-9",
-                     "874280313038192670": "Demon Alerts",
-                     "1389300087829827745": "ZT swing-1",
-                     "862419656382873650": "ZT swing-2",
-                     "1061980561293443152": "ZT swing-3",
-                     "1179200811650252850": "ZT swing-4",
-                     "918665915103584327": "ZT cc-1",
-                     "1255279667489931325": "ZT cc-2",
-                     "1294812275668160613": "ZT cc-3",
-                     "1121391020148543631": "ZT cc-4",
-                     "552885275676639243": "ZT forex",
-                     "1525120298075029554": "ZT fut-1",
-                     "1251181965252755517": "ZT fut-2",
-                     "1213977047479754783": "ZT fut-4",
-                     "1375454591755489341": "ZT fut-5",
-                     "1288291150083653652": "Boka 1",
-                     "1499190814482632825": "Boka 2",
-                     "1395159239164432515": "Boka 3",
-                     "1387459050505240597": "Boka 4",
-                     "1323708708374450247": "Vero 1",
-                     "760694103401955378": "Vero 2",
-                     "1095502893559316482": "Vero 3",
-                     "1527044644796366888": "Options Insider",
-                     "1471700027662405712": "ZT fut-6" };
-
-/* Every channel grouped by the Discord/Whop SERVER it lives on — his ask
- * (8/15): turn off a whole server ("all of honeydrip, etc") in one click, but
- * still be able to keep any ONE of its channels on. Built straight from the
- * server ids 🎯 START HERE.bat opens each channel under, so this and the
- * startup script can never disagree about which channel belongs to which
- * server. Whop rooms have no numeric server — firststeptrading is their
- * shared "server" for this purpose, one group like any other. */
-const SERVER_GROUPS = [
-  { name: "Honeydrip / Aristotle (main)", ids: [
-      "829754942817828884", "987515353670221834", "1144369893760831489",
-      "1433933203302776852" ] },
-  { name: "firststeptrading (Whop)", ids: [
-      "whop:day-trades", "whop:futures", "whop:high-risk",
-      "whop:2k-challenge", "whop:swing", "whop:long-term" ] },
-  { name: "ZTRADEZ", ids: [
-      "829352738239414332", "721821717328298066", "1174393224253681674",
-      "748266924122570882", "1471700027662405712", "499045647580921887",
-      "1135947475912495216",
-      "1356793611420958732", "1248264554886991893", "694197721430491266",
-      "777750637613416479", "1331631786068938813", "1239624229583061052",
-      "1209181195406024744", "1332090335005900800", "874280313038192670",
-      "1389300087829827745", "862419656382873650", "1061980561293443152",
-      "1179200811650252850", "918665915103584327", "1255279667489931325",
-      "1294812275668160613", "1121391020148543631", "552885275676639243",
-      "1525120298075029554", "1251181965252755517", "1213977047479754783",
-      "1375454591755489341" ] },
-  { name: "Boka Trading", ids: [
-      "1288291150083653652", "1499190814482632825", "1395159239164432515",
-      "1387459050505240597" ] },
-  { name: "Alert servers (TTT / RWGates / Vero / Insider / Platinum)", ids: [
-      "769797179992571914", "808127664022880297", "880503518878892143",
-      "769797593316065280", "1137873895832174672", "771902435680845845",
-      "800526679046225961", "769797819770732554", "642437862930907158",
-      "1323708708374450247", "760694103401955378", "1095502893559316482",
-      "1527044644796366888", "1276616766004658226" ] }
-];
+/* ROOM_NAMES and SERVER_GROUPS both come from extension/rooms.txt now
+ * (8/17) — the SAME file background.js loads its trading list from, and
+ * the same file START HERE.bat reads to open tabs. One file, three
+ * consumers, so a room removed from it is gone from all three at once
+ * instead of needing three separate edits that could drift apart (which is
+ * exactly how a channel kept trading after it stopped being opened as a
+ * tab). Both start empty and are populated once by loadRoomsForPopup()
+ * before the first render — see the call at the bottom of this file. */
+let ROOM_NAMES = {};
+let SERVER_GROUPS = [];
+let _roomsLoaded = false;
+async function loadRoomsForPopup() {
+  try {
+    const r = await fetch(chrome.runtime.getURL("rooms.txt"));
+    const text = await r.text();
+    const names = {};
+    const groups = [];              // preserves file order, one entry per group
+    const groupIndex = {};
+    for (const line of text.split("\n")) {
+      const t = line.trim();
+      if (!t || t.startsWith("#")) continue;
+      const parts = t.split("|");
+      const id = (parts[0] || "").trim();
+      const label = (parts[2] || id).trim();
+      const group = (parts[3] || "Other rooms").trim();
+      if (!id) continue;
+      names[id] = label;
+      if (!(group in groupIndex)) {
+        groupIndex[group] = groups.length;
+        groups.push({ name: group, ids: [] });
+      }
+      groups[groupIndex[group]].ids.push(id);
+    }
+    ROOM_NAMES = names;
+    SERVER_GROUPS = groups;
+  } catch (e) {
+    // Leave both empty rather than guess — an empty Channels tab with a
+    // clear "couldn't load rooms.txt" is honest; a stale hardcoded list
+    // silently trading rooms that were supposedly removed is not.
+    if ($("roomtoggles"))
+      $("roomtoggles").innerHTML =
+        '<div class="note">Couldn\'t load extension/rooms.txt — nothing shows here until this is fixed.</div>';
+  }
+  _roomsLoaded = true;
+}
 // Any channel that's opened but doesn't fall in a named group above (a room
 // added later, or one of the many "added on request" ids in background.js's
 // channel_ids list) still needs a home so it isn't invisible in the Servers
@@ -1025,10 +988,12 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
   const box = $("roomtoggles");
   if (!box) return;
   const cd = channelDisabled || {};
-  // A room turned off up in Servers has nothing to arm here — it isn't
-  // reading, so LIVE/testing on it is meaningless until it's back on.
-  const ids = Object.keys(ROOM_NAMES).filter(id => !cd[id]);
-  const liveCount = ids.filter(id => !!(channelLive || {})[id]).length;
+  // Rooms turned off up in Servers stay VISIBLE here (his ask, 8/17: "i
+  // only want them to toggle off, not disappear") — shown dimmed with an
+  // "off" tag instead of vanishing from the list. Their LIVE/pull controls
+  // are hidden while off, since a room that isn't read can't trade anyway.
+  const ids = Object.keys(ROOM_NAMES);
+  const liveCount = ids.filter(id => !cd[id] && !!(channelLive || {})[id]).length;
   // Master row (his ask, 8/13): flip every room at once instead of clicking
   // ~60 toggles. "all testing" is always safe and instant. "all LIVE" arms
   // REAL money on every room, so it takes two taps — one to arm, one to fire,
@@ -1048,17 +1013,26 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
   box.innerHTML = master + ids.map(id => {
     const live = !!(channelLive || {})[id];
     const pull = !!(channelPull || {})[id];
+    // Server-switched-off rooms: visible but dimmed with a plain "off" tag
+    // (his ask, 8/17) — no controls to misclick while the room isn't read.
+    if (cd[id]) {
+      return '<div class="row" style="margin-bottom:4px;opacity:.45">' +
+             '<span class="grow" style="font-size:12px">' + chanLabel(id) +
+             '</span><span style="font-size:10px;color:#7d8697">' +
+             'off — server switch</span></div>';
+    }
     // ONE button, one click, flips and saves instantly. No dropdown, no
     // confirm, no Save step — his word. Red is reserved for real money.
     // Second toggle (8/11/26): entry mode. "instant" buys the alert at the
-    // ask; "RN wait" hands it to the bridge's round-number pullback watcher
-    // (paper-only there until proven).
+    // ask; "RN wait" hands it to the bridge's round-number pullback watcher.
+    // Paper-force lifted 8/17 — RN wait spends whatever the room's
+    // TESTING/LIVE switch says, same as instant.
     return '<div class="row" style="margin-bottom:4px">' +
            '<span class="grow" style="font-size:12px">' + chanLabel(id) +
            '</span>' +
            '<button data-pull="' + id + '" title="Entry mode: instant = buy the ' +
-           'alert at the ask. RN wait = wait for the stock to touch the next ' +
-           'whole dollar first (paper only until proven)." ' +
+           'alert right away. RN wait = wait for the stock to touch the next ' +
+           'round number first. Uses the room\'s TESTING/LIVE setting either way." ' +
            'style="font-size:10px;margin-right:6px;padding:1px 7px;border-radius:9px;' +
            'cursor:pointer;border:1px solid ' + (pull ? "#60a5fa" : "#3a4254") +
            ';background:' + (pull ? "#1d3a5f" : "transparent") +
@@ -1078,7 +1052,7 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
     const s = settings || {};
     s.channel_live = {};
     await chrome.storage.local.set({ settings: s });
-    renderRoomToggles(s.channel_live, s.channel_pullback);
+    renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
   };
   // "all LIVE" — real money on every room. Two taps: arm, then fire.
   const allOn = box.querySelector("#allLive");
@@ -1107,7 +1081,7 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
     s.channel_live = s.channel_live || {};
     ids.forEach(id => { s.channel_live[id] = true; });
     await chrome.storage.local.set({ settings: s });
-    renderRoomToggles(s.channel_live, s.channel_pullback);
+    renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
   };
   box.querySelectorAll("button[data-room]").forEach(btn => {
     btn.onclick = async () => {
@@ -1118,7 +1092,7 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
       if (s.channel_live[id]) delete s.channel_live[id];
       else s.channel_live[id] = true;
       await chrome.storage.local.set({ settings: s });
-      renderRoomToggles(s.channel_live, s.channel_pullback);
+      renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
     };
   });
   box.querySelectorAll("button[data-pull]").forEach(btn => {
@@ -1130,7 +1104,7 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
       if (s.channel_pullback[id]) delete s.channel_pullback[id];
       else s.channel_pullback[id] = true;
       await chrome.storage.local.set({ settings: s });
-      renderRoomToggles(s.channel_live, s.channel_pullback);
+      renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
     };
   });
 }
@@ -1218,36 +1192,15 @@ async function render() {
     await chrome.storage.local.get(["guardState", "log", "wallet",
                                     "day_table"]);
 
-  // The big word is what it IS right now. His call: drop the "click to turn it
-  // off/on" sub-line — the button state speaks for itself.
-  const arm = $("arm");
-  if (s.armed) {
-    arm.innerHTML = "ON";
-    arm.className = "grow armed big";
-  } else {
-    arm.innerHTML = "OFF";
-    arm.className = "grow safe big";
-  }
-  // The loud OFF banner — same red treatment as the bridge being down, because
-  // an OFF bot is the other state where nothing trades. If it went OFF by itself
-  // (auto-disarm after the bridge vanished), say so, since he didn't do it.
-  const offEl = $("botOff");
-  if (offEl) {
-    offEl.style.display = s.armed ? "none" : "flex";
-    if (!s.armed && $("botOffWhy")) {
-      const autoOff = (log || []).some(e => String(e.what || "").includes("AUTO-DISARMED") &&
-                                            (Date.now() - (e.t || 0)) < 90 * 60 * 1000);
-      $("botOffWhy").textContent = autoOff
-        ? "It auto-disarmed after the bridge went missing. Bring the bridge back, then turn it ON."
-        : "Tap the big OFF button below to turn it back ON.";
-    }
-  }
+  // No more ON/OFF button or its banner (8/17) — a room tab being open is the
+  // only switch now. See paintBridgeLive() for the live connected/not-reachable
+  // dot that replaces it.
+  paintBridgeLive();
 
   const held = Object.keys((gs && gs.positions) || {});
   const cap = parseInt(s.guards.max_trades_per_day, 10) || 0;
   const done = (gs && gs.count) || 0;
   const bits = [];
-  bits.push(s.armed ? "following their calls" : "watching only, not trading");
   // 0 means you took the limit off on purpose, so say that rather than counting
   // down from a number that doesn't exist.
   bits.push(cap > 0 ? done + " of " + cap + " trades used today"
@@ -1307,6 +1260,27 @@ async function render() {
       }
       return String(v || "").toUpperCase();
     };
+    // The call said SWING (his ask, 8/17): purple "(Swing)" in front of the
+    // trade, so an overnight hold never reads like a day trade. Same
+    // book-then-extension matching as creditFor below.
+    const swingFor = (b) => {
+      if (b.swing) return true;
+      const sym = futRoot(b.symbol);
+      const sources = [bookPos || {}, pos || {}];
+      for (const src of sources)
+      for (const k of Object.keys(src)) {
+        const p = src[k] || {};
+        if (futRoot(p.symbol || keySym(k)) !== sym) continue;
+        if (b.strike != null && p.strike != null &&
+            Math.abs(Number(p.strike) - Number(b.strike)) > 0.001) continue;
+        if (b.side && p.side && String(b.side)[0] !== String(p.side)[0]) continue;
+        if (p.swing) return true;
+      }
+      return false;
+    };
+    const swingTag = (b) => swingFor(b)
+      ? '<span style="color:#c084fc;font-size:10px;font-weight:700">(SWING)</span> '
+      : "";
     const creditFor = (b) => {
       const sym = futRoot(b.symbol);
       // Bridge book first (it keeps who/room for the life of the trade), then
@@ -1387,7 +1361,7 @@ async function render() {
       // Hover as well as the line under it — his call 8/12. A title works even
       // if the extra line is ever clipped by the panel's scroll box.
       const _tip = _cr ? ' title="' + _cr.replace(/"/g, "&quot;") + '"' : "";
-      rows.push('<div class="posrow"' + _tip + '><span class="grow">' + tag + dir +
+      rows.push('<div class="posrow"' + _tip + '><span class="grow">' + swingTag(b) + tag + dir +
         '<span class="in">IN</span> <b>' +
         contract + '</b> <b>x' + n + "</b>" + paid + now + plTxt +
         "</span>" + x + "</div>" +
@@ -1402,7 +1376,9 @@ async function render() {
         .filter(Boolean).join(" ");
       const x = '<button class="posx" data-close="' + encodeURIComponent(k) +
                 '" title="Cancel this">✕</button>';
-      rows.push('<div class="posrow"><span class="grow"><span class="in wait">BID IN</span> <b>' +
+      rows.push('<div class="posrow"><span class="grow">' +
+        (p.swing ? '<span style="color:#c084fc;font-size:10px;font-weight:700">(SWING)</span> ' : "") +
+        '<span class="in wait">BID IN</span> <b>' +
         contract + "</b>" + (keyWho(k) !== "?" ? " · " + keyWho(k) + "'s call" : "") +
         (p.ts ? " — since " + clock(p.ts) : "") +
         " · nobody has sold to you yet</span>" + x + "</div>");
@@ -1584,14 +1560,6 @@ async function patch(changes) {
   chrome.runtime.sendMessage({ type: "ATTACHED" }).catch(() => {});
   render();
 }
-
-$("arm").onclick = async () => {
-  const s = await getSettings();
-  // stopped:false always. The old STOP button is gone, but an installation that
-  // was left stopped would otherwise sit there refusing everything with no
-  // button on screen to clear it. Turning it ON clears it.
-  await patch({ armed: !s.armed, stopped: false });
-};
 
 if ($("save")) $("save").onclick = async () => {
   // The switch lives in TWO places on purpose: the extension (gates whether
@@ -1822,7 +1790,9 @@ $("dayspick").onchange = async () => {
   render();
 };
 
-render();
+// rooms.txt loads once before the first paint so the Channels/Servers tabs
+// never flash empty — every render() after this one just reuses it.
+loadRoomsForPopup().then(render);
 setInterval(render, 2000);
 refreshMode();
 setInterval(refreshMode, 4000);

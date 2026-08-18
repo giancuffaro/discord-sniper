@@ -15,8 +15,8 @@
 #                                        rule applies instead (the bridge makes
 #                                        that call before we're ever involved).
 #
-# PAPER-ONLY BY DESIGN until he's watched it work: the bridge forces every
-# pullback order onto the sandbox no matter what the room's live toggle says.
+# The paper-force was LIFTED 8/17 (his call): a pullback order now spends
+# whatever the room's own TESTING/LIVE toggle says, like any other entry.
 #
 # This file knows nothing about Webull or the bridge. It's handed plain
 # callables, which is what makes it testable on a laptop with no keys:
@@ -79,13 +79,20 @@ class Pullback:
 
     def __init__(self, quote_fn, enter_fn, close_fn, note,
                  timeout_seconds=300.0, poll_seconds=2.0,
-                 manage_seconds=6.5 * 3600):
+                 manage_seconds=6.5 * 3600, entry_poll_seconds=1.0):
         self.quote_fn = quote_fn
         self.enter_fn = enter_fn
         self.close_fn = close_fn
         self.note = note or (lambda s: None)
         self.timeout = float(timeout_seconds)
+        # Two speeds on purpose (8/17, his ask): the ENTRY wait polls fast —
+        # it lives 5 minutes at most, and a quick wick through the round
+        # number is exactly what it must not sleep through. MANAGEMENT polls
+        # slower — it can run for hours, its stop/target are $0.25-$1.00
+        # wide (2s granularity loses nothing there), and every poll is a
+        # real Webull quote request that counts against rate limits.
         self.poll = float(poll_seconds)
+        self.entry_poll = float(entry_poll_seconds)
         self.manage_seconds = float(manage_seconds)
         self._lock = threading.Lock()
         self._armed = {}        # symbol -> True while a watcher is waiting
@@ -132,7 +139,7 @@ class Pullback:
         misses = 0
         try:
             while time.time() < deadline:
-                time.sleep(self.poll)
+                time.sleep(self.entry_poll)
                 try:
                     px = float(self.quote_fn(sym))
                     misses = 0
@@ -241,7 +248,8 @@ if __name__ == "__main__":
     pb = Pullback(Q(), lambda o: events.append("enter") or (True, "bought"),
                   lambda o, w: events.append("close:" + w) or (True, "sold"),
                   lambda s: events.append("note:" + s),
-                  timeout_seconds=30, poll_seconds=0.01)
+                  timeout_seconds=30, poll_seconds=0.01,
+                  entry_poll_seconds=0.01)
     okd, msg = pb.start({"symbol": "SPY", "side": "CALLS", "strike": 752,
                          "expiry": "8/12"})
     ok(okd, "watcher armed: " + msg)

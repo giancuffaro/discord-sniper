@@ -176,21 +176,8 @@
             title="Check again">Retry</button>
   </div>
 
-  <!-- The other silent killer: the bot switched OFF (you did it, or it
-       auto-disarmed after the bridge went missing). Nothing trades while OFF. -->
-  <div id="botOff" style="display:none;align-items:center;gap:8px;
-       background:#3b0d0d;border:1px solid #7f1d1d;border-radius:8px;
-       padding:9px 11px;margin-bottom:8px">
-    <span style="flex:none;width:22px;height:22px;border-radius:5px;
-         background:#dc2626;color:#fff;font-weight:700;display:flex;
-         align-items:center;justify-content:center;font-size:14px">✕</span>
-    <span style="flex:1;font-size:12px;color:#fecaca;line-height:1.35">
-      <b style="color:#fff">Bot is OFF — nothing is being traded.</b><br>
-      <span id="botOffWhy">Tap the big OFF button below to turn it back ON.</span>
-    </span>
-    <button id="botOffOn" style="flex:none;width:60px;font-size:11px"
-            title="Turn the bot ON">Turn ON</button>
-  </div>
+  <!-- No more ON/OFF button (8/17, his ask): a room tab open in the browser
+       IS the switch. There's nothing left to leave off by accident. -->
 
   <!-- One glance: everything that matters, and what to fix if it's red. -->
   <div id="statusBar" style="font-size:11.5px;line-height:1.7;padding:7px 9px;
@@ -199,9 +186,13 @@
     <div id="stFix" style="color:#fbbf24;margin-top:3px"></div>
   </div>
 
-  <!-- Master on/off + what you're holding stay visible on every tab. -->
-  <div class="row">
-    <button id="arm" class="grow safe big">OFF</button>
+  <!-- LIVE bridge status — always visible, updates every second while this
+       popup is open, never just an error-only banner (his ask, 8/17). -->
+  <div class="row" style="align-items:center;gap:6px;margin-bottom:8px;
+       font-size:11.5px;color:#9aa3b5">
+    <span id="bridgeDot" style="flex:none;width:8px;height:8px;border-radius:50%;
+         background:#52525b"></span>
+    <span id="bridgeLiveText" style="flex:1">checking bridge…</span>
   </div>
   <div class="state" id="state">Loading…</div>
 
@@ -213,28 +204,21 @@
     <div class="holding" id="holding">No active trades</div>
   </div>
 
+  <!-- Trades tab DELETED (his ask, 8/17) — it was an empty shell after the
+       8/15 cleanup ("i dont see it shows anything"). Its two hidden elements
+       stay below because popup.js still writes to them; Channels is the
+       first tab now. -->
   <div class="tabbar" id="tabbar">
-    <button data-tab="trades" class="tabbtn on">Trades</button>
-    <button data-tab="channels" class="tabbtn">Channels</button>
+    <button data-tab="channels" class="tabbtn on">Channels</button>
     <button data-tab="strategies" class="tabbtn">Strategies</button>
     <button data-tab="keys" class="tabbtn">Keys</button>
     <button data-tab="logs" class="tabbtn">Logs</button>
   </div>
-
-
-  <!-- ===== TRADES ===== -->
-  <div class="tabpane on" data-tab="trades">
-    <!-- Day picker: what the Logs tab's day-by-day view reads. The old table
-         that used to sit next to it (removed 8/12 - Active trades above is
-         what matters) is gone for good now (8/15 cleanup), along with the
-         manual-futures and test-a-trade panels this file used to keep alive
-         hidden. Nothing in popup.js references those ids any more. -->
-    <select id="dayspick" style="display:none"><option value="">today</option></select>
-    <div id="daytable" style="display:none"></div>
-  </div>
+  <select id="dayspick" style="display:none"><option value="">today</option></select>
+  <div id="daytable" style="display:none"></div>
 
   <!-- ===== CHANNELS ===== -->
-  <div class="tabpane" data-tab="channels">
+  <div class="tabpane on" data-tab="channels">
     <label>Servers — turn off a whole server at once</label>
     <div id="servertoggles"></div>
     <div class="note">Each server groups the channels opened for it. OFF stops

@@ -556,6 +556,10 @@ class Signal:
     raw: str = ""
     clean: str = ""
     matched: str = ""
+    # The call said it's a SWING — held overnight, not a day trade. Display
+    # only (his ask, 8/17: "(Swing) before the trade in a diff color"); it
+    # changes no order, no bracket, no exit.
+    swing: bool = False
 
     def key(self):
         # reenter belongs in the identity. "exited SPY, and back in" and a
@@ -935,6 +939,9 @@ def _parse_inner(text, author="", channel="", cfg=None):
         t = re.sub(r"\s+", " ", t).strip()
     sig.clean = t
     low = t.lower()
+    # Swing wording anywhere on the line tags the signal (harmless on
+    # non-entries — only entries ever store or show it). Mirrors parser.js.
+    sig.swing = bool(re.search(r"\bswing(?:ing|s)?\b", low))
 
     # A date stamp inside the body means this is an old post the scraper
     # picked up rendered on screen, not a live message. This check comes

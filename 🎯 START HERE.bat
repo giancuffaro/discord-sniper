@@ -218,54 +218,35 @@ set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
+rem  Every room now comes from ONE file - extension\rooms.txt (his ask,
+rem  8/17). That file is also what background.js reads its trading list
+rem  from, so a room deleted from rooms.txt stops opening AND stops
+rem  trading in the same edit - nothing here to keep in sync by hand any
+rem  more. Format per line: channel_id|url|label|group - this loop only
+rem  needs the url (2nd field).
 if defined CHROME (
   rem  The flags do two jobs. The first three stop Chrome throttling background
   rem  tabs - a room you're not looking at still gets read the instant a
-  rem  message lands. --process-per-site is the big RAM saver: all ~40 discord
+  rem  message lands. --process-per-site is the big RAM saver: all the discord
   rem  tabs (same site) share ONE renderer process instead of one each, and the
   rem  Whop tabs share another - it cuts memory hard with this many rooms open.
   rem  --disable-features drops translate, casting and the occlusion check that
   rem  would otherwise pause a window you can't see. These apply to the whole
   rem  Chrome instance because we closed it first above, so this launch is what
-  rem  starts it - the later windows inherit them.
-  start "" "!CHROME!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --process-per-site --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!" "!ARISTOTLE_URL!" "!MIDAS_URL!" "!ARISTOTLE_SMALL_URL!" "!WHOP1!" "!WHOP2!" "!WHOP3!" "!WHOP4!" "!WHOP5!" "!WHOP6!" "!ZT1!" "!ZT2!" "!ZT4!" "!ZT5!" "!ZT8!" "!ZT9!" "!ZT10!"
-  rem  z trades batch two opens as its own window - 25 more rooms
-  start "" "!CHROME!" "https://discord.com/channels/496871546963492874/1356793611420958732" "https://discord.com/channels/496871546963492874/1248264554886991893" "https://discord.com/channels/496871546963492874/694197721430491266" "https://discord.com/channels/496871546963492874/777750637613416479" "https://discord.com/channels/496871546963492874/1331631786068938813" "https://discord.com/channels/496871546963492874/1239624229583061052" "https://discord.com/channels/496871546963492874/1209181195406024744" "https://discord.com/channels/496871546963492874/1332090335005900800" "https://discord.com/channels/496871546963492874/874280313038192670" "https://discord.com/channels/496871546963492874/1389300087829827745" "https://discord.com/channels/496871546963492874/862419656382873650" "https://discord.com/channels/496871546963492874/1061980561293443152" "https://discord.com/channels/496871546963492874/1179200811650252850" "https://discord.com/channels/496871546963492874/918665915103584327" "https://discord.com/channels/496871546963492874/1255279667489931325" "https://discord.com/channels/496871546963492874/1294812275668160613" "https://discord.com/channels/496871546963492874/1121391020148543631" "https://discord.com/channels/496871546963492874/552885275676639243" "https://discord.com/channels/496871546963492874/1525120298075029554" "https://discord.com/channels/496871546963492874/1251181965252755517" "https://discord.com/channels/496871546963492874/1213977047479754783" "https://discord.com/channels/496871546963492874/1375454591755489341"
-  rem  boka trading opens as its own window
-  start "" "!CHROME!" "https://discord.com/channels/1156381060108664884/1288291150083653652" "https://discord.com/channels/1156381060108664884/1499190814482632825" "https://discord.com/channels/1156381060108664884/1395159239164432515" "https://discord.com/channels/1156381060108664884/1387459050505240597"
-  rem  the alert servers - Trading The Trend, RWGates, Vero, Insider, Platinum
-  start "" "!CHROME!" "https://discord.com/channels/!TTT_SERVER!/769797179992571914" "https://discord.com/channels/!TTT_SERVER!/808127664022880297" "https://discord.com/channels/!TTT_SERVER!/880503518878892143" "https://discord.com/channels/!TTT_SERVER!/769797593316065280" "https://discord.com/channels/!TTT_SERVER!/1137873895832174672" "https://discord.com/channels/!TTT_SERVER!/771902435680845845" "https://discord.com/channels/!TTT_SERVER!/800526679046225961" "https://discord.com/channels/!TTT_SERVER!/769797819770732554" "https://discord.com/channels/!SUMMIT_SERVER!/642437862930907158" "https://discord.com/channels/!VERO_SERVER!/1323708708374450247" "https://discord.com/channels/!VERO_SERVER!/760694103401955378" "https://discord.com/channels/!VERO_SERVER!/1095502893559316482" "https://discord.com/channels/!INSIDER_SERVER!/1527044644796366888" "https://discord.com/channels/!PLATINUM_SERVER!/1276616766004658226"
+  rem  starts it - the later tabs inherit them. The main room opens here by
+  rem  itself so SOMETHING starts Chrome with the flags on; it's also in
+  rem  rooms.txt and would open a second time in the loop below, but the
+  rem  extension's own dupe-closer (oneTabPerChannel) tidies that up within
+  rem  30 seconds - harmless.
+  start "" "!CHROME!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --process-per-site --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!"
+  for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+    if not "%%A"=="" start "" "!CHROME!" "%%B"
+  )
 ) else (
   start "" "!DISCORD_URL!"
-  start "" "!ARISTOTLE_URL!"
-  start "" "!MIDAS_URL!"
-  start "" "!ARISTOTLE_SMALL_URL!"
-  start "" "!WHOP1!"
-  start "" "!WHOP2!"
-  start "" "!WHOP3!"
-  start "" "!WHOP4!"
-  start "" "!WHOP5!"
-  start "" "!WHOP6!"
-  start "" "!ZT1!"
-  start "" "!ZT2!"
-  start "" "!ZT4!"
-  start "" "!ZT5!"
-  start "" "!ZT8!"
-  start "" "!ZT9!"
-  start "" "!ZT10!"
-  if defined TTT_SERVER (
-    for %%C in (769797179992571914 808127664022880297 880503518878892143 769797593316065280 1137873895832174672 771902435680845845 800526679046225961 769797819770732554) do start "" "https://discord.com/channels/!TTT_SERVER!/%%C"
+  for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+    if not "%%A"=="" start "" "%%B"
   )
-  if defined SUMMIT_SERVER start "" "https://discord.com/channels/!SUMMIT_SERVER!/642437862930907158"
-  if defined VERO_SERVER (
-    for %%C in (1323708708374450247 760694103401955378 1095502893559316482) do start "" "https://discord.com/channels/!VERO_SERVER!/%%C"
-  )
-  if defined INSIDER_SERVER start "" "https://discord.com/channels/!INSIDER_SERVER!/1527044644796366888"
-  if defined PLATINUM_SERVER start "" "https://discord.com/channels/!PLATINUM_SERVER!/1276616766004658226"
-  rem  boka trading
-  start "" "https://discord.com/channels/1156381060108664884/1288291150083653652" "https://discord.com/channels/1156381060108664884/1499190814482632825" "https://discord.com/channels/1156381060108664884/1395159239164432515" "https://discord.com/channels/1156381060108664884/1387459050505240597"
-  rem  z trades batch two - one more window's worth
-  start "" "https://discord.com/channels/496871546963492874/1356793611420958732" "https://discord.com/channels/496871546963492874/1248264554886991893" "https://discord.com/channels/496871546963492874/694197721430491266" "https://discord.com/channels/496871546963492874/777750637613416479" "https://discord.com/channels/496871546963492874/1331631786068938813" "https://discord.com/channels/496871546963492874/1239624229583061052" "https://discord.com/channels/496871546963492874/1209181195406024744" "https://discord.com/channels/496871546963492874/1332090335005900800" "https://discord.com/channels/496871546963492874/874280313038192670" "https://discord.com/channels/496871546963492874/1389300087829827745" "https://discord.com/channels/496871546963492874/862419656382873650" "https://discord.com/channels/496871546963492874/1061980561293443152" "https://discord.com/channels/496871546963492874/1179200811650252850" "https://discord.com/channels/496871546963492874/918665915103584327" "https://discord.com/channels/496871546963492874/1255279667489931325" "https://discord.com/channels/496871546963492874/1294812275668160613" "https://discord.com/channels/496871546963492874/1121391020148543631" "https://discord.com/channels/496871546963492874/552885275676639243" "https://discord.com/channels/496871546963492874/1525120298075029554" "https://discord.com/channels/496871546963492874/1251181965252755517" "https://discord.com/channels/496871546963492874/1213977047479754783" "https://discord.com/channels/496871546963492874/1375454591755489341"
   echo         Couldn't find Chrome in the usual folders - opened your
   echo         default browser. The extension only runs in Chrome.
 )

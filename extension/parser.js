@@ -495,6 +495,19 @@ function indexToEtf(s) {
                     s.action === "TRIM" || s.action === "CLOSE";
   const isOpt = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
   if (!hasAction && !isOpt) return;
+  // Fresh index entries are switched OFF (8/15, his word — mirrors
+  // signals.py SPX_ENTRIES_ENABLED = False). This gate was missing here
+  // while Python had it, so the extension would have bought SPY on an SPX
+  // call Python refused — caught by test_parity on 8/17. Refuse loudly,
+  // leave symbol/strike exactly as parsed; exits/trims still retarget below
+  // so an old position can always be closed.
+  if (s.action === "OPEN" || s.action === "ADD") {
+    const was0 = String(s.symbol).toUpperCase();
+    s.fire = false;
+    s.why = was0 + " is a cash-index option - following it as an ETF is " +
+            "turned off for now, so nothing was sent";
+    return;
+  }
   const etf = m[0], ratio = m[1];
   if (s.strike !== null && s.strike !== undefined) {
     const k = parseFloat(s.strike);
@@ -610,6 +623,9 @@ function parseSignalInner(text, cfg) {
   }
   s.clean = t;
   const low = t.toLowerCase();
+  // Swing wording anywhere on the line tags the signal (harmless on
+  // non-entries — only entries ever store or show it). Mirrors signals.py.
+  s.swing = /\bswing(?:ing|s)?\b/.test(low);
 
   // Before every format reader on purpose: on Aug 3 a "Felony posted
   // Jul 30" scrape bought an expired NVDA contract because the entry

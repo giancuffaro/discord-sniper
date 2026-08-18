@@ -359,7 +359,33 @@ class Book:
             "closed": p.get("closed_at"),
             "all_out": p.get("state") in DONE,
             "manual": bool(p.get("manual_close")),
+            # The alert word for word, win/loss as a PERCENT, and WHAT pulled
+            # the exit trigger — his asks (8/17) for the journal that shows
+            # which traders and rooms are worth following.
+            "raw": p.get("raw"),
+            "pl_pct": (round(100.0 * float(p.get("trade_pl") or 0)
+                              / float(p.get("cost")), 1)
+                       if p.get("cost") else None),
+            "exit_by": self._exit_by(p),
+            "swing": bool(p.get("swing")),
         }
+
+    @staticmethod
+    def _exit_by(p):
+        st = p.get("state")
+        if st not in DONE or st == NOFILL:
+            return ""
+        why = str(p.get("closed_why") or "")
+        if p.get("manual_close"):
+            return ("you at Webull (or your resting stop filled)"
+                    if p.get("stop_order_id") else "you at Webull")
+        if "take-profit" in why:
+            return "bot take-profit"
+        if st == STOPPED:
+            return "bot stop"
+        if st == FAILED:
+            return "failed"
+        return "room call"
 
     def table(self):
         """Every trade of the day, open and finished, one row each — who
@@ -524,6 +550,14 @@ class Book:
                 # ceiling, not a real market price — so it must NOT be assumed
                 # filled at that ceiling; it waits for the broker's real fill.
                 "blind": bool(ticket.get("blind")),
+                # The Discord/Whop message this trade came from, word for
+                # word — his ask (8/17): a per-trade journal that tells him
+                # which traders and which rooms are actually worth
+                # following. Kept on adds too (first entry's wording).
+                "raw": order.get("raw") if not adding else prev.get("raw"),
+                # The call said SWING — overnight hold. Display only (8/17).
+                "swing": (prev.get("swing") if adding
+                          else bool(order.get("swing"))),
             }
         # Money out of the door the moment the bid is out, not when it fills.
         # It isn't spent yet, but it is promised, and it can't be promised
@@ -638,6 +672,42 @@ class Book:
                      "Removed from the book; nothing was sent to the broker."
                      % sym)
         return len(bad)
+
+    def purge_stale_futures(self, note=None, older_than=86400.0):
+        """Drop adopted FUTURES rows more than a day old (his MESU6/MNQU6
+        question, 8/17). These are his own hand trades the bot picked up;
+        the futures account often can't be polled (unfunded / no data sub),
+        so the gone-from-account sweep never gets a verdict and the row
+        haunts 'holding ...' forever. A day-old adopted future the broker
+        can't confirm is a ghost: archive it, touch no broker."""
+        cut = time.time() - float(older_than)
+        gone = 0
+        with self._lock:
+            items = list(self._pos.items())
+        for key, p in items:
+            if p.get("kind") != "future" or not p.get("adopted"):
+                continue
+            if p.get("state") not in (WORKING, FILLED):
+                continue
+            if float(p.get("sent_at") or 0) >= cut:
+                continue
+            with self._lock:
+                q = self._pos.pop(key, None)
+                if q is not None:
+                    q.update(state=CLOSED, qty=0, closing=False,
+                             watching=False, manual_close=True,
+                             closed_why="stale adopted future purged at "
+                                        "startup — over a day old and the "
+                                        "broker can't confirm it",
+                             closed_at=time.time())
+                    self._archive.append(q)
+                    gone += 1
+            if note:
+                note("PURGED   %s — an adopted futures row over a day old "
+                     "that the broker can't confirm. It was your own hand "
+                     "trade; the book stops showing it as held."
+                     % p.get("symbol"))
+        return gone
 
     def purge_expired(self, note=None):
         """Drop FILLED option positions whose expiry is already in the past.
@@ -760,6 +830,26 @@ class Book:
             qty = int(b.get("qty") or 0)
             if qty <= 0:
                 continue
+            # JUST-CLOSED GUARD (8/17): Webull's position feed lags a beat
+            # behind a sell. On 8/17 a META sold on the room's call at 09:33:27
+            # was still in the feed one second later, got re-adopted, armed a
+            # fresh stop, and that stop then failed 417 ("nothing to sell")
+            # again and again until the breaker gave up. If we closed this exact
+            # symbol seconds ago, that IS the lag — leave it until the feed
+            # catches up instead of re-adopting a ghost.
+            _cool = float(getattr(self, "readopt_cooldown", 120) or 0)
+            if _cool > 0:
+                _cut = time.time() - _cool
+                _recent = False
+                with self._lock:
+                    for _q in self._archive:
+                        if str(_q.get("symbol") or "").upper() != sym:
+                            continue
+                        if float(_q.get("closed_at") or 0) >= _cut:
+                            _recent = True
+                            break
+                if _recent:
+                    continue
             is_fut = b.get("kind") == "future"
             # HIS OWN hand trades share this account: 5-30 lot scalps next to
             # the bot's 1-2 lot calls. Adopting a 30-lot means a room's "all
@@ -1993,7 +2083,11 @@ class Book:
                 # No price was passed, but the watchdog has been keeping the
                 # last bid it saw, and the bid is what you'd sell into.
                 price = p.get("last_bid")
-            p.update(state=state, closing=False, qty=0, closed_at=time.time())
+            # The sentence that ended the trade, kept on the record — the
+            # journal's "exit_by" column reads it (with state and the manual
+            # flag) to say WHAT pulled the trigger (8/17).
+            p.update(state=state, closing=False, qty=0, closed_at=time.time(),
+                     closed_why=str(why or ""))
 
         money = ""
         if settle and self.cash is not None and qty and price is not None:

@@ -135,6 +135,155 @@ PX_INDEX = {"ES", "MES", "NQ", "MNQ", "YM", "MYM", "RTY", "M2K"}
 PX_TICK = {"ES": 0.25, "MES": 0.25, "NQ": 0.25, "MNQ": 0.25,
            "YM": 1.0, "MYM": 1.0, "RTY": 0.10, "M2K": 0.10}
 
+# ---- Topstep account-safety rules (his call, 8/17) --------------------------
+# "need all topstep rules to be followed, so if anything is going to trigger
+# that will burn the account, dont execute." Everything this side can check
+# is checked BEFORE an order leaves; what Topstep's own engine enforces (the
+# Daily Loss Limit flatten-and-pause, the trailing Max Loss) is respected by
+# refusing to enter whenever the account reports it can't trade. EXITS ARE
+# NEVER BLOCKED — getting out is always allowed, rules or no rules.
+PX_RULES = {
+    # Scaling-plan floor: 1 contract is legal at every balance level of
+    # every Topstep account size. Raise on purpose only.
+    "max_contracts": 1,
+    # The flat-by-4:10-PM-ET rule: no NEW entry from 3:50 PM ET until the
+    # 6:00 PM ET reopen — 20 minutes of margin ahead of the forced flatten.
+    "entry_cutoff_et": (15, 50),
+    "reopen_et": (18, 0),
+    # Topstep's consistency rule: the best DAY may be at most this share of
+    # total profit (50% standard; set 0.40 on the stricter payout path).
+    "consistency_pct": 0.50,
+}
+
+# Day-start balances survive a bridge restart in this tiny file — without
+# it, a mid-day restart would re-baseline "today's profit" to zero and the
+# consistency lock would quietly under-count the day.
+def _px_state_path():
+    import os
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "px_day.json")
+
+
+def _px_day_load():
+    try:
+        with open(_px_state_path(), encoding="utf-8") as f:
+            return json.load(f) or {}
+    except Exception:                                   # noqa: BLE001
+        return {}
+
+
+def _px_day_save(d):
+    try:
+        with open(_px_state_path(), "w", encoding="utf-8") as f:
+            json.dump(d, f)
+    except Exception:                                   # noqa: BLE001
+        pass                     # a full disk never blocks the refusal path
+
+
+def _px_entry_guard(prop, order, acct, qty):
+    """Every Topstep rule this side can check, checked before the entry
+    leaves. Raises PropRefused with the reason, or returns the (possibly
+    capped) size. CLOSE/TRIM never come through here."""
+    name = prop.get("name")
+    # Topstep's own lock is the law: after a Daily Loss Limit pause or a
+    # breach, the account answers canTrade=false — nothing goes out.
+    if acct.get("canTrade") is False:
+        raise PropRefused("%s: Topstep has this account paused or locked "
+                          "(daily-loss pause, or a breach) — nothing sent"
+                          % name)
+    # Flat-by-4:10-PM-ET: entering minutes before the forced flatten is how
+    # an account picks up a violation. No new entries 3:50 PM - 6:00 PM ET.
+    mins = None
+    try:
+        import eastern
+        t = eastern.now()
+        mins = t.hour * 60 + t.minute
+    except Exception:                                   # noqa: BLE001
+        pass                    # no clock -> skip this check, never crash
+    if mins is not None:
+        cut = PX_RULES["entry_cutoff_et"][0] * 60 + PX_RULES["entry_cutoff_et"][1]
+        reopen = PX_RULES["reopen_et"][0] * 60 + PX_RULES["reopen_et"][1]
+        if cut <= mins < reopen:
+            raise PropRefused("%s: inside the flat-by-4:10-PM-ET window (no "
+                              "new entries 3:50-6:00 PM ET) — nothing sent. "
+                              "Exits still go." % name)
+    # Bracket-or-nothing: only contracts with the server-side stop+target
+    # may enter. Anything else would sit on a funded account with no stop.
+    sym = str(order.get("symbol") or "").upper()
+    if sym not in PX_INDEX:
+        raise PropRefused("%s: only the auto-bracketed index contracts (%s) "
+                          "enter on Topstep — %s would have no server-side "
+                          "stop, so nothing was sent"
+                          % (name, " ".join(sorted(PX_INDEX)), sym))
+    # Scaling plan: never send more than the configured cap.
+    cap = int(PX_RULES.get("max_contracts") or 1)
+    if qty > cap:
+        qty = cap
+    # The balance-based rules need the account's balance in the API answer.
+    # When it's there: a personal daily-loss stop, and the CONSISTENCY LOCK.
+    bal = acct.get("balance")
+    if isinstance(bal, (int, float)):
+        try:
+            import eastern
+            day = eastern.now().strftime("%Y-%m-%d")
+        except Exception:                               # noqa: BLE001
+            import time as _t
+            day = _t.strftime("%Y-%m-%d")
+        k = "%s|%s|%s" % (str(prop.get("extra") or ""), acct.get("id"), day)
+        st = _px_day_load()
+        if k not in st:
+            st[k] = float(bal)
+            _px_day_save(st)
+        day_start = float(st[k])
+        today = float(bal) - day_start
+        # Personal daily-loss stop, tighter than Topstep's own DLL: set
+        # "daily_loss_stop" (dollars) and entries stop once the account is
+        # down that much on the day.
+        stop_d = float(prop.get("daily_loss_stop") or 0)
+        if stop_d > 0 and -today >= stop_d:
+            raise PropRefused("%s: down $%.0f today — your daily-loss stop "
+                              "($%.0f) says no more entries"
+                              % (name, -today, stop_d))
+        # CONSISTENCY LOCK (his ask, 8/17): Topstep's rule is best day <= 50%
+        # of total profit. Keeping today under 50% of the NEW total means:
+        # today may earn at most what the whole account had earned before
+        # today (cap = pct/(1-pct) * prior profit; at 50% that's exactly the
+        # prior profit). When today's profit reaches the cap, entries LOCK
+        # until tomorrow — Topstep answers a payout question with "trade
+        # more days", this answers it by never concentrating the profit in
+        # the first place. Needs "start_balance" (the account's size, e.g.
+        # 50000) on the prop entry to know total profit; only applies while
+        # the account is actually ahead (prior profit > 0) — early green
+        # days BUILD the base, locking those would freeze a new account.
+        start_bal = float(prop.get("start_balance") or 0)
+        if start_bal > 0:
+            # The STAGE picks the percentage by itself (his ask, 8/17: "check
+            # yourself if its passed — it says in the name"). Topstep bakes
+            # the stage into the account name: an Express Funded Account
+            # carries XFA — that's PASSED, the strict 40% payout path
+            # applies. Anything else (the Combine) gets Topstep's own 50%.
+            # The settings value is only a fallback when the name says
+            # nothing recognisable.
+            nm = str(acct.get("name") or "").upper()
+            if "XFA" in nm or "EXPRESS" in nm:
+                pct = 0.40
+            else:
+                pct = float(prop.get("consistency_pct")
+                            or PX_RULES["consistency_pct"])
+            pct = min(max(pct, 0.05), 0.95)
+            prior = day_start - start_bal
+            if prior > 0 and today > 0:
+                # round to cents — 0.4/0.6*600 is 400.000000000006 in floats,
+                # and "up exactly $400" must NOT slip under a cap of $400.
+                cap = round((pct / (1.0 - pct)) * prior, 2)
+                if today >= cap:
+                    raise PropRefused(
+                        "%s: CONSISTENCY LOCK — up $%.0f today, and the "
+                        "%.0f%% best-day rule caps today at $%.0f. No more "
+                        "entries until tomorrow; exits still go."
+                        % (name, today, pct * 100, cap))
+    return qty
+
 
 def _px_token(req, base, user, key):
     import time
@@ -175,6 +324,13 @@ def _px_contract(req, base, hdr, symbol):
 
 
 def _send_projectx(prop, order, note):
+    # MGC is switched OFF here (his call, 8/17): gold has no auto-bracket on
+    # ProjectX (only the index set does), so an MGC call would sit on a
+    # funded account with no stop. Refused loudly until he turns it on
+    # on purpose. Webull's own MGC handling is untouched.
+    if str(order.get("symbol") or "").upper() == "MGC":
+        raise PropRefused("%s: MGC is switched off for Topstep — his call. "
+                          "Nothing was sent." % prop.get("name"))
     req = _requests()
     base = str(prop.get("extra") or "").rstrip("/")
     # `extra` may be "URL" or "URL|AccountName" to pick a specific account.
@@ -227,7 +383,9 @@ def _send_projectx(prop, order, note):
         note("PROP     %s <- TRIM %s x%s (ProjectX)" % (prop.get("name"), order.get("symbol"), qty))
         return "trimmed on %s" % prop.get("name")
 
-    # Entry. Limit if a price came with the call, otherwise market.
+    # Entry. Every Topstep rule checked FIRST — burn nothing (8/17).
+    qty = _px_entry_guard(prop, order, acct, qty)
+    # Limit if a price came with the call, otherwise market.
     limit = order.get("limit")
     body = {"accountId": acct_id, "contractId": contract_id,
             "side": 1 if is_short else 0,      # 0 = buy, 1 = sell

@@ -132,14 +132,54 @@ const RECORD_ONLY = new Set([
  * for the next new room that needs a proving day. */
 const SHADOW = new Set([]);
 
+/* rooms.txt is the ONE list of channels that trade (his ask, 8/17) — the
+ * extension used to keep its own hardcoded copy of "which rooms are baked
+ * in", separate from the list of tabs START HERE.bat opens, and the two
+ * drifted: a room pulled from the tab-opener kept trading anyway because it
+ * was still sitting in this file's old array. Now both read the same
+ * rooms.txt. Delete a line there and the room stops opening AND stops
+ * trading, in one edit, guaranteed.
+ *
+ * Loaded once, cached — cfg() awaits this so channel_ids is never read
+ * half-populated. An empty channel_ids would mean guardCheck's channel
+ * filter skips itself and lets EVERY room through — the opposite of what a
+ * missing rooms.txt should do — so a fetch failure logs it and channel_ids
+ * stays empty on purpose (nothing trades) rather than defaulting open. */
+let _roomsPromise = null;
+function loadRoomsFile() {
+  if (_roomsPromise) return _roomsPromise;
+  _roomsPromise = (async () => {
+    try {
+      const r = await fetch(chrome.runtime.getURL("rooms.txt"));
+      const text = await r.text();
+      const ids = [];
+      for (const line of text.split("\n")) {
+        const t = line.trim();
+        if (!t || t.startsWith("#")) continue;
+        const id = t.split("|", 1)[0].trim();
+        if (id) ids.push(id);
+      }
+      return ids;
+    } catch (e) {
+      try {
+        await addLog({ kind: "failed", what: "ROOMS.TXT",
+          why: "couldn't read extension/rooms.txt — no rooms are traded " +
+               "until this is fixed. (" + String(e).slice(0, 120) + ")" });
+      } catch (e2) {}
+      return [];
+    }
+  })();
+  return _roomsPromise;
+}
+
 async function cfg() {
   const { settings } = await chrome.storage.local.get("settings");
+  const bakedRooms = await loadRoomsFile();
   const c = Object.assign({
-    armed: true,       // ON is the resting state — see ensureArmed()
-    stopped: false,
+    // No armed/stopped switch any more (8/17) — a room tab being open is the
+    // only ON/OFF there is. See guards.js guardCheck() for why.
     capture: true,
     bridge_url: BRIDGE_DEFAULT,
-    auto_rearm: true,   // B3 - re-arm automatically once the bridge is back
     author_names: [],
     channel_ids: [],   // merged with the graduated rooms below
     extra_veto_words: [],
@@ -162,66 +202,11 @@ async function cfg() {
   c.allowed_symbols = Array.from(new Set(
     [].concat((settings || {}).allowed_symbols || [], VOCAB)
       .map(x => String(x).toUpperCase())));
-  // The rooms that trade are baked in, so graduating one never depends on a
-  // settings box being right: the main room and Aristotle's. Anything typed
-  // in the popup's channel box is honoured ON TOP of these.
+  // The rooms that trade come from rooms.txt now (8/17) — the same file
+  // START HERE.bat reads to open tabs. Anything typed in the popup's channel
+  // box is still honoured ON TOP of these, same as before.
   c.channel_ids = Array.from(new Set(
-    [].concat((settings || {}).channel_ids || [],
-              ["829754942817828884",     // main room
-               "987515353670221834",     // Aristotle — testing, his word
-               "1144369893760831489",    // Midas — testing, his word
-               "1433933203302776852",    // Aristotle's small-account challenge
-               "642437862930907158",    // RWGates / TradeLikeGates ($STS) alert room
-               "769797179992571914",    // Option Alerts
-               "880503518878892143",    // Lotto Alerts
-               "769797819770732554",    // Options Watchlist
-               "1137873895832174672",    // Futures Alerts
-               "808127664022880297",    // Spread Alerts
-               "769797593316065280",    // Stock Alerts
-               "771902435680845845",    // Member Alerts
-               "800526679046225961",    // Trade Log
-               "1276616766004658226",    // Platinum Trading
-               // Felony's Whop rooms — canonical ids, matched by slug below
-               "whop:day-trades", "whop:futures", "whop:high-risk",
-               "whop:2k-challenge", "whop:swing", "whop:long-term",
-               // z trades (ZTRADEZ) — the free-trial week, all testing
-               "829352738239414332", "721821717328298066", "1174393224253681674", "748266924122570882",
-               // z trades batch two — his links, his groupings
-               "1356793611420958732",
-               "1248264554886991893",
-               "694197721430491266",
-               "777750637613416479",
-               "1331631786068938813",
-               "1239624229583061052",
-               "1209181195406024744",
-               "1332090335005900800",
-               "874280313038192670",
-               "1389300087829827745",
-               "862419656382873650",
-               "1061980561293443152",
-               "1179200811650252850",
-               // dropped per request — not watched, not traded:
-               //   credit-spread (covered-call) rooms cc-1..5 and forex.
-               //   The buy-only bot can't follow premium-selling or FX.
-               //   918665915103584327 1255279667489931325 1294812275668160613
-               //   1121391020148543631 1239561137914122240  (cc-1..5)
-               //   552885275676639243  (forex)
-               "1525120298075029554",
-               "1251181965252755517",
-               "1213977047479754783",
-               "1375454591755489341",
-               // boka trading — new server
-               "1288291150083653652", "1499190814482632825", "1395159239164432515", "1387459050505240597",
-               // VERO — new server
-               "1323708708374450247", "760694103401955378", "1095502893559316482",
-               // added on request
-               "1527044644796366888",   // Options Insider (embed room)
-               "1471700027662405712",   // ZT fut-6 (name TBD)
-               "1135947475912495216",   // added on request
-               "1436009967693074462",   // added on request
-               "499045647580921887",    // added on request
-               "1468300531457069214"])  // added on request
-      .map(String)));
+    [].concat((settings || {}).channel_ids || [], bakedRooms).map(String)));
   return c;
 }
 
@@ -430,9 +415,13 @@ try {
 async function badge() {
   const c = await cfg();
   const st = await guardState();
-  if (c.stopped || !c.armed) {
-    chrome.action.setBadgeText({ text: "OFF" });
-    chrome.action.setBadgeBackgroundColor({ color: "#3f3f46" });
+  // No armed/stopped any more — the toolbar badge is now the LIVE bridge
+  // indicator (his ask, 8/17), visible whether or not the popup is open.
+  // checkBridgeHealth() keeps this fresh every 30s on the watch-build alarm.
+  const { bridge_healthy } = await chrome.storage.local.get("bridge_healthy");
+  if (bridge_healthy === false) {
+    chrome.action.setBadgeText({ text: "NO BR" });
+    chrome.action.setBadgeBackgroundColor({ color: "#dc2626" });
   } else if (sessionPhase(Object.assign({}, GUARD_DEFAULTS, c.guards || {})) !== "live"
              && Object.keys(st.positions || {}).length) {
     // On after the entry window purely to let an exit through. Worth its own
@@ -483,8 +472,11 @@ async function sendOrder(sig, qty, c, author) {
     coid: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
     // Real money or pretend, decided by the ROOM's toggle, not a global.
     live: !!sig.live,
-    // "instant" (null) or "pullback" — the room's entry-mode toggle. The
-    // bridge treats pullback as paper regardless of the live flag above.
+    // The call said SWING — rides to the book purely for display (8/17).
+    swing: !!sig.swing,
+    // "instant" (null) or "pullback" — the room's entry-mode toggle. A
+    // pullback entry spends whatever the live flag above says, same as an
+    // instant one (the old paper-force was lifted 8/17, his call).
     entry_mode: sig.entry_mode || null,
     // Which room called it — the per-room scoreboard keys off this.
     room: sig.room || null
@@ -532,45 +524,25 @@ async function sendOrder(sig, qty, c, author) {
 let bridgeStrikes = 0;
 const BRIDGE_STRIKES_OUT = 3;
 
-/* B3 - auto-re-arm. AUTO-DISARM correctly stops the bot firing when the bridge
- * is unreachable, but it then needed a hand to turn back on - so a brief blip (a
- * restart or self-update) left it OFF for the rest of the session with calls
- * read and lost. This brings it back the moment the bridge answers again. Only
- * re-arms what auto-disarm turned off (never a manual OFF), never overrides the
- * STOP brake, and only when the bridge is genuinely healthy. Off if auto_rearm
- * is false. Runs on the existing 30s watch-build alarm. */
-async function tryReArm() {
-  const { auto_disarmed } = await chrome.storage.local.get("auto_disarmed");
-  if (!auto_disarmed) return;
+/* No more auto-disarm / re-arm (8/17): there's nothing left to arm or
+ * disarm. When the bridge is unreachable, sendOrder's own 3-retry already
+ * fails each order with a clear "couldn't reach the bridge" log line and
+ * nothing fires — orders just start working again the instant the bridge
+ * answers, with no switch to remember to flip back. This only tracks the
+ * live connected/not-reachable flag for the badge and the popup's status
+ * dot, and still says something loud after 3 in a row so a real outage
+ * doesn't pass silently. */
+async function checkBridgeHealth() {
   const c = await cfg();
-  if (c.auto_rearm === false) return;
   let healthy = false;
   try {
     const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/build", { cache: "no-store" });
     healthy = r.ok;
   } catch (e) { healthy = false; }
-  if (!healthy) return;                       // bridge still down - keep waiting
-  const { settings } = await chrome.storage.local.get("settings");
-  if (settings && settings.stopped) return;   // the STOP brake is separate - honour it
-  await chrome.storage.local.set({
-    settings: Object.assign({}, settings, { armed: true }),
-    auto_disarmed: false
-  });
-  bridgeStrikes = 0;
-  await addLog({
-    kind: "update", what: "AUTO-RE-ARMED", action: "ARM",
-    why: "the bridge is reachable again - the bot re-armed itself and is " +
-         "watching the rooms. It was OFF only while the bridge was unreachable.",
-    text: "", author: ""
-  });
-  badge();
-  try {
-    chrome.notifications.create({
-      type: "basic", iconUrl: "icon128.png",
-      title: "AUTO-RE-ARMED - bridge is back",
-      message: "The bridge is reachable again, so the bot turned itself back ON."
-    });
-  } catch (e) { /* notifications are a nicety, never a blocker */ }
+  const { bridge_healthy: was } = await chrome.storage.local.get("bridge_healthy");
+  await chrome.storage.local.set({ bridge_healthy: healthy, bridge_checked_at: Date.now() });
+  if (healthy !== was) badge();
+  return healthy;
 }
 
 async function bridgeStrike(res) {
@@ -578,27 +550,23 @@ async function bridgeStrike(res) {
   if (!res.unreachable) return;
   bridgeStrikes++;
   if (bridgeStrikes < BRIDGE_STRIKES_OUT) return;
-  const { settings } = await chrome.storage.local.get("settings");
-  if (settings && settings.armed === false) return;   // already off
-  await chrome.storage.local.set({
-    settings: Object.assign({}, settings, { armed: false }),
-    auto_disarmed: true          // B3 - marks this as OURS to undo when the bridge returns
-  });
+  bridgeStrikes = 0;
+  await chrome.storage.local.set({ bridge_healthy: false, bridge_checked_at: Date.now() });
   await addLog({
-    kind: "failed", what: "AUTO-DISARMED", action: "HALT",
+    kind: "failed", what: "BRIDGE UNREACHABLE",
     why: "the bridge couldn't be reached " + BRIDGE_STRIKES_OUT + " times " +
-         "in a row — calls were being read and lost, which is worse than " +
-         "missing them. Start the bridge (🎯 START HERE.bat), then flip the " +
-         "switch back ON in the popup.",
+         "in a row — those calls were read but nothing was sent. Start the " +
+         "bridge (🎯 START HERE.bat). Nothing needs re-arming — trading " +
+         "resumes on its own the moment the bridge answers again.",
     text: "", author: ""
   });
   badge();
   try {
     chrome.notifications.create({
       type: "basic", iconUrl: "icon128.png",
-      title: "AUTO-DISARMED — bridge unreachable",
-      message: "3 orders in a row couldn't reach the bridge. The bot is OFF " +
-               "until you start the bridge and re-arm it."
+      title: "BRIDGE UNREACHABLE",
+      message: "3 orders in a row couldn't reach the bridge on your PC. " +
+               "Start it back up — nothing else to do, it'll pick back up on its own."
     });
   } catch (e) { /* notifications are a nicety, never a blocker */ }
 }
@@ -969,7 +937,12 @@ async function checkBuild() {
   }
   if (stamp === build_stamp) return;
 
-  if (inFlight > 0 || (c.armed && marketOpenNow())) {
+  // Used to wait for the manual OFF switch — deleted 8/17 because that's
+  // exactly what left the bot silently dead for 90 minutes on 8/17: it
+  // waited for OFF, something turned it OFF once, and nothing ever turned
+  // it back ON. Wait for the market to be closed instead — a real state
+  // that always ends on its own, with nothing to remember to flip.
+  if (inFlight > 0 || marketOpenNow()) {
     const { build_waiting } = await chrome.storage.local.get("build_waiting");
     if (build_waiting !== stamp) {
       await chrome.storage.local.set({ build_waiting: stamp });
@@ -1028,23 +1001,16 @@ async function reinject() {
  * session and weekends, and exits were never time-boxed. Being ON around the
  * clock costs nothing and misses nothing.
  *
+ * 8/17: taken one step further — the manual ON/OFF switch itself is gone.
+ * A room tab being open in the browser is the only switch there ever was in
+ * practice (content.js only reads while it's open); the toggle was a SECOND,
+ * independent switch that could be left OFF and forgotten, which is exactly
+ * what cost 90 minutes on 8/17. There's nothing left to arm on install.
+ *
  * What stays manual, on his word too: TEST vs REAL. Being ON only ever spends
  * pretend money until he flips the mode himself ("if i want it to go live
  * with an account with money then yes have to activate it").
- *
- * ensureArmed runs once per install: it arms the bot and leaves a marker so
- * the OFF button still works — pressing OFF is a choice, and choices stick.
  */
-async function ensureArmed() {
-  const { settings, armed_once } = await chrome.storage.local.get(
-    ["settings", "armed_once"]);
-  if (armed_once) return;
-  await chrome.storage.local.set({
-    settings: Object.assign({}, settings || {}, { armed: true, stopped: false }),
-    armed_once: true
-  });
-  badge();
-}
 
 /* One tab per channel. Day one he clicked START HERE by hand and the 9:25
  * alarm ran it again — every channel open twice, every message read twice.
@@ -1148,7 +1114,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch.export_every_min) armAutoExport();
 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); tryReArm(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); checkBridgeHealth(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "auto-export") autoExportForLearning();
 });
@@ -1228,7 +1194,8 @@ async function autoExportForLearning() {
     state =
       "=== CURRENT STATE (as of " + stamp(Date.now()) + " ET) ===\n" +
       "  version:        v" + ver + "\n" +
-      "  bot armed:      " + onoff(c.armed !== false && !c.stopped) + "\n" +
+      // No armed/stopped any more — reading is just whether a room tab is
+      // open (8/17). "bridge" below is the one thing that gates trading.
       "  bridge:         " + (mode ? "connected" : "NOT REACHABLE") + "\n" +
       "  webull:         " + (mode ? ("live keys " + onoff(mode.has_keys && mode.connected) +
         ", paper " + (mode.paper ? "ON" : "off") +
@@ -1367,17 +1334,11 @@ async function handleOffscreen(msg) {
   }
 }
 
-// Going from ON back to OFF is the moment a held-back update can land, so
-// don't make it wait out the rest of the half minute.
+// A settings change is a sign he's here — check for a pending update a
+// little sooner than the 30s alarm would (checkBuild now waits for the
+// market to be closed, not for any manual switch — see checkBuild()).
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && changes.settings) {
-    checkBuild();
-    // Re-arming by hand is a statement that the bridge is back — the
-    // strike count starts over instead of instantly disarming again.
-    const was = (changes.settings.oldValue || {}).armed;
-    const now = (changes.settings.newValue || {}).armed;
-    if (now && !was) { bridgeStrikes = 0; chrome.storage.local.set({ auto_disarmed: false }); }
-  }
+  if (area === "local" && changes.settings) checkBuild();
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
@@ -1697,9 +1658,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     }
 
     // "All positions closed" — walk everything this trader holds and close
-    // each one as its own order. Respect the OFF switch like everything else.
+    // each one as its own order.
     if (sig.all && sig.action === "CLOSE") {
-      if (c.stopped || c.armed === false) { reply({ ok: true }); return; }
       const stAll = await guardState();
       const whoAll = String(sig.caller || msg.author || "").toLowerCase();
       const mine = Object.keys(stAll.positions || {})
@@ -1845,7 +1805,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     const _room = CHAN_NAMES[_cid] || ROOM_LABELS[_cid] || sig.room || "";
     const _from = (sig.caller || msg.author || "?") + (_room ? " · " + _room : "");
     await addLog({ kind: res.ok ? "sent" : "failed",
-                   what: human(sig) + " x" + qty + " — " + _from,
+                   // "(Swing)" rides the front of the line when the call said
+                   // so (his ask, 8/17) — overnight hold, not a day trade.
+                   what: (sig.swing ? "(Swing) " : "") + human(sig) + " x" + qty + " — " + _from,
                    // What kind of order it was. "BID IN" is only true of an
                    // entry — a sell doesn't sit on the bid waiting for a buyer,
                    // and calling an exit "BID IN" made closed trades read like
@@ -1888,9 +1850,9 @@ async function allRoomsTesting() {
   return;
 }
 
-chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); ensureArmed(); badge(); reinject(); });
-chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); ensureArmed(); badge(); reinject(); });
-ensureArmed();
+chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); });
+chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); });
 badge();
 reinject();
 checkBuild();
+checkBridgeHealth();
