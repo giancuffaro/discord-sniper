@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 14:53:16 ET)
+Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 15:23:16 ET)
 
-=== CURRENT STATE (as of 2026-08-18 14:53:16 ET) ===
+=== CURRENT STATE (as of 2026-08-18 15:23:16 ET) ===
   version:        v2.9.6
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -15,7 +15,7 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 14:53:
   open positions (0):
     (none)
 
-=== RAW MESSAGES THE READER SAW (1133) ===
+=== RAW MESSAGES THE READER SAW (1136) ===
 2020-06-18 19:36:31  [Summit Trading Strategies: 🎉｜welcome #588478902775709696]  TradeLikeGates: TradeLikeGates [$STS], Server Tag: $STS $STS — 6/18/20, 7:36 PM Thursday, June 18, 2020 at 7:36 PM We are OFFICIAL! SCROLL UP FOR MORE INFORMATION ABOUT THE SERVER (edited) Tuesday, November 24, 2020 at 10:39 PM
 2020-12-15 03:17:50  [TradingTheTrend: intro-to-options-trading #787347359385911296]  TradingTheTrend: TradingTheTrend — 12/15/20, 3:17 AM Tuesday, December 15, 2020 at 3:17 AM What is an option? An option is a contract giving the buyer the right to buy or sell an underlying asset at a specific price, on or before a certain date. An option is a security, and constitutes a binding contract with strictly defined terms and properties. Every option contract represents 100 shares. Options are time decaying securities. They are much riskier than trading stock, but offer much higher rewards. The bigger risk/reward is what draws in most traders/investors. Calls You buy calls when you're expecting a stock to be bullish. When you buy a call, you’re buying the right to purchase 100 shares of a particular stock at a predetermined price, which is the “strike price.” To purchase a call, you pay the seller a fee, known as a “premium. Puts You buy puts when you are expecting a stock to be bearish. A put option gives you the right, but not the obligation, to sell a stock at a certain price in the future (exercise). When you purchase a put, you expect the underlying asset to decline in price.. As price declines, your contracts will gain value. Puts lose value as the underlying increases. You are not obligated to "exercise" call or put options, and can simply sell them to gain the premium." (edited) Saturday, December 19, 2020 at 1:23 AM
 2021-08-24 09:47:35  [Summit Trading Strategies: 🧹｜golden-sweeps #687491078823215153]  Spartan.Flows: Spartan.Flows APP — 8/24/21, 9:47 AM Tuesday, August 24, 2021 at 9:47 AM NNOX PUTS Time 09:46 AM Expiration 11/19/21 Strike Price 25 Details 2,500 @ 5.70 Spot 23.44 Type SWEEP Premium $1.4M 1-100 Rank 107 8/24/21, 9:46 AM
@@ -1149,14 +1149,11 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 14:53:
 2026-08-18 14:23:53  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯tlm-options #694197721430491266]  TLM: TLM — 2:23 PM Tuesday, August 18, 2026 at 2:23 PM Close Or stops above entry @everyone Aapl 312.50 call Aug 21 at 2.15
 2026-08-18 14:26:37  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  Unraveller (Admin)🔮: Unraveller (Admin)🔮 ADMINS — 2:26 PM Tuesday, August 18, 2026 at 2:26 PM This could be it. Lets see if we can push thru @here
 2026-08-18 14:45:48  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯tlm-options #694197721430491266]  TLM: TLM — 2:45 PM Tuesday, August 18, 2026 at 2:45 PM Close Or stops above entry @everyone Aapl 312.50 call Aug 21 at 2.40
+2026-08-18 15:08:41  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  Unraveller (Admin)🔮: Unraveller (Admin)🔮 ADMINS — 3:08 PM Tuesday, August 18, 2026 at 3:08 PM Msft finally over 483 @here
+2026-08-18 15:11:59  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  Unraveller (Admin)🔮: [ 3:11 PM ] Tuesday, August 18, 2026 at 3:11 PM Only took all day but never broke structure. Just that kind of market. This is not a swing so definitely trim or take profits. See you all on stock Tuesday @here
+2026-08-18 15:12:40  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 3:12 PM Tuesday, August 18, 2026 at 3:12 PM @everyone market is dead Do not take this as financial advice! || ⏱︎ 15:12:40 EST
 
 === WHAT THE BOT DID (400) ===
-2026-08-18 09:32:28  <skipped>  CLOSE NQ — you're not in NQ, so there's nothing to close — the order was not sent  |  Felony: BANG! Target hit $2,600 a contract locked in! Lovely overnight trade on NQ starting the day off green CPI here in an hour will drop levels for eval passer in chat!
-2026-08-18 09:32:28  <skipped>  OPEN MNQ @ 30100.00 — ⚠ double-check disagrees — I read MNQ , the AI read NQ . Held for review — nothing sent. Fire it by hand in Webull if the room really meant it.  |  Felony: Long NQ @ 30100 Stop 30075 Target 30155 Higher risk with this weakness intraday but just held that major demand have to test it here RR is great.
-2026-08-18 09:32:29  <update>  VXX · Felony — their exit landed before your bid filled. The bid is off the book; you own nothing here.
-2026-08-18 09:32:29  <failed>  OPEN MNQ @ 30125.00 x1 — Felony · Whop High Risk — the bridge refused it: HTTP 502 Webull futures didn't take it: your Webull FUTURES account doesn't have enough money in it for one MNQU6. The order itself was fine - Webull checked it; Topstep: ProjectX refused the order (HTTP 200 {  |  Felony: Long NQ @ 30125 Stop 30100 Target 30300 Higher risk with that rejection but really like that sweep of previous hourly low + strong closure here 4H also flipping green. Using currently hourly low as stop in lightly here.
-2026-08-18 09:32:46  <skipped>  CLOSE PLTR — you're not in PLTR, so there's nothing to close — the order was not sent  |  HoneyDrip (Scribe): @Unraveller (Admin)🔮 all out of PLTR @everyone -16%
-2026-08-18 09:32:48  <update>  VXX — x1 picked up from your Webull LIVE account — the bot can see it and exit it on the room's call now
 2026-08-18 09:32:48  <update>  VXX — Webull wouldn't hold a resting stop (HTTP Status: 417, Code: OAUTH_OPENAPI_STOP_PRICE_MUST_BE_GREATER_THAN_LIMIT_PRICE, Msg: St). The watchdog on this PC is still on it, so keep this program running.
 2026-08-18 09:32:48  <update>  SPY · Trademorewiser (MOD) — gone from your Webull account — you closed it yourself, so the trade is marked done · +$30 on the trade · day so far +$0
 2026-08-18 09:32:53  <stopped>  VXX — bid hit 0.06, at or under your 0.14 stop. Selling 1.
@@ -1551,3 +1548,9 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 14:53:
 2026-08-18 14:45:46  <update>  AAPL · TLM — up 34%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
 2026-08-18 14:45:49  <ignored>  full exit on AAPL  |  TLM: Close Or stops above entry @everyone Aapl 312.50 call Aug 21 at 2.40
 2026-08-18 14:46:16  <update>  AAPL · TLM — up 34%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
+2026-08-18 15:00:46  <update>  AAPL · TLM — pulled the resting stop before selling
+2026-08-18 15:00:46  <stopped>  AAPL · TLM — bid hit 2.09, at or under your 2.09 stop. Selling 1.
+2026-08-18 15:00:46  <update>  AAPL · TLM — Webull said an order was still on this contract; cleared it and re-sent the sell
+2026-08-18 15:00:46  <stopped>  AAPL · TLM — the resting stop at Webull had already sold it; the watchdog stands down. Trade closed.
+2026-08-18 15:00:46  <stopped>  AAPL · TLM — the resting stop at Webull sold it first · +$209 on the trade · day so far +$0
+2026-08-18 15:12:00  <ignored>  a trim with no ticker in it, and you're not in anything — nothing to close  |  Unraveller (Admin)🔮: Only took all day but never broke structure. Just that kind of market. This is not a swing so definitely trim or take profits. See you all on stock Tuesday @here
