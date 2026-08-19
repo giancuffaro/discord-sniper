@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 07:54:30 ET)
+Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 08:24:31 ET)
 
-=== CURRENT STATE (as of 2026-08-19 07:54:30 ET) ===
+=== CURRENT STATE (as of 2026-08-19 08:24:31 ET) ===
   version:        v2.9.8
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -18,7 +18,7 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 07:54:
     [LIVE ] TSLA 2026-09-18 300P x1 paid 3.21 now 3.25 +$4 (+1%)
     [LIVE ] BAC 2026-10-02 66C x1 paid 1.06 now 1.05 -$1 (-1%)
 
-=== RAW MESSAGES THE READER SAW (18) ===
+=== RAW MESSAGES THE READER SAW (25) ===
 2026-08-18 22:42:45  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:42 PM Tuesday, August 18, 2026 at 10:42 PM @everyone BTO MNQ1 29522 longs here tight sl PT 29550 then 29609 © 2021-2026, Horizon Analytics, LLC
 2026-08-18 22:46:12  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:46 PM ] Tuesday, August 18, 2026 at 10:46 PM @everyone 44 ticks © 2021-2026, Horizon Analytics, LLC
 2026-08-18 22:46:51  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:46 PM ] Tuesday, August 18, 2026 at 10:46 PM @everyone © 2021-2026, Horizon Analytics, LLC
@@ -37,6 +37,13 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 07:54:
 2026-08-19 07:32:43  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 7:32 AM Wednesday, August 19, 2026 at 7:32 AM @everyone 50 ticks Do not take this as financial advice! || ⏱︎ 07:32:43 EST
 2026-08-19 07:42:08  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 7:42 AM Wednesday, August 19, 2026 at 7:42 AM @everyone 90 ticks trim 2 Do not take this as financial advice! || ⏱︎ 07:42:08 EST
 2026-08-19 07:43:33  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: @everyone 100 ticks Do not take this as financial advice! || ⏱︎ 07:43:33 EST Do not take this as financial advice! || ⏱︎ 07:43:33 EST
+2026-08-19 08:03:58  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 8:03 AM Wednesday, August 19, 2026 at 8:03 AM @everyone 112 ticks support here Do not take this as financial advice! || ⏱︎ 08:03:57 EST
+2026-08-19 08:09:42  [VeroTrade: ⚡⏐daily-futures-levels #1326233105454993439]  Vero: Vero [PAID], Server Tag: PAID PAID Owner — 8:09 AM Wednesday, August 19, 2026 at 8:09 AM ES or MES (S&P 500 Futures) S = 7710, 7698, 7656, 7649 R = 7723, 7735, 7766, 7779
+2026-08-19 08:10:03  [VeroTrade: ⚡⏐daily-futures-levels #1326233105454993439]  Vero: [ 8:10 AM ] Wednesday, August 19, 2026 at 8:10 AM - NQ or MNQ (NASDAQ 100 Futures) S = 29510, 29430, 29340, 29240 R = 29610, 29690, 29770, 29860
+2026-08-19 08:10:09  [VeroTrade: ⚡⏐daily-futures-levels #1326233105454993439]  @daily-key-levels: [ 8:10 AM ] Wednesday, August 19, 2026 at 8:10 AM - DAILY FUTURES LEVELS MES and MNQ INDICATOR INPUTS (copy + paste): Add indicator: ⁠📈⏐key-levels-indicator MES1!, 7710, 7698, 7656, 7649, 7723, 7735, 7766, 7779 MNQ1!, 29510, 29430, 29340, 29240, 29610, 29690, 29770, 29860 @daily-key-levels
+2026-08-19 08:14:24  [ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop #1239624229583061052]  The Pawn (The Market Bishop): The Pawn (The Market Bishop) VERIFIED APP APP — 8:14 AM Wednesday, August 19, 2026 at 8:14 AM @everyone Bishop's Ideas Holy shit, I hope you guys took the MRNA leaps with me a few days ago on the twitter account Cause, wow. How I Trade The Market Bishop Trade Idea's Disclaimer Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:14 AM
+2026-08-19 08:16:41  [ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop #1239624229583061052]  The Pawn (The Market Bishop): @everyone Bishop's Ideas We always catch the biggest moves man I keep saying it, no one can replicate what we do for a reason All done with inside information, just genuine understanding of price action and the markets Don't mind the drawings, it's from when I was teaching people How I Trade The Market Bishop Trade Idea's Disclaimer Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:16 AM Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:16 AM •
+2026-08-19 08:17:32  [ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop #1239624229583061052]  The Pawn (The Market Bishop): ^ Should come to show you, win rate does not matter, not even in the slightest The only thing that does is average gain (which includes wins and losses), and no one comes to close to us on that Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:17 AM Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:17 AM •
 
 === WHAT THE BOT DID (42) ===
 2026-08-18 22:22:27  <update>  KO · King Maker Bot — stop resting at Webull at 0.50 (-10% from 0.54)
