@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 23:24:30 ET)
+Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 23:54:30 ET)
 
-=== CURRENT STATE (as of 2026-08-18 23:24:30 ET) ===
+=== CURRENT STATE (as of 2026-08-18 23:54:30 ET) ===
   version:        v2.9.8
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -18,7 +18,7 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 23:24:
     [LIVE ] TSLA 2026-09-18 300P x1 paid 3.21 now 3.25 +$4 (+1%)
     [LIVE ] BAC 2026-10-02 66C x1 paid 1.06 now 1.05 -$1 (-1%)
 
-=== RAW MESSAGES THE READER SAW (8) ===
+=== RAW MESSAGES THE READER SAW (9) ===
 2026-08-18 22:42:45  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:42 PM Tuesday, August 18, 2026 at 10:42 PM @everyone BTO MNQ1 29522 longs here tight sl PT 29550 then 29609 © 2021-2026, Horizon Analytics, LLC
 2026-08-18 22:46:12  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:46 PM ] Tuesday, August 18, 2026 at 10:46 PM @everyone 44 ticks © 2021-2026, Horizon Analytics, LLC
 2026-08-18 22:46:51  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:46 PM ] Tuesday, August 18, 2026 at 10:46 PM @everyone © 2021-2026, Horizon Analytics, LLC
@@ -27,8 +27,9 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 23:24:
 2026-08-18 22:50:29  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:50 PM Tuesday, August 18, 2026 at 10:50 PM @everyone 22 points = 88 ticks MNQ what a beautyyyyyyyy of a play 29543 © 2021-2026, Horizon Analytics, LLC
 2026-08-18 22:57:58  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:57 PM Tuesday, August 18, 2026 at 10:57 PM @everyone LIVE TOMORROWWWWWWW LFGGGGGGGGGGGGGGGGGGGGG © 2021-2026, Horizon Analytics, LLC
 2026-08-18 23:02:20  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 11:02 PM ] Tuesday, August 18, 2026 at 11:02 PM @everyone 27 points = 108 ticks close baby closing leaving one in baby raising sl now YES SIRRRRR MNQ for the win © 2021-2026, Horizon Analytics, LLC
+2026-08-18 23:38:58  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 11:38 PM Tuesday, August 18, 2026 at 11:38 PM @everyone 46 points = 184 ticks all out MNQ see you tomorrow GOING LIVE TOMORROW baby © 2021-2026, Horizon Analytics, LLC
 
-=== WHAT THE BOT DID (39) ===
+=== WHAT THE BOT DID (40) ===
 2026-08-18 22:22:27  <update>  KO · King Maker Bot — stop resting at Webull at 0.50 (-10% from 0.54)
 2026-08-18 22:22:27  <update>  GLD · TLM — TLM's call, bid is in at 2.45 for 1, waiting for a seller (90s)
 2026-08-18 22:22:27  <update>  GLD · TLM — no fill (nobody sold at 2.45 within 90s). You are NOT in this one.
@@ -68,3 +69,4 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 23:24:
 2026-08-18 23:02:20  <skipped>  CLOSE YES — you're not in YES, so there's nothing to close — the order was not sent  |  MR.TOPHAT (OPTIONS/FUTURES): @everyone 27 points = 108 ticks close baby closing leaving one in baby raising sl now YES SIRRRRR MNQ for the win © 2021-2026, Horizon Analytics, LLC © 2021-2026, Horizon Analytics, LLC
 2026-08-18 23:22:58  <update>  picked up a new version by itself and reloaded
 2026-08-18 23:23:29  <update>  picked up a new version by itself and reloaded
+2026-08-18 23:38:59  <skipped>  CLOSE MNQ — you're not in MNQ, so there's nothing to close — the order was not sent  |  MR.TOPHAT (OPTIONS/FUTURES): @everyone 46 points = 184 ticks all out MNQ see you tomorrow GOING LIVE TOMORROW baby © 2021-2026, Horizon Analytics, LLC © 2021-2026, Horizon Analytics, LLC
