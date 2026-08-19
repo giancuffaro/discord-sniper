@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 13:12:17 ET)
+Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 13:42:18 ET)
 
-=== CURRENT STATE (as of 2026-08-19 13:12:17 ET) ===
+=== CURRENT STATE (as of 2026-08-19 13:42:18 ET) ===
   version:        v3.0.2
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -13,10 +13,10 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 13:12:
   LIVE rooms:     ZTRADEZ (OPTIONS & STOCKS): 🔸︱🏰king-maker, VeroTrade: ✅⏐vero-swings, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🅰adex-swings, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎰sir-goldman, ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings, ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures, Platinum Trading: ✅│join-premium, BOKA Trading: 🚨︱option-alerts, VeroTrade: ✅⏐1k-challenge, ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯cranmer, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯madhatter-trades, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺clutchinvestments, BOKA Trading: 🦩︱ryans-alerts, Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge, ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options, BOKA Trading: 🚨︱equity-alerts, ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy, The Insiders Trading Education: 🐺・desi-swings, Summit Trading Strategies: 📌｜alert-room, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯tlm-options, ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps, VeroTrade: ✅⏐vero-trades, TradingTheTrend: 🚨option-alerts🚨, TradingTheTrend: 🔵options-watchlist, ZTRADEZ (OPTIONS & STOCKS): ◽︱🐼evapanda, ZTRADEZ (OPTIONS & STOCKS): 🟢︱🏆top-flow, Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺kumo-debit, ZTRADEZ (OPTIONS & STOCKS): ◽︱😈demon, Honey Drip Network 🍯💰📈: 👑｜aristotle-trades, Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, Whop Swing Trades
   RN-pullback:    ON — all channels wait for the round number
   open positions (2):
-    [LIVE ] QQQ 2026-08-21 722C x1 paid 1.83 now 1.68 -$15 (-8%)
-    [LIVE ] M 2026-09-18 25C x1 paid 0.75 now 0.89 +$14 (+18%)
+    [LIVE ] AAPL 2026-08-21 310P x1 paid 0.94 now 0.79 -$15 (-16%)
+    [LIVE ] M 2026-09-18 25C x1 paid 0.75 now 0.90 +$15 (+19%)
 
-=== RAW MESSAGES THE READER SAW (499) ===
+=== RAW MESSAGES THE READER SAW (516) ===
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  Nitro Trades: Nitro Trades [PLAT], Server Tag: PLAT PLAT — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively.
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
@@ -516,28 +516,25 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 13:12:
 2026-08-19 13:07:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 2026-08-19 13:09:08  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 1:09 PM Wednesday, August 19, 2026 at 1:09 PM @everyone 40 ticks Do not take this as financial advice! || ⏱︎ 13:09:08 EST
 2026-08-19 13:09:08  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 1:09 PM Wednesday, August 19, 2026 at 1:09 PM @everyone 40 ticks Do not take this as financial advice! || ⏱︎ 13:09:08 EST
+2026-08-19 13:15:28  [ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options #1471700027662405712]  Namrood-BOT: @everyone Lotto Trade — RISKY leave room to average AAPL 310P 08/21/2026 $0.92 Size for what you can afford to lose --- 1% of your account balance. Manage your risk! @Namrood - LIVE DASHBOARD @ZTRADEZ (OPTIONS & STOCKS) | Wednesday - 08-19-2026 01:15 PM EST @ZTRADEZ (OPTIONS & STOCKS) | Wednesday - 08-19-2026 01:15 PM EST
+2026-08-19 13:15:56  [ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options #1471700027662405712]  Namrood-BOT: @everyone Idea AAPL SL is reclaim of 315 on 1H @Namrood - Live trades dashboard @ZTRADEZ (OPTIONS & STOCKS) | Wednesday - 08-19-2026 01:15 PM EST @ZTRADEZ (OPTIONS & STOCKS) | Wednesday - 08-19-2026 01:15 PM EST
+2026-08-19 13:16:27  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 13:21:02  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps #721821717328298066]  Bullwinkle: Bullwinkle EDU — 1:21 PM Wednesday, August 19, 2026 at 1:21 PM **COIN | $155 P 6.72 SEPT 11
+2026-08-19 13:21:08  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps #721821717328298066]  Bullwinkle: Bullwinkle COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited) Wednesday, August 19, 2026 at 1:21 PM Bullwinkle EDU — 1:24 PM Wednesday, August 19, 2026 at 1:24 PM COIN | 7.00 OUT 1/4
+2026-08-19 13:21:08  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps #721821717328298066]  Bullwinkle: Bullwinkle COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited) Wednesday, August 19, 2026 at 1:21 PM Bullwinkle EDU — 1:25 PM Wednesday, August 19, 2026 at 1:25 PM COIN | 7.10 OUT ALL BUT 1
+2026-08-19 13:21:08  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps #721821717328298066]  Bullwinkle: Bullwinkle COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited) Wednesday, August 19, 2026 at 1:21 PM Bullwinkle EDU — 1:25 PM Wednesday, August 19, 2026 at 1:25 PM SL 6.78
+2026-08-19 13:21:08  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps #721821717328298066]  Bullwinkle: Bullwinkle COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited) Wednesday, August 19, 2026 at 1:21 PM Bullwinkle EDU — 1:29 PM Wednesday, August 19, 2026 at 1:29 PM COIN | 7.25 ON ASK SPREAD WIDE MARKETING OUT LAST WIN
+2026-08-19 13:21:08  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps #721821717328298066]  Bullwinkle: Bullwinkle COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited) Wednesday, August 19, 2026 at 1:21 PM Bullwinkle EDU — 1:34 PM Wednesday, August 19, 2026 at 1:34 PM
+2026-08-19 13:22:16  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 1:22 PM Wednesday, August 19, 2026 at 1:22 PM @everyone 75 ticks trim 1 Do not take this as financial advice! || ⏱︎ 13:22:16 EST
+2026-08-19 13:22:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 13:28:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 13:32:04  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 1:32 PM Wednesday, August 19, 2026 at 1:32 PM @everyone 109 ticks Do not take this as financial advice! || ⏱︎ 13:32:04 EST
+2026-08-19 13:32:58  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: @everyone 111 ticks anyone here ?? Do not take this as financial advice! || ⏱︎ 13:32:57 EST Do not take this as financial advice! || ⏱︎ 13:32:57 EST
+2026-08-19 13:34:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 13:34:57  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: @everyone from tonight we will focus on mnq nq , I am trading because of FOMC manipulation Do not take this as financial advice! || ⏱︎ 13:34:57 EST Do not take this as financial advice! || ⏱︎ 13:34:57 EST
+2026-08-19 13:40:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 
-=== WHAT THE BOT DID (388) ===
-2026-08-18 22:22:27  <update>  KO · King Maker Bot — stop resting at Webull at 0.50 (-10% from 0.54)
-2026-08-18 22:22:27  <update>  GLD · TLM — TLM's call, bid is in at 2.45 for 1, waiting for a seller (90s)
-2026-08-18 22:22:27  <update>  GLD · TLM — no fill (nobody sold at 2.45 within 90s). You are NOT in this one.
-2026-08-18 22:22:27  <update>  AAPL · TLM — TLM's call, bid is in at 1.95 for 1, waiting for a seller (90s)
-2026-08-18 22:22:27  <update>  KO · King Maker Bot — gone from your Webull account — you closed it yourself, so the trade is marked done · +$53 on the trade · day so far +$0
-2026-08-18 22:22:27  <fired>  AAPL · TLM — filled 1.0 at 1.90 — cost $0
-2026-08-18 22:22:27  <update>  AAPL · TLM — stop resting at Webull at 1.71 (-10% from 1.90)
-2026-08-18 22:22:27  <update>  AAPL · TLM — up 20%, ratchet moved your stop to 2.09 — locked in +10%, can't go red from here
-2026-08-18 22:22:27  <update>  AAPL · TLM — up 30%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
-2026-08-18 22:22:27  <update>  AAPL · TLM — up 30%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
-2026-08-18 22:22:27  <update>  AAPL · TLM — up 32%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
-2026-08-18 22:22:27  <update>  AAPL · TLM — up 32%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
-2026-08-18 22:22:27  <update>  AAPL · TLM — up 32%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
-2026-08-18 22:22:27  <update>  AAPL · TLM — up 33%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
-2026-08-18 22:22:27  <update>  AAPL · TLM — up 34%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
-2026-08-18 22:22:27  <update>  AAPL · TLM — up 34%, but the ratchet couldn't move the resting stop to 2.28 (HTTP Status: 417, Code: OAUTH_OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: You hold a). The old stop is still in place; the watchdog on this PC covers the gap.
-2026-08-18 22:22:27  <update>  AAPL · TLM — pulled the resting stop before selling
-2026-08-18 22:22:27  <stopped>  AAPL · TLM — bid hit 2.09, at or under your 2.09 stop. Selling 1.
-2026-08-18 22:22:27  <update>  AAPL · TLM — Webull said an order was still on this contract; cleared it and re-sent the sell
-2026-08-18 22:22:27  <stopped>  AAPL · TLM — the resting stop at Webull had already sold it; the watchdog stands down. Trade closed.
+=== WHAT THE BOT DID (400) ===
 2026-08-18 22:22:27  <stopped>  AAPL · TLM — the resting stop at Webull sold it first · +$209 on the trade · day so far +$0
 2026-08-18 22:22:27  <update>  BAC · Shakira T — Shakira T's call, bid is in at 1.16 for 1, waiting for a seller (90s)
 2026-08-18 22:22:27  <fired>  BAC · Shakira T — filled 1.0 at 1.06 — cost $0
@@ -906,3 +903,35 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 13:12:
 2026-08-19 13:11:18  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  👑KingBeeAri🐝: Starters in SOFI 18.5 C 8/28 “0.63” @everyone
 2026-08-19 13:11:19  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: MRNA | $150 C 34.20 DEC 18 34.10 @everyone
 2026-08-19 13:11:20  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  TradingTheTrend: BTO SPY 8/25 760p @ 1.88 grabbing these in case it gets ugly here. Potential is there. If support holds I will end up cutting them
+2026-08-19 13:15:17  <update>  QQQ — pulled the resting stop before selling
+2026-08-19 13:15:17  <stopped>  QQQ — bid hit 1.64, at or under your 1.65 stop. Selling 1.
+2026-08-19 13:15:17  <stopped>  QQQ — stopped out at 1.64 · -$19 on the trade · day so far +$0
+2026-08-19 13:15:31  <sent>  OPEN AAPL 310P 8/21/2026 @ 0.92 x1 — Namrood-BOT · ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options — sent in 2496 ms — waiting for AAPL to touch $315 (stock at 314.83) — enters there or skips in 10 min  |  Namrood-BOT: @everyone Lotto Trade — RISKY leave room to average AAPL 310P 08/21/2026 $0.92 Size for what you can afford to lose --- 1% of your account balance. Manage your risk! @Namrood - LIVE DASHBOARD @ZTRADEZ (OPTIONS & STOCKS) | Wednesday - 08-19-2026 01:15 PM EST @ZTRADEZ (OPTIONS & STOCKS) | Wednesday - 08-19-2026 01:15 PM EST
+2026-08-19 13:16:44  <update>  AAPL · Namrood-BOT — Namrood-BOT's call, bid is in at 0.97 for 1, waiting for a seller (90s)
+2026-08-19 13:18:17  <fired>  AAPL · Namrood-BOT — filled 1.0 at 0.94 — cost $94
+2026-08-19 13:18:17  <update>  AAPL · Namrood-BOT — stop resting at Webull at 0.85 (-10% from 0.94)
+2026-08-19 13:22:17  <skipped>  AI read this as “TRIM” but wasn't sure (40%) — held for review, nothing sent. Fire it by hand if it's right.  |  Market Guru™ Alerts: @everyone 75 ticks trim 1 Do not take this as financial advice! || ⏱︎ 13:22:16 EST Do not take this as financial advice! || ⏱︎ 13:22:16 EST
+2026-08-19 13:24:28  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited)Wednesday, August 19, 2026 at 1:21 PM
+2026-08-19 13:25:13  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited)Wednesday, August 19, 2026 at 1:21 PM
+2026-08-19 13:25:37  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited)Wednesday, August 19, 2026 at 1:21 PM
+2026-08-19 13:29:00  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited)Wednesday, August 19, 2026 at 1:21 PM
+2026-08-19 13:34:17  <update>  AAPL · Namrood-BOT — pulled the resting stop before selling
+2026-08-19 13:34:17  <stopped>  AAPL · Namrood-BOT — bid hit 0.85, at or under your 0.85 stop. Selling 1.
+2026-08-19 13:34:17  <stopped>  AAPL · Namrood-BOT — stopped out at 0.85 · -$9 on the trade · day so far +$0
+2026-08-19 13:34:36  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: COIN | $155 P 6.72 SEPT 11 @everyone Spoiler (edited)Wednesday, August 19, 2026 at 1:21 PM
+2026-08-19 13:36:47  <update>  AAPL — x1 picked up from your Webull LIVE account — the bot can see it and exit it on the room's call now
+2026-08-19 13:36:47  <update>  AAPL — Webull wouldn't hold a resting stop (HTTP Status: 417, Code: OAUTH_OPENAPI_ORDER_NOT_SUPPORT_REVERSE_OPTION, Msg: This order ca). The watchdog on this PC is still on it, so keep this program running.
+2026-08-19 13:36:47  <stopped>  AAPL — bid hit 0.85, at or under your 0.85 stop. Selling 1.
+2026-08-19 13:36:47  <update>  AAPL — Webull said an order was still on this contract; cleared it and re-sent the sell
+2026-08-19 13:37:17  <update>  AAPL — the stop tried to sell and couldn't: HTTP Status: 417, Code: OAUTH_OPENAPI_ORDER_NOT_SUPPORT_REVERSE_OPTION, Msg: This order cannot be entered beca. Retrying.
+2026-08-19 13:37:17  <update>  AAPL — stop failed to sell · -$9 on the trade · day so far +$0
+2026-08-19 13:39:17  <update>  AAPL — x1 picked up from your Webull LIVE account — the bot can see it and exit it on the room's call now
+2026-08-19 13:39:17  <update>  AAPL — Webull wouldn't hold a resting stop (HTTP Status: 417, Code: OAUTH_OPENAPI_ORDER_NOT_SUPPORT_REVERSE_OPTION, Msg: This order ca). The watchdog on this PC is still on it, so keep this program running.
+2026-08-19 13:39:47  <stopped>  AAPL — bid hit 0.81, at or under your 0.85 stop. Selling 1.
+2026-08-19 13:39:47  <update>  AAPL — Webull said an order was still on this contract; cleared it and re-sent the sell
+2026-08-19 13:39:47  <update>  AAPL — the stop tried to sell and couldn't: HTTP Status: 417, Code: OAUTH_OPENAPI_ORDER_NOT_SUPPORT_REVERSE_OPTION, Msg: This order cannot be entered beca. Retrying.
+2026-08-19 13:39:47  <update>  AAPL — stop failed to sell · -$13 on the trade · day so far +$0
+2026-08-19 13:42:17  <update>  AAPL — x1 picked up from your Webull LIVE account — the bot can see it and exit it on the room's call now
+2026-08-19 13:42:17  <update>  AAPL — Webull wouldn't hold a resting stop (HTTP Status: 417, Code: OAUTH_OPENAPI_ORDER_NOT_SUPPORT_REVERSE_OPTION, Msg: This order ca). The watchdog on this PC is still on it, so keep this program running.
+2026-08-19 13:42:17  <stopped>  AAPL — bid hit 0.80, at or under your 0.85 stop. Selling 1.
+2026-08-19 13:42:17  <update>  AAPL — Webull said an order was still on this contract; cleared it and re-sent the sell
