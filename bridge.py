@@ -231,6 +231,12 @@ WB_ACCOUNT = ""
 WB_PAPER = None     # the sandbox client — every TEST room fills here
 WB_LIVE = None      # the real-money client — only a room flipped LIVE routes here
 BOOK = None         # positions.Book — what filled, what didn't, and the stops
+# More Webull accounts firing from the same bot (his ask, 8/18). Each entry:
+# {"name", "client", "book"} — a full live client AND a full book of its own,
+# so every extra account gets its own resting stop, ratchet, trims, and
+# manual-trade protection, not a blind copy of the main account's exits.
+# Empty list (nothing configured) = the bridge behaves exactly as before.
+WB_EXTRA = []
 
 
 def _sync_stop_pct(pct):
@@ -243,12 +249,17 @@ def _sync_stop_pct(pct):
         pct = float(pct)
     except (TypeError, ValueError):
         return
-    for _w in (WB, WB_PAPER, WB_LIVE):
+    for _w in [WB, WB_PAPER, WB_LIVE] + [x["client"] for x in WB_EXTRA]:
         if _w is not None:
             try:
                 _w.stop_pct = pct
             except Exception:                               # noqa: BLE001
                 pass
+    for _x in WB_EXTRA:
+        try:
+            _x["book"].stop_pct = pct
+        except Exception:                                   # noqa: BLE001
+            pass
 
 
 def build_book():
@@ -374,6 +385,96 @@ def build_book():
         note("test account: unlimited. Nothing is refused for money — instead "
              "I keep the most cash that was ever tied up at once, which is the "
              "number that tells you what funding this really takes.")
+
+
+def _extra_state_path(name):
+    safe = "".join(ch if (ch.isalnum() or ch in "-_") else "_"
+                   for ch in str(name))[:32] or "acct"
+    return os.path.join(HERE, "state-%s.json" % safe)
+
+
+def _connect_extras():
+    """More Webull accounts firing from the same bot (his ask, 8/18): every
+    LIVE order — options and futures — mirrors 1:1 onto each account listed
+    in execution.webull_extra_accounts, and each account runs its own full
+    book: its own fill-watch, its own resting stop and ratchet, its own trims,
+    its own adoption/protection of hand trades, and journal rows tagged with
+    the account's name. TEST/paper rooms never touch these accounts.
+    With the list empty this whole feature is dormant."""
+    global WB_EXTRA
+    old = {x["name"]: x for x in WB_EXTRA}
+    fresh = []
+    import copy
+    for acc in (EXEC.get("webull_extra_accounts") or []):
+        name = str(acc.get("name") or "acct%d" % (len(fresh) + 2)).strip()[:24]
+        if not acc.get("enabled", True):
+            continue
+        if not (acc.get("app_key") and acc.get("app_secret")):
+            note("ACCT %s skipped — no keys saved for it yet" % name)
+            continue
+        # Same rule as the main book: never rebuild under an open position —
+        # the old book's watchdog is the only thing holding its stop.
+        if name in old and old[name]["book"].open_count():
+            fresh.append(old[name])
+            note("ACCT %s kept as-is — %d position(s) still open on it"
+                 % (name, old[name]["book"].open_count()))
+            continue
+        try:
+            from webull_options import WebullOptions
+            c = copy.deepcopy(CFG)
+            wx = c.setdefault("execution", {}).setdefault("webull", {})
+            wx["app_key"] = acc["app_key"]
+            wx["app_secret"] = acc["app_secret"]
+            wx["paper_trading"] = False
+            cli = WebullOptions(c)
+            acct_no = cli.connect()
+            if getattr(cli, "paper", False):
+                note("ACCT %s NOT connected — its keys came up paper, and the "
+                     "extra accounts are live-only" % name)
+                continue
+            cli.entry_price = "ask"     # same standing rule as every executor
+            if WB_LIVE is not None:
+                cli.quote_client = WB_LIVE   # one OPRA feed prices them all
+            w = EXEC.get("webull", {}) or {}
+            bk = positions.Book(
+                cli, note,
+                stop_pct=float(w.get("stop_loss_pct", 20)),
+                fill_seconds=float(w.get("entry_fill_seconds", 180)),
+                poll_seconds=float(w.get("fill_poll_seconds", 5)),
+                simulated=False, unlimited=False)
+            bk.save_day = save_day
+            bk.broker_resolver = lambda pos, _c=cli: _c
+            bk.adopt_max_qty = int(
+                (CFG.get("execution") or {}).get("adopt_max_qty", 3))
+            if BOOK is not None:
+                bk.expiry_parser = BOOK.expiry_parser
+                bk.occ_builder = BOOK.occ_builder
+            bk.fut_mult = FUT_MULT
+            _st = (CFG.get("strategy") or {})
+            bk.take_profit_on = bool(_st.get("take_profit_hard_close", False))
+            bk.ratchet_on = bool(_st.get("ratchet_enabled", True))
+            bk.take_profit_pct = float(_st.get("take_profit_pct", 20.0))
+            bk.stop_pct = float(_st.get("stop_loss_pct", 10.0))
+            try:
+                cli.stop_pct = bk.stop_pct
+            except Exception:                           # noqa: BLE001
+                pass
+            # Its own memory file, so ITS swings survive a restart too.
+            try:
+                with open(_extra_state_path(name), encoding="utf-8") as f:
+                    d = json.load(f)
+                bk.restore_state(d.get("state") or {},
+                                 d.get("date") == today_str())
+                bk.purge_stale_futures(note)
+            except Exception:                           # noqa: BLE001
+                pass
+            fresh.append({"name": name, "client": cli, "book": bk})
+            note("ACCT %s connected — Webull account %s now mirrors every "
+                 "LIVE order with its own stops and its own book"
+                 % (name, acct_no))
+        except Exception as e:                          # noqa: BLE001
+            note("ACCT %s NOT connected — %s" % (name, str(e)[:120]))
+    WB_EXTRA = fresh
 
 
 AI_KEY_OK = None      # None = never probed; True/False = the last real answer
@@ -536,6 +637,15 @@ def save_state():
             json.dump({"date": today_str(), "state": BOOK.export_state()}, f)
     except OSError:
         pass
+    # Every extra account's book remembers its own swings the same way.
+    for _x in WB_EXTRA:
+        try:
+            with open(_extra_state_path(_x["name"]), "w",
+                      encoding="utf-8") as f:
+                json.dump({"date": today_str(),
+                           "state": _x["book"].export_state()}, f)
+        except Exception:                               # noqa: BLE001
+            pass
 
 
 def load_state():
@@ -572,9 +682,21 @@ def save_day():
     try:
         os.makedirs(DAYS, exist_ok=True)
         path = os.path.join(DAYS, today_str() + ".json")
+        _tbl = BOOK.table()
+        # Extra accounts' trades land in the same day file, each row tagged
+        # with the account's name — that's what fills the journal's
+        # "account" column so he can see per-account results.
+        for _x in WB_EXTRA:
+            try:
+                for _r in _x["book"].table():
+                    _rr = dict(_r)
+                    _rr["account"] = _x["name"]
+                    _tbl.append(_rr)
+            except Exception:                           # noqa: BLE001
+                pass
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"date": today_str(), "mode": MODE,
-                       "table": BOOK.table(), "wallet": BOOK.wallet()}, f)
+                       "table": _tbl, "wallet": BOOK.wallet()}, f)
     except OSError:
         pass        # a full disk must never take down the trading path
     # HANDOFF-<date>.md — his ask (8/18): "make a file handoff every single
@@ -704,7 +826,8 @@ def save_day():
                             _hhmm(r.get("opened")), _hhmm(r.get("closed")),
                             r.get("state") or "",
                             r.get("exit_by") or "",
-                            "live" if r.get("live") else "paper",
+                            r.get("account")
+                            or ("live" if r.get("live") else "paper"),
                             r.get("raw") or ""])
     except Exception:                                   # noqa: BLE001
         pass    # the journal must never take down the trading path
@@ -1013,6 +1136,15 @@ def _futures_brokers_safe():
                       # green box keys off these (8/17).
                       "keys_in": bool(ts.get("api_key") and ts.get("username")),
                       "verified": TS_KEY_OK}
+    # Extra Webull accounts (8/18): what's configured and which of those the
+    # bridge actually logged in to — the popup's green checks key off this.
+    _live_names = {x["name"] for x in WB_EXTRA}
+    out["webull_extras"] = [
+        {"name": str(a.get("name") or "").strip()[:24],
+         "enabled": bool(a.get("enabled", True)),
+         "keys_in": bool(a.get("app_key") and a.get("app_secret")),
+         "connected": str(a.get("name") or "").strip()[:24] in _live_names}
+        for a in (EXEC.get("webull_extra_accounts") or [])]
     return out
 
 
@@ -1301,6 +1433,22 @@ def _place_impl(order):
         # BOOK.trim places the real sandbox sell for a paper position (paper is
         # no longer simulated), or the real sell for a live one; only a pure
         # dry-run book with no broker models it.
+        # Extra accounts trim too (8/18) — each one sells from ITS holding,
+        # sized to what IT owns, through its own book (so its resting stop
+        # is handled the same way the main account's is).
+        if live_order:
+            for _x in WB_EXTRA:
+                try:
+                    _held = _x["book"].qty_of(key)
+                    if _held > 0:
+                        _s2 = _x["book"].trim(key, min(want, _held), got,
+                                              "their trim" + how + " —")
+                        if _s2:
+                            note("TRIMMED  [%s] %s — sold %d"
+                                 % (_x["name"], sym, _s2))
+                except Exception as _e:                 # noqa: BLE001
+                    note("ACCT %s trim ERROR %s -> %s"
+                         % (_x["name"], sym, str(_e)[:120]))
         where = ("sandbox" if paper else ("LIVE" if live_order else "dry run"))
         return True, "%s — sold %d, holding the rest" % (where, sold)
 
@@ -1457,6 +1605,21 @@ def _place_impl(order):
                 except Exception as e:                  # noqa: BLE001
                     note("FUTURES  Webull ERROR %s -> %s" % (what, e))
                     results.append("Webull futures didn't take it: %s" % str(e)[:120])
+                # Every extra Webull account fires the same futures order
+                # (8/18), each into its own book. One account's refusal
+                # (no cash, no subscription) never blocks the others.
+                if live_order:
+                    for _x in WB_EXTRA:
+                        try:
+                            import webull_futures as _wf
+                            _ok2, _msg2 = _wf.execute(
+                                _x["client"], _x["book"], order, key, note)
+                            results.append("[%s] %s" % (_x["name"], _msg2))
+                            if _ok2:
+                                any_sent = True
+                        except Exception as _e:         # noqa: BLE001
+                            note("FUTURES  [%s] ERROR %s -> %s"
+                                 % (_x["name"], what, str(_e)[:120]))
 
             # NinjaTrader / Tradovate legs — also send; they only touch the book
             # if Webull didn't already (so the position is never counted twice).
@@ -1512,6 +1675,26 @@ def _place_impl(order):
                     BOOK.entry_sent(order, ticket)
                     if action == "ADD" and order.get("avg"):
                         BOOK.their_add(key, order["avg"])
+                # More accounts, same fire (8/18): every LIVE entry mirrors
+                # 1:1 to each extra Webull account. Each account's own book
+                # watches its own fill and arms its own stop — one account
+                # refusing never stops the others.
+                if live_order:
+                    for _x in WB_EXTRA:
+                        try:
+                            _t2 = _x["client"].buy(
+                                order["symbol"], order.get("side"),
+                                order.get("strike"), order.get("expiry"), qty,
+                                their_price=order.get("limit"),
+                                price_mode=order.get("price_mode"))
+                            _t2["live"] = True
+                            note("ORDER IN [%s] %s" % (_x["name"], _t2["what"]))
+                            _x["book"].entry_sent(order, _t2)
+                            if action == "ADD" and order.get("avg"):
+                                _x["book"].their_add(key, order["avg"])
+                        except Exception as _e:         # noqa: BLE001
+                            note("ACCT %s REFUSED %s -> %s"
+                                 % (_x["name"], what, str(_e)[:140]))
                 return True, entry_words(ticket)
 
             if action == "CLOSE":
@@ -1571,6 +1754,47 @@ def _place_impl(order):
                     BOOK.finish(key, positions.CLOSED,
                                 "sold on their call at %.2f" % float(res["limit"]))
 
+                # Mirror the exit onto every extra account that actually
+                # holds this trade (8/18). Each one sells through its OWN
+                # book's retry, so its own resting stop is pulled first; if
+                # its stop already sold it, that's recorded, not an error.
+                if live_order:
+                    for _x in WB_EXTRA:
+                        _xb, _xc = _x["book"], _x["client"]
+                        try:
+                            if _xb.qty_of(key) <= 0:
+                                continue    # this account never got in
+                            _r2 = _xb._sell_retry(
+                                _xc, key, order["symbol"], order.get("side"),
+                                order.get("strike"), order.get("expiry"), qty,
+                                ref_price=exref)
+                            note("SOLD     [%s] %s" % (_x["name"], _r2["what"]))
+                            _xb.finish(key, positions.CLOSED,
+                                       "sold on their call at %.2f"
+                                       % float(_r2["limit"]))
+                        except Exception as _e:         # noqa: BLE001
+                            try:
+                                if _xb._gone_at_broker(
+                                        _xc, order["symbol"],
+                                        order.get("side"), order.get("strike")):
+                                    _xb.finish(key, positions.CLOSED,
+                                               "sold in a two-seller collision "
+                                               "— the other order won",
+                                               price=exref)
+                                    note("SOLD     [%s] %s — its own stop won "
+                                         "the race" % (_x["name"],
+                                                       order["symbol"]))
+                                    continue
+                            except Exception:           # noqa: BLE001
+                                pass
+                            note("ACCT %s exit ERROR %s -> %s — its stop is "
+                                 "being re-armed"
+                                 % (_x["name"], what, str(_e)[:120]))
+                            try:
+                                _xb.rearm_stop_after_failed_exit(key)
+                            except Exception:           # noqa: BLE001
+                                pass
+
                 # "exited SPY, and back in @ 2.84" — they sold and bought the
                 # same contract straight back. Both legs happen here rather
                 # than as two round-trips from the browser, so the gap between
@@ -1584,6 +1808,21 @@ def _place_impl(order):
                         note("ORDER IN %s   (back in)" % back["what"])
                         if BOOK is not None:
                             BOOK.entry_sent(order, back)
+                        if live_order:
+                            for _x in WB_EXTRA:
+                                try:
+                                    _b2 = _x["client"].buy(
+                                        order["symbol"], order.get("side"),
+                                        order.get("strike"),
+                                        order.get("expiry"), qty,
+                                        their_price=order.get("reenter_limit"))
+                                    _b2["live"] = True
+                                    note("ORDER IN [%s] %s   (back in)"
+                                         % (_x["name"], _b2["what"]))
+                                    _x["book"].entry_sent(order, _b2)
+                                except Exception as _e:  # noqa: BLE001
+                                    note("ACCT %s back-in REFUSED -> %s"
+                                         % (_x["name"], str(_e)[:120]))
                         return True, msg + "  ||  " + entry_words(back)
                     except Refused as e:
                         # The sell already went through. Say so plainly, because
@@ -2323,6 +2562,14 @@ class Handler(BaseHTTPRequestHandler):
                 BOOK.take_profit_on = bracket_on and bool(
                     st.get("take_profit_hard_close", False))
                 BOOK.take_profit_pct = float(st.get("take_profit_pct", 20.0))
+                # the extra accounts' books follow the same strategy switch
+                for _x in WB_EXTRA:
+                    try:
+                        _x["book"].ratchet_on = BOOK.ratchet_on
+                        _x["book"].take_profit_on = BOOK.take_profit_on
+                        _x["book"].take_profit_pct = BOOK.take_profit_pct
+                    except Exception:                   # noqa: BLE001
+                        pass
                 if bracket_on and st.get("stop_loss_pct"):
                     BOOK.stop_pct = float(st["stop_loss_pct"])
                     _sync_stop_pct(BOOK.stop_pct)
@@ -2366,6 +2613,38 @@ class Handler(BaseHTTPRequestHandler):
             if (fb.get("topstep") or {}).get("enabled"):
                 _on.append("topstep")
             note("FUTURES  trade from: %s" % (", ".join(_on) or "nothing selected"))
+
+        # Extra Webull accounts (8/18): the popup sends the WHOLE list on
+        # save (add/remove happens there). Keys are secrets — they live in
+        # settings.json only, never echoed back. Connects right away so the
+        # green check means "logged in", same promise as Topstep's.
+        if isinstance(body.get("webull_extra_accounts"), list):
+            _clean = []
+            for a in body["webull_extra_accounts"]:
+                if not isinstance(a, dict):
+                    continue
+                _e = {"name": str(a.get("name") or "").strip()[:24],
+                      "app_key": str(a.get("app_key") or "").strip(),
+                      "app_secret": str(a.get("app_secret") or "").strip(),
+                      "enabled": bool(a.get("enabled", True))}
+                # A resave with blanked secrets keeps the stored ones —
+                # same only-fill-empty rule that fixed the Topstep email.
+                for old in (EXEC.get("webull_extra_accounts") or []):
+                    if str(old.get("name") or "").strip()[:24] == _e["name"]:
+                        _e["app_key"] = _e["app_key"] or old.get("app_key", "")
+                        _e["app_secret"] = (_e["app_secret"]
+                                            or old.get("app_secret", ""))
+                if _e["name"]:
+                    _clean.append(_e)
+            data.setdefault("execution", {})["webull_extra_accounts"] = _clean
+            CFG.setdefault("execution", {})["webull_extra_accounts"] = _clean
+            EXEC["webull_extra_accounts"] = _clean
+            note("ACCT     extra Webull accounts saved: %s"
+                 % (", ".join(a["name"] for a in _clean) or "none"))
+            try:
+                _connect_extras()
+            except Exception as _e:                     # noqa: BLE001
+                note("ACCT     connect failed: %s" % str(_e)[:120])
 
         # AI reader — reading intelligence on the misses. The key is a secret,
         # so it lives in settings.json (gitignored, chmod 600), never the
@@ -2700,6 +2979,7 @@ def connect_broker(quiet=False):
             print("  Webull: no keys — the dry run assumes every bid filled.")
     build_book()
     load_state()      # swings survive restarts
+    _connect_extras()  # more Webull accounts, each with its own book (8/18)
 
 
 def _install_network_failfast():
@@ -2768,6 +3048,31 @@ def main():
                         save_day()
             except Exception:                           # noqa: BLE001
                 pass
+            # Each extra account gets the same housekeeping against ITS OWN
+            # broker view: adopt what it holds (so a room's "all out" can
+            # flatten it, and hand trades get the same protection), and
+            # notice what HE closed on that account himself.
+            for _x in WB_EXTRA:
+                try:
+                    _rows = []
+                    for _p in (_x["client"].positions() or []):
+                        _d = dict(_p)
+                        _d["live"] = True
+                        _rows.append(_d)
+                    try:
+                        for _p in (_x["client"].futures_positions() or []):
+                            _d = dict(_p)
+                            _d["live"] = True
+                            _rows.append(_d)
+                    except Exception:                   # noqa: BLE001
+                        pass
+                    _x["book"].drop_corrupt(note)
+                    _x["book"].purge_expired(note)
+                    _x["book"].adopt(_rows, note)
+                    if _x["book"].reconcile_gone(_rows, note):
+                        save_day()
+                except Exception:                       # noqa: BLE001
+                    pass
             time.sleep(20)
     threading.Thread(target=_reconcile_loop, daemon=True).start()
     print("=" * 62)

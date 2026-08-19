@@ -1,7 +1,7 @@
-Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 22:42:58 ET)
+Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 23:24:30 ET)
 
-=== CURRENT STATE (as of 2026-08-18 22:42:58 ET) ===
-  version:        v2.9.7
+=== CURRENT STATE (as of 2026-08-18 23:24:30 ET) ===
+  version:        v2.9.8
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
   margin BP:      $986,764
@@ -11,17 +11,24 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 22:42:
   AI reader:      ON
   voice key:      off
   LIVE rooms:     ZTRADEZ (OPTIONS & STOCKS): 🔸︱🏰king-maker, VeroTrade: ✅⏐vero-swings, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🅰adex-swings, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎰sir-goldman, ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings, ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures, Platinum Trading: ✅│join-premium, BOKA Trading: 🚨︱option-alerts, VeroTrade: ✅⏐1k-challenge, ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯cranmer, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯madhatter-trades, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺clutchinvestments, BOKA Trading: 🦩︱ryans-alerts, Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge, ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options, BOKA Trading: 🚨︱equity-alerts, ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy, The Insiders Trading Education: 🐺・desi-swings, Summit Trading Strategies: 📌｜alert-room, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯tlm-options, ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps, VeroTrade: ✅⏐vero-trades, TradingTheTrend: 🚨option-alerts🚨, TradingTheTrend: 🔵options-watchlist, ZTRADEZ (OPTIONS & STOCKS): ◽︱🐼evapanda, ZTRADEZ (OPTIONS & STOCKS): 🟢︱🏆top-flow, Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺kumo-debit, ZTRADEZ (OPTIONS & STOCKS): ◽︱😈demon, Honey Drip Network 🍯💰📈: 👑｜aristotle-trades, Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, Whop Swing Trades
-  RN-pullback:    off (all instant)
+  RN-pullback:    ON — all channels wait for the round number
   open positions (4):
     [LIVE ] UBER 2026-09-04 74P x1 paid 1.75 now 1.79 +$4 (+2%)
     [LIVE ] M 2026-09-18 25C x1 paid 0.75 now 0.75 -$1 (-1%)
     [LIVE ] TSLA 2026-09-18 300P x1 paid 3.21 now 3.25 +$4 (+1%)
     [LIVE ] BAC 2026-10-02 66C x1 paid 1.06 now 1.05 -$1 (-1%)
 
-=== RAW MESSAGES THE READER SAW (1) ===
+=== RAW MESSAGES THE READER SAW (8) ===
 2026-08-18 22:42:45  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:42 PM Tuesday, August 18, 2026 at 10:42 PM @everyone BTO MNQ1 29522 longs here tight sl PT 29550 then 29609 © 2021-2026, Horizon Analytics, LLC
+2026-08-18 22:46:12  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:46 PM ] Tuesday, August 18, 2026 at 10:46 PM @everyone 44 ticks © 2021-2026, Horizon Analytics, LLC
+2026-08-18 22:46:51  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:46 PM ] Tuesday, August 18, 2026 at 10:46 PM @everyone © 2021-2026, Horizon Analytics, LLC
+2026-08-18 22:47:39  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:47 PM ] Tuesday, August 18, 2026 at 10:47 PM @everyone bang bang baby closing leaving 2 in for fun baby wowzerrrssss © 2021-2026, Horizon Analytics, LLC
+2026-08-18 22:48:26  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:48 PM ] Tuesday, August 18, 2026 at 10:48 PM @everyone 20 points = 80 ticks yummmmmm easy peezy © 2021-2026, Horizon Analytics, LLC
+2026-08-18 22:50:29  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:50 PM Tuesday, August 18, 2026 at 10:50 PM @everyone 22 points = 88 ticks MNQ what a beautyyyyyyyy of a play 29543 © 2021-2026, Horizon Analytics, LLC
+2026-08-18 22:57:58  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:57 PM Tuesday, August 18, 2026 at 10:57 PM @everyone LIVE TOMORROWWWWWWW LFGGGGGGGGGGGGGGGGGGGGG © 2021-2026, Horizon Analytics, LLC
+2026-08-18 23:02:20  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 11:02 PM ] Tuesday, August 18, 2026 at 11:02 PM @everyone 27 points = 108 ticks close baby closing leaving one in baby raising sl now YES SIRRRRR MNQ for the win © 2021-2026, Horizon Analytics, LLC
 
-=== WHAT THE BOT DID (35) ===
+=== WHAT THE BOT DID (39) ===
 2026-08-18 22:22:27  <update>  KO · King Maker Bot — stop resting at Webull at 0.50 (-10% from 0.54)
 2026-08-18 22:22:27  <update>  GLD · TLM — TLM's call, bid is in at 2.45 for 1, waiting for a seller (90s)
 2026-08-18 22:22:27  <update>  GLD · TLM — no fill (nobody sold at 2.45 within 90s). You are NOT in this one.
@@ -57,3 +64,7 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 22:42:
 2026-08-18 22:22:27  <update>  UBER · The Pawn (The Market Bishop) — stop resting at Webull at 1.57 (-10% from 1.75)
 2026-08-18 22:39:27  <update>  picked up a new version by itself and reloaded
 2026-08-18 22:41:27  <update>  picked up a new version by itself and reloaded
+2026-08-18 22:47:42  <skipped>  AI read this as “OUT” but wasn't sure (40%) — held for review, nothing sent. Fire it by hand if it's right.  |  MR.TOPHAT (OPTIONS/FUTURES): @everyone bang bang baby closing leaving 2 in for fun baby wowzerrrssss © 2021-2026, Horizon Analytics, LLC © 2021-2026, Horizon Analytics, LLC
+2026-08-18 23:02:20  <skipped>  CLOSE YES — you're not in YES, so there's nothing to close — the order was not sent  |  MR.TOPHAT (OPTIONS/FUTURES): @everyone 27 points = 108 ticks close baby closing leaving one in baby raising sl now YES SIRRRRR MNQ for the win © 2021-2026, Horizon Analytics, LLC © 2021-2026, Horizon Analytics, LLC
+2026-08-18 23:22:58  <update>  picked up a new version by itself and reloaded
+2026-08-18 23:23:29  <update>  picked up a new version by itself and reloaded

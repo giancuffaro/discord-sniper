@@ -185,6 +185,77 @@ function paintKeys() {
   el.textContent = (!modeStatus || has) ? ""
     : "No key yet — tap the pencil on Webull to add it.";
 }
+
+/* More Webull accounts (8/18): one row per account — green when the bridge
+ * actually logged in to it, honest words when it didn't. The ✖ removes it
+ * (its saved keys go with it). */
+function paintExtras() {
+  const list = $("extraList");
+  if (!list) return;
+  const xs = (((modeStatus || {}).futures_brokers || {}).webull_extras) || [];
+  list.innerHTML = "";
+  xs.forEach(x => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.style.marginTop = "4px";
+    const ok = !!x.connected;
+    const word = ok ? "connected — mirrors every LIVE trade"
+      : x.keys_in ? "saved — bridge couldn't log in (check trades.log)"
+      : "no keys saved";
+    row.innerHTML =
+      '<span class="grow" style="font-size:12px;color:' +
+      (ok ? "#4ade80" : "#fbbf24") + '">' +
+      (ok ? "✓ " : "") + (x.name || "?") + " — " + word + "</span>";
+    const del = document.createElement("button");
+    del.textContent = "✖";
+    del.title = "Remove this account";
+    del.style.maxWidth = "34px";
+    del.onclick = async () => {
+      if (!confirm("Remove " + (x.name || "this account") +
+                   "? It stops firing immediately.")) return;
+      const keep = xs.filter(o => o.name !== x.name)
+        .map(o => ({ name: o.name, enabled: o.enabled !== false }));
+      try {
+        modeStatus = await askBridge("/config",
+                                     { webull_extra_accounts: keep });
+        paintExtras();
+      } catch (e) {
+        $("exState").textContent = "Couldn't reach the bridge.";
+      }
+    };
+    row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+if ($("exAdd")) $("exAdd").onclick = async () => {
+  const name = ($("exName").value || "").trim();
+  const key = ($("exKey").value || "").trim();
+  const sec = ($("exSecret").value || "").trim();
+  const st = $("exState");
+  if (!name) { st.textContent = "Give the account a name first."; return; }
+  if (!key || !sec) {
+    st.textContent = "Both the App Key and App Secret are needed.";
+    return;
+  }
+  // Send the whole list back: existing rows by name only (the bridge keeps
+  // their stored secrets), plus the new one with its keys.
+  const xs = (((modeStatus || {}).futures_brokers || {}).webull_extras) || [];
+  const out = xs.filter(o => o.name !== name)
+    .map(o => ({ name: o.name, enabled: o.enabled !== false }));
+  out.push({ name: name, app_key: key, app_secret: sec, enabled: true });
+  $("exAdd").textContent = "Saving and connecting…";
+  try {
+    modeStatus = await askBridge("/config", { webull_extra_accounts: out });
+    $("exName").value = ""; $("exKey").value = ""; $("exSecret").value = "";
+    st.textContent = "";
+    paintExtras();
+  } catch (e) {
+    st.textContent = "Couldn't reach the bridge on your PC — double-click " +
+      "START HERE first, then try again.";
+  }
+  $("exAdd").textContent = "Add this account";
+};
 function _okbox(id, ok, label) {
   const b = $(id);
   if (!b) return;
@@ -219,6 +290,7 @@ async function refreshMode() {
   paintSim();
   paintStrat();
   paintFuturesBrokers();
+  paintExtras();
   paintPaper();
   paintAi(modeStatus);
   paintStatus();

@@ -382,6 +382,21 @@
     </div>
     <div class="note" id="fbState">&nbsp;</div>
 
+    <label style="margin-top:12px">More Webull accounts — same bot, more accounts</label>
+    <div class="note">Every account here fires the exact same LIVE trades as
+      your main Webull — options and futures — and each one runs its own
+      resting stop, ratchet and trims. Test rooms never touch these accounts.
+      Each needs its own API key from developer.webull.com (log in AS that
+      account to make it).</div>
+    <div id="extraList"></div>
+    <input id="exName" placeholder="a name for this account (shows in the journal)" autocomplete="off" style="margin-top:6px">
+    <input id="exKey" type="password" placeholder="that account's Webull App Key" autocomplete="off" style="margin-top:6px">
+    <input id="exSecret" type="password" placeholder="that account's Webull App Secret" autocomplete="off" style="margin-top:6px">
+    <div class="row" style="margin-top:8px">
+      <button id="exAdd" class="grow">Add this account</button>
+    </div>
+    <div class="note" id="exState">&nbsp;</div>
+
     <label style="margin-top:12px">AI reader — <b id="aiState">off</b></label>
     <input id="aiKey" type="password" autocomplete="off"
            placeholder="paste your Claude (Anthropic) API key">
