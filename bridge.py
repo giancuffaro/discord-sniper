@@ -796,6 +796,7 @@ def save_day():
             # the alert word for word.
             w.writerow(["date", "room", "caller", "symbol", "side", "direction",
                         "contract", "qty", "avg_in", "exits", "P&L", "P&L %",
+                        "max run-up %", "max drawdown %",
                         "opened", "closed", "status", "exit_by",
                         "account", "signal"])
             for date, r in allrows:
@@ -817,12 +818,16 @@ def save_day():
                                  else " (%+.0f)" % e["pl"])
                     for e in (r.get("exits") or []))
                 pl_pct = r.get("pl_pct")
+                hi = r.get("hi_pct")
+                lo = r.get("lo_pct")
                 w.writerow([date, r.get("room") or "", r.get("who") or "?",
                             r.get("symbol") or "", side_col, direction, ct,
                             r.get("qty") or 0,
                             r.get("avg") if r.get("avg") is not None else "",
                             ex, r.get("pl"),
                             ("%+.1f%%" % pl_pct) if pl_pct is not None else "",
+                            ("%+.1f%%" % hi) if hi is not None else "",
+                            ("%+.1f%%" % lo) if lo is not None else "",
                             _hhmm(r.get("opened")), _hhmm(r.get("closed")),
                             r.get("state") or "",
                             r.get("exit_by") or "",
@@ -2437,6 +2442,53 @@ class Handler(BaseHTTPRequestHandler):
                                 "read": cleaned,
                                 "confidence": cleaned.get("confidence", 0)})
 
+    def _ai_read_image(self):
+        """SCREENSHOT reading (his ask, 8/19): some rooms post the call as an
+        image. Same brain, same guards as _ai_read — the model reads the picture
+        and TRANSCRIBES the trade text it sees; that transcription (plus any
+        caption) is what the literal-match guard validates against, so a chart
+        with no order, or an invented ticker, is refused exactly like a bad
+        typed read. We never trade here; we hand a clean call back to the
+        extension, which runs it through the real parser + every guard."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:                                   # noqa: BLE001
+            return self._json(400, {"ok": False, "why": "unreadable"})
+        images = body.get("images") or []
+        caption = str(body.get("text") or "").strip()
+        if not images:
+            return self._json(200, {"ok": False, "why": "no image"})
+        try:
+            import ai_reader
+        except Exception as e:                              # noqa: BLE001
+            return self._json(200, {"off": True, "why": "ai_reader missing: %s" % e})
+        if not ai_reader.available(CFG):
+            return self._json(200, {"off": True})
+        allowed = CFG.get("allowed_symbols", []) or []
+        read = ai_reader.read_image(images, caption, allowed, CFG)
+        if not isinstance(read, dict):
+            note("IMG READ no read")
+            return self._json(200, {"ok": False, "why": "no read"})
+        if read.get("_error"):
+            note("IMG READ couldn't read the image (%s)" % read["_error"])
+            return self._json(200, {"ok": False, "why": read["_error"]})
+        # The anti-hallucination check runs against the image's OWN words (what
+        # the model transcribed) plus any caption — never an empty string, or a
+        # screenshot read would always fail the "must appear in the text" bar.
+        seen = str(read.get("_seen_text") or "")
+        check_text = (caption + "\n" + seen).strip()
+        ok, why, cleaned = ai_reader.validate(read, check_text, allowed)
+        if not ok:
+            note("IMG READ no call — %s" % (why or "")[:80])
+            return self._json(200, {"ok": False, "why": why})
+        canon = ai_reader.canonical(cleaned)
+        note("IMG READ  [screenshot]  ->  %s   (saw: '%s')"
+             % (canon, seen[:60]))
+        return self._json(200, {"ok": True, "canonical": canon,
+                                "read": cleaned, "seen_text": seen,
+                                "confidence": cleaned.get("confidence", 0)})
+
     def _self_update(self):
         """Pull the latest build from GitHub and restart the bridge onto it —
         this is the popup's Update button, so he never has to open START HERE
@@ -2758,6 +2810,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._set_props()
         if self.path.startswith("/update"):
             return self._self_update()
+        if self.path.startswith("/readimage"):
+            return self._ai_read_image()
         if self.path.startswith("/read"):
             return self._ai_read()
         if self.path.startswith("/exportlog"):

@@ -21,6 +21,7 @@ Money-safety by construction:
 The call is a plain HTTPS POST (urllib) so there's no extra package to install.
 """
 
+import base64
 import json
 import re
 import urllib.request
@@ -140,6 +141,126 @@ def read_signal(text, allowed_symbols, cfg, timeout=8):
     out = _extract_json(raw)
     if not isinstance(out, dict):
         return {"_error": "unparseable reply"}
+    return out
+
+
+# ---- SCREENSHOT reading: some rooms post the call as an image (his ask,
+# 8/19: "there are some channels that post screenshots"). Same brain, same
+# guards — the only new thing is the eyes. The model must TRANSCRIBE the
+# trade-relevant text it sees (seen_text), and every field is then checked to
+# literally appear in that transcription, exactly like a typed message. A model
+# that invents "AAPL 500c" from a candlestick chart gets caught the same way.
+VISION_SYSTEM = (
+    "You read ONE screenshot from a stock/options/futures trading signal room "
+    "and extract only what is LITERALLY visible in the image. You never guess a "
+    "ticker, strike, expiry, or price that is not written in the picture. A bare "
+    "chart, a candlestick, a P&L card with no order, or any image that is not an "
+    "actionable order has action NONE. First transcribe the exact trade text you "
+    "see, then fill the form. Reply with ONE JSON object and nothing else."
+)
+
+VISION_INSTRUCTION = """Look at the screenshot(s) and extract the trade call. Return exactly this JSON:
+{{"seen_text": "<verbatim transcription of any order/ticker/strike/price text visible in the image>",
+  "action": "OPEN|ADD|TRIM|CLOSE|NONE",
+  "instrument": "option|future|equity",
+  "ticker": "<symbol exactly as shown>",
+  "side": "CALL|PUT|LONG|SHORT|null",
+  "strike": <number or null>,
+  "expiry": "<as shown, or null>",
+  "price": <number or null>,
+  "qty": <number or null>,
+  "confidence": <0.0-1.0>}}
+
+Rules:
+- seen_text MUST be a faithful transcription — only characters actually in the image.
+- Only use tickers, strikes and prices that literally appear in the image.
+- A chart/graph with no explicit order text -> action NONE.
+- "loading"/"watching"/"looking at" is NOT an order -> action NONE.
+- A percentage or "trimmed"/"took profit" with no fresh contract is a TRIM.
+- "out"/"sold"/"closed"/"stopped" is a CLOSE.
+- If unsure it is a real, actionable call, use action NONE.
+- Known symbols in this room (spelling help, not a filter): {allowed}
+- Caption posted with the image (may be empty): \"\"\"{caption}\"\"\""""
+
+
+def _fetch_image_b64(url, timeout=8, cap_bytes=5 * 1024 * 1024):
+    """Download an image the browser already showed and return
+    (media_type, base64) — or None. The page loaded it; we only read it, same
+    footing as reading the text. Capped so a huge file can't stall the reader."""
+    try:
+        req = urllib.request.Request(url, method="GET")
+        req.add_header("user-agent", "Mozilla/5.0")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            ct = (resp.headers.get("content-type") or "").split(";")[0].strip().lower()
+            raw = resp.read(cap_bytes + 1)
+        if len(raw) > cap_bytes:
+            return None
+        if ct not in ("image/png", "image/jpeg", "image/gif", "image/webp"):
+            # fall back on the extension when the header is vague
+            low = url.lower()
+            ct = ("image/png" if ".png" in low
+                  else "image/gif" if ".gif" in low
+                  else "image/webp" if ".webp" in low
+                  else "image/jpeg")
+        return ct, base64.b64encode(raw).decode("ascii")
+    except Exception:                                       # noqa: BLE001
+        return None
+
+
+def read_image(images, caption, allowed_symbols, cfg, timeout=15):
+    """Ask Claude to read a screenshot into the same fields read_signal returns,
+    PLUS a seen_text transcription used for the anti-hallucination check. Returns
+    a dict (with _seen_text) or None. Never raises for an ordinary failure."""
+    a = _cfg(cfg)
+    key = a.get("api_key")
+    if not key or not images:
+        return None
+    # A vision-capable model. The configured model is used as-is (Haiku 4.5 and
+    # the Sonnet/Opus lines all read images); a dedicated vision_model override
+    # wins when set.
+    model = a.get("vision_model") or a.get("model") or DEFAULT_MODEL
+    blocks = []
+    for u in list(images)[:3]:            # cap: at most 3 images per post
+        got = _fetch_image_b64(u, timeout=min(timeout, 8))
+        if not got:
+            continue
+        mt, b64 = got
+        blocks.append({"type": "image", "source": {
+            "type": "base64", "media_type": mt, "data": b64}})
+    if not blocks:
+        return {"_error": "no image could be fetched"}
+    allowed = ", ".join(sorted(set(allowed_symbols or [])))[:400]
+    prompt = VISION_INSTRUCTION.format(allowed=allowed or "(none listed)",
+                                       caption=(caption or "")[:400])
+    content = blocks + [{"type": "text", "text": prompt}]
+    body = json.dumps({
+        "model": model,
+        "max_tokens": 400,
+        "system": VISION_SYSTEM,
+        "messages": [{"role": "user", "content": content}],
+    }).encode("utf-8")
+    req = urllib.request.Request(ANTHROPIC_URL, data=body, method="POST")
+    req.add_header("content-type", "application/json")
+    req.add_header("x-api-key", key)
+    req.add_header("anthropic-version", API_VERSION)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        return {"_error": "HTTP %s" % e.code}
+    except Exception:                                       # noqa: BLE001
+        return {"_error": "unreachable"}
+    try:
+        parts = data.get("content") or []
+        raw = "".join(p.get("text", "") for p in parts if isinstance(p, dict))
+    except Exception:                                       # noqa: BLE001
+        raw = ""
+    out = _extract_json(raw)
+    if not isinstance(out, dict):
+        return {"_error": "unparseable reply"}
+    # Expose the transcription under a private key the bridge feeds to validate()
+    # as the "text" — so the literal-match guard checks the image's own words.
+    out["_seen_text"] = str(out.get("seen_text") or "")
     return out
 
 

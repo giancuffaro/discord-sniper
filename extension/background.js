@@ -849,6 +849,44 @@ async function aiRead(text, c) {
   } catch (e) { return null; }
 }
 
+/* SCREENSHOT reading (his ask, 8/19): a room posts the call as a picture. The
+ * uploaded image URLs go to the bridge, which has Claude read them into a clean
+ * call the SAME way text is read — then it runs back through this parser and
+ * every guard. Returns {canonical, confidence, seen} or null. */
+async function aiReadImage(images, text, c) {
+  try {
+    const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/readimage", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images: images || [], text: text || "" })
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!(j && j.ok && j.canonical)) return null;
+    return { canonical: j.canonical, seen: j.seen_text || "",
+             confidence: Number(j.confidence || (j.read && j.read.confidence) || 0) };
+  } catch (e) { return null; }
+}
+
+/* Micro vs full-size index futures are the SAME underlying to us — we always
+ * fire the micro (MNQ) no matter which name the room types (NQ). So the
+ * double-check must NOT treat "nq" (AI read NQ) vs "MNQ" (regex read) as a
+ * disagreement — that false mismatch held every one of Trademorewiser's NQ
+ * calls for review, 8/18 and 8/19. Each pair below is one instrument in two
+ * sizes; anything not in a pair is compared as a plain ticker. */
+const FUT_SIBLINGS = [
+  ["NQ", "MNQ"], ["ES", "MES"], ["YM", "MYM"],
+  ["RTY", "M2K"], ["CL", "MCL"], ["GC", "MGC"]
+];
+function sameUnderlying(a, b) {
+  a = String(a || "").toUpperCase().trim();
+  b = String(b || "").toUpperCase().trim();
+  if (a === b) return true;
+  for (const [x, y] of FUT_SIBLINGS) {
+    if ((a === x || a === y) && (b === x || b === y)) return true;
+  }
+  return false;
+}
+
 /* SMARTER READS — the double-check. Ask the AI to read the SAME message
  * independently and see if it agrees with the regex on the things that pick the
  * contract: ticker, strike, side. Returns {agree, ai} — or null when the AI is
@@ -864,7 +902,7 @@ async function aiVerify(text, sig, c) {
     const j = await r.json();
     if (!j || j.off || !j.ok || !j.read) return null;   // no opinion -> don't block
     const a = j.read;
-    const tOk = !a.ticker || String(a.ticker).toUpperCase() === String(sig.symbol || "").toUpperCase();
+    const tOk = !a.ticker || sameUnderlying(a.ticker, sig.symbol);
     const kOk = a.strike == null || sig.strike == null || Number(a.strike) === Number(sig.strike);
     const sOk = !a.side || !sig.side || String(a.side).toUpperCase() === String(sig.side).toUpperCase();
     return { agree: tOk && kOk && sOk, ai: a };
@@ -1558,6 +1596,37 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
                            why: "AI read this as “" + rd.canonical + "”" + pct,
                            text: msg.text, author: msg.author });
             sig = sig2;
+          }
+        }
+      }
+    }
+
+    // SCREENSHOT reading (his ask, 8/19): still no call from the text, but the
+    // post carries an uploaded image — some rooms post the whole call as a
+    // picture. Send the image(s) to the bridge's vision reader; a confident
+    // read becomes a live signal and runs the identical guards below. Skipped
+    // on history and replies, same as the text path. Only fires when the
+    // message actually had an image, so ordinary text posts cost nothing.
+    if (!sig.action && !msg.history && !msg.reply &&
+        Array.isArray(msg.images) && msg.images.length) {
+      const ri = await aiReadImage(msg.images, msg.text, c);
+      if (ri && ri.canonical) {
+        const sig3 = parseSignal(ri.canonical, c);
+        if (sig3.action) {
+          const conf = ri.confidence;
+          const pct = conf ? " (" + Math.round(conf * 100) + "%)" : "";
+          const sawBit = ri.seen ? " — saw “" + ri.seen.slice(0, 80) + "”" : "";
+          if (conf && conf < 0.6) {
+            await addLog({ kind: "skipped",
+              why: "📸 read a screenshot as “" + ri.canonical + "” but wasn't sure" +
+                   pct + sawBit + " — held for review, nothing sent. Fire it by " +
+                   "hand if it's right.",
+              text: msg.text || "(image)", author: msg.author });
+          } else {
+            await addLog({ kind: "update",
+              why: "📸 read a screenshot as “" + ri.canonical + "”" + pct + sawBit,
+              text: msg.text || "(image)", author: msg.author });
+            sig = sig3;
           }
         }
       }

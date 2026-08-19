@@ -68,6 +68,25 @@ function clean(s) {
   return String(s || "").replace(/\s+/g, " ").trim();
 }
 
+// Screenshots posted in a Whop room (his ask, 8/19) — real uploaded images
+// only, never tiny avatars/emojis. Whop serves uploads from its own CDN and
+// from imgix/cloudfront; keep the full signed url so the reader can fetch it.
+function imagesIn(el) {
+  const urls = [];
+  try {
+    el.querySelectorAll("img").forEach(im => {
+      const src = im.currentSrc || im.src || im.getAttribute("src") || "";
+      if (!src || /^data:/.test(src)) return;
+      if (/(avatar|emoji|icon|reaction|sticker|profile)/i.test(
+            src + " " + (im.className || ""))) return;
+      const w = im.naturalWidth || im.width || 0;
+      if (w && w < 64) return;
+      if (urls.indexOf(src) === -1) urls.push(src);
+    });
+  } catch (e) {}
+  return urls.slice(0, 3);
+}
+
 /* The post's own age, read from its header lines: "34s", "1m", "9h", "2d",
  * "Jul 23". Stamping Date.now() on everything is how a JULY 23rd VXX post
  * traded as fresh on AUGUST 18th — the reader must report the REAL time and
@@ -98,12 +117,13 @@ function ageToTs(lines) {
   return Date.now();
 }
 
-function send(text, author, at) {
+function send(text, author, at, images) {
   const ts = at || Date.now();
   chrome.runtime.sendMessage({
     type: "MESSAGE",
     platform: "whop",
     text: text,
+    images: images || [],
     author: author || "?",
     channelId: roomId(),
     channelName: roomName(),
@@ -133,7 +153,10 @@ function readFeedPosts() {
       const body = c.querySelector('div[class*="post-body"]');
       text = body ? clean(body.innerText) : "";
     } catch (e) { text = ""; }
-    if (!text) continue;
+    const images = imagesIn(c);
+    // Text OR a screenshot is enough now — an image-only alert used to be
+    // dropped here and never reached the reader.
+    if (!text && !images.length) continue;
     let author = "?";
     let at = Date.now();
     try {
@@ -144,7 +167,7 @@ function readFeedPosts() {
     } catch (e) {}
     SEEN.add(id);
     if (SEEN.size > 6000) SEEN.clear();
-    send(text, author, at);
+    send(text, author, at, images);
   }
 }
 

@@ -108,6 +108,33 @@ function fullTextOf(li) {
   return all.length > t.length ? all : t;
 }
 
+// Some rooms post the whole call as a SCREENSHOT (his ask, 8/19). Collect the
+// uploaded images on a message so the worker can have them read by vision when
+// the text alone carries no call. ONLY real attachments — never emojis,
+// avatars, reactions, or stickers, which are tiny decorative images.
+function imagesOf(li) {
+  const urls = [];
+  try {
+    li.querySelectorAll("img").forEach(im => {
+      const src = im.currentSrc || im.src || im.getAttribute("src") || "";
+      if (!src) return;
+      // Discord serves uploaded pictures from these hosts under /attachments/
+      // (cdn) or as proxied /external|/attachments (media). Keep the FULL url,
+      // query and all — the cdn links are signed and won't fetch without it.
+      if (!/(cdn|media)\.discordapp\.(net|com)\//.test(src)) return;
+      if (/\/(emojis|avatars|icons|stickers|embed\/avatars)\//.test(src)) return;
+      const cls = (im.className || "") + " " +
+                  ((im.closest && im.closest('[class*="reaction"], [class*="emoji"], [class*="avatar"]')) ? "deco" : "");
+      if (/emoji|avatar|reaction|sticker|deco/i.test(cls)) return;
+      // skip obvious thumbnails/icons by rendered size when we can see it
+      const w = im.naturalWidth || im.width || 0;
+      if (w && w < 64) return;
+      if (urls.indexOf(src) === -1) urls.push(src);
+    });
+  } catch (e) {}
+  return urls.slice(0, 3);
+}
+
 function handle(li) {
   if (!li.id || SEEN.has(li.id)) return;
   SEEN.add(li.id);
@@ -126,7 +153,10 @@ function handle(li) {
   const history = postedAt < STARTED - 5000;
 
   const text = textOf(li);
-  if (!text) return;
+  const images = imagesOf(li);
+  // A pure screenshot has no text — it used to stop right here and vanish.
+  // Now an image-only post still goes through so vision can read it.
+  if (!text && !images.length) return;
 
   // A reply quotes an older message, and Discord renders the quoted line
   // inside the new one — which is how Mike replying to his own morning entry
@@ -148,6 +178,7 @@ function handle(li) {
                               // room can be open in two tabs)
       text,
       full: fullTextOf(li),   // everything in the row — for the grabber's export
+      images,                 // uploaded screenshots, for the vision reader
       author: authorOf(li),
       channelId: channelId(),
       channelName: channelName(),

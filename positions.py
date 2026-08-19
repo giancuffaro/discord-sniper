@@ -258,6 +258,31 @@ class Book:
             if now > self.peak:
                 self.peak = now
 
+    def _mark_excursion(self, key, bid):
+        """The furthest a position ever ran green and the furthest it ever went
+        red, as a % from the entry fill (his ask, 8/19: 'the lowest the
+        position was, -8%, and the highest'). Marked to the same live bid the
+        stop and ratchet watch, every poll. direction flips it for a short so a
+        futures short shows +% when price falls. Stored on the position, so it
+        rides into the day file and the journal when the trade closes."""
+        with self._lock:
+            p = self._pos.get(key)
+            if not p:
+                return
+            try:
+                base = float(p.get("fill"))
+            except (TypeError, ValueError):
+                return
+            if not base:
+                return
+            d = int(p.get("direction") or 1)
+            pct = d * (float(bid) - base) / base * 100.0
+            hi, lo = p.get("hi_pct"), p.get("lo_pct")
+            if hi is None or pct > hi:
+                p["hi_pct"] = pct
+            if lo is None or pct < lo:
+                p["lo_pct"] = pct
+
     def available(self):
         """Spendable cash: what's left, minus the bids already out there.
 
@@ -368,6 +393,11 @@ class Book:
                        if p.get("cost") else None),
             "exit_by": self._exit_by(p),
             "swing": bool(p.get("swing")),
+            # How far the trade ever ran green / red from entry (his ask, 8/19).
+            "hi_pct": (round(float(p["hi_pct"]), 1)
+                       if p.get("hi_pct") is not None else None),
+            "lo_pct": (round(float(p["lo_pct"]), 1)
+                       if p.get("lo_pct") is not None else None),
         }
 
     @staticmethod
@@ -1572,6 +1602,8 @@ class Book:
                     q = self._pos.get(key)
                     if q:
                         q["last_bid"] = float(bid)
+                # High-water / low-water mark of the trade, same live bid.
+                self._mark_excursion(key, float(bid))
                 # His rule runs here, on the same live bid the stop watches.
                 # Take-profit first: if the position is up +N% it closes ALL of
                 # it and we're done — nothing else to manage. Then the sim-only
