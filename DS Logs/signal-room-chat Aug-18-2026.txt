@@ -1,12 +1,12 @@
-Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 22:33:52 ET)
+Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 22:42:58 ET)
 
-=== CURRENT STATE (as of 2026-08-18 22:33:52 ET) ===
-  version:        v2.9.6
+=== CURRENT STATE (as of 2026-08-18 22:42:58 ET) ===
+  version:        v2.9.7
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
   margin BP:      $986,764
   futures BP:     $986,764
-  futures from:   webull ON, ninjatrader off, tradovate off
+  futures from:   webull ON, topstep ON, ninjatrader off, tradovate off
   bracket strat:  ON (+20% / -10%, 1 contract)
   AI reader:      ON
   voice key:      off
@@ -18,10 +18,10 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 22:33:
     [LIVE ] TSLA 2026-09-18 300P x1 paid 3.21 now 3.25 +$4 (+1%)
     [LIVE ] BAC 2026-10-02 66C x1 paid 1.06 now 1.05 -$1 (-1%)
 
-=== RAW MESSAGES THE READER SAW (0) ===
+=== RAW MESSAGES THE READER SAW (1) ===
+2026-08-18 22:42:45  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:42 PM Tuesday, August 18, 2026 at 10:42 PM @everyone BTO MNQ1 29522 longs here tight sl PT 29550 then 29609 © 2021-2026, Horizon Analytics, LLC
 
-
-=== WHAT THE BOT DID (33) ===
+=== WHAT THE BOT DID (35) ===
 2026-08-18 22:22:27  <update>  KO · King Maker Bot — stop resting at Webull at 0.50 (-10% from 0.54)
 2026-08-18 22:22:27  <update>  GLD · TLM — TLM's call, bid is in at 2.45 for 1, waiting for a seller (90s)
 2026-08-18 22:22:27  <update>  GLD · TLM — no fill (nobody sold at 2.45 within 90s). You are NOT in this one.
@@ -55,3 +55,5 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 22:33:
 2026-08-18 22:22:27  <update>  UBER · The Pawn (The Market Bishop) — The Pawn (The Market Bishop)'s call, bid is in at 1.75 for 1, waiting for a seller (90s)
 2026-08-18 22:22:27  <fired>  UBER · The Pawn (The Market Bishop) — filled 1.0 at 1.75 — cost $0
 2026-08-18 22:22:27  <update>  UBER · The Pawn (The Market Bishop) — stop resting at Webull at 1.57 (-10% from 1.75)
+2026-08-18 22:39:27  <update>  picked up a new version by itself and reloaded
+2026-08-18 22:41:27  <update>  picked up a new version by itself and reloaded

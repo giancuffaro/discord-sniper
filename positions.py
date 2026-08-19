@@ -1335,16 +1335,21 @@ class Book:
             m0 = float((p0 or {}).get("mult") or 100)
         # mult-aware: an option is 100 shares, a share is one share. The old
         # hardcoded x100 would have priced $1,000 of NFLX stock as $100,000.
-        paid = 0.0 if (is_fut or is_live) else float(price) * m0 * int(qty or 1)
+        paid = 0.0 if is_fut else float(price) * m0 * int(qty or 1)
         self._unreserve(key)
         with self._lock:
-            # Real money never touches the pretend wallet — Webull's own
-            # numbers are the only honest ledger for a live position.
+            # The position's OWN cost ledger records what was paid no matter
+            # which account paid it — it is the basis every P&L and % is
+            # computed from. (8/18: live fills skipped this, so a live
+            # trade's "P&L" printed as its sale PROCEEDS — AAPL's real +$19
+            # showed as +$209, and a Vero LOSS showed as +$132.) Only the
+            # PRETEND WALLET below stays live-blind, exactly as designed:
+            # real money never touches the pretend cash.
+            p = self._pos.get(key)
+            if p and not is_fut:
+                p["cost"] = float(p.get("cost") or 0) + paid
             if self.cash is not None and not is_fut and not is_live:
                 self.cash -= paid
-                p = self._pos.get(key)
-                if p:
-                    p["cost"] = float(p.get("cost") or 0) + paid
         self._mark_peak()
         # With no broker at all there is nothing to ask, so the dry run assumed
         # this filled. Said out loud every single time, because an assumed fill

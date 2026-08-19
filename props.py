@@ -396,9 +396,13 @@ def _send_projectx(prop, order, note):
         body["type"] = 2                                     # 2 = market
 
     # Server-side bracket (ticks) = protection that survives the PC going dark.
+    # Stop-loss rides as a STOP (type 4), not a limit — a limit stop can be
+    # skipped in a fast market, and TopstepX's engine was instantly rejecting
+    # the limit-typed version on 8/18 (every bot order that day: status 5,
+    # dead 2ms after creation). Take-profit stays a limit, as it should be.
     sym = str(order.get("symbol") or "").upper()
     if tick and sym in PX_INDEX:
-        body["stopLossBracket"] = {"ticks": int(round(PX_BRACKET_PTS["stop"] / tick)), "type": 1}
+        body["stopLossBracket"] = {"ticks": int(round(PX_BRACKET_PTS["stop"] / tick)), "type": 4}
         body["takeProfitBracket"] = {"ticks": int(round(PX_BRACKET_PTS["target"] / tick)), "type": 1}
 
     r = req.post(base + "/api/Order/place", headers=hdr, json=body, timeout=8)
@@ -406,6 +410,33 @@ def _send_projectx(prop, order, note):
     if not j2.get("success", False):
         raise PropRefused("%s: ProjectX refused the order (HTTP %s %s)"
                           % (prop.get("name"), r.status_code, r.text[:160]))
+    # "success" only means the order was CREATED — on 8/18 Topstep's risk
+    # engine then killed each one 2ms later (status 5) and the bridge never
+    # knew, so 'why didn't Topstep fire?' had no answer anywhere. Look back
+    # at the order once, a beat after placing it; a rejection is a refusal.
+    oid = j2.get("orderId")
+    if oid:
+        import time as _t
+        _t.sleep(1.2)
+        try:
+            since = _t.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                _t.gmtime(_t.time() - 300))
+            chk = req.post(base + "/api/Order/search", headers=hdr,
+                           json={"accountId": acct_id,
+                                 "startTimestamp": since},
+                           timeout=8).json()
+            mine = next((o for o in (chk.get("orders") or [])
+                         if o.get("id") == oid), None)
+            if mine and int(mine.get("status") or 0) == 5:
+                raise PropRefused(
+                    "%s: Topstep's risk engine REJECTED the order right after "
+                    "accepting it (order %s, status 5). The printed reason is "
+                    "on the TopstepX platform's order log — read it there and "
+                    "tell me what it says." % (prop.get("name"), oid))
+        except PropRefused:
+            raise
+        except Exception:                               # noqa: BLE001
+            pass        # the look-back must never break a good order
     br = " +bracket" if "stopLossBracket" in body else ""
     note("PROP     %s <- %s %s x%s (ProjectX accepted%s)"
          % (prop.get("name"), "SELL" if is_short else "BUY",
