@@ -1463,6 +1463,12 @@ def _place_impl(order):
             if armed_props:
                 import props as prop_mod
                 sent, refused = prop_mod.execute_all(armed_props, order, note)
+                # Refusals land in trades.log too (8/18): the extension's
+                # log got reset and took every "why didn't Topstep fire?"
+                # answer with it. Never again — the reason is written where
+                # nothing can erase it.
+                for _r in refused:
+                    note("PROP-NO  %s" % str(_r)[:220])
                 results += sent + refused
                 if sent:
                     any_sent = True

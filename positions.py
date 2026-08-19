@@ -1480,9 +1480,18 @@ class Book:
         if wb is not None and not self._sim(p):
             # Averaging in moves the stop, so the old one has to go first or
             # you end up with two resting sells and get flattened twice.
+            # And WAIT for the cancel to land (8/18): cancels are async, and
+            # placing the new stop while the old one still rests is every
+            # "ratchet couldn't move the resting stop" 417 of the day —
+            # AAPL's +30% lock failed eight times in a row over this race
+            # and gave back ~$19 of locked profit.
             if old:
                 try:
                     wb.cancel(old)
+                except Exception:                       # noqa: BLE001
+                    pass
+                try:
+                    self._await_cancel(wb, old)
                 except Exception:                       # noqa: BLE001
                     pass
             try:

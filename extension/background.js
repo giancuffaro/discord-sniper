@@ -1205,6 +1205,7 @@ async function autoExportForLearning() {
       "  margin BP:      " + (mode && mode.buying_power != null ? "$" + Math.round(mode.buying_power).toLocaleString() : "—") + "\n" +
       "  futures BP:     " + (mode && mode.futures_buying_power != null ? "$" + Math.round(mode.futures_buying_power).toLocaleString() : "—") + "\n" +
       "  futures from:   webull " + onoff(fb.webull) +
+        ", topstep " + onoff((fb.topstep || {}).enabled) +
         ", ninjatrader " + onoff((fb.ninjatrader || {}).enabled) +
         ", tradovate " + onoff((fb.tradovate || {}).enabled) + "\n" +
       "  bracket strat:  " + onoff(strat.enabled) +
