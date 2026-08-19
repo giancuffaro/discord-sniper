@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 08:24:31 ET)
+Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 08:54:30 ET)
 
-=== CURRENT STATE (as of 2026-08-19 08:24:31 ET) ===
+=== CURRENT STATE (as of 2026-08-19 08:54:30 ET) ===
   version:        v2.9.8
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -18,7 +18,7 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 08:24:
     [LIVE ] TSLA 2026-09-18 300P x1 paid 3.21 now 3.25 +$4 (+1%)
     [LIVE ] BAC 2026-10-02 66C x1 paid 1.06 now 1.05 -$1 (-1%)
 
-=== RAW MESSAGES THE READER SAW (25) ===
+=== RAW MESSAGES THE READER SAW (27) ===
 2026-08-18 22:42:45  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:42 PM Tuesday, August 18, 2026 at 10:42 PM @everyone BTO MNQ1 29522 longs here tight sl PT 29550 then 29609 © 2021-2026, Horizon Analytics, LLC
 2026-08-18 22:46:12  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:46 PM ] Tuesday, August 18, 2026 at 10:46 PM @everyone 44 ticks © 2021-2026, Horizon Analytics, LLC
 2026-08-18 22:46:51  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): [ 10:46 PM ] Tuesday, August 18, 2026 at 10:46 PM @everyone © 2021-2026, Horizon Analytics, LLC
@@ -44,6 +44,8 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 08:24:
 2026-08-19 08:14:24  [ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop #1239624229583061052]  The Pawn (The Market Bishop): The Pawn (The Market Bishop) VERIFIED APP APP — 8:14 AM Wednesday, August 19, 2026 at 8:14 AM @everyone Bishop's Ideas Holy shit, I hope you guys took the MRNA leaps with me a few days ago on the twitter account Cause, wow. How I Trade The Market Bishop Trade Idea's Disclaimer Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:14 AM
 2026-08-19 08:16:41  [ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop #1239624229583061052]  The Pawn (The Market Bishop): @everyone Bishop's Ideas We always catch the biggest moves man I keep saying it, no one can replicate what we do for a reason All done with inside information, just genuine understanding of price action and the markets Don't mind the drawings, it's from when I was teaching people How I Trade The Market Bishop Trade Idea's Disclaimer Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:16 AM Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:16 AM •
 2026-08-19 08:17:32  [ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop #1239624229583061052]  The Pawn (The Market Bishop): ^ Should come to show you, win rate does not matter, not even in the slightest The only thing that does is average gain (which includes wins and losses), and no one comes to close to us on that Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:17 AM Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:17 AM •
+2026-08-19 08:41:38  [ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop #1239624229583061052]  The Pawn (The Market Bishop): The Pawn (The Market Bishop) VERIFIED APP APP — 8:41 AM Wednesday, August 19, 2026 at 8:41 AM @everyone Bishop's Ideas Holy shit my bad I mean to say all done WITHOUT inside information lol, not with If anything, we are the inside information, just kidding, don't kill me, I'm just happy about MRNA let me live How I Trade The Market Bishop Trade Idea's Disclaimer Twitter: @TheMarketBishop | I want to be the greatest•Today at 8:41 AM
+2026-08-19 08:42:23  [Summit Trading Strategies: 📌｜alert-room #642437862930907158]  AlertBot: AlertBot APP — 8:42 AM Wednesday, August 19, 2026 at 8:42 AM @here @everyone Good morning to all! Join me in The Arena for a LIVE review of the WL. I am joining right now! Today we trade LIVE! Join me in The Arena, located at the bottom left side of the discord server, if you wish to attend. Follow the instructions listed at the 3:20 mark of the ⁠🧘｜watchlist-training video number 1 to help you navigate here OR watch video number 1 on the whop course. It shouldnt be hard to find. The Stage will show my name only. If there is a green circle by my name, it means that I am speaking. If the mic symbol by my name has a line through it, it means that I am muted and not speaking. This should help you identify in the future if I am present and have started speaking or not
 
 === WHAT THE BOT DID (42) ===
 2026-08-18 22:22:27  <update>  KO · King Maker Bot — stop resting at Webull at 0.50 (-10% from 0.54)
