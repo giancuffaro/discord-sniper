@@ -323,9 +323,25 @@ window.__SNIPER_STOP__ = function () {
   watching = null;
 };
 
+// Belt-and-suspenders for the MutationObserver: re-read every message on
+// screen on a timer, don't trust the "new message" event alone. Discord's
+// observer can drop an event when the tab is backgrounded, throttled, or busy
+// re-rendering — that's how Unraveller's "all out of TSLA" was never read and
+// the position sat open (8/19). handle() dedupes via SEEN, so re-sweeping the
+// same rows is free, and it only ever fires a message the observer skipped —
+// and only while it's still fresh, since handle() files anything old as
+// history and the bridge's staleness guard drops a stale chase anyway.
+function liveSweep() {
+  const list = document.querySelector('[data-list-id="chat-messages"]');
+  if (!list) return;
+  try { list.querySelectorAll('li[id^="chat-messages-"]').forEach(handle); }
+  catch (e) { /* one bad row never stops the sweep */ }
+}
+
 // Discord is a single-page app: switching channels swaps the whole list out
 // from under us, so re-check for it rather than attaching once and hoping.
 attach();
+liveSweep();
 timer = setInterval(function () {
   // After an update the old copy of this file is still running but is no longer
   // connected to anything — chrome.runtime.id goes undefined. Stand down rather
@@ -334,5 +350,6 @@ timer = setInterval(function () {
   try { alive = !!(chrome.runtime && chrome.runtime.id); } catch (e) { alive = false; }
   if (!alive) { window.__SNIPER_STOP__(); return; }
   attach();
+  liveSweep();       // catch anything the live observer missed, every tick
 }, 1500);
 })();

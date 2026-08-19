@@ -1708,38 +1708,43 @@ class Book:
         except Exception:                               # noqa: BLE001
             return False            # can't tell -> assume held, keep trying
 
+    @staticmethod
+    def _sell_blocked(msg):
+        """Webull says 'something is in the way of this sell' in several voices —
+        all mean a resting order still has the contract committed, all cured the
+        same way (let go of it and ask again)."""
+        msg = str(msg).upper()
+        return ("MUST_BE_CLOSE_THAN_SELL_SHORT" in msg
+                or "EXCESS OF CURRENT HOLDING" in msg
+                or "CHECK YOUR OPEN ORDERS" in msg
+                # "...it will reverse an existing position. You may need to ...
+                # cancel an open order" (ORDER_NOT_SUPPORT_REVERSE_OPTION)
+                or "REVERSE_OPTION" in msg
+                or "REVERSE AN EXISTING POSITION" in msg
+                # Webull reads a blocked long sale as opening a covered call and
+                # complains about shares it never needed.
+                or "CAVERED_CALL_STOCK_NO_ENOUGH" in msg
+                or "COVERED_CALL_STOCK_NO_ENOUGH" in msg
+                or "INSUFFICIENT NUMBER OF UNDERLYING" in msg)
+
     def _sell_retry(self, wb, key, sym, side, strike, expiry, qty, **kw):
         """Sell, and if Webull refuses because something is still resting
-        against the contract, clear it and try once more.
+        against the contract, clear it and try AGAIN — up to a few rounds.
 
-        "You can not place order in excess of current holding quantity to
-        create a position on the other side of the market" does NOT mean you
-        can't sell — it means an order (usually the stop we just cancelled,
-        or an orphan from an earlier run) still has the contract committed.
-        The cure is to let go and ask again, not to give up on the exit."""
+        A single cancel-and-resend used to be enough on paper, but Webull's
+        order-check system lags a cancel by a second or two, so the re-sent sell
+        can race the cancel and hit the SAME REVERSE_OPTION block — then it gave
+        up (8/19: TSLA 340P bled to -24% with an orphan stop-limit blocking every
+        stop-out). So the recovery now LOOPS: pull our stop, pull every resting
+        sell on the contract, wait a beat longer each round, and try the sell
+        again — a few times before it's allowed to fail."""
         try:
             return wb.sell(sym, side, strike, expiry, qty, **kw)
         except Exception as e:                          # noqa: BLE001
-            msg = str(e).upper()
-            # Webull says "something is in the way of this sell" in several
-            # different voices. All of them mean the same thing and all of them
-            # are cured the same way — let go of the resting order and ask
-            # again. Counted on 8/12: 121 + 79 + 3 rejections across three
-            # codes, and only the first was being retried.
-            blocked = ("MUST_BE_CLOSE_THAN_SELL_SHORT" in msg
-                       or "EXCESS OF CURRENT HOLDING" in msg
-                       or "CHECK YOUR OPEN ORDERS" in msg
-                       # "...it will reverse an existing position. You may need
-                       # to ... cancel an open order" (ORDER_NOT_SUPPORT_REVERSE_OPTION)
-                       or "REVERSE_OPTION" in msg
-                       or "REVERSE AN EXISTING POSITION" in msg
-                       # Webull reads a blocked long sale as opening a covered
-                       # call and complains about shares it never needed.
-                       or "CAVERED_CALL_STOCK_NO_ENOUGH" in msg
-                       or "COVERED_CALL_STOCK_NO_ENOUGH" in msg
-                       or "INSUFFICIENT NUMBER OF UNDERLYING" in msg)
-            if not blocked:
+            if not self._sell_blocked(e):
                 raise
+        last = None
+        for attempt in range(4):
             with self._lock:
                 p = self._pos.get(key) or {}
                 oid = p.get("stop_order_id")
@@ -1753,19 +1758,27 @@ class Book:
                     q = self._pos.get(key)
                     if q is not None:
                         q["stop_order_id"] = None
-            # Whatever we knew about, ALSO clear anything else of ours resting
-            # on this contract. The bot can only cancel ids it holds, so an
-            # orphan from an earlier session blocked every sell and every stop
-            # that followed it — that's the SPCX +32% that would not close on
-            # 8/12, and the 233 rejections behind it. Ask the broker what is
-            # still working on this symbol and pull it.
+            # ALSO clear anything else of ours resting on this contract — an
+            # orphan from an earlier run (or a stop-out that recorded closed but
+            # never filled) blocks every following sell. Ask the broker what's
+            # still working on this symbol and pull it, awaiting each cancel.
             pulled = self._clear_orphans(wb, key, sym, strike)
             if not oid and not pulled:
-                time.sleep(1.5)     # nothing to pull — just let it settle
-            self._event(key, "update",
-                        "%s — Webull said an order was still on this contract; "
-                        "cleared it and re-sent the sell" % sym)
-            return wb.sell(sym, side, strike, expiry, qty, **kw)
+                time.sleep(1.0 + attempt)   # nothing to pull — settle, longer each round
+            if attempt == 0:
+                self._event(key, "update",
+                            "%s — Webull said an order was still on this contract; "
+                            "cleared it and re-sent the sell" % sym)
+            try:
+                return wb.sell(sym, side, strike, expiry, qty, **kw)
+            except Exception as e2:                     # noqa: BLE001
+                if not self._sell_blocked(e2):
+                    raise
+                last = e2                               # still blocked — loop and clear again
+                time.sleep(0.5 + 0.5 * attempt)
+        # Exhausted every round and it's still blocked — let the caller log a
+        # real failure (and re-arm the stop / stand the watchdog back up).
+        raise last if last is not None else RuntimeError("sell blocked")
 
     def _clear_orphans(self, wb, key, sym, strike=None):
         """Cancel every WORKING order the broker still has on this contract.

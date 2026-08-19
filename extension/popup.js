@@ -388,6 +388,8 @@ function paintFuturesBrokers() {
     $("ninjaAccount").value = nt.account || "";
   if ($("ninjaDir") && !$("ninjaDir").value)
     $("ninjaDir").value = nt.incoming_dir || "";
+  if ($("ninjaAtm") && !$("ninjaAtm").value)
+    $("ninjaAtm").value = nt.atm_template || "";
   if ($("tvUser") && !$("tvUser").value)
     $("tvUser").value = tv.username || "";
   if ($("tvDemo")) $("tvDemo").checked = !!tv.demo;
@@ -408,7 +410,8 @@ async function saveFuturesBrokers() {
     webull: _fbLocal.webull,
     ninjatrader: { enabled: _fbLocal.ninja,
                    account: _fbVal("ninjaAccount"),
-                   incoming_dir: _fbVal("ninjaDir") },
+                   incoming_dir: _fbVal("ninjaDir"),
+                   atm_template: _fbVal("ninjaAtm") },
     tradovate: { enabled: _fbLocal.tradovate,
                  username: _fbVal("tvUser"),
                  demo: !!($("tvDemo") || {}).checked },

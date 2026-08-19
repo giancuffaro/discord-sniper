@@ -478,7 +478,8 @@ def _send_ninjatrader(prop, order, note):
                           % (prop.get("name"), folder))
     # BUY opens a long / covers a short; SELL opens a short / sells a long.
     is_short = str(order.get("direction") or "").upper() == "SHORT"
-    if order.get("action") in ("CLOSE", "TRIM"):
+    is_exit = order.get("action") in ("CLOSE", "TRIM")
+    if is_exit:
         is_short = not is_short          # exiting is the opposite side
     side = "SELL" if is_short else "BUY"
     instrument = str(order.get("symbol") or "").upper()
@@ -487,9 +488,19 @@ def _send_ninjatrader(prop, order, note):
     otype = "LIMIT" if limit else "MARKET"
     lim = ("%.2f" % float(limit)) if limit else ""
     oid = "DS" + uuid.uuid4().hex[:10]
+    # ENTRY bracket (his ask, 8/19): an ATM strategy TEMPLATE name in the
+    # STRATEGY field makes NinjaTrader wrap the entry in that template's stop +
+    # target automatically — real DOM-side protection that survives the PC
+    # going dark, the NinjaTrader equal of the Webull resting stop and the
+    # Topstep server bracket. Only on entries; exits (CLOSE/TRIM) flatten and
+    # must never re-bracket. Blank template = plain order, as before.
+    atm = str(prop.get("atm_template") or "").strip()
+    strat, stratid = "", ""
+    if atm and not is_exit:
+        strat, stratid = atm, "DSA" + uuid.uuid4().hex[:8]
     # PLACE;ACCOUNT;INSTRUMENT;ACTION;QTY;TYPE;LIMIT;STOP;TIF;OCO;ORDERID;STRAT;STRATID
-    line = "PLACE;%s;%s;%s;%d;%s;%s;;DAY;;%s;;" % (
-        account, instrument, side, qty, otype, lim, oid)
+    line = "PLACE;%s;%s;%s;%d;%s;%s;;DAY;;%s;%s;%s" % (
+        account, instrument, side, qty, otype, lim, oid, strat, stratid)
     # A unique filename per order; NinjaTrader consumes and removes it.
     fname = "oif_%s.txt" % oid
     tmp = os.path.join(folder, "." + fname)         # write-then-rename, so
@@ -501,8 +512,17 @@ def _send_ninjatrader(prop, order, note):
     except OSError as e:
         raise PropRefused("%s: couldn't write the NinjaTrader order file (%s) — "
                           "nothing was sent" % (prop.get("name"), str(e)[:100]))
-    note("PROP     %s <- %s %s x%d (NinjaTrader OIF %s)"
-         % (prop.get("name"), side, instrument, qty, oid))
+    if atm and not is_exit:
+        note("PROP     %s <- %s %s x%d (NinjaTrader OIF %s, ATM bracket '%s')"
+             % (prop.get("name"), side, instrument, qty, oid, atm))
+    else:
+        note("PROP     %s <- %s %s x%d (NinjaTrader OIF %s)"
+             % (prop.get("name"), side, instrument, qty, oid))
+        if not is_exit and not atm:
+            note("PROP     %s WARN — no ATM template set, so this NinjaTrader "
+                 "entry has NO stop on NT's side. Make an ATM template in "
+                 "NinjaTrader 8 and put its name in the NinjaTrader settings "
+                 "to bracket every entry." % prop.get("name"))
     return "sent to %s (NinjaTrader)" % prop.get("name")
 
 

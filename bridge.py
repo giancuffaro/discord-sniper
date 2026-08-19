@@ -1021,14 +1021,23 @@ def implied_add_price(pos, new_avg):
 
 def find_key(order):
     """Which trade is this order about. The trader's own first; failing that,
-    the only live trade in that ticker; failing that, the trader key as-is
-    (which will read as "not in it" downstream, and say so)."""
+    the only live trade in that ticker — but ONLY when that trade is this same
+    trader's, or unattributed, or this order named no trader. A DIFFERENT named
+    trader's percentage must never resolve onto your position (8/19: KingBeeAri's
+    bare "10%" closed stockguy007's AAPL swing because this fell through to "the
+    only AAPL, any trader"). Failing all that, the trader key as-is (reads as
+    "not in it" downstream, and says so)."""
     key = tkey(order)
     if BOOK is None or BOOK.state_of(key) is not None:
         return key
     others = BOOK.find_by_symbol(order.get("symbol"))
     if len(others) == 1:
-        return others[0]
+        cand = others[0]
+        want = str(order.get("trader") or "").strip().lower()
+        owner = cand.rsplit("|", 1)[0]          # key is "who|SYM"
+        if not want or owner in ("", "?") or owner == want:
+            return cand
+        # a different named trader — don't hijack their trade
     return key
 
 
@@ -1125,7 +1134,8 @@ def _futures_brokers_safe():
     nt = fb.get("ninjatrader") or {}
     out["ninjatrader"] = {"enabled": bool(nt.get("enabled")),
                           "account": nt.get("account", ""),
-                          "incoming_dir": nt.get("incoming_dir", "")}
+                          "incoming_dir": nt.get("incoming_dir", ""),
+                          "atm_template": nt.get("atm_template", "")}
     tv = fb.get("tradovate") or {}
     out["tradovate"] = {"enabled": bool(tv.get("enabled")),
                         "username": tv.get("username", ""),
@@ -1564,7 +1574,14 @@ def _place_impl(order):
                     armed_props.append({"name": "NinjaTrader",
                         "platform": "ninjatrader",
                         "username": nt.get("account", ""),
-                        "extra": nt.get("incoming_dir", ""), "enabled": True})
+                        "extra": nt.get("incoming_dir", ""),
+                        # An ATM strategy TEMPLATE name (his ask, 8/19): set it
+                        # and every entry is bracketed by NinjaTrader's own ATM
+                        # engine (its stop + target), so an NT order is never
+                        # naked. Made once in NT8 (Chart Trader/ATM > save a
+                        # template) and named here. Blank = no NT-side stop.
+                        "atm_template": nt.get("atm_template", ""),
+                        "enabled": True})
                 tv = fb.get("tradovate") or {}
                 if tv.get("enabled"):
                     armed_props.append({"name": "Tradovate",

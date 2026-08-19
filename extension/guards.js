@@ -263,7 +263,11 @@ async function resolveSymbol(sig, author) {
     const ld = (st.loaded || {})[who] || {};
     const ldSym = String(ld.symbol || "").toUpperCase();
     if (ldSym) {
-      const cands = keys.filter(k => keySymbol(k) === ldSym);
+      // Same trader (or an unattributed pickup) only — a loaded ticker must
+      // never resolve onto ANOTHER trader's position (8/19: KingBeeAri had
+      // loaded AAPL, so his bare "10%" grabbed stockguy007's AAPL swing).
+      const cands = keys.filter(k => keySymbol(k) === ldSym &&
+        (keyWho(k) === who || keyWho(k) === "?"));
       if (cands.length === 1) pick = cands[0];
     }
   }
