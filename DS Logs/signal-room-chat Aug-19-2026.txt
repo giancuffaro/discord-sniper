@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 12:14:17 ET)
+Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 12:44:18 ET)
 
-=== CURRENT STATE (as of 2026-08-19 12:14:17 ET) ===
+=== CURRENT STATE (as of 2026-08-19 12:44:18 ET) ===
   version:        v3.0.2
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -13,9 +13,9 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 12:14:
   LIVE rooms:     ZTRADEZ (OPTIONS & STOCKS): 🔸︱🏰king-maker, VeroTrade: ✅⏐vero-swings, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🅰adex-swings, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎰sir-goldman, ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings, ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures, Platinum Trading: ✅│join-premium, BOKA Trading: 🚨︱option-alerts, VeroTrade: ✅⏐1k-challenge, ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯cranmer, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯madhatter-trades, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺clutchinvestments, BOKA Trading: 🦩︱ryans-alerts, Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge, ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options, BOKA Trading: 🚨︱equity-alerts, ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy, The Insiders Trading Education: 🐺・desi-swings, Summit Trading Strategies: 📌｜alert-room, ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯tlm-options, ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps, VeroTrade: ✅⏐vero-trades, TradingTheTrend: 🚨option-alerts🚨, TradingTheTrend: 🔵options-watchlist, ZTRADEZ (OPTIONS & STOCKS): ◽︱🐼evapanda, ZTRADEZ (OPTIONS & STOCKS): 🟢︱🏆top-flow, Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps, ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺kumo-debit, ZTRADEZ (OPTIONS & STOCKS): ◽︱😈demon, Honey Drip Network 🍯💰📈: 👑｜aristotle-trades, Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, Whop Swing Trades
   RN-pullback:    ON — all channels wait for the round number
   open positions (1):
-    [LIVE ] M 2026-09-18 25C x1 paid 0.75 now 0.92 +$17 (+22%)
+    [LIVE ] M 2026-09-18 25C x1 paid 0.75 now 0.89 +$14 (+19%)
 
-=== RAW MESSAGES THE READER SAW (436) ===
+=== RAW MESSAGES THE READER SAW (446) ===
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  Nitro Trades: Nitro Trades [PLAT], Server Tag: PLAT PLAT — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively.
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
 2026-06-09 12:00:00  [Swing Trades #whop:/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/app]  Felony: 30% on VXX even after add Can trim if you'd like - I am holding personally stop is todays low on VXX/todays high on SPY/QQQ whichever comes first.
@@ -452,8 +452,18 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 12:14:
 2026-08-19 12:07:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 2026-08-19 12:09:14  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: Stormzy APP — 12:09 PM Wednesday, August 19, 2026 at 12:09 PM @everyone Trade Alert TP 2: 7762.75 TP 3 : 7770.25
 2026-08-19 12:13:23  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 12:19:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 12:20:00  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: Stormzy APP — 12:20 PM Wednesday, August 19, 2026 at 12:20 PM @everyone Trade Alert 12+ Points here
+2026-08-19 12:25:22  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 12:29:56  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: Stormzy APP — 12:29 PM Wednesday, August 19, 2026 at 12:29 PM @everyone Trade Alert Remaining cons out B/E. Another banger on ES today saw 12+ Points on that move!
+2026-08-19 12:31:29  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 12:31:43  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: [ 12:31 PM ] Wednesday, August 19, 2026 at 12:31 PM @everyone Trade Alert Co Hosting a FREE Live Trading Session w/ WolfofWebull shortly! Join in here https://us06web.zoom.us/j/81417962198?pwd=3xZF8KIlyNgnqbcHlTz0bB3at5UX4g.1
+2026-08-19 12:37:23  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 12:39:19  [ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options #1471700027662405712]  Namrood-BOT: @everyone Idea Watch AAPL PUTs @Namrood - Live trades dashboard @ZTRADEZ (OPTIONS & STOCKS) | Wednesday - 08-19-2026 12:39 PM EST @ZTRADEZ (OPTIONS & STOCKS) | Wednesday - 08-19-2026 12:39 PM EST
+2026-08-19 12:41:09  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 12:41 PM Wednesday, August 19, 2026 at 12:41 PM @everyone 6 trades today 5 wins do you want more risky ? Do not take this as financial advice! || ⏱︎ 12:41:09 EST
+2026-08-19 12:43:28  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 
-=== WHAT THE BOT DID (371) ===
+=== WHAT THE BOT DID (372) ===
 2026-08-18 22:22:27  <update>  KO · King Maker Bot — stop resting at Webull at 0.50 (-10% from 0.54)
 2026-08-18 22:22:27  <update>  GLD · TLM — TLM's call, bid is in at 2.45 for 1, waiting for a seller (90s)
 2026-08-18 22:22:27  <update>  GLD · TLM — no fill (nobody sold at 2.45 within 90s). You are NOT in this one.
@@ -825,3 +835,4 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 12:14:
 2026-08-19 12:03:56  <failed>  OPEN MRNA 150C @ 34.20 x1 — Bullwinkle · ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps — the bridge refused it: HTTP 502 that one costs $3420 and you've got $982 to spend. Skipped on purpose — no order was sent and you're not in it.  |  Bullwinkle: MRNA | $150 C 34.20 DEC 18 34.10 @everyone
 2026-08-19 12:06:28  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: MRNA | $150 C 34.20 DEC 18 34.10 @everyone
 2026-08-19 12:06:41  <skipped>  AI read this as “TRIM ES” but wasn't sure (45%) — held for review, nothing sent. Fire it by hand if it's right.  |  Stormzy: @everyone Trade Alert BANG First Target hit here lock in profits up 6+ Points ES. Mini GZ + 5m FVG fill. Adjust SL.
+2026-08-19 12:29:56  <skipped>  CLOSE ES — you're not in ES, so there's nothing to close — the order was not sent  |  Stormzy: @everyone Trade Alert Remaining cons out B/E. Another banger on ES today saw 12+ Points on that move!
