@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 21:12:48 ET)
+Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 21:42:48 ET)
 
-=== CURRENT STATE (as of 2026-08-18 21:12:48 ET) ===
+=== CURRENT STATE (as of 2026-08-18 21:42:48 ET) ===
   version:        v2.9.6
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -18,7 +18,7 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 21:12:
     [LIVE ] TSLA 2026-09-18 300P x1 paid 3.21 now 3.25 +$4 (+1%)
     [LIVE ] BAC 2026-10-02 66C x1 paid 1.06 now 1.05 -$1 (-1%)
 
-=== RAW MESSAGES THE READER SAW (1172) ===
+=== RAW MESSAGES THE READER SAW (1173) ===
 2020-06-18 19:36:31  [Summit Trading Strategies: 🎉｜welcome #588478902775709696]  TradeLikeGates: TradeLikeGates [$STS], Server Tag: $STS $STS — 6/18/20, 7:36 PM Thursday, June 18, 2020 at 7:36 PM We are OFFICIAL! SCROLL UP FOR MORE INFORMATION ABOUT THE SERVER (edited) Tuesday, November 24, 2020 at 10:39 PM
 2020-12-15 03:17:50  [TradingTheTrend: intro-to-options-trading #787347359385911296]  TradingTheTrend: TradingTheTrend — 12/15/20, 3:17 AM Tuesday, December 15, 2020 at 3:17 AM What is an option? An option is a contract giving the buyer the right to buy or sell an underlying asset at a specific price, on or before a certain date. An option is a security, and constitutes a binding contract with strictly defined terms and properties. Every option contract represents 100 shares. Options are time decaying securities. They are much riskier than trading stock, but offer much higher rewards. The bigger risk/reward is what draws in most traders/investors. Calls You buy calls when you're expecting a stock to be bullish. When you buy a call, you’re buying the right to purchase 100 shares of a particular stock at a predetermined price, which is the “strike price.” To purchase a call, you pay the seller a fee, known as a “premium. Puts You buy puts when you are expecting a stock to be bearish. A put option gives you the right, but not the obligation, to sell a stock at a certain price in the future (exercise). When you purchase a put, you expect the underlying asset to decline in price.. As price declines, your contracts will gain value. Puts lose value as the underlying increases. You are not obligated to "exercise" call or put options, and can simply sell them to gain the premium." (edited) Saturday, December 19, 2020 at 1:23 AM
 2021-08-24 09:47:35  [Summit Trading Strategies: 🧹｜golden-sweeps #687491078823215153]  Spartan.Flows: Spartan.Flows APP — 8/24/21, 9:47 AM Tuesday, August 24, 2021 at 9:47 AM NNOX PUTS Time 09:46 AM Expiration 11/19/21 Strike Price 25 Details 2,500 @ 5.70 Spot 23.44 Type SWEEP Premium $1.4M 1-100 Rank 107 8/24/21, 9:46 AM
@@ -1191,6 +1191,7 @@ Discord Sniper — self-learning export (2026-08-18, refreshed 2026-08-18 21:12:
 2026-08-18 20:34:06  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 8:34 PM Tuesday, August 18, 2026 at 8:34 PM @everyone only runner left near resistance Do not take this as financial advice! || ⏱︎ 20:34:06 EST
 2026-08-18 20:36:50  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: @everyone folks mnq bounce earlier preorder not filled , it bounce 100 points, I wanna still put that order overnight, I don’t wanna long at this point Do not take this as financial advice! || ⏱︎ 20:36:50 EST Do not take this as financial advice! || ⏱︎ 20:36:50 EST
 2026-08-18 20:43:34  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 8:43 PM Tuesday, August 18, 2026 at 8:43 PM @everyone 111 ticks Do not take this as financial advice! || ⏱︎ 20:43:34 EST
+2026-08-18 21:41:25  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 9:41 PM Tuesday, August 18, 2026 at 9:41 PM @everyone 200 ticks they wick me out for runner but bias was right Do not take this as financial advice! || ⏱︎ 21:41:25 EST
 
 === WHAT THE BOT DID (400) ===
 2026-08-18 09:38:22  <skipped>  TRIM PLTR (+15%) — you're not in PLTR, so there's nothing to trim — the order was not sent  |  HoneyDrip (Scribe): @Unraveller (Admin)🔮 trimming PLTR @ 15% @everyone
