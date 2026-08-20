@@ -484,6 +484,39 @@ def _send_ninjatrader(prop, order, note):
     side = "SELL" if is_short else "BUY"
     instrument = str(order.get("symbol") or "").upper()
     qty = int(order.get("qty") or 1)
+    # A CLOSE uses NinjaTrader's own CLOSEPOSITION command — it flattens
+    # whatever the account actually holds in that instrument and does NOTHING
+    # when flat (8/20: an opposite-side PLACE from a flat account would have
+    # OPENED a position; five overnight entries went out with no exit path).
+    # A TRIM can't be done position-blind, so it's refused loudly instead of
+    # guessed.
+    if order.get("action") == "CLOSE":
+        import os, uuid
+        line = "CLOSEPOSITION;%s;%s;;;;;;;;;;" % (account, instrument)
+        oid = "DS" + uuid.uuid4().hex[:10]
+        fname = "oif_%s.txt" % oid
+        folder = _ninjatrader_dir(prop)
+        if not os.path.isdir(folder):
+            raise PropRefused("%s: NinjaTrader's incoming folder isn't there "
+                              "(%s) — the close wasn't sent"
+                              % (prop.get("name"), folder))
+        tmp = os.path.join(folder, "." + fname)
+        dst = os.path.join(folder, fname)
+        try:
+            with open(tmp, "w", encoding="ascii") as f:
+                f.write(line + "\n")
+            os.replace(tmp, dst)
+        except OSError as e:
+            raise PropRefused("%s: couldn't write the NinjaTrader close file "
+                              "(%s)" % (prop.get("name"), str(e)[:100]))
+        note("PROP     %s <- CLOSEPOSITION %s (flattens whatever it holds; "
+             "no-op when flat)" % (prop.get("name"), instrument))
+        return "closed on %s (NinjaTrader)" % prop.get("name")
+    if order.get("action") == "TRIM":
+        raise PropRefused("%s: a trim needs to know the NinjaTrader position "
+                          "size and the file interface can't read it — trim "
+                          "there by hand; a full close IS forwarded"
+                          % prop.get("name"))
     limit = order.get("limit")
     otype = "LIMIT" if limit else "MARKET"
     lim = ("%.2f" % float(limit)) if limit else ""

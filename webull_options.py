@@ -53,6 +53,11 @@ class Refused(Exception):
     read by you, not by a developer."""
 
 
+class _ComboUnsupported(Exception):
+    """The broker/SDK wouldn't take a linked order group — internal signal
+    only: the caller falls back to the plain single-order path and says so."""
+
+
 # --- turning the room's shorthand into a real contract -----------------------
 
 def weekly_expiry(today=None):
@@ -835,6 +840,47 @@ class WebullOptions:
             o["time_in_force"] = "GTC"
         return [o]
 
+    def _send_combo(self, orders, combo_id, what):
+        """Send a linked order group (MASTER entry + its stop leg) in ONE
+        request — his ask, 8/19: 'group orders... limit with take profit /
+        stoploss... instead of having the watchdog go crazy'. The SDK's
+        place_order has grown parameters across versions, so the known
+        signatures are tried in turn; when none fits, _ComboUnsupported tells
+        the caller to fall back to the plain two-step (entry now, stop after
+        the fill) — a combo the broker can't take must never cost an entry."""
+        holder = getattr(self.trade, "order_v3", None) \
+            or getattr(self.trade, "order", None)
+        fn = getattr(holder, "place_order", None) if holder else None
+        if fn is None:
+            raise _ComboUnsupported("this SDK build has no place_order")
+        attempts = (
+            lambda: fn(self.account_id, orders, combo_id),
+            lambda: fn(self.account_id, orders,
+                       client_combo_order_id=combo_id),
+        )
+        last = None
+        for a in attempts:
+            try:
+                res = a()
+            except TypeError as e:
+                last = e
+                continue
+            try:
+                body = res.json()
+            except Exception:                           # noqa: BLE001
+                body = {}
+            code = getattr(res, "status_code", "?")
+            if code != 200:
+                blob = str(body)
+                up = blob.upper()
+                if "COMBO" in up or "NOT_SUPPORT" in up or "NOT SUPPORT" in up:
+                    raise _ComboUnsupported(blob[:160])
+                raise Refused("Webull rejected %s (HTTP %s): %s"
+                              % (what, code, blob[:180]))
+            return body if isinstance(body, (dict, list)) else {}
+        raise _ComboUnsupported(
+            "place_order accepted no combo signature (%s)" % str(last)[:80])
+
     def _send(self, orders, what):
         res = self.trade.order_v3.place_order(self.account_id, orders)
         try:
@@ -1232,14 +1278,21 @@ class WebullOptions:
         return (str(oid) if oid else None), stop
 
     def buy(self, symbol, side, strike, expiry, qty, their_price=None,
-            price_mode=None):
+            price_mode=None, bracket_stop_pct=None):
         """side is CALLS or PUTS, the way the room writes it.
 
         price_mode overrides the global entry_price for THIS order only.
         The one user today is the round-number pullback (8/17): its entries
         cross the ask (marketable — Webull takes no true market orders on
         options), because the discount was already earned waiting for the
-        touch. None = the normal setting (bid) applies."""
+        touch. None = the normal setting (bid) applies.
+
+        bracket_stop_pct (his ask, 8/19): send the entry as a LINKED GROUP —
+        MASTER limit buy + a stop-loss leg born WITH it, held broker-side.
+        There is no naked moment between the fill and the stop, and when the
+        stop fills the group is done (no orphan orders to 417 a later sell).
+        If the broker/SDK won't take the group, this falls back to the plain
+        single order and the book arms the stop after the fill, as before."""
         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
         expiration = expiry_to_date(expiry)
         occ = occ_symbol(symbol, expiration, option_type, strike)
@@ -1324,9 +1377,36 @@ class WebullOptions:
         else:
             what = "BUY %d %s %g%s %s @ %.2f" % (qty, symbol, float(strike),
                                                  option_type[0], expiration, limit)
-        _orders = self._order(symbol, expiration, option_type, strike,
-                                      "BUY", qty, limit)
-        body = self._send(_orders, what)
+        # ---- linked entry+stop group (his ask, 8/19) ----
+        stop_child = stop_born = None
+        _orders = None
+        if bracket_stop_pct and not blind:
+            try:
+                stop_born = max(0.01, round(
+                    float(limit) * (1 - float(bracket_stop_pct) / 100), 2))
+                slim = max(0.01, round(stop_born * 0.90, 2))
+                master = self._order(symbol, expiration, option_type, strike,
+                                     "BUY", qty, limit)[0]
+                master["combo_type"] = "MASTER"
+                child = self._order(symbol, expiration, option_type, strike,
+                                    "SELL", qty, slim, stop=stop_born)[0]
+                child["combo_type"] = "STOP_LOSS"
+                child["time_in_force"] = "DAY"   # option SELL legs are DAY-only
+                combo_id = uuid.uuid4().hex[:32]
+                body = self._send_combo([master, child], combo_id,
+                                        what + " +stop %.2f (one group)"
+                                        % stop_born)
+                _orders = [master]
+                stop_child = child.get("client_order_id")
+            except _ComboUnsupported as _cu:
+                stop_child = stop_born = None
+                _orders = None
+                # remembered so the caller can say it once, not every trade
+                self._combo_no = str(_cu)[:120]
+        if _orders is None:
+            _orders = self._order(symbol, expiration, option_type, strike,
+                                          "BUY", qty, limit)
+            body = self._send(_orders, what)
         # Cancel looks an order up by the CLIENT id we generated —
         # the SDK puts whatever it is handed into client_order_id.
         # Returning Webull's own order_id here meant every cancel
@@ -1341,10 +1421,13 @@ class WebullOptions:
         # On a resting bid those are different events minutes apart, and
         # sometimes the second one never happens — so nothing downstream is
         # allowed to read this as "you own it". bridge.py watches the ticket.
+        if stop_child:
+            what += "  [stop %.2f born with it]" % stop_born
         return {"ok": True, "state": "working", "order_id": str(oid) if oid else None,
                 "occ": occ, "what": what, "limit": limit, "bid": bid, "ask": ask,
                 "blind": blind, "symbol": symbol, "side": side, "strike": strike,
-                "expiry": expiry, "qty": qty}
+                "expiry": expiry, "qty": qty,
+                "stop_child": stop_child, "stop_born": stop_born}
 
     def entry_limit(self, bid, ask):
         """The number that goes on the entry.

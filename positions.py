@@ -588,6 +588,15 @@ class Book:
                 # The call said SWING — overnight hold. Display only (8/17).
                 "swing": (prev.get("swing") if adding
                           else bool(order.get("swing"))),
+                # Born-with-the-order stop (8/19): the entry went out as a
+                # linked group with its stop leg attached broker-side. On the
+                # fill, _arm_stop ADOPTS this resting leg instead of placing a
+                # second one. An ADD replaces the bracket (new avg = new stop),
+                # so only a fresh entry keeps it.
+                "bracket_stop_id": (None if adding
+                                    else (str(ticket.get("stop_child"))
+                                          if ticket.get("stop_child") else None)),
+                "bracket_stop": (None if adding else ticket.get("stop_born")),
             }
         # Money out of the door the moment the bid is out, not when it fills.
         # It isn't spent yet, but it is promised, and it can't be promised
@@ -1512,6 +1521,25 @@ class Book:
             p = self._pos.get(key)
             wb = self._wbfor(p)
             old = p.get("stop_order_id") if p else None
+            # Born-with-the-order stop (8/19): the entry went out as a linked
+            # group and its stop leg is ALREADY resting at Webull. Adopt that
+            # leg — placing a second stop here would be the very two-resting-
+            # sells problem the group exists to end. The ratchet still moves
+            # it later (cancel+replace path, unchanged).
+            born = p.get("bracket_stop_id") if p else None
+            if born and not old:
+                p["stop"] = float(p.get("bracket_stop") or stop_price)
+                p["stop_order_id"] = str(born)
+                p["bracket_stop_id"] = None
+                if not p.get("watching"):
+                    p["watching"] = True
+                    threading.Thread(target=self._watchdog, args=(key,),
+                                     daemon=True).start()
+                self._event(key, "stop-set",
+                            "%s — stop was born WITH the order and is resting "
+                            "at Webull at %.2f (one group, no naked moment)"
+                            % (sym, float(p["stop"])))
+                return
         if wb is not None and not self._sim(p):
             # Averaging in moves the stop, so the old one has to go first or
             # you end up with two resting sells and get flattened twice.

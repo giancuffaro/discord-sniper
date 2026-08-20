@@ -1041,6 +1041,103 @@ def find_key(order):
     return key
 
 
+# ---- "3 strikes ITM" (his call, 8/19): SPY, QQQ and the Mag-7 on 0DTE ------
+# Whatever strike the room posts, the bot buys the THIRD in-the-money strike
+# measured from the CURRENT stock price (his pick: anchor ATM, not their
+# strike). ITM options carry real delta, so a 0DTE scalp moves with the stock
+# instead of decaying at it. Only these tickers, only same-day expiry; every
+# translation is one loud line in the log.
+ITM3_TICKERS = {"SPY", "QQQ", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL",
+                "META", "TSLA"}
+ITM3_INC = {"SPY": 1.0, "QQQ": 1.0, "NVDA": 1.0}     # the rest default 2.5
+
+
+def _itm3_translate(order, client):
+    """Rewrite order['strike'] to 3-ITM-from-ATM. Returns a note string when it
+    translated, None when the rule doesn't apply. Never raises — any trouble
+    (no quote, no chain) leaves the caller's strike untouched, loudly."""
+    try:
+        if order.get("action") not in ("OPEN", "ADD"):
+            return None
+        if order.get("kind") in ("future", "equity"):
+            return None
+        sym = str(order.get("symbol") or "").upper()
+        if sym not in ITM3_TICKERS or order.get("strike") is None:
+            return None
+        from webull_options import expiry_to_date, occ_symbol
+        import eastern
+        import datetime as _dt
+        exp = _dt.date.fromisoformat(str(expiry_to_date(order.get("expiry"))))
+        if exp != eastern.now().date():
+            return None                          # 0DTE only — his rule
+        # An ADD onto something already held buys MORE OF THAT CONTRACT —
+        # translating again mid-day would buy a second, different strike
+        # under the same trade.
+        if order.get("action") == "ADD" and BOOK is not None:
+            held = BOOK.info(tkey(order)) or {}
+            if held.get("strike") is not None:
+                order["strike"] = held["strike"]
+                return None
+        px = None
+        for _c in (client, WB_LIVE, WB):
+            if _c is None:
+                continue
+            try:
+                px = _c.stock_price(sym)
+            except Exception:                   # noqa: BLE001
+                px = None
+            if px:
+                break
+        if not px:
+            note("ITM-3    %s — couldn't read the stock price, so the caller's "
+                 "strike stands" % sym)
+            return None
+        px = float(px)
+        is_call = str(order.get("side") or "").upper().startswith("C")
+        import math
+        kind = "CALL" if is_call else "PUT"
+        old = order.get("strike")
+        # Try the ticker's usual strike step first, then coarser/finer ladders —
+        # the strike must actually EXIST (quote-verified) or Webull answers
+        # PARAM_ERR (this morning's AAPL 325C rejection).
+        incs = [ITM3_INC.get(sym, 2.5)]
+        for alt in (2.5, 5.0, 1.0):
+            if alt not in incs:
+                incs.append(alt)
+        for inc in incs:
+            if is_call:
+                cand = (math.floor(px / inc) - 2) * inc
+            else:
+                cand = (math.ceil(px / inc) + 2) * inc
+            cand = round(cand, 2)
+            if cand <= 0:
+                continue
+            try:
+                occ = occ_symbol(sym, exp.isoformat(), kind, cand)
+                ask, bid, _r = (client or WB_LIVE or WB).ask_bid(occ)
+            except Exception:                   # noqa: BLE001
+                ask = bid = None
+            if ask is not None or bid is not None:
+                order["strike"] = cand
+                # Their posted premium priced THEIR strike — an ITM contract
+                # costs more, so the cap comes off and the entry pays the ask
+                # (the standing entry rule). Affordability still gates it.
+                order["limit"] = None
+                return ("ITM-3    %s 0DTE: their %s%s -> %s%s (stock at %.2f)"
+                        % (sym, old, "C" if is_call else "P",
+                           ("%g" % cand), "C" if is_call else "P", px))
+        note("ITM-3    %s — no quoted strike found near %.2f, so the caller's "
+             "strike stands" % (sym, px))
+        return None
+    except Exception as _e:                     # noqa: BLE001
+        try:
+            note("ITM-3    %s — translation skipped (%s)"
+                 % (order.get("symbol"), str(_e)[:80]))
+        except Exception:                       # noqa: BLE001
+            pass
+        return None
+
+
 def plan_exit(order, key):
     """Work out whether there is anything to sell, before anything is sent.
 
@@ -1403,8 +1500,22 @@ def _place_impl(order):
     if action == "CLOSE" and BOOK is not None:
         go, claimed, reply = plan_exit(order, key)
         if not go:
-            note("EXIT     %s" % reply[1])
-            return reply
+            # A futures CLOSE the book doesn't hold may still be a REAL
+            # position at an armed prop broker (8/20: five NinjaTrader entries
+            # went out while Webull had no cash, then every exit died right
+            # here on "you're not in it"). Forward the close — NinjaTrader
+            # gets CLOSEPOSITION (a no-op when flat), Topstep its own
+            # closeContract — instead of stranding the prop position.
+            _fb = CFG.get("futures_brokers") or {}
+            _prop_on = any((_fb.get(_b) or {}).get("enabled")
+                           for _b in ("ninjatrader", "tradovate", "topstep"))
+            if order.get("kind") == "future" and _prop_on:
+                note("EXIT     %s — not on the Webull book, but a prop broker "
+                     "is armed; forwarding the close there" % sym)
+                claimed = False
+            else:
+                note("EXIT     %s" % reply[1])
+                return reply
     what = describe(order)
 
     # Whether THIS order is real money — the room's own toggle, not a global.
@@ -1671,6 +1782,14 @@ def _place_impl(order):
 
         from webull_options import Refused
         qty = int(order.get("qty") or 1)
+        # "3 strikes ITM" on SPY/QQQ/Mag-7 0DTE (his call, 8/19) — rewrite the
+        # strike from the live stock price before anything is priced or sent.
+        # Runs here so instant entries, the pullback's at-the-touch entry, AND
+        # every mirrored extra account all buy the same translated contract.
+        if action in ("OPEN", "ADD"):
+            _t = _itm3_translate(order, client)
+            if _t:
+                note(_t)
         # One-click bracket strategy forces ONE contract on every entry, no
         # matter what the alert or the browser said. Clamped here too (not just
         # in the extension) so real money can never size up by accident.
@@ -1681,13 +1800,29 @@ def _place_impl(order):
             # you're already holding. The averaging decision was made upstream;
             # by the time it gets here it's just an order.
             if action in ("OPEN", "ADD"):
+                # Linked entry+stop group on LIVE entries (his ask, 8/19):
+                # the stop leg is born with the order, broker-side — no naked
+                # moment, no watchdog scramble. Falls back to the plain order
+                # by itself if Webull won't take the group.
+                _brk = None
+                if live_order and (CFG.get("execution", {}).get("webull", {})
+                                   or {}).get("bracket_entries", True):
+                    _brk = float((CFG.get("strategy") or {})
+                                 .get("stop_loss_pct", 10))
                 ticket = client.buy(order["symbol"], order.get("side"),
                                     order.get("strike"), order.get("expiry"), qty,
                                     their_price=order.get("limit"),
                                     # "ask" only on pullback entries (8/17):
                                     # the discount was earned waiting for the
                                     # touch — at the trigger he wants IN.
-                                    price_mode=order.get("price_mode"))
+                                    price_mode=order.get("price_mode"),
+                                    bracket_stop_pct=_brk)
+                if _brk and not ticket.get("stop_child"):
+                    _cn = getattr(client, "_combo_no", "")
+                    if _cn:
+                        note("BRACKET  %s — Webull wouldn't take the linked "
+                             "group (%s); entry went plain and the stop arms "
+                             "on the fill, as before" % (order["symbol"], _cn))
                 ticket["live"] = bool(live_order)   # real money?
                 ticket["paper"] = bool(paper)       # or Webull's sim engine
                 # "ORDER IN", not "BOUGHT". Webull has accepted a resting bid;
@@ -1708,7 +1843,8 @@ def _place_impl(order):
                                 order["symbol"], order.get("side"),
                                 order.get("strike"), order.get("expiry"), qty,
                                 their_price=order.get("limit"),
-                                price_mode=order.get("price_mode"))
+                                price_mode=order.get("price_mode"),
+                                bracket_stop_pct=_brk)
                             _t2["live"] = True
                             note("ORDER IN [%s] %s" % (_x["name"], _t2["what"]))
                             _x["book"].entry_sent(order, _t2)
