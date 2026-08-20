@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 22:42:17 ET)
+Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 23:12:17 ET)
 
-=== CURRENT STATE (as of 2026-08-19 22:42:17 ET) ===
+=== CURRENT STATE (as of 2026-08-19 23:12:17 ET) ===
   version:        v3.0.2
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -16,7 +16,7 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 22:42:
     [LIVE ] MP 2026-08-28 60C x1 paid 1.34 now 1.31 -$3 (-2%)
     [LIVE ] M 2026-09-18 25C x1 paid 0.75 now 0.83 +$8 (+10%)
 
-=== RAW MESSAGES THE READER SAW (727) ===
+=== RAW MESSAGES THE READER SAW (738) ===
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  Nitro Trades: Nitro Trades [PLAT], Server Tag: PLAT PLAT — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively.
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
@@ -744,11 +744,19 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 22:42:
 2026-08-19 22:33:52  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: [ 10:33 PM ] Wednesday, August 19, 2026 at 10:33 PM @everyone Trade Alert SL : 29650.25 **
 2026-08-19 22:34:41  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: [ 10:34 PM ] Wednesday, August 19, 2026 at 10:34 PM @everyone Trade Alert Stopped out
 2026-08-19 22:36:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 22:42:28  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 22:47:08  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat #1135947475912495216]  MR.TOPHAT (OPTIONS/FUTURES): MR.TOPHAT (OPTIONS/FUTURES) APP — 10:47 PM Wednesday, August 19, 2026 at 10:47 PM @everyone Are we dead ass bout to lose by 1 leg? Come on man fucking one run all we need © 2021-2026, Horizon Analytics, LLC
+2026-08-19 22:48:29  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 22:54:30  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 22:56:02  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: Stormzy APP — 10:56 PM Wednesday, August 19, 2026 at 10:56 PM @everyone Trade Alert Looking like a good ol fashion stop hunt rn
+2026-08-19 23:00:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 23:00:42  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: [ 11:00 PM ] Wednesday, August 19, 2026 at 11:00 PM @everyone Trade Alert TRADE ENTRY - MNQ Shorts - 1/4 Size Position Entry: 29642.00 Sl: 29642.75
+2026-08-19 23:01:20  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: [ 11:01 PM ] Wednesday, August 19, 2026 at 11:01 PM @everyone Trade Alert TP 1 : 29602.25 TP 2 : 29587.50 TP 3 : 29563.75
+2026-08-19 23:03:17  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: Stormzy APP — 11:03 PM Wednesday, August 19, 2026 at 11:03 PM @everyone Trade Alert ENTRY : 29624.25
+2026-08-19 23:06:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-19 23:06:38  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: [ 11:06 PM ] Wednesday, August 19, 2026 at 11:06 PM @everyone Trade Alert Stopped out. Lack of follow through and volume to find continuation in any direction. Not worth taking any more trades this session. I'll see everyone tmr for NY session.
 
 === WHAT THE BOT DID (400) ===
-2026-08-19 09:32:06  <ignored>  they're getting ready on GOOGL — LOADING never buys, that's the room's own rule  |  HoneyDrip (Scribe): @Unraveller (Admin)🔮 loading GOOGL 8/21 345C @ 2.95 @everyone
-2026-08-19 09:32:18  <skipped>  TRIM GOOGL — you're not in GOOGL, so there's nothing to trim — the order was not sent  |  HoneyDrip (Scribe): @Unraveller (Admin)🔮 trimming GOOGL @everyone
-2026-08-19 09:32:34  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: MRNA | $110 P 5.60 AUG 28 ON THE BREAK OF $115.25 @everyone Spoiler (edited)Wednesday, August 19, 2026 at 9:31 AM
 2026-08-19 09:32:41  <stopped>  UBER · The Pawn (The Market Bishop) — bid hit 1.50, at or under your 1.57 stop. Selling 1.
 2026-08-19 09:32:41  <update>  UBER · The Pawn (The Market Bishop) — Webull said an order was still on this contract; cleared it and re-sent the sell
 2026-08-19 09:32:41  <update>  UBER · The Pawn (The Market Bishop) — the stop tried to sell and couldn't: HTTP Status: 417, Code: OAUTH_OPENAPI_ORDER_NOT_SUPPORT_REVERSE_OPTION, Msg: This order cannot be entered beca. Retrying.
@@ -1146,3 +1154,6 @@ Discord Sniper — self-learning export (2026-08-19, refreshed 2026-08-19 22:42:
 2026-08-19 22:32:11  <update>  MNQ · Stormzy — Stormzy's call, bid is in at 29626.50 for 1, waiting for a seller (90s)
 2026-08-19 22:33:47  <update>  MNQ · Stormzy — no fill (nobody sold at 29626.50 within 90s). You are NOT in this one.
 2026-08-19 22:34:41  <failed>  CLOSE MES x24 — Stormzy · ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy — the bridge refused it: HTTP 400 that order didn't say which contract (no strike or expiry), so nothing was sent. Close it in the Webull app if you're in it.  |  Stormzy: @everyone Trade Alert Stopped out
+2026-08-19 23:00:43  <sent>  OPEN MNQ @ 29642.00 x1 — Stormzy · ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy — sent in 379 ms — Webull futures didn't take it: your Webull FUTURES account doesn't have enough money in it for one MNQU6. The order itself was fine - Webull checked it; sent to NinjaTrader (NinjaTrader)  |  Stormzy: @everyone Trade Alert TRADE ENTRY - MNQ Shorts - 1/4 Size Position Entry: 29642.00 Sl: 29642.75
+2026-08-19 23:00:46  <update>  MNQ · Stormzy — Stormzy's call, bid is in at 29642.00 for 1, waiting for a seller (90s)
+2026-08-19 23:02:21  <update>  MNQ · Stormzy — no fill (nobody sold at 29642.00 within 90s). You are NOT in this one.
