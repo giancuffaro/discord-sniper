@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 07:46:48 ET)
+Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 08:16:47 ET)
 
-=== CURRENT STATE (as of 2026-08-20 07:46:48 ET) ===
+=== CURRENT STATE (as of 2026-08-20 08:16:47 ET) ===
   version:        v3.0.2
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -16,7 +16,7 @@ Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 07:46:
     [LIVE ] MP 2026-08-28 60C x1 paid 1.34 now 1.31 -$3 (-2%)
     [LIVE ] M 2026-09-18 25C x1 paid 0.75 now 0.83 +$8 (+10%)
 
-=== RAW MESSAGES THE READER SAW (867) ===
+=== RAW MESSAGES THE READER SAW (873) ===
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  Nitro Trades: Nitro Trades [PLAT], Server Tag: PLAT PLAT — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively.
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
@@ -884,6 +884,12 @@ Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 07:46:
 2026-08-20 07:33:58  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 2026-08-20 07:39:52  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 2026-08-20 07:45:53  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 07:51:51  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 07:57:51  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 08:03:53  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 08:09:51  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 08:15:26  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 8:15 AM Thursday, August 20, 2026 at 8:15 AM @everyone testing Do not take this as financial advice! || ⏱︎ 08:15:26 EST
+2026-08-20 08:15:51  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 
 === WHAT THE BOT DID (400) ===
 2026-08-19 09:33:30  <ignored>  they're getting ready on AMD — LOADING never buys, that's the room's own rule  |  HoneyDrip (Scribe): @Unraveller (Admin)🔮 loading AMD 8/21 495C @here
