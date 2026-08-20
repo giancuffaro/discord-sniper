@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 15:16:47 ET)
+Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 15:46:47 ET)
 
-=== CURRENT STATE (as of 2026-08-20 15:16:47 ET) ===
+=== CURRENT STATE (as of 2026-08-20 15:46:47 ET) ===
   version:        v3.0.2
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -15,7 +15,7 @@ Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 15:16:
   open positions (0):
     (none)
 
-=== RAW MESSAGES THE READER SAW (1236) ===
+=== RAW MESSAGES THE READER SAW (1248) ===
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  Nitro Trades: Nitro Trades [PLAT], Server Tag: PLAT PLAT — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively.
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
@@ -1252,9 +1252,20 @@ Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 15:16:
 2026-08-20 15:07:51  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 2026-08-20 15:13:51  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 2026-08-20 15:15:15  [ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy #1525120298075029554]  Stormzy: Stormzy APP — 3:15 PM Thursday, August 20, 2026 at 3:15 PM @everyone Trade Alert Sponsored Ticker: AZIO AZIO looking interesting heading into the close. After showing strength earlier today, I’m watching to see if buyers can step back in and drive a move. With the recent AI infrastructure catalysts still in focus, AZIO could be an interesting multi-day breakout setup if momentum returns. Source Disclaimer
+2026-08-20 15:19:59  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 15:25:58  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 15:26:39  [Honey Drip Network 🍯💰📈: 👑｜aristotle-trades #987515353670221834]  👑KingBeeAri🐝: 👑KingBeeAri🐝 [DRIP], Server Tag: DRIP DRIP OWNER🤴🏾 — 3:26 PM Thursday, August 20, 2026 at 3:26 PM And now AAPL drops lol. My read was right, just a bullshit day in price action @here
+2026-08-20 15:31:51  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 15:32:54  [ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop #1239624229583061052]  The Pawn (The Market Bishop): The Pawn (The Market Bishop) VERIFIED APP APP — 3:32 PM Thursday, August 20, 2026 at 3:32 PM @everyone Bishop's Ideas Potential Swings Few put setups, those are obvious I am about to look at flow now How I Trade The Market Bishop Trade Idea's Disclaimer Twitter: @TheMarketBishop | I want to be the greatest•Today at 3:32 PM
+2026-08-20 15:37:51  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 15:43:53  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 15:44:47  [Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge #1433933203302776852]  👑KingBeeAri🐝: 👑KingBeeAri🐝 [DRIP], Server Tag: DRIP DRIP OWNER🤴🏾 — 3:44 PM Thursday, August 20, 2026 at 3:44 PM In these 2 @everyone
+2026-08-20 15:45:13  [Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge #1433933203302776852]  👑KingBeeAri🐝: [ 3:45 PM ] Thursday, August 20, 2026 at 3:45 PM Seeing if we can bank on this market volatility
+2026-08-20 15:45:26  [Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge #1433933203302776852]  👑KingBeeAri🐝: [ 3:45 PM ] Thursday, August 20, 2026 at 3:45 PM XOM, & GLD
+2026-08-20 15:45:46  [ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop #1239624229583061052]  The Pawn (The Market Bishop): The Pawn (The Market Bishop) VERIFIED APP APP — 3:45 PM Thursday, August 20, 2026 at 3:45 PM @everyone Bishop's Ideas Updated Priority list has flow behind it Possible list are what I find as good setups How I Trade The Market Bishop Trade Idea's Disclaimer Twitter: @TheMarketBishop | I want to be the greatest•Today at 3:45 PM
+2026-08-20 15:46:40  [Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge #1433933203302776852]  👑KingBeeAri🐝: [ 3:46 PM ] Thursday, August 20, 2026 at 3:46 PM Size for zero
 
 === WHAT THE BOT DID (400) ===
-2026-08-19 10:51:05  <skipped>  CLOSE TSLA — you're not in TSLA, so there's nothing to close — the order was not sent  |  HoneyDrip (Scribe): @Unraveller (Admin)🔮 all out of TSLA @everyone Green
 2026-08-19 10:51:54  <sent>  OPEN PFE 30C 1/15/27 @ 1.08 x1 — sloth  legooman NR100 · TradingTheTrend: 🚨option-alerts🚨 — sent in 765 ms — bid is in at 1.08 on PFE 30C — you're not in it until somebody sells to you  |  sloth  legooman NR100: BTO PFE 1/15/27 30c @1.08 monthly IHS break
 2026-08-19 10:51:57  <update>  PFE · sloth  legooman NR100 — sloth legooman NR100's call, bid is in at 1.08 for 1, waiting for a seller (90s)
 2026-08-19 10:52:27  <update>  QQQ — gone from your Webull account — you closed it yourself, so the trade is marked done · sold, but at a price I never saw — account left as it was
@@ -1654,3 +1665,4 @@ Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 15:16:
 2026-08-20 14:38:17  <update>  QQQ — x1 picked up from your Webull LIVE account — the bot can see it and exit it on the room's call now
 2026-08-20 14:45:34  <ignored>  an equity entry with no price anywhere — nothing to follow  |  JonnyOptions: added $NBIL shares for a swing,@Premium
 2026-08-20 15:01:03  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: MRNA | $135 C 9.05 NEXT WEEK $130 BREAK @everyone Spoiler
+2026-08-20 15:44:47  <ignored>  they posted a fill price on its own, but the last LOADING call was 335 minutes ago — too long ago to assume it's the same trade, so nothing was sent  |  👑KingBeeAri🐝: In these 2 @everyone
