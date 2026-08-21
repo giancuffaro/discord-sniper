@@ -85,9 +85,16 @@ class FakeWB:
         self.calls.append(("stop", symbol, qty, stop))
         return str(self.next_id), stop
 
-    def sell(self, symbol, side, strike, expiry, qty):
+    def sell(self, symbol, side, strike, expiry, qty, ref_price=None,
+             urgent=False):
+        # Mirrors the real client: urgent stop-outs cross the bid, and every
+        # sell is trackable so the fill-confirmation loop (8/21) can verify.
         self.calls.append(("sell", symbol, qty))
-        return {"what": "SELL", "limit": self.bid}
+        self.next_id += 1
+        oid = str(self.next_id)
+        self.limits[oid] = self.bid
+        self.qtys[oid] = qty
+        return {"what": "SELL", "limit": self.bid, "order_id": oid}
 
 
 def book(wb, **kw):
@@ -211,7 +218,10 @@ b = book(wb, poll_seconds=0.2)
 b.entry_sent(ORDER, ticket(wb, limit=3.00))
 settle(b)
 wb.bid = 2.30                        # 2.40 is the stop; this is through it
-end = time.time() + 3
+# The stop now CONFIRMS its fill with the broker before recording (8/21 —
+# a sell that never filled used to be booked as a stop-out), so give it the
+# few polling seconds that honesty costs.
+end = time.time() + 15
 while time.time() < end and b.state_of(K) == positions.FILLED:
     time.sleep(0.05)
 ok(b.state_of(K) == positions.STOPPED,

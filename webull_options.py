@@ -1504,7 +1504,8 @@ class WebullOptions:
             return max(0.01, round((bid + ask) / 2, 2))
         return max(0.01, round(bid, 2))
 
-    def sell(self, symbol, side, strike, expiry, qty, ref_price=None):
+    def sell(self, symbol, side, strike, expiry, qty, ref_price=None,
+             urgent=False):
         """Exit a position. Getting OUT matters more than pricing it to the
         cent — when the room says "all out", you're out.
 
@@ -1550,7 +1551,15 @@ class WebullOptions:
         except Refused:
             pass                # no live quote — we still get out, see below
         ref = bid or ask or ref_price
-        if ask and ask > 0:
+        if urgent and bid and float(bid) > 0:
+            # STOP-OUT pricing (8/21, the CLF/MP/TSLA lesson): on a collapsing
+            # contract an ask-priced sell RESTS above the market and never
+            # fills — the book says stopped while the broker says holding.
+            # An urgent exit CROSSES the bid so it clears right now; a sell
+            # limit under the bid fills AT the bid, not at the limit.
+            limit = max(0.01, round(float(bid) * (1 - self.buffer_pct / 100)
+                                    - 0.01, 2))
+        elif ask and ask > 0:
             # His call (8/13): exit AT the ask instead of discounting to the
             # bid — stop handing the spread to the market maker on every trim.
             # This is a resting limit at the offer: it captures the full ask

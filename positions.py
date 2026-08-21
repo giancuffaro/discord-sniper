@@ -1663,9 +1663,23 @@ class Book:
                             price=float(bid))
                 return
             try:
-                self._sell_retry(wb, key, sym, side, strike, expiry, qty)
-                self.finish(key, STOPPED, "stopped out at %.2f" % float(bid),
-                            price=float(bid))
+                _okf, _px = self._sell_confirmed(wb, key, occ, sym, side,
+                                                 strike, expiry, qty,
+                                                 float(bid))
+                if _okf:
+                    self.finish(key, STOPPED,
+                                "stopped out at %.2f" % float(_px),
+                                price=float(_px))
+                    return
+                # Accepted but NEVER filled, twice — the truth is you're
+                # still holding. Hand the claim back and keep watching;
+                # pretending it sold is how CLF/MP went wrong.
+                self.release(key)
+                self._event(key, "stop-warn",
+                            "%s — the stop's sell was accepted but never "
+                            "FILLED (tried twice, repriced once). Still "
+                            "HOLDING; the watchdog keeps trying." % sym)
+                continue
             except Exception as e:                      # noqa: BLE001
                 # FIRST: is there anything left to sell? (8/18) The resting
                 # stop at Webull often fills a beat before the watchdog
@@ -1759,6 +1773,48 @@ class Book:
                 or "CAVERED_CALL_STOCK_NO_ENOUGH" in msg
                 or "COVERED_CALL_STOCK_NO_ENOUGH" in msg
                 or "INSUFFICIENT NUMBER OF UNDERLYING" in msg)
+
+    def _sell_confirmed(self, wb, key, occ, sym, side, strike, expiry, qty,
+                        ref):
+        """Sell URGENTLY (crossing the bid) and report True only when the
+        broker says FILLED. The 8/21 CLF stop (and MP, and TSLA before it):
+        a stop's sell was ACCEPTED, recorded as a fill, and never actually
+        filled — the book said flat while the broker said holding, and the
+        orphaned order 417-blocked every later exit. Acceptance is not a
+        fill. This waits for the real fill, re-prices ONCE at the fresh bid
+        if it has to, and tells the truth when it can't get out."""
+        for _attempt in (0, 1):
+            r = self._sell_retry(wb, key, sym, side, strike, expiry, qty,
+                                 ref_price=ref, urgent=True)
+            oid = r.get("order_id")
+            px_fallback = r.get("limit") or ref
+            if not oid:
+                return True, px_fallback        # untrackable — old behavior
+            deadline = time.time() + 25
+            while time.time() < deadline:
+                time.sleep(3)
+                try:
+                    state, fq, avg = wb.order_status(oid)
+                except Exception:               # noqa: BLE001
+                    continue
+                s = str(state or "").lower()
+                if s.startswith("fill") or (fq and int(fq) >= int(qty)):
+                    return True, (avg or px_fallback)
+                if s in ("dead", "cancelled", "canceled", "rejected",
+                         "failed", "expired"):
+                    break                       # go again at the fresh bid
+            try:
+                wb.cancel(oid)
+            except Exception:                   # noqa: BLE001
+                pass
+            self._await_cancel(wb, oid)
+            try:
+                _a, _b, _ = wb.ask_bid(occ)
+                if _b and float(_b) > 0:
+                    ref = float(_b)             # round 2 prices off NOW
+            except Exception:                   # noqa: BLE001
+                pass
+        return False, None
 
     def _sell_retry(self, wb, key, sym, side, strike, expiry, qty, **kw):
         """Sell, and if Webull refuses because something is still resting
