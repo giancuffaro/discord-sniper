@@ -1763,6 +1763,29 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
                        GC: "MGC", CL: "MCL", SI: "SIL" };
     if (sig.kind === "future" && sig.symbol && MICRO_OF[sig.symbol]) {
       sig.symbol = MICRO_OF[sig.symbol];
+    } else if (sig.symbol && MICRO_OF[sig.symbol] &&
+               (sig.action === "TRIM" || sig.action === "CLOSE") &&
+               (sig.strike === null || sig.strike === undefined)) {
+      // A bare futures EXIT ("TRIM ES", "out of NQ") arrives with no kind tag —
+      // the reader marks entries, not one-word exits — so it skipped the micro
+      // translation above and went looking for an "ES" position while the book
+      // holds MES. The exit guard then refused it as "you're not in ES" and it
+      // never reached the bridge: 8/21, Stormzy's two ES trims died that way on
+      // a live MES long. Same class of bug bridge.py already fixed on its own
+      // exit gate ("a known futures root with no strike IS a future").
+      // Deliberately narrow: only on an exit, only when you are actually
+      // holding the micro and NOT the plain root, so an equity ticker that
+      // happens to share a futures root (CL, SI) can never be translated.
+      const _stMic = await guardState();
+      const _heldMic = (_stMic && _stMic.positions) || {};
+      const _plain = String(sig.symbol).toUpperCase();
+      const _micro = MICRO_OF[_plain];
+      const _hasSym = (s) =>
+        Object.keys(_heldMic).some(k => keySymbol(k) === s);
+      if (!_hasSym(_plain) && _hasSym(_micro)) {
+        sig.symbol = _micro;
+        sig.kind = "future";
+      }
     }
 
     // Boka rooms (JonnyOptions) post bare percentages as PROGRESS, like

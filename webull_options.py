@@ -1340,17 +1340,22 @@ class WebullOptions:
                     "was sent. (Their call may be fine; this contract just "
                     "isn't tradeable at a sane price right now.)"
                     % (occ, _b, _a, 100.0 * (_a - _b) / _mid))
-            # HIS absolute cap (8/20): spread wider than $0.20 of premium
-            # ($20 a contract) is refused no matter the percentage — a $5.00
-            # contract quoted 4.80/5.10 passes the % guard but still hands
-            # away $30 crossing it.
-            if self.max_spread_dollars and \
-                    (_a - _b) > self.max_spread_dollars + 1e-9:
-                raise Refused(
-                    "the spread on %s is %.2f/%.2f — $%.0f a contract just to "
-                    "cross it, over your $%.0f cap. Nothing was sent."
-                    % (occ, _b, _a, 100.0 * (_a - _b),
-                       100.0 * self.max_spread_dollars))
+            # HIS absolute cap (8/20), widened 8/21 after it collided with the
+            # NO-OTM rule: ITM contracts on expensive names carry wide DOLLAR
+            # spreads even when they're normal in percent (MSFT 480C at
+            # 6.40/7.05 is ~9% but $65) — the flat $20 cap was refusing every
+            # translated entry. The cap is now $20 OR 10% of the mid,
+            # whichever is LARGER: cheap contracts stay strictly protected, a
+            # $7 contract may spread to ~70 cents (MSFT-class ITM territory),
+            # and true garbage still dies on the 35% guard above.
+            if self.max_spread_dollars:
+                _cap = max(self.max_spread_dollars, 0.10 * _mid)
+                if (_a - _b) > _cap + 1e-9:
+                    raise Refused(
+                        "the spread on %s is %.2f/%.2f — $%.0f a contract to "
+                        "cross it, over your cap ($%.0f for a contract this "
+                        "price). Nothing was sent."
+                        % (occ, _b, _a, 100.0 * (_a - _b), 100.0 * _cap))
         blind = False
         if ask and ask > 0:
             if price_mode == "ask":
