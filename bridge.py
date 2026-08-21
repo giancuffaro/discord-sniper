@@ -2389,8 +2389,18 @@ class Handler(BaseHTTPRequestHandler):
             # Every account behind an extra login's keys, with buying power —
             # the popup's ✏️ uses this so switching accounts is one click
             # (his ask, 8/21). Read-only probing; nothing is placed.
+            # Cached 60s per login — each probe is a full login + balance
+            # read per account, and hammering it is how Webull answered
+            # 429 TOO_MANY_REQUESTS (8/21).
             q = parse_qs(urlparse(self.path).query)
             nm = str((q.get("name") or [""])[0]).strip()[:24]
+            _cch = getattr(Handler, "_exch_cache", None)
+            if _cch is None:
+                _cch = Handler._exch_cache = {}
+            _hit = _cch.get(nm)
+            if _hit and time.time() - _hit[0] < 60:
+                return self._json(200, {"ok": True, "choices": _hit[1],
+                                        "cached": True})
             acc = next((a for a in (EXEC.get("webull_extra_accounts") or [])
                         if str(a.get("name") or "").strip()[:24] == nm), None)
             if not acc or not (acc.get("app_key") and acc.get("app_secret")):
@@ -2405,6 +2415,7 @@ class Handler(BaseHTTPRequestHandler):
                     if "FUTURES" in str(r0.get("kind") or "").upper():
                         continue        # options bot — futures rides the main
                     _bp = None
+                    time.sleep(0.5)     # pace the probes — 429 protection
                     try:
                         c2 = _cp.deepcopy(CFG)
                         w2 = c2.setdefault("execution", {}).setdefault(
@@ -2422,6 +2433,7 @@ class Handler(BaseHTTPRequestHandler):
                                     "bp": (round(float(_bp), 0)
                                            if _bp is not None else None),
                                     "current": r0["id"] == cur})
+                _cch[nm] = (time.time(), choices)
                 return self._json(200, {"ok": True, "choices": choices})
             except Exception as e:                      # noqa: BLE001
                 return self._json(200, {"ok": False, "why": str(e)[:160]})
@@ -3414,6 +3426,85 @@ def main():
         probe_topstep_key()
     except Exception:                                   # noqa: BLE001
         pass
+    # Restart the bridge BY ITSELF when its own code changes on disk (his ask,
+    # 8/21: "can you restart the bridge every time?" — now nobody has to).
+    # Safe by construction: waits for the edit batch to SETTLE (60s with no
+    # further change), refuses to restart onto code that doesn't compile, and
+    # during market hours it holds the restart until after the close so a
+    # mid-session swap can't blink the reader. Positions survive restarts
+    # (state.json + re-adopt + stop re-arm), same as any START HERE.
+    def _code_watch_loop():
+        import py_compile
+        def snap():
+            out = {}
+            try:
+                for fn in os.listdir(HERE):
+                    if fn.endswith(".py"):
+                        try:
+                            out[fn] = os.path.getmtime(os.path.join(HERE, fn))
+                        except OSError:
+                            pass
+            except OSError:
+                pass
+            return out
+        base = snap()
+        pending_since = None
+        warned_open = False
+        while True:
+            time.sleep(20)
+            cur = snap()
+            if cur != base:
+                if pending_since is None:
+                    note("CODE     change on disk — will restart once it "
+                         "settles (after the close if the market's open)")
+                pending_since = time.time()
+                base = cur
+                continue
+            if pending_since is None:
+                continue
+            if time.time() - pending_since < 60:
+                continue                # let the whole edit batch finish
+            try:
+                import eastern
+                _t = eastern.now()
+                _mins = _t.hour * 60 + _t.minute
+                is_open = _t.weekday() < 5 and \
+                    (9 * 60 + 20) <= _mins <= (16 * 60 + 15)
+            except Exception:                           # noqa: BLE001
+                is_open = False
+            if is_open:
+                if not warned_open:
+                    note("CODE     new build ready — restarting at the close")
+                    warned_open = True
+                continue
+            ok = True
+            for fn in sorted(cur):
+                try:
+                    py_compile.compile(os.path.join(HERE, fn), doraise=True)
+                except Exception as e:                  # noqa: BLE001
+                    note("CODE     %s doesn't compile (%s) — NOT restarting, "
+                         "staying on the running build" % (fn, str(e)[:80]))
+                    ok = False
+                    break
+            if not ok:
+                pending_since = None
+                warned_open = False
+                continue
+            note("CODE     restarting onto the new build")
+            try:
+                save_day()
+            except Exception:                           # noqa: BLE001
+                pass
+            try:
+                os.execv(sys.executable,
+                         [sys.executable, os.path.join(HERE, "bridge.py")])
+            except Exception as e:                      # noqa: BLE001
+                note("CODE     restart failed (%s) — the next START HERE "
+                     "loads it" % e)
+                pending_since = None
+                warned_open = False
+    threading.Thread(target=_code_watch_loop, daemon=True).start()
+
     # Keep the book in step with the REAL Webull account: adopt any open position
     # the book doesn't know about (one it never placed, or lost on a restart) so
     # a room's "all out" can actually flatten it. Runs once now and every 20s.
