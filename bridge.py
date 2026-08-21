@@ -82,6 +82,12 @@ FUT_MULT = {"NQ": 20.0, "MNQ": 2.0, "ES": 50.0, "MES": 5.0,
             "CL": 1000.0, "MCL": 100.0, "GC": 100.0, "MGC": 10.0,
             "SI": 5000.0, "SIL": 1000.0, "NG": 10000.0}
 
+# The micro this bridge actually trades when a room calls the full-size root
+# ("when felony mentions NQ and ES, we shoot the diminutive"). Same table the
+# extension uses; kept here so an exit can find the position the entry made.
+FUT_MICRO_OF = {"NQ": "MNQ", "ES": "MES", "YM": "MYM", "RTY": "M2K",
+                "GC": "MGC", "CL": "MCL", "SI": "SIL"}
+
 
 # ---- honest fill + his two tactics -----------------------------------------
 # All OFF by default: nothing here changes a single number until he turns it
@@ -3222,6 +3228,32 @@ class Handler(BaseHTTPRequestHandler):
                     "ES", "NQ", "MES", "MNQ", "YM", "MYM", "RTY", "M2K",
                     "CL", "MCL", "GC", "MGC"):
             order["kind"] = "future"
+
+        # A micro and its full-size root are ONE position. Stormzy's "ALL OUT
+        # ES" (8/21 11:36) arrived on a live MES long, found no "ES" in the
+        # book, and webull_futures answered "you're not in ES" without writing
+        # a single line — a SILENT drop, and the position stayed open. The
+        # extension rewrites this too; the same rule lives here so a stale
+        # extension can never lose an exit. Deliberately narrow: exits only,
+        # no strike, and only when the book holds the micro and NOT the plain
+        # root — so an equity sharing a futures root (CL, SI, GC) is never
+        # touched. Rewrites the SYMBOL, not just the key: webull_futures picks
+        # its contract off order["symbol"], so a key-only fix would have sold
+        # a full-size ES against a micro long.
+        if order.get("action") in ("CLOSE", "TRIM") \
+                and order.get("strike") is None and BOOK is not None:
+            _sib = FUT_MICRO_OF.get(sym)
+            try:
+                _need = bool(_sib) and not BOOK.find_by_symbol(sym) \
+                    and bool(BOOK.find_by_symbol(_sib))
+            except Exception:                           # noqa: BLE001
+                _need = False
+            if _need:
+                note("FUTURES  %s exit routed to your %s position — the micro "
+                     "and its full-size root are one trade" % (sym, _sib))
+                order["symbol"] = _sib
+                order["kind"] = "future"
+                sym = _sib
 
         if order.get("live") and order.get("action") != "TRIM" \
                 and order.get("kind") != "future" \

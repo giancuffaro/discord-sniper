@@ -209,14 +209,28 @@ async function guardCheck(sig, ctx, cfg) {
         "not a new trade" };
   }
 
-  if ((sig.action === "CLOSE" || sig.action === "TRIM") &&
-      !st.positions[posKey(who, sig.symbol)] &&
-      !Object.keys(st.positions).some(k => keySymbol(k) === sig.symbol))
-    // At most brokers a sell with nothing to sell isn't a no-op — it opens a
-    // short. Never send it.
-    return { allowed: false, reason: "you're not in " + sig.symbol +
-      ", so there's nothing to " + (sig.action === "TRIM" ? "trim" : "close") +
-      " — the order was not sent" };
+  if (sig.action === "CLOSE" || sig.action === "TRIM") {
+    // Micro/full futures siblings are ONE position (8/21: the room's "ALL
+    // OUT ES" died right here because the book holds it as MES — the same
+    // NQ/MNQ lesson, on the exit side). If we hold the sibling, the exit is
+    // for it: rewrite the symbol so everything downstream matches.
+    const _sibs = { ES: "MES", MES: "ES", NQ: "MNQ", MNQ: "NQ",
+                    YM: "MYM", MYM: "YM", RTY: "M2K", M2K: "RTY",
+                    CL: "MCL", MCL: "CL", GC: "MGC", MGC: "GC" };
+    const _sib = _sibs[sig.symbol];
+    if (_sib && !st.positions[posKey(who, sig.symbol)] &&
+        !Object.keys(st.positions).some(k => keySymbol(k) === sig.symbol) &&
+        Object.keys(st.positions).some(k => keySymbol(k) === _sib)) {
+      sig.symbol = _sib;
+    }
+    if (!st.positions[posKey(who, sig.symbol)] &&
+        !Object.keys(st.positions).some(k => keySymbol(k) === sig.symbol))
+      // At most brokers a sell with nothing to sell isn't a no-op — it opens
+      // a short. Never send it.
+      return { allowed: false, reason: "you're not in " + sig.symbol +
+        ", so there's nothing to " + (sig.action === "TRIM" ? "trim" : "close") +
+        " — the order was not sent" };
+  }
 
   const last = st.recent[signalKey(sig)];
   if (last && (now - last) / 1000 < g.dedupe_seconds)
