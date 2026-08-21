@@ -323,6 +323,38 @@ window.__SNIPER_STOP__ = function () {
   watching = null;
 };
 
+/* LIVE detection (his ask, 8/20): some rooms trade LIVE on voice/stage, and
+ * the call is SPOKEN seconds before it's typed. When Discord paints a LIVE
+ * badge anywhere in this server's channel list, tell the worker — it logs it
+ * loudly, fires a desktop notification, and starts the voice listener the
+ * moment this tab is playing the room's audio. Class hashes change between
+ * Discord builds, so hunt by class fragment AND by literal badge text. */
+let _lastLivePing = 0;
+function liveScan() {
+  const now = Date.now();
+  if (now - _lastLivePing < 60000) return;    // one ping a minute is plenty
+  let hit = "";
+  try {
+    const el = document.querySelector(
+      '[class*="liveBadge" i], [class*="liveTag" i], [aria-label*="live" i][class*="badge" i]');
+    if (el) hit = (el.getAttribute("aria-label") || el.textContent || "LIVE").trim().slice(0, 40);
+    if (!hit) {
+      // literal little "LIVE" pills in the sidebar
+      for (const s of document.querySelectorAll("nav span, aside span")) {
+        const t = (s.textContent || "").trim();
+        if (t === "LIVE" || t === "Live") { hit = "LIVE badge"; break; }
+      }
+    }
+  } catch (e) {}
+  if (!hit) return;
+  _lastLivePing = now;
+  try {
+    chrome.runtime.sendMessage({ type: "LIVE_DETECTED",
+      channelId: channelId(), channelName: channelName(),
+      where: hit, url: location.href }).catch(() => {});
+  } catch (e) {}
+}
+
 // Belt-and-suspenders for the MutationObserver: re-read every message on
 // screen on a timer, don't trust the "new message" event alone. Discord's
 // observer can drop an event when the tab is backgrounded, throttled, or busy
@@ -351,5 +383,6 @@ timer = setInterval(function () {
   if (!alive) { window.__SNIPER_STOP__(); return; }
   attach();
   liveSweep();       // catch anything the live observer missed, every tick
+  liveScan();        // and notice when the server goes LIVE on voice/stage
 }, 1500);
 })();

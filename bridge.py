@@ -387,6 +387,27 @@ def build_book():
              "number that tells you what funding this really takes.")
 
 
+def _extra_month_now():
+    import eastern
+    return eastern.now().strftime("%Y-%m")
+
+
+def _extra_active(x):
+    """May this extra account take NEW entries right now? (His model, 8/20:
+    the accounts are subscription-based — a toggle plus a month stamp. Flip
+    it ON and it's paid through the END of the current month; when the month
+    rolls over it EXPIRES by itself until it's flipped on again.) Exits,
+    trims and stop management always keep working on anything already held —
+    an expired subscription must never strand an open position."""
+    nm = x.get("name")
+    for a in (EXEC.get("webull_extra_accounts") or []):
+        if str(a.get("name") or "").strip()[:24] == nm:
+            if not a.get("enabled", True):
+                return False
+            return str(a.get("paid_month") or "") == _extra_month_now()
+    return False
+
+
 def _extra_state_path(name):
     safe = "".join(ch if (ch.isalnum() or ch in "-_") else "_"
                    for ch in str(name))[:32] or "acct"
@@ -1247,7 +1268,11 @@ def _futures_brokers_safe():
         {"name": str(a.get("name") or "").strip()[:24],
          "enabled": bool(a.get("enabled", True)),
          "keys_in": bool(a.get("app_key") and a.get("app_secret")),
-         "connected": str(a.get("name") or "").strip()[:24] in _live_names}
+         "connected": str(a.get("name") or "").strip()[:24] in _live_names,
+         "paid_month": str(a.get("paid_month") or ""),
+         "month_now": _extra_month_now(),
+         "active": (bool(a.get("enabled", True))
+                    and str(a.get("paid_month") or "") == _extra_month_now())}
         for a in (EXEC.get("webull_extra_accounts") or [])]
     return out
 
@@ -1735,6 +1760,11 @@ def _place_impl(order):
                 # (no cash, no subscription) never blocks the others.
                 if live_order:
                     for _x in WB_EXTRA:
+                        # subscription gates ENTRIES only — a close or trim on
+                        # something already held always goes through
+                        if order.get("action") in ("OPEN", "ADD") \
+                                and not _extra_active(_x):
+                            continue
                         try:
                             import webull_futures as _wf
                             _ok2, _msg2 = _wf.execute(
@@ -1846,6 +1876,8 @@ def _place_impl(order):
                 # refusing never stops the others.
                 if live_order:
                     for _x in WB_EXTRA:
+                        if not _extra_active(_x):
+                            continue   # subscription off/expired: no NEW entries
                         try:
                             _t2 = _x["client"].buy(
                                 order["symbol"], order.get("side"),
@@ -1976,6 +2008,8 @@ def _place_impl(order):
                             BOOK.entry_sent(order, back)
                         if live_order:
                             for _x in WB_EXTRA:
+                                if not _extra_active(_x):
+                                    continue
                                 try:
                                     _b2 = _x["client"].buy(
                                         order["symbol"], order.get("side"),
@@ -2289,6 +2323,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/mode"):
             return self._json(200, self._status())
+        if self.path.startswith("/dgkey"):
+            # The Deepgram key's PERMANENT home (his ask, 8/20: "put it once,
+            # saved, always active"). The browser keeps a copy, but a profile
+            # wipe or extension reinstall loses that — the extension asks
+            # here and restores itself. Localhost-only, like everything.
+            return self._json(200, {"key": (EXEC.get("voice") or {})
+                                    .get("deepgram_key", "")})
         if self.path.startswith("/positions"):
             # The real Webull account positions, so the popup mirrors the broker.
             return self._json(200, {"positions": broker_positions(),
@@ -2718,7 +2759,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "message": "unreadable"})
         _known = ("futures_enabled", "simulation", "paper_trading",
                   "ai_enabled", "ai_api_key", "ai_model", "strategy",
-                  "futures_brokers")
+                  "futures_brokers", "webull_extra_accounts", "deepgram_key")
         if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
@@ -2839,7 +2880,11 @@ class Handler(BaseHTTPRequestHandler):
                 _e = {"name": str(a.get("name") or "").strip()[:24],
                       "app_key": str(a.get("app_key") or "").strip(),
                       "app_secret": str(a.get("app_secret") or "").strip(),
-                      "enabled": bool(a.get("enabled", True))}
+                      "enabled": bool(a.get("enabled", True)),
+                      # Subscription month (his model, 8/20): "YYYY-MM".
+                      # Active while it equals the current month; the popup
+                      # stamps it when the toggle is flipped ON.
+                      "paid_month": str(a.get("paid_month") or "").strip()[:7]}
                 # A resave with blanked secrets keeps the stored ones —
                 # same only-fill-empty rule that fixed the Topstep email.
                 for old in (EXEC.get("webull_extra_accounts") or []):
@@ -2847,6 +2892,8 @@ class Handler(BaseHTTPRequestHandler):
                         _e["app_key"] = _e["app_key"] or old.get("app_key", "")
                         _e["app_secret"] = (_e["app_secret"]
                                             or old.get("app_secret", ""))
+                        _e["paid_month"] = (_e["paid_month"]
+                                            or old.get("paid_month", ""))
                 if _e["name"]:
                     _clean.append(_e)
             data.setdefault("execution", {})["webull_extra_accounts"] = _clean
@@ -2858,6 +2905,19 @@ class Handler(BaseHTTPRequestHandler):
                 _connect_extras()
             except Exception as _e:                     # noqa: BLE001
                 note("ACCT     connect failed: %s" % str(_e)[:120])
+
+        # Deepgram (voice ears) key — saved on this PC so it survives any
+        # browser wipe or extension reinstall (his ask, 8/20: "put it once
+        # and always active"). The extension restores itself from /dgkey.
+        if "deepgram_key" in body:
+            _dk = str(body["deepgram_key"] or "").strip()
+            _v = data.setdefault("execution", {}).setdefault("voice", {})
+            _v["deepgram_key"] = _dk
+            CFG.setdefault("execution", {}).setdefault(
+                "voice", {})["deepgram_key"] = _dk
+            EXEC.setdefault("voice", {})["deepgram_key"] = _dk
+            note("VOICE    Deepgram key saved on this PC — the ears are "
+                 "permanent now (survives browser reinstalls)")
 
         # AI reader — reading intelligence on the misses. The key is a secret,
         # so it lives in settings.json (gitignored, chmod 600), never the

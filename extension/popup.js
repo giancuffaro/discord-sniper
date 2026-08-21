@@ -189,23 +189,67 @@ function paintKeys() {
 /* More Webull accounts (8/18): one row per account — green when the bridge
  * actually logged in to it, honest words when it didn't. The ✖ removes it
  * (its saved keys go with it). */
+function _monthNow() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+function _monthEndWords() {
+  const d = new Date();
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  return last.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 function paintExtras() {
   const list = $("extraList");
   if (!list) return;
   const xs = (((modeStatus || {}).futures_brokers || {}).webull_extras) || [];
   list.innerHTML = "";
+  const resend = (mut) => xs.map(o => {
+    const e = { name: o.name, enabled: o.enabled !== false,
+                paid_month: o.paid_month || "" };
+    return (mut && mut(e)) || e;
+  });
   xs.forEach(x => {
     const row = document.createElement("div");
     row.className = "row";
     row.style.marginTop = "4px";
     const ok = !!x.connected;
-    const word = ok ? "connected — mirrors every LIVE trade"
-      : x.keys_in ? "saved — bridge couldn't log in (check trades.log)"
-      : "no keys saved";
+    // Subscription words (his model, 8/20): flipping ON pays the account
+    // through the END of this month; the new month expires it by itself.
+    const active = !!x.active;
+    const expired = (x.enabled !== false) && x.paid_month &&
+                    x.paid_month !== (x.month_now || _monthNow());
+    const word = !x.keys_in ? "no keys saved"
+      : !ok ? "saved — bridge couldn't log in (check trades.log)"
+      : active ? "connected · active through " + _monthEndWords()
+      : expired ? "connected · subscription EXPIRED — flip ON to renew"
+      : "connected · OFF — not taking entries";
     row.innerHTML =
       '<span class="grow" style="font-size:12px;color:' +
-      (ok ? "#4ade80" : "#fbbf24") + '">' +
-      (ok ? "✓ " : "") + (x.name || "?") + " — " + word + "</span>";
+      (active ? "#4ade80" : expired ? "#f87171" : "#fbbf24") + '">' +
+      (active ? "✓ " : "") + (x.name || "?") + " — " + word + "</span>";
+    const tgl = document.createElement("button");
+    tgl.className = "tgl " + (active ? "" : "safe");
+    tgl.textContent = active ? "on" : "off";
+    tgl.title = active
+      ? "Turn OFF — stops new entries now (open positions still managed)"
+      : "Turn ON — active through the end of this month";
+    tgl.onclick = async () => {
+      const goingOn = !active;
+      const out = resend(e => {
+        if (e.name === x.name) {
+          e.enabled = goingOn;
+          if (goingOn) e.paid_month = _monthNow();   // renew for THIS month
+        }
+      });
+      try {
+        modeStatus = await askBridge("/config",
+                                     { webull_extra_accounts: out });
+        paintExtras();
+      } catch (e2) {
+        $("exState").textContent = "Couldn't reach the bridge.";
+      }
+    };
+    row.appendChild(tgl);
     const del = document.createElement("button");
     del.textContent = "✖";
     del.title = "Remove this account";
@@ -213,8 +257,7 @@ function paintExtras() {
     del.onclick = async () => {
       if (!confirm("Remove " + (x.name || "this account") +
                    "? It stops firing immediately.")) return;
-      const keep = xs.filter(o => o.name !== x.name)
-        .map(o => ({ name: o.name, enabled: o.enabled !== false }));
+      const keep = resend().filter(o => o.name !== x.name);
       try {
         modeStatus = await askBridge("/config",
                                      { webull_extra_accounts: keep });
@@ -242,12 +285,16 @@ if ($("exAdd")) $("exAdd").onclick = async () => {
   // their stored secrets), plus the new one with its keys.
   const xs = (((modeStatus || {}).futures_brokers || {}).webull_extras) || [];
   const out = xs.filter(o => o.name !== name)
-    .map(o => ({ name: o.name, enabled: o.enabled !== false }));
-  out.push({ name: name, app_key: key, app_secret: sec, enabled: true });
+    .map(o => ({ name: o.name, enabled: o.enabled !== false,
+                 paid_month: o.paid_month || "" }));
+  // a freshly added account starts ACTIVE for the current month
+  out.push({ name: name, app_key: key, app_secret: sec, enabled: true,
+             paid_month: _monthNow() });
   $("exAdd").textContent = "Saving and connecting…";
   try {
     modeStatus = await askBridge("/config", { webull_extra_accounts: out });
     $("exName").value = ""; $("exKey").value = ""; $("exSecret").value = "";
+    clearDrafts(["exName", "exKey", "exSecret"]);
     st.textContent = "";
     paintExtras();
   } catch (e) {
@@ -424,6 +471,8 @@ async function saveFuturesBrokers() {
   try {
     modeStatus = await askBridge("/config", { futures_brokers: payload });
     if ($("fbState")) $("fbState").textContent = "saved — futures route there now";
+    clearDrafts(["tsUser", "tsKey", "tsUrl", "tvUser", "tvPass",
+                 "ninjaAccount", "ninjaDir", "ninjaAtm"]);
   } catch (e) {
     if ($("fbState")) $("fbState").textContent = "saved on this PC — it'll sync when the bridge is up";
   }
@@ -660,6 +709,7 @@ $("savekeys").onclick = async () => {
     el.textContent = r.message || "saved";
     if (r.ok) {
       $("wbkey").value = ""; $("wbsecret").value = "";
+      clearDrafts(["wbkey", "wbsecret"]);
       const ke = $("keyEntry"); if (ke) delete ke.dataset.forceOpen;
     }
     paintMode();
@@ -687,6 +737,7 @@ $("savepaperkeys").onclick = async () => {
     el.textContent = r.message || "saved";
     if (r.ok) {
       $("wbpkey").value = ""; $("wbpsecret").value = "";
+      clearDrafts(["wbpkey", "wbpsecret"]);
       const pe = $("paperKeyEntry"); if (pe) delete pe.dataset.forceOpen;
     }
     paintMode();
@@ -721,7 +772,7 @@ if ($("saveaikey")) $("saveaikey").onclick = async () => {
     modeStatus = r;
     el.textContent = r.ai_enabled ? "AI reading is ON — every call goes through it." :
                      (r.message || "saved");
-    if (r.ai_enabled) $("aiKey").value = "";
+    if (r.ai_enabled) { $("aiKey").value = ""; clearDrafts(["aiKey"]); }
     paintAi(r);
   } catch (e) {
     el.textContent = "Couldn't reach the bridge — double-click START HERE first.";
@@ -773,8 +824,13 @@ $("savedg").onclick = async () => {
   const el = $("dgstate");
   if (!key) { el.textContent = "Paste your Deepgram key first."; return; }
   try { await chrome.storage.local.set({ deepgram_key: key });
-        el.textContent = "Deepgram key saved to this PC."; $("dgKey").value = ""; }
+        el.textContent = "Deepgram key saved — the ears are always on now.";
+        $("dgKey").value = "";
+        clearDrafts(["dgKey"]); }
   catch (e) { el.textContent = "couldn't save it"; }
+  // Its permanent home is the PC (settings.json) — survives a browser
+  // reinstall; the extension restores itself from the bridge on boot.
+  try { await askBridge("/config", { deepgram_key: key }); } catch (e) {}
 };
 $("listenTab").onclick = async () => {
   const el = $("dgstate");
@@ -1817,6 +1873,48 @@ $("dayspick").onchange = async () => {
   }
   render();
 };
+
+/* DRAFT MEMORY for the key fields (his ask, 8/20): Chrome kills this popup the
+ * moment another window takes focus, and everything typed-but-not-saved died
+ * with it — paste the App Key, click over to grab the Secret, come back to an
+ * empty box. Every keystroke in these fields now saves to the extension's
+ * local storage and is restored when the popup reopens. A successful save
+ * CLEARS its fields' drafts, so secrets don't linger once they've reached
+ * settings.json on the PC. */
+const DRAFT_IDS = ["wbkey", "wbsecret", "wbpkey", "wbpsecret",
+                   "tsUser", "tsKey", "tsUrl", "tvUser", "tvPass",
+                   "ninjaAccount", "ninjaDir", "ninjaAtm",
+                   "exName", "exKey", "exSecret", "aiKey", "dgKey"];
+function wireDrafts() {
+  try {
+    chrome.storage.local.get("field_drafts", d => {
+      const drafts = (d && d.field_drafts) || {};
+      for (const id of DRAFT_IDS) {
+        const el = $(id);
+        if (!el) continue;
+        if (!el.value && drafts[id]) el.value = drafts[id];
+        el.addEventListener("input", () => {
+          chrome.storage.local.get("field_drafts", dd => {
+            const cur = (dd && dd.field_drafts) || {};
+            if (el.value) cur[id] = el.value;
+            else delete cur[id];
+            chrome.storage.local.set({ field_drafts: cur });
+          });
+        });
+      }
+    });
+  } catch (e) { /* storage unavailable — typing just isn't remembered */ }
+}
+function clearDrafts(ids) {
+  try {
+    chrome.storage.local.get("field_drafts", dd => {
+      const cur = (dd && dd.field_drafts) || {};
+      for (const id of ids) delete cur[id];
+      chrome.storage.local.set({ field_drafts: cur });
+    });
+  } catch (e) {}
+}
+wireDrafts();
 
 // rooms.txt loads once before the first paint so the Channels/Servers tabs
 // never flash empty — every render() after this one just reuses it.

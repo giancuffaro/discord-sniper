@@ -1310,8 +1310,20 @@ async function ensureOffscreen() {
 }
 
 async function dgKey() {
-  try { return (await chrome.storage.local.get("deepgram_key")).deepgram_key || ""; }
-  catch (e) { return ""; }
+  try {
+    let k = (await chrome.storage.local.get("deepgram_key")).deepgram_key || "";
+    if (k) return k;
+    // Not in the browser (fresh install / wiped profile) — its permanent
+    // home is the PC. Ask the bridge and restore ourselves (8/20).
+    const c = await cfg();
+    const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/dgkey");
+    if (r.ok) {
+      const j = await r.json();
+      k = (j && j.key) || "";
+      if (k) await chrome.storage.local.set({ deepgram_key: k });
+    }
+    return k;
+  } catch (e) { return ""; }
 }
 async function dgModel() {
   try { return (await chrome.storage.local.get("deepgram_model")).deepgram_model || "nova-2"; }
@@ -1393,6 +1405,84 @@ async function handleOffscreen(msg) {
 // market to be closed, not for any manual switch — see checkBuild()).
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.settings) checkBuild();
+});
+
+/* LIVE rooms (his ask, 8/20): a trader SAYS the call seconds before typing
+ * it. The reader in the tab spots Discord's LIVE badge; this side logs it,
+ * throws a desktop notification, and tries to start the ears right away.
+ * Chrome only hands over a tab's audio after the extension has been clicked
+ * on that tab once — so when the grab is refused, the notification says
+ * exactly that: click the sniper icon on that tab once, and from then on
+ * this room auto-listens every time it goes live. */
+const LIVE_SEEN = new Map();     // channelId -> last ping ts
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (!msg || msg.type !== "LIVE_DETECTED") return;
+  (async () => {
+    const cid = String(msg.channelId || "");
+    const last = LIVE_SEEN.get(cid) || 0;
+    if (Date.now() - last < 10 * 60 * 1000) return;   // one alert per 10 min
+    LIVE_SEEN.set(cid, Date.now());
+    const room = msg.channelName || cid;
+    await addLog({ kind: "update",
+      why: "🔴 " + room + " is LIVE on voice — they may be calling trades "
+           + "out loud before typing them.", text: "" });
+    const tabId = sender && sender.tab && sender.tab.id;
+    let started = false;
+    if (tabId != null && !LISTENING.has(tabId)) {
+      const r = await startListening(tabId, room);
+      started = !!(r && r.ok);
+      if (!started && r) {
+        await addLog({ kind: "ignored",
+          why: "🔴 couldn't auto-grab " + room + "'s audio (" + r.why + "). "
+             + "Join the voice in that tab and click the sniper icon on it "
+             + "once — after that it auto-listens every time.", text: "" });
+      }
+    }
+    try {
+      chrome.notifications.create("live-" + cid, {
+        type: "basic", iconUrl: "icon128.png",
+        title: room + " is LIVE",
+        message: started
+          ? "Listening — every spoken call is being written down."
+          : "Join the voice in its tab, then click the Sniper icon on that tab once to start the ears."
+      });
+    } catch (e) {}
+  })();
+});
+
+/* The moment a Discord tab starts PLAYING audio (he joined the voice), start
+ * transcribing it — and when it goes quiet again, stop. Auto only touches
+ * sessions it started itself, so a hand-started listen is never cut off. */
+chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
+  if (!info || !("audible" in info)) return;
+  (async () => {
+    try {
+      if (!tab || !/https:\/\/([^/]*\.)?discord\.com\//.test(tab.url || "")) return;
+      const c = await cfg();
+      if (c.auto_listen_live === false) return;      // on unless he turns it off
+      if (info.audible === true && !LISTENING.has(tabId)) {
+        if (!(await dgKey())) return;               // no Deepgram key = no ears
+        const label = (tab.title || "voice").replace(/ \| Discord.*/i, "").slice(0, 40);
+        const r = await startListening(tabId, label);
+        if (r && r.ok) {
+          const v = LISTENING.get(tabId); if (v) v.auto = true;
+          await saveListening();
+          await addLog({ kind: "update",
+            why: "🎙 auto-listening to " + label + " — the tab started playing "
+               + "voice audio. Every spoken call gets written down and read.",
+            text: "" });
+        }
+      } else if (info.audible === false) {
+        const v = LISTENING.get(tabId);
+        if (v && v.auto) {
+          await stopListening(tabId);
+          await addLog({ kind: "update",
+            why: "🎙 " + (v.label || "voice") + " went quiet — stopped "
+               + "listening.", text: "" });
+        }
+      }
+    } catch (e) {}
+  })();
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
