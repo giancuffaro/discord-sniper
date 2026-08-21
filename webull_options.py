@@ -870,6 +870,13 @@ class WebullOptions:
             except TypeError as e:
                 last = e
                 continue
+            except Exception as e:                      # noqa: BLE001
+                # Newer SDK builds RAISE on an HTTP error instead of returning
+                # a response — the raw exception escaping here is exactly how
+                # 'invalid order_type' killed five entries on 8/21 with the
+                # fallback never engaging. Wrap it so the caller's retry and
+                # fall-back logic actually get to run.
+                raise Refused(str(e)[:220])
             try:
                 body = res.json()
             except Exception:                           # noqa: BLE001
@@ -1432,7 +1439,13 @@ class WebullOptions:
                         raise
                 _orders = [master]
                 stop_child = child.get("client_order_id")
-            except (_ComboUnsupported, Refused) as _cu:
+            except Exception as _cu:                    # noqa: BLE001
+                # ANY failure of the linked group — refused, unsupported, or
+                # an SDK exception shape we've never seen — falls through to
+                # the plain single order below. THE ENTRY IS NEVER LOST TO
+                # THE BRACKET (8/20 and again 8/21, the lesson twice). A real
+                # problem with the order itself resurfaces on the plain
+                # attempt and is reported honestly there.
                 # THE ENTRY IS NEVER LOST TO THE BRACKET (the 8/20 lesson:
                 # NVDA/BABA/TM/BAC all died when a group rejection was allowed
                 # to escape). Whatever the group's problem was, fall through
