@@ -346,6 +346,11 @@ class WebullOptions:
         # Pay a hair over the ask so a marketable limit actually fills instead
         # of resting while the move happens without you.
         self.buffer_pct = float(w.get("marketable_buffer_pct", 2))
+        # Absolute spread cap (his rule, 8/20): an entry whose bid/ask spread
+        # is wider than this many PREMIUM dollars ($0.20 = $20 a contract) is
+        # refused, however cheap or expensive the contract. Rides alongside
+        # the 35%-of-mid relative guard; exits are never blocked by either.
+        self.max_spread_dollars = float(w.get("max_spread_dollars", 0.20))
         # Where the entry limit is priced. "bid" sits and waits for a seller to
         # come to you — you never overpay, and you don't always get in. "ask"
         # crosses the spread and fills nearly every time. "mid" splits it.
@@ -1328,6 +1333,17 @@ class WebullOptions:
                     "was sent. (Their call may be fine; this contract just "
                     "isn't tradeable at a sane price right now.)"
                     % (occ, _b, _a, 100.0 * (_a - _b) / _mid))
+            # HIS absolute cap (8/20): spread wider than $0.20 of premium
+            # ($20 a contract) is refused no matter the percentage — a $5.00
+            # contract quoted 4.80/5.10 passes the % guard but still hands
+            # away $30 crossing it.
+            if self.max_spread_dollars and \
+                    (_a - _b) > self.max_spread_dollars + 1e-9:
+                raise Refused(
+                    "the spread on %s is %.2f/%.2f — $%.0f a contract just to "
+                    "cross it, over your $%.0f cap. Nothing was sent."
+                    % (occ, _b, _a, 100.0 * (_a - _b),
+                       100.0 * self.max_spread_dollars))
         blind = False
         if ask and ask > 0:
             if price_mode == "ask":
@@ -1385,20 +1401,44 @@ class WebullOptions:
                 stop_born = max(0.01, round(
                     float(limit) * (1 - float(bracket_stop_pct) / 100), 2))
                 slim = max(0.01, round(stop_born * 0.90, 2))
-                master = self._order(symbol, expiration, option_type, strike,
-                                     "BUY", qty, limit)[0]
-                master["combo_type"] = "MASTER"
-                child = self._order(symbol, expiration, option_type, strike,
+
+                def _combo_try(child_type):
+                    """Fresh ids every attempt — a rejected group may still
+                    have consumed its client ids at the broker."""
+                    m = self._order(symbol, expiration, option_type, strike,
+                                    "BUY", qty, limit)[0]
+                    m["combo_type"] = "MASTER"
+                    c = self._order(symbol, expiration, option_type, strike,
                                     "SELL", qty, slim, stop=stop_born)[0]
-                child["combo_type"] = "STOP_LOSS"
-                child["time_in_force"] = "DAY"   # option SELL legs are DAY-only
-                combo_id = uuid.uuid4().hex[:32]
-                body = self._send_combo([master, child], combo_id,
-                                        what + " +stop %.2f (one group)"
-                                        % stop_born)
+                    c["combo_type"] = "STOP_LOSS"
+                    c["time_in_force"] = "DAY"  # option SELL legs are DAY-only
+                    if child_type == "STOP_LOSS":
+                        # plain stop (market on trigger) — Webull refused the
+                        # stop-LIMIT flavor inside a group on 8/20 ("invalid
+                        # order_type, value: STOP_LOSS_LIMIT", 4 entries lost)
+                        c["order_type"] = "STOP_LOSS"
+                        c.pop("limit_price", None)
+                    _b = self._send_combo([m, c], uuid.uuid4().hex[:32],
+                                          what + " +stop %.2f (one group)"
+                                          % stop_born)
+                    return m, c, _b
+                try:
+                    master, child, body = _combo_try("STOP_LOSS_LIMIT")
+                except Refused as _rf:
+                    up = str(_rf).upper()
+                    if "ORDER_TYPE" in up or "STOP_LOSS" in up:
+                        master, child, body = _combo_try("STOP_LOSS")
+                    else:
+                        raise
                 _orders = [master]
                 stop_child = child.get("client_order_id")
-            except _ComboUnsupported as _cu:
+            except (_ComboUnsupported, Refused) as _cu:
+                # THE ENTRY IS NEVER LOST TO THE BRACKET (the 8/20 lesson:
+                # NVDA/BABA/TM/BAC all died when a group rejection was allowed
+                # to escape). Whatever the group's problem was, fall through
+                # to the plain single order; a real problem with the ORDER
+                # itself (price, affordability) will resurface there and be
+                # reported honestly.
                 stop_child = stop_born = None
                 _orders = None
                 # remembered so the caller can say it once, not every trade

@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 23:12:18 ET)
+Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 23:42:19 ET)
 
-=== CURRENT STATE (as of 2026-08-20 23:12:18 ET) ===
+=== CURRENT STATE (as of 2026-08-20 23:42:19 ET) ===
   version:        v3.0.3
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -15,7 +15,7 @@ Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 23:12:
   open positions (0):
     (none)
 
-=== RAW MESSAGES THE READER SAW (1378) ===
+=== RAW MESSAGES THE READER SAW (1385) ===
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  Nitro Trades: Nitro Trades [PLAT], Server Tag: PLAT PLAT — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively.
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
 2025-05-26 21:24:54  [Platinum Trading: ✅│join-premium #1276616766004658226]  PT | Nitro Trades: PT | Nitro Trades [PLAT], Server Tag: PLAT PLAT CEO — 5/26/25, 9:24 PM Monday, May 26, 2025 at 9:24 PM @everyone JOINING PREMIUM CHAT If you guys want to trade live with me EVERY single morning... With my exact setups, strategies, entries, & exits... Then head to the link below to join in https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true WHAT'S INCLUDED Live Trading every morning @ 9:30 AM EST (with screen share and live entry/exit) , 24/7 chatroom to talk with me & the entire server for any help you ever need , 35+ hours of educational content , & much more! , Again, hopefully you guys took advantage of the free trial that was available for the past year to see how we trade See you guys on the other side, let's print https://whop.com/checkout/plan_quhKrdurKU1Hm?d2c=true (edited) Friday, May 30, 2025 at 4:09 PM Whop Platinum Trading Premium Platinum Trading Premium offers a seamless trading journey with live signals, lessons, and support to master trading effectively. Image failed to load. Forward More
@@ -1394,12 +1394,15 @@ Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 23:12:
 2026-08-20 22:54:23  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 2026-08-20 23:00:30  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
 2026-08-20 23:06:34  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 23:12:22  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 23:18:23  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 23:24:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 23:30:23  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 23:36:21  [FST × 2K Challenge #whop:/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app]  ?: 
+2026-08-20 23:37:33  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: Market Guru™ Alerts APP — 11:37 PM Thursday, August 20, 2026 at 11:37 PM @everyone MGC LONG RISKYYY Do not take this as financial advice! || ⏱︎ 23:37:33 EST
+2026-08-20 23:38:42  [ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures #1251181965252755517]  Market Guru™ Alerts: @everyone Ticker: MGC LONG Entry: 4586 Stoploss: 4578 I am not a financial advisor. For educational purposes only. || ⏱︎ 23:38:42 EST I am not a financial advisor. For educational purposes only. || ⏱︎ 23:38:42 EST
 
 === WHAT THE BOT DID (400) ===
-2026-08-19 11:06:12  <stopped>  SPCX · Bullwinkle — the resting stop at Webull sold it first · -$41 on the trade · day so far +$0
-2026-08-19 11:08:18  <skipped>  TRIM GOOGL (+82%) — you're not in GOOGL, so there's nothing to trim — the order was not sent  |  HoneyDrip (Scribe): @Unraveller (Admin)🔮 trimming GOOGL @ 82% @everyone
-2026-08-19 11:12:30  <skipped>  CLOSE GOOGL — you're not in GOOGL, so there's nothing to close — the order was not sent  |  HoneyDrip (Scribe): @Unraveller (Admin)🔮 all out of GOOGL @everyone
-2026-08-19 11:13:18  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  👑KingBeeAri🐝: Starters in SOFI 18.5 C 8/28 “0.63” @everyone
 2026-08-19 11:13:20  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: MRNA | $110 P 5.60 AUG 28 ON THE BREAK OF $115.25 @everyone Spoiler (edited)Wednesday, August 19, 2026 at 9:31 AM
 2026-08-19 11:13:26  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  TradingTheTrend: BTO SPY 8/25 760p @ 1.88 grabbing these in case it gets ugly here. Potential is there. If support holds I will end up cutting them
 2026-08-19 11:14:14  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: SPCX | $143 C 4.75 MAY SWING @everyone Spoiler
@@ -1796,3 +1799,7 @@ Discord Sniper — self-learning export (2026-08-20, refreshed 2026-08-20 23:12:
 2026-08-20 20:16:17  <update>  MNQ · Market Guru™ Alerts — they trimmed, but there's no price to sell at (no quote and no percentage). Still holding 2.
 2026-08-20 20:18:06  <failed>  TRIM MNQ x1 — Market Guru™ Alerts · ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures — the bridge refused it: HTTP 502 couldn't put a price on that trim (no quote, no percentage), so nothing was sold — still holding 2  |  Market Guru™ Alerts: @everyone 32 points trim 2 Do not take this as financial advice! || ⏱︎ 20:18:06 EST Do not take this as financial advice! || ⏱︎ 20:18:06 EST
 2026-08-20 20:18:17  <update>  MNQ · Market Guru™ Alerts — they trimmed, but there's no price to sell at (no quote and no percentage). Still holding 2.
+2026-08-20 23:38:43  <sent>  OPEN MGC @ 4586.00 x1 — Market Guru™ Alerts · ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures — sent in 426 ms — Webull futures didn't take it: your Webull FUTURES account doesn't have enough money in it for one MGCV6. The order itself was fine - Webull checked it; sent to NinjaTrader (NinjaTrader); Topstep: MGC  |  Market Guru™ Alerts: @everyone Ticker: MGC LONG Entry: 4586 Stoploss: 4578 I am not a financial advisor. For educational purposes only. || ⏱︎ 23:38:42 EST I am not a financial advisor. For educational purposes only. || ⏱︎ 23:38:42 EST
+2026-08-20 23:38:46  <update>  MGC · Market Guru™ Alerts — Market Guru™ Alerts's call, bid is in at 4586.00 for 1, waiting for a seller (90s)
+2026-08-20 23:40:16  <fired>  MGC · Market Guru™ Alerts — filled 1.0 at 2.02 — futures: no premium out, the money moves at the exit
+2026-08-20 23:40:16  <update>  MGC · Market Guru™ Alerts — running their stop at 4578; exits fire on their calls

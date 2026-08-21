@@ -977,7 +977,12 @@ class Book:
                 self._pos[key] = {
                     "key": key, "live": row_live, "paper": not row_live,
                     "room": _room,
-                    "who": _who or "?", "symbol": sym,
+                    # No bot record to inherit credit from = a trade GIAN put
+                    # on himself (his ask, 8/20: "are my trades the adopted?
+                    # put gian if so"). The KEY stays "?|SYM" on purpose — any
+                    # admin's "all out" still matches it by symbol — only the
+                    # journal's name changes.
+                    "who": _who or "Gian", "symbol": sym,
                     "kind": b.get("kind") or "option",
                     # A futures contract is points x ITS OWN multiplier (MNQ 2,
                     # NQ 20, ES 50). Hardcoding 1.0 made every adopted futures

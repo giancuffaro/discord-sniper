@@ -1041,38 +1041,27 @@ def find_key(order):
     return key
 
 
-# ---- "3 strikes ITM" (his call, 8/19): SPY, QQQ and the Mag-7 on 0DTE ------
-# Whatever strike the room posts, the bot buys the THIRD in-the-money strike
-# measured from the CURRENT stock price (his pick: anchor ATM, not their
-# strike). ITM options carry real delta, so a 0DTE scalp moves with the stock
-# instead of decaying at it. Only these tickers, only same-day expiry; every
-# translation is one loud line in the log.
-ITM3_TICKERS = {"SPY", "QQQ", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL",
-                "META", "TSLA"}
-ITM3_INC = {"SPY": 1.0, "QQQ": 1.0, "NVDA": 1.0}     # the rest default 2.5
-
-
-def _itm3_translate(order, client):
-    """Rewrite order['strike'] to 3-ITM-from-ATM. Returns a note string when it
-    translated, None when the rule doesn't apply. Never raises — any trouble
-    (no quote, no chain) leaves the caller's strike untouched, loudly."""
+# ---- NO-OTM rule (his call, 8/20, replacing the 8/19 "3 strikes ITM"): -----
+# No contract is bought OUT of the money. A called strike that's already ATM
+# or ITM is bought exactly as called, at the caller's price cap. A called
+# strike that's OTM snaps to the NEAREST qualifying strike (ATM or first ITM,
+# quote-verified so it actually exists) — and since that contract costs more
+# than their OTM one, the price cap comes off and the entry pays the ask.
+# Applies to every options entry, every ticker, every expiry.
+def _no_otm_translate(order, client):
+    """Rewrite an OTM order['strike'] to the nearest ATM/ITM strike. Returns a
+    note string when it translated, None when the strike already qualifies or
+    the rule can't be applied. Never raises — trouble leaves the caller's
+    strike untouched."""
     try:
         if order.get("action") not in ("OPEN", "ADD"):
             return None
         if order.get("kind") in ("future", "equity"):
             return None
         sym = str(order.get("symbol") or "").upper()
-        if sym not in ITM3_TICKERS or order.get("strike") is None:
+        if order.get("strike") is None or not sym:
             return None
-        from webull_options import expiry_to_date, occ_symbol
-        import eastern
-        import datetime as _dt
-        exp = _dt.date.fromisoformat(str(expiry_to_date(order.get("expiry"))))
-        if exp != eastern.now().date():
-            return None                          # 0DTE only — his rule
-        # An ADD onto something already held buys MORE OF THAT CONTRACT —
-        # translating again mid-day would buy a second, different strike
-        # under the same trade.
+        # An ADD onto something already held buys MORE OF THAT CONTRACT.
         if order.get("action") == "ADD" and BOOK is not None:
             held = BOOK.info(tkey(order)) or {}
             if held.get("strike") is not None:
@@ -1089,49 +1078,52 @@ def _itm3_translate(order, client):
             if px:
                 break
         if not px:
-            note("ITM-3    %s — couldn't read the stock price, so the caller's "
-                 "strike stands" % sym)
-            return None
+            return None      # can't judge moneyness — the call stands as-is
         px = float(px)
+        old = float(order.get("strike"))
         is_call = str(order.get("side") or "").upper().startswith("C")
+        # Already ATM or ITM? Then it's THEIR contract, THEIR price — done.
+        if (is_call and old <= px) or ((not is_call) and old >= px):
+            return None
+        from webull_options import expiry_to_date, occ_symbol
+        import datetime as _dt
         import math
+        exp = _dt.date.fromisoformat(str(expiry_to_date(order.get("expiry"))))
         kind = "CALL" if is_call else "PUT"
-        old = order.get("strike")
-        # Try the ticker's usual strike step first, then coarser/finer ladders —
-        # the strike must actually EXIST (quote-verified) or Webull answers
-        # PARAM_ERR (this morning's AAPL 325C rejection).
-        incs = [ITM3_INC.get(sym, 2.5)]
-        for alt in (2.5, 5.0, 1.0):
-            if alt not in incs:
-                incs.append(alt)
-        for inc in incs:
-            if is_call:
-                cand = (math.floor(px / inc) - 2) * inc
-            else:
-                cand = (math.ceil(px / inc) + 2) * inc
-            cand = round(cand, 2)
-            if cand <= 0:
-                continue
+        # Nearest qualifying strike across the usual ladders, quote-verified
+        # (an unquoted strike = Webull PARAM_ERR). Closest-to-ATM quoted
+        # candidate wins: highest at-or-below px for a call, lowest
+        # at-or-above for a put.
+        cands = set()
+        for inc in (0.5, 1.0, 2.5, 5.0):
+            c = (math.floor(px / inc) if is_call else math.ceil(px / inc)) * inc
+            c = round(c, 2)
+            if c > 0:
+                cands.add(c)
+        best = None
+        for cand in sorted(cands, reverse=is_call):
             try:
                 occ = occ_symbol(sym, exp.isoformat(), kind, cand)
                 ask, bid, _r = (client or WB_LIVE or WB).ask_bid(occ)
             except Exception:                   # noqa: BLE001
                 ask = bid = None
             if ask is not None or bid is not None:
-                order["strike"] = cand
-                # Their posted premium priced THEIR strike — an ITM contract
-                # costs more, so the cap comes off and the entry pays the ask
-                # (the standing entry rule). Affordability still gates it.
-                order["limit"] = None
-                return ("ITM-3    %s 0DTE: their %s%s -> %s%s (stock at %.2f)"
-                        % (sym, old, "C" if is_call else "P",
-                           ("%g" % cand), "C" if is_call else "P", px))
-        note("ITM-3    %s — no quoted strike found near %.2f, so the caller's "
-             "strike stands" % (sym, px))
-        return None
+                best = cand
+                break
+        if best is None:
+            note("NO-OTM   %s — %g%s is OTM (stock %.2f) but no ATM/ITM "
+                 "strike answered a quote; the caller's strike stands"
+                 % (sym, old, "C" if is_call else "P", px))
+            return None
+        order["strike"] = best
+        order["limit"] = None       # their premium priced their OTM strike
+        return ("NO-OTM   %s: their %g%s was OTM (stock %.2f) -> nearest "
+                "qualifying %g%s"
+                % (sym, old, "C" if is_call else "P", px,
+                   best, "C" if is_call else "P"))
     except Exception as _e:                     # noqa: BLE001
         try:
-            note("ITM-3    %s — translation skipped (%s)"
+            note("NO-OTM   %s — check skipped (%s)"
                  % (order.get("symbol"), str(_e)[:80]))
         except Exception:                       # noqa: BLE001
             pass
@@ -1782,12 +1774,28 @@ def _place_impl(order):
 
         from webull_options import Refused
         qty = int(order.get("qty") or 1)
-        # "3 strikes ITM" on SPY/QQQ/Mag-7 0DTE (his call, 8/19) — rewrite the
-        # strike from the live stock price before anything is priced or sent.
-        # Runs here so instant entries, the pullback's at-the-touch entry, AND
-        # every mirrored extra account all buy the same translated contract.
+        # A futures root with a strike on it (Brett's "ES 768P", 8/20) is a
+        # FUTURES OPTION — Webull's options endpoint can never take it, so it
+        # died as a raw PARAM_ERR. Refuse it in words instead.
+        if action in ("OPEN", "ADD") and order.get("strike") is not None \
+                and str(order.get("symbol") or "").upper() in (
+                    "ES", "NQ", "MES", "MNQ", "YM", "MYM", "RTY", "M2K",
+                    "CL", "MCL", "GC", "MGC"):
+            note("REFUSED  %s — that's an option on a FUTURES contract "
+                 "(%s %sP/C); Webull's options API doesn't trade those. "
+                 "Nothing was sent." % (what, order.get("symbol"),
+                                        order.get("strike")))
+            if claimed:
+                BOOK.release(key)
+            return False, ("that's a futures option (%s with a strike) — "
+                           "Webull can't place those, so nothing was sent."
+                           % order.get("symbol"))
+        # NO-OTM rule (his call, 8/20) — an OTM strike snaps to the nearest
+        # ATM/ITM one before anything is priced or sent. Runs here so instant
+        # entries, the pullback's at-the-touch entry, AND every mirrored
+        # extra account all buy the same qualifying contract.
         if action in ("OPEN", "ADD"):
-            _t = _itm3_translate(order, client)
+            _t = _no_otm_translate(order, client)
             if _t:
                 note(_t)
         # One-click bracket strategy forces ONE contract on every entry, no
