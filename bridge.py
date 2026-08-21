@@ -1173,10 +1173,16 @@ def _no_otm_translate(order, client):
         # at-or-above for a put.
         cands = set()
         for inc in (0.5, 1.0, 2.5, 5.0):
-            c = (math.floor(px / inc) if is_call else math.ceil(px / inc)) * inc
-            c = round(c, 2)
-            if c > 0:
-                cands.add(c)
+            base = (math.floor(px / inc) if is_call else math.ceil(px / inc)) * inc
+            # Walk a few rungs further ITM as well. On a stock sitting near a
+            # round number every ladder collapses to the SAME single strike,
+            # and if that one doesn't quote the rescue finds nothing and the
+            # caller's bad strike goes to Webull as a PARAM_ERR — that's what
+            # sent TWLO 2440C on 8/21 (stock 225.45, only candidate was 225).
+            for step in range(0, 4):
+                c = round(base - step * inc if is_call else base + step * inc, 2)
+                if c > 0:
+                    cands.add(c)
         best = None
         for cand in sorted(cands, reverse=is_call):
             try:
