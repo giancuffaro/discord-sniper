@@ -3212,6 +3212,17 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
+        # A bare futures exit ("close MGC") reaches here without its kind tag —
+        # the reader marks entries, not one-word exits — and the option gate
+        # below then demanded a strike/expiry a future never has. That block
+        # stranded a NAKED NinjaTrader MGC long on 8/21 (and MES/NFLX/MGC
+        # closes before it). A known futures root with no strike IS a future.
+        if not order.get("kind") and order.get("strike") is None \
+                and str(order.get("symbol") or "").upper() in (
+                    "ES", "NQ", "MES", "MNQ", "YM", "MYM", "RTY", "M2K",
+                    "CL", "MCL", "GC", "MGC"):
+            order["kind"] = "future"
+
         if order.get("live") and order.get("action") != "TRIM" \
                 and order.get("kind") != "future" \
                 and not (order.get("strike") and order.get("expiry")):
