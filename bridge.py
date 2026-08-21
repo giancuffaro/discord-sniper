@@ -237,6 +237,13 @@ BOOK = None         # positions.Book — what filled, what didn't, and the stops
 # manual-trade protection, not a blind copy of the main account's exits.
 # Empty list (nothing configured) = the bridge behaves exactly as before.
 WB_EXTRA = []
+# Why an extra account did NOT connect, by name — shown in the popup row so
+# the answer is in his face, not buried in trades.log (8/21).
+WB_EXTRA_ERR = {}
+# When one login has SEVERAL accounts: the probed candidates (id + buying
+# power), served to the popup as CLICKABLE choices — click one and it's
+# pinned, no re-typing anything (his ask, 8/21).
+WB_EXTRA_CHOICES = {}
 
 
 def _sync_stop_pct(pct):
@@ -447,6 +454,11 @@ def _connect_extras():
             wx["app_key"] = acc["app_key"]
             wx["app_secret"] = acc["app_secret"]
             wx["paper_trading"] = False
+            # A login with SEVERAL margin accounts needs to be told which one
+            # (8/21: L's login had two). The popup's optional account-id field
+            # lands here; empty keeps the automatic pick.
+            if acc.get("account_id"):
+                wx["account_id"] = str(acc["account_id"]).strip()
             cli = WebullOptions(c)
             acct_no = cli.connect()
             if getattr(cli, "paper", False):
@@ -490,11 +502,49 @@ def _connect_extras():
             except Exception:                           # noqa: BLE001
                 pass
             fresh.append({"name": name, "client": cli, "book": bk})
+            WB_EXTRA_ERR.pop(name, None)
+            WB_EXTRA_CHOICES.pop(name, None)
             note("ACCT %s connected — Webull account %s now mirrors every "
                  "LIVE order with its own stops and its own book"
                  % (name, acct_no))
         except Exception as e:                          # noqa: BLE001
-            note("ACCT %s NOT connected — %s" % (name, str(e)[:120]))
+            msg = str(e)
+            # The "several accounts on one login" wall (8/21, L's login had
+            # two MARGIN accounts): don't just refuse — PROBE each candidate
+            # and report its buying power, so the popup row itself says which
+            # id to paste. This runs once per connect attempt, not per trade.
+            if "more than one" in msg.lower():
+                try:
+                    import re as _re
+                    from webull_options import WebullOptions as _WO
+                    ids = _re.findall(r"([A-Z0-9]{16,})\s*\(", msg)
+                    choices = []
+                    for _aid in ids[:4]:
+                        try:
+                            c2 = copy.deepcopy(CFG)
+                            w2 = c2.setdefault("execution", {}).setdefault(
+                                "webull", {})
+                            w2["app_key"] = acc["app_key"]
+                            w2["app_secret"] = acc["app_secret"]
+                            w2["paper_trading"] = False
+                            w2["account_id"] = _aid
+                            _c2 = _WO(c2)
+                            _c2.connect()
+                            _bp = _c2.buying_power()
+                            choices.append({"id": _aid,
+                                            "bp": (round(float(_bp), 0)
+                                                   if _bp is not None
+                                                   else None)})
+                        except Exception as _e2:        # noqa: BLE001
+                            choices.append({"id": _aid, "bp": None,
+                                            "err": str(_e2)[:60]})
+                    WB_EXTRA_CHOICES[name] = choices
+                    msg = ("this login has %d accounts — CLICK the one to "
+                           "trade from:" % len(ids))
+                except Exception:                       # noqa: BLE001
+                    pass
+            WB_EXTRA_ERR[name] = msg[:240]
+            note("ACCT %s NOT connected — %s" % (name, msg[:220]))
     WB_EXTRA = fresh
 
 
@@ -1263,17 +1313,29 @@ def _futures_brokers_safe():
                       "verified": TS_KEY_OK}
     # Extra Webull accounts (8/18): what's configured and which of those the
     # bridge actually logged in to — the popup's green checks key off this.
-    _live_names = {x["name"] for x in WB_EXTRA}
-    out["webull_extras"] = [
-        {"name": str(a.get("name") or "").strip()[:24],
-         "enabled": bool(a.get("enabled", True)),
-         "keys_in": bool(a.get("app_key") and a.get("app_secret")),
-         "connected": str(a.get("name") or "").strip()[:24] in _live_names,
-         "paid_month": str(a.get("paid_month") or ""),
-         "month_now": _extra_month_now(),
-         "active": (bool(a.get("enabled", True))
-                    and str(a.get("paid_month") or "") == _extra_month_now())}
-        for a in (EXEC.get("webull_extra_accounts") or [])]
+    _live = {x["name"]: x for x in WB_EXTRA}
+    out["webull_extras"] = []
+    for a in (EXEC.get("webull_extra_accounts") or []):
+        _nm = str(a.get("name") or "").strip()[:24]
+        _bp = None
+        if _nm in _live:
+            try:      # cached ~8s inside the client — cheap on the 4s poll
+                _bp = _live[_nm]["client"].buying_power()
+            except Exception:                           # noqa: BLE001
+                _bp = None
+        out["webull_extras"].append(
+            {"name": _nm,
+             "enabled": bool(a.get("enabled", True)),
+             "keys_in": bool(a.get("app_key") and a.get("app_secret")),
+             "connected": _nm in _live,
+             "why": WB_EXTRA_ERR.get(_nm, ""),
+             "choices": WB_EXTRA_CHOICES.get(_nm, []),
+             "buying_power": _bp,
+             "paid_month": str(a.get("paid_month") or ""),
+             "month_now": _extra_month_now(),
+             "active": (bool(a.get("enabled", True))
+                        and str(a.get("paid_month") or "")
+                        == _extra_month_now())})
     return out
 
 
@@ -2323,6 +2385,46 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/mode"):
             return self._json(200, self._status())
+        if self.path.startswith("/exchoices"):
+            # Every account behind an extra login's keys, with buying power —
+            # the popup's ✏️ uses this so switching accounts is one click
+            # (his ask, 8/21). Read-only probing; nothing is placed.
+            q = parse_qs(urlparse(self.path).query)
+            nm = str((q.get("name") or [""])[0]).strip()[:24]
+            acc = next((a for a in (EXEC.get("webull_extra_accounts") or [])
+                        if str(a.get("name") or "").strip()[:24] == nm), None)
+            if not acc or not (acc.get("app_key") and acc.get("app_secret")):
+                return self._json(200, {"ok": False, "why": "no such account"})
+            try:
+                import webull_options as _wo
+                import copy as _cp
+                rows = _wo.list_accounts(acc["app_key"], acc["app_secret"])
+                cur = str(acc.get("account_id") or "")
+                choices = []
+                for r0 in rows:
+                    if "FUTURES" in str(r0.get("kind") or "").upper():
+                        continue        # options bot — futures rides the main
+                    _bp = None
+                    try:
+                        c2 = _cp.deepcopy(CFG)
+                        w2 = c2.setdefault("execution", {}).setdefault(
+                            "webull", {})
+                        w2["app_key"] = acc["app_key"]
+                        w2["app_secret"] = acc["app_secret"]
+                        w2["paper_trading"] = False
+                        w2["account_id"] = r0["id"]
+                        _c2 = _wo.WebullOptions(c2)
+                        _c2.connect()
+                        _bp = _c2.buying_power()
+                    except Exception:                   # noqa: BLE001
+                        pass
+                    choices.append({"id": r0["id"], "kind": r0.get("kind"),
+                                    "bp": (round(float(_bp), 0)
+                                           if _bp is not None else None),
+                                    "current": r0["id"] == cur})
+                return self._json(200, {"ok": True, "choices": choices})
+            except Exception as e:                      # noqa: BLE001
+                return self._json(200, {"ok": False, "why": str(e)[:160]})
         if self.path.startswith("/dgkey"):
             # The Deepgram key's PERMANENT home (his ask, 8/20: "put it once,
             # saved, always active"). The browser keeps a copy, but a profile
@@ -2884,7 +2986,9 @@ class Handler(BaseHTTPRequestHandler):
                       # Subscription month (his model, 8/20): "YYYY-MM".
                       # Active while it equals the current month; the popup
                       # stamps it when the toggle is flipped ON.
-                      "paid_month": str(a.get("paid_month") or "").strip()[:7]}
+                      "paid_month": str(a.get("paid_month") or "").strip()[:7],
+                      # Which account when the login has several (8/21).
+                      "account_id": str(a.get("account_id") or "").strip()[:40]}
                 # A resave with blanked secrets keeps the stored ones —
                 # same only-fill-empty rule that fixed the Topstep email.
                 for old in (EXEC.get("webull_extra_accounts") or []):
@@ -2894,6 +2998,8 @@ class Handler(BaseHTTPRequestHandler):
                                             or old.get("app_secret", ""))
                         _e["paid_month"] = (_e["paid_month"]
                                             or old.get("paid_month", ""))
+                        _e["account_id"] = (_e["account_id"]
+                                            or old.get("account_id", ""))
                 if _e["name"]:
                     _clean.append(_e)
             data.setdefault("execution", {})["webull_extra_accounts"] = _clean

@@ -218,21 +218,109 @@ function paintExtras() {
     const active = !!x.active;
     const expired = (x.enabled !== false) && x.paid_month &&
                     x.paid_month !== (x.month_now || _monthNow());
-    const word = !x.keys_in ? "no keys saved"
-      : !ok ? "saved — bridge couldn't log in (check trades.log)"
+    const bp = (x.buying_power === null || x.buying_power === undefined)
+      ? "" : " · $" + Math.round(x.buying_power).toLocaleString() + " BP";
+    const word = (!x.keys_in ? "no keys saved"
+      : !ok ? ("saved — " + (x.why || "couldn't log in (check trades.log)"))
       : active ? "connected · active through " + _monthEndWords()
       : expired ? "connected · subscription EXPIRED — flip ON to renew"
-      : "connected · OFF — not taking entries";
-    row.innerHTML =
-      '<span class="grow" style="font-size:12px;color:' +
-      (active ? "#4ade80" : expired ? "#f87171" : "#fbbf24") + '">' +
-      (active ? "✓ " : "") + (x.name || "?") + " — " + word + "</span>";
+      : "connected · OFF — not taking entries") + (ok ? bp : "");
+    const span = document.createElement("span");
+    span.className = "grow";
+    span.style.cssText = "font-size:12px;white-space:normal;color:" +
+      (active ? "#4ade80" : expired ? "#f87171" : "#fbbf24");
+    span.textContent = (active ? "✓ " : "") + (x.name || "?") + " — " + word;
+    row.appendChild(span);
+    // Several accounts on one login: one BUTTON per candidate, labeled with
+    // its buying power — click the one to trade from and it's pinned (8/21).
+    if (!ok && Array.isArray(x.choices) && x.choices.length) {
+      const wrap = document.createElement("div");
+      wrap.style.cssText = "width:100%;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap";
+      x.choices.forEach(ch => {
+        const b = document.createElement("button");
+        b.textContent = ch.bp != null
+          ? "use $" + Math.round(ch.bp).toLocaleString() + " acct"
+          : (ch.err ? "…" + ch.id.slice(-6) + " (error)" : "…" + ch.id.slice(-6));
+        b.title = ch.id + (ch.err ? " — " + ch.err : "");
+        b.disabled = !!ch.err;
+        b.onclick = async () => {
+          b.textContent = "connecting…";
+          const out = resend(e => {
+            if (e.name === x.name) {
+              e.account_id = ch.id;
+              e.enabled = true;               // picking it = arming it
+              e.paid_month = _monthNow();     // active for this month
+            }
+          });
+          try {
+            modeStatus = await askBridge("/config",
+                                         { webull_extra_accounts: out });
+            paintExtras();
+          } catch (e2) {
+            $("exState").textContent = "Couldn't reach the bridge.";
+          }
+        };
+        wrap.appendChild(b);
+      });
+      row.appendChild(wrap);
+      row.style.flexWrap = "wrap";
+    }
+    // ✏️ — switch WHICH of the login's accounts trades, any time (8/21).
+    const ed = document.createElement("button");
+    ed.className = "edit";
+    ed.textContent = "✏️";
+    ed.title = "Switch which of this login's accounts trades";
+    ed.onclick = async () => {
+      ed.textContent = "…";
+      try {
+        const j = await askBridge("/exchoices?name=" + encodeURIComponent(x.name));
+        ed.textContent = "✏️";
+        if (!(j && j.ok && j.choices && j.choices.length)) {
+          $("exState").textContent = (j && j.why) || "couldn't list the accounts";
+          return;
+        }
+        const old = row.querySelector(".exChoices");
+        if (old) { old.remove(); return; }   // second click closes it
+        const wrap = document.createElement("div");
+        wrap.className = "exChoices";
+        wrap.style.cssText = "width:100%;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap";
+        j.choices.forEach(ch => {
+          const b = document.createElement("button");
+          b.textContent = (ch.current ? "✓ " : "") +
+            (ch.bp != null ? "$" + Math.round(ch.bp).toLocaleString() : "…" + ch.id.slice(-6)) +
+            " " + (ch.kind || "");
+          b.title = ch.id;
+          b.disabled = !!ch.current;
+          b.onclick = async () => {
+            b.textContent = "switching…";
+            const out = resend(e => { if (e.name === x.name) e.account_id = ch.id; });
+            try {
+              modeStatus = await askBridge("/config", { webull_extra_accounts: out });
+              paintExtras();
+            } catch (e2) { $("exState").textContent = "Couldn't reach the bridge."; }
+          };
+          wrap.appendChild(b);
+        });
+        row.appendChild(wrap);
+        row.style.flexWrap = "wrap";
+      } catch (e) {
+        ed.textContent = "✏️";
+        $("exState").textContent = "Couldn't reach the bridge.";
+      }
+    };
+    row.appendChild(ed);
+    const daysLeft = (() => {
+      const d = new Date();
+      return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() - d.getDate() + 1;
+    })();
     const tgl = document.createElement("button");
-    tgl.className = "tgl " + (active ? "" : "safe");
+    tgl.className = "tgl " + (active ? "live" : "safe");
     tgl.textContent = active ? "on" : "off";
     tgl.title = active
-      ? "Turn OFF — stops new entries now (open positions still managed)"
-      : "Turn ON — active through the end of this month";
+      ? (daysLeft + " day" + (daysLeft === 1 ? "" : "s") + " left — active through " +
+         _monthEndWords() + ". Click to turn OFF (open positions still managed).")
+      : ("OFF — click to activate through " + _monthEndWords() + " (" + daysLeft +
+         " day" + (daysLeft === 1 ? "" : "s") + ").");
     tgl.onclick = async () => {
       const goingOn = !active;
       const out = resend(e => {
@@ -289,12 +377,14 @@ if ($("exAdd")) $("exAdd").onclick = async () => {
                  paid_month: o.paid_month || "" }));
   // a freshly added account starts ACTIVE for the current month
   out.push({ name: name, app_key: key, app_secret: sec, enabled: true,
-             paid_month: _monthNow() });
+             paid_month: _monthNow(),
+             account_id: (($("exAcctId") || {}).value || "").trim() });
   $("exAdd").textContent = "Saving and connecting…";
   try {
     modeStatus = await askBridge("/config", { webull_extra_accounts: out });
     $("exName").value = ""; $("exKey").value = ""; $("exSecret").value = "";
-    clearDrafts(["exName", "exKey", "exSecret"]);
+    if ($("exAcctId")) $("exAcctId").value = "";
+    clearDrafts(["exName", "exKey", "exSecret", "exAcctId"]);
     st.textContent = "";
     paintExtras();
   } catch (e) {
@@ -1884,7 +1974,7 @@ $("dayspick").onchange = async () => {
 const DRAFT_IDS = ["wbkey", "wbsecret", "wbpkey", "wbpsecret",
                    "tsUser", "tsKey", "tsUrl", "tvUser", "tvPass",
                    "ninjaAccount", "ninjaDir", "ninjaAtm",
-                   "exName", "exKey", "exSecret", "aiKey", "dgKey"];
+                   "exName", "exKey", "exSecret", "exAcctId", "aiKey", "dgKey"];
 function wireDrafts() {
   try {
     chrome.storage.local.get("field_drafts", d => {
