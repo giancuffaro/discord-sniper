@@ -1833,6 +1833,12 @@ def _place_impl(order):
                         if order.get("action") in ("OPEN", "ADD") \
                                 and not _extra_active(_x):
                             continue
+                        # A login with no futures account can't take futures —
+                        # skip quietly instead of logging the same routing
+                        # error on every call (8/21, L's log noise).
+                        if not getattr(_x["client"], "futures_account_id",
+                                       None):
+                            continue
                         try:
                             import webull_futures as _wf
                             _ok2, _msg2 = _wf.execute(
