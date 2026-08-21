@@ -970,6 +970,15 @@ class WebullOptions:
         "unknown" is deliberately not treated as "filled" anywhere upstream. If
         this can't tell, the safe reading is that you might be in it, which is
         why the caller checks your actual positions before deciding."""
+        # No id, no answer. An entry that never got placed (futures rejected on
+        # funds, 8/21 MNQ) reaches here with order_id None -- and the "query"
+        # endpoint ignores a None id and hands back the account's RECENT ORDER
+        # LIST, whose row 0 is somebody else's trade. That is how a phantom
+        # MNQ "filled 3.0 at 1.41" was really the SPY x3 adopted four minutes
+        # earlier, which then armed a stop and sent a CLOSE for the wrong size.
+        # Unknown is the honest answer and is never read as a fill upstream.
+        if not order_id:
+            return "unknown", 0, None
         body, _why = self._try_calls(
             ["order_v3", "order"], ["detail", "query", "get_order"],
             self.account_id, order_id)

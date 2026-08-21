@@ -3569,6 +3569,28 @@ def main():
                         save_day()
             except Exception:                           # noqa: BLE001
                 pass
+            # A configured extra account that ISN'T connected (a 429 rate
+            # limit at connect time — 8/21, L's switch to the funded account)
+            # gets retried every 5 minutes until it lands, instead of waiting
+            # for a restart or a popup save.
+            try:
+                _cfgd = [str(a.get("name") or "").strip()[:24]
+                         for a in (EXEC.get("webull_extra_accounts") or [])
+                         if a.get("enabled", True) and a.get("app_key")]
+                _livec = {x["name"] for x in WB_EXTRA}
+                if any(n not in _livec for n in _cfgd):
+                    global _EXTRA_RETRY_AT
+                    try:
+                        _last = _EXTRA_RETRY_AT
+                    except NameError:
+                        _last = 0
+                    if time.time() - _last > 300:
+                        _EXTRA_RETRY_AT = time.time()
+                        note("ACCT     retrying the un-connected account(s) "
+                             "— rate limits cool off")
+                        _connect_extras()
+            except Exception:                           # noqa: BLE001
+                pass
             # Each extra account gets the same housekeeping against ITS OWN
             # broker view: adopt what it holds (so a room's "all out" can
             # flatten it, and hand trades get the same protection), and
