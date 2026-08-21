@@ -902,6 +902,70 @@ class Book:
                 if _recent:
                     continue
             is_fut = b.get("kind") == "future"
+            # PHANTOM-EXIT COMPLETION (8/21, his ask: "can't the bot put an
+            # order in and not leave it open?"): the book recorded a stop or
+            # close MINUTES ago, but the broker still holds the contract —
+            # the exit's sell never really filled (CLF today; MP and TSLA
+            # before the fill-confirmation fix existed). The decision to be
+            # OUT was already made by a stop or a room call; finish it —
+            # urgent, fill-confirmed — instead of re-adopting an unmanaged
+            # orphan. Manual closes are exempt: those are HIS trades.
+            phantom = None
+            if not is_fut and qty <= int(getattr(self, "adopt_max_qty", 3) or 3):
+                _pcut = time.time() - 900.0
+                with self._lock:
+                    for _q in list(self._pos.values()) + list(self._archive):
+                        if str(_q.get("symbol") or "").upper() != sym:
+                            continue
+                        if _q.get("state") not in (STOPPED, CLOSED):
+                            continue
+                        if _q.get("manual_close"):
+                            continue
+                        if float(_q.get("closed_at") or 0) < _pcut:
+                            continue
+                        try:
+                            if (b.get("strike") is not None
+                                    and _q.get("strike") is not None
+                                    and abs(float(b["strike"])
+                                            - float(_q["strike"])) > 0.001):
+                                continue
+                        except (TypeError, ValueError):
+                            continue
+                        phantom = dict(_q)
+                        break
+            if phantom:
+                wb = self._wbfor(phantom)
+                if wb is not None:
+                    _occ = phantom.get("occ") or self._occ_for(b)
+                    _ref = phantom.get("last_bid") or phantom.get("stop") \
+                        or fill
+                    if note:
+                        note("PHANTOM  %s — the book recorded '%s' but the "
+                             "broker STILL holds it; that exit never filled. "
+                             "Finishing it now (urgent, fill-confirmed)."
+                             % (sym, phantom.get("state")))
+                    try:
+                        _okp, _pxp = self._sell_confirmed(
+                            wb, phantom.get("key") or key_of("?", sym), _occ,
+                            sym, phantom.get("side") or b.get("side"),
+                            phantom.get("strike") if phantom.get("strike")
+                            is not None else b.get("strike"),
+                            phantom.get("expiry") or b.get("expiry"),
+                            qty, float(_ref) if _ref else None)
+                    except Exception as _pe:            # noqa: BLE001
+                        _okp, _pxp = False, None
+                        if note:
+                            note("PHANTOM  %s — completing the exit FAILED "
+                                 "(%s); adopting it back so it stays visible "
+                                 "and watched." % (sym, str(_pe)[:80]))
+                    if _okp:
+                        if note:
+                            note("PHANTOM  %s — exit COMPLETED at %.2f. The "
+                                 "earlier recorded price was wrong; the "
+                                 "daily reconcile trues up the P&L."
+                                 % (sym, float(_pxp)))
+                        continue        # really out now — nothing to adopt
+                    # else fall through: adopt normally, the watchdog re-arms
             # Cash-settled index options (SPXW, XSP, NDX...) can't be SOLD
             # through this account's API — Webull refuses every sell
             # (INDEX_NAKED 8/17, MARGIN_TO_CASH 8/18, live both days), so an
