@@ -396,20 +396,41 @@ def _send_projectx(prop, order, note):
         body["type"] = 2                                     # 2 = market
 
     # Server-side bracket (ticks) = protection that survives the PC going dark.
-    # Stop-loss rides as a STOP (type 4), not a limit — a limit stop can be
-    # skipped in a fast market, and TopstepX's engine was instantly rejecting
-    # the limit-typed version on 8/18 (every bot order that day: status 5,
-    # dead 2ms after creation). Take-profit stays a limit, as it should be.
+    # HIS RATCHET, futures edition (8/22): the stop leg rides as a TRAILING
+    # stop (type 5) — it follows the price at a fixed distance, so a winner
+    # locks profit as it runs, the same idea as the options ratchet walking
+    # its stop up. If the firm's engine rejects trailing brackets, it falls
+    # back to the plain STOP (type 4) automatically — protection is never
+    # sacrificed to the fancier order. Take-profit stays a limit.
+    # settings futures_brokers.topstep.trail=false forces the fixed stop.
     sym = str(order.get("symbol") or "").upper()
-    if tick and sym in PX_INDEX:
-        body["stopLossBracket"] = {"ticks": int(round(PX_BRACKET_PTS["stop"] / tick)), "type": 4}
-        body["takeProfitBracket"] = {"ticks": int(round(PX_BRACKET_PTS["target"] / tick)), "type": 1}
-
-    r = req.post(base + "/api/Order/place", headers=hdr, json=body, timeout=8)
-    j2 = r.json() if r.status_code == 200 else {}
-    if not j2.get("success", False):
-        raise PropRefused("%s: ProjectX refused the order (HTTP %s %s)"
-                          % (prop.get("name"), r.status_code, r.text[:160]))
+    want_trail = bool(prop.get("trail", True))
+    bracket_types = [5, 4] if (tick and sym in PX_INDEX and want_trail) \
+        else ([4] if (tick and sym in PX_INDEX) else [None])
+    j2, last_rej = None, None
+    for _bt in bracket_types:
+        if _bt is not None:
+            body["stopLossBracket"] = {
+                "ticks": int(round(PX_BRACKET_PTS["stop"] / tick)),
+                "type": _bt}
+            body["takeProfitBracket"] = {
+                "ticks": int(round(PX_BRACKET_PTS["target"] / tick)),
+                "type": 1}
+        r = req.post(base + "/api/Order/place", headers=hdr, json=body,
+                     timeout=8)
+        j2 = r.json() if r.status_code == 200 else {}
+        if j2.get("success", False):
+            if _bt == 4 and want_trail:
+                note("PROP     %s — trailing bracket refused, riding the "
+                     "fixed stop instead" % prop.get("name"))
+            break
+        last_rej = "HTTP %s %s" % (r.status_code, r.text[:160])
+        if len(bracket_types) == 1 or _bt == bracket_types[-1]:
+            raise PropRefused("%s: ProjectX refused the order (%s)"
+                              % (prop.get("name"), last_rej))
+    if not (j2 or {}).get("success", False):
+        raise PropRefused("%s: ProjectX refused the order (%s)"
+                          % (prop.get("name"), last_rej))
     # "success" only means the order was CREATED — on 8/18 Topstep's risk
     # engine then killed each one 2ms later (status 5) and the bridge never
     # knew, so 'why didn't Topstep fire?' had no answer anywhere. Look back

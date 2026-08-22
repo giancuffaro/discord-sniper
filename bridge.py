@@ -1807,6 +1807,9 @@ def _place_impl(order):
                         "start_balance": ts.get("start_balance"),
                         "daily_loss_stop": ts.get("daily_loss_stop"),
                         "consistency_pct": ts.get("consistency_pct"),
+                        # Futures ratchet (8/22): server-side TRAILING stop on
+                        # every Topstep entry; set trail=false for fixed stops.
+                        "trail": ts.get("trail", True),
                         "enabled": True})
                 # Any hand-added prop accounts still ride along when armed.
                 armed_props += [p for p in (CFG.get("props") or [])
