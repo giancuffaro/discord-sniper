@@ -38,3 +38,15 @@ _to_delete/
 
 # the per-trade journal - rebuilt from days/ constantly, data not code
 journal.csv
+
+# Trading DATA is not code (8/23 — the pre-start save swept these into git
+# and deleting them locally made git resurrect them). Records stay on the PC.
+DS Logs/
+handoffs/
+journal-*.xlsx
+trader-scoreboard.xlsx
+Webull_Orders_*.csv
+signal-room-chat*.txt
+px_day.json
+state-*.json
+.~lock.*
