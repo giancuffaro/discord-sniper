@@ -1,6 +1,6 @@
-Discord Sniper — self-learning export (2026-08-23, refreshed 2026-08-23 19:03:35 ET)
+Discord Sniper — self-learning export (2026-08-23, refreshed 2026-08-23 19:09:38 ET)
 
-=== CURRENT STATE (as of 2026-08-23 19:03:35 ET) ===
+=== CURRENT STATE (as of 2026-08-23 19:09:38 ET) ===
   version:        v3.1.5
   bridge:         connected
   webull:         live keys ON, paper ON, paper keys ON
@@ -15,15 +15,58 @@ Discord Sniper — self-learning export (2026-08-23, refreshed 2026-08-23 19:03:
   open positions (1):
     [LIVE ] CLF 2026-08-28 11.5C x1 paid 0.50 now 0.31 -$19 (-38%)
 
-=== RAW MESSAGES THE READER SAW (3) ===
+=== RAW MESSAGES THE READER SAW (43) ===
+2026-08-10 14:06:33  [The Insiders Trading Education: 🐺・desi-swings #1527044644796366888]  Options Insider Alerts: Options Insider Alerts APP — 8/10/26, 2:06 PM Monday, August 10, 2026 at 2:06 PM @everyone (edited) Tuesday, August 11, 2026 at 3:21 PM SWING — NFLX 75C · Oct 16 Long NFLX calls Entry (premium) $5.40 Spot at entry $75.50 Stop (underlying) $75 Targets (underlying) $78.44 → $81.93 Risk 1R = $0.50 move Status CLOSED · -0.5% Trade #18 · Options Insider•8/10/26, 2:06 PM
 2026-08-12 14:23:47  [ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings #1248264554886991893]  are alerts: are alerts APP — 8/12/26, 2:23 PM Wednesday, August 12, 2026 at 2:23 PM Trimming some more of my $HPE september's here at 57.50 +30% on the $60c +112% on the $55c @unknown-role
+2026-08-12 15:19:57  [The Insiders Trading Education: 🐺・desi-swings #1527044644796366888]  DesiTrade: DesiTrade [TTL], Server Tag: TTL TTL — 8/12/26, 3:19 PM Wednesday, August 12, 2026 at 3:19 PM My holdings @everyone
+2026-08-12 19:36:08  [The Insiders Trading Education: 🐺・desi-swings #1527044644796366888]  Options Insider Alerts: [ 7:36 PM ] Wednesday, August 12, 2026 at 7:36 PM @everyone NEW SWING — TSM 430C · Sep 18 Long TSM calls Entry (premium) $22.30 Spot at entry $430 Stop (underlying) $424.81 Targets (underlying) $450 Risk 1R = $5.19 move Status OPEN · full position Thesis Break & Retest of major previous rejections between 424/426. We are also reclaiming the 50DMA. If we can turn these previous highs into support, TSM is set for a push towards 450. Trade #19 · Options Insider•8/12/26, 7:36 PM
+2026-08-13 11:00:36  [ZTRADEZ (OPTIONS & STOCKS): 🔸︱🅰adex-swings #1179200811650252850]  Adex Swing ⚠: Adex Swing ⚠ APP — 8/13/26, 11:00 AM Thursday, August 13, 2026 at 11:00 AM $LEN back positive. I am still holding. @everyone
+2026-08-13 11:01:54  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎰sir-goldman #1209181195406024744]  Sir Goldman Alert Bot: Sir Goldman Alert Bot APP — 8/13/26, 11:01 AM Thursday, August 13, 2026 at 11:01 AM @everyone TRIM $SPX 3.0! +25% 08/13/26 • 11:01 AM EDT
 2026-08-14 13:24:00  [ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings #1248264554886991893]  are alerts: are alerts APP — 8/14/26, 1:24 PM Friday, August 14, 2026 at 1:24 PM Friday price action, don't see much to do currently. $AVGO filling the gap, still have this on my radar, glad we didn't rush it @unknown-role
+2026-08-14 15:58:16  [ZTRADEZ (OPTIONS & STOCKS): 🔸︱🅰adex-swings #1179200811650252850]  Adex Swing ⚠: Adex Swing ⚠ APP — 8/14/26, 3:58 PM Friday, August 14, 2026 at 3:58 PM 8/10 - 8/14 Weekly Recap $QQQ 750C 23% Unrealized: $HD, $LEN Slow week this week, but still holding all trades unrealized. Please manage positions according to your port, and understand that some of these trades can invalidate. We have new candles opening, so please do the homework! Reminder that these next couple of days will be filled with events: Charts, Review, Q&A with @unknown-user on Saturday 3:00pm EST Dev's Perspectives with @unknown-user on Sunday 1:00pm EST Ash's Analysis with @unknown-user on Monday 7:00pm EST If you are new, PLEASE find the time to come to these sessions if you can. You won't regret it You all have a great weekend @everyone @unknown-role
+2026-08-18 09:46:15  [VeroTrade: ✅⏐1k-challenge #1323708708374450247]  Vero: Vero [PAID], Server Tag: PAID PAID Owner — 8/18/26, 9:46 AM Tuesday, August 18, 2026 at 9:46 AM QQQ 718P 8/18 1.22 2 CONTRACTS @vero-alerts
+2026-08-18 09:55:29  [VeroTrade: ✅⏐1k-challenge #1323708708374450247]  @vero-alerts: [ 9:55 AM ] Tuesday, August 18, 2026 at 9:55 AM QQQ OUT @ 1.77 Left a runner in personal @vero-alerts
+2026-08-18 10:14:35  [TradingTheTrend: 🚨option-alerts🚨 #769797179992571914]  TradingTheTrend: TradingTheTrend — 8/18/26, 10:14 AM Tuesday, August 18, 2026 at 10:14 AM BTO SPY 8/25 760p @ 1.88 grabbing these in case it gets ugly here. Potential is there. If support holds I will end up cutting them
+2026-08-18 15:48:07  [TradingTheTrend: 🚨option-alerts🚨 #769797179992571914]  TradingTheTrend: TradingTheTrend — 8/18/26, 3:48 PM Tuesday, August 18, 2026 at 3:48 PM BTO TSLA 9/18 300p @ 3.25 swing Trying this 4 hour rising wedge. 323 will be first target. Anything more will be a bonus
+2026-08-19 20:53:16  [ZTRADEZ (OPTIONS & STOCKS): 🔸︱🅰adex-swings #1179200811650252850]  Bullwinkle: Bullwinkle — 8/19/26, 8:53 PM Wednesday, August 19, 2026 at 8:53 PM FIXING THIS FOLKS @everyone Spoiler
+2026-08-20 09:45:31  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🏆top-flow #829352738239414332]  bullwinkle0001: [ 9:45 AM ] Thursday, August 20, 2026 at 9:45 AM TSLA | 4.60 bullwinkle0001000 , 🟢 **TSLA | $355 C 4.30 NEX... , ,
+2026-08-20 10:21:42  [VeroTrade: ✅⏐1k-challenge #1323708708374450247]  @vero-alerts: [ 10:21 AM ] Thursday, August 20, 2026 at 10:21 AM QQQ OUT @vero-alerts
+2026-08-20 11:34:42  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps #721821717328298066]  Bullwinkle: Bullwinkle — 8/20/26, 11:34 AM Thursday, August 20, 2026 at 11:34 AM light starter
+2026-08-20 11:52:43  [TradingTheTrend: 🚨option-alerts🚨 #769797179992571914]  David T: David T BTO BAC 10/2 66c @ 1.10 (you can grab 65c instead if you want to pay a bit more) David T — 8/20/26, 11:52 AM Thursday, August 20, 2026 at 11:52 AM feel free to cut, i had plan of scaling in. Will wait this out.
+2026-08-20 12:04:05  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps #721821717328298066]  Bullwinkle: [ 12:04 PM ] Thursday, August 20, 2026 at 12:04 PM With the avg down just below 4.85 $ cost average running away guys no loss on this
+2026-08-20 15:45:26  [Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge #1433933203302776852]  👑KingBeeAri🐝: 👑KingBeeAri🐝 [DRIP], Server Tag: DRIP DRIP — 8/20/26, 3:45 PM Thursday, August 20, 2026 at 3:45 PM XOM, & GLD
+2026-08-21 09:37:12  [Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge #1433933203302776852]  👑KingBeeAri🐝: [ 9:37 AM ] Friday, August 21, 2026 at 9:37 AM 10% XOM @here
+2026-08-21 09:37:53  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps #721821717328298066]  Bullwinkle: Bullwinkle AMZN | $262.5 C 2.40 @everyone Bullwinkle — 8/21/26, 9:37 AM Friday, August 21, 2026 at 9:37 AM 2.20 ON THE SL
+2026-08-21 09:59:21  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🏆top-flow #829352738239414332]  bullwinkle0001: [ 9:59 AM ] Friday, August 21, 2026 at 9:59 AM TSLA | 5.45
+2026-08-21 10:06:43  [Honey Drip Network 🍯💰📈: 👑｜aristotle-trades #987515353670221834]  👑KingBeeAri🐝: [ 10:06 AM ] Friday, August 21, 2026 at 10:06 AM 110% @here
+2026-08-21 10:09:33  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  mike57212: mike57212 — 8/21/26, 10:09 AM Friday, August 21, 2026 at 10:09 AM 130%+ on next week contracts lol what an amazing way to end the week @here
+2026-08-21 10:10:52  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  JT INVESTMENTS: JT INVESTMENTS — 8/21/26, 10:10 AM Friday, August 21, 2026 at 10:10 AM @Unraveller 🔮 trimming MSFT 32% @everyone
+2026-08-21 10:10:52  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  JT INVESTMENTS: JT INVESTMENTS — 8/21/26, 10:10 AM Friday, August 21, 2026 at 10:10 AM @Unraveller 🔮 trimming MSFT 32% @everyone
+2026-08-21 10:11:29  [Honey Drip Network 🍯💰📈: 👑｜aristotle-trades #987515353670221834]  👑KingBeeAri🐝: [ 10:11 AM ] Friday, August 21, 2026 at 10:11 AM Not even by my computer
+2026-08-21 10:12:20  [ZTRADEZ (OPTIONS & STOCKS): ◽︱😈demon #874280313038192670]  Demon Alerts: Demon Alerts APP — 8/21/26, 10:12 AM Friday, August 21, 2026 at 10:12 AM This is the move I was looking for on $AAPL btw. If it broke $320 our cons would've done even crazier than this so I hope u guys understand the risk vs reward @everyone
+2026-08-21 10:25:17  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  Unraveller 🔮: Unraveller 🔮 — 8/21/26, 10:25 AM Friday, August 21, 2026 at 10:25 AM Beautiful day! Have a great weekend! God bless @everyone
+2026-08-21 10:29:05  [Honey Drip Network 🍯💰📈: 👑｜aristotle-trades #987515353670221834]  👑KingBeeAri🐝: 👑KingBeeAri🐝 [DRIP], Server Tag: DRIP DRIP OWNER🤴🏾 — 8/21/26, 10:29 AM Friday, August 21, 2026 at 10:29 AM 200% on runners @here
+2026-08-21 10:29:42  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  mike57212: [ 10:29 AM ] Friday, August 21, 2026 at 10:29 AM @here
+2026-08-21 10:29:42  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  mike57212: [ 10:29 AM ] Friday, August 21, 2026 at 10:29 AM @here
+2026-08-21 10:29:47  [Honey Drip Network 🍯💰📈: 👑｜aristotle-trades #987515353670221834]  👑KingBeeAri🐝: [ 10:29 AM ] Friday, August 21, 2026 at 10:29 AM Nobody is better than the drip
+2026-08-21 11:34:24  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  Unraveller 🔮: Unraveller 🔮 Same zone pltr @here Unraveller 🔮 — 8/21/26, 11:34 AM Friday, August 21, 2026 at 11:34 AM PLTR @here
+2026-08-21 11:34:24  [Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps #829754942817828884]  Unraveller 🔮: Unraveller 🔮 Same zone pltr @here Unraveller 🔮 — 8/21/26, 11:34 AM Friday, August 21, 2026 at 11:34 AM PLTR @here
+2026-08-21 12:54:43  [Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge #1433933203302776852]  👑KingBeeAri🐝: 👑KingBeeAri🐝 [DRIP], Server Tag: DRIP DRIP OWNER🤴🏾 — 8/21/26, 12:54 PM Friday, August 21, 2026 at 12:54 PM GLD runners up 97% if you held @everyone
+2026-08-21 12:54:43  [Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge #1433933203302776852]  👑KingBeeAri🐝: 👑KingBeeAri🐝 [DRIP], Server Tag: DRIP DRIP — 8/21/26, 12:54 PM Friday, August 21, 2026 at 12:54 PM GLD runners up 97% if you held @everyone
+2026-08-21 13:00:30  [ZTRADEZ (OPTIONS & STOCKS): 🟢︱🏆top-flow #829352738239414332]  bullwinkle0001: bullwinkle0001 APP — 8/21/26, 1:00 PM Friday, August 21, 2026 at 1:00 PM TSLA | 11.50
+2026-08-21 13:05:13  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🐼evapanda #777750637613416479]  EvaPanda Alerts: @everyone Update: MSFT - 4hr loving this hammer off the 9 and 21 ema Looking into the following for end of day swing: 520C 9/18 ~ 3.05 or 500C 8/28 ~ 1.85 ©Turning Points Entities, Inc. Official EvaPanda Bot. For Information purposes only, not financial advice. 08/21/26 ● 01:05:12 PM ©Turning Points Entities, Inc. Official EvaPanda Bot. For Information purposes only, not financial advice. 08/21/26 ● 01:05:12 PM
+2026-08-21 15:09:22  [ZTRADEZ (OPTIONS & STOCKS): ◽︱😈demon #874280313038192670]  Demon Alerts: Demon Alerts APP — 8/21/26, 3:09 PM Friday, August 21, 2026 at 3:09 PM @everyone
+2026-08-21 15:59:07  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🐼evapanda #777750637613416479]  EvaPanda Alerts: @everyone Update: Current Open Positions BULL 15C 1/15/27 @ 0.37 (Covered Call - Collecting Prems) RIVN 25c 12/18 @ 1.39 (Covered Call - Collecting prems) NOK 25C 1/21/2028 @ 3.00 (Leap) TSLA 960C 1/15/2027 @ 6.65 (Swing) MSFT 520C 9/18 @ 2.62 (Swing) - ½ position -Starter (Added Today) currently what i have heading into this weekend. 2 losses (INTC & MP ) 1 Win with PLTR Didn't do much as MP and INTC took my a part of my soul HAve a great weekend everyone~ ©Turning Points Entities, Inc. Official EvaPanda Bot. For Information purposes only, not financial advice. 08/21/26 ● 03:59:06 PM ©Turning Points Entities, Inc. Official EvaPanda Bot. For Information purposes only, not financial advice. 08/21/26 ● 03:59:06 PM
 2026-08-21 16:02:39  [ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings #1248264554886991893]  are alerts: are alerts APP — 8/21/26, 4:02 PM Friday, August 21, 2026 at 4:02 PM Have a good weekend everyone, didn't see anything I wanted to swing @unknown-role
+2026-08-23 13:43:11  [ZTRADEZ (OPTIONS & STOCKS): ◽︱🎰sir-goldman #1209181195406024744]  Sir Goldman Alert Bot: Sir Goldman Alert Bot APP — 1:43 PM Sunday, August 23, 2026 at 1:43 PM @everyone COMMENT I am back after a nice week off! Got some fundeds and a few evals to trade this week but let’s smash it! I will post some updated levels this week and SPX trades. Code: RYANSTRADING on Lucid/Tradiedy for your evals! HERE WE GO 08/23/26 • 01:43 PM EDT
 
-=== WHAT THE BOT DID (6) ===
+=== WHAT THE BOT DID (9) ===
 2026-08-23 18:50:46  <update>  MGC · Stormzy — running their stop at 4643.5; exits fire on their calls
 2026-08-23 18:50:46  <update>  MES · Stormzy — running their stop at 7682.5; exits fire on their calls
 2026-08-23 18:50:46  <update>  MNQ · Stormzy — running their stop at 29393.8; exits fire on their calls
 2026-08-23 18:50:46  <update>  CLF · Gian — x1 picked up from your Webull LIVE account — the bot can see it and exit it on the room's call now
 2026-08-23 18:55:58  <update>  picked up a new version by itself and reloaded
 2026-08-23 18:56:28  <update>  CLF · Gian — x1 picked up from your Webull LIVE account — the bot can see it and exit it on the room's call now
+2026-08-23 19:09:01  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: NVDA | $230 C 4.90 AUG 28 @everyone
+2026-08-23 19:09:01  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  Bullwinkle: AMZN | $262.5 C 2.40 @everyone
+2026-08-23 19:09:28  <ignored>  that's a REPLY quoting an older message — not a fresh call, so nothing was sent  |  David T: BTO BAC 10/2 66c @ 1.10 (you can grab 65c instead if you want to pay a bit more)
