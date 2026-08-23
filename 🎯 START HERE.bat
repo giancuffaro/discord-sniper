@@ -270,9 +270,25 @@ if defined CHROME (
   rem  extension's own dupe-closer (oneTabPerChannel) tidies that up within
   rem  30 seconds - harmless.
   start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --process-per-site --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!"
+  rem  Give Chrome itself a moment to be up before the flood.
+  timeout /t 6 /nobreak >nul
+  rem  THREE AT A TIME (his ask, 8/23): all ~40 rooms at once choked Chrome
+  rem  and tabs sat stuck/unloaded. Open 3, breathe 8s so they actually
+  rem  load, open the next 3. Whole list takes ~2 minutes and every tab
+  rem  comes up alive.
+  set /a TABN=0
   for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
-    if not "%%A"=="" start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" "%%B"
+    if not "%%A"=="" (
+      start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" "%%B"
+      set /a TABN+=1
+      set /a TABMOD=TABN %% 3
+      if !TABMOD! EQU 0 (
+        echo         ...!TABN! rooms open, letting them load...
+        timeout /t 8 /nobreak >nul
+      )
+    )
   )
+  echo         All !TABN! rooms opened.
 ) else (
   start "" "!DISCORD_URL!"
   for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (

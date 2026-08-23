@@ -1,0 +1,29 @@
+Discord Sniper — self-learning export (2026-08-23, refreshed 2026-08-23 19:03:35 ET)
+
+=== CURRENT STATE (as of 2026-08-23 19:03:35 ET) ===
+  version:        v3.1.5
+  bridge:         connected
+  webull:         live keys ON, paper ON, paper keys ON
+  margin BP:      $986,764
+  futures BP:     $986,764
+  futures from:   webull ON, topstep ON, ninjatrader ON, tradovate off
+  bracket strat:  ON (+20% / -10%, 1 contract)
+  AI reader:      ON
+  voice key:      off
+  LIVE rooms:     none (all testing)
+  RN-pullback:    off (all instant)
+  open positions (1):
+    [LIVE ] CLF 2026-08-28 11.5C x1 paid 0.50 now 0.31 -$19 (-38%)
+
+=== RAW MESSAGES THE READER SAW (3) ===
+2026-08-12 14:23:47  [ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings #1248264554886991893]  are alerts: are alerts APP — 8/12/26, 2:23 PM Wednesday, August 12, 2026 at 2:23 PM Trimming some more of my $HPE september's here at 57.50 +30% on the $60c +112% on the $55c @unknown-role
+2026-08-14 13:24:00  [ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings #1248264554886991893]  are alerts: are alerts APP — 8/14/26, 1:24 PM Friday, August 14, 2026 at 1:24 PM Friday price action, don't see much to do currently. $AVGO filling the gap, still have this on my radar, glad we didn't rush it @unknown-role
+2026-08-21 16:02:39  [ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings #1248264554886991893]  are alerts: are alerts APP — 8/21/26, 4:02 PM Friday, August 21, 2026 at 4:02 PM Have a good weekend everyone, didn't see anything I wanted to swing @unknown-role
+
+=== WHAT THE BOT DID (6) ===
+2026-08-23 18:50:46  <update>  MGC · Stormzy — running their stop at 4643.5; exits fire on their calls
+2026-08-23 18:50:46  <update>  MES · Stormzy — running their stop at 7682.5; exits fire on their calls
+2026-08-23 18:50:46  <update>  MNQ · Stormzy — running their stop at 29393.8; exits fire on their calls
+2026-08-23 18:50:46  <update>  CLF · Gian — x1 picked up from your Webull LIVE account — the bot can see it and exit it on the room's call now
+2026-08-23 18:55:58  <update>  picked up a new version by itself and reloaded
+2026-08-23 18:56:28  <update>  CLF · Gian — x1 picked up from your Webull LIVE account — the bot can see it and exit it on the room's call now
