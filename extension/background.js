@@ -132,7 +132,13 @@ const RECORD_ONLY = new Set([
  * testing." Every graduated room fires PRETEND trades; not one real dollar
  * moves until he flips the REAL MONEY switch himself. The set stays here
  * for the next new room that needs a proving day. */
-const SHADOW = new Set([]);
+const SHADOW = new Set([
+  // The new server (8/23) proves itself here first — his call: "learn the
+  // parser and corpus before anything." Read for real, judged in the log
+  // ("would have read this as…"), fires NOTHING until graduated out.
+  "911389167169191946", "911390080285962290", "1086120203009658982",
+  "1533885258724937739", "983807207625859143",
+]);
 
 /* rooms.txt is the ONE list of channels that trade (his ask, 8/17) — the
  * extension used to keep its own hardcoded copy of "which rooms are baked

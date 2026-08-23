@@ -57,3 +57,11 @@ whop:swing|https://whop.com/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/
 1095502893559316482|https://discord.com/channels/725117609275555851/1095502893559316482|Vero 3|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 1527044644796366888|https://discord.com/channels/719580371997556737/1527044644796366888|Options Insider|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 1276616766004658226|https://discord.com/channels/911385966864896081/1276616766004658226|Platinum Trading|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+
+# New server (8/23) — in SHADOW while the parser learns their wording:
+# read + judged in the log, nothing fires until graduated.
+911389167169191946|https://discord.com/channels/911385966864896081/911389167169191946|NewSV-1|New Server
+911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|NewSV-2|New Server
+1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|NewSV-3|New Server
+1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|NewSV-4|New Server
+983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|NewSV equity-swings|New Server
