@@ -127,10 +127,23 @@ if errorlevel 1 (
 )
 git checkout -B main >nul 2>&1
 :haverepo
+rem  SAVE LOCAL WORK FIRST (8/23): clicking this between auto-pushes used to
+rem  hard-reset away anything Claude changed in the last half hour. Now the
+rem  folder pushes ITSELF before the mirror step - and if the push fails
+rem  (offline), the reset is SKIPPED so nothing local is ever thrown away.
+git add -A >nul 2>&1
+git commit -m "pre-start save" >nul 2>&1
+set "PUSHOK=1"
+git push origin main >nul 2>&1
+if errorlevel 1 set "PUSHOK=0"
 set "OLDREV="
 for /f %%r in ('git rev-parse HEAD 2^>nul') do set "OLDREV=%%r"
 git fetch origin main >nul 2>&1
 if errorlevel 1 goto pastpull
+if "!PUSHOK!"=="0" (
+  echo         Couldn't push local work - keeping it, skipping the mirror step.
+  goto pastpull
+)
 git reset --hard origin/main >nul 2>&1
 set "NEWREV="
 for /f %%r in ('git rev-parse HEAD 2^>nul') do set "NEWREV=%%r"
@@ -227,6 +240,11 @@ if not errorlevel 1 (
   timeout /t 2 /nobreak >nul
 )
 echo   [5/5] Opening all the rooms fresh...
+rem  Dedicated Discord profile (8/23): chrome-profile.txt holds the
+rem  profile-directory name (chrome://version -> Profile Path, last part).
+set "SNIPER_PROFILE=Default"
+if exist "chrome-profile.txt" set /p SNIPER_PROFILE=<"chrome-profile.txt"
+echo         (using Chrome profile: !SNIPER_PROFILE!)
 set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
@@ -251,9 +269,9 @@ if defined CHROME (
   rem  rooms.txt and would open a second time in the loop below, but the
   rem  extension's own dupe-closer (oneTabPerChannel) tidies that up within
   rem  30 seconds - harmless.
-  start "" "!CHROME!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --process-per-site --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!"
+  start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --process-per-site --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!"
   for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
-    if not "%%A"=="" start "" "!CHROME!" "%%B"
+    if not "%%A"=="" start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" "%%B"
   )
 ) else (
   start "" "!DISCORD_URL!"

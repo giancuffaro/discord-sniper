@@ -1,1 +1,1 @@
-{"date": "2026-08-23", "state": {"pos": {}, "archive": [], "wallet": {"cash": null, "realised": 0.0, "realised_assumed": 0.0, "wins": 0, "losses": 0, "peak": 0.0, "trades": []}}}
+{"date": "2026-08-23", "state": {"pos": {}, "archive": [], "wallet": {"cash": 0.0, "realised": 0.0, "realised_assumed": 0.0, "wins": 0, "losses": 0, "peak": 0.0, "trades": []}}}

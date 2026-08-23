@@ -60,8 +60,8 @@ whop:swing|https://whop.com/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/
 
 # New server (8/23) — in SHADOW while the parser learns their wording:
 # read + judged in the log, nothing fires until graduated.
-911389167169191946|https://discord.com/channels/911385966864896081/911389167169191946|NewSV-1|New Server
-911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|NewSV-2|New Server
-1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|NewSV-3|New Server
-1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|NewSV-4|New Server
-983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|NewSV equity-swings|New Server
+911389167169191946|https://discord.com/channels/911385966864896081/911389167169191946|Platinum-1|Platinum Trading
+911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|Platinum-2|Platinum Trading
+1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum-3|Platinum Trading
+1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum-4|Platinum Trading
+983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity-swings|Platinum Trading
