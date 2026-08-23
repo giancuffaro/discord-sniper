@@ -1342,9 +1342,11 @@ class WebullOptions:
         if ask and bid and float(ask) > 0 and float(bid) > 0:
             _a, _b = float(ask), float(bid)
             _mid = (_a + _b) / 2.0
-            if _mid > 0 and (_a - _b) / _mid > 0.35:
+            # 20% ceiling (8/22, was 35%): past ~20% of the price you're
+            # donating, not trading — the pros' consensus and his call.
+            if _mid > 0 and (_a - _b) / _mid > 0.20:
                 raise Refused(
-                    "the spread on %s is %.2f/%.2f — %.0f%% of the price. A "
+                    "the spread on %s is %.2f/%.2f — %.0f%% of the price (20%% cap). A "
                     "fill inside that is an instant paper loss, so nothing "
                     "was sent. (Their call may be fine; this contract just "
                     "isn't tradeable at a sane price right now.)"
