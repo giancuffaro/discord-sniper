@@ -3431,6 +3431,20 @@ def connect_broker(quiet=False):
     build_book()
     load_state()      # swings survive restarts
     _connect_extras()  # more Webull accounts, each with its own book (8/18)
+    # The Webull SDK's own debug log wrote ~700MB in a week (8/23). Quiet it
+    # to warnings-only, and sweep rotations older than 2 days at every boot.
+    try:
+        import logging
+        for _nm in list(logging.root.manager.loggerDict):
+            if "webull" in _nm.lower():
+                logging.getLogger(_nm).setLevel(logging.WARNING)
+        _cut = time.time() - 2 * 86400
+        for _fn in os.listdir(HERE):
+            if _fn.startswith("webull_trade_sdk.log.") \
+                    and os.path.getmtime(os.path.join(HERE, _fn)) < _cut:
+                os.remove(os.path.join(HERE, _fn))
+    except Exception:                                   # noqa: BLE001
+        pass
 
 
 def _install_network_failfast():

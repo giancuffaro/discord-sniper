@@ -1078,6 +1078,10 @@ async function oneTabPerChannel() {
   for (const t of tabs) {
     let path;
     try { path = new URL(t.url).pathname; } catch (e) { continue; }
+    // Whop drops the trailing slash once the page loads, so "/app/" (still
+    // loading) and "/app" (loaded) counted as two different rooms and BOTH
+    // survived — "5 open, 5 loading" (8/23). Normalize before matching.
+    path = path.replace(/\/+$/, "").toLowerCase();
     (byChannel[path] = byChannel[path] || []).push(t);
   }
   for (const path of Object.keys(byChannel)) {
@@ -1802,14 +1806,16 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       c.adding_is_entry = true;   // Jonny's "adding" opens a position
     }
 
-    const roomLive = !!((c.channel_live || {})[String(msg.channelId || "")]);
+    // ALWAYS LIVE (his call, 8/23: "channels always toggled all live as soon
+    // as I open everything"). Every room is REAL MONEY unless he explicitly
+    // flips it to testing in the popup (stored false) — the old default was
+    // the reverse. Shadow rooms still fire nothing at all.
+    const _lv = (c.channel_live || {})[String(msg.channelId || "")];
+    const roomLive = _lv !== false;
     sig.live = roomLive;
-    // Round-number pullback is ONE global switch now (his ask, 8/17: "1
-    // toggle for all channels") — Strategies tab. ON = every entry waits
-    // for the stock to touch the round number (managed symbols only; the
-    // bridge routes anything else instant on its own). Spends whatever the
-    // room's TESTING/LIVE switch says.
-    sig.entry_mode = c.rn_pullback_all ? "pullback" : null;
+    // Round-number pullback is ONE global switch (his ask, 8/17), and since
+    // 8/23 it COMES UP ON — only an explicit off in Strategies turns it off.
+    sig.entry_mode = (c.rn_pullback_all !== false) ? "pullback" : null;
     sig.channelId = String(msg.channelId || "");
     sig.room = ROOM_LABELS[String(msg.channelId || "")] ||
                String(msg.channelId || "");

@@ -308,6 +308,11 @@ if defined CHROME (
     )
   )
   echo         All !TABN! rooms opened.
+  rem  Above-Normal priority for every Chrome process (8/23) - the Task
+  rem  Manager bump that never survives a restart, reapplied each morning.
+  timeout /t 5 /nobreak >nul
+  powershell -NoProfile -Command "Get-Process chrome -ErrorAction SilentlyContinue | ForEach-Object { $_.PriorityClass = 'AboveNormal' }" >nul 2>&1
+  echo         Chrome bumped to Above-Normal priority.
 ) else (
   start "" "!DISCORD_URL!"
   for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (

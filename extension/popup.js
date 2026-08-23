@@ -886,7 +886,7 @@ if ($("aioff")) $("aioff").style.display = "none";   // no off switch — always
  * rn_pullback_all and stamps entry_mode on every entry it fires. */
 if ($("rnAll")) $("rnAll").onclick = async () => {
   const s = await getSettings();
-  await patch({ rn_pullback_all: !s.rn_pullback_all });
+  await patch({ rn_pullback_all: s.rn_pullback_all === false });
 };
 
 /* Double-check entries — a browser-side toggle; the key stays on the bridge. */
@@ -1207,7 +1207,9 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
     'cursor:pointer;border:1px solid #f87171;background:transparent;color:#f87171">' +
     'all LIVE</button></div>';
   box.innerHTML = master + ids.map(id => {
-    const live = !!(channelLive || {})[id];
+    // absent = LIVE now (8/23, his call: rooms come up live; only an
+    // explicit false means testing)
+    const live = (channelLive || {})[id] !== false;
     const pull = !!(channelPull || {})[id];
     // Server-switched-off rooms: visible but dimmed with a plain "off" tag
     // (his ask, 8/17) — no controls to misclick while the room isn't read.
@@ -1237,6 +1239,7 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
     const { settings } = await chrome.storage.local.get("settings");
     const s = settings || {};
     s.channel_live = {};
+    ids.forEach(id => { s.channel_live[id] = false; });
     await chrome.storage.local.set({ settings: s });
     renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
   };
@@ -1275,8 +1278,7 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
       const s = settings || {};
       s.channel_live = s.channel_live || {};
       const id = btn.dataset.room;
-      if (s.channel_live[id]) delete s.channel_live[id];
-      else s.channel_live[id] = true;
+      s.channel_live[id] = (s.channel_live[id] === false);
       await chrome.storage.local.set({ settings: s });
       renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
     };
@@ -1376,7 +1378,7 @@ async function render() {
   // The ONE Round-number toggle (Strategies tab) — painted every pass.
   const rnBtn = $("rnAll");
   if (rnBtn) {
-    const rnOn = !!s.rn_pullback_all;
+    const rnOn = s.rn_pullback_all !== false;   // comes up ON (8/23)
     rnBtn.textContent = rnOn ? "ON" : "off";
     rnBtn.className = "tgl " + (rnOn ? "live" : "safe");
   }
