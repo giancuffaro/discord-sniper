@@ -78,7 +78,6 @@ const ROOM_LABELS = {
   "769797819770732554": "Options Watchlist",
   "1137873895832174672": "Futures Alerts",
   "1135947475912495216": "MR.TOPHAT",
-  "1276616766004658226": "Platinum Trading",
   "808127664022880297": "Spread Alerts",
   "769797593316065280": "Stock Alerts",
   "771902435680845845": "Member Alerts",

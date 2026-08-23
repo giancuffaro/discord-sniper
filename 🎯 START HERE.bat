@@ -273,18 +273,37 @@ if defined CHROME (
   rem  Give Chrome itself a moment to be up before the flood.
   timeout /t 6 /nobreak >nul
   rem  THREE AT A TIME (his ask, 8/23): all ~40 rooms at once choked Chrome
-  rem  and tabs sat stuck/unloaded. Open 3, breathe 8s so they actually
-  rem  load, open the next 3. Whole list takes ~2 minutes and every tab
-  rem  comes up alive.
+  rem  and tabs sat stuck/unloaded. Open 3, breathe 10s so they actually
+  rem  load, open the next 3. DISCORD rooms first, WHOP rooms LAST (8/23) -
+  rem  by the time the browser is heavy with tabs, the slower Whop pages get
+  rem  the tail end where the extra weight hurts least.
   set /a TABN=0
   for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
     if not "%%A"=="" (
-      start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" "%%B"
-      set /a TABN+=1
-      set /a TABMOD=TABN %% 3
-      if !TABMOD! EQU 0 (
-        echo         ...!TABN! rooms open, letting them load...
-        timeout /t 8 /nobreak >nul
+      set "RID=%%A"
+      if /i not "!RID:~0,5!"=="whop:" (
+        start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" "%%B"
+        set /a TABN+=1
+        set /a TABMOD=TABN %% 3
+        if !TABMOD! EQU 0 (
+          echo         ...!TABN! rooms open, letting them load...
+          timeout /t 10 /nobreak >nul
+        )
+      )
+    )
+  )
+  echo         Discord rooms open - now the Whop rooms...
+  for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+    if not "%%A"=="" (
+      set "RID=%%A"
+      if /i "!RID:~0,5!"=="whop:" (
+        start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" "%%B"
+        set /a TABN+=1
+        set /a TABMOD=TABN %% 3
+        if !TABMOD! EQU 0 (
+          echo         ...!TABN! rooms open, letting them load...
+          timeout /t 10 /nobreak >nul
+        )
       )
     )
   )
