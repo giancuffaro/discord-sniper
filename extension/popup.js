@@ -889,6 +889,13 @@ if ($("rnAll")) $("rnAll").onclick = async () => {
   await patch({ rn_pullback_all: s.rn_pullback_all === false });
 };
 
+/* Voice executing — fires the spoken call (8/24). OFF by default; only this
+ * switch arms it. Real-money red when on, like the room switches. */
+if ($("voiceFire")) $("voiceFire").onclick = async () => {
+  const s = await getSettings();
+  await patch({ voice_fire: !(s.voice_fire === true) });
+};
+
 /* Double-check entries — a browser-side toggle; the key stays on the bridge. */
 async function paintVerify() {
   let on = true;   // ON by default now (8/13); still toggleable off
@@ -1376,6 +1383,12 @@ async function render() {
   paintBridgeLive();
 
   // The ONE Round-number toggle (Strategies tab) — painted every pass.
+  const vfBtn = $("voiceFire");
+  if (vfBtn) {
+    const vfOn = s.voice_fire === true;   // comes up OFF (8/24)
+    vfBtn.textContent = vfOn ? "ON" : "off";
+    vfBtn.className = "tgl money " + (vfOn ? "live" : "safe");
+  }
   const rnBtn = $("rnAll");
   if (rnBtn) {
     const rnOn = s.rn_pullback_all !== false;   // comes up ON (8/23)

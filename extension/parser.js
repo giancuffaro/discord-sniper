@@ -594,7 +594,7 @@ function parseSignal(text, cfg) {
   // premium. Rides in their_stop; the bridge's stock watcher closes the
   // option when the stock crosses it. Mirrors signals.py.
   if (isOption && (s.their_stop === null || s.their_stop === undefined)) {
-    const mu = /\b(?:hard\s+)?(?:st[o0]p(?:\s*loss)?|sl)\s+(?:is\s+)?(?:under|below|above|over)\s+\$?(\d[\d,]*(?:\.\d+)?)\b/.exec(low);
+    const mu = /\b(?:hard\s+)?(?:st[o0]p(?:\s*loss)?|sl)\s*:?\s+(?:is\s+)?(?:under|below|above|over)\s+\$?(\d[\d,]*(?:\.\d+)?)\b/.exec(low);
     if (mu) s.their_stop = parseFloat(mu[1].replace(/,/g, ""));
   }
   if (isOption && /\b(sell|selling|sold|sto)\b/.test(low)

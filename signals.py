@@ -928,7 +928,7 @@ def parse(text, author="", channel="", cfg=None):
     # the premium. The number rides in their_stop; the bridge's stock
     # watcher closes the option when the stock crosses it. Mirrors parser.js.
     if is_option and s.their_stop is None:
-        _mu = re.search(r"\b(?:hard\s+)?(?:st[o0]p(?:\s*loss)?|sl)\s+(?:is\s+)?"
+        _mu = re.search(r"\b(?:hard\s+)?(?:st[o0]p(?:\s*loss)?|sl)\s*:?\s+(?:is\s+)?"
                         r"(?:under|below|above|over)\s+\$?"
                         r"(\d[\d,]*(?:\.\d+)?)\b", low)
         if _mu:

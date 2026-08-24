@@ -24,6 +24,21 @@ const RECENT_MSGS = new Map();
 const MSG_TTL_MS = 5 * 60 * 1000;
 // One entry in flight per CONTRACT — see the AAPL 315C double-buy (8/18).
 const OPEN_INFLIGHT = new Map();
+// What the VOICE ears already bought — "SYM|side" and "SYM|side|strike" ->
+// ts. The scribe types the same call seconds after it's spoken; within this
+// window the typed copy is a repeat of a trade we're already in, keyed on
+// the contract because the typed author (the scribe) never matches the
+// voice room's label. 5 minutes, then the map forgets.
+const VOICE_TOOK = new Map();
+const VOICE_TOOK_MS = 5 * 60 * 1000;
+function voiceTookThis(sig) {
+  const now = Date.now();
+  for (const [k, t] of VOICE_TOOK) if (now - t > VOICE_TOOK_MS) VOICE_TOOK.delete(k);
+  if (!sig || !sig.symbol) return false;
+  const base = sig.symbol + "|" + (sig.side || "");
+  return VOICE_TOOK.has(base) ||
+         (sig.strike != null && VOICE_TOOK.has(base + "|" + sig.strike));
+}
 function seenMessage(msg) {
   const key = String(msg.mid ||
     (msg.channelId + "|" + msg.postedAt + "|" + (msg.author || "") + "|" + msg.text));
@@ -1399,14 +1414,47 @@ async function handleOffscreen(msg) {
     //    regex is the free fast path when it already reads it.
     if (!looksTradeLike(msg.text)) return;
     const c = await cfg();
-    let canon = null, conf = 0;
+    let canon = null, conf = 0, regexHit = false;
     const sig = parseSignal(msg.text, c);
-    if (sig.action && sig.symbol) canon = msg.text.trim();
+    if (sig.action && sig.symbol) { canon = msg.text.trim(); regexHit = true; }
     if (!canon) { const rd = await aiRead(msg.text, c); if (rd) { canon = rd.canonical; conf = rd.confidence; } }
-    if (canon) {
-      const pct = conf ? " (" + Math.round(conf * 100) + "%)" : "";
-      await addLog({ kind: "update", why: "🎙 VOICE CALL (" + label + ") → " + canon + pct,
-                     text: msg.text, author: label });
+    if (!canon) return;
+    const pct = conf ? " (" + Math.round(conf * 100) + "%)" : "";
+    await addLog({ kind: "update", why: "🎙 VOICE CALL (" + label + ") → " + canon + pct,
+                   text: msg.text, author: label });
+    // VOICE FIRES (his call, 8/24): the spoken call beats the scribe's typed
+    // copy by seconds — that's the whole edge. High-confidence only: the
+    // regex reading the words directly counts as confident; an AI read needs
+    // 85%+. A misheard strike is the risk, so every normal guard downstream
+    // (spread, NO-OTM, cash, stop-at-birth) still applies, and entries need
+    // a strike (or a futures root) — "buying some calls" is not an order.
+    // Installed but OFF until he flips the popup switch (his call, 8/24).
+    if (c.voice_fire !== true) return;
+    const vs = regexHit ? sig : parseSignal(canon, c);
+    if (!vs.action || !vs.symbol || vs.fire === false) return;
+    if (!regexHit && conf < 0.85) {
+      await addLog({ kind: "skipped", why: "🎙 heard a call but only " +
+                     Math.round(conf * 100) + "% sure of the words — not firing " +
+                     "real money on a maybe (typed copy will fire normally)",
+                     text: canon, author: label });
+      return;
+    }
+    if ((vs.action === "OPEN" || vs.action === "ADD") &&
+        vs.strike == null && vs.kind !== "future") return;
+    vs.live = true;                        // voice rooms are live rooms
+    vs.entry_mode = (vs.action === "OPEN" && c.rn_pullback_all !== false)
+      ? "pullback" : null;
+    vs.caller = vs.caller || label;
+    vs.room = "🎙 " + label;
+    const vres = await sendOrder(vs, vs.qty || 1, c, label);
+    await addLog({ kind: vres && vres.ok ? "sent" : "failed",
+                   what: "🎙 " + vs.action + " " + vs.symbol + " — voice, " + label,
+                   why: (vres && vres.msg) || "", text: canon, author: label });
+    if (vres && vres.ok && (vs.action === "OPEN" || vs.action === "ADD")) {
+      const now = Date.now();
+      VOICE_TOOK.set(vs.symbol + "|" + (vs.side || ""), now);
+      if (vs.strike != null)
+        VOICE_TOOK.set(vs.symbol + "|" + (vs.side || "") + "|" + vs.strike, now);
     }
   }
 }
@@ -1851,6 +1899,19 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     const _lv = (c.channel_live || {})[String(msg.channelId || "")];
     const roomLive = _lv !== false;
     sig.live = roomLive;
+    // The voice ears already took this one (8/24): the spoken call fired
+    // seconds ago; this typed line is the scribe's copy of it. Entries only —
+    // exits and trims always pass, doubled exits are idempotent and a missed
+    // exit is the expensive mistake.
+    if ((sig.action === "OPEN" || sig.action === "ADD") && voiceTookThis(sig)) {
+      await addLog({ kind: "skipped",
+                     what: sig.action + " " + sig.symbol + " — typed copy",
+                     why: "🎙 the voice ears already fired this call seconds ago — " +
+                          "the typed version is the scribe catching up, not a new trade",
+                     text: msg.text, author: msg.author });
+      reply({ ok: true });
+      return;
+    }
     // Round-number pullback is ONE global switch (his ask, 8/17), and since
     // 8/23 it COMES UP ON — only an explicit off in Strategies turns it off.
     sig.entry_mode = (c.rn_pullback_all !== false) ? "pullback" : null;

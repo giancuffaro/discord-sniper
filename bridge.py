@@ -1935,6 +1935,23 @@ def _place_impl(order):
                                    or {}).get("bracket_entries", True):
                     _brk = float((CFG.get("strategy") or {})
                                  .get("stop_loss_pct", 10))
+                    # SWING stops (his call, 8/24 — the HOOD lesson: a
+                    # 3-week swing died in 3 minutes on a scalp's -10%).
+                    # A swing with THEIR stock level runs on that level
+                    # (the underlying watcher, armed in place()) and takes
+                    # no premium stop; a swing without one gets a wide
+                    # -25% so it can breathe. Scalps keep the -10%.
+                    if order.get("swing"):
+                        if order.get("their_stop"):
+                            _brk = None
+                            note("SWING    %s — no premium stop; running "
+                                 "their stock level %g instead"
+                                 % (order["symbol"],
+                                    float(order["their_stop"])))
+                        else:
+                            _brk = 25.0
+                            note("SWING    %s — wide -25%% stop (swing, no "
+                                 "level given)" % order["symbol"])
                 ticket = client.buy(order["symbol"], order.get("side"),
                                     order.get("strike"), order.get("expiry"), qty,
                                     their_price=order.get("limit"),

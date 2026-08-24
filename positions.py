@@ -1584,6 +1584,33 @@ class Book:
             _p = self._pos.get(key) or {}
             if _p.get("no_auto_stop") or (str(_p.get("symbol") or "").upper(), _p.get("strike"), str(_p.get("expiry") or "")) in self.broker_blocked:
                 return
+        # SWING with THEIR stock level (8/24): no premium stop at all — the
+        # bridge's underlying watcher guards it at their level; a resting
+        # premium stop here is the scalp-stop that killed the HOOD swing in
+        # 3 minutes. A born bracket leg, if one slipped through, is
+        # cancelled so it can't sell the swing on noise.
+        _wb0 = _bid0 = None
+        with self._lock:
+            _sp = self._pos.get(key)
+            _is_swing_lvl = bool(_sp and _sp.get("swing")
+                                 and _sp.get("their_stop")
+                                 and _sp.get("kind") != "future")
+            if _is_swing_lvl:
+                _wb0 = self._wbfor(_sp)
+                _bid0 = _sp.get("bracket_stop_id")
+                _sp["bracket_stop_id"] = None
+                _sp["stop"] = None
+                self._event(key, "stop-set",
+                            "%s — SWING: no premium stop; their stock level "
+                            "%g is the guard (watched on this PC)"
+                            % (sym, float(_sp["their_stop"])))
+        if _is_swing_lvl:
+            if _bid0 and _wb0 is not None:
+                try:
+                    _wb0.cancel(_bid0)
+                except Exception:                       # noqa: BLE001
+                    pass
+            return
         stop_price = max(0.01, round(float(fill) * (1 - self.stop_pct / 100), 2))
         oid = None
         with self._lock:
@@ -1597,18 +1624,33 @@ class Book:
             # it later (cancel+replace path, unchanged).
             born = p.get("bracket_stop_id") if p else None
             if born and not old:
-                p["stop"] = float(p.get("bracket_stop") or stop_price)
-                p["stop_order_id"] = str(born)
-                p["bracket_stop_id"] = None
-                if not p.get("watching"):
-                    p["watching"] = True
-                    threading.Thread(target=self._watchdog, args=(key,),
-                                     daemon=True).start()
-                self._event(key, "stop-set",
-                            "%s — stop was born WITH the order and is resting "
-                            "at Webull at %.2f (one group, no naked moment)"
-                            % (sym, float(p["stop"])))
-                return
+                _bs = float(p.get("bracket_stop") or stop_price)
+                # REBASE (8/24, the HOOD lesson): the bracket leg was priced
+                # off the ORDER (7.86 -> stop 7.07) but the fill came better
+                # (7.50) — a 6% stop wearing 10% clothes. When the born stop
+                # sits tighter than the fill deserves, cancel it (below, via
+                # the normal path) and place a fresh one off the FILL.
+                if _bs > stop_price + 0.02:
+                    old = str(born)
+                    p["bracket_stop_id"] = None
+                    self._event(key, "stop-set",
+                                "%s — filled better than the bid the bracket "
+                                "was priced off; moving the stop from %.2f "
+                                "to %.2f (-%.0f%% of the FILL)"
+                                % (sym, _bs, stop_price, self.stop_pct))
+                else:
+                    p["stop"] = _bs
+                    p["stop_order_id"] = str(born)
+                    p["bracket_stop_id"] = None
+                    if not p.get("watching"):
+                        p["watching"] = True
+                        threading.Thread(target=self._watchdog, args=(key,),
+                                         daemon=True).start()
+                    self._event(key, "stop-set",
+                                "%s — stop was born WITH the order and is resting "
+                                "at Webull at %.2f (one group, no naked moment)"
+                                % (sym, float(p["stop"])))
+                    return
         if wb is not None and not self._sim(p):
             # Averaging in moves the stop, so the old one has to go first or
             # you end up with two resting sells and get flattened twice.
