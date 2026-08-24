@@ -2342,6 +2342,7 @@ class Handler(BaseHTTPRequestHandler):
                 # says 401, whatever is pasted.
                 "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key"))
                               and AI_KEY_OK is not False,
+                "benched_callers": list(CFG.get("benched_callers") or []),
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}
@@ -2918,7 +2919,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "message": "unreadable"})
         _known = ("futures_enabled", "simulation", "paper_trading",
                   "ai_enabled", "ai_api_key", "ai_model", "strategy",
-                  "futures_brokers", "webull_extra_accounts", "deepgram_key")
+                  "futures_brokers", "webull_extra_accounts", "deepgram_key",
+                  "benched_callers")
         if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
@@ -3068,6 +3070,15 @@ class Handler(BaseHTTPRequestHandler):
                 _connect_extras()
             except Exception as _e:                     # noqa: BLE001
                 note("ACCT     connect failed: %s" % str(_e)[:120])
+
+        # THE BENCH is HIS lever only (8/23: "I want to be the only one that
+        # can turn them off, from the app"). The popup sends the whole list.
+        if isinstance(body.get("benched_callers"), list):
+            _bl = [str(x).strip().lower()[:40]
+                   for x in body["benched_callers"] if str(x).strip()]
+            data["benched_callers"] = _bl
+            CFG["benched_callers"] = _bl
+            note("BENCH    %s" % (", ".join(_bl) or "empty — everyone plays"))
 
         # Deepgram (voice ears) key — saved on this PC so it survives any
         # browser wipe or extension reinstall (his ask, 8/20: "put it once
