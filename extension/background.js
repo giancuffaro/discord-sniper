@@ -53,17 +53,20 @@ function seenMessage(msg) {
  * so every whop room parses with bare_pct_trims off. Unknown whop rooms
  * stay capture-only until they're named here. */
 const WHOP_ROOMS = [
-  { slug: "day-trades",         id: "whop:day-trades",   name: "Whop Day Trades" },
-  { slug: "futures-",           id: "whop:futures",      name: "Whop Futures" },
-  { slug: "high-risk",          id: "whop:high-risk",    name: "Whop High Risk" },
-  { slug: "fst-2-k-challenge",  id: "whop:2k-challenge", name: "Whop 2K Challenge" },
-  { slug: "swing-trades",       id: "whop:swing",        name: "Whop Swing Trades" },
-  { slug: "long-term",          id: "whop:long-term",    name: "Whop Long Term" }
+  // hash = the stable room id Whop keeps in EVERY url shape — the new
+  // profile serves "/firststeptrading/exp_<hash>/app" with no slug at all
+  // (8/23), so matching by slug alone lost every room's canonical id.
+  { slug: "day-trades",        hash: "cvgzKYDmcUEDGh", id: "whop:day-trades",   name: "Whop Day Trades" },
+  { slug: "futures-",          hash: "26GaLgZVMzB2PL", id: "whop:futures",      name: "Whop Futures" },
+  { slug: "high-risk",         hash: "hpXJymtw0yMqzB", id: "whop:high-risk",    name: "Whop High Risk" },
+  { slug: "fst-2-k-challenge", hash: "Yg9HGTPsXPhQ5D", id: "whop:2k-challenge", name: "Whop 2K Challenge" },
+  { slug: "swing-trades",      hash: "6Q7acPPpFb6CyZ", id: "whop:swing",        name: "Whop Swing Trades" },
+  { slug: "long-term",         hash: "sMzuBmyHSwKzFW", id: "whop:long-term",    name: "Whop Long Term" }
 ];
 function whopRoomOf(channelId) {
   const p = String(channelId || "");
   if (!p.startsWith("whop:")) return null;
-  return WHOP_ROOMS.find(r => p.includes(r.slug)) || null;
+  return WHOP_ROOMS.find(r => p.includes(r.slug) || p.includes(r.hash)) || null;
 }
 
 /* Every room's plain name, for the per-room scoreboard he asked for. */
@@ -1645,7 +1648,17 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // This is the graduation exam: a day of "would have" lines to hold up
     // against what Aristotle actually did.
     if (SHADOW.has(String(msg.channelId || ""))) {
-      const sv = parseSignal(msg.text, c);
+      let sv = parseSignal(msg.text, c);
+      // Shadow grading gets the SAME brain as live rooms (8/23): when the
+      // regex shrugs, the AI reader takes a look — otherwise a messy format
+      // grades as silence instead of "would have traded X".
+      if (!sv.action && !msg.history && !msg.reply && looksTradeLike(msg.text)) {
+        const rd = await aiRead(msg.text, c);
+        if (rd && rd.canonical) {
+          const sv2 = parseSignal(rd.canonical, c);
+          if (sv2.action) sv = sv2;
+        }
+      }
       if (sv.action) {
         await addLog({ kind: "ignored",
                        what: "shadow · " + (sv.caller || msg.author || "?"),
