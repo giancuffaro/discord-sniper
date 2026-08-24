@@ -1389,13 +1389,11 @@ async function handleOffscreen(msg) {
   if (msg.type === "TRANSCRIPT") {
     if (!msg.isFinal) return;              // write down only finalized segments
     const label = msg.label || ("tab " + msg.id);
-    // 1) write EVERYTHING down, fast — the transcript itself, tagged by room.
+    // 1) write EVERYTHING down, fast — but only to the CAPTURE (the corpus
+    //    file used for tuning). His call, 8/24: "if its a trash message,
+    //    there is no need to fill the log" — the popup log gets a line only
+    //    when the words turn out to be an actual call (below).
     capture(msg.text, "🎙 " + label, String(msg.id), Date.now());
-    // The transcript lives in `why` (with the 🎙 tag). It used to ALSO go in
-    // `text`, and the log renders both — so every spoken line was written down
-    // twice. Keep it in one place; the author still tags the room.
-    await addLog({ kind: "voice", why: "🎙 " + label + ": " + msg.text, text: "",
-                   author: label });
     // 2) turn a spoken call into the SAME clean format as a typed one, so it's
     //    easy to read and execute. The AI reader gives one uniform shape; the
     //    regex is the free fast path when it already reads it.
@@ -1642,6 +1640,32 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     if (msg.history) {
       reply({ ok: true });
       return;
+    }
+
+    // STALE-ENTRY gate (8/24). The MSFT 480P lesson: the call came at 9:34,
+    // was rightly skipped (already in MSFT), and 8 minutes later — after the
+    // first trade closed and a bridge restart — the re-scan re-read the SAME
+    // message (its 5-min dedupe had expired) and bought it. By then the
+    // trader had already stopped out. A scalp entry older than 3 minutes is
+    // an artifact of a re-scan or a slow tab, never a fresh call — refused
+    // here for OPEN/ADD only. Exits and trims still pass at any age: late
+    // is better than never when it's about getting OUT.
+    {
+      const _pa = Number(msg.postedAt);
+      if (isFinite(_pa) && _pa > 946684800000 &&
+          Date.now() - _pa > 3 * 60 * 1000) {
+        const _st = parseSignal(msg.text, c);
+        if (_st && (_st.action === "OPEN" || _st.action === "ADD")) {
+          await addLog({ kind: "ignored",
+                         what: "stale · " + (_st.caller || msg.author || "?"),
+                         why: "that call is " + Math.round((Date.now() - _pa) / 60000) +
+                              " minutes old (a re-scan or slow tab brought it back) — " +
+                              "entries don't fire late, so nothing was sent",
+                         text: msg.text, author: msg.author });
+          reply({ ok: true });
+          return;
+        }
+      }
     }
 
     // Shadow rooms get read for real — parsed with the same brain as the

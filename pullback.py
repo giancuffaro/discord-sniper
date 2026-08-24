@@ -95,7 +95,11 @@ class Pullback:
         self.entry_poll = float(entry_poll_seconds)
         self.manage_seconds = float(manage_seconds)
         self._lock = threading.Lock()
-        self._armed = {}        # symbol -> True while a watcher is waiting
+        # 8/24: keyed per trader+contract, not per symbol. Vero's QQQ 705P
+        # (a winner — trimmed +29%) was refused because Mike's QQQ 706P
+        # pullback was still armed. Different trader, different contract,
+        # different trade — only the SAME call relayed twice should dedupe.
+        self._armed = {}        # "trader|sym|strike|side|expiry" -> True
 
     # -- entry ----------------------------------------------------------------
     def start(self, order):
@@ -104,19 +108,22 @@ class Pullback:
         alerts seconds apart can't both buy the same dip."""
         sym = str(order.get("symbol") or "").upper()
         side = order.get("side")
+        akey = "|".join(str(order.get(k) or "") for k in
+                        ("trader", "strike", "side", "expiry")).lower() + "|" + sym
         if sym not in MANAGED:
             return False, ("%s isn't a round-number symbol — the normal "
                            "instant entry should have handled it" % sym)
         with self._lock:
-            if self._armed.get(sym):
-                return False, ("already waiting on a %s pullback — not arming "
-                               "a second one" % sym)
-            self._armed[sym] = True
+            if self._armed.get(akey):
+                return False, ("already waiting on this exact %s pullback "
+                               "(same trader, same contract) — not arming it "
+                               "twice" % sym)
+            self._armed[akey] = True
         try:
             px = float(self.quote_fn(sym))
         except Exception as e:                          # noqa: BLE001
             with self._lock:
-                self._armed.pop(sym, None)
+                self._armed.pop(akey, None)
             return False, ("pullback needs a live stock quote for %s and "
                            "couldn't get one (%s) — nothing armed, nothing "
                            "bought. If this keeps happening the stock-quote "
@@ -127,14 +134,14 @@ class Pullback:
                                       px, "a dip" if is_call(side) else "a bounce",
                                       target, self.timeout))
         t = threading.Thread(target=self._wait_entry,
-                             args=(dict(order), sym, side, target),
+                             args=(dict(order), sym, side, target, akey),
                              daemon=True)
         t.start()
         return True, ("waiting for %s to touch $%.0f (stock at %.2f) — enters "
                       "there or skips in %d min" % (sym, target, px,
                                                     int(self.timeout // 60)))
 
-    def _wait_entry(self, order, sym, side, target):
+    def _wait_entry(self, order, sym, side, target, akey):
         deadline = time.time() + self.timeout
         misses = 0
         try:
@@ -163,7 +170,7 @@ class Pullback:
                       "as designed" % (sym, target, int(self.timeout // 60)))
         finally:
             with self._lock:
-                self._armed.pop(sym, None)
+                self._armed.pop(akey, None)
 
     # -- exit -----------------------------------------------------------------
     def _manage_exit(self, order, sym, side, under_entry):

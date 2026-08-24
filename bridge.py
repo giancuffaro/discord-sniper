@@ -3290,11 +3290,45 @@ class Handler(BaseHTTPRequestHandler):
         if order.get("live") and order.get("action") != "TRIM" \
                 and order.get("kind") != "future" \
                 and not (order.get("strike") and order.get("expiry")):
-            note("BLOCKED  %s %s arrived with no strike/expiry" %
-                 (order.get("action"), sym))
-            return self._reply(400,
-                "that order didn't say which contract (no strike or expiry), so "
-                "nothing was sent. Close it in the Webull app if you're in it.")
+            # 8/24: Bullwinkle's bare "OUT NVDA 4.25" landed here and got
+            # BLOCKED while both accounts sat in his NVDA 207.5C — the book
+            # KNEW the contract; the gate never asked it. A bare exit now
+            # resolves against the book: the trader's own position in that
+            # ticker first, else the only position in it. Two different
+            # contracts held with no owner match still block — guessing which
+            # to sell is worse than asking.
+            _cands = []
+            if BOOK is not None:
+                try:
+                    _cands = [(k, BOOK.info(k)) for k in BOOK.find_by_symbol(sym)]
+                    _cands = [(k, p) for k, p in _cands if p]
+                    _who = str(order.get("trader") or "").strip().lower()
+                    if _who and len(_cands) > 1:
+                        _own = [(k, p) for k, p in _cands
+                                if _who in str(p.get("who") or k).lower()]
+                        if _own:
+                            _cands = _own
+                except Exception:                       # noqa: BLE001
+                    _cands = []
+            if len(_cands) == 1:
+                _k, _p = _cands[0]
+                order["strike"] = _p.get("strike")
+                order["expiry"] = _p.get("expiry")
+                if not order.get("side"):
+                    order["side"] = _p.get("side")
+                note("RESOLVED %s %s — bare exit matched to your held %s %s%s "
+                     "%s" % (order.get("action"), sym, sym,
+                             order.get("strike"),
+                             "C" if str(order.get("side") or "").upper().startswith("CALL") else "P",
+                             order.get("expiry") or ""))
+            else:
+                note("BLOCKED  %s %s arrived with no strike/expiry%s" %
+                     (order.get("action"), sym,
+                      " (you hold %d different %s contracts — say which)"
+                      % (len(_cands), sym) if len(_cands) > 1 else ""))
+                return self._reply(400,
+                    "that order didn't say which contract (no strike or expiry), so "
+                    "nothing was sent. Close it in the Webull app if you're in it.")
 
         # An expiry in the recent past is never a real call — it's a stale
         # repost, a scrape of an old message, or a typo. On Aug 3 a July 31

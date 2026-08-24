@@ -682,8 +682,24 @@ class WebullOptions:
                   (([sym], "US_STOCK"), {}), ((), {"symbols": sym}),
                   ((), {"symbols": [sym]}),
                   ((), {"symbols": [sym], "category": "US_STOCK"})]
-        for name, fn in fns:
-            for args, kw in shapes:
+        # 8/24: remember the combo that worked. The hunt used to run in FULL
+        # on every call — each wrong shape a real HTTP request that 417'd and
+        # logged an error. A 1s pullback poll turned that into ~13 failing
+        # requests a second (9,690 errors in 12 min) and chewed rate limit.
+        _w = getattr(self, "_stock_quote_winner", None)
+        if _w is not None:
+            _wname, _wsi = _w
+            _wfn = dict(fns).get(_wname)
+            if _wfn is not None and _wsi < len(shapes):
+                _pairs = [(_wname, _wfn, shapes[_wsi])]
+            else:
+                _pairs = None
+        else:
+            _pairs = None
+        hunt = _pairs or [(n, f, sh) for n, f in fns
+                          for sh in shapes]
+        for _hi, (name, fn, (args, kw)) in enumerate(hunt):
+            if True:
                 try:
                     res = fn(*args, **kw)
                 except TypeError:
@@ -707,9 +723,14 @@ class WebullOptions:
                         px = None
                 try:
                     if px not in (None, "", 0, "0", 0.0):
+                        self._stock_quote_winner = (name, shapes.index((args, kw)))
                         return float(px)
                 except (TypeError, ValueError):
                     continue
+        if _pairs:
+            # the remembered winner went stale — forget it and hunt fresh once
+            self._stock_quote_winner = None
+            return self.stock_price(symbol)
         raise Refused("couldn't get a stock quote for %s. (%s)"
                       % (sym, " | ".join(errors[:3])[:120]))
 

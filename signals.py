@@ -894,6 +894,17 @@ def parse(text, author="", channel="", cfg=None):
     if s.action != "OPEN" or s.kind == "future":
         return s
     low = (s.clean or "").lower()
+    # HARD VETO (8/24, mirrors parser.js): a trader saying NO outranks every
+    # entry pattern. Bullwinkle's "SNDK $1500 C ... I AM NOT GETTING IN THIS
+    # TOO EXPINSIVE" parsed as a buy; only low cash refused it.
+    for _hv in ("not getting in", "not taking", "not entering", "not buying",
+                "too expensive", "too expinsive", "sitting this",
+                "i'll pass", "ill pass"):
+        if _hv in low:
+            s.fire = False
+            s.action = None
+            s.why = ('the trader passed on it ("%s") — not a call' % _hv)
+            return s
     is_option = s.side in ("CALLS", "PUTS") or s.strike is not None
     # A PROGRESS UPDATE wearing an entry's clothes (8/18): "KO 08/21 $89
     # Call @$0.62, up more than 90%!, my order filled little earlier for
@@ -902,7 +913,7 @@ def parse(text, author="", channel="", cfg=None):
     # lap about a trade ALREADY made. A real entry never brags about its
     # own gain in the same breath. Mirrors parser.js.
     if s.action == "OPEN" and re.search(
-            r"\bup\s+(?:more\s+than\s+)?\d{1,4}\s*%"
+            r"\bup\s+(?:more\s+than\s+)?\+?\d{1,4}\s*%"
             r"|\bfilled\s+(?:a\s+)?(?:little\s+|bit\s+)?earlier"
             r"|\bwill\s+look\s+to\s+close"
             r"|\bclos(?:e|ed|ing)\s+the\s+remaining", low):
