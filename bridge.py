@@ -1167,42 +1167,67 @@ def _no_otm_translate(order, client):
         import math
         exp = _dt.date.fromisoformat(str(expiry_to_date(order.get("expiry"))))
         kind = "CALL" if is_call else "PUT"
-        # Nearest qualifying strike across the usual ladders, quote-verified
-        # (an unquoted strike = Webull PARAM_ERR). Closest-to-ATM quoted
-        # candidate wins: highest at-or-below px for a call, lowest
-        # at-or-above for a put.
-        cands = set()
-        for inc in (0.5, 1.0, 2.5, 5.0):
-            base = (math.floor(px / inc) if is_call else math.ceil(px / inc)) * inc
-            # Walk a few rungs further ITM as well. On a stock sitting near a
-            # round number every ladder collapses to the SAME single strike,
-            # and if that one doesn't quote the rescue finds nothing and the
-            # caller's bad strike goes to Webull as a PARAM_ERR — that's what
-            # sent TWLO 2440C on 8/21 (stock 225.45, only candidate was 225).
-            for step in range(0, 4):
-                c = round(base - step * inc if is_call else base + step * inc, 2)
-                if c > 0:
-                    cands.add(c)
-        best = None
-        for cand in sorted(cands, reverse=is_call):
+        _q = client or WB_LIVE or WB
+
+        def _quotes(cand):
             try:
                 occ = occ_symbol(sym, exp.isoformat(), kind, cand)
-                ask, bid, _r = (client or WB_LIVE or WB).ask_bid(occ)
+                ask, bid, _r = _q.ask_bid(occ)
+                return ask is not None or bid is not None
             except Exception:                   # noqa: BLE001
-                ask = bid = None
-            if ask is not None or bid is not None:
-                best = cand
+                return False
+
+        # ONE STRIKE OTM is allowed now (his call, 8/24: "1 strike above is
+        # good" — the old snap-to-ITM was buying $750 contracts off $300
+        # calls on Mag7 names). Find the first OTM rung beyond the stock:
+        # smallest quoted strike above px on a call, largest below on a put.
+        # Their strike AT that rung stands as called; anything deeper snaps
+        # TO the rung — cheap, and still the closest thing to their intent.
+        first_otm = None
+        _steps = set()
+        for inc in (0.5, 1.0, 2.5, 5.0):
+            base = (math.floor(px / inc) + 1 if is_call
+                    else math.ceil(px / inc) - 1) * inc
+            c = round(base, 2)
+            # skip rungs that land ATM/ITM by rounding
+            if c > 0 and ((is_call and c > px) or ((not is_call) and c < px)):
+                _steps.add(c)
+        for cand in sorted(_steps, reverse=not is_call):
+            if _quotes(cand):
+                first_otm = cand
                 break
+        if first_otm is not None and                 ((is_call and old <= first_otm + 1e-9)
+                 or ((not is_call) and old >= first_otm - 1e-9)):
+            return None      # within one strike OTM — their contract stands
+        best = first_otm
+        why = "1 strike OTM"
         if best is None:
-            note("NO-OTM   %s — %g%s is OTM (stock %.2f) but no ATM/ITM "
-                 "strike answered a quote; the caller's strike stands"
+            # No OTM rung quotes — fall back to the old inward walk (ATM/ITM),
+            # quote-verified. TWLO 2440C (8/21) lives in this branch.
+            cands = set()
+            for inc in (0.5, 1.0, 2.5, 5.0):
+                base = (math.floor(px / inc) if is_call
+                        else math.ceil(px / inc)) * inc
+                for step in range(0, 4):
+                    c = round(base - step * inc if is_call
+                              else base + step * inc, 2)
+                    if c > 0:
+                        cands.add(c)
+            for cand in sorted(cands, reverse=is_call):
+                if _quotes(cand):
+                    best = cand
+                    break
+            why = "nearest qualifying"
+        if best is None:
+            note("NO-OTM   %s — %g%s is too far OTM (stock %.2f) but no "
+                 "closer strike answered a quote; the caller's strike stands"
                  % (sym, old, "C" if is_call else "P", px))
             return None
         order["strike"] = best
         order["limit"] = None       # their premium priced their OTM strike
-        return ("NO-OTM   %s: their %g%s was OTM (stock %.2f) -> nearest "
-                "qualifying %g%s"
-                % (sym, old, "C" if is_call else "P", px,
+        return ("NO-OTM   %s: their %g%s was too far OTM (stock %.2f) -> %s "
+                "%g%s"
+                % (sym, old, "C" if is_call else "P", px, why,
                    best, "C" if is_call else "P"))
     except Exception as _e:                     # noqa: BLE001
         try:

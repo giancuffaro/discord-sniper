@@ -789,7 +789,13 @@ class WebullOptions:
         the other's cache."""
         now = time.time()
         at = getattr(self, cache_key + "_at", 0)
-        if at and now - at < 8:
+        # 8s cache on a good read; FIVE MINUTES on a failed one (8/24). The
+        # sandbox account answers /account/balance with errors for every
+        # method the hunt tries, so a fresh hunt every 8s was hundreds of
+        # failing requests an hour chewing the rate limit for a number that
+        # is never coming.
+        _ttl = getattr(self, cache_key + "_ttl", 8)
+        if at and now - at < _ttl:
             return getattr(self, cache_key, None)
         val = None
         for _name, fn in self._balance_fns():
@@ -820,6 +826,7 @@ class WebullOptions:
                 break
         setattr(self, cache_key, val)
         setattr(self, cache_key + "_at", now)
+        setattr(self, cache_key + "_ttl", 8 if val is not None else 300)
         return val
 
     def afford_check(self, limit, qty):

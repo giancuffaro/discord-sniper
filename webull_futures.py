@@ -406,12 +406,10 @@ def execute(wb, book, order, key, note):
                                       order.get("their_stop"),
                                       order.get("their_target"))
         if order.get("their_stop") is None or order.get("their_target") is None:
-            note("FUTURES  %s bracket: stop %g, target %g (%s)"
-                 % (sym, stop_px, target_px,
-                    "their levels" if (order.get("their_stop") is not None
-                                       and order.get("their_target") is not None)
-                    else "yours: %g-pt stop / %g-pt target where they posted none"
-                         % (FUT_STOP_PTS, FUT_TARGET_PTS)))
+            _sl = "theirs" if order.get("their_stop") is not None                 else "yours (%g pts)" % FUT_STOP_PTS
+            _tl = "theirs" if order.get("their_target") is not None                 else "yours (%g pts)" % FUT_TARGET_PTS
+            note("FUTURES  %s bracket: stop %g (%s), target %g (%s)"
+                 % (sym, stop_px, _sl, target_px, _tl))
         order = dict(order, their_stop=stop_px, their_target=target_px)
         oid = _place(wb, contract, side, 1, entry_px)
         note("FUTURES  ORDER IN %s %s x1 (%s) @ %s, stop %s target %s"
