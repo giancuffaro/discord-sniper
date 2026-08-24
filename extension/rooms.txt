@@ -64,3 +64,7 @@ whop:swing|https://whop.com/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/
 1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum-3|Platinum Trading
 1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum-4|Platinum Trading
 983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity-swings|Platinum Trading
+
+# DO NOT ADD 911389321993523210 (Platinum "lottos") — it is Demon Alerts
+# mirroring the ZTRADEZ demon room already listed above. Adding it = the
+# same signal twice (8/23).

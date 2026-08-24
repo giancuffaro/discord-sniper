@@ -1798,7 +1798,12 @@ def _place_impl(order):
                         "platform": "projectx",
                         "username": ts.get("username", ""),
                         "password": ts.get("api_key", ""),
-                        "extra": ts.get("base_url") or "https://api.topstepx.com",
+                        # "URL|ACCOUNTNAME" pins WHICH Topstep account trades
+                        # (8/23: the XFA arrived; without the pin, accounts[0]
+                        # could be the old locked combine).
+                        "extra": (ts.get("base_url") or "https://api.topstepx.com")
+                                 + (("|" + ts["account_name"])
+                                    if ts.get("account_name") else ""),
                         # The account-safety knobs (8/17): start_balance arms
                         # the consistency lock (put the account size there,
                         # e.g. 50000), daily_loss_stop is his own tighter
@@ -3243,6 +3248,18 @@ class Handler(BaseHTTPRequestHandler):
                     "ES", "NQ", "MES", "MNQ", "YM", "MYM", "RTY", "M2K",
                     "CL", "MCL", "GC", "MGC"):
             order["kind"] = "future"
+        # MICROS ONLY, ALWAYS (his rule, 8/23): a room's "NQ" or "ES" is
+        # executed as the micro — MNQ, MES — on every leg (Webull, Topstep,
+        # NinjaTrader) and for every action. Full-size NQ is $20/pt against
+        # the micro's $2; one unmapped symbol would be a 10x position.
+        if order.get("kind") == "future":
+            _MICRO = {"NQ": "MNQ", "ES": "MES", "YM": "MYM", "RTY": "M2K",
+                      "GC": "MGC", "CL": "MCL"}
+            _fs = str(order.get("symbol") or "").upper()
+            if _fs in _MICRO:
+                order["symbol"] = _MICRO[_fs]
+                note("FUTURES  %s -> %s (micros only, always)"
+                     % (_fs, order["symbol"]))
 
         # A micro and its full-size root are ONE position. Stormzy's "ALL OUT
         # ES" (8/21 11:36) arrived on a live MES long, found no "ES" in the
