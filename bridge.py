@@ -1908,25 +1908,6 @@ def _place_impl(order):
             return False, ("that's a futures option (%s with a strike) — "
                            "Webull can't place those, so nothing was sent."
                            % order.get("symbol"))
-        # THE BENCH (his call, 8/23: "turn off all the shitty traders").
-        # Callers in settings.json benched_callers take NO new entries — each
-        # refused loudly with the scoreboard as the reason. Exits, trims and
-        # stops on anything already open always still run, and their rooms
-        # keep being read so the scoreboard keeps grading them; a benched
-        # trader earns the way back in with data.
-        if action in ("OPEN", "ADD"):
-            _who = str(order.get("trader") or "").lower()
-            for _b in (CFG.get("benched_callers") or []):
-                if _b and str(_b).lower() in _who:
-                    note("BENCHED  %s — %s is on the bench (scoreboard net "
-                         "red). No entry; their exits still manage anything "
-                         "open." % (what, order.get("trader")))
-                    if claimed:
-                        BOOK.release(key)
-                    return False, ("%s is benched — scoreboard has them net "
-                                   "red, no new entries. Unbench in "
-                                   "settings.json benched_callers."
-                                   % order.get("trader"))
         # NO-OTM rule (his call, 8/20) — an OTM strike snaps to the nearest
         # ATM/ITM one before anything is priced or sent. Runs here so instant
         # entries, the pullback's at-the-touch entry, AND every mirrored
@@ -2342,7 +2323,6 @@ class Handler(BaseHTTPRequestHandler):
                 # says 401, whatever is pasted.
                 "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key"))
                               and AI_KEY_OK is not False,
-                "benched_callers": list(CFG.get("benched_callers") or []),
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}
@@ -2919,8 +2899,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "message": "unreadable"})
         _known = ("futures_enabled", "simulation", "paper_trading",
                   "ai_enabled", "ai_api_key", "ai_model", "strategy",
-                  "futures_brokers", "webull_extra_accounts", "deepgram_key",
-                  "benched_callers")
+                  "futures_brokers", "webull_extra_accounts", "deepgram_key")
         if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
@@ -3070,15 +3049,6 @@ class Handler(BaseHTTPRequestHandler):
                 _connect_extras()
             except Exception as _e:                     # noqa: BLE001
                 note("ACCT     connect failed: %s" % str(_e)[:120])
-
-        # THE BENCH is HIS lever only (8/23: "I want to be the only one that
-        # can turn them off, from the app"). The popup sends the whole list.
-        if isinstance(body.get("benched_callers"), list):
-            _bl = [str(x).strip().lower()[:40]
-                   for x in body["benched_callers"] if str(x).strip()]
-            data["benched_callers"] = _bl
-            CFG["benched_callers"] = _bl
-            note("BENCH    %s" % (", ".join(_bl) or "empty — everyone plays"))
 
         # Deepgram (voice ears) key — saved on this PC so it survives any
         # browser wipe or extension reinstall (his ask, 8/20: "put it once

@@ -198,48 +198,6 @@ function _monthEndWords() {
   const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
   return last.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
-/* THE BENCH (8/23) — his lever only. Chips of benched callers; click one to
- * unbench, type + Bench to add. Stored bridge-side so it survives anything. */
-function paintBench() {
-  const box = $("benchList");
-  if (!box) return;
-  const names = (modeStatus || {}).benched_callers || [];
-  box.innerHTML = "";
-  names.forEach(n => {
-    const chip = document.createElement("button");
-    chip.textContent = n + " ✖";
-    chip.style.cssText = "font-size:12px;padding:2px 8px;border-radius:10px;" +
-      "background:#f87171;color:#0b0d12;border:none;cursor:pointer";
-    chip.title = "Unbench " + n + " — they can take entries again";
-    chip.onclick = async () => {
-      try {
-        modeStatus = await askBridge("/config",
-          { benched_callers: names.filter(x => x !== n) });
-        paintBench();
-      } catch (e) { $("benchState").textContent = "Couldn't reach the bridge."; }
-    };
-    box.appendChild(chip);
-  });
-  if (!names.length) {
-    const s = document.createElement("span");
-    s.style.cssText = "font-size:12px;color:#4ade80";
-    s.textContent = "empty — everyone plays";
-    box.appendChild(s);
-  }
-}
-if ($("benchAdd")) $("benchAdd").onclick = async () => {
-  const v = ($("benchName").value || "").trim().toLowerCase();
-  if (!v) { $("benchState").textContent = "Type a caller's name first."; return; }
-  const names = ((modeStatus || {}).benched_callers || []).filter(x => x !== v);
-  names.push(v);
-  try {
-    modeStatus = await askBridge("/config", { benched_callers: names });
-    $("benchName").value = "";
-    $("benchState").textContent = "";
-    paintBench();
-  } catch (e) { $("benchState").textContent = "Couldn't reach the bridge."; }
-};
-
 const _exOpen = {};   // name -> fetched account choices, survives repaints
 function paintExtras() {
   const list = $("extraList");
@@ -480,7 +438,6 @@ async function refreshMode() {
   paintStrat();
   paintFuturesBrokers();
   paintExtras();
-  paintBench();
   paintPaper();
   paintAi(modeStatus);
   paintStatus();

@@ -193,7 +193,10 @@ const RE_FILLER = /\b(?:lightly|light|super|very|small|starters?|lottos?|lotto|t
 // READY, none of them buys.
 const RE_LOADING = /\b(?:load(?:ing|ed)?|prep(?:ping|ped)?)\b/i;
 const RE_ALLOUT = /\ball\s+out\b/i;
-const RE_TRIM = /\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b/i;
+// 8/24: King Maker's "up +35%! taking some profits" slipped past this and the
+// generic entry pattern BOUGHT the victory lap (spread guard saved it). Any
+// "taking/took (some) profits" is an update on a ride, never a fresh entry.
+const RE_TRIM = /\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b|\b(?:taking|took|booking|booked)\s+(?:some\s+)?profits?\b/i;
 const RE_BACKIN = /\bback\s+in\b/i;
 // "swinging" is an ENTRY verb here (his rule, 8/12: open today, close
 // tomorrow) — mirrors signals.py RE_ENTRY. Present-progressive only, so
@@ -276,7 +279,12 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   "pnl", "p&l", "p/l",
   // Aug 3 options drill: war stories and future-intent plans. NOT "earlier"
   // or "if we" alone — both live inside real calls. Mirrors signals.py.
-  "was in", "almost", "tomorrow if"];
+  "was in", "almost", "tomorrow if",
+  // 8/24: bullwinkle posted "SNDK $1500 C 41.00 I AM NOT GETTING IN THIS TOO
+  // EXPINSIVE FOR ME" — a pass, not a call. The reader saw the strike and
+  // tried to BUY it; only low cash refused it. A trader saying no is a no.
+  "not getting in", "not taking", "not entering", "not buying",
+  "too expensive", "too expinsive", "sitting this", "i'll pass", "ill pass"];
 
 const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
@@ -651,6 +659,19 @@ function parseSignalInner(text, cfg) {
   }
   s.clean = t;
   const low = t.toLowerCase();
+  // HARD VETO — a trader saying NO outranks every pattern below, including
+  // the trader-specific formats that return before the normal veto list is
+  // consulted. 8/24: bullwinkle's "SNDK $1500 C 41.00 I AM NOT GETTING IN
+  // THIS TOO EXPINSIVE" matched his own entry format and tried to BUY the
+  // pass; only low cash refused it. Mirrors signals.py.
+  for (const hv of ["not getting in", "not taking", "not entering",
+                    "not buying", "too expensive", "too expinsive",
+                    "sitting this", "i'll pass", "ill pass"]) {
+    if (low.includes(hv)) {
+      s.why = "the trader passed on it (\"" + hv + "\") — not a call";
+      return s;
+    }
+  }
   // Swing wording anywhere on the line tags the signal (harmless on
   // non-entries — only entries ever store or show it). Mirrors signals.py.
   s.swing = /\bswing(?:ing|s)?\b/.test(low);

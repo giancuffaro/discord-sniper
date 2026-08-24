@@ -443,7 +443,14 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               # "Short NQ @ 29792 ... If we get stopped"). "tomorrow if"
               # is the future-intent shape: "buying NVDA tomorrow if we
               # gap up" is a plan, not an order.
-              "was in", "almost", "tomorrow if")
+              "was in", "almost", "tomorrow if",
+              # 8/24: bullwinkle posted "SNDK $1500 C 41.00 I AM NOT GETTING
+              # IN THIS TOO EXPINSIVE FOR ME" — a pass, not a call. The
+              # reader saw the strike and tried to BUY it; only low cash
+              # refused it. A trader saying no is a no. Mirrors parser.js.
+              "not getting in", "not taking", "not entering", "not buying",
+              "too expensive", "too expinsive", "sitting this",
+              "i'll pass", "ill pass")
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                # "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
