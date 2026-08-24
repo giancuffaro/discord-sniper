@@ -68,3 +68,4 @@ whop:swing|https://whop.com/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/
 # DO NOT ADD 911389321993523210 (Platinum "lottos") — it is Demon Alerts
 # mirroring the ZTRADEZ demon room already listed above. Adding it = the
 # same signal twice (8/23).
+1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|Rafita Trades|Rafita Trades

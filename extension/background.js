@@ -140,6 +140,7 @@ const SHADOW = new Set([
   // ("would have read this as…"), fires NOTHING until graduated out.
   "911389167169191946", "911390080285962290", "1086120203009658982",
   "1533885258724937739", "983807207625859143",
+  "1537061197931618344",   // Rafita Trades 8/23 — proves itself first
 ]);
 
 /* rooms.txt is the ONE list of channels that trade (his ask, 8/17) — the

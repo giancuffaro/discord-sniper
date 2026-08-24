@@ -127,6 +127,11 @@ if errorlevel 1 (
 )
 git checkout -B main >nul 2>&1
 :haverepo
+rem  A stale git lock (a crashed git, or the sandbox's FUSE mount) makes the
+rem  save-guard silently FAIL and the reset then eats local work (23:28,
+rem  8/23 — the bench and Rafita vanished). Clear it before anything git.
+if exist ".git\index.lock" del /f ".git\index.lock" >nul 2>&1
+if exist ".git\HEAD.lock" del /f ".git\HEAD.lock" >nul 2>&1
 rem  SAVE LOCAL WORK FIRST (8/23): clicking this between auto-pushes used to
 rem  hard-reset away anything Claude changed in the last half hour. Now the
 rem  folder pushes ITSELF before the mirror step - and if the push fails
@@ -142,6 +147,14 @@ git fetch origin main >nul 2>&1
 if errorlevel 1 goto pastpull
 if "!PUSHOK!"=="0" (
   echo         Couldn't push local work - keeping it, skipping the mirror step.
+  goto pastpull
+)
+rem  FINAL CHECK: if ANYTHING is still uncommitted (a failed add, a locked
+rem  index, whatever new way git finds), the mirror step is skipped. The
+rem  reset only ever runs on a fully saved folder.
+git diff-index --quiet HEAD -- >nul 2>&1
+if errorlevel 1 (
+  echo         Unsaved local changes detected - keeping them, skipping mirror.
   goto pastpull
 )
 git reset --hard origin/main >nul 2>&1
