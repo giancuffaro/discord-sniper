@@ -1989,6 +1989,26 @@ def _place_impl(order):
                                    or {}).get("bracket_entries", True):
                     _brk = float((CFG.get("strategy") or {})
                                  .get("stop_loss_pct", 10))
+                    # AUTO-SWING (8/25, the UBER lesson): an expiry 14+
+                    # days out IS a swing whether or not the caller says the
+                    # word — UBER 9/18 wicked out on a 25-cent stock move
+                    # and reclaimed the level ten minutes later. Far-dated
+                    # contracts get swing treatment by construction.
+                    if not order.get("swing"):
+                        try:
+                            from webull_options import expiry_to_date
+                            import datetime as _dt2
+                            _ed = _dt2.date.fromisoformat(
+                                str(expiry_to_date(order.get("expiry"))))
+                            if (_ed - _dt2.date.today()).days >= 14:
+                                order["swing"] = True
+                                note("SWING    %s — expiry %s is %d days out"
+                                     ": treated as a swing (wide stop), no"
+                                     " matter what the call said"
+                                     % (order["symbol"], _ed.isoformat(),
+                                        (_ed - _dt2.date.today()).days))
+                        except Exception:               # noqa: BLE001
+                            pass
                     # SWING stops (his call, 8/24 — the HOOD lesson: a
                     # 3-week swing died in 3 minutes on a scalp's -10%).
                     # A swing with THEIR stock level runs on that level
