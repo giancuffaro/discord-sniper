@@ -1852,7 +1852,18 @@ class Book:
         try:
             side_word = ("CALLS" if str(side or "").upper().startswith("C")
                          else "PUTS")
-            for p in (wb.positions() or []):
+            held = wb.positions() or []
+            # positions() NEVER raises — on a throttle/timeout/bad body it
+            # hands back an EMPTY LIST, which is indistinguishable from "the
+            # account is flat". The except-guard below can therefore never
+            # see that failure, and an empty list used to fall through to
+            # "gone" and book a close that never filled: SPCX 139C 9/4
+            # (8/25, 13:42:51) was recorded CLOSED at the MARK (-$10) while
+            # the broker still held it — the 13:57 adoption sweep found it
+            # sitting there. Empty is DOUBT, and doubt means still held.
+            if not held:
+                return False
+            for p in held:
                 if str(p.get("symbol") or "").upper() != str(sym or "").upper():
                     continue
                 if p.get("side") and p.get("side") != side_word:
