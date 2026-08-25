@@ -959,6 +959,14 @@ class Book:
                                  "(%s); adopting it back so it stays visible "
                                  "and watched." % (sym, str(_pe)[:80]))
                     if _okp:
+                        # Refresh the close stamp to NOW (8/25): the recent-
+                        # close guard above dates from the WRONG recorded
+                        # close, so Webull's reporting lag after this real
+                        # fill could still re-adopt a ghost (NVDA, 9:54).
+                        try:
+                            phantom["closed_at"] = time.time()
+                        except Exception:               # noqa: BLE001
+                            pass
                         if note:
                             note("PHANTOM  %s — exit COMPLETED at %.2f. The "
                                  "earlier recorded price was wrong; the "

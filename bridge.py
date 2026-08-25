@@ -1401,6 +1401,12 @@ def _book_futures(order, key):
 
 
 _RECENT_COIDS = {}          # coid -> (timestamp, (ok, msg)) — retry dedup
+# ONE contract, ONE entry, 20 seconds (8/25, the UBER triple-buy): the same
+# spoken line hit from three relays ~1s apart and the extension's echo-lock
+# set too late while the AI reads were still running — three real buys.
+# This is the bridge-side backstop every path must pass: an OPEN for a
+# contract that was accepted in the last 20s is the echo, whoever sent it.
+_RECENT_CONTRACTS = {}      # "SYM|side|strike|expiry" -> timestamp
 
 
 # --- round-number pullback (HIS strategy, 8/11/26) ---------------------------
@@ -1565,6 +1571,29 @@ def _place_impl(order):
     sym = str(order.get("symbol", "")).upper()
     action = order.get("action")
     key = find_key(order) if BOOK is not None else tkey(order)
+
+    # THE UBER RULE (8/25): one contract, one entry, whatever the path.
+    # The pullback ARM pass is exempt — its real entry comes back through
+    # here at the touch (sometimes seconds later) and must not be read as
+    # its own echo; the watcher already refuses a duplicate arm.
+    if action in ("OPEN", "ADD") \
+            and str(order.get("entry_mode") or "") != "pullback":
+        _ckey = "|".join(str(x) for x in (sym, order.get("side"),
+                                          order.get("strike"),
+                                          order.get("expiry")))
+        _now = time.time()
+        for _k in [k for k, t in list(_RECENT_CONTRACTS.items())
+                   if _now - t > 60]:
+            _RECENT_CONTRACTS.pop(_k, None)
+        _t0 = _RECENT_CONTRACTS.get(_ckey)
+        if _t0 and _now - _t0 < 20 and action == "OPEN":
+            note("ECHO     OPEN %s refused — this exact contract was bought "
+                 "%.0fs ago; the same call from another relay is an echo, "
+                 "not a second trade" % (sym, _now - _t0))
+            return False, ("that exact contract was entered %.0f seconds "
+                           "ago — this copy of the call is an echo, nothing "
+                           "was sent" % (_now - _t0))
+        _RECENT_CONTRACTS[_ckey] = _now
 
     # Round-number pullback mode, per-room. Only OPENs on the managed symbols
     # are deferred to the watcher; anything else (futures, equities, unlisted

@@ -284,7 +284,10 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
   // EXPINSIVE FOR ME" — a pass, not a call. The reader saw the strike and
   // tried to BUY it; only low cash refused it. A trader saying no is a no.
   "not getting in", "not taking", "not entering", "not buying",
-  "too expensive", "too expinsive", "sitting this", "i'll pass", "ill pass"];
+  "too expensive", "too expinsive", "sitting this", "i'll pass", "ill pass",
+  // 8/25: "AAPL OUT THE GATES" — hype for a rip at the open, and OUT read as
+  // a full exit. Would have SOLD a held AAPL on a cheer.
+  "out the gate"];
 
 const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
@@ -798,7 +801,10 @@ function parseSignalInner(text, cfg) {
     return s;
   }
   const bw = /^([A-Za-z]{1,5})\s*(\|)?\s*(\$)?(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b([\s\S]*)$/.exec(t);
-  if (bw && (bw[2] || bw[3]) && !NOT_TICKERS.has(bw[1].toUpperCase())) {
+  // 8/25: "AAPL 315 C 2.13" with no pipe and no $ is still his entry shape —
+  // accept it when a plain decimal premium follows (a bare % never counts).
+  if (bw && (bw[2] || bw[3] || /(?<![\d$.])\d+\.\d{1,2}(?!\s*%)/.test(bw[6] || ""))
+      && !NOT_TICKERS.has(bw[1].toUpperCase())) {
     const rest = bw[6];
     s.symbol = bw[1].toUpperCase();
     s.strike = parseFloat(bw[4]);

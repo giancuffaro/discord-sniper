@@ -450,7 +450,9 @@ VETO_WORDS = ("do not", "don't", "dont ", "watching", "watch", "eyeing",
               # refused it. A trader saying no is a no. Mirrors parser.js.
               "not getting in", "not taking", "not entering", "not buying",
               "too expensive", "too expinsive", "sitting this",
-              "i'll pass", "ill pass")
+              "i'll pass", "ill pass",
+              # 8/25: "AAPL OUT THE GATES" — a rip cheer, not an exit.
+              "out the gate")
 
 NOT_TICKERS = {"THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT", "ON", "MY",
                # "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
@@ -1143,7 +1145,9 @@ def _parse_inner(text, author="", channel="", cfg=None):
         return sig
     bw = re.match(r"^([A-Za-z]{1,5})\s*(\|)?\s*(\$)?"
                   r"(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b(.*)$", t)
-    if bw and (bw.group(2) or bw.group(3)) and \
+    if bw and (bw.group(2) or bw.group(3)
+               or re.search(r"(?<![\d$.])\d+\.\d{1,2}(?!\s*%)",
+                            bw.group(6) or "")) and \
             bw.group(1).upper() not in NOT_TICKERS:
         rest = bw.group(6)
         sig.symbol = bw.group(1).upper()
