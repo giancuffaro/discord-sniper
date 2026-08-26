@@ -27,7 +27,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   else if (msg.type === "STOP_ALL") { for (const id of Array.from(SESS.keys())) stopListen(id); }
 });
 
-async function startListen(id, label, streamId, dgKey, model) {
+async function startListen(id, label, streamId, dgKey, model, keyterms) {
   stopListen(id);                     // never stack two captures on one tab
   if (!streamId) { toBg({ type: "LISTEN_ERROR", id, label, why: "no tab to capture" }); return; }
   if (!dgKey) { toBg({ type: "LISTEN_ERROR", id, label, why: "no Deepgram key saved" }); return; }
@@ -47,23 +47,66 @@ async function startListen(id, label, streamId, dgKey, model) {
   source.connect(ctx.destination);    // capturing mutes the tab — play it back so you still hear it
   const outRate = 16000, inRate = ctx.sampleRate;
 
-  const url = "wss://api.deepgram.com/v1/listen"
-    + "?encoding=linear16&sample_rate=" + outRate + "&channels=1"
-    + "&interim_results=true&smart_format=true&punctuate=true"
-    + "&model=" + encodeURIComponent(model || "nova-2");
-  let ws;
-  try { ws = new WebSocket(url, ["token", dgKey]); }
-  catch (e) { toBg({ type: "LISTEN_ERROR", id, label, why: "couldn't open Deepgram: " + (e && e.message || e) }); return; }
-  ws.binaryType = "arraybuffer";
-  ws.onopen = () => toBg({ type: "LISTEN_STATE", id, label, state: "listening" });
-  ws.onerror = () => toBg({ type: "LISTEN_ERROR", id, label, why: "Deepgram connection error — is the key right and funded?" });
-  ws.onclose = (ev) => toBg({ type: "LISTEN_STATE", id, label, state: "stopped", code: ev && ev.code });
-  ws.onmessage = (ev) => {
-    let d; try { d = JSON.parse(ev.data); } catch (e) { return; }
-    const alt = d && d.channel && d.channel.alternatives && d.channel.alternatives[0];
-    const text = alt && alt.transcript;
-    if (text && text.trim()) toBg({ type: "TRANSCRIPT", id, label, text: text.trim(), isFinal: !!d.is_final });
+  const cleanup = () => {             // a socket that never opened must not
+    try { stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    try { if (ctx.state !== "closed") ctx.close(); } catch (e) {}
   };
+
+  const makeUrl = (mdl) => {
+    let u = "wss://api.deepgram.com/v1/listen"
+      + "?encoding=linear16&sample_rate=" + outRate + "&channels=1"
+      + "&interim_results=true&smart_format=true&punctuate=true"
+      + "&model=" + encodeURIComponent(mdl);
+    // Keyterm prompting is a nova-3 feature: the tickers this room actually
+    // trades, so "SLV" comes back as SLV and not "silver". Spelling help
+    // only — nothing about what fires depends on this list.
+    if (/^nova-3/.test(mdl) && Array.isArray(keyterms))
+      for (const t of keyterms.slice(0, 50)) u += "&keyterm=" + encodeURIComponent(t);
+    return u;
+  };
+
+  let ws = null, gotWords = false;
+  const openSocket = (mdl, canFallback) => {
+    let sock;
+    try { sock = new WebSocket(makeUrl(mdl), ["token", dgKey]); }
+    catch (e) { toBg({ type: "LISTEN_ERROR", id, label, why: "couldn't open Deepgram: " + (e && e.message || e) }); return null; }
+    sock.binaryType = "arraybuffer";
+    sock.onopen = () => toBg({ type: "LISTEN_STATE", id, label, state: "listening" });
+    sock.onerror = () => {
+      // About to fall back? Save the scary toast for a REAL dead end.
+      if (!(canFallback && !gotWords))
+        toBg({ type: "LISTEN_ERROR", id, label, why: "Deepgram connection error — is the key right and funded?" });
+    };
+    sock.onclose = (ev) => {
+      const s = SESS.get(id);
+      if (!s || s.ws !== sock) return;     // stopped on purpose, or replaced
+      if (canFallback && !gotWords) {
+        // nova-3 died before a single word — a key without nova-3 access or
+        // a rejected parameter. Same tab stream, one retry on nova-2, and
+        // the log says so. gotWords guards the loop: the retry never gets
+        // its own retry.
+        toBg({ type: "LISTEN_NOTE", id, label,
+               why: "Deepgram dropped the nova-3 session before any words — retrying this room on nova-2." });
+        const nw = openSocket("nova-2", false);
+        if (nw) { s.ws = nw; ws = nw; return; }
+      }
+      toBg({ type: "LISTEN_STATE", id, label, state: "stopped", code: ev && ev.code });
+    };
+    sock.onmessage = (ev) => {
+      let d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      const alt = d && d.channel && d.channel.alternatives && d.channel.alternatives[0];
+      const text = alt && alt.transcript;
+      if (text && text.trim()) {
+        gotWords = true;
+        toBg({ type: "TRANSCRIPT", id, label, text: text.trim(), isFinal: !!d.is_final });
+      }
+    };
+    return sock;
+  };
+
+  const mdl0 = model || "nova-3";
+  ws = openSocket(mdl0, /^nova-3/.test(mdl0));
+  if (!ws) { cleanup(); return; }
 
   const processor = ctx.createScriptProcessor(4096, 1, 1);
   source.connect(processor);
