@@ -478,6 +478,19 @@ class Book:
             return sum(1 for p in self._pos.values()
                        if p.get("state") in (WORKING, FILLED))
 
+    def restart_exposure(self):
+        """What a restart would interrupt, for the pre-restart check (8/26):
+        held positions are SAFE (their stops rest at the broker and the book
+        restores), but a WORKING bid loses its 90s puller and an armed
+        pullback hunt dies silently. Names included so the warning can say
+        exactly what's at stake."""
+        with self._lock:
+            held = [p.get("symbol") for p in self._pos.values()
+                    if p.get("state") == FILLED]
+            working = [p.get("symbol") for p in self._pos.values()
+                       if p.get("state") == WORKING]
+        return held, working
+
     def info(self, key):
         """A copy of what's known about a position, for callers that need a
         number off it — their posted entry price, the last bid seen — without

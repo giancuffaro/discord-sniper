@@ -2467,6 +2467,13 @@ class Handler(BaseHTTPRequestHandler):
                 "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key"))
                               and AI_KEY_OK is not False,
                 "pocket_scalps_only": bool(CFG.get("pocket_scalps_only")),
+                "restart_check": (lambda _he=(BOOK.restart_exposure()
+                                              if BOOK is not None
+                                              else ([], []))
+                                  : {"held": _he[0], "working": _he[1],
+                                     "armed_pullbacks":
+                                         (sorted(_PULLBACK._armed)
+                                          if _PULLBACK is not None else [])})(),
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}
