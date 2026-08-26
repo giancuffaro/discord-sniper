@@ -26,6 +26,19 @@ import zlib
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+# A Windows console (or the .bat's piped stdout) defaults to cp1252, and a
+# caller name with an emoji in it — 👑KingBeeAri🐝, 8/25 — crashed entry_sent
+# MID-ORDER on a bare print: the trade was PLACED at Webull and then never
+# registered in the book, which is the worst possible order of events (the
+# UBER triple). The stream itself is made unable to die on a character here,
+# before anything else loads; note() below is belt-and-suspenders on top.
+for _s in (sys.stdout, sys.stderr):
+    try:
+        if _s is not None and hasattr(_s, "reconfigure"):
+            _s.reconfigure(errors="replace")
+    except Exception:                                   # noqa: BLE001
+        pass
+
 # The book of what actually filled. Since entries sit on the bid, "an order went
 # out" and "you own it" are two different events, and only this file knows which
 # one has happened. Everything that closes a position asks it first.
@@ -675,7 +688,18 @@ def save_mode(new_mode):
 
 def note(line):
     stamp = datetime.now(ET).strftime("%H:%M:%S")
-    print("%s  %s" % (stamp, line), flush=True)
+    try:
+        print("%s  %s" % (stamp, line), flush=True)
+    except Exception:                                   # noqa: BLE001
+        # A console that can't take a character must never kill the caller —
+        # that's how the 8/25 UBER entries went unrecorded. The UTF-8 file
+        # write below is the record that matters; try an ASCII-safe echo and
+        # move on regardless.
+        try:
+            print(("%s  %s" % (stamp, line)).encode("ascii", "replace")
+                  .decode("ascii"), flush=True)
+        except Exception:                               # noqa: BLE001
+            pass
     try:
         with open(LOG, "a", encoding="utf-8") as f:
             f.write("%s\t%s\n" % (datetime.now(ET).isoformat(timespec="seconds"), line))

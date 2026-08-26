@@ -541,9 +541,15 @@ async function sendOrder(sig, qty, c, author) {
     } catch (e) { lastErr = e; }   // connection failure — nothing delivered, retry
   }
   if (lastErr) {
+    // Honest about the unknown (8/25 UBER): a thrown fetch usually means
+    // nothing was delivered — but a bridge that crashed MID-order placed the
+    // trade and never answered. Don't promise "did NOT go out" when the
+    // truthful answer is "check".
     return { ok: false, unreachable: true,
              msg: "couldn't reach the bridge on your PC (tried 3×) — did you " +
-             "double-click START HERE? The trade did NOT go out." };
+             "double-click START HERE? The trade almost certainly did not go " +
+             "out, but if the bridge hung mid-order it MIGHT have — check the " +
+             "popup's fills (or Webull) before re-sending it by hand." };
   }
   const ms = Math.round(performance.now() - t0);
   const body = (await r.text()).slice(0, 200);
