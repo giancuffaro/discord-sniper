@@ -1602,6 +1602,27 @@ def _place_impl(order):
                            "was sent" % (_now - _t0))
         _RECENT_CONTRACTS[_ckey] = _now
 
+    # THE POCKET (8/25, his call after the 2-year clock study: minutes
+    # :45-:51 carry 27% more dollar-follow-through than the rest of the
+    # hour). OFF by default — a popup switch. When ON, a SCALP entry
+    # (non-swing option) outside minutes :43-:51 is refused with the clock
+    # as the reason. Swings, futures, exits and adds-to-held all pass at
+    # any minute — timing gates entries only, never protection.
+    if action == "OPEN" and CFG.get("pocket_scalps_only")             and (order.get("kind") or "option") == "option"             and not order.get("swing"):
+        try:
+            import datetime as _dtp
+            from zoneinfo import ZoneInfo as _ZI
+            _mn = _dtp.datetime.now(_ZI("America/New_York")).minute
+        except Exception:                               # noqa: BLE001
+            _mn = None
+        if _mn is not None and not (43 <= _mn <= 51):
+            note("POCKET   OPEN %s held — it's :%02d and the pocket switch "
+                 "is ON (scalps enter :43-:51 only)" % (sym, _mn))
+            return False, ("pocket mode is ON: scalp entries only fire "
+                           "minutes :43-:51 of each hour (it's :%02d). Flip "
+                           "the switch off in the popup to trade any time."
+                           % _mn)
+
     # Round-number pullback mode, per-room. Only OPENs on the managed symbols
     # are deferred to the watcher; anything else (futures, equities, unlisted
     # tickers) falls straight through to the normal instant path — that IS the
@@ -2997,7 +3018,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "message": "unreadable"})
         _known = ("futures_enabled", "simulation", "paper_trading",
                   "ai_enabled", "ai_api_key", "ai_model", "strategy",
-                  "futures_brokers", "webull_extra_accounts", "deepgram_key")
+                  "futures_brokers", "webull_extra_accounts", "deepgram_key", "pocket_scalps_only")
         if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
@@ -3150,6 +3171,13 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as _e:                     # noqa: BLE001
                 note("ACCT     connect failed: %s" % str(_e)[:120])
 
+        if "pocket_scalps_only" in body:
+            data["pocket_scalps_only"] = bool(body["pocket_scalps_only"])
+            CFG["pocket_scalps_only"] = bool(body["pocket_scalps_only"])
+            note("POCKET   %s" % ("ON — scalps enter :43-:51 only"
+                                  if CFG["pocket_scalps_only"]
+                                  else "off — any minute trades"))
+
         # Deepgram (voice ears) key — saved on this PC so it survives any
         # browser wipe or extension reinstall (his ask, 8/20: "put it once
         # and always active"). The extension restores itself from /dgkey.
@@ -3296,6 +3324,23 @@ class Handler(BaseHTTPRequestHandler):
         sym = str(order.get("symbol", "")).upper()
         if not sym:
             return self._reply(400, "no symbol in that order")
+        # "BTO MNQ1 29115 quickie" — that room writes the CONTRACT COUNT onto
+        # the root, so the symbol lands here as "MNQ1": not a futures root, not
+        # a real ticker either, so it matched no gate below and the call was
+        # dropped without a single line in trades.log (8/18 22:42 and 8/25
+        # 21:38, both silent). Same shape as the bare-futures-exit and
+        # micros-only fixes further down: a known root with a small count (or a
+        # TradingView "!") stuck on the end IS that root. Only ever rewrites a
+        # symbol that is NOT already a root, so ES/NQ/NG/SI are untouched.
+        if sym not in FUT_MULT:
+            _bare = sym.rstrip("!")
+            _root = _bare.rstrip("0123456789")
+            if (_root != _bare and _root in FUT_MULT
+                    and len(_bare) - len(_root) <= 2):
+                note("FUTURES  %s -> %s (that's the contract count stuck on "
+                     "the root, not a ticker)" % (sym, _root))
+                sym = _root
+                order["symbol"] = sym
         # No ticker is ever blocked — the allowed-list filter is deleted, on
         # his word: "no filters wanted." The one check left isn't a filter:
         # a futures root has to be in the multiplier table, because without
