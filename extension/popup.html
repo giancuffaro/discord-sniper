@@ -265,24 +265,27 @@
       Overrides sizing while it's on.</div>
 
     <div class="row" style="margin-top:8px;margin-bottom:2px">
-      <span class="grow" style="font-size:12px">At +20%, then —</span>
+      <span class="grow" style="font-size:12px">Once it's green, then —</span>
       <select id="bracketexit" style="max-width:200px">
         <option value="ratchet">ratchet the stop up (default)</option>
         <option value="hardclose">close the whole position</option>
       </select>
     </div>
-    <div class="note" id="bracketexitstate"><b>Ratchet</b>: the stop stops sitting
-      at -10% and starts walking UP instead — locked at +10% first, then another
-      +10% for every further +10% of gain (up 20 locks +10, up 30 locks +20, up 40
-      locks +30…), no ceiling. Never sells outright, never comes back red once
-      it's locked. <b>Close whole position</b> is the old behaviour: sells
-      everything the instant it's up +20% and you're flat.</div>
+    <div class="note" id="bracketexitstate"><b>Ratchet</b> (v2, 8/25): at +10%
+      the stop jumps to BREAKEVEN — the trade can't go red anymore. Then every
+      further +10% of gain locks another +10%: up 20 locks +10, up 30 locks +20,
+      up 40 locks +30… no ceiling. Contracts under $1.00 wait for +15% before
+      the breakeven jump (cheap 0DTEs breathe ±15% on noise); the rungs after
+      are the same. Never sells outright — the stop does the selling.
+      <b>Close whole position</b> is the old behaviour: sells everything the
+      instant it's up +20% and you're flat.</div>
 
 
     <div class="row" style="margin-top:10px;margin-bottom:4px">
       <span class="grow" style="font-size:12px">Round-number pullback — <b>all channels</b></span>
       <button id="rnAll" class="tgl safe">off</button>
     </div>
+
     <div class="note">ON = every entry waits for the stock to touch the next
       round number before buying (watched every second, bought at the ask on
       the touch, skipped if it never pulls back within 10 minutes). Applies to

@@ -2442,6 +2442,7 @@ class Handler(BaseHTTPRequestHandler):
                 # says 401, whatever is pasted.
                 "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key"))
                               and AI_KEY_OK is not False,
+                "pocket_scalps_only": bool(CFG.get("pocket_scalps_only")),
                 "props": [{"name": p.get("name"),
                            "platform": p.get("platform"),
                            "enabled": bool(p.get("enabled"))}
