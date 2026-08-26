@@ -478,6 +478,24 @@ class Book:
             return sum(1 for p in self._pos.values()
                        if p.get("state") in (WORKING, FILLED))
 
+    def cancel_working_for(self, trader):
+        """RETRACTION (8/26): the trader said 'not ready / revising' — pull
+        every resting bid of theirs off the book and the broker. Returns the
+        symbols pulled."""
+        who = str(trader or "").strip().lower()
+        pulled = []
+        with self._lock:
+            keys = [k for k, p in self._pos.items()
+                    if p.get("state") == WORKING
+                    and (not who or who in str(p.get("who") or k).lower())]
+        for k in keys:
+            try:
+                self.cancel_entry(k, "the trader pulled the call back")
+                pulled.append(k.split("|")[-1])
+            except Exception:                           # noqa: BLE001
+                pass
+        return pulled
+
     def restart_exposure(self):
         """What a restart would interrupt, for the pre-restart check (8/26):
         held positions are SAFE (their stops rest at the broker and the book

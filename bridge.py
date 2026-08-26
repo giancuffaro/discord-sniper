@@ -1603,6 +1603,26 @@ def _place_impl(order):
     action = order.get("action")
     key = find_key(order) if BOOK is not None else tkey(order)
 
+    # RETRACTION (8/26): "NOT READY YET REVISING" — pull the trader's
+    # resting bids and kill their armed pullback hunts. Never touches a
+    # FILLED position: a retraction cancels an entry, it doesn't exit one.
+    if action == "RETRACT":
+        _who = str(order.get("trader") or "")
+        _pulled = BOOK.cancel_working_for(_who) if BOOK is not None else []
+        _hunts = 0
+        try:
+            if _PULLBACK is not None:
+                _hunts = _PULLBACK.cancel_for(_who)
+        except Exception:                               # noqa: BLE001
+            pass
+        note("RETRACT  %s pulled their call — %s bid(s) cancelled%s"
+             % (_who or "trader",
+                ", ".join(_pulled) if _pulled else "no",
+                (", %d hunt(s) stood down" % _hunts) if _hunts else ""))
+        return True, ("retraction honoured — %s resting bid(s) pulled, %d "
+                      "pullback hunt(s) cancelled. Held positions untouched."
+                      % (len(_pulled), _hunts))
+
     # THE UBER RULE (8/25): one contract, one entry, whatever the path.
     # The pullback ARM pass is exempt — its real entry comes back through
     # here at the touch (sometimes seconds later) and must not be read as

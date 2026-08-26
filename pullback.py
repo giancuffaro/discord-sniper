@@ -100,6 +100,20 @@ class Pullback:
         # pullback was still armed. Different trader, different contract,
         # different trade — only the SAME call relayed twice should dedupe.
         self._armed = {}        # "trader|sym|strike|side|expiry" -> True
+        self._cancelled = set()  # akeys retracted mid-hunt (8/26)
+
+    def cancel_for(self, trader):
+        """RETRACTION (8/26): kill every armed entry hunt whose key carries
+        this trader. The waiting thread sees the flag on its next poll and
+        stands down without buying. Returns how many were flagged."""
+        who = str(trader or "").strip().lower()
+        n = 0
+        with self._lock:
+            for k in list(self._armed):
+                if not who or who in k:
+                    self._cancelled.add(k)
+                    n += 1
+        return n
 
     # -- entry ----------------------------------------------------------------
     def start(self, order):
@@ -147,6 +161,13 @@ class Pullback:
         try:
             while time.time() < deadline:
                 time.sleep(self.entry_poll)
+                with self._lock:
+                    if akey in self._cancelled:
+                        self._cancelled.discard(akey)
+                        self.note("PULLBACK %s: the trader pulled the call "
+                                  "back — hunt cancelled, nothing bought"
+                                  % sym)
+                        return
                 try:
                     px = float(self.quote_fn(sym))
                     misses = 0
