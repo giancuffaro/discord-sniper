@@ -2538,6 +2538,42 @@ class Book:
                 self._event(key, "stop-warn",
                             "%s — couldn't pull the resting bid. If it's still "
                             "in Webull, cancel it there by hand." % sym)
+            # CONFIRM the pull (8/26, the SPY 766P race): a cancel is a
+            # REQUEST — Webull can fill the bid before it lands. The old
+            # fire-and-forget left a real position marked NOFILL; the
+            # trader's exit (the very reason for this pull) then found
+            # "nothing to sell" and the orphan sat until adoption, two
+            # minutes after the room had left. Poll briefly: if the bid
+            # actually FILLED, mark it held so the exit that pulled us
+            # sells it right now.
+            try:
+                for _ in range(4):
+                    time.sleep(1.5)
+                    _st, _fq, _px = self._probe(oid, p.get("occ"),
+                                                p.get("limit"),
+                                                live=bool(p.get("live")),
+                                                wb=wb,
+                                                paper=bool(p.get("paper")))
+                    if _st == FILLED and (_fq is None or _fq):
+                        with self._lock:
+                            p2 = self._pos.get(key)
+                            if p2 is not None:
+                                p2["state"] = FILLED
+                                p2["qty"] = int(_fq or p2.get("qty") or 1)
+                                if _px:
+                                    p2["fill"] = float(_px)
+                                p2.pop("closed_at", None)
+                        held = int(_fq or 1)
+                        self._event(key, "update",
+                                    "%s — the cancel LOST the race: the bid "
+                                    "filled at %s before the pull landed. "
+                                    "You hold %d — selling it on their exit "
+                                    "now." % (sym, _px if _px else "?", held))
+                        break
+                    if _st in ("dead", NOFILL) or _st == "cancelled":
+                        break
+            except Exception:                           # noqa: BLE001
+                pass
         self._event(key, "pulled",
                     "%s — %s. The bid is off the book%s"
                     % (sym, why, "; you own nothing here." if not held
