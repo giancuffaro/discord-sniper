@@ -31,6 +31,15 @@ const OPEN_INFLIGHT = new Map();
 // voice room's label. 5 minutes, then the map forgets.
 const VOICE_TOOK = new Map();
 const VOICE_TOOK_MS = 5 * 60 * 1000;
+// The ears' QUIET GRACE (8/26): a Discord notification ping flips a tab
+// audible for two seconds — on 8/25 that started and stopped the listener 42
+// times and wrote down NOTHING all day, and a real speaker's normal pauses
+// were cutting sessions mid-sentence. Starting stays instant (latency is the
+// whole point); STOPPING now waits until the tab has been quiet for a full
+// minute. A stray ping costs 60 seconds of cheap listening; a dropped
+// first-word-of-a-call costs the entire edge.
+const VOICE_QUIET = new Map();          // tabId -> pending stop timer
+const VOICE_QUIET_GRACE_MS = 60 * 1000;
 function voiceTookThis(sig) {
   const now = Date.now();
   for (const [k, t] of VOICE_TOOK) if (now - t > VOICE_TOOK_MS) VOICE_TOOK.delete(k);
@@ -1452,8 +1461,13 @@ async function dgKey() {
   } catch (e) { return ""; }
 }
 async function dgModel() {
-  try { return (await chrome.storage.local.get("deepgram_model")).deepgram_model || "nova-2"; }
-  catch (e) { return "nova-2"; }
+  // nova-3 (8/26): noticeably better on fast multi-speaker room audio, and it
+  // takes keyterm prompting — the ticker names are exactly the words nova-2
+  // kept mangling ("SLV" -> "silver"). A key without nova-3 access falls back
+  // to nova-2 by itself in offscreen.js. Saving deepgram_model in storage
+  // still overrides this default, same as before.
+  try { return (await chrome.storage.local.get("deepgram_model")).deepgram_model || "nova-3"; }
+  catch (e) { return "nova-3"; }
 }
 async function saveListening() {
   const arr = Array.from(LISTENING.entries()).map(([id, v]) => ({ id, ...v }));
@@ -1470,8 +1484,18 @@ async function startListening(tabId, label) {
   catch (e) { return { ok: false, why: "couldn't grab that tab's audio — click the extension while the Discord tab is focused: " + (e && e.message || e) }; }
   LISTENING.set(tabId, { label: label || ("tab " + tabId), state: "starting" });
   await saveListening();
+  // Keyterm prompting (nova-3): hand Deepgram the room's own ticker
+  // vocabulary so "SLV" comes back as SLV and not "silver". Short symbols
+  // first — those are the ones speech mangles. Spelling help only; nothing
+  // is filtered by this list, exactly like the parser's vocabulary.
+  const _c = await cfg();
+  const keyterms = Array.from(new Set([].concat(_c.allowed_symbols || [])
+      .map(s => String(s).toUpperCase().trim())
+      .filter(s => /^[A-Z.]{1,6}$/.test(s))))
+    .sort((a, b) => a.length - b.length).slice(0, 50);
   chrome.runtime.sendMessage({ target: "offscreen", type: "START_LISTEN",
-    id: tabId, label: label || ("tab " + tabId), streamId, dgKey: key, model: await dgModel() });
+    id: tabId, label: label || ("tab " + tabId), streamId, dgKey: key,
+    model: await dgModel(), keyterms });
   return { ok: true };
 }
 async function stopListening(tabId) {
@@ -1487,6 +1511,13 @@ async function stopAllListening() {
 }
 
 async function handleOffscreen(msg) {
+  if (msg.type === "LISTEN_NOTE") {
+    // Informational only (e.g. nova-3 fell back to nova-2) — the session is
+    // still alive, so this must NOT touch the LISTENING map.
+    await addLog({ kind: "update",
+                   why: "🎙 " + (msg.label || "voice") + ": " + msg.why, text: "" });
+    return;
+  }
   if (msg.type === "LISTEN_STATE") {
     if (msg.state === "stopped") LISTENING.delete(msg.id);
     else { const cur = LISTENING.get(msg.id); if (cur) cur.state = msg.state; }
@@ -1623,7 +1654,11 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
       if (!tab || !/https:\/\/([^/]*\.)?discord\.com\//.test(tab.url || "")) return;
       const c = await cfg();
       if (c.auto_listen_live === false) return;      // on unless he turns it off
-      if (info.audible === true && !LISTENING.has(tabId)) {
+      if (info.audible === true) {
+        // Sound again — cancel any pending "quiet" stop and keep the session.
+        const t = VOICE_QUIET.get(tabId);
+        if (t) { clearTimeout(t); VOICE_QUIET.delete(tabId); }
+        if (LISTENING.has(tabId)) return;   // the grace held; nothing to start
         if (!(await dgKey())) return;               // no Deepgram key = no ears
         const label = (tab.title || "voice").replace(/ \| Discord.*/i, "").slice(0, 40);
         const r = await startListening(tabId, label);
@@ -1637,12 +1672,23 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
         }
       } else if (info.audible === false) {
         const v = LISTENING.get(tabId);
-        if (v && v.auto) {
-          await stopListening(tabId);
-          await addLog({ kind: "update",
-            why: "🎙 " + (v.label || "voice") + " went quiet — stopped "
-               + "listening.", text: "" });
-        }
+        if (!(v && v.auto)) return;         // hand-started sessions are never cut
+        if (VOICE_QUIET.has(tabId)) return; // grace already counting down
+        VOICE_QUIET.set(tabId, setTimeout(async () => {
+          VOICE_QUIET.delete(tabId);
+          try {
+            const cur = LISTENING.get(tabId);
+            if (!(cur && cur.auto)) return;
+            let audibleNow = false;
+            try { audibleNow = !!(await chrome.tabs.get(tabId)).audible; }
+            catch (e) { /* tab gone — fall through and stop */ }
+            if (audibleNow) return;         // it came back — the ears stay on
+            await stopListening(tabId);
+            await addLog({ kind: "update",
+              why: "🎙 " + (cur.label || "voice") + " has been quiet a full "
+                 + "minute — stopped listening.", text: "" });
+          } catch (e) {}
+        }, VOICE_QUIET_GRACE_MS));
       }
     } catch (e) {}
   })();

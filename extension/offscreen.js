@@ -22,7 +22,7 @@ function toBg(obj) {
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (!msg || msg.target !== "offscreen") return;
-  if (msg.type === "START_LISTEN") startListen(msg.id, msg.label, msg.streamId, msg.dgKey, msg.model);
+  if (msg.type === "START_LISTEN") startListen(msg.id, msg.label, msg.streamId, msg.dgKey, msg.model, msg.keyterms);
   else if (msg.type === "STOP_LISTEN") stopListen(msg.id);
   else if (msg.type === "STOP_ALL") { for (const id of Array.from(SESS.keys())) stopListen(id); }
 });
