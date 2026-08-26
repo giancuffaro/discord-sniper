@@ -667,23 +667,24 @@ print("Live-exit: live AND paper positions both get real resting stops and real 
       "management on their own accounts; only a pure dry-run book simulates.")
 
 
-# --- the ratchet (8/15): ------------------------------------------------------
+# --- the ratchet (8/15, re-tuned 8/25): ---------------------------------------
 # starts at -stop_pct like any other stop; once gain reaches take_profit_pct
-# the stop stops closing the position and starts WALKING UP instead, first to
-# +stop_pct locked, then another +stop_pct for every further step. Never sells
-# outright on the way up, never loosens once it's locked.
+# the stop arms EARLY at BREAKEVEN (lock 0 — the trade can't go red any more),
+# and every further stop_pct of gain locks another stop_pct. Never sells
+# outright on the way up, never loosens once it's locked. (The old first rung
+# jumped straight to +stop_pct and left a +15%% winner free to ride back red.)
 ok(positions.ratchet_locked_pct(19.9, 10, 20) is None,
    "below the first rung, nothing is locked yet")
-ok(positions.ratchet_locked_pct(20.0, 10, 20) == 10,
-   "right at +20%%, the stop locks at +10%%")
-ok(positions.ratchet_locked_pct(25.0, 10, 20) == 10,
-   "between rungs (+25%%) still locked at the last rung crossed, +10%%")
-ok(positions.ratchet_locked_pct(30.0, 10, 20) == 20,
-   "at +30%%, locked climbs to +20%%")
-ok(positions.ratchet_locked_pct(30.0, 10, 20) == 20,
-   "at +30%%, locked climbs to +20%%")
-ok(positions.ratchet_locked_pct(95.0, 10, 20) == 80,
-   "no ceiling: a +95%% runner locks +80%%")
+ok(positions.ratchet_locked_pct(20.0, 10, 20) == 0,
+   "right at +20%%, the stop goes to BREAKEVEN (locks +0%%)")
+ok(positions.ratchet_locked_pct(25.0, 10, 20) == 0,
+   "between rungs (+25%%) still at the last rung crossed — breakeven")
+ok(positions.ratchet_locked_pct(30.0, 10, 20) == 10,
+   "at +30%%, locked climbs to +10%%")
+ok(positions.ratchet_locked_pct(30.0, 10, 20) == 10,
+   "at +30%%, locked climbs to +10%% (same answer asked twice — no drift)")
+ok(positions.ratchet_locked_pct(95.0, 10, 20) == 70,
+   "no ceiling: a +95%% runner locks +70%% (rungs 20,30,...,90)")
 ok(positions.ratchet_locked_pct(15.0, 20, 20) is None,
    "a broken bracket (take-profit <= stop) never ratchets, refuses instead")
 
@@ -711,17 +712,17 @@ stops_after = [c for c in RWB.calls if c[0] == "stop"]
 ok(len(stops_after) == len(stops_before) + 1,
    "the ratchet cancels the old resting stop and places exactly one new one")
 new_stop = stops_after[-1][3]
-ok(abs(new_stop - 2.20) < 0.005,
-   "locked +10%% off a 2.00 fill is a 2.20 stop, got %s" % new_stop)
+ok(abs(new_stop - 2.00) < 0.005,
+   "the first rung is BREAKEVEN off a 2.00 fill — a 2.00 stop, got %s" % new_stop)
 ok(any(c[0] == "cancel" for c in RWB.calls),
    "the old stop order gets cancelled before the new one goes in")
-# Price keeps climbing to +30% — the stop should walk up again, to +20%.
+# Price keeps climbing to +30% — the stop should walk up again, to +10%.
 rb.auto_ratchet(RKEY, 2.60)
 stops_30 = [c for c in RWB.calls if c[0] == "stop"]
 ok(len(stops_30) == len(stops_after) + 1,
    "a further rung places another new stop")
-ok(abs(stops_30[-1][3] - 2.40) < 0.005,
-   "locked +20%% off a 2.00 fill is a 2.40 stop, got %s" % stops_30[-1][3])
+ok(abs(stops_30[-1][3] - 2.20) < 0.005,
+   "locked +10%% off a 2.00 fill is a 2.20 stop, got %s" % stops_30[-1][3])
 # Price dips back to +21% (still above the +20 rung, below the +30 rung) — the
 # already-locked +20% stop must NOT be loosened back down to +10%.
 rb.auto_ratchet(RKEY, 2.42)
@@ -734,5 +735,5 @@ if bad:
     print("\n%d ratchet check(s) failed." % bad)
     raise SystemExit(1)
 print("Ratchet: below +20%% the position is untouched; +20%% walks the stop to "
-      "+10%% instead of closing; +30%% walks it to +20%%; a dip that's still "
+      "BREAKEVEN instead of closing; +30%% locks +10%%; a dip that's still "
       "above the last rung never loosens the stop back down.")
