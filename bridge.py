@@ -3793,10 +3793,36 @@ def main():
             except Exception:                           # noqa: BLE001
                 is_open = False
             if is_open:
-                if not warned_open:
-                    note("CODE     new build ready — restarting at the close")
-                    warned_open = True
-                continue
+                # SAFE-WINDOW RESTART (8/26, his ask: "restart automatically
+                # when it's safe"). Mid-market, a new build no longer waits
+                # for the close if NOTHING is in flight: no resting bids, no
+                # armed pullback hunts, no position mid-close — checked twice
+                # 20s apart so a call landing between checks wins. Held
+                # positions don't block it (their stops rest at the broker
+                # and the book restores them); that's been proven daily.
+                def _in_flight():
+                    try:
+                        _h, _w = BOOK.restart_exposure()                             if BOOK is not None else ([], [])
+                        if _w:
+                            return True
+                        if _PULLBACK is not None and _PULLBACK._armed:
+                            return True
+                    except Exception:                   # noqa: BLE001
+                        return True     # can't tell = not safe
+                    return False
+                if _in_flight():
+                    if not warned_open:
+                        note("CODE     new build ready — waiting for a safe "
+                             "window (or the close, whichever comes first)")
+                        warned_open = True
+                    continue
+                time.sleep(20)
+                if _in_flight():
+                    continue
+                note("CODE     safe window — nothing in flight, restarting "
+                     "onto the new build now instead of waiting for the "
+                     "close")
+                # fall through to the compile-check + restart below
             ok = True
             for fn in sorted(cur):
                 try:
