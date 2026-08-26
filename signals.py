@@ -188,6 +188,27 @@ RE_BARE_FILL = re.compile(
 # instead of the flat 20% rule when his room trades.
 FUT_SYMS = {"NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K",
             "CL", "MCL", "GC", "MGC", "SI", "SIL", "NG"}
+
+
+def _fut_root(raw):
+    """A futures token the rooms wrote with a trailing digit -> its ROOT.
+
+    Same shape of bug as positions._fut_mult_for: the table is keyed by ROOT
+    ("MNQ") while a room writes the contract with a number stuck on the end.
+    Horizon posts "BTO MNQ1 29115"; "MNQ1" is in no set, so the entry branch
+    below fell through to the no-price branch and the call died with NO log
+    line at all — a silent drop, twice (8/18 22:42, 8/25 21:38).
+
+    EXACT MATCH FIRST, so nothing that already works can change. Only if the
+    token is unknown do we strip trailing digits and retry. Returns the root
+    or None; the caller's price-band check still has the final say."""
+    s = str(raw or "").upper()
+    if s in FUT_SYMS:
+        return s
+    t = s
+    while t and t[-1].isdigit():
+        t = t[:-1]
+    return t if (t and t != s and t in FUT_SYMS) else None
 RE_FUT_ENTRY = re.compile(
     # The @ is optional now — his Day Trades channel writes "Short nq
     # 28240.50" with nothing between the symbol and the price. The number
@@ -1809,17 +1830,18 @@ def _parse_inner(text, author="", channel="", cfg=None):
     mfut = RE_FUT_ENTRY.search(t)
     fut_dir = fut_sym = fut_px = None
     fut_end = 0
-    if mfut and mfut.group(2).upper() in FUT_SYMS:
+    _mroot = _fut_root(mfut.group(2)) if mfut else None
+    if _mroot:
         _px = _num(mfut.group(3))
-        if not _fut_price_ok(mfut.group(2).upper(), _px):
+        if not _fut_price_ok(_mroot, _px):
             # "Long NQ @ 0", "Long NQ @ 286600000", or a count the unit-word
             # lookahead didn't know. Refused loudly, never guessed — a short
             # at a nonsense-low price is a marketable order.
             sig.why = ("looks like a futures entry but %g isn't a plausible "
                        "%s price — refused, not guessed"
-                       % (_px, mfut.group(2).upper()))
+                       % (_px, _mroot))
             return sig
-        fut_dir, fut_sym = mfut.group(1).upper(), mfut.group(2).upper()
+        fut_dir, fut_sym = mfut.group(1).upper(), _mroot
         fut_px, fut_end = _px, mfut.end()
     else:
         # "Long NQ - AVG 24015" / "Entered NQ short 23477 average" — no

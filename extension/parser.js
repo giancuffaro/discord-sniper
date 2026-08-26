@@ -80,6 +80,22 @@ const RE_BARE = /\b([A-Za-z]{1,5})\b/g;
  * use HIS levels instead of the flat 20% rule when his room trades. */
 const FUT_SYMS = new Set(["NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K",
                           "CL", "MCL", "GC", "MGC", "SI", "SIL", "NG"]);
+/* A futures token the rooms wrote with a trailing digit -> its ROOT.
+ * Same shape of bug as positions._fut_mult_for: the set is keyed by ROOT
+ * ("MNQ") while a room writes the contract with a number stuck on the end.
+ * Horizon posts "BTO MNQ1 29115"; "MNQ1" is in no set, so the entry branch
+ * fell through to the no-price branch and the call died with NO log line at
+ * all — a silent drop, twice (8/18 22:42, 8/25 21:38).
+ * EXACT MATCH FIRST, so nothing that already works can change. Only an
+ * unknown token gets its trailing digits stripped and retried. Returns the
+ * root or null; the caller's price-band check still has the final say.
+ * Mirrors signals._fut_root — test_parity holds the two together. */
+function futRoot(raw) {
+  const s = String(raw || "").toUpperCase();
+  if (FUT_SYMS.has(s)) return s;
+  const t = s.replace(/\d+$/, "");
+  return (t && t !== s && FUT_SYMS.has(t)) ? t : null;
+}
 // The @ is optional now — his Day Trades channel writes "Short nq 28240.50"
 // with nothing between the symbol and the price. "SL 28302" is Whop
 // shorthand for the same stop ("SL at be" carries no number and stays
@@ -1379,17 +1395,18 @@ function parseSignalInner(text, cfg) {
   //     the parser's decision; it reads, the guards and the bridge decide.
   const mf = RE_FUT_ENTRY.exec(t);
   let futDir = null, futSym = null, futPx = null, futEnd = 0;
-  if (mf && FUT_SYMS.has(mf[2].toUpperCase())) {
+  const mfRoot = mf ? futRoot(mf[2]) : null;
+  if (mfRoot) {
     const px0 = num(mf[3]);
-    if (!futPriceOk(mf[2].toUpperCase(), px0)) {
+    if (!futPriceOk(mfRoot, px0)) {
       // "Long NQ @ 0", "Long NQ @ 286600000", or a count the unit-word
       // lookahead didn't know. Refused loudly, never guessed — a short at
       // a nonsense-low price is a marketable order. Mirrors signals.py.
       s.why = "looks like a futures entry but " + px0 + " isn't a plausible " +
-              mf[2].toUpperCase() + " price — refused, not guessed";
+              mfRoot + " price — refused, not guessed";
       return s;
     }
-    futDir = mf[1].toUpperCase(); futSym = mf[2].toUpperCase();
+    futDir = mf[1].toUpperCase(); futSym = mfRoot;
     futPx = px0; futEnd = (mf.index || 0) + mf[0].length;
   } else {
     // "Long NQ - AVG 24015" / "Entered NQ short 23477 average" — no inline
