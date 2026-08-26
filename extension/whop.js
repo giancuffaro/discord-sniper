@@ -244,4 +244,20 @@ timer = setInterval(function () {
   if (!alive) { window.__SNIPER_WHOP_STOP__(); return; }
   sweep();
 }, 2000);
+
+// HEALTH PULSE (8/25): once a minute, tell the worker whether this page
+// actually RENDERED — a black/stuck Whop shell runs scripts but paints no
+// text. The watchdog reloads on "running but blank", never on "quiet room",
+// so an evening with no messages stops looking like a dead tab.
+setInterval(function () {
+  try {
+    if (!(chrome.runtime && chrome.runtime.id)) return;
+    const txt = (document.body && document.body.innerText) || "";
+    chrome.runtime.sendMessage({
+      type: "WHOP_PULSE",
+      ok: txt.replace(/\s+/g, "").length > 120,
+      href: location.href
+    }, function () { void chrome.runtime.lastError; });
+  } catch (e) {}
+}, 60 * 1000);
 })();

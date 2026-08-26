@@ -1121,6 +1121,7 @@ async function oneTabPerChannel() {
  * behind, and the 15-second history grace in whop.js means a reload can
  * never trade the old messages it repaints. */
 const whopTabSeen = {};    // tabId -> last time a message arrived from it
+const WHOP_PULSE = {};     // tabId -> { t, ok, badSince } from the health pulse
 
 async function whopWatchdog() {
   let tabs;
@@ -1148,6 +1149,20 @@ async function whopWatchdog() {
       try { await chrome.tabs.update(t.id, { url: feed }); } catch (e) { /* gone */ }
       continue;
     }
+    // BROKEN-PAGE reload, any hour (8/25): the pulse says the page is
+    // running but painting nothing — a black shell. Two bad minutes in a
+    // row earns a reload; a healthy quiet page is left alone.
+    const hp = WHOP_PULSE[t.id];
+    if (hp && !hp.ok && hp.badSince && now - hp.badSince > 2 * 60 * 1000) {
+      WHOP_PULSE[t.id] = { t: now, ok: false, badSince: 0 };  // reset clock
+      whopTabSeen[t.id] = now;
+      try { await chrome.tabs.reload(t.id); } catch (e) { /* tab gone */ }
+      continue;
+    }
+    // NO-MESSAGE reload, MARKET HOURS ONLY (8/25): out of hours a quiet
+    // room is just a quiet room — the old any-hour version reloaded every
+    // whop tab all evening, which read as "loading and black again".
+    if (!_marketOpenNow()) continue;
     if (!whopTabSeen[t.id]) { whopTabSeen[t.id] = now; continue; }
     if (now - whopTabSeen[t.id] > 5 * 60 * 1000) {
       whopTabSeen[t.id] = now;
@@ -1558,6 +1573,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
  * this room auto-listens every time it goes live. */
 const LIVE_SEEN = new Map();     // channelId -> last ping ts
 chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (msg && msg.type === "WHOP_PULSE" && sender.tab) {
+    const prev = WHOP_PULSE[sender.tab.id] || {};
+    WHOP_PULSE[sender.tab.id] = { t: Date.now(), ok: !!msg.ok,
+      badSince: msg.ok ? 0 : (prev.badSince || Date.now()) };
+    return;
+  }
   if (!msg || msg.type !== "LIVE_DETECTED") return;
   (async () => {
     const cid = String(msg.channelId || "");

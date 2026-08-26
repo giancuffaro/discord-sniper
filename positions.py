@@ -87,11 +87,17 @@ def ratchet_locked_pct(gain_pct, stop_loss_pct, take_profit_pct):
     * 100 comes out 19.999999999999996 in real floating point, not a clean
     20.0, and a bid landing EXACTLY on the take-profit price must still ratchet
     — the alternative is silently skipping the very moment this exists for."""
-    step = take_profit_pct - stop_loss_pct
+    # 8/25, his change: the ratchet arms EARLY. At +take_profit_pct the stop
+    # goes to BREAKEVEN (lock 0 — can't go red), and every further
+    # stop_loss_pct of gain locks another stop_loss_pct: 10/10 -> +10% locks
+    # BE, +20% locks +10, +30% locks +20, no ceiling. The old first rung
+    # (+20% -> +10) skipped straight past breakeven and left a +15% winner
+    # free to ride back to -10%.
+    step = stop_loss_pct
     if step <= 0 or gain_pct is None or gain_pct < take_profit_pct - 1e-9:
         return None
     k = int((gain_pct - take_profit_pct + 1e-9) // step)
-    return stop_loss_pct + step * k
+    return step * k
 
 
 class Book:
