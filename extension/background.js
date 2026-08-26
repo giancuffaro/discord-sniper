@@ -1125,7 +1125,12 @@ const whopTabSeen = {};    // tabId -> last time a message arrived from it
 async function whopWatchdog() {
   let tabs;
   try {
-    tabs = await chrome.tabs.query({ url: ["https://whop.com/joined/*"] });
+    // ALL whop tabs (8/25): Profile 2's rooms live at
+    // whop.com/<community>/exp_<hash>/app — the old "/joined/*" filter
+    // matched none of them, so the auto-reload guarded empty air and a
+    // dead (black) tab stayed dead all day. Filter to app views here.
+    tabs = await chrome.tabs.query({ url: ["https://whop.com/*"] });
+    tabs = tabs.filter(t => /\/app(\/|$)|\/joined\//.test(t.url || ""));
   } catch (e) { return; }
   const now = Date.now();
   for (const t of tabs) {
@@ -1151,6 +1156,83 @@ async function whopWatchdog() {
   }
 }
 
+/* ROOM SILENCE ALARM (his ask, 8/25: "alert me if a channel is not putting
+ * out alerts"). Every 5 minutes during market hours, any watched room that
+ * hasn't produced a single message in 40 minutes gets a desktop
+ * notification and an amber log line — that's either a dead reader (F5 the
+ * tab) or a room that's gone quiet; both are worth knowing about. One alert
+ * per quiet spell, again at the 2-hour mark if it's still dead. Also barks
+ * if NO whop tab is open at all. The map persists across service-worker
+ * naps so an idle restart can't fake a full board of silence. */
+const ROOM_MSG_AT = {};          // channelId -> last message ts
+const ROOM_ALERTED = {};         // channelId -> last-msg ts we alerted on
+let _pulseBoot = Date.now();
+(async () => { try {
+  const st = (await chrome.storage.local.get("room_msg_at")).room_msg_at;
+  if (st) for (const k of Object.keys(st)) ROOM_MSG_AT[k] = st[k];
+} catch (e) {} })();
+
+function _marketOpenNow() {
+  try {
+    const p = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York",
+      hour12: false, weekday: "short", hour: "2-digit", minute: "2-digit"
+    }).formatToParts(new Date());
+    const g = t => (p.find(x => x.type === t) || {}).value || "";
+    if (["Sat", "Sun"].includes(g("weekday"))) return false;
+    const m = parseInt(g("hour"), 10) * 60 + parseInt(g("minute"), 10);
+    return m >= 9 * 60 + 30 && m < 16 * 60;
+  } catch (e) { return false; }
+}
+
+async function roomSilenceCheck() {
+  try { await chrome.storage.local.set({ room_msg_at: ROOM_MSG_AT }); } catch (e) {}
+  if (!_marketOpenNow()) return;
+  const now = Date.now();
+  const QUIET = 40 * 60 * 1000;
+  for (const id of Object.keys(ROOM_LABELS)) {
+    const last = ROOM_MSG_AT[id] || _pulseBoot;
+    const quiet = now - last;
+    if (quiet < QUIET) continue;
+    const already = ROOM_ALERTED[id];
+    // once per spell, and once more if it crosses two hours
+    if (already === last && quiet < 120 * 60 * 1000) continue;
+    if (already === "2h:" + last) continue;
+    ROOM_ALERTED[id] = quiet >= 120 * 60 * 1000 ? "2h:" + last : last;
+    const mins = Math.round(quiet / 60000);
+    const label = ROOM_LABELS[id] || id;
+    try {
+      chrome.notifications.create("quiet-" + id, {
+        type: "basic", iconUrl: "icon128.png",
+        title: "🔇 " + label + " — silent " + mins + " min",
+        message: "Not one message during market hours. Dead reader (F5 its " +
+                 "tab) or the room's just asleep — worth a look either way."
+      });
+    } catch (e) {}
+    await addLog({ kind: "skipped",
+                   why: "🔇 " + label + " has been silent " + mins + " min " +
+                        "during market hours — dead reader or sleeping room. " +
+                        "Check its tab.", text: "", author: label });
+  }
+  // No whop tab open at all — nothing can be read, say so plainly.
+  try {
+    let wt = await chrome.tabs.query({ url: ["https://whop.com/*"] });
+    wt = wt.filter(t => /\/app(\/|$)|\/joined\//.test(t.url || ""));
+    if (!wt.length && WHOP_ROOMS.length &&
+        (now - (ROOM_ALERTED["_nowhop"] || 0)) > 30 * 60 * 1000) {
+      ROOM_ALERTED["_nowhop"] = now;
+      chrome.notifications.create("no-whop", {
+        type: "basic", iconUrl: "icon128.png",
+        title: "🔇 No Whop tab is open",
+        message: "Every Whop room is unwatched right now — open the rooms " +
+                 "(START HERE does it) or Felony trades without you." });
+      await addLog({ kind: "skipped",
+                     why: "🔇 no Whop tab open — every Whop room is unwatched",
+                     text: "", author: "whop" });
+    }
+  } catch (e) {}
+}
+
+chrome.alarms.create("room-silence", { periodInMinutes: 5 });
 chrome.alarms.create("whop-watchdog", { periodInMinutes: 1 });
 chrome.alarms.create("watch-build", { periodInMinutes: 0.5 });
 // The self-learning pipe: every 30 minutes, drop the whole day — every raw
@@ -1186,6 +1268,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
 chrome.alarms.onAlarm.addListener(a => {
   if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); checkBridgeHealth(); }
   if (a.name === "whop-watchdog") whopWatchdog();
+  if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "auto-export") autoExportForLearning();
 });
 
@@ -1628,6 +1711,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // Grabber export stores the FULL row text (embeds and all); trading still
     // reads the clean msg.text below.
     if (c.capture) capture(msg.full || msg.text, msg.author, msg.channelId, msg.postedAt);
+    ROOM_MSG_AT[String(msg.channelId || "")] = Date.now();
 
     // Drop a message we've already handled. Capture ran first (above), so the
     // grabber's export still sees every row; this only stops the LIVE path —
@@ -1645,7 +1729,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // decides), so that profile applies whether or not the room is named.
     if (String(msg.platform || "") === "whop") {
       const wroom = whopRoomOf(msg.channelId);
-      if (wroom) msg.channelId = wroom.id;   // canonical id when we know it
+      if (wroom) { msg.channelId = wroom.id;   // canonical id when we know it
+                   ROOM_MSG_AT[String(wroom.id)] = Date.now(); }
       c.bare_pct_trims = false;
     }
 
