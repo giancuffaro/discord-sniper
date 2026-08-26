@@ -691,6 +691,21 @@ function parseSignalInner(text, cfg) {
       return s;
     }
   }
+  // RETRACTION (8/26, bullwinkle's "NOT READY YET REVISING" 60s after a
+  // TSLA call the bot had already bid on): a trader pulling a call back is
+  // an ORDER — cancel my in-flight entry and any armed pullback of theirs.
+  // Only fires when the message is a bare retraction (no fresh contract in
+  // it); a revision WITH a new contract parses as its own new call below.
+  if (/(?:not\s+ready(?:\s+yet)?|revising|scratch\s+that|cancel\s+that|disregard(?:\s+that)?|hold\s+off|nevermind|never\s*mind)/i.test(low)
+      && !/\d{1,5}(?:\.\d+)?\s*[CcPp]/.test(t)) {
+    s.action = "RETRACT";
+    s.fire = true;
+    const rt = /([A-Z]{1,5})/.exec(t.toUpperCase());
+    if (rt && !NOT_TICKERS.has(rt[1])) s.symbol = rt[1];
+    s.why = "the trader pulled the call back — cancelling anything of " +
+            "theirs still in flight";
+    return s;
+  }
   // Swing wording anywhere on the line tags the signal (harmless on
   // non-entries — only entries ever store or show it). Mirrors signals.py.
   s.swing = /\bswing(?:ing|s)?\b/.test(low);
