@@ -50,3 +50,4 @@ signal-room-chat*.txt
 px_day.json
 state-*.json
 .~lock.*
+.autopush.alive
