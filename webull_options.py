@@ -1306,6 +1306,12 @@ class WebullOptions:
             if stop >= ceiling:
                 stop = max(0.01, float(tick_round(ceiling)))
                 stop_clamped = True
+        # The price that actually RESTS at Webull is the tick-rounded one —
+        # _order() snaps stop_price to the exchange step on the way out. Round
+        # here too, so the value returned (then logged, journaled, and used by
+        # the watchdog) is the broker's number and not a phantom penny off it.
+        # 8/25 SLV: the log said 2.46 while the resting order was 2.45.
+        stop = max(0.01, float(tick_round(stop)))
         what = "STOP %d %s %g%s %s @ %.2f%s" % (qty, symbol, float(strike),
                                                 option_type[0], expiration, stop,
                                                 " (clamped under market)" if stop_clamped else "")
@@ -1449,8 +1455,12 @@ class WebullOptions:
         _orders = None
         if bracket_stop_pct and not blind:
             try:
-                stop_born = max(0.01, round(
-                    float(limit) * (1 - float(bracket_stop_pct) / 100), 2))
+                # Tick-rounded HERE, not just inside _order(): what gets
+                # recorded as bracket_stop must be the price actually resting,
+                # or the book carries a stop that doesn't exist (8/25 SLV: the
+                # log said "stop 2.51 born with it", the resting leg was 2.50).
+                stop_born = max(0.01, float(tick_round(
+                    float(limit) * (1 - float(bracket_stop_pct) / 100))))
                 slim = max(0.01, round(stop_born * 0.90, 2))
 
                 def _combo_try(child_type):

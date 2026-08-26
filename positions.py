@@ -46,6 +46,24 @@ import threading
 import time
 
 
+def _tick_round(px):
+    """Snap an option price to the exchange's legal increment — $0.05 steps
+    below $3.00, $0.10 at or above. This is the SAME snap webull_options.py
+    applies to every price on its way to the broker (tick_round there); it
+    lives here as its own five lines so the book never has to import the
+    broker module (test stubs, and no SDK needed to compute a price). If one
+    changes, change the other."""
+    try:
+        p = float(px)
+    except (TypeError, ValueError):
+        return px
+    if p <= 0:
+        return 0.05
+    step = 0.05 if p < 3.0 else 0.10
+    snapped = round(round(p / step) * step, 2)
+    return snapped if snapped > 0 else step
+
+
 # The states a position can be in, and what each one means for whether the
 # extension should believe you're holding something.
 WORKING = "working"     # bid is resting. You do NOT own it yet.
@@ -1625,7 +1643,14 @@ class Book:
                 except Exception:                       # noqa: BLE001
                     pass
             return
-        stop_price = max(0.01, round(float(fill) * (1 - self.stop_pct / 100), 2))
+        # Tick-rounded to the exchange step (0.05 under $3, 0.10 above), the
+        # same snap webull_options applies on the way out — so the number in
+        # the book, the log, and the REBASE comparison below is the number
+        # that actually rests at the broker. Before this, SLV showed 2.46
+        # while the broker held 2.45, and CDE's rebase line promised 1.22
+        # while 1.20 went out.
+        stop_price = max(0.01, float(_tick_round(
+            float(fill) * (1 - self.stop_pct / 100))))
         oid = None
         with self._lock:
             p = self._pos.get(key)
@@ -1647,11 +1672,16 @@ class Book:
                 if _bs > stop_price + 0.02:
                     old = str(born)
                     p["bracket_stop_id"] = None
+                    # Print the TRUE percent of the tick-rounded price, not
+                    # the setting — on a nickel-step contract "-10%" can
+                    # really be -11% (CDE 8/25: 1.35 fill, 1.20 stop).
+                    _pa = ((1 - stop_price / float(fill)) * 100
+                           if float(fill or 0) > 0 else self.stop_pct)
                     self._event(key, "stop-set",
                                 "%s — filled better than the bid the bracket "
                                 "was priced off; moving the stop from %.2f "
                                 "to %.2f (-%.0f%% of the FILL)"
-                                % (sym, _bs, stop_price, self.stop_pct))
+                                % (sym, _bs, stop_price, _pa))
                 else:
                     p["stop"] = _bs
                     p["stop_order_id"] = str(born)
@@ -1702,9 +1732,11 @@ class Book:
                             raise
                     else:
                         raise
+                _pa = ((1 - stop_price / float(fill)) * 100
+                       if float(fill or 0) > 0 else self.stop_pct)
                 self._event(key, "stop-set",
                             "%s — stop resting at Webull at %.2f (-%.0f%% from "
-                            "%.2f)" % (sym, stop_price, self.stop_pct, fill))
+                            "%.2f)" % (sym, stop_price, _pa, fill))
             except Exception as e:                      # noqa: BLE001
                 # Not fatal, and it must not read as if you're unprotected —
                 # the watchdog below is still running.
@@ -1722,9 +1754,11 @@ class Book:
                     threading.Thread(target=self._watchdog, args=(key,),
                                      daemon=True).start()
         if self._sim(p):
+            _pa = ((1 - stop_price / float(fill)) * 100
+                   if float(fill or 0) > 0 else self.stop_pct)
             self._event(key, "stop-set",
                         "%s — pretend stop at %.2f (-%.0f%% from %.2f)"
-                        % (sym, stop_price, self.stop_pct, fill))
+                        % (sym, stop_price, _pa, fill))
 
     def _watchdog(self, key):
         """Checks the bid. If it's at or under the stop, sells what's left.
