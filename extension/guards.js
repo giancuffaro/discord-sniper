@@ -194,9 +194,33 @@ async function guardCheck(sig, ctx, cfg) {
   const already = st.positions[posKey(who, sig.symbol)] ||
     Object.keys(st.positions).some(k => keySymbol(k) === sig.symbol &&
                                         keyWho(k) === "?");
-  if (sig.action === "OPEN" && already)
+  if (sig.action === "OPEN" && already) {
+    // BETTER-AVERAGE ADD (8/26, his call: "we can double if the avg is
+    // better"). Same trader, same CONTRACT, position actually filled, and
+    // the new call's price at least 1% under what you PAID — then this is
+    // an average-down, not a double: it converts to an ADD for one more
+    // contract (the book blends the average and walks the stop to it).
+    // One better-average add per position — twice is martingale, not
+    // averaging. Note: if the first entry was strike-translated, the paid
+    // price belongs to the translated contract and this compare is
+    // conservative; a mismatch just leaves a resting bid that never fills.
+    const heldPos = st.positions[posKey(who, sig.symbol)];
+    const samePaper = heldPos && heldPos.strike === sig.strike &&
+      String(heldPos.expiry || "") === String(sig.expiry || "") &&
+      heldPos.side === sig.side;
+    const paid = heldPos && heldPos.fill != null ? Number(heldPos.fill) : null;
+    if (samePaper && !heldPos.pending && paid && sig.limit != null &&
+        Number(sig.limit) < paid * 0.99 && (heldPos.adds || 0) < 1) {
+      sig.action = "ADD";
+      return { allowed: true, reason: "already in " + sig.symbol + " at " +
+        paid + ", but their re-fire at " + sig.limit + " IMPROVES the " +
+        "average — buying one more as an ADD" };
+    }
     return { allowed: false, reason: "you're already in " + sig.symbol +
-      " from their earlier call — this one would double you up" };
+      " from their earlier call — this one would double you up" +
+      (samePaper && paid ? " (and " + sig.limit + " doesn't beat your " +
+       paid + " average)" : "") };
+  }
 
   // The echo guard. Only with a posted price — re-entries with no price
   // (Aristotle's bare contracts) can't be told apart from each other, and
