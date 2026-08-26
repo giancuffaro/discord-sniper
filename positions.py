@@ -2150,7 +2150,13 @@ class Book:
             if not fill:
                 return
             gain = (float(bid) - fill) * dirn / fill * 100.0
-            locked = ratchet_locked_pct(gain, self.stop_pct, self.take_profit_pct)
+            # CHEAP-CONTRACT arm (his call, 8/25): a sub-$1.00 premium
+            # breathes +/-10-15% on pure noise, so its ratchet arms at +15%
+            # instead of +10% — otherwise the first wiggle scratches every
+            # 0DTE lotto at breakeven and the runners leave without him.
+            # Rungs after arming are unchanged.
+            _arm = self.take_profit_pct if fill >= 1.0                 else max(self.take_profit_pct, 15.0)
+            locked = ratchet_locked_pct(gain, self.stop_pct, _arm)
             if locked is None:
                 return           # hasn't reached the first rung yet
             already = p.get("ratchet_locked_pct")
