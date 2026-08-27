@@ -76,8 +76,16 @@ def held(b, key, sym, side, strike, expiry, qty, fill, live=True):
         }
 
 
+# The account is NOT empty — it just doesn't hold our contract any more. An
+# all-empty sweep is deliberately ignored upstream (empty and unreachable look
+# identical from there), so a decoy live row is what makes the sweep count.
+DECOY = {"symbol": "AAPL", "side": "CALLS", "strike": 250.0,
+         "expiry": "2026-09-18", "qty": 1, "live": True, "kind": "option"}
+
+
 def vanish(b, key, wb, stale_bid):
-    """Three sweeps against an empty account = the bot calls it gone.
+    """Three sweeps of an account that no longer holds it = the bot calls it
+    gone.
 
     The stale bid is planted first, exactly as the watchdog would have left it,
     so the test proves the bid is IGNORED rather than merely absent.
@@ -85,7 +93,7 @@ def vanish(b, key, wb, stale_bid):
     with b._lock:
         b._pos[key]["last_bid"] = stale_bid
     for _ in range(3):
-        b.reconcile_gone({True: [], False: []})
+        b.reconcile_gone([dict(DECOY)])
     return b._pos.get(key) or {}
 
 
