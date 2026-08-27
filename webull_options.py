@@ -1038,6 +1038,102 @@ class WebullOptions:
             return "working", fq, avg
         return "unknown", fq, avg
 
+    def last_sell_fill(self, symbol, side, strike, expiry, since=None):
+        """What this contract ACTUALLY last sold for at Webull, or None.
+
+        Built 8/27 for the phantom-exit bug. When a position disappears from
+        the account the bot has no order_id to ask about — it never placed the
+        sell. Something else did: a resting bracket stop, a GTC stop from an
+        earlier session, or him tapping Close on his phone. The book used to
+        fill that hole with the last quoted BID, which is how a QQQ that made
+        $8 got written down as +$290 and a TSLA that lost $45 got written down
+        as +$70.
+
+        So: ask the broker. Order HISTORY (not open orders, not order_status —
+        both need an id we don't have) knows every fill on the account. Find
+        the newest FILLED sell leg on this exact contract and hand back its
+        price. Never raises; None means "still don't know", and the caller is
+        expected to stay silent rather than guess.
+
+        `since` is an epoch seconds floor — pass the position's open time so an
+        older round trip on the same strike can't be mistaken for this exit.
+        """
+        want = str(symbol or "").upper()
+        if not want:
+            return None
+        # A day either side: Webull rejects single-day ranges, and a stop that
+        # was placed yesterday but filled today has to fall inside the window.
+        import datetime as _dt
+        today = _dt.date.today()
+        start = (today - _dt.timedelta(days=1)).isoformat()
+        end = (today + _dt.timedelta(days=1)).isoformat()
+        body = None
+        for args in ((self.account_id, start, end), (self.account_id,)):
+            body, _why = self._try_calls(
+                ["order_v3", "order", "trade", "account_v2"],
+                ["history", "list_orders", "orders", "query_orders"], *args)
+            if body is not None:
+                break
+        if body is None:
+            return None
+        items = body if isinstance(body, list) else \
+            ((body or {}).get("orders") or (body or {}).get("data") or [])
+
+        def _num(v):
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return None
+
+        want_c = str(side or "").upper().startswith("C")
+        want_k = _num(strike)
+        want_x = str(expiry or "")[:10]
+        best_t, best_px = None, None
+        for grp in (items or []):
+            # order history nests: {orders:[{legs:[...], filled_price, ...}]}
+            for o in (grp.get("orders") if isinstance(grp, dict)
+                      and isinstance(grp.get("orders"), list) else [grp]):
+                if not isinstance(o, dict):
+                    continue
+                try:
+                    st = str(_find(o, "status", "order_status") or "").upper()
+                    if "FILL" not in st or "PART" in st:
+                        continue
+                    if str(_find(o, "side", "action") or "").upper() != "SELL":
+                        continue
+                    legs = o.get("legs") or [o]
+                    leg = legs[0] if legs else {}
+                    if str(leg.get("symbol") or o.get("symbol")
+                           or "").upper() != want:
+                        continue
+                    ot = str(leg.get("option_type")
+                             or o.get("option_type") or "").upper()
+                    if ot and bool(ot.startswith("C")) != want_c:
+                        continue
+                    k = _num(leg.get("option_exercise_price")
+                             or leg.get("strike_price") or leg.get("strike"))
+                    if want_k is not None and k is not None \
+                            and abs(k - want_k) > 0.001:
+                        continue
+                    x = str(leg.get("option_expire_date")
+                            or o.get("option_expire_date") or "")[:10]
+                    if want_x and x and x != want_x:
+                        continue
+                    px = _num(_find(o, "filled_price", "avg_fill_price",
+                                    "avgFillPrice", "average_price"))
+                    if px is None or px <= 0:
+                        continue
+                    t = _num(_find(o, "filled_time", "filledTime")) or 0
+                    if t > 1e12:            # Webull hands these back in ms
+                        t /= 1000.0
+                    if since and t and t < float(since) - 5:
+                        continue
+                    if best_t is None or t >= best_t:
+                        best_t, best_px = t, px
+                except Exception:                          # noqa: BLE001
+                    continue
+        return best_px
+
     def open_orders(self, symbol=None):
         """Every order still WORKING at Webull, normalised to
         [{order_id, symbol, strike, side, action, qty}].

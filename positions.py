@@ -1483,12 +1483,44 @@ class Book:
                 if misses >= 3:
                     q["manual_close"] = True
             if misses >= 3:
-                self.finish(key, CLOSED,
-                            "gone from your Webull account — you closed it "
-                            "yourself, so the trade is marked done",
-                            price=None)
+                # ASK BEFORE ASSUMING (8/27). The position is gone and the bot
+                # never sent the sell, so it has no order id — but the account
+                # still has the fill on it. Look the real price up and settle
+                # on THAT. Whatever closed it (a resting bracket stop, a GTC
+                # stop from an earlier session, him tapping Close) printed a
+                # price, and that price is the trade's truth. None means the
+                # lookup failed, and finish() then says so out loud instead of
+                # crediting a quote.
+                px = self._broker_exit_price(p_)
+                if px is not None:
+                    why = ("closed at your broker for %.2f — the bot didn't "
+                           "send this sell, so it read the fill back off the "
+                           "account" % px)
+                else:
+                    why = ("gone from your Webull account — you closed it "
+                           "yourself, so the trade is marked done")
+                self.finish(key, CLOSED, why, price=px)
                 closed += 1
         return closed
+
+    def _broker_exit_price(self, p_):
+        """The real sale price for a position that vanished, or None.
+
+        Wrapped tight on purpose: this runs inside the reconcile sweep, and a
+        broker hiccup here must never stop the sweep from finishing the trade.
+        Silence (None) is a safe answer — finish() handles it honestly."""
+        if not p_.get("live"):
+            return None
+        try:
+            wb = self._wbfor(p_)
+            if wb is None or not hasattr(wb, "last_sell_fill"):
+                return None
+            px = wb.last_sell_fill(p_.get("symbol"), p_.get("side"),
+                                   p_.get("strike"), p_.get("expiry"),
+                                   since=p_.get("filled_at") or p_.get("sent_at"))
+            return float(px) if px else None
+        except Exception:                                   # noqa: BLE001
+            return None
 
     def _became_filled(self, key, qty, price):
         with self._lock:
