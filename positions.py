@@ -2659,9 +2659,23 @@ class Book:
             sym = p.get("symbol") or key.split("|")[-1]
             who = p.get("who") or key.split("|")[0]
             if price is None:
-                # No price was passed, but the watchdog has been keeping the
-                # last bid it saw, and the bid is what you'd sell into.
-                price = p.get("last_bid")
+                # NEVER GUESS THE EXIT (8/27). This used to fall back to the
+                # watchdog's last seen bid. A bid is what somebody MIGHT pay;
+                # it is not an execution, and one line of it invented every
+                # phantom in the 8/26-8/27 books:
+                #   QQQ 709C  booked +$290, really +$8  (bid 3.97 vs fill 2.56)
+                #   TSLA 350P booked  +$70, really -$45 (its bracket stop had
+                #                                        already filled @4.70)
+                #   SLV       booked   -$5, really -$42
+                #   CDE       booked  -$10, really -$25
+                #   QQQ 712P  booked  -$66, really -$29
+                # The only honest exit price is one the broker printed. Callers
+                # that know the fill pass it in; reconcile_gone now ASKS the
+                # broker for it (see _broker_exit_price). When nobody knows,
+                # price stays None and the money goes silent below — "sold, but
+                # at a price I never saw" — which is the truth and is also what
+                # this function's docstring has always promised.
+                pass
             # The sentence that ended the trade, kept on the record — the
             # journal's "exit_by" column reads it (with state and the manual
             # flag) to say WHAT pulled the trigger (8/17).
