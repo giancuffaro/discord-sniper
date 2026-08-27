@@ -2809,6 +2809,26 @@ class Book:
         if not isinstance(pos, dict):
             pos = {}
         n = 0
+        # DEAD PAPER GATE (8/27): a restored OPTION whose expiry passed while
+        # the bridge was off is settled history, not a position. Restoring it
+        # live armed a watchdog on a STALE quote — "up 58%" on Wednesday's
+        # 0DTE, ratchet spam against a contract Webull rightly refused to
+        # touch, and a phantom +$290 credited off the dead quote. Expired =
+        # not restored, said plainly, zero credit (the market already ruled).
+        pe = getattr(self, "expiry_parser", None)
+        import datetime as _dt
+        _today = _dt.date.today()
+
+        def _dead(pp):
+            if pp.get("kind") == "future":
+                return False
+            exp = pp.get("expiry")
+            if not exp or pe is None:
+                return False
+            try:
+                return pe(exp) < _today
+            except Exception:                           # noqa: BLE001
+                return False
         with self._lock:
             for k, p in pos.items():
                 if not isinstance(p, dict):
@@ -2816,6 +2836,14 @@ class Book:
                 if k in self._pos:
                     continue
                 p = dict(p)
+                if _dead(p):
+                    self.note("EXPIRED  %s %s%s %s — expired while the "
+                              "bridge was off; settled by the market, not "
+                              "restored, nothing credited."
+                              % (p.get("symbol"), p.get("strike"),
+                                 str(p.get("side") or "")[:1],
+                                 p.get("expiry")))
+                    continue
                 p["state"] = FILLED
                 p["closing"] = False
                 self._pos[k] = p
@@ -2833,7 +2861,7 @@ class Book:
         # Stops re-arm outside the lock: each restored hold gets its
         # watchdog back, exactly as if it had just filled.
         for k, p in list(pos.items()):
-            if not isinstance(p, dict):
+            if not isinstance(p, dict) or _dead(p):
                 continue
             try:
                 self._arm_stop(k, p.get("side"), p.get("strike"),
