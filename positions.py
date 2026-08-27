@@ -1452,10 +1452,26 @@ class Book:
             if not acct:
                 continue        # no rows from that account — no verdict
             if any(_held(b, p_) for b in acct):
+                _arm_now = False
                 with self._lock:
                     q = self._pos.get(key)
                     if q is not None:
                         q["gone_misses"] = 0
+                        if q.get("unverified"):
+                            q["unverified"] = False
+                            _arm_now = True
+                if _arm_now:
+                    self._event(key, "update",
+                                "%s — the broker confirms the restored "
+                                "position; watchdog and stop armed"
+                                % p_.get("symbol"))
+                    try:
+                        self._arm_stop(key, p_.get("side"), p_.get("strike"),
+                                       p_.get("expiry"),
+                                       int(p_.get("qty") or 1),
+                                       float(p_.get("fill") or 0) or None)
+                    except Exception:                   # noqa: BLE001
+                        pass
                 continue
             misses = 0
             with self._lock:
@@ -2846,6 +2862,17 @@ class Book:
                     continue
                 p["state"] = FILLED
                 p["closing"] = False
+                # VERIFY-BEFORE-TRUST (8/27): a restored position arms no
+                # watchdog and no ratchet until the first broker sweep
+                # confirms Webull actually still holds it. The photo is for
+                # remembering; the broker is for truth. Its resting stop at
+                # Webull guards the ~20s gap, as always.
+                p["unverified"] = True
+                # and forget the photo's last quote — if this position turns
+                # out to be gone, the close must say "a price I never saw",
+                # never credit stale numbers (tonight's phantom +$290).
+                for _stale in ("last_bid", "bid", "hi_pct", "lo_pct"):
+                    p.pop(_stale, None)
                 self._pos[k] = p
                 n += 1
             if same_day:
@@ -2860,15 +2887,9 @@ class Book:
                 self.closed_trades = list(w.get("trades") or [])
         # Stops re-arm outside the lock: each restored hold gets its
         # watchdog back, exactly as if it had just filled.
-        for k, p in list(pos.items()):
-            if not isinstance(p, dict) or _dead(p):
-                continue
-            try:
-                self._arm_stop(k, p.get("side"), p.get("strike"),
-                               p.get("expiry"), int(p.get("qty") or 1),
-                               float(p.get("fill") or 0) or None)
-            except Exception:                           # noqa: BLE001
-                pass
+        # Watchdogs wait for the broker's word now (8/27) — see
+        # reconcile_gone: the first sweep that finds the position still held
+        # clears "unverified" and arms the stop then. Nothing armed here.
         if n:
             self.note("RESTORED %d position(s) from the last run — swings "
                       "survive a restart now" % n)
