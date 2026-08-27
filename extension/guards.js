@@ -189,11 +189,11 @@ async function guardCheck(sig, ctx, cfg) {
   // Checked per TRADER now: Brett being in SPY doesn't stop Unraveler's SPY
   // call — those are two different trades and both should run.
   const who = String(sig.caller || ctx.author || "").toLowerCase();
-  // A position whose owner was never known blocks anyone's re-entry in that
-  // name — better one missed trade than one doubled one.
-  const already = st.positions[posKey(who, sig.symbol)] ||
-    Object.keys(st.positions).some(k => keySymbol(k) === sig.symbol &&
-                                        keyWho(k) === "?");
+  // COEXISTENCE (8/26): an ownerless position is G's OWN trade — his
+  // Market Sniper tool works the same account. His QQQ scalp must not
+  // block a room's QQQ call; they're two different trades by design.
+  // Only the SAME TRADER already being in the name blocks a re-entry.
+  const already = st.positions[posKey(who, sig.symbol)];
   if (sig.action === "OPEN" && already) {
     // BETTER-AVERAGE ADD (8/26, his call: "we can double if the avg is
     // better"). Same trader, same CONTRACT, position actually filled, and
