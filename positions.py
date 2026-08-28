@@ -239,6 +239,33 @@ class Book:
         sentence would be one bad rewording away from selling something you
         don't own.
         """
+        # WARNING STORMS (8/27): stop-warn fires from the watchdog loop, so a
+        # condition that doesn't clear repeats every few seconds forever —
+        # tonight it was 8 identical QQQ ratchet lines in 45 seconds, and on
+        # 8/26 the TSLA 417 warned 4 times in 20. Same trade, same complaint,
+        # nothing new to act on: say it once a minute and count the rest. The
+        # repeat still comes (this is a real problem and must not go silent),
+        # it just stops burying the lines he actually needs to see. Only
+        # stop-warn is folded; fills, stops, exits and errors are never
+        # touched.
+        folded = 0
+        if kind == "stop-warn":
+            import re as _re
+            sig = (key, _re.sub(r"[\d.]+", "#", str(text)))
+            now = time.time()
+            with self._lock:
+                seen = getattr(self, "_warn_seen", None)
+                if seen is None:
+                    seen = self._warn_seen = {}
+                last, n = seen.get(sig, (0.0, 0))
+                if now - last < 60.0:
+                    seen[sig] = (last, n + 1)
+                    return                      # same gripe, still fresh
+                seen[sig] = (now, 0)
+                folded = n
+            if folded:
+                text = ("%s  (+%d more like this in the last minute)"
+                        % (text, folded))
         with self._lock:
             p = self._pos.get(key) or {}
             if qty is None:
