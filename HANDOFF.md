@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-08-27 evening (after the dead-paper / verify-before-trust fixes).
+Last updated: 2026-08-28 evening (options API block CONFIRMED; Topstep Auto OCO toggle found).
 No secrets live here — keys and account ids stay in settings.json (gitignored).
 
 ## Who and what
@@ -78,18 +78,24 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   stops, gated by subscription (paid_month). Exits always mirror.
 
 ## Standing chores (G's side, updated 8/27 evening)
-1. RESOLVED-PENDING-PROOF: Webull options eligibility — API sells were
-   refused 8/26 ("update your options trading application"), but G traded
-   options on the margin account fine 8/27, so it likely self-cleared.
-   VERIFY on the bot's next live option sell; if STRATEGY_NOT_MATCH_ANY
-   ever returns, the fix is Webull app -> search "Options Trading" ->
-   update the application.
-2. Webull futures account: $0 BY CHOICE (his call 8/27) — NT + Topstep carry
+1. CONFIRMED BROKEN (8/28): the BOT'S API access to options. 4 live
+   entries rejected 8/28 (SPCX/ABT/WFC/PBR) + 3 on 8/26, all
+   STRATEGY_NOT_MATCH_ANY "update your options trading application".
+   G's manual/app trading works fine — it's the OPENAPI side that's
+   blocked. Fix: Webull OpenAPI developer portal (where the API keys
+   came from) -> the app's options-trading permission / agreement; if
+   nothing there, the account's Options Trading application in the app.
+   Until fixed the bot is options-dead: it reads, grades, refuses.
+2. NEW (8/28): Topstep refused brackets — "You must enable Auto OCO
+   Brackets" — a toggle in his Topstep/ProjectX account settings.
+3. Bridge went silent Fri 16:38 (likely exited). Verify it's up before
+   CME reopens Sunday 6 PM ET.
+4. Webull futures account: $0 BY CHOICE (his call 8/27) — NT + Topstep carry
    futures; Webull-futures refusals are clean and intentional.
-3. NinjaTrader ATM template: decided 8/27 — name SNIPER, stop 100 ticks /
+5. NinjaTrader ATM template: decided 8/27 — name SNIPER, stop 100 ticks /
    target 200 ticks (= 25/50 pts on MNQ), qty 1. G creates it in NT8 and
    types SNIPER into the popup's NinjaTrader field.
-4. Topstep XFA: locked/paused — unlock in TopstepX Risk Settings (-$680
+6. Topstep XFA: locked/paused — unlock in TopstepX Risk Settings (-$680
    pre-existing on it).
 
 ## Watch items
