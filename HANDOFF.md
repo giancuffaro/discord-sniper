@@ -77,12 +77,15 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
 - Multi-account: extras (e.g. "L") mirror LIVE entries 1:1 with own books/
   stops, gated by subscription (paid_month). Exits always mirror.
 
-## Standing chores (G's side, still open as of 8/27)
+## Standing chores (G's side, updated 8/27 evening)
 1. Webull OPTIONS QUESTIONNAIRE — API sells were refused 8/26 ("update your
    options trading application"). Until done, bot can buy but may not sell.
-   THE most important chore.
-2. Webull futures account: $0 — every futures call dies on funds.
-3. NinjaTrader ATM template: unset — NT entries run naked until room exit.
+   THE most important chore. G walked through steps 8/27.
+2. Webull futures account: $0 BY CHOICE (his call 8/27) — NT + Topstep carry
+   futures; Webull-futures refusals are clean and intentional.
+3. NinjaTrader ATM template: decided 8/27 — name SNIPER, stop 100 ticks /
+   target 200 ticks (= 25/50 pts on MNQ), qty 1. G creates it in NT8 and
+   types SNIPER into the popup's NinjaTrader field.
 4. Topstep XFA: locked/paused — unlock in TopstepX Risk Settings (-$680
    pre-existing on it).
 
