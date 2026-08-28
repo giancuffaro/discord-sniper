@@ -78,9 +78,12 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   stops, gated by subscription (paid_month). Exits always mirror.
 
 ## Standing chores (G's side, updated 8/27 evening)
-1. Webull OPTIONS QUESTIONNAIRE — API sells were refused 8/26 ("update your
-   options trading application"). Until done, bot can buy but may not sell.
-   THE most important chore. G walked through steps 8/27.
+1. RESOLVED-PENDING-PROOF: Webull options eligibility — API sells were
+   refused 8/26 ("update your options trading application"), but G traded
+   options on the margin account fine 8/27, so it likely self-cleared.
+   VERIFY on the bot's next live option sell; if STRATEGY_NOT_MATCH_ANY
+   ever returns, the fix is Webull app -> search "Options Trading" ->
+   update the application.
 2. Webull futures account: $0 BY CHOICE (his call 8/27) — NT + Topstep carry
    futures; Webull-futures refusals are clean and intentional.
 3. NinjaTrader ATM template: decided 8/27 — name SNIPER, stop 100 ticks /
