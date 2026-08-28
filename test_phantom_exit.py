@@ -161,3 +161,33 @@ if bad:
 print("Phantom exits: a vanished position asks the broker what it really sold "
       "for and settles on THAT; when the broker can't say, the money stays "
       "silent instead of crediting a stale bid; an explicit fill still books.")
+
+
+# --- warning storms: say it once a minute, count the rest -------------------
+# 8 identical QQQ ratchet lines in 45 seconds is what made tonight's log
+# unreadable. The warning must still arrive — it just must not repeat itself
+# into noise. Fills and exits are never folded.
+lines = []
+b = positions.Book(GoneWB(), lines.append)
+K = positions.key_of("Gian", "QQQ")
+held(b, K, "QQQ", "CALLS", 709, "2026-08-26", 1, 2.52)
+for i in range(8):
+    b._event(K, "stop-warn",
+             "QQQ — up %d%%, but the ratchet couldn't move the resting stop "
+             "to 3.5%d" % (55 + i, i))
+warns = [l for l in lines if "STOP-WARN" in l]
+ok(len(warns) == 1,
+   "8 near-identical stop-warns in a burst should log once, got %d" % len(warns))
+for i in range(3):
+    b._event(K, "stopped", "QQQ — stopped out at 2.40")
+ok(len([l for l in lines if "STOPPED" in l]) == 3,
+   "real outcomes are never folded — all 3 stop-outs must show")
+b._event(K, "stop-warn", "QQQ — a different problem entirely")
+ok(len([l for l in lines if "STOP-WARN" in l]) == 2,
+   "a genuinely different warning still gets through immediately")
+
+if bad:
+    print("\n%d check(s) failed." % bad)
+    raise SystemExit(1)
+print("Warning storms: a repeated stop-warn logs once a minute with a count, "
+      "a different warning still gets through, and real outcomes never fold.")
