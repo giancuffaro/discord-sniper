@@ -1067,11 +1067,23 @@ class WebullOptions:
         today = _dt.date.today()
         start = (today - _dt.timedelta(days=1)).isoformat()
         end = (today + _dt.timedelta(days=1)).isoformat()
+        # 8/28: the dates MUST go in by keyword. Passed positionally they land
+        # in the SDK's (account_id, page_size, last_client_order_id, ...) slots
+        # instead — Webull answered every one of those with HTTP 500
+        # INTERNAL_ERROR, and the only reason this function still worked was
+        # the bare (account_id,) fallback below, which returns TODAY's orders
+        # only. That silently reopened the hole this whole function exists to
+        # close: an exit that filled today off a stop resting since yesterday
+        # falls outside "today" and comes back None.
         body = None
-        for args in ((self.account_id, start, end), (self.account_id,)):
+        for args, kw in (((self.account_id,), {"start_date": start,
+                                               "end_date": end}),
+                         ((self.account_id, start, end), {}),
+                         ((self.account_id,), {})):
             body, _why = self._try_calls(
                 ["order_v3", "order", "trade", "account_v2"],
-                ["history", "list_orders", "orders", "query_orders"], *args)
+                ["history", "list_orders", "orders", "query_orders"],
+                *args, **kw)
             if body is not None:
                 break
         if body is None:
