@@ -1932,6 +1932,14 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       c.bare_pct_trims = false;
     }
 
+    // SPX->SPY entries, per channel (8/30, G: Ryan's alerts trade SPX —
+    // "enter with SPY instead, pretty much the equivalent"). The parser's
+    // index-to-ETF retarget (strike/10, premium dropped, bid the SPY
+    // market) already handles the math; this flag just unlocks ENTRIES
+    // for channels listed in settings.json spx_entry_channels.
+    c.spx_entries = ((c.spx_entry_channels || [])
+      .map(String).includes(String(msg.channelId || "")));
+
     // RELAY UNWRAP (8/30, G: "one room that alerts everything"): the ZT
     // all-trades-mashup (and HD Greeter) post as ONE bot account relaying
     // every trader, with the real name leading the embed title — "Bishop's

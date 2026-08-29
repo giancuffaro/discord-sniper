@@ -28,6 +28,12 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   25-pt grid in his favour. Their stop/target wins; 25/50 fills the gaps.
 - SPREAD GUARD (entries only): refuse if spread > 20% of mid, or > max($0.20,
   10% of mid).
+- SPX->SPY, per channel (8/30, v3.4.8 — G: Ryan's alerts/Boka 3 trade SPX,
+  "enter with SPY instead, pretty much the equivalent"): channels listed in
+  settings.json spx_entry_channels fire index ENTRIES as the ETF — SPY,
+  strike/10 rounded (6470 -> 647), caller's premium DROPPED (index premium
+  is ~10x the ETF's; the bridge bids the SPY market). Verified: same call
+  refuses everywhere else — the 8/15 index-entry off switch still rules.
 - THE RATCHET v2 (strategy 10/10): -10% stop born WITH the order (combo
   bracket; rebased to the FILL if filled better). At +10% stop jumps to
   BREAKEVEN; every further +10% locks another +10%, no ceiling. Contracts
