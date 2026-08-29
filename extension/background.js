@@ -1148,6 +1148,14 @@ async function oneTabPerChannel() {
     // loading) and "/app" (loaded) counted as two different rooms and BOTH
     // survived — "5 open, 5 loading" (8/23). Normalize before matching.
     path = path.replace(/\/+$/, "").toLowerCase();
+    // ONLY a path that NAMES a room can be a duplicate (8/30 — "why do
+    // fewer rooms open than rooms.txt?"): during the morning flood, tabs
+    // that hadn't committed yet all reported the same blank/interstitial
+    // path (/channels/@me, /login, "") and this closer executed the lot
+    // as "duplicates". A still-loading tab is never a duplicate.
+    if (t.status === "loading") continue;
+    if (!(/\/channels\/\d+\/\d+/.test(path) ||
+          /\/exp_[a-z0-9]+/.test(path) || /\/joined\//.test(path))) continue;
     (byChannel[path] = byChannel[path] || []).push(t);
   }
   for (const path of Object.keys(byChannel)) {

@@ -41,6 +41,14 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
 - RETRACTION: "not ready / revising / scratch that / cancel that / disregard
   / hold off / nevermind" pulls that trader's resting bids AND kills their
   armed pullback hunts. Exits/held positions untouched.
+- TAB MASSACRE (FIXED 8/30, v3.4.5 — G: "43 rooms but fewer open"):
+  oneTabPerChannel (the dupe-closer, on the watch-build alarm) treated
+  still-loading tabs as duplicates — during START HERE's paced flood,
+  uncommitted tabs all report the same blank//channels/@me path and got
+  closed as one. Now: loading tabs are never candidates, and only paths
+  that NAME a room (/channels/<id>/<id>, /exp_<id>, /joined/) can dedupe.
+  Note the flood itself takes ~2.5 min by design (3 tabs per 10s so
+  Chrome doesn't choke) — count tabs after, not during.
 - EMBED RACE (FIXED 8/30, v3.4.4 — G: "every bot puts the trade inside an
   embed"): HD Greeter, ZTRADEZ BOT, Options Insider Alerts, Nitro Trades
   all post an empty body with the call in a Discord embed, which hydrates
