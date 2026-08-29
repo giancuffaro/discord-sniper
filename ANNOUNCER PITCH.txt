@@ -1,0 +1,37 @@
+FILL ANNOUNCER — the pitch (paste, swap the name, send)
+=========================================================
+
+Hey [NAME]! Quick thing I think you'll love. I run a copy-trading bot
+that reads typed Discord signals and executes in under a second. The
+real bottleneck is the *typing*: by the time a trader types his alert,
+the fill is already seconds old — and you know every second counts.
+
+So I built the fix: a FILL ANNOUNCER. A small read-only script that
+watches your broker account and auto-posts every fill to your channel
+the moment it happens:
+
+  ENTRY TSLA 345P 8/28 @ 4.24 x1
+  📈 TSLA 345P +20%  (4.24 → 5.10)
+  EXIT TSLA 345P @ 5.10 x1  (+20%)
+
+Your members get your real entries, real average, and real exits to
+the second — zero typing — and it posts progress milestones
+(+10/+20/+30%...) and stop-outs by itself.
+
+Connecting is genuinely 5 minutes:
+  1. Channel Settings → Integrations → Webhooks → New Webhook → copy URL
+  2. Paste that URL + your broker's READ-ONLY API key into one settings file
+  3. Run the script. Done — it can't place, cancel, or touch anything.
+     It only reads fills.
+
+Built for Webull out of the box; other brokers are a small tweak.
+Want it? I'll send you the file.
+
+---------------------------------------------------------
+Notes to self (not part of the message):
+- Send them a CLEANED copy of announcer.py — my settings.json, webhooks,
+  and keys never leave this machine.
+- Every admin who runs it = a machine-clean feed the sniper reads with
+  zero parsing ambiguity. That's the whole recruiting play.
+- Their announcer channel goes in rooms.txt like any other room; ours
+  NEVER does.
