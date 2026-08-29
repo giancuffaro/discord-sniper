@@ -2582,6 +2582,28 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/mode"):
             return self._json(200, self._status())
+        if self.path.startswith("/rooms"):
+            # The one list of channels that trade (extension/rooms.txt),
+            # parsed — so "what is the sniper actually listening to" is a
+            # one-second curl instead of a screen-share (audit ask, 8/30).
+            # Read-only, no secrets: ids/urls/labels only.
+            rooms = []
+            try:
+                _rp = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "extension", "rooms.txt")
+                with open(_rp, encoding="utf-8") as _f:
+                    for _ln in _f:
+                        _ln = _ln.strip()
+                        if not _ln or _ln.startswith("#"):
+                            continue
+                        _p = _ln.split("|")
+                        if len(_p) >= 4:
+                            rooms.append({"id": _p[0], "url": _p[1],
+                                          "label": _p[2], "group": _p[3]})
+            except Exception as _e:                     # noqa: BLE001
+                return self._json(200, {"ok": False, "why": str(_e)[:120]})
+            return self._json(200, {"ok": True, "count": len(rooms),
+                                    "rooms": rooms})
         if self.path.startswith("/exchoices"):
             # Every account behind an extra login's keys, with buying power —
             # the popup's ✏️ uses this so switching accounts is one click
