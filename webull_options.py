@@ -137,6 +137,7 @@ def expiry_to_date(expiry, today=None):
     # can only mean day/month. Swap instead of refusing a real contract.
     if mo > 12 and day <= 12:
         mo, day = day, mo
+    if yr:
         year = int(yr)
         if year < 100:
             year += 2000
