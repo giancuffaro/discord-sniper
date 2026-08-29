@@ -41,6 +41,15 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
 - RETRACTION: "not ready / revising / scratch that / cancel that / disregard
   / hold off / nevermind" pulls that trader's resting bids AND kills their
   armed pullback hunts. Exits/held positions untouched.
+- EMBED RACE (FIXED 8/30, v3.4.4 — G: "every bot puts the trade inside an
+  embed"): HD Greeter, ZTRADEZ BOT, Options Insider Alerts, Nitro Trades
+  all post an empty body with the call in a Discord embed, which hydrates
+  a beat AFTER the row paints. The old id-burn dedupe locked in the blank
+  first read — alerts vanished silently. Now content.js SEEN maps id ->
+  captured text length (blank shells stay unrecorded; a fuller re-read
+  re-emits) and the worker's seenMessage keys mid+length to let the
+  hydrated version through. Same-length re-sweeps stay deduped; a double
+  EMIT of the same signal is caught by the normal dedupe ladder.
 - STALE-ENTRY GATE: entries older than 3 minutes (re-scan, slow tab) never
   fire. Exits pass at any age. Negations ("NOT GETTING IN", "too expensive")
   hard-veto everything; "out the gate(s)" is hype, never an exit.
