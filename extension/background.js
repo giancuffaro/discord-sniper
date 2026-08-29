@@ -1895,6 +1895,12 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     noteChannelName(msg.channelId, msg.channelName);   // learn the room's real name
     if (sender && sender.tab && String(msg.platform || "") === "whop") {
       whopTabSeen[sender.tab.id] = Date.now();   // this tab is alive
+      // WHOP API MODE (8/30): when the bridge's server-side reader is
+      // active, it is the ONE source of whop messages — tab reads are
+      // dropped here so the same alert can't arrive twice with two
+      // different identities (tab reads carry no mid; the dedupe can't
+      // catch that pair). Tabs stay useful as the health/backup view.
+      if (WHOP_API_ACTIVE) { reply({ ok: true, why: "api mode" }); return; }
     }
     // Deactivated (his ask, 8/15): a whole Discord/Whop SERVER can be turned
     // off from the Channels tab in one click, with the option to keep any

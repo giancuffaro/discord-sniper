@@ -2661,6 +2661,20 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"ok": False, "why": str(_e)[:120]})
             return self._json(200, {"ok": True, "count": len(rooms),
                                     "rooms": rooms})
+        if self.path.startswith("/whopfeed"):
+            # The whop-api reader's queue. The extension's offscreen page
+            # polls this every ~2s with its last cursor; active only when
+            # settings.json whop.api_key exists (otherwise always empty).
+            q = parse_qs(urlparse(self.path).query)
+            try:
+                cur = int((q.get("cursor") or ["0"])[0])
+            except ValueError:
+                cur = 0
+            items = [m for m in WHOP_FEED if m.get("_i", 0) > cur]
+            return self._json(200, {"ok": True, "cursor": WHOP_FEED_N[0],
+                                    "active": bool(str((CFG.get("whop") or {})
+                                                   .get("api_key") or "").strip()),
+                                    "items": items[-100:]})
         if self.path.startswith("/exchoices"):
             # Every account behind an extra login's keys, with buying power —
             # the popup's ✏️ uses this so switching accounts is one click

@@ -25,7 +25,50 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "START_LISTEN") startListen(msg.id, msg.label, msg.streamId, msg.dgKey, msg.model, msg.keyterms);
   else if (msg.type === "STOP_LISTEN") stopListen(msg.id);
   else if (msg.type === "STOP_ALL") { for (const id of Array.from(SESS.keys())) stopListen(id); }
+  else if (msg.type === "FEED_START") feedStart(msg.base);
 });
+
+/* ---- WHOP API FEED (8/30) --------------------------------------------------
+ * The service worker can't run a 2-second loop (MV3 suspends it), but THIS
+ * page can — it's the same trick that keeps Deepgram alive. Poll the
+ * bridge's /whopfeed and forward each item as a normal whop MESSAGE; the
+ * background handles it exactly like a tab-read message. When the bridge
+ * says the reader is inactive (no api key), poll lazily just in case. */
+let FEED_TIMER = null;
+let FEED_CUR = 0;
+function feedStart(base) {
+  if (FEED_TIMER) clearInterval(FEED_TIMER);
+  let everyMs = 2000;
+  const tick = async () => {
+    try {
+      const r = await fetch(base + "/whopfeed?cursor=" + FEED_CUR);
+      if (!r.ok) return;
+      const j = await r.json();
+      FEED_CUR = j.cursor || FEED_CUR;
+      const wantMs = j.active ? 2000 : 30000;
+      if (wantMs !== everyMs) {
+        everyMs = wantMs;
+        clearInterval(FEED_TIMER);
+        FEED_TIMER = setInterval(tick, everyMs);
+      }
+      try { chrome.runtime.sendMessage({ type: "FEED_ACTIVE", active: !!j.active }); }
+      catch (e) {}
+      for (const it of (j.items || [])) {
+        try {
+          chrome.runtime.sendMessage({
+            type: "MESSAGE", platform: "whop",
+            channelId: it.channelId, channelName: it.channelName,
+            author: it.author, text: it.text, mid: it.mid,
+            postedAt: Date.parse(it.postedAt) || Date.now(),
+            history: !!it.history, images: [], url: ""
+          });
+        } catch (e) { /* worker asleep; next send wakes it */ }
+      }
+    } catch (e) { /* bridge down — next tick retries */ }
+  };
+  FEED_TIMER = setInterval(tick, everyMs);
+  tick();
+}
 
 async function startListen(id, label, streamId, dgKey, model, keyterms) {
   stopListen(id);                     // never stack two captures on one tab
