@@ -56,7 +56,9 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   the mashup alone. Rooms 43 -> 25. VERIFY MONDAY: the mashup capture
   lists every relayed trader (unwrapped names) — any ZT trader who does
   NOT appear gets their direct room uncommented. If the mashup ever goes
-  quiet in market hours, the 40-min silence alarm barks. ALSO 8/30: day-first expiries ("26/8") accepted
+  quiet in market hours, the 40-min silence alarm barks. MIDAS re-added
+  8/30 (G: "we only need entries, since we have the ratchet" — his exits
+  were the old reason he got benched). Rooms = 26. ALSO 8/30: day-first expiries ("26/8") accepted
   in webull_options (cost a TLG META entry 8/25), and Vero's month-name+
   year format ("MSTR SEP 18 2026 $150 CALLS") parses (was "no full
   contract"). RWGates VERDICT corrected: he DOES fire when he posts full
