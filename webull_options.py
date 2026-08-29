@@ -434,22 +434,23 @@ class WebullOptions:
                     or any(_acct_id(a).upper().endswith(s)
                            for s in self.futures_suffixes))
 
-        # Paper mode: the whole account list is simulated, so just take the
-        # named paper account or the first one. None of the live-account
-        # (margin/futures) rules apply — it's all pretend by definition.
+        # Paper mode since the sandbox retirement (8/29): the account list is
+        # the REAL one (live keys, live endpoint), so pick exactly the way
+        # live does — margin for options, named futures kept apart — and let
+        # the paper flag keep every order local. Realistic ids, pretend money.
         if self.paper:
             if not accounts:
-                raise Refused("connected to Webull PAPER but no simulated "
-                              "account came back — open the paper account in "
-                              "the Webull app once, then reconnect.")
-            chosen = None
-            if self.paper_account_id:
-                chosen = next((a for a in accounts
-                               if _acct_id(a) == str(self.paper_account_id)), None)
-            chosen = chosen or accounts[0]
+                raise Refused("connected to Webull but no account came back — "
+                              "check the keys and reconnect.")
+            _margins = [a for a in accounts if not is_futures(a)
+                        and "MARGIN" in _acct_kind(a).upper()]
+            chosen = (_margins[0] if _margins
+                      else next((a for a in accounts if not is_futures(a)),
+                                accounts[0]))
             self.account_id = _acct_id(chosen)
             self.account_kind = "PAPER"
-            self.futures_account_id = _acct_id(chosen)   # same paper book
+            _fut = next((a for a in accounts if is_futures(a)), None)
+            self.futures_account_id = _acct_id(_fut) if _fut else self.account_id
             return self.account_id
         if self.account_id:
             match = [a for a in accounts if _acct_id(a) == str(self.account_id)]

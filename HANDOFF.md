@@ -206,6 +206,17 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   (drops announcer.stop — stays off through reboots until ANNOUNCER.bat
   runs again and deletes it).
 
+- SANDBOX FULLY RETIRED (8/29, G: "deactivate every single thing that has
+  to do with paper trading" [meaning: sandbox contact]): the paper client
+  now connects with LIVE keys to the LIVE endpoint — real quotes, real
+  account list (margin picked like live, futures kept apart) — and the
+  paper flag alone keeps orders LOCAL (SIM tickets) and balance offline
+  (None, never a network call — was 211 sandbox 404s in one quiet
+  Saturday). The old "sandbox 401 -> quietly flip to live" fallback is
+  DELETED: it would have turned one flaky boot request into real orders
+  from testing rooms. paper_app_key/secret in settings = dead config.
+  TESTING mode itself is unchanged and still the default for every room.
+
 ## Operational truths
 - settings.json: ALL keys, gitignored, never pushed. Never run git write ops
   from the sandbox (locks can't be unlinked); AUTO PUSH.bat is a resident
