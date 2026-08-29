@@ -93,10 +93,17 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
 - STALE-ENTRY GATE: entries older than 3 minutes (re-scan, slow tab) never
   fire. Exits pass at any age. Negations ("NOT GETTING IN", "too expensive")
   hard-veto everything; "out the gate(s)" is hype, never an exit.
-- EXITS: urgent sells cross the bid; fill-confirmed (phantom-exit family).
-  Bare exits ("OUT NVDA") resolve to the held contract via the book. Pulled
-  bids are confirmed dead — if the cancel lost the race, the exit sells the
-  fill immediately.
+- EXITS — RATCHET + EMERGENCY OUT (G's policy, 8/30: "we're taking
+  everybody's entry, but we are letting the ratchet do its thing"): the
+  ratchet owns ALL profit-taking and stop management. Callers' TRIMS and
+  STOP-MOVES are logged ("noted, not traded") and never fire — this
+  includes swing stop-level tightenings (the level posted WITH the entry
+  still applies; later moves don't). A caller's FULL exit ("all out",
+  "stopped out") still fires as the emergency word — urgent sells cross
+  the bid, fill-confirmed (phantom-exit family), bare exits ("OUT NVDA")
+  resolve to the held contract via the book. Pulled bids are confirmed
+  dead — if the cancel lost the race, the exit sells the fill immediately.
+  settings.json exit_policy:"full" = the one-line way back.
 - RESTARTS: state photo on every event. On boot: expired options = dead
   paper, dropped, zero credit; everything else is UNVERIFIED until the
   broker confirms it (then watchdog+stop arm); gone = closed at "a price I

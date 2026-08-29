@@ -2144,6 +2144,26 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // since i want every room to act individually. its either testing or
     // they are live.. just like that." Each room's own toggle decides, per
     // order. Every room resets to TESTING when Chrome starts.
+    // EXIT POLICY (8/30, his word: "we're taking everybody's entry, but we
+    // are letting the ratchet do its thing" — chose RATCHET + EMERGENCY
+    // OUT): callers' TRIMS and STOP-MOVES are recorded, never traded — the
+    // ratchet owns profit-taking and stop management. A caller's FULL exit
+    // ("all out", "stopped out") still fires: their emergency word can beat
+    // a trailing stop on real news. settings.json exit_policy:"full" is the
+    // one-line way back to the old obey-everything behavior.
+    {
+      const _xp = String(c.exit_policy || "ratchet_emergency");
+      if (_xp !== "full" && sig.fire &&
+          (sig.action === "TRIM" || sig.action === "STOPMOVE")) {
+        await addLog({ kind: "ignored",
+          why: "exit policy: the ratchet owns " +
+               (sig.action === "TRIM" ? "trims" : "stop moves") + " — " +
+               (sig.caller || msg.author || "?") + "'s call noted, not traded",
+          text: String(msg.text || "").slice(0, 140) });
+        reply({ ok: true });
+        return;
+      }
+    }
     // MICROS, always — his word: "when felony mentiones NQ and ES, we are
     // going to shoot the diminutive of the underlying.. meaning MNQ because
     // my buying power wont be the same. same for any other future." The
