@@ -142,6 +142,19 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   is never a strike, average=fill price, "settle for green"=exit, never
   marry ticker+strike across an intervening ticker. Typed copy of a voice
   fire is skipped as echo for 5 min.
+- WHOP API READER (8/30, v3.4.9 — built DARK, awaiting G's key): Whop has
+  an official API (docs.whop.com/developer/guides/chat) — messages.list by
+  the SAME exp_ ids in rooms.txt. bridge.py polls every whop room server-
+  side (1.5s, endpoint-hunted, Bearer key) into a /whopfeed queue; the
+  extension's OFFSCREEN page (the only MV3 place a 2s timer survives)
+  polls it and forwards items as normal whop MESSAGEs (mid "whopapi|...").
+  When active, tab-sourced whop reads are DROPPED (api is the one source;
+  tabs stay as backup/health view). ACTIVATION: G creates an app at
+  whop.com dashboard -> Developer, pastes key into settings.json as
+  "whop": {"api_key": "..."}, restarts bridge. OPEN QUESTION: whether a
+  member's key can read communities he didn't create — if 403, plan B is
+  Felony installing G's app (chat:read permission). Until the key exists
+  nothing runs and tabs carry the job.
 - WHOP (SOLVED 8/30 — "we never got anything from Whop"): Whop's 2026
   redesign KILLED /joined/ URLs — they redirect to /townhall/ (or mangle
   the room id), a lobby page with neither structure, so tabs parked on old

@@ -2535,8 +2535,26 @@ async function allRoomsTesting() {
   return;
 }
 
-chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); });
-chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); });
+chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); startWhopFeed(); });
+chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); startWhopFeed(); });
+
+/* WHOP API FEED bootstrap (8/30): the offscreen page runs the 2s poll of
+ * the bridge's /whopfeed (a service worker can't hold a timer that fast).
+ * FEED_ACTIVE pings from offscreen tell the MESSAGE handler whether tab
+ * reads should stand down. Dark until settings.json whop.api_key exists. */
+let WHOP_API_ACTIVE = false;
+chrome.runtime.onMessage.addListener((m) => {
+  if (m && m.type === "FEED_ACTIVE") WHOP_API_ACTIVE = !!m.active;
+});
+async function startWhopFeed() {
+  try {
+    await ensureOffscreen();
+    const c = await cfg();
+    chrome.runtime.sendMessage({ target: "offscreen", type: "FEED_START",
+                                 base: bridgeBaseFrom(c.bridge_url) });
+  } catch (e) { /* offscreen races are harmless — voice will ensure it too */ }
+}
+startWhopFeed();
 badge();
 reinject();
 checkBuild();
