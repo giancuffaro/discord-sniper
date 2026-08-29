@@ -1440,6 +1440,10 @@ _RECENT_COIDS = {}          # coid -> (timestamp, (ok, msg)) — retry dedup
 _RECENT_CONTRACTS = {}      # "SYM|side|strike|expiry" -> timestamp
 WHOP_FEED = []              # whop-api reader queue: [{_i, platform, text...}]
 WHOP_FEED_N = [0]           # monotonic counter for /whopfeed cursors
+WHOP_FEED_OK = [0.0]        # ts of the last SUCCESSFUL room read — "active"
+                            # means delivering, never just "a key exists"
+                            # (8/30: key valid but member reads are walled;
+                            # tabs must never stand down for a dead feed)
 
 
 # --- round-number pullback (HIS strategy, 8/11/26) ---------------------------
@@ -2672,8 +2676,8 @@ class Handler(BaseHTTPRequestHandler):
                 cur = 0
             items = [m for m in WHOP_FEED if m.get("_i", 0) > cur]
             return self._json(200, {"ok": True, "cursor": WHOP_FEED_N[0],
-                                    "active": bool(str((CFG.get("whop") or {})
-                                                   .get("api_key") or "").strip()),
+                                    "active": (time.time() - WHOP_FEED_OK[0]
+                                               < 300),
                                     "items": items[-100:]})
         if self.path.startswith("/exchoices"):
             # Every account behind an extra login's keys, with buying power —
@@ -4067,6 +4071,7 @@ def main():
                             with _ur.urlopen(req, timeout=8) as r:
                                 body = json.loads(r.read().decode())
                                 winner[0] = base
+                                WHOP_FEED_OK[0] = time.time()
                                 break
                         except Exception:               # noqa: BLE001
                             continue
@@ -4102,7 +4107,8 @@ def main():
                 except Exception:                       # noqa: BLE001
                     pass
             del WHOP_FEED[:-400]        # bounded queue, newest 400 kept
-            time.sleep(1.5)
+            # fast only while it's actually working; walled/dead = 60s probes
+            time.sleep(1.5 if time.time() - WHOP_FEED_OK[0] < 300 else 60)
     threading.Thread(target=_whop_feed_loop, daemon=True).start()
 
     print("=" * 62)
