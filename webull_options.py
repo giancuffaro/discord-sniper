@@ -132,7 +132,11 @@ def expiry_to_date(expiry, today=None):
         raise Refused("couldn't make sense of the expiry \"%s\". Nothing was sent."
                       % expiry)
     mo, day, yr = int(m.group(1)), int(m.group(2)), m.group(3)
-    if yr:
+    # Day-first dates ("26/8" — TradeLikeGates writes them European style,
+    # cost a META entry 8/25): a "month" over 12 with a sane day after it
+    # can only mean day/month. Swap instead of refusing a real contract.
+    if mo > 12 and day <= 12:
+        mo, day = day, mo
         year = int(yr)
         if year < 100:
             year += 2000
