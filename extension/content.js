@@ -24,7 +24,7 @@ if (typeof window.__SNIPER_STOP__ === "function") {
   try { window.__SNIPER_STOP__(); } catch (e) { /* old copy already gone */ }
 }
 
-const SEEN = new Set();
+const SEEN = new Map();   // message id -> captured text LENGTH (embed-race fix)
 const STARTED = Date.now();
 let observer = null;
 let watching = null;
@@ -136,8 +136,24 @@ function imagesOf(li) {
 }
 
 function handle(li) {
-  if (!li.id || SEEN.has(li.id)) return;
-  SEEN.add(li.id);
+  if (!li.id) return;
+  // EMBED RACE FIX (8/30, G: "every bot puts the trade inside an embed" —
+  // HD Greeter, ZTRADEZ BOT, Options Insider Alerts, Nitro Trades all send
+  // an empty body with the call in the embed): Discord paints the message
+  // row FIRST and hydrates the embed a beat later. The old code burned the
+  // id into SEEN on first sight, so the blank pre-hydration version won and
+  // the alert vanished without a log line. SEEN is now id -> captured text
+  // LENGTH: a later, FULLER read of the same row (the embed arrived, via
+  // the subtree observer or a re-sweep) re-emits; a same-length re-sweep
+  // stays deduped. The worker's seenMessage mirrors this (mid + length).
+  const text = textOf(li);
+  const images = imagesOf(li);
+  const prevLen = SEEN.get(li.id);
+  if (prevLen !== undefined && text.length <= prevLen) return;  // nothing new
+  if (!text && !images.length) return;  // blank shell, embed not hydrated —
+                                        // leave UNRECORDED so the hydration
+                                        // mutation still passes through
+  SEEN.set(li.id, text.length);
   if (SEEN.size > 3000) SEEN.clear();
 
   const t = li.querySelector("time[datetime]");
@@ -152,11 +168,9 @@ function handle(li) {
   // instead of collecting it live for days.
   const history = postedAt < STARTED - 5000;
 
-  const text = textOf(li);
-  const images = imagesOf(li);
-  // A pure screenshot has no text — it used to stop right here and vanish.
-  // Now an image-only post still goes through so vision can read it.
-  if (!text && !images.length) return;
+  // (text/images and the empty-check moved to the top of handle() — the
+  // embed-race fix needs them before the dedupe decision. Image-only posts
+  // still pass: vision reads them.)
 
   // A reply quotes an older message, and Discord renders the quoted line
   // inside the new one — which is how Mike replying to his own morning entry

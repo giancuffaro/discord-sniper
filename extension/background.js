@@ -71,8 +71,13 @@ function voiceTookThis(sig) {
          (sig.strike != null && VOICE_TOOK.has(base + "|" + sig.strike));
 }
 function seenMessage(msg) {
-  const key = String(msg.mid ||
-    (msg.channelId + "|" + msg.postedAt + "|" + (msg.author || "") + "|" + msg.text));
+  // mid alone once swallowed embed hydrations: the re-read of a bot row
+  // whose embed arrived late shares its mid with the blank first read.
+  // Keying on mid + text LENGTH lets the fuller version through while a
+  // same-length re-sweep stays deduped (embed-race fix, 8/30).
+  const key = String(msg.mid
+    ? msg.mid + "|" + String(msg.text || "").length
+    : (msg.channelId + "|" + msg.postedAt + "|" + (msg.author || "") + "|" + msg.text));
   const now = Date.now();
   const prev = RECENT_MSGS.get(key);
   if (prev && (now - prev) < MSG_TTL_MS) return true;
