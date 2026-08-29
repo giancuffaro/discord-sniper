@@ -41,6 +41,21 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
 - RETRACTION: "not ready / revising / scratch that / cancel that / disregard
   / hold off / nevermind" pulls that trader's resting bids AND kills their
   armed pullback hunts. Exits/held positions untouched.
+- THE MASHUP SWAP (8/30, v3.4.6 — G: "eliminate six and have only one"):
+  ZT all-trades-mashup (1334236429655740457, ZTRADEZ BOT) relays every ZT
+  trader as embeds titled "<Name>'s ...". Wired IN; the five journal-proven
+  bleeders wired OUT (commented in rooms.txt, reversible): MR.TOPHAT -156,
+  Market Bishop/opt-7 -87, Demon -65, EvaPanda/opt-5 -55, are-alerts/opt-2
+  -42. RELAY UNWRAP in background.js re-books relayed calls under the real
+  trader name (regex on the leading possessive), so per-trader claims +
+  dedupe + scoreboard hold, and a direct-room copy can't double-fire.
+  KingBeeAri posts inside Honeydrip's Aristotle rooms — not separately
+  cuttable. Rooms now 39. ALSO 8/30: day-first expiries ("26/8") accepted
+  in webull_options (cost a TLG META entry 8/25), and Vero's month-name+
+  year format ("MSTR SEP 18 2026 $150 CALLS") parses (was "no full
+  contract"). RWGates VERDICT corrected: he DOES fire when he posts full
+  contracts (NFLX 8/19+8/20); his misses were thin buying power + the
+  date bug + contract-less narration (correctly skipped).
 - TAB MASSACRE (FIXED 8/30, v3.4.5 — G: "43 rooms but fewer open"):
   oneTabPerChannel (the dupe-closer, on the watch-build alarm) treated
   still-loading tabs as duplicates — during START HERE's paced flood,

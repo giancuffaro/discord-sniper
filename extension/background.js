@@ -1932,6 +1932,19 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       c.bare_pct_trims = false;
     }
 
+    // RELAY UNWRAP (8/30, G: "one room that alerts everything"): the ZT
+    // all-trades-mashup (and HD Greeter) post as ONE bot account relaying
+    // every trader, with the real name leading the embed title — "Bishop's
+    // Ideas". Re-book the call under the REAL trader so per-trader claims,
+    // the dedupe ladder, and the scoreboard keep working; without this every
+    // relayed trader shares one book, and a copy arriving in a direct room
+    // would double-fire (different "trader" = no claim match).
+    if (/^(ztradez\s*bot|hd\s*greeter)/i.test(String(msg.author || ""))) {
+      const _rm = String(msg.text || "")
+        .match(/^\s*(?:the\s+)?([A-Za-z][\w .\-]{1,24}?)[’']s\b/);
+      if (_rm) msg.author = _rm[1].trim();
+    }
+
     // VERO posts every call as a reply on his own alert bot, so the reply
     // gate below was killing ALL of them (his 717C entry read as "a reply,
     // nothing sent"). His format is fixed and self-contained — a full
