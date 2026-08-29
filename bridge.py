@@ -1438,6 +1438,8 @@ _RECENT_COIDS = {}          # coid -> (timestamp, (ok, msg)) — retry dedup
 # This is the bridge-side backstop every path must pass: an OPEN for a
 # contract that was accepted in the last 20s is the echo, whoever sent it.
 _RECENT_CONTRACTS = {}      # "SYM|side|strike|expiry" -> timestamp
+WHOP_FEED = []              # whop-api reader queue: [{_i, platform, text...}]
+WHOP_FEED_N = [0]           # monotonic counter for /whopfeed cursors
 
 
 # --- round-number pullback (HIS strategy, 8/11/26) ---------------------------
@@ -3992,6 +3994,103 @@ def main():
                     pass
             time.sleep(20)
     threading.Thread(target=_reconcile_loop, daemon=True).start()
+
+    # ---- WHOP API READER (8/30, dark until a key exists) -----------------
+    # Whop has an official API (docs.whop.com/developer/guides/chat):
+    # messages.list by experience id — the SAME exp_ ids in rooms.txt. With
+    # settings.json  "whop": {"api_key": "..."}  this poller reads every
+    # whop room server-side and queues messages for the extension's
+    # offscreen page (GET /whopfeed, 2s poll) — no tabs, no black screens,
+    # no reloads. Without the key nothing here runs and the tabs carry on.
+    def _whop_rooms_from_file():
+        rooms = []
+        try:
+            _rp = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "extension", "rooms.txt")
+            for _ln in open(_rp, encoding="utf-8"):
+                _ln = _ln.strip()
+                if not _ln or _ln.startswith("#"):
+                    continue
+                _p = _ln.split("|")
+                if len(_p) >= 4 and _p[0].startswith("whop:"):
+                    _m = re.search(r"(exp_[A-Za-z0-9]+)", _p[1])
+                    if _m:
+                        rooms.append((_m.group(1), _p[2]))
+        except Exception:                               # noqa: BLE001
+            pass
+        return rooms
+
+    def _whop_feed_loop():
+        key = str((CFG.get("whop") or {}).get("api_key") or "").strip()
+        if not key:
+            return                      # dark — no key, tabs keep the job
+        import urllib.request as _ur
+        import urllib.parse as _up
+        rooms = _whop_rooms_from_file()
+        if not rooms:
+            return
+        seen = {}                       # exp_id -> set of message ids
+        first = {r[0]: True for r in rooms}
+        # Endpoint hunt, webull-style: the SDK wraps REST; try the sane
+        # paths once and remember the winner.
+        paths = ["https://api.whop.com/v1/messages",
+                 "https://api.whop.com/api/v1/messages",
+                 "https://api.whop.com/v2/messages"]
+        winner = [None]
+        print("[whop-api] reader up — %d rooms, tabs now optional." % len(rooms))
+        while True:
+            for exp_id, label in rooms:
+                try:
+                    tries = [winner[0]] if winner[0] else paths
+                    body = None
+                    for base in tries:
+                        q = _up.urlencode({"channel_id": exp_id,
+                                           "direction": "desc", "first": 20})
+                        req = _ur.Request(base + "?" + q, headers={
+                            "Authorization": "Bearer " + key,
+                            "User-Agent": "Mozilla/5.0 (DiscordSniper/1.0)"})
+                        try:
+                            with _ur.urlopen(req, timeout=8) as r:
+                                body = json.loads(r.read().decode())
+                                winner[0] = base
+                                break
+                        except Exception:               # noqa: BLE001
+                            continue
+                    if not isinstance(body, dict):
+                        continue
+                    items = body.get("data") or body.get("messages") or []
+                    sset = seen.setdefault(exp_id, set())
+                    fresh = []
+                    for it in items:
+                        mid = str(it.get("id") or "")
+                        if not mid or mid in sset:
+                            continue
+                        sset.add(mid)
+                        u = it.get("user") or {}
+                        fresh.append({
+                            "platform": "whop",
+                            "channelId": "whop:api/" + exp_id,
+                            "channelName": label,
+                            "author": u.get("name") or u.get("username") or "?",
+                            "text": str(it.get("content") or ""),
+                            "mid": "whopapi|" + mid,
+                            "postedAt": it.get("created_at") or "",
+                            "history": bool(first.get(exp_id)),
+                        })
+                    if len(sset) > 4000:
+                        sset.clear()
+                    # oldest first so the extension reads in order
+                    for msg in reversed(fresh):
+                        WHOP_FEED_N[0] += 1
+                        msg["_i"] = WHOP_FEED_N[0]
+                        WHOP_FEED.append(msg)
+                    first[exp_id] = False
+                except Exception:                       # noqa: BLE001
+                    pass
+            del WHOP_FEED[:-400]        # bounded queue, newest 400 kept
+            time.sleep(1.5)
+    threading.Thread(target=_whop_feed_loop, daemon=True).start()
+
     print("=" * 62)
     print("Leave this window open. Close it and the extension can't trade.")
     try:
