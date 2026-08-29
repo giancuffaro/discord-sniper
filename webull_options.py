@@ -333,8 +333,12 @@ class WebullOptions:
         _paper_default = bool(self.paper_app_key and self.paper_app_secret)
         self.paper = bool(w.get("paper_trading", _paper_default))
         self.paper_warning = ""     # set on connect when paper can't run yet
-        self.endpoint = (w.get("paper_endpoint") or PAPER_ENDPOINT) if self.paper \
-            else LIVE_ENDPOINT
+        # SANDBOX FULLY RETIRED (8/29, G: "deactivate every single thing that
+        # has to do with the sandbox"): paper mode now connects to the LIVE
+        # endpoint with the live keys — real quotes, real account list — and
+        # the paper flag keeps every order LOCAL (SIM tickets, assumed fills)
+        # and the balance read offline. Not one byte goes to the sandbox.
+        self.endpoint = LIVE_ENDPOINT
         self.paper_account_id = w.get("paper_account_id") or None
         # Webull labels futures accounts as MARGIN, so the only reliable way to
         # keep off one is to name it. Put the tail of your futures account id
@@ -395,12 +399,10 @@ class WebullOptions:
 
     # -- connect --------------------------------------------------------------
     def _creds(self):
-        """(key, secret) for the current environment. Paper prefers its own
-        sandbox keys; it falls back to the live keys only so an old config that
-        never got sandbox keys still connects (it will then 401 and revert to
-        live below, which is the honest outcome)."""
-        if self.paper and self.paper_app_key and self.paper_app_secret:
-            return self.paper_app_key, self.paper_app_secret
+        """(key, secret) — ALWAYS the live keys since the sandbox retirement
+        (8/29). Paper mode is a local behavior flag, not an environment:
+        live data in, SIM fills out. The old paper_app_key settings are dead
+        config, kept only so old settings.json files still load."""
         return self.app_key, self.app_secret
 
     def connect(self):
@@ -411,17 +413,8 @@ class WebullOptions:
         if not self.app_key or not self.app_secret:
             raise Refused("no Webull API key saved yet. Open START HERE, press "
                           "2, and put your app key and secret in.")
-        if self.paper and not (self.paper_app_key and self.paper_app_secret):
-            # Not an error — just tell the truth about why paper can't run and
-            # keep going on live so quotes + the in-house sim still work.
-            self.paper_warning = (
-                "Webull PAPER needs its own sandbox app key. Webull's sandbox "
-                "is fully isolated from your live account, so your live keys "
-                "won't work there. Apply for a SANDBOX API key (it's a separate "
-                "application, auto-approved in a few minutes), then paste it "
-                "under EXTRAS -> keys -> paper. Running the in-house sim mean"
-                "while.")
-
+        # (The old "paper needs its own sandbox key" warning is gone with the
+        # sandbox itself — paper always runs now, on live data + local fills.)
         key, secret = self._creds()
         api = ApiClient(key, secret, REGION)
         api.add_endpoint(REGION, self.endpoint)
@@ -429,26 +422,12 @@ class WebullOptions:
         self.trade = TradeClient(api)
         self._data = DataClient(api)
 
-        try:
-            accounts = _unpack_accounts(self.trade.account_v2.get_account_list())
-        except Exception as e:                          # noqa: BLE001
-            # Sandbox rejected the keys (401). Either paper has no sandbox key
-            # yet, or the sandbox key is wrong. Fall back to the LIVE connection
-            # with the live keys so quotes + the in-house honest-fill sim keep
-            # working; paper just stays off until a valid sandbox key is in.
-            # Never leave him fully disconnected.
-            if self.paper:
-                self.paper = False
-                self.endpoint = LIVE_ENDPOINT
-                api = ApiClient(self.app_key, self.app_secret, REGION)
-                api.add_endpoint(REGION, self.endpoint)
-                self._api = api
-                self.trade = TradeClient(api)
-                self._data = DataClient(api)
-                accounts = _unpack_accounts(
-                    self.trade.account_v2.get_account_list())
-            else:
-                raise
+        # No fallback that flips paper off any more: since the sandbox
+        # retirement paper IS the live connection + local fills, so the old
+        # "sandbox 401 -> quietly go live" branch would have turned one
+        # flaky boot request into REAL orders from testing rooms. A failure
+        # here is a failure, loudly, in both modes.
+        accounts = _unpack_accounts(self.trade.account_v2.get_account_list())
 
         def is_futures(a):
             return (_acct_kind(a) == "FUTURES"
