@@ -29,6 +29,28 @@ const OPEN_INFLIGHT = new Map();
 // window the typed copy is a repeat of a trade we're already in, keyed on
 // the contract because the typed author (the scribe) never matches the
 // voice room's label. 5 minutes, then the map forgets.
+const VOICE_CTX = new Map();     // tabId -> rolling 25s of speech segments
+const VOICE_STAGED = new Map();
+// SPEAKER NAMING via the scribe (G's design, 8/29): when a voice's spoken
+// call matches a typed "@Name" alert within 90s, that speaker IS that
+// trader for the session. Voice trades then book under the real name, so
+// every per-trader wall (dedupe, trims, no-override) applies to voices
+// exactly like text.
+const SPEAKER_NAMES = new Map();     // "tabId|spk" -> trader name
+const VOICE_RECENT_CALLS = [];       // {t, vkey, symbol, strike, side}
+(async () => { try {
+  const st = (await chrome.storage.local.get("voice_speaker_names")).voice_speaker_names;
+  if (st) for (const k of Object.keys(st)) SPEAKER_NAMES.set(k, st[k]);
+} catch (e) {} })();
+async function _saveSpeakerNames() {
+  try {
+    const o = {}; for (const [k, v] of SPEAKER_NAMES) o[k] = v;
+    await chrome.storage.local.set({ voice_speaker_names: o });
+  } catch (e) {}
+}  // tabId -> {vs, t} — "loading X" staged,
+                                 // fired only on "I'm in / my average is"
+                                 // (G's teaching, 8/29: loading = get ready,
+                                 // I'm in = executed). 4-minute shelf life.
 const VOICE_TOOK = new Map();
 const VOICE_TOOK_MS = 5 * 60 * 1000;
 // The ears' QUIET GRACE (8/26): a Discord notification ping flips a tab
@@ -49,13 +71,8 @@ function voiceTookThis(sig) {
          (sig.strike != null && VOICE_TOOK.has(base + "|" + sig.strike));
 }
 function seenMessage(msg) {
-  // mid alone once swallowed embed hydrations: the re-read of a bot row
-  // whose embed arrived late shares its mid with the blank first read.
-  // Keying on mid + text LENGTH lets the fuller version through while a
-  // same-length re-sweep stays deduped (embed-race fix, 8/30).
-  const key = String(msg.mid
-    ? msg.mid + "|" + String(msg.text || "").length
-    : (msg.channelId + "|" + msg.postedAt + "|" + (msg.author || "") + "|" + msg.text));
+  const key = String(msg.mid ||
+    (msg.channelId + "|" + msg.postedAt + "|" + (msg.author || "") + "|" + msg.text));
   const now = Date.now();
   const prev = RECENT_MSGS.get(key);
   if (prev && (now - prev) < MSG_TTL_MS) return true;
@@ -506,6 +523,7 @@ async function sendOrder(sig, qty, c, author) {
     their_stop: (sig.their_stop === 0 || sig.their_stop) ? sig.their_stop : null,
     their_target: (sig.their_target === 0 || sig.their_target) ? sig.their_target : null,
     usd: (sig.usd === 0 || sig.usd) ? sig.usd : null,
+    be: !!sig.be,     // breakeven-stops flag (8/29)
     source: "discord-extension", raw: sig.raw, ts: Date.now(),
     // A stable id for THIS order across retries. If the bridge is mid-restart
     // when a call lands, the first POST is refused at the socket (nothing was
@@ -1552,17 +1570,72 @@ async function handleOffscreen(msg) {
     //    file used for tuning). His call, 8/24: "if its a trash message,
     //    there is no need to fill the log" — the popup log gets a line only
     //    when the words turn out to be an actual call (below).
-    capture(msg.text, "🎙 " + label, String(msg.id), Date.now());
+    capture(msg.text, "🎙 " + label +
+            (msg.speaker != null ? " S" + msg.speaker : ""),
+            String(msg.id), Date.now());
     // 2) turn a spoken call into the SAME clean format as a typed one, so it's
     //    easy to read and execute. The AI reader gives one uniform shape; the
     //    regex is the free fast path when it already reads it.
-    if (!looksTradeLike(msg.text)) return;
+    // THE STITCHER (8/29, his find in the transcripts): the trader says
+    // "Loading the meta"... breath... "Five sixty calls." Each segment
+    // alone is unreadable; the last 25 seconds together are a complete
+    // call. Every room keeps a rolling window and the reader sees the
+    // window, not the fragment.
+    const _now = Date.now();
+    // PER-SPEAKER (8/29): each voice in the room gets its own context
+    // window and its own staged contract — trader A's "I'm in" can never
+    // fire trader B's load. Speaker index comes from Deepgram diarization;
+    // null (old sessions) falls back to one shared lane.
+    const _vkey = msg.id + "|" + (msg.speaker == null ? "x" : msg.speaker);
+    const _buf = (VOICE_CTX.get(_vkey) || []).filter(b => _now - b.t < 25000);
+    _buf.push({ t: _now, x: msg.text });
+    VOICE_CTX.set(_vkey, _buf);
+    const stitched = _buf.map(b => b.x).join(" ");
+    // "Now I'm in, guys" — the execution word for a previously STAGED load.
+    const CONFIRM = /\b(i'?m in|i am in|got filled|just (?:got )?filled|my average(?: is)?|average is|avg(?:\.| is)|(?:got|took|grabbed|in with) (?:some )?starters?|starters? (?:in|on|here))\b/i;
+    const _st = VOICE_STAGED.get(_vkey);
+    if (_st && Date.now() - _st.t < 4 * 60 * 1000 && CONFIRM.test(msg.text)) {
+      VOICE_STAGED.delete(_vkey);
+      const c2 = await cfg();
+      if (c2.voice_entries === true) {
+        const vs2 = _st.vs;
+        const mavg = /(?:average(?: is)?|avg(?:\.| is)?)[^0-9]{0,10}(\d+(?:\.\d+)?)/i.exec(msg.text);
+        if (mavg) vs2.limit = parseFloat(mavg[1]);
+        await addLog({ kind: "update",
+          why: "🎙 \"I'm in\" — firing the staged " + vs2.symbol + " " +
+               (vs2.strike || "") + (String(vs2.side||"")[0]||"") +
+               (vs2.limit ? " @ " + vs2.limit : ""),
+          text: msg.text, author: _st.label || "voice" });
+        const r2 = await sendOrder(vs2, vs2.qty || 1, c2, _st.label || "voice");
+        await addLog({ kind: r2 && r2.ok ? "sent" : "failed",
+          what: "🎙 " + vs2.action + " " + vs2.symbol + " — voice confirm",
+          why: (r2 && r2.msg) || "", text: msg.text, author: _st.label || "voice" });
+        if (r2 && r2.ok) {
+          const nowv = Date.now();
+          VOICE_TOOK.set(vs2.symbol + "|" + (vs2.side || ""), nowv);
+          if (vs2.strike != null)
+            VOICE_TOOK.set(vs2.symbol + "|" + (vs2.side || "") + "|" + vs2.strike, nowv);
+        }
+      } else {
+        await addLog({ kind: "update",
+          why: "🎙 \"I'm in\" heard for the staged " + _st.vs.symbol +
+               " — Voice ENTRIES is OFF, so noted only",
+          text: msg.text, author: _st.label || "voice" });
+      }
+      return;
+    }
+    if (!looksTradeLike(msg.text) && !looksTradeLike(stitched)) return;
     const c = await cfg();
     let canon = null, conf = 0, regexHit = false;
-    const sig = parseSignal(msg.text, c);
+    let sig = parseSignal(msg.text, c);
     if (sig.action && sig.symbol) { canon = msg.text.trim(); regexHit = true; }
-    if (!canon) { const rd = await aiRead(msg.text, c); if (rd) { canon = rd.canonical; conf = rd.confidence; } }
+    if (!canon) {
+      sig = parseSignal(stitched, c);
+      if (sig.action && sig.symbol) { canon = stitched.trim(); regexHit = true; }
+    }
+    if (!canon) { const rd = await aiRead(stitched, c); if (rd) { canon = rd.canonical; conf = rd.confidence; } }
     if (!canon) return;
+    VOICE_CTX.set(_vkey, []);   // a read call consumes its window
     const pct = conf ? " (" + Math.round(conf * 100) + "%)" : "";
     await addLog({ kind: "update", why: "🎙 VOICE CALL (" + label + ") → " + canon + pct,
                    text: msg.text, author: label });
@@ -1572,10 +1645,43 @@ async function handleOffscreen(msg) {
     // 85%+. A misheard strike is the risk, so every normal guard downstream
     // (spread, NO-OTM, cash, stop-at-birth) still applies, and entries need
     // a strike (or a futures root) — "buying some calls" is not an order.
-    // Installed but OFF until he flips the popup switch (his call, 8/24).
-    if (c.voice_fire !== true) return;
+    // TWO SWITCHES now (his call, 8/29): voice ENTRIES and voice EXITS
+    // arm separately, both OFF by default. Exits are the proven edge
+    // (spoken 6-249s before the scribe, and complete as spoken); entries
+    // need the stitcher plus a strike and are the riskier flip.
     const vs = regexHit ? sig : parseSignal(canon, c);
     if (!vs.action || !vs.symbol || vs.fire === false) return;
+    // remembered for scribe-matching even in ears-only mode — naming
+    // learns while the switches are still off
+    VOICE_RECENT_CALLS.push({ t: Date.now(), vkey: _vkey,
+                              symbol: vs.symbol, strike: vs.strike,
+                              side: vs.side });
+    while (VOICE_RECENT_CALLS.length > 40) VOICE_RECENT_CALLS.shift();
+    const _learned = SPEAKER_NAMES.get(_vkey.split("|").slice(0,2).join("|")) ||
+                     SPEAKER_NAMES.get(_vkey);
+    if (_learned) { vs.caller = _learned; label = _learned + " 🎙"; }
+    const _isEntry = vs.action === "OPEN" || vs.action === "ADD";
+    if (_isEntry && c.voice_entries !== true) return;
+    if (!_isEntry && c.voice_exits !== true) return;
+    // Dress the order BEFORE staging or firing — a staged entry confirmed
+    // by "I'm in" must carry the SAME live flag and the SAME round-number
+    // pullback as a direct one (8/29 fix: it used to fire naked-paper).
+    vs.live = true;                        // voice rooms are live rooms
+    vs.entry_mode = (vs.action === "OPEN" && c.rn_pullback_all !== false)
+      ? "pullback" : null;
+    vs.caller = vs.caller || label;
+    vs.room = "🎙 " + label;
+    // TWO-STAGE PROTOCOL (G, 8/29): "loading" means GET READY, not buy.
+    // Stage the contract; the buy fires on "I'm in / my average is".
+    if (_isEntry && /\bload(?:ing|ed)?\b/i.test(stitched) && !CONFIRM.test(stitched)) {
+      VOICE_STAGED.set(_vkey, { vs, t: Date.now(), label: label + (msg.speaker != null ? " · S" + msg.speaker : "") });
+      await addLog({ kind: "update",
+        why: "🎙 STAGED " + vs.symbol + " " + (vs.strike || "") +
+             (String(vs.side||"")[0]||"") + " — they said \"loading\"; " +
+             "waiting for \"I'm in\" (4 min shelf)",
+        text: canon, author: label });
+      return;
+    }
     if (!regexHit && conf < 0.85) {
       await addLog({ kind: "skipped", why: "🎙 heard a call but only " +
                      Math.round(conf * 100) + "% sure of the words — not firing " +
@@ -1585,11 +1691,6 @@ async function handleOffscreen(msg) {
     }
     if ((vs.action === "OPEN" || vs.action === "ADD") &&
         vs.strike == null && vs.kind !== "future") return;
-    vs.live = true;                        // voice rooms are live rooms
-    vs.entry_mode = (vs.action === "OPEN" && c.rn_pullback_all !== false)
-      ? "pullback" : null;
-    vs.caller = vs.caller || label;
-    vs.room = "🎙 " + label;
     const vres = await sendOrder(vs, vs.qty || 1, c, label);
     await addLog({ kind: vres && vres.ok ? "sent" : "failed",
                    what: "🎙 " + vs.action + " " + vs.symbol + " — voice, " + label,
@@ -2072,6 +2173,32 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // seconds ago; this typed line is the scribe's copy of it. Entries only —
     // exits and trims always pass, doubled exits are idempotent and a missed
     // exit is the expensive mistake.
+    // SPEAKER LEARNING (8/29): this typed alert may be the scribe's copy of
+    // something a voice just said — if symbol (and strike, when both have
+    // one) match a voice call from the last 90s, that speaker now has this
+    // trader's name.
+    if (sig.symbol && (sig.caller || msg.author)) {
+      const _nm = String(sig.caller || msg.author).replace(/^@/, "").trim();
+      const _cut = Date.now() - 90000;
+      for (const rc of VOICE_RECENT_CALLS) {
+        if (rc.t < _cut || rc.symbol !== sig.symbol) continue;
+        if (rc.strike != null && sig.strike != null &&
+            Number(rc.strike) !== Number(sig.strike)) continue;
+        const spkKey = rc.vkey;   // tabId|speaker
+        if (_nm && SPEAKER_NAMES.get(spkKey) !== _nm) {
+          SPEAKER_NAMES.set(spkKey, _nm);
+          _saveSpeakerNames();
+          const _spk = spkKey.split("|")[1];
+          await addLog({ kind: "update",
+            why: (_spk !== "x"
+              ? "🎙 speaker S" + _spk + " identified as " + _nm +
+                " (scribe confirmed the same call)"
+              : "🎙 the room's voice identified as " + _nm +
+                " (scribe confirmed)"),
+            text: msg.text, author: _nm });
+        }
+      }
+    }
     if ((sig.action === "OPEN" || sig.action === "ADD") && voiceTookThis(sig)) {
       await addLog({ kind: "skipped",
                      what: sig.action + " " + sig.symbol + " — typed copy",

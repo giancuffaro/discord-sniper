@@ -889,11 +889,15 @@ if ($("rnAll")) $("rnAll").onclick = async () => {
   await patch({ rn_pullback_all: s.rn_pullback_all === false });
 };
 
-/* Voice executing — fires the spoken call (8/24). OFF by default; only this
- * switch arms it. Real-money red when on, like the room switches. */
-if ($("voiceFire")) $("voiceFire").onclick = async () => {
+/* Voice firing, split in two (8/29): EXITS (the proven, protective edge)
+ * and ENTRIES (the stitcher). Both OFF by default, both real-money red. */
+if ($("voiceExits")) $("voiceExits").onclick = async () => {
   const s = await getSettings();
-  await patch({ voice_fire: !(s.voice_fire === true) });
+  await patch({ voice_exits: !(s.voice_exits === true) });
+};
+if ($("voiceEntries")) $("voiceEntries").onclick = async () => {
+  const s = await getSettings();
+  await patch({ voice_entries: !(s.voice_entries === true) });
 };
 
 /* Double-check entries — a browser-side toggle; the key stays on the bridge. */
@@ -1383,11 +1387,17 @@ async function render() {
   paintBridgeLive();
 
   // The ONE Round-number toggle (Strategies tab) — painted every pass.
-  const vfBtn = $("voiceFire");
-  if (vfBtn) {
-    const vfOn = s.voice_fire === true;   // comes up OFF (8/24)
-    vfBtn.textContent = vfOn ? "ON" : "off";
-    vfBtn.className = "tgl money " + (vfOn ? "live" : "safe");
+  const vxBtn = $("voiceExits");
+  if (vxBtn) {
+    const vxOn = s.voice_exits === true;    // comes up OFF (8/29)
+    vxBtn.textContent = vxOn ? "ON" : "off";
+    vxBtn.className = "tgl money " + (vxOn ? "live" : "safe");
+  }
+  const veBtn = $("voiceEntries");
+  if (veBtn) {
+    const veOn = s.voice_entries === true;  // comes up OFF (8/29)
+    veBtn.textContent = veOn ? "ON" : "off";
+    veBtn.className = "tgl money " + (veOn ? "live" : "safe");
   }
   const rnBtn = $("rnAll");
   if (rnBtn) {

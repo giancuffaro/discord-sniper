@@ -523,6 +523,40 @@ class Book:
                 pass
         return pulled
 
+    def stop_to_breakeven(self, key):
+        """BE STOPS (G, 8/29: "you can use breakeven stops, guys") — the
+        resting premium stop moves to the ENTRY fill: from here the trade
+        can scratch but never lose. Rides the existing cancel+replace in
+        _arm_stop by feeding it the price whose -stop_pct lands exactly on
+        the fill. Swings on a stock-level stop are left to that watcher."""
+        with self._lock:
+            p = self._pos.get(key)
+            if not p or p.get("state") != FILLED:
+                return False
+            if p.get("swing") and p.get("their_stop"):
+                return False
+            f = float(p.get("fill") or 0)
+            side, strike = p.get("side"), p.get("strike")
+            expiry, qty = p.get("expiry"), int(p.get("qty") or 1)
+        if not f:
+            return False
+        adj = f / (1 - self.stop_pct / 100.0)
+        try:
+            self._arm_stop(key, side, strike, expiry, qty, adj)
+        except Exception:                               # noqa: BLE001
+            return False
+        return True
+
+    def set_their_stop(self, key, level):
+        """STOPMOVE (8/29): the trader spoke a new stock-level stop; the
+        running underlying watcher reads this field every pass."""
+        with self._lock:
+            p = self._pos.get(key)
+            if p is not None:
+                p["their_stop"] = float(level)
+                return True
+        return False
+
     def restart_exposure(self):
         """What a restart would interrupt, for the pre-restart check (8/26):
         held positions are SAFE (their stops rest at the broker and the book

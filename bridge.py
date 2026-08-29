@@ -1499,6 +1499,7 @@ def _underlying_stop_watch(order):
     side = str(order.get("side") or "").upper()
     if not (sym and stop > 0):
         return
+    _wkey = find_key(order)
     is_call = side.startswith("C")
     note("UNDER-STOP %s: watching the STOCK — the option closes if %s "
          "prints %s %.2f (their hard stop)"
@@ -1506,6 +1507,19 @@ def _underlying_stop_watch(order):
     misses = 0
     while True:
         time.sleep(2.0)
+        # LIVE LEVEL (8/29, "351 new stop loss"): the trader moves their
+        # stop mid-trade; the book carries the current number and this
+        # watcher follows it instead of the level it was born with.
+        try:
+            _pp = BOOK.info(_wkey) if BOOK is not None else None
+            if _pp and _pp.get("their_stop"):
+                _ns = float(_pp["their_stop"])
+                if _ns > 0 and abs(_ns - stop) > 1e-9:
+                    note("UNDER-STOP %s: their stop MOVED %.2f -> %.2f — "
+                         "following it" % (sym, stop, _ns))
+                    stop = _ns
+        except Exception:                               # noqa: BLE001
+            pass
         try:
             if BOOK is None or not BOOK.holding(find_key(order)):
                 return          # closed some other way — stand down quietly
@@ -1602,6 +1616,47 @@ def _place_impl(order):
     sym = str(order.get("symbol", "")).upper()
     action = order.get("action")
     key = find_key(order) if BOOK is not None else tkey(order)
+
+    # STOPMOVE (8/29, his annotation: "Tesla three fifty one new stop
+    # loss" = the UNDERLYING price 351 is the new stop). Updates the
+    # trader's held position; the running underlying watcher follows the
+    # book's number, and a position that had no stock-level watcher yet
+    # gets one now. Never an exit, never an entry.
+    if action == "STOPMOVE":
+        if order.get("be"):
+            _k2 = find_key(order)
+            if BOOK is not None and BOOK.stop_to_breakeven(_k2):
+                note("BE-STOP  %s — their call: breakeven stops. The resting "
+                     "stop now sits AT the entry; scratch possible, loss "
+                     "impossible." % sym)
+                return True, ("stop moved to BREAKEVEN on %s — can't go "
+                              "red from here" % sym)
+            return False, ("no held %s position to set a breakeven stop on"
+                           % sym)
+        _lvl = order.get("their_stop")
+        if not _lvl or BOOK is None:
+            return False, "a stop move needs a level and a book"
+        _k2 = find_key(order)
+        _p2 = BOOK.info(_k2)
+        if not _p2 or _p2.get("state") != positions.FILLED:
+            return False, ("no held %s position of theirs to move a stop "
+                           "on — noted, nothing done" % sym)
+        _had = bool(_p2.get("their_stop"))
+        BOOK.set_their_stop(_k2, float(_lvl))
+        note("UNDER-STOP %s: %s set their stop at %.2f on the STOCK — %s"
+             % (sym, order.get("trader") or "the trader", float(_lvl),
+                "the watcher follows it" if _had
+                else "arming a stock watcher on it now"))
+        if not _had:
+            threading.Thread(target=_underlying_stop_watch,
+                             args=(dict(order,
+                                        side=_p2.get("side"),
+                                        strike=_p2.get("strike"),
+                                        expiry=_p2.get("expiry"),
+                                        live=bool(_p2.get("live"))),),
+                             daemon=True).start()
+        return True, ("their stop on %s is now %.2f on the stock — watched "
+                      "on this PC" % (sym, float(_lvl)))
 
     # RETRACTION (8/26): "NOT READY YET REVISING" — pull the trader's
     # resting bids and kill their armed pullback hunts. Never touches a
@@ -2582,28 +2637,6 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/mode"):
             return self._json(200, self._status())
-        if self.path.startswith("/rooms"):
-            # The one list of channels that trade (extension/rooms.txt),
-            # parsed — so "what is the sniper actually listening to" is a
-            # one-second curl instead of a screen-share (audit ask, 8/30).
-            # Read-only, no secrets: ids/urls/labels only.
-            rooms = []
-            try:
-                _rp = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   "extension", "rooms.txt")
-                with open(_rp, encoding="utf-8") as _f:
-                    for _ln in _f:
-                        _ln = _ln.strip()
-                        if not _ln or _ln.startswith("#"):
-                            continue
-                        _p = _ln.split("|")
-                        if len(_p) >= 4:
-                            rooms.append({"id": _p[0], "url": _p[1],
-                                          "label": _p[2], "group": _p[3]})
-            except Exception as _e:                     # noqa: BLE001
-                return self._json(200, {"ok": False, "why": str(_e)[:120]})
-            return self._json(200, {"ok": True, "count": len(rooms),
-                                    "rooms": rooms})
         if self.path.startswith("/exchoices"):
             # Every account behind an extra login's keys, with buying power —
             # the popup's ✏️ uses this so switching accounts is one click

@@ -56,6 +56,47 @@ INSTRUCTION = """Extract the trade call from this message. Return exactly this J
 
 Rules:
 - Only use tickers, strikes, and prices that literally appear in the message.
+- "same contracts" / "same cons" / "keep the same contracts on the load"
+  = the speaker's PREVIOUS contract goes back to STAGED (loaded, ready) —
+  carry prior ticker+strike+expiry forward but it is NOT an entry until
+  their next "I'm in / got filled". Often said right after a stop-out: out
+  at a loss, same contract re-loaded for a re-entry. "Get the contracts
+  ready" with "I'm not in yet" = staging too, never an entry.
+- MORE (G, 8/29): "my fingers are the trigger (on X)" = entry IMMINENT —
+  keep that speaker's staged contract hot, but it is NOT the entry itself.
+  "just have them ready" = staging confirmation. "taking a trim to cover
+  my risk" = TRIM. "(you) can use breakeven stops" = move the stop to the
+  ENTRY price (0% — scratch allowed, loss not): canonical "STOPMOVE X
+  BREAKEVEN".
+- STOP MOVES spoken (G, 8/29): "lowering/raising/moving my stop (loss) on
+  X, <number> new stop loss" = the trader MOVED their stop to the
+  UNDERLYING stock price <number>. Canonical: "STOPMOVE X <number>".
+  Never an entry, never an exit, never a strike.
+- "STARTERS" (G, 8/29): "I got starters (on X)" / "starter position" =
+  they ENTERED with a partial-size position — a real entry (BTO), expect
+  possible ADDs later. Mishears: "start this on Microsoft" = "starters on
+  Microsoft". "A little chop in here" (often misheard "cock") = choppy
+  market, commentary only.
+- TRIMS spoken (G, 8/29): "taking (more) trims here" / "I've taken my
+  second trims" = a TRIM executed — sell a partial, runners stay. "Take
+  your trims, hold the rest" = the same instruction to the room: TRIM,
+  never a full exit.
+- "I'm stopping out (of my position) here, minus 6%" = FULL EXIT at a -6%
+  LOSS. The percentage after "minus/down/loss" is their P&L, NEVER a trim
+  size and NEVER a strike.
+- MORE VOICE VOCAB (G, 8/29): "cons" = contracts. "I got filled (here)" =
+  they are IN (execution confirmed). "I'll let you know when I get filled"
+  = PENDING, not in — never an entry. "Filled on the wrong cons" = wrong
+  contract, judgment call — do NOT copy. "Settle for green" / "settling
+  for green here" = they are EXITING the position (a close, often small
+  profit).
+- VOICE-TRANSCRIPT GLOSSARY (mishears, G-confirmed 8/29): "pulls" = puts;
+  "as p y" / "s p y" = SPY; "the Qs"/"cues" = QQQ; "one d t"/"one d t e" =
+  1DTE (0-1 day expiry); numbers are often WORDS ("five sixty" = 560,
+  "three forty five" = 345). A bare number is NEVER a strike — only
+  "number + calls/puts" is. "my average is X" = their FILL PRICE (they are
+  IN), not a strike. Never combine a ticker from one sentence with a strike
+  from another if a different ticker appears between them.
 - "loading"/"prepping"/"watching"/"looking at" is NOT an order -> action NONE.
 - A percentage or "took profit"/"trimmed" with no fresh contract is a TRIM.
 - "out"/"sold"/"closed"/"stopped"/"took an L" is a CLOSE.
@@ -175,6 +216,47 @@ Rules:
 - seen_text MUST be a faithful transcription — only characters actually in the image.
 - Only use tickers, strikes and prices that literally appear in the image.
 - A chart/graph with no explicit order text -> action NONE.
+- "same contracts" / "same cons" / "keep the same contracts on the load"
+  = the speaker's PREVIOUS contract goes back to STAGED (loaded, ready) —
+  carry prior ticker+strike+expiry forward but it is NOT an entry until
+  their next "I'm in / got filled". Often said right after a stop-out: out
+  at a loss, same contract re-loaded for a re-entry. "Get the contracts
+  ready" with "I'm not in yet" = staging too, never an entry.
+- MORE (G, 8/29): "my fingers are the trigger (on X)" = entry IMMINENT —
+  keep that speaker's staged contract hot, but it is NOT the entry itself.
+  "just have them ready" = staging confirmation. "taking a trim to cover
+  my risk" = TRIM. "(you) can use breakeven stops" = move the stop to the
+  ENTRY price (0% — scratch allowed, loss not): canonical "STOPMOVE X
+  BREAKEVEN".
+- STOP MOVES spoken (G, 8/29): "lowering/raising/moving my stop (loss) on
+  X, <number> new stop loss" = the trader MOVED their stop to the
+  UNDERLYING stock price <number>. Canonical: "STOPMOVE X <number>".
+  Never an entry, never an exit, never a strike.
+- "STARTERS" (G, 8/29): "I got starters (on X)" / "starter position" =
+  they ENTERED with a partial-size position — a real entry (BTO), expect
+  possible ADDs later. Mishears: "start this on Microsoft" = "starters on
+  Microsoft". "A little chop in here" (often misheard "cock") = choppy
+  market, commentary only.
+- TRIMS spoken (G, 8/29): "taking (more) trims here" / "I've taken my
+  second trims" = a TRIM executed — sell a partial, runners stay. "Take
+  your trims, hold the rest" = the same instruction to the room: TRIM,
+  never a full exit.
+- "I'm stopping out (of my position) here, minus 6%" = FULL EXIT at a -6%
+  LOSS. The percentage after "minus/down/loss" is their P&L, NEVER a trim
+  size and NEVER a strike.
+- MORE VOICE VOCAB (G, 8/29): "cons" = contracts. "I got filled (here)" =
+  they are IN (execution confirmed). "I'll let you know when I get filled"
+  = PENDING, not in — never an entry. "Filled on the wrong cons" = wrong
+  contract, judgment call — do NOT copy. "Settle for green" / "settling
+  for green here" = they are EXITING the position (a close, often small
+  profit).
+- VOICE-TRANSCRIPT GLOSSARY (mishears, G-confirmed 8/29): "pulls" = puts;
+  "as p y" / "s p y" = SPY; "the Qs"/"cues" = QQQ; "one d t"/"one d t e" =
+  1DTE (0-1 day expiry); numbers are often WORDS ("five sixty" = 560,
+  "three forty five" = 345). A bare number is NEVER a strike — only
+  "number + calls/puts" is. "my average is X" = their FILL PRICE (they are
+  IN), not a strike. Never combine a ticker from one sentence with a strike
+  from another if a different ticker appears between them.
 - "loading"/"watching"/"looking at" is NOT an order -> action NONE.
 - A percentage or "trimmed"/"took profit" with no fresh contract is a TRIM.
 - "out"/"sold"/"closed"/"stopped" is a CLOSE.

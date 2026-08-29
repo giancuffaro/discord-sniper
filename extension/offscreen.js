@@ -56,6 +56,7 @@ async function startListen(id, label, streamId, dgKey, model, keyterms) {
     let u = "wss://api.deepgram.com/v1/listen"
       + "?encoding=linear16&sample_rate=" + outRate + "&channels=1"
       + "&interim_results=true&smart_format=true&punctuate=true"
+      + "&diarize=true"
       + "&model=" + encodeURIComponent(mdl);
     // Keyterm prompting is a nova-3 feature: the tickers this room actually
     // trades, so "SLV" comes back as SLV and not "silver". Spelling help
@@ -98,7 +99,21 @@ async function startListen(id, label, streamId, dgKey, model, keyterms) {
       const text = alt && alt.transcript;
       if (text && text.trim()) {
         gotWords = true;
-        toBg({ type: "TRANSCRIPT", id, label, text: text.trim(), isFinal: !!d.is_final });
+        // DIARIZATION (8/29, his ask "can you distinguish voices?"):
+        // Deepgram tags every word with a speaker index. The utterance's
+        // speaker = the majority speaker of its words. Rides out with the
+        // transcript so staging and "I'm in" stay per-VOICE.
+        let spk = null;
+        try {
+          const words = alt.words || [];
+          const tally = {};
+          for (const w of words)
+            if (w.speaker !== undefined) tally[w.speaker] = (tally[w.speaker] || 0) + 1;
+          let best = -1;
+          for (const k in tally) if (tally[k] > best) { best = tally[k]; spk = parseInt(k, 10); }
+        } catch (e) {}
+        toBg({ type: "TRANSCRIPT", id, label, text: text.trim(),
+               isFinal: !!d.is_final, speaker: spk });
       }
     };
     return sock;

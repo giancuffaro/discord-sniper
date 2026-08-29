@@ -881,6 +881,16 @@ class WebullOptions:
         signatures are tried in turn; when none fits, _ComboUnsupported tells
         the caller to fall back to the plain two-step (entry now, stop after
         the fill) — a combo the broker can't take must never cost an entry."""
+        # PAPER IS LOCAL NOW (8/28): the Webull sandbox has no options
+        # entitlement — every options order sent there died with
+        # OPTION_STRATEGY_NOT_MATCH_ANY (all 12 of 8/28's "rejections" were
+        # sandbox, not his real account). A testing room's order is
+        # simulated here instead: real quotes (they already ride the LIVE
+        # feed), assumed fills, zero API calls, zero rejection noise.
+        if getattr(self, "paper", False):
+            import uuid as _uuid
+            return {"order_id": "SIM-" + _uuid.uuid4().hex[:12],
+                    "client_order_id": combo_id, "simulated": True}
         holder = getattr(self.trade, "order_v3", None) \
             or getattr(self.trade, "order", None)
         fn = getattr(holder, "place_order", None) if holder else None
@@ -922,6 +932,11 @@ class WebullOptions:
             "place_order accepted no combo signature (%s)" % str(last)[:80])
 
     def _send(self, orders, what):
+        # PAPER IS LOCAL (8/28) — see _send_combo. No sandbox, no 417s.
+        if getattr(self, "paper", False):
+            import uuid as _uuid
+            return {"order_id": "SIM-" + _uuid.uuid4().hex[:12],
+                    "simulated": True}
         res = self.trade.order_v3.place_order(self.account_id, orders)
         try:
             body = res.json()
@@ -1007,6 +1022,9 @@ class WebullOptions:
         # Unknown is the honest answer and is never read as a fill upstream.
         if not order_id:
             return "unknown", 0, None
+        if str(order_id).startswith("SIM-"):
+            # a local paper order — filled at its stated price by definition
+            return "filled", None, None
         body, _why = self._try_calls(
             ["order_v3", "order"], ["detail", "query", "get_order"],
             self.account_id, order_id)
@@ -1221,6 +1239,8 @@ class WebullOptions:
     def cancel(self, order_id):
         """True if Webull took the cancel. False is not a crisis on its own —
         it usually means the order already filled or was already gone."""
+        if str(order_id or "").startswith("SIM-") or getattr(self, "paper", False):
+            return True
         body, _why = self._try_calls(["order_v3", "order"], ["cancel"],
                                      self.account_id, order_id)
         if body is None:

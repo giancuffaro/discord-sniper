@@ -706,6 +706,44 @@ function parseSignalInner(text, cfg) {
             "theirs still in flight";
     return s;
   }
+  // BE STOPS (8/29, G): "you can use breakeven stops" = move the stop to
+  // the ENTRY price. Zero loss allowed from here. Ticker optional.
+  if (/\b(break\s*-?even|b\/?e)\s+stops?\b|\bstops?\s+(?:to|at)\s+break\s*-?even\b/i.test(low)) {
+    s.action = "STOPMOVE";
+    s.be = true;
+    s.fire = true;
+    const _rebe = /\b([A-Z]{1,5})\b/g; let _mbe;
+    const _upbe = t.toUpperCase();
+    while ((_mbe = _rebe.exec(_upbe)) !== null) {
+      if (!NOT_TICKERS.has(_mbe[1]) && !/^(FIRST|GUYS|CAN|USE|OKAY|STOPS|MOVE|BREAK|EVEN|B\/E|BE)$/.test(_mbe[1])) { s.symbol = _mbe[1]; break; }
+    }
+    s.why = "their call: breakeven stops — stop moves to the entry";
+    return s;
+  }
+  // STOPMOVE (8/29, G): "lowering my stop loss on Tesla, 351 new stop
+  // loss" — the number is the UNDERLYING price, the action is moving
+  // their stop. Never an entry, never an exit, never a strike.
+  {
+    const sm = /\b(?:new stop(?:\s*loss)?(?:\s+is)?|(?:lower|rais|mov|adjust)(?:ing|ed)?\s+(?:my\s+)?stop(?:\s*loss)?(?:\s+(?:to|at))?)\b/i.test(low)
+      && /\b(\d{2,5}(?:\.\d+)?)\b/.test(t);
+    if (sm && !/\b(call|put)s?\b/i.test(low)) {
+      const _scan = t.toUpperCase().replace(/\bSTOP\b|\bLOSS\b|\bNEW\b/g, " ");
+      let tkSym = null, _m2;
+      const _re2 = /\b([A-Z]{1,5})\b/g;
+      while ((_m2 = _re2.exec(_scan)) !== null) {
+        if (!NOT_TICKERS.has(_m2[1]) && !/^(MOVIN|GUYS|LOWER|RAIS|MY)$/.test(_m2[1])) { tkSym = _m2[1]; break; }
+      }
+      const lv = /\b(\d{2,5}(?:\.\d+)?)\b/.exec(t);
+      if (lv) {
+        s.action = "STOPMOVE";
+        s.their_stop = parseFloat(lv[1]);
+        if (tkSym) s.symbol = tkSym;
+        s.fire = true;
+        s.why = "their stop moved to " + s.their_stop + " on the stock";
+        return s;
+      }
+    }
+  }
   // Swing wording anywhere on the line tags the signal (harmless on
   // non-entries — only entries ever store or show it). Mirrors signals.py.
   s.swing = /\bswing(?:ing|s)?\b/.test(low);
