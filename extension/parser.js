@@ -520,7 +520,7 @@ function signalKey(s) {
 // the room's SPX call becomes a tradeable SPY one. Mirrors signals.py.
 const INDEX_ETF = { SPX: ["SPY", 10], SPXW: ["SPY", 10], XSP: ["SPY", 1],
                     RUT: ["IWM", 10], RUTW: ["IWM", 10] };
-function indexToEtf(s) {
+function indexToEtf(s, cfg) {
   if (!s || !s.symbol) return;
   const m = INDEX_ETF[String(s.symbol).toUpperCase()];
   if (!m) return;
@@ -534,7 +534,13 @@ function indexToEtf(s) {
   // call Python refused — caught by test_parity on 8/17. Refuse loudly,
   // leave symbol/strike exactly as parsed; exits/trims still retarget below
   // so an old position can always be closed.
-  if (s.action === "OPEN" || s.action === "ADD") {
+  if ((s.action === "OPEN" || s.action === "ADD") &&
+      !(cfg && cfg.spx_entries)) {
+    // Per-channel override (8/30, G: Ryan's alerts trade SPX — "make me
+    // enter with SPY instead, pretty much the equivalent"): background.js
+    // sets cfg.spx_entries = true when the message came from a channel in
+    // settings.json spx_entry_channels. Everywhere else the 8/15 off
+    // switch still holds.
     const was0 = String(s.symbol).toUpperCase();
     s.fire = false;
     s.why = was0 + " is a cash-index option - following it as an ETF is " +
@@ -589,7 +595,7 @@ function directionSanity(s) {
 
 function parseSignal(text, cfg) {
   const s = parseSignalInner(text, cfg);
-  indexToEtf(s);
+  indexToEtf(s, cfg);
   directionSanity(s);
   if (s.action !== "OPEN" || s.kind === "future") return s;
   const low = (s.clean || "").toLowerCase();
