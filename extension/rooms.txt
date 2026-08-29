@@ -18,6 +18,9 @@
 829754942817828884|https://discord.com/channels/525113944239767562/829754942817828884|Honeydrip daytrades|Honeydrip / Aristotle (main)
 987515353670221834|https://discord.com/channels/525113944239767562/987515353670221834|Aristotle|Honeydrip / Aristotle (main)
 1433933203302776852|https://discord.com/channels/525113944239767562/1433933203302776852|Aristotle small|Honeydrip / Aristotle (main)
+# Midas RE-ADDED 8/30 (G: "now that we only need entries, since we have the
+# ratchet") — his exits were the old problem; the ratchet owns exits now.
+1144369893760831489|https://discord.com/channels/525113944239767562/1144369893760831489|Midas|Honeydrip / Aristotle (main)
 
 # URLs replaced 8/30 — Whop's redesign killed /joined/ links (they redirect
 # to Townhall, a page with no messages: the reason Whop never produced a
