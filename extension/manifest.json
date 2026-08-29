@@ -1,25 +1,53 @@
 {
   "manifest_version": 3,
   "name": "Discord Sniper",
-  "version": "3.3.2",
+  "version": "3.4.4",
   "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
-  "permissions": ["storage", "notifications", "downloads", "alarms", "scripting",
-                  "clipboardWrite", "tabCapture", "offscreen", "activeTab"],
-  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*",
-                       "https://discord.com/*", "https://*.discord.com/*",
-                       "https://whop.com/*", "https://*.whop.com/*",
-                       "https://zoom.us/*", "https://*.zoom.us/*",
-                       "wss://api.deepgram.com/*", "https://api.deepgram.com/*"],
-  "background": { "service_worker": "background.js" },
+  "permissions": [
+    "storage",
+    "notifications",
+    "downloads",
+    "alarms",
+    "scripting",
+    "clipboardWrite",
+    "tabCapture",
+    "offscreen",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "https://discord.com/*",
+    "https://*.discord.com/*",
+    "https://whop.com/*",
+    "https://*.whop.com/*",
+    "https://zoom.us/*",
+    "https://*.zoom.us/*",
+    "wss://api.deepgram.com/*",
+    "https://api.deepgram.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
-      "matches": ["https://discord.com/channels/*", "https://*.discord.com/channels/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://discord.com/channels/*",
+        "https://*.discord.com/channels/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://whop.com/*", "https://*.whop.com/*"],
-      "js": ["whop.js"],
+      "matches": [
+        "https://whop.com/*",
+        "https://*.whop.com/*"
+      ],
+      "js": [
+        "whop.js"
+      ],
       "all_frames": true,
       "run_at": "document_idle"
     }
@@ -27,13 +55,23 @@
   "action": {
     "default_title": "Discord Sniper",
     "default_popup": "popup.html",
-    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
   },
   "commands": {
     "grab-history": {
-      "suggested_key": { "default": "Ctrl+Shift+X" },
+      "suggested_key": {
+        "default": "Ctrl+Shift+X"
+      },
       "description": "Grab this room's history (auto-scroll + save to Downloads)"
     }
   },
-  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
 }
