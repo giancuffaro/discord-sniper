@@ -151,10 +151,16 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   When active, tab-sourced whop reads are DROPPED (api is the one source;
   tabs stay as backup/health view). ACTIVATION: G creates an app at
   whop.com dashboard -> Developer, pastes key into settings.json as
-  "whop": {"api_key": "..."}, restarts bridge. OPEN QUESTION: whether a
-  member's key can read communities he didn't create — if 403, plan B is
-  Felony installing G's app (chat:read permission). Until the key exists
-  nothing runs and tabs carry the job.
+  "whop": {"api_key": "..."}, restarts bridge. TESTED 8/30 with G's real
+  Account API key (in settings.json): the key AUTHENTICATES (endpoints
+  resolve, Day Trades correctly identified as a forum-type experience)
+  but member-side reads are WALLED — chat 403, forum "You do not have
+  access to read these posts". Account keys see your own business only.
+  "active" on /whopfeed = delivered-in-last-5-min (never just key-exists),
+  so tabs NEVER stand down for a dead feed; poller backs off to 60s probes
+  while walled. PLAN B (the unlock): Felony installs G's Whop app with
+  chat:read — the moment any community grants access, the reader lights
+  up on its own, no code changes. Tabs carry the job until then.
 - WHOP (SOLVED 8/30 — "we never got anything from Whop"): Whop's 2026
   redesign KILLED /joined/ URLs — they redirect to /townhall/ (or mangle
   the room id), a lobby page with neither structure, so tabs parked on old
