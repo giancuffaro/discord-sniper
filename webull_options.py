@@ -792,6 +792,12 @@ class WebullOptions:
         """Buying power for one account id, cached ~8s per account. Factored out
         so the margin and futures accounts can each be read without stepping on
         the other's cache."""
+        if getattr(self, "paper", False):
+            # PAPER IS LOCAL (8/29): the sandbox serves no /account/balance
+            # (404 Route Not Found — 211 of them in one quiet Saturday's log)
+            # and paper money is unlimited by design. Never ask the network;
+            # None reads as "don't block the trade", which is exactly right.
+            return None
         now = time.time()
         at = getattr(self, cache_key + "_at", 0)
         # 8s cache on a good read; FIVE MINUTES on a failed one (8/24). The
