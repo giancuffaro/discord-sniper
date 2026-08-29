@@ -19,11 +19,15 @@
 987515353670221834|https://discord.com/channels/525113944239767562/987515353670221834|Aristotle|Honeydrip / Aristotle (main)
 1433933203302776852|https://discord.com/channels/525113944239767562/1433933203302776852|Aristotle small|Honeydrip / Aristotle (main)
 
-whop:day-trades|https://whop.com/joined/firststeptrading/day-trades-cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)
-whop:futures|https://whop.com/joined/firststeptrading/futures-26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)
-whop:high-risk|https://whop.com/joined/firststeptrading/high-risk-hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)
-whop:2k-challenge|https://whop.com/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)
-whop:swing|https://whop.com/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/app/|Whop Swing Trades|firststeptrading (Whop)
+# URLs replaced 8/30 — Whop's redesign killed /joined/ links (they redirect
+# to Townhall, a page with no messages: the reason Whop never produced a
+# single signal). Rooms live at /<biz>/exp_<hash>/app/ now; same hashes, so
+# whopRoomOf() still maps them. Verified live in the browser 8/30.
+whop:day-trades|https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)
+whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)
+whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)
+whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)
+whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing Trades|firststeptrading (Whop)
 
 829352738239414332|https://discord.com/channels/496871546963492874/829352738239414332|ZT top-flow|ZTRADEZ
 721821717328298066|https://discord.com/channels/496871546963492874/721821717328298066|ZT scalps|ZTRADEZ

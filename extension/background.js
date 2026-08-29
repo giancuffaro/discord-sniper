@@ -1111,7 +1111,11 @@ async function oneTabPerChannel() {
                                            "https://*.discord.com/channels/*",
                                            // Whop rooms dedupe the same way —
                                            // the morning alarm reopens them.
-                                           "https://whop.com/joined/*"] });
+                                           // 2026 redesign: rooms live at
+                                           // /<biz>/exp_<id>/app — /joined/
+                                           // is dead but kept for stragglers.
+                                           "https://whop.com/joined/*",
+                                           "https://whop.com/*/exp_*"] });
   } catch (e) { return; }
   const byChannel = {};
   for (const t of tabs) {
@@ -1662,7 +1666,9 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
   if (!info || !("audible" in info)) return;
   (async () => {
     try {
-      if (!tab || !/https:\/\/([^/]*\.)?discord\.com\//.test(tab.url || "")) return;
+      // Discord voice OR a Zoom web-client meeting (Felony goes live on
+      // Zoom — the /wc/ browser version is a tab like any other, 8/30).
+      if (!tab || !/https:\/\/([^/]*\.)?(discord\.com|zoom\.us)\//.test(tab.url || "")) return;
       const c = await cfg();
       if (c.auto_listen_live === false) return;      // on unless he turns it off
       if (info.audible === true) {

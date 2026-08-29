@@ -36,12 +36,15 @@ set "MIDAS_URL=https://discord.com/channels/%SERVER_ID%/1144369893760831489"
 rem  Aristotle again, but his small-account challenge room.
 set "ARISTOTLE_SMALL_URL=https://discord.com/channels/%SERVER_ID%/1433933203302776852"
 rem  Felony's Whop rooms - the reader only sees what's open in a tab.
-set "WHOP1=https://whop.com/joined/firststeptrading/day-trades-cvgzKYDmcUEDGh/app/"
-set "WHOP2=https://whop.com/joined/firststeptrading/futures-26GaLgZVMzB2PL/app/"
-set "WHOP3=https://whop.com/joined/firststeptrading/high-risk-hpXJymtw0yMqzB/app/"
-set "WHOP4=https://whop.com/joined/firststeptrading/fst-2-k-challenge-Yg9HGTPsXPhQ5D/app/"
-set "WHOP5=https://whop.com/joined/firststeptrading/swing-trades-6Q7acPPpFb6CyZ/app/"
-set "WHOP6=https://whop.com/joined/firststeptrading/long-term-sMzuBmyHSwKzFW/app/"
+rem  (8/30: Whop killed /joined/ URLs - rooms are /<biz>/exp_<hash>/app/
+rem  now. These vars are legacy - rooms.txt is the real list - but they
+rem  stay correct so no future copy-paste resurrects a dead link.)
+set "WHOP1=https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/"
+set "WHOP2=https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/"
+set "WHOP3=https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/"
+set "WHOP4=https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/"
+set "WHOP5=https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/"
+set "WHOP6=https://whop.com/firststeptrading/exp_sMzuBmyHSwKzFW/app/"
 rem  z trades (ZTRADEZ) - the free-trial week. Different Discord server.
 set "ZT_SERVER=496871546963492874"
 set "ZT1=https://discord.com/channels/%ZT_SERVER%/829352738239414332"

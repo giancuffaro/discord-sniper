@@ -30,9 +30,12 @@
  * If the page is NEITHER type (storefront, still loading), emit NOTHING —
  * never fall back to scraping page text. That fallback was the whole bug.
  *
- * CRITICAL: real messages only render on the JOINED app URL —
- *   https://whop.com/joined/<business>/<room-slug>/app/
- * Anything else is the storefront. rooms.txt must use /joined/ + /app/.
+ * CRITICAL: real messages only render on the room app URL — since Whop's
+ * 2026 redesign that is:
+ *   https://whop.com/<business>/exp_<id>/app/
+ * (/joined/ links are DEAD — they redirect to Townhall, which renders
+ * neither structure. That redirect is why Whop produced zero signals for
+ * months.) rooms.txt must use the exp_ form.
  */
 (function () {
 "use strict";
@@ -224,13 +227,21 @@ window.__SNIPER_WHOP_STOP__ = function () {
   timer = null;
 };
 
-// One loud line if this tab isn't on the joined app URL — the #1 cause of
-// the storefront-junk captures. The tab still gets swept (harmlessly reads
-// nothing), but the console says why nothing is arriving.
-if (!/\/joined\/.+\/app\/?/.test(location.pathname)) {
+// One loud line if this tab isn't on a room URL — the #1 cause of the
+// zero-alerts months. Whop's 2026 redesign KILLED /joined/ links: they now
+// redirect to /townhall/ (or mangle the room id), a page with neither post
+// nor chat structures, so a tab parked on an old link reads nothing forever.
+// Rooms now live at whop.com/<business>/exp_<id>/app/ (verified live 8/30:
+// both the feed selectors and the chat selectors still match perfectly on
+// the new pages — the reader was never blind, the tabs were just parked on
+// a lobby). The tab still gets swept (harmlessly reads nothing), but the
+// console says why nothing is arriving.
+if (!/\/exp_[A-Za-z0-9]+\/app\/?/.test(location.pathname)) {
   try {
-    console.warn("[sniper] this is NOT a joined-room URL — messages only " +
-                 "render at whop.com/joined/<biz>/<room>/app/. Fix rooms.txt.");
+    console.warn("[sniper] this is NOT a room URL — messages only render at " +
+                 "whop.com/<business>/exp_<id>/app/. Old /joined/ links are " +
+                 "dead (they redirect to Townhall). Re-open the room from " +
+                 "the community sidebar and pin THAT tab.");
   } catch (e) {}
 }
 
