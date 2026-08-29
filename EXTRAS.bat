@@ -324,6 +324,14 @@ echo.
 set "MATCH="
 set /p MATCH="   Make this folder match GitHub now? (Y = yes): "
 if /i not "!MATCH!"=="Y" goto back
+rem  Refuse to destroy local-only commits (8/30 lesson): if GitHub is
+rem  missing anything local, this reset would erase real work.
+git merge-base --is-ancestor HEAD origin/main >nul 2>&1
+if errorlevel 1 (
+  echo   STOP: this folder has work GitHub does NOT have yet. Push it
+  echo   first ^(AUTO PUSH or SEND CHANGES^), then try again.
+  goto back
+)
 git reset --hard origin/main
 if errorlevel 1 (
   echo   That failed and nothing was changed. Send me a photo of

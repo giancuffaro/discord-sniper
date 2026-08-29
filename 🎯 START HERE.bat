@@ -160,6 +160,14 @@ if errorlevel 1 (
   echo         Unsaved local changes detected - keeping them, skipping mirror.
   goto pastpull
 )
+rem  NEVER destroy local-only commits: mirror only when GitHub already has
+rem  every local commit (8/30 lesson - a silent push failure + this reset
+rem  erased a full day of work; recovered from the reflog, never again).
+git merge-base --is-ancestor HEAD origin/main >nul 2>&1
+if errorlevel 1 (
+  echo         GitHub is MISSING local work - keeping it, skipping mirror.
+  goto pastpull
+)
 git reset --hard origin/main >nul 2>&1
 set "NEWREV="
 for /f %%r in ('git rev-parse HEAD 2^>nul') do set "NEWREV=%%r"
