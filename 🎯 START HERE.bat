@@ -252,8 +252,18 @@ rem  been opened"). Visible windows = his tabs, leave them alone. Background
 rem  only = kill it quietly and cold-start, so the performance flags apply.
 powershell -NoProfile -Command "$w = Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle }; if ($w) { exit 0 } else { exit 1 }"
 if not errorlevel 1 (
-  echo   [5/5] Chrome is already open with windows - leaving every tab
-  echo         exactly as it is. Open any missing rooms yourself.
+  echo.
+  echo   ==========================================================
+  echo   [5/5] Chrome is ALREADY OPEN - so no tabs were touched.
+  echo         That is the rule you set: a re-run never disturbs
+  echo         open tabs. Everything else was checked and is fine.
+  echo.
+  echo         Want the fresh 26-room open? CLOSE CHROME first
+  echo         ^(every window^), then run this again.
+  echo   ==========================================================
+  echo.
+  echo   This window closes in 15 seconds.
+  timeout /t 15 >nul
   goto chromedone
 )
 tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
