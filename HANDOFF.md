@@ -278,6 +278,22 @@ AI usage and Topstep evals. The operation must clear ~$60+/trading day
 to break even on costs.
 Next audit: cost vs scoreboard P&L per room; identify the $65 mystery sub.
 
+## Watch items (NEW 8/31, from the mashup's first live day — journal-2026-08-31)
+- GHOST STOP: bot adopted G's SPY 765C at 11:19, missed his 11:20 sale, and
+  at 14:42 its stop fired on the 3h-gone position (417 storm, resolved, no
+  money moved). reconcile_gone should clear an adopted position within a
+  minute of the broker showing it gone — find why it didn't.
+- CHEAP-CONTRACT STOP ROUNDING: IWM 0.20 fill got a 0.20 stop (born off the
+  0.22 bid, 0.198 rounded UP) = stopped in 7 seconds on one tick. Sub-$0.50
+  premium needs floor-rounding or a min-gap tick.
+- MASHUP ATTRIBUTION: every relayed call books as "ZTRADEZ BOT" — the
+  possessive-title unwrap never matches because the captured text starts
+  with the call body, not "<Name>'s". Need one real captured mashup message
+  to see where the trader name actually sits (title? footer?), then fix.
+- SWING OVERNIGHT: the born bracket stop is a DAY order — Webull cancels
+  it at the close, so an overnight swing (S 22.5C) is protected only by
+  the bridge's underlying watcher. Consider GTC stops for swings.
+
 ## Watch items
 - Deepgram key may be one char short (39) — watch for voice auth errors.
 - Bridge log rotation: SDK logs purge at boot, 2-day keep.
