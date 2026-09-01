@@ -278,21 +278,25 @@ AI usage and Topstep evals. The operation must clear ~$60+/trading day
 to break even on costs.
 Next audit: cost vs scoreboard P&L per room; identify the $65 mystery sub.
 
-## Watch items (NEW 8/31, from the mashup's first live day — journal-2026-08-31)
-- GHOST STOP: bot adopted G's SPY 765C at 11:19, missed his 11:20 sale, and
-  at 14:42 its stop fired on the 3h-gone position (417 storm, resolved, no
-  money moved). reconcile_gone should clear an adopted position within a
-  minute of the broker showing it gone — find why it didn't.
-- CHEAP-CONTRACT STOP ROUNDING: IWM 0.20 fill got a 0.20 stop (born off the
-  0.22 bid, 0.198 rounded UP) = stopped in 7 seconds on one tick. Sub-$0.50
-  premium needs floor-rounding or a min-gap tick.
-- MASHUP ATTRIBUTION: every relayed call books as "ZTRADEZ BOT" — the
-  possessive-title unwrap never matches because the captured text starts
-  with the call body, not "<Name>'s". Need one real captured mashup message
-  to see where the trader name actually sits (title? footer?), then fix.
-- SWING OVERNIGHT: the born bracket stop is a DAY order — Webull cancels
-  it at the close, so an overnight swing (S 22.5C) is protected only by
-  the bridge's underlying watcher. Consider GTC stops for swings.
+## The daily rule (G, 8/31): "fix errors every day after journaling."
+A scheduled task (daily-journal-and-fix, weekdays 16:45 ET, runs in the
+desktop app) builds the journal from broker truth and then FIXES what it
+exposes, same day. All four of 8/31's finds were fixed within the hour:
+- GHOST STOP — FIXED: reconcile_gone refused verdicts on an empty account
+  ("flat and unreachable look identical"). broker_positions now flags a
+  SUCCESSFUL live read, and trust_empty_live lets a flat account clear
+  ghosts. (The adopted SPY he'd sold haunted the book 3h and 417-stormed.)
+- CHEAP STOP ROUNDING — FIXED: new stop_below() everywhere a stop is
+  computed — pct down, tick-rounded, and NEVER at/above the reference
+  (drops a full step if rounding lands there). 0.20 fill -> 0.15 stop,
+  was 0.20 = the 7-second IWM stop-out.
+- SWING OVERNIGHT — FIXED: Webull sell-leg stops are DAY-only, so
+  Book.rearm_overnight_stops() (bridge calls it weekdays at 9:31) re-arms
+  every open SWING's resting stop each morning. Scalps excluded on purpose.
+- MASHUP ATTRIBUTION — WIDENED (v3.4.10, needs extension reload): the
+  relay unwrap now also hunts the first 140 chars for "<Name>'s
+  ideas/alerts/trades/plays/calls/entries". If tomorrow's calls STILL book
+  as ZTRADEZ BOT, pull one raw captured mashup message and fix from truth.
 
 ## Watch items
 - Deepgram key may be one char short (39) — watch for voice auth errors.
