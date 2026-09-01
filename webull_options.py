@@ -172,6 +172,22 @@ def occ_symbol(symbol, expiration, option_type, strike):
     return "%s%s%s%08d" % (symbol.upper(), d, cp, int(round(float(strike) * 1000)))
 
 
+def stop_below(reference, pct):
+    """A protective stop strictly BELOW the reference price: pct down, tick
+    rounded, and NEVER at or above the reference. 8/31 IWM lesson: 0.22 bid
+    * 0.90 = 0.198 nearest-rounded UP to 0.20 — the exact fill — and the
+    trade stopped out 7 seconds after filling on a single downtick. Cheap
+    contracts round on a coarse grid, so the guard drops one full step
+    whenever rounding lands at/above the reference."""
+    ref = float(reference)
+    raw = ref * (1 - float(pct) / 100.0)
+    px = max(0.01, float(tick_round(raw)))
+    step = 0.05 if ref < 3.00 else 0.10
+    if px >= ref - 1e-9:
+        px = max(0.01, round(ref - step, 2))
+    return px
+
+
 def tick_round(px):
     """Snap an option price to the exchange's legal increment. Webull rejects a
     limit that isn't on the price step — HTTP 417 OPTION_PRICE_STEP_LT — and the
@@ -1399,7 +1415,7 @@ class WebullOptions:
         if stop_price is not None:
             stop = max(0.01, round(float(stop_price), 2))
         else:
-            stop = max(0.01, round(float(fill_price) * (1 - self.stop_pct / 100), 2))
+            stop = stop_below(fill_price, self.stop_pct)
         # Webull validates a SELL stop against the LIVE market, not your fill.
         # On a wide options spread the bid right after you buy at the ask is
         # often already below a fill-based stop, so Webull 417s it
@@ -1578,8 +1594,7 @@ class WebullOptions:
                 # recorded as bracket_stop must be the price actually resting,
                 # or the book carries a stop that doesn't exist (8/25 SLV: the
                 # log said "stop 2.51 born with it", the resting leg was 2.50).
-                stop_born = max(0.01, float(tick_round(
-                    float(limit) * (1 - float(bracket_stop_pct) / 100))))
+                stop_born = stop_below(limit, bracket_stop_pct)
                 slim = max(0.01, round(stop_born * 0.90, 2))
 
                 def _combo_try(child_type):

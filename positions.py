@@ -1795,8 +1795,14 @@ class Book:
         # that actually rests at the broker. Before this, SLV showed 2.46
         # while the broker held 2.45, and CDE's rebase line promised 1.22
         # while 1.20 went out.
+        # stop strictly BELOW the fill (8/31 IWM: nearest-rounding put the
+        # stop AT the 0.20 fill -> stopped in 7 seconds). Same rule as
+        # webull_options.stop_below, inlined to keep this module standalone.
         stop_price = max(0.01, float(_tick_round(
             float(fill) * (1 - self.stop_pct / 100))))
+        if stop_price >= float(fill) - 1e-9:
+            _stp = 0.05 if float(fill) < 3.00 else 0.10
+            stop_price = max(0.01, round(float(fill) - _stp, 2))
         oid = None
         with self._lock:
             p = self._pos.get(key)
