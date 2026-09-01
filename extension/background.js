@@ -1954,8 +1954,14 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // relayed trader shares one book, and a copy arriving in a direct room
     // would double-fire (different "trader" = no claim match).
     if (/^(ztradez\s*bot|hd\s*greeter)/i.test(String(msg.author || ""))) {
-      const _rm = String(msg.text || "")
-        .match(/^\s*(?:the\s+)?([A-Za-z][\w .\-]{1,24}?)[’']s\b/);
+      const _t = String(msg.text || "");
+      // Try the leading possessive first ("Bishop's Ideas ..."), then hunt
+      // the first 140 chars for a possessive+keyword anywhere — 8/31 live
+      // showed the mashup's captured text starts with the call body, so the
+      // trader name sits deeper in the embed than the audit's sample.
+      const _rm = _t.match(/^\s*(?:the\s+)?([A-Za-z][\w .\-]{1,24}?)[’']s\b/) ||
+        _t.slice(0, 140).match(
+          /\b([A-Z][\w .\-]{1,24}?)[’']s\s+(?:ideas|alerts|trades|plays|calls|entries)\b/i);
       if (_rm) msg.author = _rm[1].trim();
     }
 

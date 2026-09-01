@@ -3959,9 +3959,26 @@ def main():
     # Keep the book in step with the REAL Webull account: adopt any open position
     # the book doesn't know about (one it never placed, or lost on a restart) so
     # a room's "all out" can actually flatten it. Runs once now and every 20s.
+    _REARM_DAY = [""]
+
     def _reconcile_loop():
         while True:
             try:
+                # Once per day just after the open: swings held overnight get
+                # their broker stop back (Webull's DAY-only sell legs died at
+                # yesterday's close — the 8/31 S-swing lesson).
+                _lt = time.localtime()
+                _td = time.strftime("%Y-%m-%d")
+                if (_lt.tm_wday < 5 and _lt.tm_hour * 60 + _lt.tm_min >= 571
+                        and _REARM_DAY[0] != _td and BOOK is not None):
+                    _REARM_DAY[0] = _td
+                    try:
+                        _n = BOOK.rearm_overnight_stops()
+                        if _n:
+                            note("STOP-SET  %d overnight swing stop(s) "
+                                 "re-armed after the open" % _n)
+                    except Exception:                   # noqa: BLE001
+                        pass
                 if BOOK is not None and WB is not None:
                     BOOK.drop_corrupt(note)
                     BOOK.purge_expired(note)

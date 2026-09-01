@@ -1456,6 +1456,40 @@ class Book:
         return wb.order_status(oid)
 
 
+    def rearm_overnight_stops(self):
+        """Webull only takes DAY stops on option sell legs, so every resting
+        stop dies at the close and an overnight hold wakes up NAKED at the
+        broker (8/31: the S 22.5C swing's 0.70 stop was cancelled at the
+        bell). The bridge calls this once per day just after the open: any
+        FILLED, still-open SWING whose stop wasn't placed today gets the
+        same _arm_stop it got at entry — resting order first, watchdog
+        second. Swings only, on purpose: scalps never live past a close."""
+        import datetime as _dt
+        today = _dt.date.today().isoformat()
+        with self._lock:
+            keys = [k for k, p in self._pos.items()
+                    if p.get("state") == FILLED and int(p.get("qty") or 0) > 0
+                    and p.get("kind") != "future" and not p.get("closing")
+                    and p.get("swing") and p.get("stop_day") != today]
+        n = 0
+        for k in keys:
+            with self._lock:
+                p = dict(self._pos.get(k) or {})
+            if not p:
+                continue
+            try:
+                self._arm_stop(k, p.get("side"), p.get("strike"),
+                               p.get("expiry"), int(p.get("qty") or 1),
+                               float(p.get("fill") or 0) or None)
+                with self._lock:
+                    q = self._pos.get(k)
+                    if q is not None:
+                        q["stop_day"] = today
+                n += 1
+            except Exception:                           # noqa: BLE001
+                pass
+        return n
+
     def reconcile_gone(self, broker_rows, note=None, trust_empty_live=False):
         """The inverse of adopt(): the book says you're in it, the ACCOUNT
         says you're not — he sold it himself in the Webull app. After 3
