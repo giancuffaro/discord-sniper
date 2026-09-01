@@ -1456,7 +1456,7 @@ class Book:
         return wb.order_status(oid)
 
 
-    def reconcile_gone(self, broker_rows, note=None):
+    def reconcile_gone(self, broker_rows, note=None, trust_empty_live=False):
         """The inverse of adopt(): the book says you're in it, the ACCOUNT
         says you're not — he sold it himself in the Webull app. After 3
         sweeps in a row missing (~60s) the trade is marked done instead of
@@ -1511,7 +1511,13 @@ class Book:
                 continue
             acct = buckets[bool(p_.get("live"))]
             if not acct:
-                continue        # no rows from that account — no verdict
+                # Empty bucket: no verdict — UNLESS the caller vouches the
+                # live read succeeded and simply found the account flat.
+                # A flat account is the strongest "you're not in it" there is
+                # (8/31 ghost-SPY lesson: he was flat for 3 hours and the
+                # ghost was untouchable the whole time).
+                if not (p_.get("live") and trust_empty_live):
+                    continue
             if any(_held(b, p_) for b in acct):
                 _arm_now = False
                 with self._lock:

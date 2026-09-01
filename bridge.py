@@ -2409,8 +2409,16 @@ def broker_positions():
                         d = dict(p)
                         d["live"] = is_live  # which Webull account it's in
                         rows.append(d)
+                    # A SUCCESSFUL read that returns nothing is a real verdict:
+                    # the account is FLAT. Without this flag, flat and
+                    # unreachable looked identical and reconcile_gone refused
+                    # to clear ghosts while he held nothing (8/31: the adopted
+                    # SPY he'd sold at 11:20 haunted the book until 14:42).
+                    if is_live:
+                        _POS["ok_live"] = True
                 except Exception:                       # noqa: BLE001
-                    pass
+                    if is_live:
+                        _POS["ok_live"] = False
                 # The FUTURES account is a separate Webull account, so it needs
                 # its own call — without this his futures positions were
                 # invisible everywhere (8/12). Always real money.
@@ -3959,7 +3967,9 @@ def main():
                     BOOK.purge_expired(note)
                     BOOK.adopt(broker_positions(), note)
                     # the other direction: positions HE closed at Webull
-                    if BOOK.reconcile_gone(broker_positions(), note):
+                    if BOOK.reconcile_gone(broker_positions(), note,
+                                           trust_empty_live=bool(
+                                               _POS.get("ok_live"))):
                         save_day()
             except Exception:                           # noqa: BLE001
                 pass
