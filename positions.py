@@ -1471,6 +1471,23 @@ class Book:
         return wb.order_status(oid)
 
 
+    def _stop_still_resting(self, p):
+        """CHECK BEFORE REDOING (9/2, G: "do that to everything"): is the
+        stop this position remembers still WORKING at Webull? True means
+        leave it alone. Anything else — gone, unknown, sim — means the
+        caller should arm. One read instead of a cancel + a place."""
+        try:
+            sid = p.get("stop_order_id")
+            if not sid or self._sim(p):
+                return False
+            wb = self._wbfor(p)
+            if wb is None:
+                return False
+            st, _fq, _ = wb.order_status(sid)
+            return st == "working"
+        except Exception:                               # noqa: BLE001
+            return False
+
     def rearm_overnight_stops(self):
         """Webull only takes DAY stops on option sell legs, so every resting
         stop dies at the close and an overnight hold wakes up NAKED at the
@@ -1491,6 +1508,17 @@ class Book:
             with self._lock:
                 p = dict(self._pos.get(k) or {})
             if not p:
+                continue
+            if self._stop_still_resting(p):
+                # A stop that survived the close (GTC standalone sells are
+                # accepted, 9/2) is not re-placed — checked, kept, logged.
+                with self._lock:
+                    q = self._pos.get(k)
+                    if q is not None:
+                        q["stop_day"] = today
+                self._event(k, "update",
+                            "%s — overnight stop still resting at Webull at %.2f "
+                            "— kept" % (k.split("|")[-1], float(p.get("stop") or 0)))
                 continue
             try:
                 self._arm_stop(k, p.get("side"), p.get("strike"),
@@ -1586,14 +1614,8 @@ class Book:
                     # watchdog. Only a stop that's gone (filled, cancelled,
                     # expired at the close) gets re-armed.
                     _kept = False
-                    _sid = p_.get("stop_order_id")
-                    if _sid and not self._sim(p_):
-                        try:
-                            _wb = self._wbfor(p_)
-                            _st, _fq, _ = _wb.order_status(_sid) if _wb else ("unknown", 0, None)
-                        except Exception:               # noqa: BLE001
-                            _st = "unknown"
-                        if _st == "working":
+                    if self._stop_still_resting(p_):
+                        if True:
                             _kept = True
                             with self._lock:
                                 q = self._pos.get(key)
