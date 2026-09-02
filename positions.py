@@ -1577,17 +1577,49 @@ class Book:
                             q["unverified"] = False
                             _arm_now = True
                 if _arm_now:
-                    self._event(key, "update",
-                                "%s — the broker confirms the restored "
-                                "position; watchdog and stop armed"
-                                % p_.get("symbol"))
-                    try:
-                        self._arm_stop(key, p_.get("side"), p_.get("strike"),
-                                       p_.get("expiry"),
-                                       int(p_.get("qty") or 1),
-                                       float(p_.get("fill") or 0) or None)
-                    except Exception:                   # noqa: BLE001
-                        pass
+                    # KEEP THE RESTING STOP (9/2, G: "leave the stop and
+                    # just check if it's still there"). A restart used to
+                    # cancel the stop Webull was already holding and place
+                    # it again — two order calls and a naked moment for
+                    # nothing. Now: ask Webull about the saved stop id; if
+                    # it is still WORKING, keep it and just start the
+                    # watchdog. Only a stop that's gone (filled, cancelled,
+                    # expired at the close) gets re-armed.
+                    _kept = False
+                    _sid = p_.get("stop_order_id")
+                    if _sid and not self._sim(p_):
+                        try:
+                            _wb = self._wbfor(p_)
+                            _st, _fq, _ = _wb.order_status(_sid) if _wb else ("unknown", 0, None)
+                        except Exception:               # noqa: BLE001
+                            _st = "unknown"
+                        if _st == "working":
+                            _kept = True
+                            with self._lock:
+                                q = self._pos.get(key)
+                                if q is not None and not q.get("watching"):
+                                    q["watching"] = True
+                                    threading.Thread(target=self._watchdog,
+                                                     args=(key,),
+                                                     daemon=True).start()
+                            self._event(key, "update",
+                                        "%s — the broker confirms the restored "
+                                        "position; stop still resting at Webull "
+                                        "at %.2f — kept as is, watchdog on"
+                                        % (p_.get("symbol"),
+                                           float(p_.get("stop") or 0)))
+                    if not _kept:
+                        self._event(key, "update",
+                                    "%s — the broker confirms the restored "
+                                    "position; watchdog and stop armed"
+                                    % p_.get("symbol"))
+                        try:
+                            self._arm_stop(key, p_.get("side"), p_.get("strike"),
+                                           p_.get("expiry"),
+                                           int(p_.get("qty") or 1),
+                                           float(p_.get("fill") or 0) or None)
+                        except Exception:               # noqa: BLE001
+                            pass
                 continue
             misses = 0
             with self._lock:
