@@ -304,6 +304,29 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   credit / ThetaData one month) ONLY if the model checks out and he'll
   actually re-run the analysis.
 
+- BROKER FACTS (9/2 research, ~150 sources: v3.5.0/OPTIONS-BROKER-
+  REFERENCE.md — READ IT before any broker test). Corrections applied:
+  (1) Webull has NO option streaming (MQTT = stocks/ETFs/futures/crypto
+  only) — TEST STREAMING is answered, no Python 3.12 needed. (2) Rate
+  limits are PER ENDPOINT: option snapshot 60/min (20 symbols/call),
+  Order Detail / Open Orders / Positions / Balance 2 per 2s — the quote
+  bus now sweeps at 1.05s (was 0.30 = would have 429'd), ask_bid_many
+  chunks at 20, fill_poll_seconds 1.0. (3) TICKS: SPY/QQQ/IWM = $0.01 at
+  every price; Penny Program names $0.01 <$3 / $0.05 >=$3; others $0.05/
+  $0.10 — tick_round/stop_below/_tick_round are symbol-aware (PENNY_ALWAYS
+  + PENNY_PROGRAM sets in webull_options; unknown = coarse, always legal).
+  (4) Option SELL orders are DAY-only at Webull (confirmed) — the 9:31
+  re-arm is the right design. (5) No MARKET orders for options; combos =
+  MASTER(LIMIT)+STOP_LOSS on SINGLE only; OTO/OCO are stock-only — our
+  bracket shape is correct. (6) Replace needs the ORIGINAL client_order_id
+  AND legs[].id for options — replace_stop lacks leg ids, so it falls back
+  to cancel+place (safe); storing leg ids at entry would make replace
+  work. (7) Webull PUSHES order fills over gRPC (TradeEventsClient, same
+  SDK) — that is announcer v4: no polling, no rate budget. (8) ETF options
+  (SPY/QQQ/IWM/DIA...) trade to 16:15; the restart safe-window already
+  honours 16:15. (9) Webull retail lists SPX/XSP index options; whether
+  the OpenAPI takes them is UNVERIFIED — our SPX->SPY translation stays.
+
 ## Operational truths
 - settings.json: ALL keys, gitignored, never pushed. Never run git write ops
   from the sandbox (locks can't be unlinked); AUTO PUSH.bat is a resident
