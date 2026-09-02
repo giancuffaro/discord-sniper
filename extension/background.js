@@ -2705,16 +2705,43 @@ async function keepRoomsLoaded() {
     if (now - last < BEAT_DEAD_MS) continue;
     const tid = READER_TAB[cid];
     if (!tid) continue;
-    if (now - (REVIVED_AT[tid] || 0) < 60000) continue;
+    // BACK OFF, DON'T LOOP (9/2 evening): one room was reloaded 174 times
+    // between 13:25 and 17:11 — every ~80s all afternoon — because its
+    // heartbeat never came back. A reload that didn't help once won't
+    // help every minute; it only keeps a tab that may be reading fine for
+    // ANOTHER room in a permanent reload cycle. 1m, 2m, 4m, 8m, then 15m.
+    const tries = REVIVE_TRIES[cid] || 0;
+    const wait = Math.min(15 * 60000, 60000 * Math.pow(2, tries));
+    if (now - (REVIVED_AT[tid] || 0) < wait) continue;
     // still open? a closed tab just stops beating — nothing to revive
     let alive = null;
     try { alive = await chrome.tabs.get(tid); } catch (e) { alive = null; }
-    if (!alive) { delete READER_BEAT[cid]; delete READER_TAB[cid]; continue; }
+    if (!alive) { delete READER_BEAT[cid]; delete READER_TAB[cid];
+                  delete REVIVE_TRIES[cid]; continue; }
+    // STALE RECORD: the tab has since moved to a different page (a click,
+    // a redirect, a room swap) — its content script now beats under the
+    // NEW channel id and this old id can never answer again. Reloading it
+    // would only punish whatever it is reading now. Drop the record.
+    if (!String(alive.url || "").includes("/" + cid)) {
+      delete READER_BEAT[cid]; delete READER_TAB[cid]; delete REVIVE_TRIES[cid];
+      await addLog({ kind: "skipped", author: ROOM_LABELS[cid] || cid, text: "",
+                     why: "that room's tab now shows a different page, so its "
+                          + "old heartbeat record was stale — dropped, no "
+                          + "reload. If the room should be open, START HERE "
+                          + "opens it." });
+      continue;
+    }
     REVIVED_AT[tid] = now;
+    REVIVE_TRIES[cid] = tries + 1;
+    const nextWait = Math.min(15 * 60000, 60000 * Math.pow(2, tries + 1));
     await addLog({ kind: "skipped", author: ROOM_LABELS[cid] || cid, text: "",
                    why: "⚠ this room's reader stopped answering ("
                         + Math.round((now - last) / 1000) + "s). Reloading it "
-                        + "now instead of waiting 40 minutes to notice." });
+                        + "now instead of waiting 40 minutes to notice."
+                        + (tries ? " (attempt " + (tries + 1) + " — next in "
+                                   + Math.round(nextWait / 60000) + " min; if "
+                                   + "it never answers, open that room by hand)"
+                                 : "") });
     try { await chrome.tabs.reload(tid); } catch (e) { }
   }
 }
