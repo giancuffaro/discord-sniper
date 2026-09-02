@@ -16,6 +16,7 @@ liked better. If it can't build exactly what they called, it refuses.
 """
 
 import datetime as dt
+import math
 import re
 import time
 import uuid
@@ -240,6 +241,33 @@ def tick_round(px, symbol=None):
         return tick_step(0.01, symbol)
     step = tick_step(p, symbol)
     snapped = round(round(p / step) * step, 2)
+    return snapped if snapped > 0 else step
+
+
+def tick_floor(px, symbol=None):
+    """Snap DOWN to the legal tick — "the caller's price or better" for a
+    resting BUY, and a more marketable price for a SELL. 9/2 lesson: _order()
+    rounded to the NEAREST nickel with no symbol in hand, so IWM's 0.18 bid
+    (a penny name) went out at 0.20 — 11% over the caller — and AMZN's 2.11
+    stop rested at 2.10 while the log swore 2.11. Never below one tick."""
+    try:
+        p = float(px)
+    except (TypeError, ValueError):
+        return px
+    step = tick_step(max(p, 0.01), symbol)
+    snapped = round(math.floor(p / step + 1e-9) * step, 2)
+    return snapped if snapped > 0 else step
+
+
+def tick_ceil(px, symbol=None):
+    """Snap UP to the legal tick — for a marketable BUY (the pullback's
+    ask-cross) that must stay at or above the ask to fill right now."""
+    try:
+        p = float(px)
+    except (TypeError, ValueError):
+        return px
+    step = tick_step(max(p, 0.01), symbol)
+    snapped = round(math.ceil(p / step - 1e-9) * step, 2)
     return snapped if snapped > 0 else step
 
 
@@ -1123,7 +1151,13 @@ class WebullOptions:
         # Snap every price to a legal exchange tick right before it goes out —
         # the single choke point every order passes through, so no odd-cent
         # premium (2.38, 4.66) can ever reach Webull and 417 on the price step.
-        limit = tick_round(limit)
+        # SYMBOL-AWARE (9/2 journal): this line rounded to the conservative
+        # nickel for every name, so a penny contract's price got moved on
+        # every order — IWM 0.18 bid sent as 0.20, AMZN 2.41 as 2.40, the
+        # 2.11 stop as 2.10 — while the log printed the number it meant to
+        # send. buy()/sell() now floor/ceil on the right side; this stays as
+        # the legal-tick backstop and is a no-op for a price already on grid.
+        limit = tick_round(limit, symbol)
         leg = {"side": side, "quantity": str(qty), "symbol": symbol,
                "strike_price": "%.2f" % float(strike),
                "option_expire_date": expiration, "instrument_type": "OPTION",
@@ -1141,7 +1175,7 @@ class WebullOptions:
             # so it clears in a fast drop instead of resting above the market
             # while the contract keeps falling.
             o["order_type"] = "STOP_LOSS_LIMIT"
-            o["stop_price"] = "%.2f" % float(tick_round(stop))
+            o["stop_price"] = "%.2f" % float(tick_round(stop, symbol))
             o["time_in_force"] = "GTC"
         return [o]
 
