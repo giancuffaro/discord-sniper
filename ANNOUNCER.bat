@@ -17,7 +17,11 @@ del /q "announcer.stop" >nul 2>&1
 
 rem --- 2. Startup folder entry (runs at every logon, no admin needed)
 set "SU=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\fill-announcer.vbs"
-> "%SU%" echo CreateObject("WScript.Shell").Run "wscript.exe ""%~dp0_announcer_hidden.vbs""", 0, False
+rem  60s head start: at logon the Desktop folder (OneDrive / disk) isn't
+rem  always ready yet - firing instantly threw "Can not find script file"
+rem  (9/2). START HERE launches it too, so this is just the safety net.
+> "%SU%" echo WScript.Sleep 60000
+>> "%SU%" echo If CreateObject("Scripting.FileSystemObject").FileExists("%~dp0_announcer_hidden.vbs") Then CreateObject("WScript.Shell").Run "wscript.exe ""%~dp0_announcer_hidden.vbs""", 0, False
 
 rem --- 3. revive task: every 30 min, the heartbeat makes extras stand down
 schtasks /query /tn "Fill Announcer revive" >nul 2>&1

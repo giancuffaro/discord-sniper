@@ -237,6 +237,27 @@ if "!NEEDSTART!"=="0" (
   )
 )
 
+rem ---- [4.5/5] the Fill Announcer, hidden (his ask, 9/2) --------
+rem  Same launcher the Startup entry and the revive task use. Safe to
+rem  fire every time: the loop stands down if a heartbeat is fresh
+rem  (one announcer, never two), and a NON-EMPTY announcer.stop means
+rem  "he turned it off on purpose" - we honour that and skip.
+set "ANN_OFF=0"
+if exist "announcer.stop" (
+  for %%z in ("announcer.stop") do if %%~zz GTR 0 set "ANN_OFF=1"
+)
+if "!ANN_OFF!"=="1" (
+  echo         Fill Announcer is switched OFF ^(STOP ANNOUNCER was used^).
+  echo         Run ANNOUNCER.bat to turn it back on.
+) else (
+  if exist "_announcer_hidden.vbs" (
+    wscript.exe "%~dp0_announcer_hidden.vbs"
+    echo         Fill Announcer running in the background.
+  ) else (
+    echo         _announcer_hidden.vbs is missing - announcer not started.
+  )
+)
+
 rem ---- [5/5] Chrome, all the rooms ----------------------------
 rem  His call (8/10): NEVER touch tabs that are already open. This
 rem  used to close ALL of Chrome and reopen every room on every run
