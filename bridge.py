@@ -1348,7 +1348,19 @@ def plan_exit(order, key):
                         "never bought." % sym)
             except Exception:                           # noqa: BLE001
                 pass
-        return True, False, None
+        # NOT ON THE BOOK = NOT THE BOT'S TO SELL (9/2 evening). The old
+        # "send it anyway, the worst case is a 417" was written before the
+        # state photo (positions survive restarts) and before he scalped
+        # SPY/QQQ 0DTE in size in the SAME account the rooms call all day.
+        # A contract the book has no record of is either nothing (417 noise,
+        # 11:13 NVDA today) or HIS hand position — and a sell of "1" against
+        # his 12-lot is a real loss, not a message. Adopted positions ARE on
+        # the book, so a room's named exit still reaches them.
+        note("EXIT     %s — not on the book (no bot position in that "
+             "contract), so nothing was sent. If it's yours, it stays yours."
+             % sym)
+        return False, False, (True,
+            "you're not in %s on the bot's book, so nothing was sent." % sym)
 
     if st == positions.WORKING:
         held = BOOK.cancel_entry(key, "their exit landed before your bid filled")
