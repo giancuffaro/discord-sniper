@@ -729,7 +729,13 @@ class WebullOptions:
             return {}
 
         joined = ",".join(occs)
-        shapes = [((occs,), {}), ((joined,), {}),
+        # 9/2 (from the SDK's own request log): the single-quote call that
+        # WORKS sends symbols="<occ>", category="US_OPTION" — a comma-joined
+        # STRING plus the category. That exact pair leads the hunt now; the
+        # old first guesses (a bare list) were what got refused.
+        shapes = [((), {"symbols": joined, "category": "US_OPTION"}),
+                  ((joined, "US_OPTION"), {}),
+                  ((occs,), {}), ((joined,), {}),
                   ((), {"symbols": occs}), ((), {"symbols": joined}),
                   ((occs, "US_OPTION"), {}),
                   ((), {"symbols": occs, "category": "US_OPTION"})]

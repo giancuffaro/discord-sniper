@@ -423,6 +423,26 @@ exposes, same day. All four of 8/31's finds were fixed within the hour:
   ideas/alerts/trades/plays/calls/entries". If tomorrow's calls STILL book
   as ZTRADEZ BOT, pull one raw captured mashup message and fix from truth.
 
+## Watch items (9/2 midday)
+- EXIT-WHILE-WORKING: 11:13 Midas "OUT NVDA 225C" arrived while the bot's
+  pullback entry was still WORKING (never filled). The exit path "cleared
+  an order still on the contract and re-sent the sell" -> 417 (nothing
+  held). Harmless, but wrong shape: an exit against a WORKING/unfilled
+  entry must CANCEL the entry and stop, never sell. Fix in the evening.
+- QUOTE BUS BATCH: "batched option quotes not available" all day — the
+  hunt never tried symbols="A,B,C"+category="US_OPTION" (the shape the
+  working single call uses, per the SDK log). Fixed 13:4x; verify the
+  warning is GONE after the next bridge restart, and popup prices refresh
+  every ~1s.
+- GTC OPTION STOPS ARE ACCEPTED: today's order list shows the bot's
+  standalone STOP_LOSS_LIMIT sells resting with time_in_force GTC — the
+  docs' "sell = DAY only" is wrong for standalone stop-limits (the born
+  bracket leg is DAY). Verify one survives a close, then swings can keep
+  a real broker stop overnight without the 9:31 re-arm.
+- MARKET SNIPER SOLD BOT POSITIONS: FLR (10:56:35, 1.55) and the bot's
+  SPY 766C (11:48, 1.87) were closed by MARKET orders with 6a98… ids —
+  G's tool/app, not the bot. Check Market Sniper for a flatten-all.
+
 ## Watch items
 - Deepgram key may be one char short (39) — watch for voice auth errors.
 - Bridge log rotation: SDK logs purge at boot, 2-day keep.
