@@ -26,6 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SEEN_FILE = os.path.join(HERE, "announcer-seen.json")
 ALIVE_FILE = os.path.join(HERE, ".announcer.alive")
 STOP_FILE = os.path.join(HERE, "announcer.stop")
+RESTART_FILE = os.path.join(HERE, "announcer.restart")   # touch = reload code
 MILESTONES = (10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500)
 SCORE_FILE = os.path.join(HERE, "announcer-scoreboard.json")
 FUT_MULT = {"MNQ": 2.0, "MES": 5.0, "MYM": 0.5, "M2K": 5.0,
@@ -342,6 +343,20 @@ def main():
     last_quote = 0.0
     last_beat = 0.0
     while True:
+        if os.path.exists(RESTART_FILE) and os.path.getsize(RESTART_FILE) > 0:
+            # RESTART (9/2): a plain exit — the keep-alive loop respawns us
+            # in 10s on the new code. No stop-file race (the loop only
+            # quits on a NON-EMPTY announcer.stop). Delete our own flag.
+            try:
+                os.remove(RESTART_FILE)
+            except OSError:
+                try:
+                    open(RESTART_FILE, "w").close()
+                except OSError:
+                    pass
+            print("restart file found — reloading onto the new code.")
+            _save_seen(seen)
+            return
         if os.path.exists(STOP_FILE) and os.path.getsize(STOP_FILE) > 0:
             # empty stop file = inert (9/1: the sandbox mount can write but
             # not delete, so a cleared stop is truncated, not removed)
