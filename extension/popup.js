@@ -1541,7 +1541,9 @@ async function render() {
         .filter(Boolean).join(" ");
       const n = parseInt(b.qty || 1, 10) || 1;
       const paid = (b.fill != null) ? " · paid " + Number(b.fill).toFixed(2) : "";
-      const now = (b.last != null) ? " · now " + Number(b.last).toFixed(2) : "";
+      // "≈" = walked forward from the last 1/s quote on the underlying's tick
+      // stream (delta/gamma); a plain number is the real quote (9/2).
+      const now = (b.last != null) ? " · now " + (b.est ? "\u2248" : "") + Number(b.last).toFixed(2) : "";
       let plTxt = "";
       if (b.pl != null) {
         const up = b.pl >= 0;

@@ -156,8 +156,14 @@ class QuoteBus:
     only pays for what it is told the call cost.
     """
 
-    def __init__(self, fetch_many, budget=None, log=None):
+    def __init__(self, fetch_many, budget=None, log=None, und_price=None):
         self._fetch_many = fetch_many
+        # TICK INTERPOLATION (9/2, G: "can we poll faster than 1 second?"):
+        # the option door is 1/s, but the underlying streams many ticks a
+        # second. Stamp every swept row with the underlying's price AT the
+        # sweep so a reader can walk the quote forward with delta/gamma
+        # (Webull's snapshot carries both) until the next real quote lands.
+        self._und_price = und_price
         self.budget = budget or Budget()
         self._log = log or (lambda *_a, **_k: None)
         self._quotes = {}                  # occ -> (ask, bid, row, ts)
@@ -292,6 +298,16 @@ class QuoteBus:
                     ask, bid, row = val
                 except Exception:                        # noqa: BLE001
                     continue
+                if self._und_price is not None and isinstance(row, dict):
+                    try:
+                        _u = "".join(ch for ch in str(occ) if ch.isalpha())
+                        _u = _u[:-1] if _u[-1:] in ("C", "P") else _u
+                        _s = self._und_price(_u)
+                        if _s:
+                            row["_und_at_sweep"] = float(_s)
+                            row["_und_sym"] = _u
+                    except Exception:                    # noqa: BLE001
+                        pass
                 self._quotes[str(occ)] = (ask, bid, row, now)
                 tape_rows.append((str(occ), bid, ask))
         self.sweeps += 1

@@ -368,6 +368,7 @@ def build_book():
             for _s in ("SPY", "QQQ", "IWM", "NVDA", "TSLA", "AAPL", "AMD", "META",
                        "AMZN", "MSFT", "GOOGL", "NFLX"):
                 STREAM.watch(_s)
+            QUOTES._und_price = STREAM.price     # stamp sweeps with the underlying
             note("STREAM on — stock/ETF prices pushed over MQTT (options stay on the 1/s bus)")
         except Exception as _se:                        # noqa: BLE001
             note("STREAM off (%s) — HTTP stock prices as before" % str(_se)[:80])
@@ -2877,9 +2878,25 @@ class Handler(BaseHTTPRequestHandler):
                         qb = getattr(BOOK, "quotes", None) if BOOK is not None else None
                         if qb is not None:
                             qb.watch(occ)
-                            _a, _b, _ = qb.get(occ)
+                            _a, _b, _row = qb.get(occ)
                             if _b:
                                 live_px = float(_b)
+                                # walk the 1/s quote forward on the tick stream
+                                try:
+                                    st = getattr(WB, "stream", None)
+                                    _s0 = float(_row.get("_und_at_sweep") or 0)
+                                    _dl = float(_row.get("delta") or 0)
+                                    _gm = float(_row.get("gamma") or 0)
+                                    _s1 = st.price(_row.get("_und_sym") or d["symbol"]) if st else None
+                                    if _s0 and _s1 and _dl:
+                                        _ds = float(_s1) - _s0
+                                        _est = live_px + _dl * _ds + 0.5 * _gm * _ds * _ds
+                                        if abs(_est - live_px) >= 0.005:
+                                            live_px = max(0.01, round(_est, 2))
+                                            d["est"] = True
+                                        d["und_now"] = float(_s1)
+                                except Exception:       # noqa: BLE001
+                                    pass
                         mult = 100.0
                     elif d.get("kind") == "stock":
                         st = getattr(WB, "stream", None)
