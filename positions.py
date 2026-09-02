@@ -49,22 +49,32 @@ from ratchet_tiers import (ratchet_locked_pct as tier_locked_pct,
                            ratchet_stop_price, ratchet_plan, anti_clip)
 
 
-def _tick_round(px):
-    """Snap an option price to the exchange's legal increment — $0.05 steps
-    below $3.00, $0.10 at or above. This is the SAME snap webull_options.py
-    applies to every price on its way to the broker (tick_round there); it
-    lives here as its own five lines so the book never has to import the
-    broker module (test stubs, and no SDK needed to compute a price). If one
-    changes, change the other."""
+def _tick_step(px, sym=None):
+    """Legal increment — symbol-aware since 9/2 (SPY/QQQ/IWM = $0.01 always;
+    Penny Program names $0.01 under $3 / $0.05 above; else $0.05 / $0.10).
+    Borrows webull_options' table when importable; falls back to the always-
+    legal coarse grid so the book never NEEDS the broker module (test stubs)."""
+    try:
+        from webull_options import tick_step as _ts
+        return _ts(px, sym)
+    except Exception:                                   # noqa: BLE001
+        return 0.05 if float(px) < 3.0 else 0.10
+
+
+def _tick_round(px, sym=None):
+    """Snap an option price to the exchange's legal increment (see
+    _tick_step). Same snap webull_options.tick_round applies on the way to
+    the broker, so the book, the log and the resting order agree."""
     try:
         p = float(px)
     except (TypeError, ValueError):
         return px
     if p <= 0:
-        return 0.05
-    step = 0.05 if p < 3.0 else 0.10
+        return _tick_step(0.01, sym)
+    step = _tick_step(p, sym)
     snapped = round(round(p / step) * step, 2)
     return snapped if snapped > 0 else step
+
 
 
 # The states a position can be in, and what each one means for whether the
@@ -1863,9 +1873,9 @@ class Book:
             _pct = (25.0 if (_ps.get("swing") and not _ps.get("their_stop"))
                     else self.stop_pct)
         stop_price = max(0.01, float(_tick_round(
-            float(fill) * (1 - _pct / 100))))
+            float(fill) * (1 - _pct / 100), sym)))
         if stop_price >= float(fill) - 1e-9:
-            _stp = 0.05 if float(fill) < 3.00 else 0.10
+            _stp = _tick_step(float(fill), sym)
             stop_price = max(0.01, round(float(fill) - _stp, 2))
         oid = None
         with self._lock:
