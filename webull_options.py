@@ -677,11 +677,12 @@ class WebullOptions:
         if self.quote_client is not None and self.quote_client is not self:
             return self.quote_client.ask_bid_many(occs)
 
-        # Webull caps a snapshot list; 50 at a time is comfortably under it.
-        if len(occs) > 50:
+        # Webull's option snapshot list takes MAX 20 symbols per call
+        # (developer.webull.com reference/option-snapshot, checked 9/2).
+        if len(occs) > 20:
             out = {}
-            for i in range(0, len(occs), 50):
-                out.update(self.ask_bid_many(occs[i:i + 50]))
+            for i in range(0, len(occs), 20):
+                out.update(self.ask_bid_many(occs[i:i + 20]))
             return out
 
         fns = self._quote_fns()

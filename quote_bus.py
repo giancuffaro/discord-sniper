@@ -57,8 +57,13 @@ SAFETY = 0.95
 # orders. Tested at 0.25s the bucket ran dry and an entry waited 0.44s behind
 # quote sweeps — unacceptable when a fill is racing a room. 0.30s + the
 # reserve below keeps order latency under ~50ms.
-SWEEP_TARGET = 0.30
-SWEEP_FLOOR = 0.25          # never hammer faster than this
+# CORRECTED 9/2 from Webull's published limits (v3.5.0/OPTIONS-BROKER-
+# REFERENCE.md): limits are PER ENDPOINT, and the option snapshot endpoint
+# is 60 requests / 60 s = ONE call per second, max 20 symbols each. A 0.30s
+# sweep was 200 calls/min against a 60/min door — it would have 429'd
+# itself within the first minute. 1.05s keeps a hair of slack.
+SWEEP_TARGET = 1.05
+SWEEP_FLOOR = 1.00          # never faster than the endpoint's 1/s
 SWEEP_CEILING = 5.0         # what a fully backed-off bus falls back to
 
 # Tokens the sweeper will NOT touch. Entries, exits and ratchet stop-moves
