@@ -249,7 +249,14 @@ def main():
 
     log("")
     log("STEP 1 — find a real option contract (over plain HTTP)")
-    symbol, snap = find_real_contract(api, lambda m: log("    " + m))
+    # TEST_OCC=<occ symbol> skips the HTTP hunt with a contract we KNOW is
+    # real (9/2: the mdata snapshot answered INVALID_SYMBOL for plain SPY on
+    # this SDK family, which says nothing about streaming).
+    if os.environ.get("TEST_OCC"):
+        symbol, snap = os.environ["TEST_OCC"].strip(), None
+        log("    using known-real contract from TEST_OCC: %s" % symbol)
+    else:
+        symbol, snap = find_real_contract(api, lambda m: log("    " + m))
     if not symbol:
         log("    couldn't resolve a contract. Check your keys and that the")
         log("    OPRA option-data subscription is active on this app key.")
