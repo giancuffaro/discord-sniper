@@ -138,6 +138,7 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   optional garnish (the ratchet already owns TP+SL); voice ENTRIES are
   the point. Hard-lines file (voice-HARD-lines-for-G.txt) holds the ~75
   utterances still untranslated — G translates, rules get encoded.
+- VOICE ENTRIES switched ON by G 9/2 pre-open (data collection: measure the live voice-vs-scribe lead; a voice fire is real money only in a LIVE room).
 - VOICE (v3.4.2, built with G 8/29-30): ZOOM works — Felony goes live via
   Zoom; the Zoom WEB client (app.zoom.us/wc/... "Join from browser") is a
   Chrome tab, so tabCapture grabs it like Discord voice. Auto-listen now
