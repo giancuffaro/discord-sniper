@@ -404,6 +404,19 @@ def validate(read, text, allowed_symbols):
     if price is not None and not _num_in_text(price, text):
         # a price that isn't in the text is untrustworthy — drop it, don't refuse
         price = None
+    # A "premium" at or above the strike is the STOCK level, not the option
+    # (9/2 11:06, Midas: "In $NVDA 225c 9/4 2.71 adding at 224.70" read as
+    # @ 224.7 — the add trigger on the underlying; the premium was 2.71).
+    # An option never costs its own strike in these rooms; drop the number
+    # so the bridge bids the market instead of carrying a stock price as
+    # a limit through affordability and the reverse-average math.
+    try:
+        if (price is not None and strike is not None
+                and str(read.get("instrument") or "option").lower() == "option"
+                and float(price) >= float(strike) > 0):
+            price = None
+    except (TypeError, ValueError):
+        pass
 
     side = str(read.get("side") or "").upper() or None
     if side in ("CALL", "CALLS"):
