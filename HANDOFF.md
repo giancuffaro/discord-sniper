@@ -202,6 +202,14 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   channel until G makes that channel). RULE:
   NEITHER channel ever goes into rooms.txt (the sniper would chase its
   own tail). Same script is the template for any trader G recruits.
+  NEVER-POSTED BUG (FOUND+FIXED 9/1): the announcer's homemade order hunt
+  guessed SDK verbs that don't exist — announcer-seen.json sat [] for three
+  days while the account did nine round trips; only "online" banners ever
+  reached Discord. _recent_orders now uses the proven last_sell_fill
+  pattern (holders order_v3/order/trade/account_v2, verb substring
+  "history", dates BY KEYWORD). Also: an EMPTY announcer.stop is inert now
+  (the sandbox can truncate but not delete); STOP ANNOUNCER writes "stop"
+  into it. First live narration expected 9/2.
   RUNS IN BACKGROUND (8/30): ANNOUNCER.bat double-clicked once = starts
   hidden (output -> announcer.log), installs a Startup-folder entry
   (every logon) + "Fill Announcer revive" schtask (every 30 min).
