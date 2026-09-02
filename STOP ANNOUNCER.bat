@@ -9,7 +9,7 @@ rem  not even after a reboot (the Startup entry checks too).
 rem ============================================================
 cd /d "%~dp0"
 title STOP ANNOUNCER
-type nul > "announcer.stop"
+echo stop> "announcer.stop"
 echo.
 echo  Stop signal sent. The announcer signs off within a second.
 echo  Run ANNOUNCER.bat whenever you want it back.

@@ -234,7 +234,9 @@ def main():
     last_quote = 0.0
     last_beat = 0.0
     while True:
-        if os.path.exists(STOP_FILE):
+        if os.path.exists(STOP_FILE) and os.path.getsize(STOP_FILE) > 0:
+            # empty stop file = inert (9/1: the sandbox mount can write but
+            # not delete, so a cleared stop is truncated, not removed)
             print("stop file found — announcer signing off.")
             _save_seen(seen)
             return

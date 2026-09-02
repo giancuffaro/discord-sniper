@@ -3,7 +3,8 @@ rem ============================================================
 rem  ANNOUNCER keep-alive loop (not meant to be double-clicked -
 rem  ANNOUNCER.bat / _announcer_hidden.vbs run it for you).
 rem  If the announcer ever crashes it comes back in 10 seconds.
-rem  Honours announcer.stop; port-safe via the heartbeat file.
+rem  Honours a NON-EMPTY announcer.stop (an empty one is inert - the
+rem  sandbox can truncate but not delete); heartbeat = single instance.
 rem ============================================================
 cd /d "%~dp0"
 
@@ -13,8 +14,8 @@ powershell -nop -c "$f='.announcer.alive'; if(Test-Path $f){$a=(Get-Date)-(Get-I
 if errorlevel 1 exit /b 0
 
 :loop
-if exist "announcer.stop" exit /b 0
+for %%z in ("announcer.stop") do if %%~zz GTR 0 exit /b 0
 python -u announcer.py >> announcer.log 2>&1
-if exist "announcer.stop" exit /b 0
+for %%z in ("announcer.stop") do if %%~zz GTR 0 exit /b 0
 timeout /t 10 /nobreak >nul
 goto loop
