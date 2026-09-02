@@ -26,12 +26,12 @@ RE_CALLER = re.compile(r"@\s*([A-Za-z0-9_.\-]{2,24})\s*\((admin|mod|analyst|scri
                        re.IGNORECASE)
 RE_PING = re.compile(r"@(everyone|here)\b", re.IGNORECASE)
 RE_HDR = re.compile(r"^(?P<who>[A-Za-z0-9_.\- ]{2,24})\s*\((scribe|admin|mod)\)"
+                    r"\s*[—\-]+\s*\d{1,2}:\d{2}\s*(AM|PM)\s*", re.IGNORECASE)
 RE_STAG = re.compile(
     r"(?:[A-Za-z0-9_.$|&' \-]{1,40}?\s*\[[^\]]{1,16}\],?\s*)?Server Tag:\s*\S{1,16}(?:\s+\S{1,16})?"
     r"(?:\s+(?:Owner|Admin|Founder|CEO|Mod|Moderator|Analyst|Trader))?"
     r"(?:\s*[—\-]+\s*(?:\d{1,2}/\d{1,2}/\d{2,4},?\s*)?\d{1,2}:\d{2}\s*[AP]M"
     r"(?:\s+[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?)?", re.I)
-                    r"\s*[—\-]+\s*\d{1,2}:\d{2}\s*(AM|PM)\s*", re.IGNORECASE)
 RE_EMOJI = re.compile("[\U0001F000-\U0001FAFF←-⯿️]")
 
 # --- the pieces of a call ----------------------------------------------------
