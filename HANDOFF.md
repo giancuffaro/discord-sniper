@@ -1,7 +1,12 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-08-30 (announcer v3: futures leg + scoreboard channel, seeded from journals).
+Last updated: 2026-09-01 (first automated journal day; breached-stop clamp
+fix — see the daily rule section. Mashup attribution CONFIRMED working:
+9/1 journal names The Market Bishop / Jpm Options. Bot 0-for-3 -$70 on ZT
+mashup day one incl. the S swing's clamp bug; Gian +$94. FLR 57.5C swing
+open. The 8/31 fixes all proved live 9/1: rearm fired 9:31, ghost-clear
+and stop_below in the build since 00:10.)
 No secrets live here — keys and account ids stay in settings.json (gitignored).
 
 ## Who and what

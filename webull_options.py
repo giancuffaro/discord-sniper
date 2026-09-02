@@ -1438,6 +1438,20 @@ class WebullOptions:
             ceiling = round(float(mkt) - step, 2)
             if ceiling < 0.01:
                 ceiling = 0.01
+            # BREACHED vs ARTIFACT (9/1, the S-swing lesson): a market a
+            # hair under the intended stop right after a wide-spread entry
+            # is an artifact — clamp and carry on. A market DEEP below the
+            # intended stop means the stop condition has ALREADY happened
+            # (S opened at ~0.45 bid vs a 0.75 intended stop; the clamp
+            # re-anchored to 0.40 and rode it down to a -59% fill). More
+            # than 10% below intended = breached: refuse to rest a lower
+            # stop so the caller's watchdog SELLS instead of re-anchoring.
+            if stop_price is None and float(mkt) <= stop * 0.90:
+                raise Refused(
+                    "the market (%.2f) is already well below the intended "
+                    "stop (%.2f) — that stop is BREACHED, not clamp-able. "
+                    "No lower stop was rested; the watchdog should sell."
+                    % (float(mkt), stop))
             if stop >= ceiling:
                 stop = max(0.01, float(tick_round(ceiling)))
                 stop_clamped = True
