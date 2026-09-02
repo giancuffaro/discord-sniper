@@ -2654,11 +2654,13 @@ const READER_BEAT = {};        // channelId -> last heartbeat ts
 const READER_TAB = {};         // channelId -> tabId
 const BEAT_DEAD_MS = 95000;    // 3 missed beats. Reload, don't wonder.
 const REVIVED_AT = {};         // tabId -> last revive, so we don't loop
+const REVIVE_TRIES = {};       // channelId -> reloads in a row with no beat back
 
 chrome.runtime.onMessage.addListener((m, sender) => {
   if (!m || m.type !== "READER_ALIVE") return;
   if (m.channelId) {
     READER_BEAT[m.channelId] = m.at || Date.now();
+    REVIVE_TRIES[m.channelId] = 0;          // it answered — the slate is clean
     if (sender && sender.tab) READER_TAB[m.channelId] = sender.tab.id;
   }
   if (m.listFound && !m.observing) {
