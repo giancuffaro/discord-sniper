@@ -252,19 +252,34 @@ def _start_push(cfg, wb, account_ids):
         except Exception:                               # noqa: BLE001
             ev.set()
 
+    # Exact shape from developer.webull.com reference/custom/subscribe-
+    # trade-events (checked 9/2): TradeEventsClient(app_key, app_secret,
+    # region_id); .on_events_message(event_type, subscribe_type, payload,
+    # raw); .do_subscribe([account_ids]) blocks while streaming. The
+    # payload is JSON with scene_type FILLED / FINAL_FILLED.
+    _w = ((cfg.get("execution") or {}).get("webull") or {})
+    _key, _sec = _w.get("app_key", ""), _w.get("app_secret", "")
+
+    def _on_events(event_type, subscribe_type, payload, raw=None):
+        try:
+            blob = str(payload).upper()
+            if "FILLED" in blob:            # FILLED and FINAL_FILLED
+                ev.set()
+        except Exception:                               # noqa: BLE001
+            ev.set()
+
     def _run():
         while True:
             try:
-                api = getattr(wb, "_api", None)
-                if api is None:
-                    time.sleep(30); continue
-                cli = TradeEventsClient(api)
-                # the SDK names the hook on_events_message; accept variants
-                for name in ("on_events_message", "on_message", "on_event"):
-                    try:
-                        setattr(cli, name, _on)
-                    except Exception:                   # noqa: BLE001
-                        pass
+                if not (_key and _sec):
+                    print("push: no app key in settings — polling only")
+                    return
+                cli = TradeEventsClient(_key, _sec, "us")
+                cli.on_events_message = _on_events
+                try:
+                    cli.on_log = lambda level, msg: None    # quiet
+                except Exception:                           # noqa: BLE001
+                    pass
                 PUSH["on"] = True
                 print("push: subscribed to fill events for %s" % account_ids)
                 cli.do_subscribe(list(account_ids))    # blocks while streaming
