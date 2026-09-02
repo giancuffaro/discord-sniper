@@ -320,14 +320,20 @@ def main():
     wb.sdk_log_name = "webull_api-announcer.log"   # never share the bridge's
     wb.connect()
     print("Fill Announcer v3 up — fills at %.0fs, milestones on live quotes." % poll)
-    _post(webhook, "📡 Fill Announcer v3 online — options fills, "
-                   "milestones, stop-outs, and the scoreboard.")
-    if fut_hook != webhook:
-        _post(fut_hook, "📡 Fill Announcer v3 online — futures entries and "
-                        "exits post here.")
+    # No boot banners (G, 9/2: "we know what it does") — every restart was
+    # spamming the channels. Fills speak for themselves. The scoreboard
+    # still posts at boot only when the score file changed since last boot.
+    _bs = getattr(_score_board, "_last", None)
     board = _score_board(sc)
-    if board:
-        _post(score_hook, board)
+    try:
+        _sig = str(sorted(sc["all"].items()))
+        _sigf = os.path.join(HERE, ".announcer-board-sig")
+        _old = open(_sigf).read() if os.path.exists(_sigf) else ""
+        if board and _sig != _old:
+            _post(score_hook, board)
+            open(_sigf, "w").write(_sig)
+    except Exception:                                   # noqa: BLE001
+        pass
 
     try:
         _ids = [wb.account_id] + ([wb.futures_account_id]
