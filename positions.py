@@ -1852,8 +1852,16 @@ class Book:
         # stop strictly BELOW the fill (8/31 IWM: nearest-rounding put the
         # stop AT the 0.20 fill -> stopped in 7 seconds). Same rule as
         # webull_options.stop_below, inlined to keep this module standalone.
+        # SWING-AWARE (9/2): a swing with no caller level runs the WIDE
+        # -25% stop (the house rule) — the restore/re-arm path used to
+        # hand it the -10% scalp stop (FLR 9/2 01:00: "stop at 1.50, -9%
+        # from 1.64" on an 18-DTE swing = the HOOD lesson all over again).
+        with self._lock:
+            _ps = self._pos.get(key) or {}
+            _pct = (25.0 if (_ps.get("swing") and not _ps.get("their_stop"))
+                    else self.stop_pct)
         stop_price = max(0.01, float(_tick_round(
-            float(fill) * (1 - self.stop_pct / 100))))
+            float(fill) * (1 - _pct / 100))))
         if stop_price >= float(fill) - 1e-9:
             _stp = 0.05 if float(fill) < 3.00 else 0.10
             stop_price = max(0.01, round(float(fill) - _stp, 2))
@@ -1921,7 +1929,8 @@ class Book:
             try:
                 try:
                     oid, stop_price = wb.place_stop(sym, side, strike, expiry,
-                                                    qty, fill)
+                                                    qty, fill,
+                                                    stop_price=stop_price)
                 except Exception as e0:                 # noqa: BLE001
                     # "can't hold a resting stop" is nearly always an older
                     # order still sitting on the contract. Clear it and try
@@ -1933,7 +1942,8 @@ class Book:
                             or "EXCESS OF CURRENT HOLDING" in up0):
                         if self._clear_orphans(wb, key, sym, strike):
                             oid, stop_price = wb.place_stop(sym, side, strike,
-                                                            expiry, qty, fill)
+                                                            expiry, qty, fill,
+                                                            stop_price=stop_price)
                         else:
                             raise
                     else:

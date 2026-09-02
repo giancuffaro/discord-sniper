@@ -1457,7 +1457,7 @@ class WebullOptions:
             # re-anchored to 0.40 and rode it down to a -59% fill). More
             # than 10% below intended = breached: refuse to rest a lower
             # stop so the caller's watchdog SELLS instead of re-anchoring.
-            if stop_price is None and float(mkt) <= stop * 0.90:
+            if float(mkt) <= stop * 0.90:
                 raise Refused(
                     "the market (%.2f) is already well below the intended "
                     "stop (%.2f) — that stop is BREACHED, not clamp-able. "
