@@ -1995,6 +1995,35 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         _t.slice(0, 140).match(
           /\b([A-Z][\w .\-]{1,24}?)[’']s\s+(?:ideas|alerts|trades|plays|calls|entries)\b/i);
       if (_rm) msg.author = _rm[1].trim();
+      // THE FOOTER IS THE TRUTH (9/2 evening, from the raw captures): every
+      // relayed message ENDS with its source channel — "... #◽︱♟market-bishop
+      // • 3:57 PM", "... #◽︱🎩mr-top-hat • 3:05 PM", "... #◽︱jpm-investments
+      // • 9:44 AM". The possessive hunt above only ever matched an embed
+      // TITLE ("Bishop's Ideas"); the live relay format has none, so all
+      // 9/2 mashup calls (IREN, IWM, SPY 762P) booked as "ZTRADEZ BOT" and
+      // the journal had to name them by hand. Map the slug to the trader
+      // the scoreboard already knows; an unknown slug still beats "the bot".
+      if (!_rm) {
+        const _ft = _t.match(/#\s*[^\w#]*([a-z0-9][a-z0-9\-]{1,40})\s*•\s*\d{1,2}:\d{2}\s*[AP]M\s*$/i)
+          || _t.match(/#\s*[^\w#]*([a-z0-9][a-z0-9\-]{1,40})\s*•\s*\d{1,2}:\d{2}\s*[AP]M/i);
+        if (_ft) {
+          const _slug = _ft[1].toLowerCase();
+          const _NAMES = {
+            "market-bishop": "The Market Bishop", "mr-top-hat": "MR.TOPHAT",
+            "jpm-investments": "Jpm Options", "king-maker": "King Maker",
+            "adex-swings": "Adex", "sir-goldman": "Sir Goldman",
+            "are-swings": "are-alerts", "are-alerts": "are-alerts",
+            "guru-futures": "Market Guru", "cranmer": "Cranmer",
+            "madhatter-trades": "MadHatter", "clutchinvestments": "Clutch",
+            "namrood-options": "Namrood", "demon": "Demon", "eva-panda": "EvaPanda",
+            "evapanda": "EvaPanda", "kumo": "KuMo", "stormzy": "Stormzy",
+            "nitro-trades": "Nitro Trades", "stockguy007": "stockguy007",
+            "bullwinkle": "Bullwinkle", "top-flow": "Top Flow", "scalps": "ZT scalps",
+          };
+          msg.author = _NAMES[_slug] || _slug;
+          msg.relay_source = _slug;
+        }
+      }
     }
 
     // VERO posts every call as a reply on his own alert bot, so the reply
