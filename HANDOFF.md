@@ -1,12 +1,15 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-01 (first automated journal day; breached-stop clamp
-fix — see the daily rule section. Mashup attribution CONFIRMED working:
-9/1 journal names The Market Bishop / Jpm Options. Bot 0-for-3 -$70 on ZT
-mashup day one incl. the S swing's clamp bug; Gian +$94. FLR 57.5C swing
-open. The 8/31 fixes all proved live 9/1: rearm fired 9:31, ghost-clear
-and stop_below in the build since 00:10.)
+Last updated: 2026-09-02 evening (daily journal-and-fix run #2 — see
+"9/2 EVENING" at the bottom. Bot -$62 on 3 closes, Gian +$114 on 9 hand
+trades, account +$52 gross / +$45.71 net. Six bridge fixes + extension
+3.5.6 (RELOAD IT): pulled stops go back when an exit is abandoned, a
+CLOSE never sells what the book doesn't hold, "price I never saw" now
+trues itself up from the broker, bare "out" can't touch his hand trades,
+symbol-aware ticks at the order choke point, exits sell the HELD strike,
+mashup calls attributed from the relay FOOTER, heartbeat reloads back off.
+IREN 40C 9/18 swing carries overnight with a GTC stop resting at 1.85.)
 No secrets live here — keys and account ids stay in settings.json (gitignored).
 
 ## Who and what
@@ -422,26 +425,31 @@ exposes, same day. All four of 8/31's finds were fixed within the hour:
   relay unwrap now also hunts the first 140 chars for "<Name>'s
   ideas/alerts/trades/plays/calls/entries". If tomorrow's calls STILL book
   as ZTRADEZ BOT, pull one raw captured mashup message and fix from truth.
+  -> DONE 9/2 evening: they did (IREN/IWM/SPY 762P all "ZTRADEZ BOT").
+  Truth from the raw capture: every relayed message ENDS with its source
+  channel — "... #◽︱♟market-bishop • 3:57 PM". v3.5.6 reads that footer
+  (slug -> The Market Bishop / MR.TOPHAT / Jpm Options / King Maker ...;
+  an unknown slug books under the slug itself). Verify 9/3: the journal
+  names the trader on every mashup call without hand work.
 
-## Watch items (9/2 midday)
-- EXIT-WHILE-WORKING: 11:13 Midas "OUT NVDA 225C" arrived while the bot's
-  pullback entry was still WORKING (never filled). The exit path "cleared
-  an order still on the contract and re-sent the sell" -> 417 (nothing
-  held). Harmless, but wrong shape: an exit against a WORKING/unfilled
-  entry must CANCEL the entry and stop, never sell. Fix in the evening.
-- QUOTE BUS BATCH: "batched option quotes not available" all day — the
-  hunt never tried symbols="A,B,C"+category="US_OPTION" (the shape the
-  working single call uses, per the SDK log). Fixed 13:4x; verify the
-  warning is GONE after the next bridge restart, and popup prices refresh
-  every ~1s.
-- GTC OPTION STOPS ARE ACCEPTED: today's order list shows the bot's
-  standalone STOP_LOSS_LIMIT sells resting with time_in_force GTC — the
-  docs' "sell = DAY only" is wrong for standalone stop-limits (the born
-  bracket leg is DAY). Verify one survives a close, then swings can keep
-  a real broker stop overnight without the 9:31 re-arm.
-- MARKET SNIPER SOLD BOT POSITIONS: FLR (10:56:35, 1.55) and the bot's
-  SPY 766C (11:48, 1.87) were closed by MARKET orders with 6a98… ids —
-  G's tool/app, not the bot. Check Market Sniper for a flatten-all.
+## Watch items (9/2 midday — status as of the evening run)
+- EXIT-WHILE-WORKING — FIXED (evening): plan_exit stands an armed pullback
+  hunt down on the room's exit (the 11:13 NVDA shape) and, new rule, a
+  CLOSE for a contract the book does not hold is REFUSED, never sent — the
+  "worst case is a 417" comment was wrong the day he started scalping
+  SPY/QQQ in size in the same account (a sell of 1 against his 12-lot is
+  a loss, not a message). Adopted positions are on the book, so a room's
+  NAMED exit still reaches them (policy question below).
+- QUOTE BUS BATCH: fixed 14:20 (Response object vs .json()); the 17:12
+  restart shows no "batched option quotes not available" line. Closed.
+- GTC OPTION STOPS ARE ACCEPTED: closed by the 14:35 "check before redoing"
+  rule — 17:12 restart logged "overnight stop still resting at Webull at
+  1.85 — kept" on IREN. Confirm 9/3 pre-open that Webull still shows it
+  SUBMITTED/working after the night (first real overnight broker stop).
+- MARKET SNIPER SOLD BOT POSITIONS: FLR (10:56:35 @1.55) and SPY 766C
+  (11:48:00 @1.87) closed by MARKET orders with 6a98… client ids — G's
+  hand (Market Sniper/app), not the bot. Still open: was FLR a deliberate
+  flatten? (-$9 on a swing that was +5% the night before.)
 
 ## Watch items
 - Deepgram key may be one char short (39) — watch for voice auth errors.
