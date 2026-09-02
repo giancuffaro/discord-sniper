@@ -778,10 +778,21 @@ async function syncFillsInner() {
             qty: Math.max(1, parseInt(p.qty || 1, 10) || 1), adds: 0,
             pending: false, live: !!p.live, kind: p.kind || "",
             channelId: "", fill: p.fill || null, stop: p.stop || null,
+            // Whose it is, per the bridge: the trader it inherited credit
+            // from, or "Gian" for a hand trade. guards.pickHeld reads this
+            // so a symbol-less "out" can never land on his own position
+            // (9/2 14:54, SPY 767C 9/9 sold on a stranger's "I took my L").
+            who: String(p.who || "?"),
             adopted: true };
           changed = true;
         }
         continue;
+      }
+      // A record that predates the `who` field (or whose owner the bridge
+      // has since named): keep it current, the guard depends on it.
+      if (mine.adopted && p.who && mine.who !== String(p.who)) {
+        mine.who = String(p.who);
+        changed = true;
       }
       const qty = Math.max(1, parseInt(p.qty || 1, 10) || 1);
       if (mine.pending || mine.qty !== qty) {

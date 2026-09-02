@@ -305,7 +305,13 @@ async function resolveSymbol(sig, author) {
       // never resolve onto ANOTHER trader's position (8/19: KingBeeAri had
       // loaded AAPL, so his bare "10%" grabbed stockguy007's AAPL swing).
       const cands = keys.filter(k => keySymbol(k) === ldSym &&
-        (keyWho(k) === who || keyWho(k) === "?"));
+        (keyWho(k) === who || keyWho(k) === "?") &&
+        // ...but never G's own hand trade (9/2): an adopted record with
+        // no trader on it, or Gian's name, is his — the loading call
+        // proves the trader named the ticker, not that the position is
+        // theirs. Same rule as pickHeld.
+        !((held[k] || {}).adopted &&
+          ["?", "gian", ""].includes(String((held[k] || {}).who || "?").toLowerCase())));
       if (cands.length === 1) pick = cands[0];
     }
   }
@@ -334,7 +340,16 @@ async function resolveSymbol(sig, author) {
 function pickHeld(held, who) {
   const keys = Object.keys(held || {});
   if (!keys.length) return null;
-  const theirs = keys.filter(k => who && keyWho(k) === who);
+  // Who a record belongs to: the key's owner, or — for a bridge-adopted
+  // "?|SYM" record — the name the bridge put on it (the trader whose call
+  // the bot was in when it lost track, or "Gian" for a hand trade).
+  const ownerOf = (k) => {
+    const kw = keyWho(k);
+    if (kw && kw !== "?") return kw;
+    const p = held[k] || {};
+    return String(p.who || "?").toLowerCase();
+  };
+  const theirs = keys.filter(k => who && ownerOf(k) === who);
   // Their own, and when they hold several, the NEWEST — Aristotle runs a
   // swing and a scalp at once, and his bare "12%" / "Out" is always about
   // the trade he just opened, not the swing from Tuesday.
@@ -343,8 +358,18 @@ function pickHeld(held, who) {
     return theirs[0];
   }
   if (keys.length === 1) {
-    const owner = keyWho(keys[0]);
-    if (!who || owner === "?" || owner === who) return keys[0];
+    const k = keys[0];
+    const owner = ownerOf(k);
+    const p = held[k] || {};
+    // A HAND TRADE IS NEVER "THE ONLY POSITION" (9/2 14:54): the only
+    // record was G's own SPY 767C 9/9, adopted "?" from the account, and a
+    // caller's symbol-less "I took my $126 L" was matched to it and SOLD it
+    // (-$27) — a loss the caller took, not him. An adopted record with no
+    // trader on it (or Gian's name) belongs to nobody in the room; a bare
+    // exit can't name it. Named ones (a bot trade re-adopted after a
+    // restart) still match their own trader above.
+    if (p.adopted && (owner === "?" || owner === "gian")) return null;
+    if (!who || owner === "?" || owner === who) return k;
   }
   return null;
 }
