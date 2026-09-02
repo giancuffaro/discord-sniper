@@ -1929,6 +1929,12 @@ class Book:
             if p.get("stop_order_id"):
                 return                  # still resting — nothing to do
             stop = p.get("stop")
+            # HIS OWN TRADE (8/18 rule, re-learned 9/2 14:11): an adopted
+            # position that never carried a stop must not be handed one by
+            # a failed exit — that is how his hand-bought SPY 767C got a
+            # 3.14 stop it never asked for. No stop before = no stop after.
+            if p.get("adopted") and not stop:
+                return
             fill = p.get("fill")
             side = p.get("side")
             strike = p.get("strike")
@@ -2954,6 +2960,7 @@ class Book:
             if not p or p["state"] != FILLED or p.get("closing"):
                 return False
             p["closing"] = True
+            p.pop("pulled_stop", None)
             sym = p["symbol"]
             oid = p.get("stop_order_id")
             p["stop_order_id"] = None
@@ -2968,6 +2975,13 @@ class Book:
                 # exactly what killed the 8/12 META and LYFT stops, one second
                 # after the pull. So wait for the broker to actually let go.
                 self._await_cancel(wb, oid)
+                # Remembered so release() can put it BACK if the sell never
+                # goes out (9/2: SPY 766C sat naked five minutes after a
+                # pull-then-refuse).
+                with self._lock:
+                    p2 = self._pos.get(key)
+                    if p2 is not None:
+                        p2["pulled_stop"] = {"oid": oid, "stop": p2.get("stop")}
                 self._event(key, "stop-pulled",
                             "%s — pulled the resting stop before selling" % sym)
             except Exception:                           # noqa: BLE001
@@ -3067,11 +3081,28 @@ class Book:
         return held
 
     def release(self, key):
-        """The close didn't happen after all. Put it back."""
+        """The close didn't happen after all. Put it back — the claim AND the
+        resting stop claim() pulled on the way in.
+
+        9/2 11:43, SPY 766C 9/3: the pullback's stock-stop claimed the
+        position (stop pulled at Webull), the sell was then refused as a
+        TEST-room order, and every refusal path called release() — which
+        only cleared the flag. The contract sat with NO stop anywhere for five
+        minutes until he sold it by hand at 1.87. A pulled stop goes back
+        the moment the exit is abandoned, whatever the reason. Only a stop
+        claim() itself pulled is re-armed: an adopted hand trade that never
+        had one still gets none."""
+        pulled = None
         with self._lock:
             p = self._pos.get(key)
             if p:
                 p["closing"] = False
+                pulled = p.pop("pulled_stop", None)
+        if pulled:
+            try:
+                self.rearm_stop_after_failed_exit(key)
+            except Exception:                           # noqa: BLE001
+                pass
 
     def finish(self, key, state, why, price=None, settle=True):
         """The position is over. `price` is what you sold each contract for.
@@ -3120,6 +3151,7 @@ class Book:
             # flag) to say WHAT pulled the trigger (8/17).
             p.update(state=state, closing=False, qty=0, closed_at=time.time(),
                      closed_why=str(why or ""))
+            p.pop("pulled_stop", None)      # the exit happened; nothing to put back
 
         money = ""
         if settle and self.cash is not None and qty and price is not None:
