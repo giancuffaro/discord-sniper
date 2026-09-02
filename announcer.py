@@ -427,6 +427,39 @@ def main():
             if first_pass:
                 first_pass = False
                 _save_seen(seen)
+                # ADOPT what's already open (9/2): a restart used to forget
+                # every live position, so milestones/stop-outs never posted
+                # for a trade that filled before the boot. Seed open_pos from
+                # the broker's own positions (cost basis = entry).
+                try:
+                    for pr in (wb.positions() or []):
+                        if not pr.get("strike") or not pr.get("expiry"):
+                            continue
+                        _f = {"sym": pr.get("symbol"), "strike": pr.get("strike"),
+                              "otype": ("C" if str(pr.get("side") or "").upper()
+                                        .startswith("C") else "P"),
+                              "exp": str(pr.get("expiry") or ""),
+                              "px": pr.get("fill"), "qty": int(pr.get("qty") or 1)}
+                        _c = _con(_f)
+                        if _c in open_pos or not _f["px"]:
+                            continue
+                        _occ = None
+                        try:
+                            if len(_f["exp"]) == 10:
+                                _occ = webull_options.occ_symbol(
+                                    _f["sym"], _f["exp"],
+                                    "CALL" if _f["otype"] == "C" else "PUT",
+                                    float(_f["strike"]))
+                        except Exception:               # noqa: BLE001
+                            _occ = None
+                        open_pos[_c] = {"entry": float(_f["px"]),
+                                        "qty": _f["qty"], "hit": set(),
+                                        "occ": _occ}
+                        print(time.strftime("%H:%M:%S"),
+                              "tracking open %s @ %s x%s (adopted at boot)"
+                              % (_c, _f["px"], _f["qty"]))
+                except Exception as _ae:                # noqa: BLE001
+                    print("adopt-at-boot skipped:", str(_ae)[:80])
 
             # ---- milestones off live quotes (every ~2s) -------------------
             now = time.time()

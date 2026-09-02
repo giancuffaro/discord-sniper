@@ -1521,11 +1521,19 @@ def _pullback_enter(order):
 
 
 def _pullback_close(order, why):
+    # LIVE FLAG CARRIES THROUGH (9/2). This used to hardcode live=False while
+    # _pullback_enter passed the room's own toggle — so a REAL entry got a
+    # PAPER exit, which fell into the "test room, paper execution is off"
+    # branch and sent nothing. 9/2 11:35: SPY 766C 9/3 filled for real at
+    # 2.18, the stock stop hit at 11:43, the exit was refused as paper, and
+    # he had to close it by hand at 1.87 (-$31). An exit must always route to
+    # the same account the entry went to — the position is real either way.
     return _place_impl({
         "action": "CLOSE", "symbol": order.get("symbol"),
         "side": order.get("side"), "strike": order.get("strike"),
         "expiry": order.get("expiry"), "trader": order.get("trader"),
-        "kind": order.get("kind") or "option", "live": False,
+        "kind": order.get("kind") or "option",
+        "live": bool(order.get("live")),
         "raw": "pullback exit: " + str(why), "source": "pullback"})
 
 
@@ -1834,6 +1842,25 @@ def _place_impl(order):
 
     # Whether THIS order is real money — the room's own toggle, not a global.
     live_order = bool(order.get("live")) and MODE != "webhook"
+    # AN EXIT FOLLOWS THE POSITION, NOT THE CALLER (9/2). Every internal
+    # watcher builds its own order dict, and one of them (the pullback's
+    # stock-stop) carried the wrong live flag for weeks — a real position got
+    # a paper exit and nothing was sent. The BOOK knows which account the
+    # contracts actually sit in, so on a CLOSE or TRIM it wins over whatever
+    # the caller passed. This can only ever turn an exit MORE real; it never
+    # sends a live order for a paper position.
+    if action in ("CLOSE", "TRIM") and not live_order and BOOK is not None \
+            and MODE != "webhook":
+        try:
+            _hp = BOOK.info(key) or {}
+            if _hp.get("live") and not _hp.get("paper"):
+                note("EXIT-ROUTE %s — the book holds this one LIVE; sending "
+                     "the exit to the real account, not paper"
+                     % str(order.get("symbol", "")).upper())
+                live_order = True
+                order["live"] = True
+        except Exception:                               # noqa: BLE001
+            pass
     # Paper routes an ENTRY through Webull's SANDBOX for a real fill; it is NOT
     # real money, so the wallet still scores it. A LIVE order is never paper —
     # the two are mutually exclusive, which is what lets a live room and a test
