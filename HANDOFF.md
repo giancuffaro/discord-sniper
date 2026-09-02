@@ -245,6 +245,25 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   FILLED log line carries "· SYM @ price"; the announcer ENTRY post shows
   "(SYM @ price)"; the journal has an "Underlying at fill" column.
 
+- v3.5.0 PACKAGE (9/2, from a parallel session; docs in v3.5.0/):
+  APPLIED = Block A: _pace 0.15->0.20 (was 33% over Webull's 5/s cap),
+  SDK file logger (webull_api.log), and the TAB-DISCARD fix — Chrome's
+  Memory Saver discards background tabs that still look healthy to every
+  watchdog; now every room tab is pinned autoDiscardable=false each tick,
+  content.js heartbeats every 30s, and a room silent 3 beats (~90s) or
+  detached is reloaded (log line "⚠ Chrome had DISCARDED..." / "reader
+  stopped answering"). Memory-shed cadence 2h->4h. Extension 3.5.0.
+  STAGED, NOT APPLIED = Block B (tiered ratchet: <$1 arms +25% locks +10%
+  rungs 15%; $1-2 arms +15% BE rungs 10%; $2+ arms +10% locks +5% rungs
+  5% — CHANGES G'S EXIT RULES, needs his yes; ratchet_tiers.py is in the
+  repo), B4 naked-window replace_stop (needs new plumbing), Block C quote
+  bus (WEEKEND ONLY — rewires the position watchdog; quote_bus.py +
+  v3.5.0/_patch_ask_bid_many.py staged). Block D = free tests: TEST
+  STREAMING.bat (does Webull push option quotes? green = no rate limits
+  ever) and a trailing-stop paper test. tests: test_positions +
+  test_resolve pass; test_parity needs its python JSON arg (harness, not
+  a failure).
+
 ## Operational truths
 - settings.json: ALL keys, gitignored, never pushed. Never run git write ops
   from the sandbox (locks can't be unlinked); AUTO PUSH.bat is a resident
