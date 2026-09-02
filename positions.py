@@ -44,6 +44,9 @@ Nothing in here talks to the browser. bridge.py exposes a snapshot over GET
 
 import threading
 import time
+# v3.5.0 (9/2, G: "live tomorrow"): tiered ratchet off what he PAID
+from ratchet_tiers import (ratchet_locked_pct as tier_locked_pct,
+                           ratchet_stop_price, ratchet_plan)
 
 
 def _tick_round(px):
@@ -1992,6 +1995,10 @@ class Book:
                     q = self._pos.get(key)
                     if q:
                         q["last_bid"] = float(bid)
+                        try:
+                            q["last_ask"] = float(_ask) if _ask else None
+                        except (TypeError, ValueError):
+                            q["last_ask"] = None
                 # High-water / low-water mark of the trade, same live bid.
                 self._mark_excursion(key, float(bid))
                 # His rule runs here, on the same live bid the stop watches.
@@ -2363,6 +2370,38 @@ class Book:
             self.finish(key, FAILED, "take-profit failed to sell")
         return True
 
+    def _futures_ratchet(self, key, price):
+        """Points-based ratchet for futures (v3.5.0) — percent is meaningless
+        when MNQ trades at 24,000. Uses the trade's own stop width: one
+        stop-width of profit locks breakeven, every further one locks
+        another. Needs a futures quote feed to fire; without one `price`
+        never arrives and this is simply never called."""
+        from ratchet_tiers import (futures_stop_points, futures_locked_points,
+                                   futures_stop_price)
+        if price is None:
+            return
+        with self._lock:
+            p = self._pos.get(key)
+            if not p or p.get("state") != FILLED or p.get("closing"):
+                return
+            entry = float(p.get("fill") or 0)
+            dirn = int(p.get("direction") or 1)
+            sym = p.get("symbol")
+            if not entry:
+                return
+            gain_pts = (float(price) - entry) * dirn
+            rung = futures_stop_points(sym, p.get("their_stop"), entry)
+            locked = futures_locked_points(gain_pts, rung)
+            new_stop = futures_stop_price(entry, locked, dirn, p.get("stop"))
+            if new_stop is None:
+                return
+            p["stop"] = new_stop
+            p["ratchet_locked_pts"] = locked
+        self._event(key, "stop-set",
+                    "%s — up %.0f pts, ratchet moved the stop to %g "
+                    "(locked +%g pts, %g-pt rungs)"
+                    % (sym, gain_pts, new_stop, locked, rung))
+
     def auto_ratchet(self, key, bid):
         """His replacement for the hard take-profit close (8/15): once a
         position reaches +take_profit_pct it no longer gets sold outright —
@@ -2392,19 +2431,31 @@ class Book:
             # instead of +10% — otherwise the first wiggle scratches every
             # 0DTE lotto at breakeven and the runners leave without him.
             # Rungs after arming are unchanged.
-            _arm = self.take_profit_pct if fill >= 1.0                 else max(self.take_profit_pct, 15.0)
-            locked = ratchet_locked_pct(gain, self.stop_pct, _arm)
+            # TIERED (v3.5.0, 9/2): the rung plan comes from what he PAID,
+            # not one global pair. <$1: arm +25%, lock +10%, 15% rungs (a
+            # $0.40 contract moves 2.5% a tick — 5% rungs get scratched by
+            # the quote). $1-2: arm +15%, BE, 10% rungs. $2+: arm +10%,
+            # lock +5%, 5% rungs. See ratchet_tiers.py.
+            locked = tier_locked_pct(gain, fill)
             if locked is None:
                 return           # hasn't reached the first rung yet
             already = p.get("ratchet_locked_pct")
             if already is not None and locked <= float(already):
                 return           # never loosen a stop that's already this high
-            # Only long positions ratchet for now — every call site that arms
-            # this bracket is a long options buy; a short/futures ratchet
-            # would need the mirrored math and isn't part of what he asked for.
-            if dirn != 1:
+            # v3.5.0: shorts ratchet too — a short's stop lives ABOVE the
+            # entry and walks DOWN as the trade profits; ratchet_stop_price
+            # handles both sides. Futures go through the points path.
+            if p.get("kind") == "future":
+                return self._futures_ratchet(key, bid)
+            # Spread floor: a stop inside the bid/ask gets hit by the quote,
+            # not by the trade. None = not safe or not an improvement -> no
+            # API call spent on it.
+            _ask = p.get("last_ask")
+            new_stop = ratchet_stop_price(fill, locked, bid=bid, ask=_ask,
+                                          current_stop=p.get("stop"),
+                                          direction=dirn)
+            if new_stop is None:
                 return
-            new_stop = round(fill * (1 + locked / 100.0), 2)
             sym, side = p["symbol"], p.get("side")
             strike, expiry = p.get("strike"), p.get("expiry")
             qty = int(p.get("qty") or 0)
