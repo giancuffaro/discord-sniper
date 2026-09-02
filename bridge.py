@@ -347,7 +347,30 @@ def build_book():
         QUOTES = QuoteBus(WB.ask_bid_many, budget=BUDGET, log=print)
         QUOTES.start()
         BOOK.quotes = QUOTES
+        try:                     # OPTION TAPE: only record of our contracts' prints
+            QUOTES.record_to(os.path.join(HERE, "option_tape.csv"))
+        except Exception:                               # noqa: BLE001
+            pass
         note("QUOTE BUS on — one batched quote call per second (Webull: 60/min, 20 contracts each), one budget for all calls")
+        # STREAM BUS (9/2, G: "stream all data from the best source we can"):
+        # Webull pushes stock/ETF prices over MQTT. Attach one StockStream
+        # to every client so stock_price() answers from the push (3s fresh)
+        # and only falls back to HTTP when nothing fresh is in hand.
+        try:
+            from stream_bus import StockStream
+            _wcfg = ((CFG.get("execution") or {}).get("webull") or {})
+            STREAM = StockStream(_wcfg.get("app_key", ""), _wcfg.get("app_secret", ""),
+                                 log=print)
+            STREAM.start()
+            for _cli in (WB, WB_LIVE, WB_PAPER):
+                if _cli is not None:
+                    _cli.stream = STREAM
+            for _s in ("SPY", "QQQ", "IWM", "NVDA", "TSLA", "AAPL", "AMD", "META",
+                       "AMZN", "MSFT", "GOOGL", "NFLX"):
+                STREAM.watch(_s)
+            note("STREAM on — stock/ETF prices pushed over MQTT (options stay on the 1/s bus)")
+        except Exception as _se:                        # noqa: BLE001
+            note("STREAM off (%s) — HTTP stock prices as before" % str(_se)[:80])
     except Exception as _qe:                            # noqa: BLE001
         BOOK.quotes = None
         note("QUOTE BUS off (%s) — per-position quotes as before" % str(_qe)[:80])

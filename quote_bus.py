@@ -158,6 +158,31 @@ class QuoteBus:
         self._thread = None
         self.sweeps = 0
         self.last_sweep_ms = 0.0
+        self._tape = None                  # path of option_tape.csv (record_to)
+
+    # ---- option tape (9/2, HANDOFF-OPTION-DATA) -------------------------
+    def record_to(self, path):
+        """Append every swept quote to a CSV: ts,occ,bid,ask. Webull keeps
+        no option tick history, so this is the only record of what our
+        contracts printed. One line per contract per sweep (~1/s)."""
+        self._tape = path
+        try:
+            import os
+            if not os.path.exists(path):
+                with open(path, "a", encoding="utf-8") as f:
+                    f.write("ts,occ,bid,ask\n")
+        except Exception:                                # noqa: BLE001
+            self._tape = None
+
+    def _tape_write(self, rows, now):
+        if not self._tape or not rows:
+            return
+        try:
+            with open(self._tape, "a", encoding="utf-8") as f:
+                for occ, bid, ask in rows:
+                    f.write("%.3f,%s,%s,%s\n" % (now, occ, bid, ask))
+        except Exception:                                # noqa: BLE001
+            pass
 
     # ---- what to watch -------------------------------------------------
     def watch(self, occ):
@@ -242,6 +267,7 @@ class QuoteBus:
                 self._log("quote sweep failed: %s" % str(e)[:120])
             return
         now = time.time()
+        tape_rows = []
         with self._lock:
             for occ, val in got.items():
                 try:
@@ -249,7 +275,9 @@ class QuoteBus:
                 except Exception:                        # noqa: BLE001
                     continue
                 self._quotes[str(occ)] = (ask, bid, row, now)
+                tape_rows.append((str(occ), bid, ask))
         self.sweeps += 1
+        self._tape_write(tape_rows, now)
         self._recover()
 
     def _on_429(self):
