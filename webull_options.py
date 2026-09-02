@@ -434,6 +434,13 @@ class WebullOptions:
         key, secret = self._creds()
         api = ApiClient(key, secret, REGION)
         api.add_endpoint(REGION, self.endpoint)
+        # Full request/response logging, built into the SDK (v3.5.0 A2):
+        # this is what answers a 404 or a crash instead of tea leaves in
+        # bridge.log. *.log is gitignored.
+        try:
+            api.set_file_logger("webull_api.log")
+        except Exception:                               # noqa: BLE001
+            pass
         self._api = api
         self.trade = TradeClient(api)
         self._data = DataClient(api)
@@ -581,7 +588,11 @@ class WebullOptions:
         spacing between calls on the same connection keeps every one of them
         under the limit. Never retries anything — it only spaces."""
         now = time.time()
-        wait = 0.15 - (now - getattr(self, "_last_call", 0.0))
+        # 0.20 = Webull's documented 300 requests / 60 seconds = 5 per second.
+        # The old 0.15 was 6.67/sec — OVER the published limit, which is where
+        # the 8/9 wall of 429s came from. Slower here means fewer refusals.
+        # (v3.5.0 A1, 9/2)
+        wait = 0.20 - (now - getattr(self, "_last_call", 0.0))
         if wait > 0:
             time.sleep(wait)
         self._last_call = time.time()

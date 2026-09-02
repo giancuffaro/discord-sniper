@@ -399,4 +399,50 @@ timer = setInterval(function () {
   liveSweep();       // catch anything the live observer missed, every tick
   liveScan();        // and notice when the server goes LIVE on voice/stage
 }, 1500);
+
+/* HEARTBEAT (v3.5.0 A3.1, 9/2). A dead reader and a quiet room look
+ * identical for 40 minutes today — the silence alert even says so. But a
+ * merely-quiet room still has a living content script in it, and a living
+ * script can say so. Every 30s: rows on screen, watcher attached, whether
+ * Chrome discarded/hid us. Background reloads a room that stops answering. */
+function _readerHealth() {
+  const list = document.querySelector('[data-list-id="chat-messages"]');
+  const rows = list
+    ? list.querySelectorAll('li[id^="chat-messages-"]').length : 0;
+  return {
+    type: "READER_ALIVE",
+    channelId: (location.pathname.match(/\/channels\/\d+\/(\d+)/) || [])[1]
+               || null,
+    rows: rows,
+    listFound: !!list,
+    observing: !!observer,          // false = watcher died, reads nothing
+    wasDiscarded: !!document.wasDiscarded,
+    hidden: document.hidden,
+    at: Date.now()
+  };
+}
+function _beat() {
+  // "Extension context invalidated" throws synchronously on a reload —
+  // never let a beat kill the reader.
+  try { chrome.runtime.sendMessage(_readerHealth()).catch(() => {}); } catch (e) { }
+}
+setInterval(_beat, 30000);
+_beat();
+
+/* Chrome FREEZES background tabs. A frozen tab's MutationObserver queues
+ * nothing, so mutations during the freeze are lost outright. On resume,
+ * re-attach and force a full re-read — handle() dedupes via SEEN, so
+ * re-reading is free and missing a call is not. */
+document.addEventListener("resume", function () {
+  try {
+    const list = document.querySelector('[data-list-id="chat-messages"]');
+    if (list) {
+      if (observer) { try { observer.disconnect(); } catch (e) { } }
+      observer = new MutationObserver(onMutations);
+      observer.observe(list, { childList: true, subtree: true });
+      list.querySelectorAll('li[id^="chat-messages-"]').forEach(handle);
+    }
+  } catch (e) { }
+  _beat();
+});
 })();
