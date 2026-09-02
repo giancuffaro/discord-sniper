@@ -166,7 +166,14 @@ function handle(li) {
   // capture and refuses to let it anywhere near the trading path. Scroll back
   // through a week of a room and you've exported its whole lexicon tonight
   // instead of collecting it live for days.
-  const history = postedAt < STARTED - 5000;
+  // FRESH IS NOT HISTORY (9/2): when Chrome discards a room tab under
+  // memory pressure and the heartbeat reloads it, STARTED resets and every
+  // message on screen — including a call posted 30 seconds ago — was filed
+  // as "history" and silently never traded. A message younger than 3
+  // minutes is live no matter when this reader started; the worker's
+  // stale-entry gate (3 min) still refuses anything older for OPEN/ADD.
+  const history = postedAt < STARTED - 5000 &&
+                  (Date.now() - postedAt) > 3 * 60 * 1000;
 
   // (text/images and the empty-check moved to the top of handle() — the
   // embed-race fix needs them before the dedupe decision. Image-only posts

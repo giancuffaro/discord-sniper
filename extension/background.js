@@ -10,7 +10,11 @@
 importScripts("parser.js", "guards.js");
 
 const BRIDGE_DEFAULT = "http://127.0.0.1:8787/order";
-const LOG_MAX = 400;   // a full trading day, not just the last hour
+// 400 was NOT a full day (9/2: the day's export started at 10:51 — every
+// morning verdict was gone, so a 9:38 entry that never fired couldn't be
+// audited). Today ran ~450 verdicts by the close; 2500 covers a loud day
+// with room to spare, and the popup only renders the newest slice anyway.
+const LOG_MAX = 2500;
 
 /* One message, one pass. The reader re-scans the DOM on every mutation sweep,
  * a room can be open in two tabs at once, and content.js's own SEEN set clears
