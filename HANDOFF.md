@@ -500,3 +500,6 @@ Webull option snapshot = 60/min per key, no option streaming. Answer: the bus st
 - `_expiry_age` strptime("%m/%d") without a year: Python 3.15 will break it; year now pinned explicitly.
 - Positions endpoint still 429s ~4 per 10 min (broker_positions + futures_positions + probes). Low impact (cached row served); noted.
 - Announcer adopt-at-boot 429 item: resolved (14:25 boot adopted 1 position first try).
+
+## 9/2 14:55 — ANNOUNCER PAUSED (G: "put the announcer off for a while, get this app working 100% first")
+announcer.stop = "stop" (revive task and START HERE step 4.5 both honour it). Bridge reports `announcer_stopped`; popup shows grey "announcer off (paused)" instead of the red warning. To bring it back: ANNOUNCER.bat (clears the stop file). Focus now: the sniper itself.
