@@ -260,6 +260,19 @@ def main():
                 "</div>" % (sum(1 for x in rows if x["signals"] > 0), n_silent,
                             sum(x["sent"] for x in rows),
                             cls(sum(x["pl"] for x in rows)), money(sum(x["pl"] for x in rows))))
+    # READ THIS FIRST — the three lists that answer "who has and hasn't"
+    live = [x for x in rows if x["signals"] > 0 and x["configured"]]
+    silent = [x for x in rows if x["configured"] and x["signals"] == 0]
+    unconfigured = [x for x in rows if not x["configured"] and x["signals"] >= 5]
+    body.append("<div class=three>")
+    body.append("<div class=card><b>Signaling (configured)</b><ol>%s</ol></div>" % "".join(
+        "<li>%s — %d signals, last %s</li>" % (html.escape(x["room"]), x["signals"], x["last"][5:] or "?")
+        for x in live[:12]))
+    body.append("<div class=card><b>Configured but SILENT</b><ol>%s</ol></div>" % ("".join(
+        "<li>%s <span class=small>(%s)</span></li>" % (html.escape(x["room"]), html.escape(x["group"])) for x in silent) or "<li>none</li>"))
+    body.append("<div class=card><b>Signaling but NOT in rooms.txt</b><ol>%s</ol></div>" % ("".join(
+        "<li>%s — %d signals</li>" % (html.escape(x["room"]), x["signals"]) for x in unconfigured[:12]) or "<li>none</li>"))
+    body.append("</div>")
     body.append("<table><thead><tr>"
                 "<th>Room</th><th>Group</th><th>Msgs</th><th>Signals</th><th>Entries</th><th>Exits</th>"
                 "<th>Days</th><th>Last signal</th><th>Who signals</th>"
@@ -302,6 +315,7 @@ table{border-collapse:collapse;width:100%;background:#fff;border:1px solid #d9de
 th,td{padding:7px 9px;border-bottom:1px solid #e6e9ef;text-align:left;vertical-align:top}th{background:#eef1f6;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:#5b6472;position:sticky;top:0}
 tr:last-child td{border-bottom:0}tr.silent td{background:#fff7f7;color:#7a7f8a}
 .small{font-size:11.5px;color:#5b6472;max-width:420px}.tag{font-size:10.5px;background:#fde8e8;color:#b91c1c;padding:1px 6px;border-radius:8px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 0 18px}.card{background:#fff;border:1px solid #d9dee7;border-radius:10px;padding:10px 14px}.card b{display:block;margin-bottom:6px}.card ol{margin:0;padding-left:18px}.card li{margin:2px 0}
 .pos{color:#15803d;font-weight:700}.neg{color:#b91c1c;font-weight:700}.foot{color:#5b6472;font-size:12px;margin-top:16px}code{background:#eef1f6;padding:1px 5px;border-radius:4px}
 </style></head><body>__BODY__</body></html>""".replace("__BODY__", "\n".join(body))
     out = os.path.join(HERE, "SCOREBOARD.html")

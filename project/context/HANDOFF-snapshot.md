@@ -633,3 +633,6 @@ STS alert-room): alive, 28 captures today, NBIS 215C called 9:44.
 CHROME: no "out of memory", no "DISCARDED" lines today; memory shed and
 the discard pin are holding. START HERE's fresh-start closes stale Whop
 tabs on next launch.
+
+## 9/2 18:40 — ROOM SCOREBOARD (scoreboard.py → SCOREBOARD.html, artifact "discord-sniper-room-scoreboard")
+Built from DS Logs exports (every message the reader saw + bot verdicts) and days/*.json. Re-run any time: `python scoreboard.py 10`. Findings: Honeydrip daytrades is the loudest real room (107 signals/10d, 17 bot sends, 4 filled, −$15); ZT mashup 61 signals, 8 filled. Whop rooms ARE read now (Day Trades 53, High Risk 41, Futures 35 signals) but send 0 — Felony calls NQ futures and every futures broker is OFF. "NGD: ngd-trades" (Ninjago Futures Radar bot, MGC) shows 86 signals and is NOT in rooms.txt. 6 configured rooms silent 10 days. Trader board from the trade table.
