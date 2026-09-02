@@ -435,11 +435,12 @@ def main():
                     # the positions endpoint is 2 per 2s and the bridge
                     # shares it — a boot-time 429 answers [] — so retry
                     _prs = []
-                    for _try in range(3):
+                    for _try in range(6):
                         _prs = wb.positions() or []
                         if _prs:
                             break
-                        time.sleep(3)
+                        time.sleep(12)      # 2-per-2s endpoint, shared with
+                                            # the bridge: wait out the window
                     print(time.strftime("%H:%M:%S"),
                           "adopt-at-boot: %d broker position(s)%s"
                           % (len(_prs), (" — keys: " + ",".join(sorted(_prs[0].keys()))[:160]) if _prs else ""))
