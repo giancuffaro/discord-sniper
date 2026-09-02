@@ -871,6 +871,18 @@ class WebullOptions:
         Returns a float, or raises Refused."""
         if self.quote_client is not None and self.quote_client is not self:
             return self.quote_client.stock_price(symbol)
+        # STREAM FIRST (9/2): a pushed price fresher than 3s beats an HTTP
+        # poll every time — no request, no rate budget, tick-accurate for
+        # the round-number touch. The bridge attaches `stream` (StockStream);
+        # nothing fresh (or no stream) falls through to the old HTTP path.
+        _st = getattr(self, "stream", None)
+        if _st is not None:
+            try:
+                _p = _st.price(symbol)
+                if _p:
+                    return float(_p)
+            except Exception:                           # noqa: BLE001
+                pass
         self._pace()
         sym = str(symbol).upper()
         fns = self._stock_fns()
