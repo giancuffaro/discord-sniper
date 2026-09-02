@@ -107,6 +107,17 @@ class Budget:
         """
         deadline = time.time() + float(timeout)
         floor = 0.0 if priority else float(reserve)
+        # WHO-SPENDS tell (9/2): the bucket sat pinned at the reserve floor
+        # with nothing visibly calling. Count takes and remember the callers.
+        try:
+            import traceback as _tb
+            self.takes = getattr(self, "takes", 0) + 1
+            _fr = _tb.extract_stack(limit=4)
+            _who = "<".join(f.name for f in _fr[:-1])
+            _c = self.__dict__.setdefault("callers", {})
+            _c[_who] = _c.get(_who, 0) + 1
+        except Exception:                                # noqa: BLE001
+            pass
         if priority:
             with self._lock:
                 self._priority_waiting += 1
@@ -308,5 +319,7 @@ class QuoteBus:
             "last_sweep_ms": round(self.last_sweep_ms, 1),
             "sweeps": self.sweeps,
             "budget_left": round(self.budget.available(), 1),
+            "budget_takes": getattr(self.budget, "takes", 0),
+            "budget_callers": getattr(self.budget, "callers", {}),
             "rate_limited": self.budget.rejections,
         }
