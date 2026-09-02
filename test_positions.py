@@ -143,6 +143,12 @@ ok(not b.holding(K), "a resting bid must not count as holding")
 settle(b)
 ok(b.state_of(K) == positions.FILLED, "a fill should leave you holding it")
 ok(b.qty_of(K) == 1, "one contract, got %s" % b.qty_of(K))
+# the stop is armed right AFTER the state flips to FILLED, on the fill
+# thread — give it a beat (9/2: the symbol-aware tick lookup made this
+# race visible; the book's order of operations is unchanged)
+_t0 = time.time()
+while time.time() - _t0 < 2.0 and not any(c[0] == "stop" for c in wb.calls):
+    time.sleep(0.02)
 stops = [c for c in wb.calls if c[0] == "stop"]
 ok(len(stops) == 1, "a fill should place exactly one resting stop, got %d" % len(stops))
 # 20% off 2.77 is 2.216 — off YOUR fill, not off the 2.80 they posted —
