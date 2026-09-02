@@ -1670,7 +1670,7 @@ class Book:
                 # price, and that price is the trade's truth. None means the
                 # lookup failed, and finish() then says so out loud instead of
                 # crediting a quote.
-                px = self._broker_exit_price(p_)
+                px = self._broker_exit_price(p_, tries=2)
                 if px is not None:
                     why = ("closed at your broker for %.2f — the bot didn't "
                            "send this sell, so it read the fill back off the "
@@ -1680,26 +1680,118 @@ class Book:
                            "yourself, so the trade is marked done")
                 self.finish(key, CLOSED, why, price=px)
                 closed += 1
+                if px is None and p_.get("live"):
+                    # TRUE-UP (9/2 journal): the lookup above answered None
+                    # SIX times in two days — every one a 429 on the order-
+                    # history door (2 per 2s, shared with the announcer's
+                    # poll), never a missing fill. Each booked $0 and the
+                    # journal had to correct it by hand (FLR -9, SPY -31
+                    # today; S -50, SPY -12, SPY -8 yesterday). Keep asking
+                    # in the background and write the real price onto the
+                    # record when it comes.
+                    try:
+                        threading.Thread(target=self._true_up_exit,
+                                         args=(key, p_), daemon=True).start()
+                    except Exception:                   # noqa: BLE001
+                        pass
         return closed
 
-    def _broker_exit_price(self, p_):
+    def _broker_exit_price(self, p_, tries=1, pause=2.2):
         """The real sale price for a position that vanished, or None.
 
         Wrapped tight on purpose: this runs inside the reconcile sweep, and a
         broker hiccup here must never stop the sweep from finishing the trade.
-        Silence (None) is a safe answer — finish() handles it honestly."""
+        Silence (None) is a safe answer — finish() handles it honestly.
+        `tries` > 1 re-asks after `pause` seconds: the order-history endpoint
+        is budgeted 2 per 2s and a single 429 was the whole reason this came
+        back empty (9/2 11:49:01, SPY 766C — the fill was sitting right there)."""
         if not p_.get("live"):
             return None
-        try:
-            wb = self._wbfor(p_)
-            if wb is None or not hasattr(wb, "last_sell_fill"):
-                return None
-            px = wb.last_sell_fill(p_.get("symbol"), p_.get("side"),
-                                   p_.get("strike"), p_.get("expiry"),
-                                   since=p_.get("filled_at") or p_.get("sent_at"))
-            return float(px) if px else None
-        except Exception:                                   # noqa: BLE001
+        for i in range(max(1, int(tries))):
+            if i:
+                time.sleep(pause)
+            try:
+                wb = self._wbfor(p_)
+                if wb is None or not hasattr(wb, "last_sell_fill"):
+                    return None
+                px = wb.last_sell_fill(p_.get("symbol"), p_.get("side"),
+                                       p_.get("strike"), p_.get("expiry"),
+                                       since=p_.get("filled_at")
+                                       or p_.get("sent_at"))
+                if px:
+                    return float(px)
+            except Exception:                               # noqa: BLE001
+                pass
+        return None
+
+    def _true_up_exit(self, key, p_, tries=30, pause=6.0):
+        """Background: keep asking the broker for the sell that closed a
+        vanished position, and settle the record on the real print once it
+        answers. Up to ~3 minutes, six seconds apart (well under the
+        history endpoint's budget). Never raises; the day file is rewritten
+        by the event it posts."""
+        for _ in range(int(tries)):
+            time.sleep(pause)
+            px = self._broker_exit_price(p_, tries=1)
+            if px is None:
+                continue
+            pl = self._apply_exit_price(key, p_, px)
+            if pl is None:
+                return              # already settled by somebody else
+            self._event(key, "update",
+                        "%s — TRUED UP: the broker printed %.2f for that exit "
+                        "(read back off the account after the rate limit "
+                        "cleared) · %s$%.0f on the trade"
+                        % (p_.get("symbol"), px, "+" if pl >= 0 else "-",
+                           abs(pl)))
+            return
+        self._event(key, "update",
+                    "%s — no sell fill found on the account for that exit "
+                    "after %d minutes; the journal will true it up from the "
+                    "broker's order list" % (p_.get("symbol"),
+                                              int(tries * pause / 60)))
+
+    def _apply_exit_price(self, key, p_, px):
+        """Write a broker-confirmed exit price onto a CLOSED record that was
+        booked without one. Returns the trade P&L, or None if the record is
+        gone or already carries a priced exit (never double-settles)."""
+        qty = int(p_.get("qty") or 0)
+        if qty <= 0 or p_.get("kind") == "future":
             return None
+        mult = float(p_.get("mult") or 100)
+        cost = float(p_.get("cost") or 0)
+        got = float(px) * mult * qty
+        pl = got - cost
+        # The record is THIS trade (same key AND same sent_at — the key alone
+        # is reused by the next call in the same ticker), wherever it sits:
+        # still under its key in _pos, or already swept into the archive.
+        sent = float(p_.get("sent_at") or 0)
+
+        def _same(r):
+            return (r is not None and r.get("state") in DONE
+                    and abs(float(r.get("sent_at") or 0) - sent) < 1e-6)
+        with self._lock:
+            rec = self._pos.get(key)
+            if not _same(rec):
+                rec = None
+                for a in reversed(self._archive):
+                    if a.get("key") == key and _same(a):
+                        rec = a
+                        break
+            if rec is None:
+                return None
+            if any(float(x.get("price") or 0) > 0
+                   for x in (rec.get("exits") or [])):
+                return None
+            rec.setdefault("exits", []).append(
+                {"t": time.time(), "qty": qty, "price": round(float(px), 4),
+                 "pl": round(pl, 2), "trued_up": True})
+            rec["trade_pl"] = round(float(rec.get("trade_pl") or 0) + pl, 2)
+            rec["cost"] = 0.0
+            rec["exit_px"] = round(float(px), 4)
+            rec["closed_why"] = (str(rec.get("closed_why") or "")
+                                 + " · trued up: sold at %.2f" % float(px))
+        return pl
 
     def _became_filled(self, key, qty, price):
         with self._lock:
