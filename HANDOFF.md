@@ -39,10 +39,20 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   strike/10 rounded (6470 -> 647), caller's premium DROPPED (index premium
   is ~10x the ETF's; the bridge bids the SPY market). Verified: same call
   refuses everywhere else — the 8/15 index-entry off switch still rules.
-- THE RATCHET v2 (strategy 10/10): -10% stop born WITH the order (combo
-  bracket; rebased to the FILL if filled better). At +10% stop jumps to
-  BREAKEVEN; every further +10% locks another +10%, no ceiling. Contracts
-  under $1.00 arm at +15% instead (0DTE noise). The stop does the selling.
+- THE RATCHET v3 — TIERED (v3.5.0, G chose "live tomorrow" 9/2): -10%
+  stop born WITH the order (combo bracket; rebased to the FILL if filled
+  better; never at/above the fill). Then the rung plan comes from what he
+  PAID (ratchet_tiers.py): UNDER $1 arms +25%, first lock +10%, rungs
+  +15% (a $0.40 contract moves 2.5%/tick — finer rungs get scratched by
+  the quote). $1-$1.99 arms +15%, first lock BREAKEVEN, rungs +10%. $2+
+  arms +10%, first lock +5%, rungs +5% (a $2.50 fill at +30% rests at
+  3.09, not 3.00). Two floors: a rung is worth 4+ ticks, and the stop
+  never sits inside the bid/ask (ratchet_stop_price; last_ask stored on
+  the watchdog pass). Shorts ratchet mirrored; futures route to a points
+  ratchet (_futures_ratchet: one stop-width of profit = BE, each further
+  = another rung) that only fires once a futures quote feed exists. The
+  stop does the selling. NOT applied: B4 replace_stop (naked-window fix,
+  needs new plumbing — weekend with Block C).
 - SWINGS: expiry 14+ days out IS a swing (auto-tagged). Their stock-level
   stop runs it (underlying watcher); no level = wide -25%. Never the scalp stop.
 - DEDUPE LADDER: extension in-flight contract lock -> bridge echo-lock (same
