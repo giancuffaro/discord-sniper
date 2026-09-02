@@ -1154,6 +1154,7 @@ async function oneTabPerChannel() {
     // path (/channels/@me, /login, "") and this closer executed the lot
     // as "duplicates". A still-loading tab is never a duplicate.
     if (t.status === "loading") continue;
+    if (t.discarded) continue;      // a discarded tab reads nothing (v3.5.0)
     if (!(/\/channels\/\d+\/\d+/.test(path) ||
           /\/exp_[a-z0-9]+/.test(path) || /\/joined\//.test(path))) continue;
     (byChannel[path] = byChannel[path] || []).push(t);
@@ -1336,7 +1337,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch.export_every_min) armAutoExport();
 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); checkBridgeHealth(); memoryShed(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "auto-export") autoExportForLearning();
@@ -2556,7 +2557,9 @@ chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(
  * cycle of 26 rooms takes 13 minutes and no two rooms are ever blind at
  * once. Whop tabs have their own watchdog. */
 const RELOADED_AT = {};                  // tabId -> last reload ts
-const SHED_EVERY_MS = 2 * 60 * 60 * 1000;
+const SHED_EVERY_MS = 4 * 60 * 60 * 1000;   // 4h (v3.5.0: heartbeat catches
+                                            // dead readers in 90s, so the blind
+                                            // rotation only fights RAM bloat)
 async function memoryShed() {
   try {
     const now = new Date();
@@ -2576,6 +2579,82 @@ async function memoryShed() {
     RELOADED_AT[oldest.id] = t0;
     await chrome.tabs.reload(oldest.id);
   } catch (e) { /* a closed tab mid-query — next tick */ }
+}
+
+/* DISCARD FIX + HEARTBEAT WATCHDOG (v3.5.0 A3.2, 9/2).
+ * Chrome's Memory Saver DISCARDS background tabs. A discarded tab still
+ * appears in tabs.query() with a normal URL, so every watchdog here
+ * believed it was healthy — it has NO content script in it and reads
+ * nothing. Two answers: (1) pin autoDiscardable=false on every room tab,
+ * re-applied every tick because Chrome resets it whenever Discord
+ * navigates; (2) content.js now heartbeats every 30s — a room that stops
+ * answering for 3 beats gets reloaded in ~90s instead of the 40-minute
+ * silence alarm wondering. */
+const READER_BEAT = {};        // channelId -> last heartbeat ts
+const READER_TAB = {};         // channelId -> tabId
+const BEAT_DEAD_MS = 95000;    // 3 missed beats. Reload, don't wonder.
+const REVIVED_AT = {};         // tabId -> last revive, so we don't loop
+
+chrome.runtime.onMessage.addListener((m, sender) => {
+  if (!m || m.type !== "READER_ALIVE") return;
+  if (m.channelId) {
+    READER_BEAT[m.channelId] = m.at || Date.now();
+    if (sender && sender.tab) READER_TAB[m.channelId] = sender.tab.id;
+  }
+  if (m.listFound && !m.observing) {
+    const tid = READER_TAB[m.channelId];
+    if (tid && Date.now() - (REVIVED_AT[tid] || 0) > 60000) {
+      REVIVED_AT[tid] = Date.now();
+      addLog({ kind: "skipped", author: ROOM_LABELS[m.channelId] || m.channelId,
+               text: "",
+               why: "⚠ reader is running but its message watcher is detached — "
+                    + "reloading that room" });
+      try { chrome.tabs.reload(tid); } catch (e) { }
+    }
+  }
+});
+
+async function keepRoomsLoaded() {
+  let tabs;
+  try {
+    tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
+                                           "https://*.discord.com/channels/*"] });
+  } catch (e) { return; }
+  const now = Date.now();
+  for (const t of tabs) {
+    try { await chrome.tabs.update(t.id, { autoDiscardable: false }); }
+    catch (e) { /* older Chrome, or the tab just closed */ }
+    if (t.discarded) {
+      if (now - (REVIVED_AT[t.id] || 0) < 60000) continue;
+      REVIVED_AT[t.id] = now;
+      const label = (String(t.url || "").match(/\/channels\/\d+\/(\d+)/) || [])[1];
+      await addLog({ kind: "skipped",
+                     author: ROOM_LABELS[label] || label || "room", text: "",
+                     why: "⚠ Chrome had DISCARDED this room's tab to save "
+                          + "memory — it was reading nothing. Reloaded." });
+      RELOADED_AT[t.id] = now;        // counts as this tab's shed too
+      try { await chrome.tabs.reload(t.id); } catch (e) { }
+    }
+  }
+  // Rooms that once beat and went quiet — every room that ever reported,
+  // not just the hand-labelled ones.
+  for (const cid of Object.keys(READER_BEAT)) {
+    const last = READER_BEAT[cid];
+    if (now - last < BEAT_DEAD_MS) continue;
+    const tid = READER_TAB[cid];
+    if (!tid) continue;
+    if (now - (REVIVED_AT[tid] || 0) < 60000) continue;
+    // still open? a closed tab just stops beating — nothing to revive
+    let alive = null;
+    try { alive = await chrome.tabs.get(tid); } catch (e) { alive = null; }
+    if (!alive) { delete READER_BEAT[cid]; delete READER_TAB[cid]; continue; }
+    REVIVED_AT[tid] = now;
+    await addLog({ kind: "skipped", author: ROOM_LABELS[cid] || cid, text: "",
+                   why: "⚠ this room's reader stopped answering ("
+                        + Math.round((now - last) / 1000) + "s). Reloading it "
+                        + "now instead of waiting 40 minutes to notice." });
+    try { await chrome.tabs.reload(tid); } catch (e) { }
+  }
 }
 
 /* WHOP API FEED bootstrap (8/30): the offscreen page runs the 2s poll of
