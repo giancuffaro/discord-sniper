@@ -474,8 +474,12 @@ function paintBridgeLive() {
   // many seconds passed"). refreshMode refreshes this every 4s regardless.
   // Announcer rides on the same line (9/2): it was silently stopped for an
   // hour and a real fill never posted. Red text when its heartbeat is stale.
-  const annOk = ok && modeStatus.announcer_alive;
-  const annTxt = !ok ? "" : annOk ? " · announcer on"
+  // Deliberately off (STOP ANNOUNCER / G's call 9/2) is grey, not red —
+  // red is only for "should be running and isn't".
+  const annOff = ok && modeStatus.announcer_stopped;
+  const annOk = ok && (modeStatus.announcer_alive || annOff);
+  const annTxt = !ok ? "" : annOff ? " · announcer off (paused)"
+    : modeStatus.announcer_alive ? " · announcer on"
     : " · ✕ ANNOUNCER OFF — run ANNOUNCER.bat";
   txt.textContent = !_bridgeLastCheck ? "checking bridge…"
     : ok ? "✓ Bridge connected" + annTxt : "✕ Bridge NOT reachable — run 🎯 START HERE";

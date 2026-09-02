@@ -2625,8 +2625,13 @@ class Handler(BaseHTTPRequestHandler):
             _aa = time.time() - os.path.getmtime(os.path.join(HERE, ".announcer.alive"))
         except OSError:
             _aa = None
+        try:
+            _as = os.path.getsize(os.path.join(HERE, "announcer.stop")) > 0
+        except OSError:
+            _as = False
         return {"mode": "per-room",
                 "announcer_alive": (_aa is not None and _aa < 120),
+                "announcer_stopped": _as,       # deliberately off (STOP ANNOUNCER)
                 "announcer_age": (int(_aa) if _aa is not None else None),
                 # No global live any more — rooms go live one by one in the
                 # popup, and each ORDER carries its own flag.
