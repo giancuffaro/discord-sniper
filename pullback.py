@@ -115,6 +115,44 @@ class Pullback:
                     n += 1
         return n
 
+    def cancel_order(self, order):
+        """PHANTOM EXIT (9/2): a room's CLOSE that lands while that same
+        contract's entry hunt is still armed is a retraction of the hunt, not
+        a sale — there is nothing held to sell yet. Matches on trader, symbol,
+        strike and expiry (never side: an exit says SELL where the arm said
+        CALLS). Returns how many hunts were stood down."""
+        def _norm(v):
+            s = str(v or "").strip().lower()
+            try:
+                return "%g" % float(s)
+            except (TypeError, ValueError):
+                return s
+
+        who = str(order.get("trader") or "").strip().lower()
+        sym = str(order.get("symbol") or "").upper()
+        strike = _norm(order.get("strike"))
+        expiry = _norm(order.get("expiry"))
+        if not sym:
+            return 0
+        n = 0
+        with self._lock:
+            for k in list(self._armed):
+                parts = k.split("|")
+                if len(parts) != 5:
+                    continue
+                k_who, k_strike, _k_side, k_exp, k_sym = parts
+                if k_sym.upper() != sym:
+                    continue
+                if who and k_who and k_who != who:
+                    continue
+                if strike and k_strike and _norm(k_strike) != strike:
+                    continue
+                if expiry and k_exp and _norm(k_exp) != expiry:
+                    continue
+                self._cancelled.add(k)
+                n += 1
+        return n
+
     # -- entry ----------------------------------------------------------------
     def start(self, order):
         """Arm the watcher. Returns (ok, msg) immediately — the wait happens on
