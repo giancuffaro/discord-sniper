@@ -2,27 +2,30 @@
 title Webull Streaming Test - do options come through?
 cd /d "%~dp0"
 echo.
-echo Installing the streaming SDK. Python 3.14 has no prebuilt wheel for
-echo the OLD grpcio the SDK pins, so: newest grpcio/protobuf/paho as
-echo prebuilt wheels FIRST, then the SDK without re-resolving its pins.
-echo Everything is saved to streaming-test.txt so Claude can read it.
+echo  PARKED (9/2 01:10). The streaming SDK (webull-python-sdk-*) and the
+echo  bridge's SDK (webull-openapi-python-sdk) can NOT share one Python:
+echo  they pin protobuf/paho/cachetools/jmespath to incompatible ranges.
+echo  Installing this test into the bridge's Python broke the bridge's
+echo  pins on 9/2 (FIX SDK DEPS.bat repairs that).
 echo.
-> "streaming-test.txt" echo === pip install (wheels only) ===
-python -m pip install --disable-pip-version-check --only-binary=:all: --upgrade grpcio grpcio-tools protobuf paho-mqtt cachetools cryptography jmespath >> "streaming-test.txt" 2>&1
-echo === pip install (sdk, no deps) === >> "streaming-test.txt"
-python -m pip install --disable-pip-version-check --no-deps webull-python-sdk-core webull-python-sdk-mdata webull-python-sdk-quotes-core >> "streaming-test.txt" 2>&1
-type "streaming-test.txt" | findstr /i "error successfully failed"
+echo  The right way is a SEPARATE Python just for streaming. If you have
+echo  Python 3.12 installed, this will build one in .venv-stream and run
+echo  the test there. Otherwise it stops here without touching anything.
 echo.
+py -3.12 -c "print('python 3.12 found')" >nul 2>&1
+if errorlevel 1 (
+  echo  No Python 3.12 on this PC - nothing done. Install 3.12 from
+  echo  python.org side by side ^(it will not replace 3.14^), then rerun.
+  pause
+  exit /b 0
+)
+if not exist ".venv-stream\Scripts\python.exe" py -3.12 -m venv .venv-stream
+> "streaming-test.txt" echo === venv pip install ===
+".venv-stream\Scripts\python.exe" -m pip install --disable-pip-version-check -q webull-python-sdk-core webull-python-sdk-mdata webull-python-sdk-quotes-core >> "streaming-test.txt" 2>&1
 echo === test === >> "streaming-test.txt"
-echo Running the test now (about a minute)...
-rem the HTTP contract hunt answers INVALID_SYMBOL on this SDK family, so
-rem hand it a contract we KNOW is real (his open FLR 57.5C 9/18 swing)
 set "TEST_OCC=FLR260918C00057500"
-python -u "TEST_MQTT_OPTIONS.py" >> "streaming-test.txt" 2>&1
-echo.
+".venv-stream\Scripts\python.exe" -u "TEST_MQTT_OPTIONS.py" >> "streaming-test.txt" 2>&1
 type "streaming-test.txt" | more
 echo.
-echo ==========================================================
-echo  Saved to streaming-test.txt. This window stays open now.
-echo ==========================================================
+echo  Saved to streaming-test.txt.
 pause

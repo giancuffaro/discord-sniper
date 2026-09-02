@@ -57,3 +57,5 @@ announcer-scoreboard.json
 announcer.stop
 announcer.log
 announcer.log.*
+.venv-stream/
+streaming-test.txt
