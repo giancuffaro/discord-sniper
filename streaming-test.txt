@@ -1,0 +1,10 @@
+====================================================================
+WEBULL STREAMING TEST — do options come through?
+Market: CLOSED (outside 9:30-16:00) — Wed 00:52 ET
+
+  MARKET IS CLOSED. No prices will arrive, and that is FINE.
+  The answer comes from whether the SUBSCRIPTION is accepted,
+  which Webull answers whether the market is open or not.
+====================================================================
+The Webull market-data SDK isn't installed. Run:
+    pip install webull-python-sdk-mdata webull-python-sdk-quotes-core
