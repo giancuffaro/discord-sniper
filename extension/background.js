@@ -1246,6 +1246,7 @@ async function whopWatchdog() {
  * per quiet spell, again at the 2-hour mark if it's still dead. Also barks
  * if NO whop tab is open at all. The map persists across service-worker
  * naps so an idle restart can't fake a full board of silence. */
+const OFF_SAID = {};        // "off|<cid>" -> last time we said the room is OFF
 const ROOM_MSG_AT = {};          // channelId -> last message ts
 const ROOM_ALERTED = {};         // channelId -> last-msg ts we alerted on
 let _pulseBoot = Date.now();
@@ -1412,6 +1413,12 @@ async function autoExportForLearning() {
     const strat = (mode && mode.strategy) || {};
     const liveRooms = Object.keys((c.channel_live) || {})
       .map(id => roomName(id) || id);
+    // OFF rooms in the export (9/2, the RWGates mystery: a LIVE room whose
+    // calls were captured all day and never judged — the popup's per-room
+    // OFF switch drops messages silently, and nothing anywhere said so).
+    const offRooms = Object.keys((c.channel_disabled) || {})
+      .filter(id => c.channel_disabled[id]).map(id => roomName(id) || id);
+    const shadowRooms = Array.from(SHADOW || []).map(id => roomName(id) || id);
     const posLines = ((posData && posData.positions) || []).map(p => {
       const contract = [String(p.symbol || "").toUpperCase(), p.expiry || "",
         (p.strike != null ? p.strike : "") +
@@ -1444,6 +1451,8 @@ async function autoExportForLearning() {
       "  AI reader:      " + onoff(mode && mode.ai_enabled) + "\n" +
       "  voice key:      " + onoff(dg) + "\n" +
       "  LIVE rooms:     " + (liveRooms.length ? liveRooms.join(", ") : "none (all testing)") + "\n" +
+      "  OFF rooms:      " + (offRooms.length ? offRooms.join(", ") : "none") + "\n" +
+      "  SHADOW rooms:   " + (shadowRooms.length ? shadowRooms.join(", ") : "none") + "\n" +
       "  RN-pullback:    " + (c.rn_pullback_all ? "ON — all channels wait for the round number" : "off (all instant)") + "\n" +
       "  open positions (" + ((posData && posData.positions) || []).length + "):\n" +
       (posLines.length ? posLines.join("\n") : "    (none)") + "\n\n";
@@ -1942,7 +1951,27 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       const _cid = String(
         (String(msg.platform || "") === "whop" && whopRoomOf(msg.channelId))
           ? whopRoomOf(msg.channelId).id : msg.channelId || "");
-      if ((c.channel_disabled || {})[_cid]) { reply({ ok: true }); return; }
+      if ((c.channel_disabled || {})[_cid]) {
+        // Say it ONCE an hour per room, and only for something that reads
+        // as a real call — so a switched-off room with live alerts shows
+        // up in the log instead of vanishing (RWGates, 9/2).
+        try {
+          const _k = "off|" + _cid;
+          const _now = Date.now();
+          if (!msg.history && (_now - (OFF_SAID[_k] || 0)) > 3600 * 1000) {
+            const _sv = parseSignal(msg.text, c);
+            if (_sv && _sv.action) {
+              OFF_SAID[_k] = _now;
+              await addLog({ kind: "ignored",
+                             what: "room OFF · " + (roomName(_cid) || _cid),
+                             why: "this room is switched OFF in the popup, so its calls " +
+                                  "are dropped — flip it on if you want it traded",
+                             text: msg.text, author: msg.author });
+            }
+          }
+        } catch (e) {}
+        reply({ ok: true }); return;
+      }
     }
     // Grabber export stores the FULL row text (embeds and all); trading still
     // reads the clean msg.text below.
