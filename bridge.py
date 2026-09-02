@@ -1308,6 +1308,22 @@ def plan_exit(order, key):
         # browser remembers a position this program never saw. Sending the
         # exit is the right call — the worst case is Webull refusing a sell of
         # something you don't hold, which is a message, not a loss.
+        #
+        # PHANTOM EXIT (9/2): unless the entry hunt for this exact contract is
+        # still armed and waiting for its pullback. Nothing was ever bought,
+        # so this is a retraction of the hunt — the same shape as RETRACT.
+        # 9/2 11:13: Midas's NVDA 225C 9/4 close fired while the hunt was
+        # still waiting for $225 (it later timed out unfilled); Webull
+        # refused the sell with a 417 covered-call error.
+        if _PULLBACK is not None:
+            try:
+                if _PULLBACK.cancel_order(order):
+                    return False, False, (True,
+                        "%s's entry hunt was still waiting for the pullback — "
+                        "stood it down instead of selling a contract you "
+                        "never bought." % sym)
+            except Exception:                           # noqa: BLE001
+                pass
         return True, False, None
 
     if st == positions.WORKING:
