@@ -636,3 +636,14 @@ tabs on next launch.
 
 ## 9/2 18:40 — ROOM SCOREBOARD (scoreboard.py → SCOREBOARD.html, artifact "discord-sniper-room-scoreboard")
 Built from DS Logs exports (every message the reader saw + bot verdicts) and days/*.json. Re-run any time: `python scoreboard.py 10`. Findings: Honeydrip daytrades is the loudest real room (107 signals/10d, 17 bot sends, 4 filled, −$15); ZT mashup 61 signals, 8 filled. Whop rooms ARE read now (Day Trades 53, High Risk 41, Futures 35 signals) but send 0 — Felony calls NQ futures and every futures broker is OFF. "NGD: ngd-trades" (Ninjago Futures Radar bot, MGC) shows 86 signals and is NOT in rooms.txt. 6 configured rooms silent 10 days. Trader board from the trade table.
+
+## 9/2 19:20 — WHY ROOMS ARE SILENT / UNLISTED (G's ask) — findings + fixes
+- **BUG FIXED — Discord "Server Tag" junk broke the parser.** Discord's 2026 badge leaks into captured text ("Vero [PAID], Server Tag: PAID PAID SPY 763C 9/2 1.22 2 CONTRACTS…"). Vero's SPY 763C call at 10:18 today parsed as "nothing that means buy or sell" — no verdict, no order. RE_STAG strip added to parser.js cleanText + signals.py clean_text (both sides of the call, with role word + dash-timestamp). Extension 3.5.8 — reload. test_signals: same 4 pre-existing failures before/after (Brett trims), none new.
+- **Options Insider (server 719580371997556737): "NO TEXT CHANNELS — you don't have access."** Membership/role lapsed. Nothing to read until he rejoins. Remove from rooms.txt or renew.
+- **RWGates / Summit alert-room:** posts are commentary ("$META entries called out in the LIVE trading", "$AAPL next ?") — his real calls are in the live voice room. Text room will always look silent.
+- **Platinum equity, Boka 2 (equity-alerts):** SHARES swings ("added $AXTX shares for a swing") — the bot trades options/futures only. Not silent, just not ours. Boka 2 last post 8/24.
+- **Vero 2 (vero-trades):** Vero posts ~weekly (8/21, 9/1). Reader fine.
+- **Whop Swing:** Felony last posted 8/27. Whop 2K Challenge: image-only posts, one re-sent every ~6 min → 36 vision calls today. Bridge `/readimage` now hashes images+caption and answers repeats from a 24h cache.
+- **Whop Day/High Risk/Futures:** read fine (53/41/35 signals) — Felony's NQ futures calls; all futures brokers OFF → nothing fires (a switch).
+- **"Rafita Trades" 1537061197931618344 is actually NGD #ngd-trades (Ninjago Futures Radar bot, MGC).** Relabelled in rooms.txt. Futures → also gated by the OFF brokers.
+- Unlisted-but-signaling = the old individual ZT rooms (last 8/28, covered by the mashup) and Sniper HQ (our own announcer server — must never be traded). Fine.
