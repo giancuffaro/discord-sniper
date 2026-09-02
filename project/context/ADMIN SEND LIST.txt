@@ -1,0 +1,58 @@
+ADMIN SEND LIST — who gets ADMIN PITCH.txt (scanned from 6 days of captures, 9/1)
+==================================================================================
+Order = biggest upside first. "Hook" = the one personal line to add above the
+pitch so it doesn't read like a blast. DM the human, never the alert bot.
+
+1. FELONY — FirstStepTrading (Whop)          [OWNER]
+   Posts in every room himself (Futures 110, High Risk 164, Swing 157 msgs).
+   Mod: Trademorewiser. Lives on Zoom + typed alerts.
+   Hook: "Your Zoom-to-typed gap is the biggest I've measured — you call it
+   live and the room gets it a minute later."
+   ASK BOTH: announcer + install my Whop app (this is the API unlock).
+
+2. PT | NITRO TRADES — Platinum Trading      [CEO / owner]
+   4,739 + 1,434 msgs — the most prolific typer you follow. Lives at 9:30 AM.
+   Hook: "You type more alerts than anyone I track — you'd save the most
+   time and your members would gain the most seconds."
+   Also there: Kev (member, building a bot — send him the TRADER pitch,
+   he's a peer not an admin).
+
+3. TRADELIKEGATES — Summit / $STS ($189/mo)  [FOUNDER]
+   555 msgs, has an AlertBot already (so he values automation), daily live
+   Arena ~8:50 AM.
+   Hook: "You already run an alert bot — this one posts your BROKER fills,
+   not your typing."
+
+4. VERO — VeroTrade                           [OWNER]
+   690 msgs, uses @vero-alerts + Aaron as second caller.
+   Hook: "Your format is the cleanest I read — full contract every time.
+   The announcer just makes it instant."
+
+5. UNRAVELLER (Admin) — Honey Drip Network    [ADMIN; plus Brett, Mike]
+   740 msgs; HoneyDrip runs a Scribe (1,143 msgs) typing the voice calls.
+   Hook: "Your scribe is 19 seconds behind the voice on average — I
+   measured it across a week. This kills the gap."
+   Note: KingBeeAri (1,597 msgs) is the loudest voice but not tagged admin.
+
+6. JONNYOPTIONS — BOKA Trading                [lead caller; Mo Invests co-]
+   803 msgs, already runs Sir Goldman Alert Bot for exits.
+   Hook: "Your entries are perfect — 'added $DRAM $57 calls 9/18' parses
+   clean. This posts them before you finish typing."
+
+7. TRADINGTHETREND — TradingTheTrend          [owner; Shakira T second]
+   591 msgs, cleanest BTO/STC format anywhere.
+   Hook: "BTO/STC with contract + price every time — you're already
+   machine-readable. This makes it instant and adds the underlying."
+
+8. DESITRADE — The Insiders ($199/mo)          [head of desi-swings]
+   36 human msgs; the alert bot posts the swings (last one Aug 12).
+   Hook: "Your swing format is the best structured I've seen — entry,
+   spot, stop on the underlying. The announcer would post the FILL too."
+   (Also the deathwatch room — if nothing by mid-Sept, cancel instead.)
+
+9. ZTRADEZ owner — unknown from captures (the mashup bot is theirs).
+   Traders: Bullwinkle, MR.TOPHAT, Market Bishop, Namrood, Market Guru.
+   Find the owner in the server's member list (Owner crown) before sending.
+
+Skip: Rafita (free, no live calls seen), Market Trend Students (unusable
+room), Trading Decoded (software release notes, not trades).

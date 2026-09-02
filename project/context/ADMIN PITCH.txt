@@ -1,0 +1,57 @@
+ADMIN PITCH — for community owners / head traders (Felony, Kev, etc.)
+=====================================================================
+Swap [NAME]. Two asks, both take them minutes, both make THEIR room better.
+
+---------------------------------------------------------------------
+
+Hey [NAME] — quick one, I think you'll like this.
+
+I build trading automation. My bot reads alert rooms and executes in
+under a second — and after a month of running it on your room, I can tell
+you exactly where the edge leaks: the *typing*. By the time an alert is
+typed, the fill is already seconds old. Your members are always a few
+seconds behind you, through no fault of yours.
+
+I built two things that fix that, and I'd like to give you both:
+
+1) FILL ANNOUNCER — your broker posts for you.
+   A small read-only script watches your account and auto-posts every
+   fill to your channel the instant it happens:
+
+     ENTRY TSLA 345P 8/28 @ 4.24 x1  (TSLA @ 344.10)
+     📈 TSLA 345P +20%  (4.24 → 5.10)
+     EXIT TSLA 345P @ 5.10 x1  (+20%)
+
+   Real entries, real average, real exits, underlying price, progress
+   milestones, stop-outs — to the second, zero typing. Members see your
+   actual trades, not a summary of them. It can't place, cancel, or touch
+   anything: read-only by design. Setup is 5 minutes: a webhook, a
+   read-only API key, run the script. Webull out of the box, other
+   brokers are a small tweak.
+
+2) MACHINE-READABLE ROOM — one click on your side.
+   [Whop] Install my app in your community (chat:read only).
+   [Discord] Add my bot to your server (read messages only).
+   That lets tools like mine read your alerts server-side instead of
+   through a browser window — faster, cleaner, and it opens the door to
+   things your members will pay for: instant copy-trading of YOUR calls,
+   per-trader scoreboards, automatic journals. Your room becomes the
+   feed other tools plug into. You keep full control and can uninstall
+   in one click.
+
+Nothing here changes how you trade or post. It just makes what you
+already do land faster and cleaner for the people paying you.
+
+Want it? I'll send the file and the install link — you'd be the first
+room running it.
+
+---------------------------------------------------------------------
+Notes to self (not part of the message):
+- Send a CLEANED copy of announcer.py. My settings.json, webhooks, and
+  keys never leave this machine.
+- Whop: the API unlock is the admin installing MY app (Account key can't
+  read rooms I'm only a member of). Discord: same pattern — official bot
+  added by the server owner; never a self-bot on my own account.
+- Their announcer channel goes in rooms.txt like any other room; MY own
+  announcer channels NEVER do.
+- "You'd be the first" is true right now. Update once someone bites.
