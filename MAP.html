@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discord Sniper — Application Map</title>
+<style>
+  :root { color-scheme: light; --ink:#1b1f27; --mute:#5b6472; --line:#d9dee7; --bg:#f7f8fb;
+          --ext:#e8f1ff; --ext2:#2f6fdb; --br:#fff3e0; --br2:#d97706; --wb:#e9f8ee; --wb2:#15803d;
+          --ops:#f3e8ff; --ops2:#7e22ce; --out:#fde8e8; --out2:#b91c1c; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:28px 32px 60px; font: 14px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color:var(--ink); background:var(--bg); }
+  h1 { margin:0 0 4px; font-size:24px; }
+  .sub { color:var(--mute); margin-bottom:22px; }
+  h2 { font-size:15px; letter-spacing:.06em; text-transform:uppercase; color:var(--mute); margin:34px 0 12px; }
+  .flow { display:grid; grid-template-columns: 1fr 34px 1fr 34px 1fr 34px 1fr; gap:0; align-items:stretch; }
+  .col { display:flex; flex-direction:column; gap:10px; }
+  .arrow { display:flex; align-items:center; justify-content:center; color:var(--mute); font-size:26px; }
+  .box { border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:#fff; }
+  .box b { display:block; font-size:14px; margin-bottom:4px; }
+  .box small { color:var(--mute); display:block; }
+  .box ul { margin:6px 0 0 16px; padding:0; }
+  .box li { margin:2px 0; }
+  .ext { background:var(--ext); border-color:#bcd3f7; } .ext b { color:var(--ext2); }
+  .br  { background:var(--br);  border-color:#f5d7a8; } .br b  { color:var(--br2); }
+  .wb  { background:var(--wb);  border-color:#b9e6c6; } .wb b  { color:var(--wb2); }
+  .ops { background:var(--ops); border-color:#dcc4f5; } .ops b { color:var(--ops2); }
+  .out { background:var(--out); border-color:#f5bcbc; } .out b { color:var(--out2); }
+  .head { font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--mute); padding:0 2px 2px; }
+  .life { display:grid; grid-template-columns: repeat(7, 1fr); gap:8px; }
+  .step { border:1px solid var(--line); border-radius:10px; background:#fff; padding:10px 12px; position:relative; }
+  .step .n { position:absolute; top:-10px; left:10px; background:var(--ink); color:#fff; font-size:11px; border-radius:10px; padding:1px 7px; }
+  .step b { display:block; margin:4px 0 4px; font-size:13px; }
+  .step small { color:var(--mute); display:block; }
+  table { border-collapse:collapse; width:100%; background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#eef1f6; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--mute); }
+  tr:last-child td { border-bottom:0; }
+  code { background:#eef1f6; padding:1px 5px; border-radius:4px; font-size:12.5px; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .warn { border-left:4px solid var(--out2); padding-left:10px; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:8px; color:var(--mute); font-size:12px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .sw { width:14px; height:14px; border-radius:4px; border:1px solid var(--line); display:inline-block; }
+  @media (max-width: 1100px) { .flow { grid-template-columns:1fr; } .arrow { transform:rotate(90deg); height:34px; } .life { grid-template-columns:repeat(2,1fr); } .two { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<h1>Discord Sniper — the map</h1>
+<div class="sub">Rooms → Chrome extension → Bridge (Python on your PC) → Webull. Everything lives in <code>Desktop\discord-sniper</code>. Updated 9/2/26.</div>
+<div class="legend">
+  <span><i class="sw" style="background:var(--ext)"></i> Reading (Chrome extension)</span>
+  <span><i class="sw" style="background:var(--br)"></i> Deciding &amp; managing (Bridge)</span>
+  <span><i class="sw" style="background:var(--wb)"></i> Broker (Webull)</span>
+  <span><i class="sw" style="background:var(--ops)"></i> Operations / switches</span>
+  <span><i class="sw" style="background:var(--out)"></i> Outputs &amp; records</span>
+</div>
+
+<h2>1 · The big picture</h2>
+<div class="flow">
+  <div class="col">
+    <div class="head">Where calls come from</div>
+    <div class="box ext"><b>Discord rooms (21)</b><small>extension/rooms.txt — the one list</small>
+      <ul><li>ZT all-trades mashup (every ZT trader, one room)</li><li>Aristotle / Honeydrip / Midas</li><li>Boka 1–3</li><li>Platinum 1–4 + equity swings</li><li>TTT · RWGates · Vero 1–3 · Insider · Option Alerts · Watchlist</li><li>Rafita</li></ul></div>
+    <div class="box ext"><b>Whop rooms (5)</b><small>First Step Trading: Day / Futures / High Risk / 2K / Swing — read from the page; API walled (Felony must install our app)</small></div>
+    <div class="box ext"><b>Voice &amp; Zoom</b><small>Deepgram transcribes live voice rooms; auto-joins the live channel; spoken buys can fire (Voice ENTRIES)</small></div>
+    <div class="box ext"><b>Images</b><small>Screenshotted alerts go to the vision reader (/readimage)</small></div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="col">
+    <div class="head">Reading &amp; parsing (Chrome)</div>
+    <div class="box ext"><b>content.js</b><small>Sits in every room tab. Sees each new message (text + embeds), de-dupes, heartbeats so a sleeping tab is noticed.</small></div>
+    <div class="box ext"><b>parser.js + guards.js</b><small>Turns "BTO SPY 645C 0dte @1.20" into a clean signal. Guards: is it an entry, an add, a trim, an exit? SPX→SPY per channel; relay unwrap for the mashup.</small></div>
+    <div class="box ext"><b>background.js</b><small>The brain of the extension: routing per room (TEST / REAL / shadow), exit policy, AI reader hand-off, Whop feed, tab keep-alive, memory shed every 4h.</small></div>
+    <div class="box ext"><b>popup.js (the popup)</b><small>Rooms &amp; switches, live P&amp;L (1s, ≈ = tick-walked), bridge/announcer status, keys.</small></div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="col">
+    <div class="head">Bridge — 127.0.0.1:8787 (Python)</div>
+    <div class="box br"><b>bridge.py</b><small>The HTTP server the extension talks to. Endpoints: /order · /read · /readimage · /positions · /fills · /mode · /rooms · /stream · /flatten · /whopfeed · /days …</small></div>
+    <div class="box br"><b>positions.py — the Book</b><small>What we're in, what filled, stops, watchdog, ratchet, adopt/reconcile with the broker, restore after restart.</small></div>
+    <div class="box br"><b>ratchet_tiers.py + ANTI-CLIP</b><small>&lt;$1: arm +25%, lock +10%, +15%/rung · $1–2: arm +15%, lock BE, +10%/rung · ≥$2: arm +10%, lock +5%, +5%/rung. Tick &amp; spread floors; locked ≤ 60% of the gain.</small></div>
+    <div class="box br"><b>quote_bus.py</b><small>ONE batched option-quote call per second for every open contract (Webull's cap) → option_tape.csv. Budget: orders outrank quotes.</small></div>
+    <div class="box br"><b>stream_bus.py</b><small>Live stock/ETF prices pushed by Webull (MQTT). Feeds round-number hunts and walks the P&amp;L between quote sweeps (delta/gamma).</small></div>
+    <div class="box br"><b>pullback.py · ai_reader.py · signals.py · eastern.py · props.py · webull_futures.py</b><small>Round-number pullback hunter · Claude reads messy calls · Python mirror of the parser · market clock · prop/futures accounts.</small></div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="col">
+    <div class="head">Broker &amp; outputs</div>
+    <div class="box wb"><b>Webull OpenAPI (webull_options.py)</b><small>Orders (entry = one group: buy + stop leg), cancels, replaces, positions, option snapshots. Per-endpoint rate limits — the code remembers what works and never re-hunts.</small></div>
+    <div class="box wb"><b>Webull streams</b><small>MQTT: stock prices. gRPC: fill events (announcer). No option streaming exists — 1/s is the ceiling.</small></div>
+    <div class="box wb"><b>Futures brokers</b><small>Webull futures account · NinjaTrader (OIF files + bracket) · Tradovate · TopstepX</small></div>
+    <div class="box out"><b>Records</b><small>bridge.log · trades.log · days/&lt;date&gt;.json (the backtest shelf) · option_tape.csv · journal (16:45 daily task)</small></div>
+    <div class="box out"><b>Fill Announcer (PAUSED)</b><small>announcer.py → Discord webhooks: options, futures, scoreboard. Off until the sniper is 100%.</small></div>
+  </div>
+</div>
+
+<h2>2 · Life of one trade</h2>
+<div class="life">
+  <div class="step"><span class="n">1</span><b>Call posted</b><small>"BTO IWM 294C 0dte @0.18" in a room (or an embed, image, or spoken).</small></div>
+  <div class="step"><span class="n">2</span><b>Read</b><small>content.js sees it once; parser makes a signal; if the regex shrugs, the AI reader (Claude) returns a clean call.</small></div>
+  <div class="step"><span class="n">3</span><b>Guards</b><small>Room TEST/REAL · entry vs add/trim/exit · exit policy (ratchet + emergency only) · echo guard (same contract within 20s) · buying power · pocket/pullback rules.</small></div>
+  <div class="step"><span class="n">4</span><b>Order</b><small>/order → one Webull group: BUY at the bid + STOP leg born with it. Bid rests 90s; no seller → pulled ("NOFILL").</small></div>
+  <div class="step"><span class="n">5</span><b>Filled</b><small>Book marks FILLED, stop rests at the broker, watchdog thread starts, quote bus watches the contract, underlying price stamped.</small></div>
+  <div class="step"><span class="n">6</span><b>Managed</b><small>Ratchet walks the stop up by tier; replace-first, never loosens; breached-stop rule; anti-clip. Room trims/stop-moves ignored; FULL exits fire.</small></div>
+  <div class="step"><span class="n">7</span><b>Out &amp; written</b><small>Stop hit / ratchet / emergency / room "all out" → SOLD · CLOSED. P&amp;L to trades.log, days/*.json, journal.</small></div>
+</div>
+
+<h2>3 · Switches &amp; scripts (what you double-click)</h2>
+<div class="two">
+  <table>
+    <tr><th>Script</th><th>What it does</th></tr>
+    <tr><td><code>🎯 START HERE.bat</code></td><td>The one button: pulls latest code (guarded), closes Chrome, reopens every room, starts the bridge keep-alive loop, AUTO PUSH, and the announcer (if not stopped).</td></tr>
+    <tr><td><code>RESTART BRIDGE.bat</code></td><td>Restart onto new code by hand. The bridge also restarts itself: on a code change in a safe window / at the close, or instantly on a <code>bridge.restart</code> file (Claude uses this). A resting stop is kept, never re-placed.</td></tr>
+    <tr><td><code>STOP</code> / <code>STOP.txt</code> file</td><td>Emergency brake — bridge stays down until removed.</td></tr>
+    <tr><td><code>ANNOUNCER.bat</code> / <code>STOP ANNOUNCER.bat</code></td><td>Background fill announcer on/off (<code>announcer.stop</code> non-empty = off; revive task honours it).</td></tr>
+    <tr><td><code>AUTO PUSH.bat</code></td><td>Commits + pushes every 45s. <code>settings.json</code> (keys, webhooks) is never committed.</td></tr>
+    <tr><td><code>FIX SDK DEPS.bat</code></td><td>Repairs the bridge's Python packages if the Webull SDK pins break.</td></tr>
+    <tr><td><code>EXTRAS.bat</code> · <code>MAKE DESKTOP ICON.bat</code></td><td>Extra tools · taskbar/desktop shortcut for START HERE.</td></tr>
+  </table>
+  <table>
+    <tr><th>Where things live</th><th>File</th></tr>
+    <tr><td>Keys, webhooks, room defaults, poll rates</td><td><code>settings.json</code> (gitignored)</td></tr>
+    <tr><td>The room list</td><td><code>extension/rooms.txt</code> (also <code>/rooms</code>)</td></tr>
+    <tr><td>Living memory / decisions log</td><td><code>HANDOFF.md</code> (+ <code>project/context/</code> for the Claude Project)</td></tr>
+    <tr><td>Research &amp; reference</td><td><code>v3.5.0/</code> — broker reference, methodology, TOS checksheet, anti-clip</td></tr>
+    <tr><td>Health checks in a browser</td><td><code>127.0.0.1:8787/stream</code> (bus + stream) · <code>/positions</code> · <code>/mode</code> · <code>/rooms</code></td></tr>
+    <tr><td>Tests</td><td><code>test_positions.py</code> · <code>test_signals.py</code> · <code>test_phantom_exit.py</code></td></tr>
+    <tr><td>Daily journal + bug fix</td><td>Scheduled task <code>daily-journal-and-fix</code>, weekdays 16:45</td></tr>
+  </table>
+</div>
+
+<h2>4 · Rules that never change</h2>
+<div class="box warn">
+  <ul style="margin:0 0 0 16px">
+    <li><b>Real money is yours alone</b> — placing/cancelling orders by hand, flipping a room LIVE, funding, keys, passwords. Claude never does these.</li>
+    <li><b>Exits:</b> the ratchet and the emergency-out manage every bot trade. Nobody's trims or stop-moves are followed; a room's FULL exit still fires.</li>
+    <li><b>Your own hand trades</b> are adopted as visible, never auto-stopped (open question: keep them closeable on a room's "all out", or untouchable?). Positions bigger than bot size are always left alone.</li>
+    <li><b>Check before redoing:</b> keep a resting stop, remember the winning call, ask the stream before HTTP — fewer calls, fewer naked moments.</li>
+    <li><b>Never</b> commit settings.json, install the Webull streaming-SDK family into the bridge's Python, or run git from the sandbox (AUTO PUSH owns git).</li>
+  </ul>
+</div>
+</body>
+</html>
