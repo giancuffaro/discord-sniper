@@ -1,12 +1,15 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-01 (first automated journal day; breached-stop clamp
-fix — see the daily rule section. Mashup attribution CONFIRMED working:
-9/1 journal names The Market Bishop / Jpm Options. Bot 0-for-3 -$70 on ZT
-mashup day one incl. the S swing's clamp bug; Gian +$94. FLR 57.5C swing
-open. The 8/31 fixes all proved live 9/1: rearm fired 9:31, ghost-clear
-and stop_below in the build since 00:10.)
+Last updated: 2026-09-02 evening (daily journal-and-fix run #2 — see
+"9/2 EVENING" at the bottom. Bot -$62 on 3 closes, Gian +$114 on 9 hand
+trades, account +$52 gross / +$45.71 net. Six bridge fixes + extension
+3.5.6 (RELOAD IT): pulled stops go back when an exit is abandoned, a
+CLOSE never sells what the book doesn't hold, "price I never saw" now
+trues itself up from the broker, bare "out" can't touch his hand trades,
+symbol-aware ticks at the order choke point, exits sell the HELD strike,
+mashup calls attributed from the relay FOOTER, heartbeat reloads back off.
+IREN 40C 9/18 swing carries overnight with a GTC stop resting at 1.85.)
 No secrets live here — keys and account ids stay in settings.json (gitignored).
 
 ## Who and what
@@ -422,26 +425,31 @@ exposes, same day. All four of 8/31's finds were fixed within the hour:
   relay unwrap now also hunts the first 140 chars for "<Name>'s
   ideas/alerts/trades/plays/calls/entries". If tomorrow's calls STILL book
   as ZTRADEZ BOT, pull one raw captured mashup message and fix from truth.
+  -> DONE 9/2 evening: they did (IREN/IWM/SPY 762P all "ZTRADEZ BOT").
+  Truth from the raw capture: every relayed message ENDS with its source
+  channel — "... #◽︱♟market-bishop • 3:57 PM". v3.5.6 reads that footer
+  (slug -> The Market Bishop / MR.TOPHAT / Jpm Options / King Maker ...;
+  an unknown slug books under the slug itself). Verify 9/3: the journal
+  names the trader on every mashup call without hand work.
 
-## Watch items (9/2 midday)
-- EXIT-WHILE-WORKING: 11:13 Midas "OUT NVDA 225C" arrived while the bot's
-  pullback entry was still WORKING (never filled). The exit path "cleared
-  an order still on the contract and re-sent the sell" -> 417 (nothing
-  held). Harmless, but wrong shape: an exit against a WORKING/unfilled
-  entry must CANCEL the entry and stop, never sell. Fix in the evening.
-- QUOTE BUS BATCH: "batched option quotes not available" all day — the
-  hunt never tried symbols="A,B,C"+category="US_OPTION" (the shape the
-  working single call uses, per the SDK log). Fixed 13:4x; verify the
-  warning is GONE after the next bridge restart, and popup prices refresh
-  every ~1s.
-- GTC OPTION STOPS ARE ACCEPTED: today's order list shows the bot's
-  standalone STOP_LOSS_LIMIT sells resting with time_in_force GTC — the
-  docs' "sell = DAY only" is wrong for standalone stop-limits (the born
-  bracket leg is DAY). Verify one survives a close, then swings can keep
-  a real broker stop overnight without the 9:31 re-arm.
-- MARKET SNIPER SOLD BOT POSITIONS: FLR (10:56:35, 1.55) and the bot's
-  SPY 766C (11:48, 1.87) were closed by MARKET orders with 6a98… ids —
-  G's tool/app, not the bot. Check Market Sniper for a flatten-all.
+## Watch items (9/2 midday — status as of the evening run)
+- EXIT-WHILE-WORKING — FIXED (evening): plan_exit stands an armed pullback
+  hunt down on the room's exit (the 11:13 NVDA shape) and, new rule, a
+  CLOSE for a contract the book does not hold is REFUSED, never sent — the
+  "worst case is a 417" comment was wrong the day he started scalping
+  SPY/QQQ in size in the same account (a sell of 1 against his 12-lot is
+  a loss, not a message). Adopted positions are on the book, so a room's
+  NAMED exit still reaches them (policy question below).
+- QUOTE BUS BATCH: fixed 14:20 (Response object vs .json()); the 17:12
+  restart shows no "batched option quotes not available" line. Closed.
+- GTC OPTION STOPS ARE ACCEPTED: closed by the 14:35 "check before redoing"
+  rule — 17:12 restart logged "overnight stop still resting at Webull at
+  1.85 — kept" on IREN. Confirm 9/3 pre-open that Webull still shows it
+  SUBMITTED/working after the night (first real overnight broker stop).
+- MARKET SNIPER SOLD BOT POSITIONS: FLR (10:56:35 @1.55) and SPY 766C
+  (11:48:00 @1.87) closed by MARKET orders with 6a98… client ids — G's
+  hand (Market Sniper/app), not the bot. Still open: was FLR a deliberate
+  flatten? (-$9 on a swing that was +5% the night before.)
 
 ## Watch items
 - Deepgram key may be one char short (39) — watch for voice auth errors.
@@ -512,3 +520,106 @@ announcer.stop = "stop" (revive task and START HERE step 4.5 both honour it). Br
 
 ## 9/2 15:12 — TODO (G, "later"): MANAGE button for hand positions
 His QQQ 710C x4 (hand-bought, +17%) got no ratchet: adopt() leaves anything above bot size alone, and adopted trades never get a watchdog. Build: popup "MANAGE" on a broker row → bridge adopts it into the book with ratchet ON (stop_below at the current tier, resting stop + watchdog, exits only by ratchet/emergency). Real-money: placing that first stop needs his click. Also pending his answer: hand trades closeable on a room's exit call, or untouchable.
+
+## 9/2 EVENING — daily journal-and-fix run #2 (16:55-17:40, automated)
+Journal: journal-2026-09-02.xlsx (house format + the "Underlying at fill"
+column, fees ACTUAL from the API's per-order fee arrays = $6.29, not an
+estimate). Broker truth: bot -$62 on 3 closes (FLR -9 hand-closed, AMZN -22
+clean stop, SPY 766C -31 hand-closed after the naked-exit bug); Gian +$114
+gross on 9 hand trades (QQQ 706P x7 +126 and SPY 767C x20 +120 carried it,
+the other seven -$132, one of them the bot's own sale of his SPY 767C 9/9 at
+3.22 = -27). Account +$52 gross / +$45.71 net; Webull's own day figure
++$31.97 (marks FLR from 9/1's close). Open overnight: IREN 40C 9/18 x1 @2.45
+(The Market Bishop via the mashup; their 42C -> our 40C by NO-OTM), GTC
+stop-limit 1.85/1.65 resting at Webull (order O7G6OBKV9K5G2I5AN7HT2PMO6B),
+mark -$6.50, plus the bridge watchdog. Buying power ~$113.
+
+What the journal exposed -> FIXED the same evening (bridge restarted itself
+onto the build at 17:12, IREN's stop kept, tests green: test_positions,
+test_resolve; py_compile + node --check on every touched file):
+1. NAKED AFTER A REFUSED EXIT (11:43 SPY 766C, five minutes with no stop):
+   claim() pulls the resting stop before any sell; every refusal path then
+   called release(), which only cleared the flag. release() now re-arms a
+   stop that claim() itself pulled (remembered as pulled_stop) — TEST-room
+   refusal, Refused, exception, all of them. rearm_stop_after_failed_exit
+   also refuses to invent a stop for an adopted trade that never had one.
+   The watchdog's own stop-out loop passes rearm=False (it re-claims next
+   tick). _pullback_close's live flag was already carried through by the
+   14:56 build.
+2. "PRICE I NEVER SAW" = A 429, NOT A MISSING FILL (FLR, SPY 766C today;
+   S, SPY, SPY yesterday — six $0 bookings in two days, every one of them
+   a TOO_MANY_REQUESTS on /trade/order/history, 2 per 2s, shared with the
+   announcer's poll). _broker_exit_price now tries twice 2.2s apart; if
+   still empty the trade is booked and a background _true_up_exit keeps
+   asking (6s apart, up to 3 min), then writes the real print onto the
+   record — event "TRUED UP: the broker printed X for that exit" — exits/
+   trade_pl/closed_why, matched by key AND sent_at so the next trade in the
+   same ticker can never take it. Day file and state photo follow.
+3. NOT ON THE BOOK = NOT THE BOT'S TO SELL: plan_exit's "st is None ->
+   send the sell anyway" is gone (see the watch item). The 11:13 NVDA 417
+   class is extinct; so is the hand-size hole.
+4. SELL WHAT IS HELD: a room's exit naming the strike THEY called ("out
+   IREN 42C") while the bot holds the NO-OTM-translated one (40C) now sells
+   the held contract (the book resolved the exit to their position; the
+   record's strike/expiry/side win). Used to 417 four times and leave the
+   real position standing with its stop pulled.
+5. SYMBOL-AWARE TICKS AT THE CHOKE POINT (webull_options._order rounded to
+   the nearest NICKEL with no symbol): IWM 0.18 bid went out at 0.20 (+11%
+   over the caller on a penny name), AMZN 2.41 at 2.40, the 2.11 stop at
+   2.10, the 2.17 born-stop at 2.15 — while every log line printed the
+   number it meant. Now: buy() FLOORS a resting bid (their price or
+   better survives rounding), CEILS the pullback's ask-cross (stays
+   marketable), sell() floors (one tick more marketable), _order rounds
+   symbol-aware as the legal backstop. tick_floor/tick_ceil added.
+6. AI READER: a "premium" at/above the strike is the stock level, not the
+   option ("adding at 224.70" on a 225C read as @224.7) — dropped, the
+   bridge bids the market.
+Extension 3.5.6 (RELOAD in chrome://extensions — G's hands):
+7. A SYMBOL-LESS "OUT" CAN NEVER LAND ON HIS HAND TRADE: guards.pickHeld
+   treated "the only position, owner ?" as anyone's. 14:54 a caller's "I
+   took my $126 L" (no ticker, the caller's loss) matched G's adopted SPY
+   767C 9/9 and SOLD it at 3.22 (-$27). Adopted records now carry the
+   bridge's `who` (trader name or "Gian"); an adopted record owned by "?"
+   or Gian is never the answer to a bare exit, in pickHeld or the
+   loaded-symbol fallback. A bot trade re-adopted after a restart keeps its
+   trader and still matches its own caller.
+8. MASHUP ATTRIBUTION FROM THE FOOTER (see the 8/31 note above) — the
+   possessive-title hunt never matched the live relay format.
+9. HEARTBEAT RELOAD LOOP: one room tab was reloaded 174 times 13:25-17:11
+   (every ~80s) because its beat never returned — the record was stale
+   (the tab had moved to another page) and the watchdog kept punishing it.
+   Now: a tab whose URL no longer names the channel drops the record (no
+   reload); genuine dead readers back off 1m/2m/4m/8m/15m with the attempt
+   count in the log line.
+ALSO: test_signals.py has 4 failing checks that PREDATE tonight (Brett's
+"Out of 80%"/"Tapped 40%" TRIM reads and two "Stops moved to $208.30"
+STOPMOVE resolutions) — expectations written 8/15, before the 8/30 exit
+policy; not a regression, needs a look when the parser is next touched.
+
+OPEN QUESTION FOR G (from 15:10, still open, now sharper): a room's exit
+that NAMES the ticker ("out SPY") can still close an ADOPTED hand trade of
+his when the bot holds nothing else in that ticker (find_key: "the only
+live trade in that ticker, unattributed"). The house rule at the top says
+his positions are "never sold"; the 8/18 adopt rule says "closeable on the
+room's call". Tonight's fix only closed the symbol-LESS path. Say which:
+(a) rooms may close his hand trades when they name the ticker (today's
+behaviour), or (b) hand trades are untouchable, full stop (one line in
+find_key + plan_exit). Recommendation: (b) — since the state photo, the
+bot's own positions survive restarts, so adoption's original purpose
+(re-finding the bot's trade) no longer needs the door open to his.
+
+ANNOUNCER (paused by G at 14:55, announcer.stop="stop"): before the pause
+it posted only the 11:35 SPY 766C ENTRY today — it was down 11:17-11:35
+(stop-file restarts) and missed the AMZN round trip, and the 14:25 boot
+never posted the 14:54 SPY 767C sale before signing off at 14:56 despite
+"push: subscribed". When it comes back (ANNOUNCER.bat): verify an EXIT
+post, and cut its 2s history poll to a 30s safety net while push is up —
+that poll shares the 2-per-2s history budget the bridge's exit lookups
+(fix #2) need.
+DEATHWATCH: Options Insider ($199+tax) — last message 8/12 (TSM 430C
+swing); 21 days silent on 9/2, tab open, silence alarms firing daily.
+Cancel call at day 30 = 9/11 unless it posts. RWGates (TradeLikeGates,
+STS alert-room): alive, 28 captures today, NBIS 215C called 9:44.
+CHROME: no "out of memory", no "DISCARDED" lines today; memory shed and
+the discard pin are holding. START HERE's fresh-start closes stale Whop
+tabs on next launch.
