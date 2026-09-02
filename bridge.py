@@ -2749,6 +2749,12 @@ class Handler(BaseHTTPRequestHandler):
                 if qb is not None:
                     try:
                         out["option_bus"] = qb.status()
+                        # one raw snapshot row, so "what fields does Webull
+                        # give us" is a browser tab instead of a guess
+                        with qb._lock:
+                            _first = next(iter(qb._quotes.values()), None)
+                        if _first:
+                            out["sample_row"] = _first[2]
                     except Exception:                   # noqa: BLE001
                         pass
                 return self._json(200, out)
