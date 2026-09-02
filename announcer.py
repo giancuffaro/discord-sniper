@@ -118,37 +118,38 @@ def _save_seen(seen):
 
 
 def _recent_orders(wb, account_id=None):
-    holders = []
+    """Orders for one account via the SAME proven pattern as
+    webull_options.last_sell_fill — holders order_v3/order/trade/account_v2,
+    verb substring "history", and the dates passed BY KEYWORD (8/28 lesson:
+    positional dates land in the wrong SDK slots and 500 every time).
+
+    The old homemade hunt here guessed verbs his SDK doesn't have and
+    returned [] on every poll — the announcer sat online for three days
+    without seeing a single fill (found 9/1: announcer-seen.json was []
+    while the account did nine round trips)."""
+    import datetime as dt
     acct = account_id or wb.account_id
-    for hn in ("order_v3", "order"):
-        h = getattr(wb.trade, hn, None)
-        if h is not None:
-            holders.append(h)
-    verbs = ("get_history_orders", "list_orders", "history_orders",
-             "orders", "list", "query_orders", "get_orders")
-    for h in holders:
-        for v in verbs:
-            fn = getattr(h, v, None)
-            if fn is None:
-                continue
-            for args in ((acct,), (acct, 20), (acct, "20")):
-                try:
-                    res = fn(*args)
-                except TypeError:
-                    continue
-                except Exception:                       # noqa: BLE001
-                    break
-                if getattr(res, "status_code", 200) != 200:
-                    continue
-                try:
-                    body = res.json() if hasattr(res, "json") else res
-                except Exception:                       # noqa: BLE001
-                    continue
-                if isinstance(body, dict):
-                    body = body.get("data") or body.get("orders") or []
-                if isinstance(body, list):
-                    return body
-    return []
+    today = dt.date.today()
+    start = (today - dt.timedelta(days=1)).isoformat()
+    end = (today + dt.timedelta(days=1)).isoformat()
+    body = None
+    for args, kw in (((acct,), {"start_date": start, "end_date": end}),
+                     ((acct, start, end), {}),
+                     ((acct,), {})):
+        try:
+            body, _why = wb._try_calls(
+                ["order_v3", "order", "trade", "account_v2"],
+                ["history", "list_orders", "orders", "query_orders"],
+                *args, **kw)
+        except Exception:                               # noqa: BLE001
+            body = None
+        if body is not None:
+            break
+    if body is None:
+        return []
+    if isinstance(body, list):
+        return body
+    return (body or {}).get("orders") or (body or {}).get("data") or []
 
 
 def _parse(od):
