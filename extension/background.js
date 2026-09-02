@@ -1336,7 +1336,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch.export_every_min) armAutoExport();
 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); checkBridgeHealth(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); checkBridgeHealth(); memoryShed(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "auto-export") autoExportForLearning();
@@ -2543,6 +2543,40 @@ async function allRoomsTesting() {
 
 chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); startWhopFeed(); });
 chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); startWhopFeed(); });
+
+/* MEMORY SHED (9/1, G: "sometimes I come back and Chrome has run out of
+ * memory"). Discord web leaks: a room tab that starts at ~150 MB sits at
+ * 0.5-2 GB after a few hours, and 26 of them is how the browser dies. A
+ * reload resets a tab to fresh — and it is SAFE here: the content script
+ * re-attaches, everything already on screen comes back flagged history
+ * (never traded), and the stale-entry gate covers the rest. So: every
+ * 30s tick, reload at most ONE Discord room tab whose last reload is 2h+
+ * old — never the tab you're looking at, never a tab playing voice, and
+ * never in the opening window (9:28-9:40). One tab per tick means a full
+ * cycle of 26 rooms takes 13 minutes and no two rooms are ever blind at
+ * once. Whop tabs have their own watchdog. */
+const RELOADED_AT = {};                  // tabId -> last reload ts
+const SHED_EVERY_MS = 2 * 60 * 60 * 1000;
+async function memoryShed() {
+  try {
+    const now = new Date();
+    const hm = now.getHours() * 60 + now.getMinutes();
+    if (hm >= 9 * 60 + 28 && hm <= 9 * 60 + 40) return;   // the open is sacred
+    const tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
+                                                 "https://*.discord.com/channels/*"] });
+    const t0 = Date.now();
+    let oldest = null;
+    for (const t of tabs) {
+      if (!(t.id in RELOADED_AT)) RELOADED_AT[t.id] = t0;   // fresh tab = clock starts now
+      if (t.active || t.audible || LISTENING.has(t.id)) continue;
+      if (t0 - RELOADED_AT[t.id] < SHED_EVERY_MS) continue;
+      if (!oldest || RELOADED_AT[t.id] < RELOADED_AT[oldest.id]) oldest = t;
+    }
+    if (!oldest) return;
+    RELOADED_AT[oldest.id] = t0;
+    await chrome.tabs.reload(oldest.id);
+  } catch (e) { /* a closed tab mid-query — next tick */ }
+}
 
 /* WHOP API FEED bootstrap (8/30): the offscreen page runs the 2s poll of
  * the bridge's /whopfeed (a service worker can't hold a timer that fast).
