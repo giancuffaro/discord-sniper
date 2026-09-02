@@ -476,3 +476,10 @@ Verify after RESTART BRIDGE: `curl 127.0.0.1:8787/stream` → `connected: true`,
 
 ## 9/2 PM — popup P&L lag (G: "huge delay in pnl at the popup")
 Cause: /positions served Webull's positions endpoint (cached 8s, broker mark lags) and the popup asked every 4s → 10–15s stale. Fix: /positions now overlays the quote bus bid (1/s) for options and the MQTT push for stocks onto every row (`live_quote: true`); broker numbers only when nothing fresh. Popup refresh 4s→2s. Extension 3.5.3 — reload it in chrome://extensions.
+
+## 9/2 14:20 — THE quote-bus bug ("pulling data but not fast")
+Symptom: sweeps every 1.9s instead of 1.05s, budget bucket pinned at the 40-token reserve, positions endpoint 429s. Diagnosed with `/stream` (new `budget_takes`/`budget_callers` tell): 9 budget takes per sweep, all from ask_bid_many.
+Root cause: ask_bid_many passed the SDK's requests **Response object** to `_parse_batch` instead of `.json()` → every shape looked empty → the hunt walked all 8 shapes on every method every sweep, then fell back to per-contract calls ("batched option quotes not available" was printed every restart — it was never the SDK). Fixed: `.json()` + status check + TypeError skip. Result: sweep 124ms, 1 call per sweep, budget full.
+Also: `_try_calls` winner cache (positions/orders hunting cost 2-4 HTTP calls per poll into a 2-per-2s endpoint → 429 wall at 14:0x); `ask_bid` remembers its winning method+shape; `_parse_batch` matches a symbol from any string value in the row.
+Verify any time: http://127.0.0.1:8787/stream → `last_sweep_ms` ~100-200, `budget_takes` ≈ 2×`sweeps`, `budget_left` ~280.
+Note: every bridge restart cancels+re-places the resting stop on restored positions (3 times today). Not stacking, but each is a brief naked moment — restart only when it matters.
