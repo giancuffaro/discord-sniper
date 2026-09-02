@@ -715,7 +715,7 @@ new_stop = stops_after[-1][3]
 # v3.5.0 TIERS (9/2): a $2+ fill arms at +10% with a +5% first lock and 5%
 # rungs, so +20% = +15% locked = a 2.30 stop (the old 10/10 rule said BE).
 ok(abs(new_stop - 2.30) < 0.005,
-   "at +20% a $2.00 fill has +15% locked under the $2+ tier — a 2.30 stop, got %s" % new_stop)
+   "at +20%% a $2.00 fill has +15%% locked under the $2+ tier — a 2.30 stop, got %s" % new_stop)
 ok(any(c[0] == "cancel" for c in RWB.calls),
    "the old stop order gets cancelled before the new one goes in")
 # Price keeps climbing to +30% — the stop should walk up again, to +10%.
@@ -724,7 +724,7 @@ stops_30 = [c for c in RWB.calls if c[0] == "stop"]
 ok(len(stops_30) == len(stops_after) + 1,
    "a further rung places another new stop")
 ok(abs(stops_30[-1][3] - 2.50) < 0.005,
-   "at +30% the $2+ tier has +25% locked — a 2.50 stop, got %s" % stops_30[-1][3])
+   "at +30%% the $2+ tier has +25%% locked — a 2.50 stop, got %s" % stops_30[-1][3])
 # Price dips back to +21% (still above the +20 rung, below the +30 rung) — the
 # already-locked +20% stop must NOT be loosened back down to +10%.
 rb.auto_ratchet(RKEY, 2.42)
