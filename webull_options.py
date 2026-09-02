@@ -1927,6 +1927,10 @@ class WebullOptions:
                 # to end. The buffer makes it fill through a moving quote.
                 limit = max(0.01, round(
                     float(ask) * (1 + self.buffer_pct / 100) + 0.01, 2))
+                # A marketable buy must stay AT/ABOVE the ask after tick
+                # rounding, or the cross turns back into a resting bid on a
+                # nickel-tick name (2.54 -> 2.50 under a 2.53 ask). Ceil.
+                limit = max(0.01, float(tick_ceil(limit, symbol)))
             else:
                 limit = self.entry_limit(bid, ask)
                 # "Match their avg or better" (his ask, 8/13): never pay above
@@ -1940,10 +1944,15 @@ class WebullOptions:
                         limit = min(limit, float(their_price))
                     except (TypeError, ValueError):
                         pass
-                limit = max(0.01, round(limit, 2))
+                # FLOOR to the legal tick (9/2): "their price or better" has
+                # to survive rounding. Nearest-nickel used to lift IWM's 0.18
+                # to 0.20 — 11% over the caller, on a penny name whose legal
+                # tick is $0.01. Down, never up.
+                limit = max(0.01, float(tick_floor(round(limit, 2), symbol)))
         elif their_price:
             # No live ask: take the room's posted premium as the limit.
-            limit = max(0.01, round(float(their_price), 2))
+            limit = max(0.01, float(tick_floor(round(float(their_price), 2),
+                                               symbol)))
         elif self.blind_entry_max and self.blind_entry_max > 0:
             # No quote AND no posted price — "make the entry instant, a bid at
             # that moment." Place a marketable BUY at a bounded ceiling: a limit
@@ -2148,6 +2157,11 @@ class WebullOptions:
             # is marketable against any real bid, so the exit clears instead of
             # refusing. The recorded price is honest about being unknown.
             limit = 0.01
+        # Legal tick, rounded DOWN (9/2): a sell limit one tick lower is one
+        # tick more marketable — getting out is the point — and the number in
+        # the log is now the number on the wire (it used to be re-rounded to
+        # the nearest nickel inside _order, symbol unknown).
+        limit = max(0.01, float(tick_floor(limit, symbol)))
         what = "SELL %d %s %g%s %s @ %.2f" % (qty, symbol, float(strike),
                                               option_type[0], expiration, limit)
         _orders = self._order(symbol, expiration, option_type, strike,
