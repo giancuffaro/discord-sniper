@@ -224,6 +224,58 @@ def _con(f):
     return f["sym"]
 
 
+PUSH = {"wake": None, "on": False}   # set by the gRPC listener
+
+
+def _start_push(cfg, wb, account_ids):
+    """v4 (9/2): Webull PUSHES order events over gRPC (TradeEventsClient in
+    the same SDK — v3.5.0/OPTIONS-BROKER-REFERENCE.md A7). We don't parse
+    the push payload (shapes vary); we use it as a doorbell: any event ->
+    poll the order list NOW instead of waiting for the 2s tick. If the
+    stream can't start, the poll loop simply keeps its 2s cadence."""
+    import threading
+    try:
+        from webull.trade.trade_events_client import TradeEventsClient
+    except Exception as e:                              # noqa: BLE001
+        print("push: TradeEventsClient not in this SDK (%s) — polling only"
+              % str(e)[:60])
+        return
+    ev = threading.Event()
+    PUSH["wake"] = ev
+
+    def _on(*args, **kw):
+        try:
+            blob = " ".join(str(a) for a in args)[:200].upper()
+            # only fills matter; ignore pings/subscribe acks
+            if any(k in blob for k in ("FILLED", "FINAL_FILLED", "FILL")):
+                ev.set()
+        except Exception:                               # noqa: BLE001
+            ev.set()
+
+    def _run():
+        while True:
+            try:
+                api = getattr(wb, "_api", None)
+                if api is None:
+                    time.sleep(30); continue
+                cli = TradeEventsClient(api)
+                # the SDK names the hook on_events_message; accept variants
+                for name in ("on_events_message", "on_message", "on_event"):
+                    try:
+                        setattr(cli, name, _on)
+                    except Exception:                   # noqa: BLE001
+                        pass
+                PUSH["on"] = True
+                print("push: subscribed to fill events for %s" % account_ids)
+                cli.do_subscribe(list(account_ids))    # blocks while streaming
+            except Exception as e:                      # noqa: BLE001
+                PUSH["on"] = False
+                print("push: stream ended (%s) — retry in 30s, polling continues"
+                      % str(e)[:80])
+            time.sleep(30)
+    threading.Thread(target=_run, daemon=True).start()
+
+
 def main():
     # single instance: a heartbeat younger than 90s means another copy
     # is already narrating — this one stands down quietly.
@@ -260,6 +312,14 @@ def main():
     if board:
         _post(score_hook, board)
 
+    try:
+        _ids = [wb.account_id] + ([wb.futures_account_id]
+                                  if getattr(wb, "futures_account_id", None)
+                                  and wb.futures_account_id != wb.account_id
+                                  else [])
+        _start_push(cfg, wb, _ids)
+    except Exception as _pe:                            # noqa: BLE001
+        print("push: not started (%s)" % str(_pe)[:60])
     seen = _load_seen()
     open_pos = {}          # con -> {entry, qty, hit:set(), occ}
     first_pass = True
@@ -378,7 +438,12 @@ def main():
         except Exception as e:                          # noqa: BLE001
             print("poll error:", str(e)[:120])
             time.sleep(10)
-        time.sleep(poll)
+        _w = PUSH.get("wake")
+        if _w is not None:
+            if _w.wait(poll):          # a fill event rang the bell — go now
+                _w.clear()
+        else:
+            time.sleep(poll)
 
 
 if __name__ == "__main__":
