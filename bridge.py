@@ -1182,7 +1182,11 @@ def find_key(order):
     key = tkey(order)
     if BOOK is None or BOOK.state_of(key) is not None:
         return key
-    others = BOOK.find_by_symbol(order.get("symbol"))
+    # HIS HAND TRADES ARE INVISIBLE TO A ROOM'S CALL (9/2, G: "how do they
+    # manage to close them? they shouldn't"). This is the door they came
+    # through: an adopted "?|SPY" of his read as "unattributed", and any
+    # trader's "out SPY" was handed to it. rooms=True leaves them out.
+    others = BOOK.find_by_symbol(order.get("symbol"), rooms=True)
     if len(others) == 1:
         cand = others[0]
         want = str(order.get("trader") or "").strip().lower()
@@ -1326,6 +1330,16 @@ def plan_exit(order, key):
     position over to us and is expecting to be told how it ended.
     """
     sym = str(order.get("symbol", "")).upper()
+    # THE GATE (9/2): whatever key the resolvers landed on, if it is HIS
+    # hand trade the answer is no. Belt to find_key's braces — a room's exit
+    # that names his exact contract resolves straight to "?|SYM" without
+    # ever asking find_key.
+    if BOOK.is_hand_trade(BOOK.info(key)):
+        note("EXIT     %s — that's YOUR own trade (hand-placed, adopted off "
+             "the account); a room's call can't close it. Nothing sent." % sym)
+        return False, False, (True,
+            "that %s is your own hand trade — rooms can't close or trim it, "
+            "so nothing was sent." % sym)
     st = BOOK.state_of(key)
     if st is None:
         # Nothing on record. Usually this bridge was restarted mid-day, so the

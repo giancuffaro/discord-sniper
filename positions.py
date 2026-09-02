@@ -593,15 +593,31 @@ class Book:
             p = self._pos.get(key)
             return dict(p) if p else None
 
-    def find_by_symbol(self, symbol):
+    @staticmethod
+    def is_hand_trade(p):
+        """HIS OWN position (9/2, G: "how do they manage to close them? they
+        shouldn't"): adopted off the account with no bot record to inherit
+        credit from — the book names it "Gian". Visible in the popup, never
+        stop-managed, and now never resolvable by any room's exit or trim.
+        A bot trade re-found after a restart carries its trader's name and
+        is not this."""
+        if not p or not p.get("adopted"):
+            return False
+        who = str(p.get("who") or "").strip().lower()
+        return who in ("", "?", "gian")
+
+    def find_by_symbol(self, symbol, rooms=False):
         """Keys of every live trade in this ticker, any trader. For the one
         caller that has a symbol but no name — and if this returns more than
-        one key, the right answer is to ask, not to pick."""
+        one key, the right answer is to ask, not to pick.
+        rooms=True is the view a ROOM's call gets: his own hand trades are
+        left out, so "out SPY" can never land on them."""
         sym = str(symbol or "").upper()
         with self._lock:
             return [k for k, p in self._pos.items()
                     if p.get("symbol") == sym
-                    and p.get("state") in (WORKING, FILLED)]
+                    and p.get("state") in (WORKING, FILLED)
+                    and not (rooms and self.is_hand_trade(p))]
 
     def qty_of(self, key):
         """How many contracts you actually own. Not how many were ordered —
@@ -1217,9 +1233,12 @@ class Book:
             have.add(sym)
             added += 1
             self._event(key, "adopted",
-                        "%s x%d picked up from your Webull %s account — the bot "
-                        "can see it and exit it on the room's call now"
-                        % (sym, qty, "LIVE" if row_live else "paper"))
+                        "%s x%d picked up from your Webull %s account — %s"
+                        % (sym, qty, "LIVE" if row_live else "paper",
+                           ("the bot can see it and exit it on the room's "
+                            "call" if _who else
+                            "YOUR trade: visible in the popup, no stop, and "
+                            "no room can close or trim it")))
             if note:
                 note("ADOPTED  %s x%d from Webull %s (fill %s)"
                      % (sym, qty, "LIVE" if row_live else "paper", fill))
