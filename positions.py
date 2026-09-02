@@ -152,7 +152,9 @@ class Book:
         self.note = note                # bridge.note — writes to trades.log
         self.stop_pct = float(stop_pct)
         self.fill_seconds = float(fill_seconds)
-        self.poll_seconds = max(1.0, float(poll_seconds))
+        # v3.5.0: floor dropped 1.0 -> 0.2 — the quote bus makes a fast
+        # watchdog cheap (one batched call feeds every position).
+        self.poll_seconds = max(0.2, float(poll_seconds))
         self.simulated = simulated
         self._lock = threading.RLock()
         self._pos = {}                  # key ("trader|SYM") -> dict
@@ -1982,7 +1984,11 @@ class Book:
         This is the half that works when the resting stop was refused, and the
         half that catches a contract gapping straight through the trigger.
         After a trim it guards the remainder — 2 contracts still get a stop."""
-        while True:
+        _occ_watched = None
+        _bus = getattr(self, "quotes", None)
+        _last_direct = 0.0
+        try:
+          while True:
             time.sleep(self.poll_seconds)
             with self._lock:
                 p = self._pos.get(key)
@@ -1995,7 +2001,21 @@ class Book:
             if wb is None or not occ or not stop:
                 return
             try:
-                _ask, bid, _row = wb.ask_bid(occ)
+                # v3.5.0 BLOCK C: read from the shared quote bus when there
+                # is one (one batched call feeds every position, ~300ms
+                # fresh). SAFETY: if the bus has no fresh quote for this
+                # contract, fall back to a direct quote at most every 2s —
+                # a dead bus can never make a stop blind.
+                if _bus is not None:
+                    if _occ_watched != occ:
+                        _bus.watch(occ)
+                        _occ_watched = occ
+                    _ask, bid, _row = _bus.get(occ)
+                    if bid is None and time.time() - _last_direct >= 2.0:
+                        _last_direct = time.time()
+                        _ask, bid, _row = wb.ask_bid(occ)
+                else:
+                    _ask, bid, _row = wb.ask_bid(occ)
             except Exception:                           # noqa: BLE001
                 continue        # a missed quote is not a reason to sell
             if bid is not None:
@@ -2098,6 +2118,14 @@ class Book:
                                 "Retrying." % (sym, str(e)[:110]))
                 self.finish(key, FAILED, "stop failed to sell")
             return
+        finally:
+            # the bus stops fetching a contract nobody watches any more
+            if _bus is not None and _occ_watched:
+                try:
+                    _bus.unwatch(_occ_watched)
+                except Exception:                   # noqa: BLE001
+                    pass
+
 
     def _gone_at_broker(self, wb, sym, side, strike):
         """Does the broker still show this contract at all? The 8/18 morning

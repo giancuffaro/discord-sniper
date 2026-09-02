@@ -331,6 +331,26 @@ def build_book():
         simulated=(MODE != "webull"),
         unlimited=(MODE != "webull"))
     BOOK.save_day = save_day
+    # v3.5.0 BLOCK C (9/2, G: "do everything now"): ONE budget every Webull
+    # call draws from (300/60s, 5% held back), and a QUOTE BUS that fetches
+    # every watched contract in ONE batched call per sweep (~300ms) instead
+    # of one call per position per poll. If the batched shape is refused,
+    # ask_bid_many falls back to per-contract calls and says so once; the
+    # watchdog additionally falls back to a direct quote whenever the bus
+    # has nothing fresh, so the bus can never be the reason a stop is blind.
+    try:
+        from quote_bus import Budget, QuoteBus
+        BUDGET = Budget()
+        for _cli in (WB, WB_LIVE, WB_PAPER):
+            if _cli is not None:
+                _cli.budget = BUDGET
+        QUOTES = QuoteBus(WB.ask_bid_many, budget=BUDGET, log=print)
+        QUOTES.start()
+        BOOK.quotes = QUOTES
+        note("QUOTE BUS on — batched quotes every ~300ms, one budget for all calls")
+    except Exception as _qe:                            # noqa: BLE001
+        BOOK.quotes = None
+        note("QUOTE BUS off (%s) — per-position quotes as before" % str(_qe)[:80])
     # Clear the paper/dry-run book at NY midnight so the popup starts each day
     # clean; live (real-money) holds are never touched. Default ON.
     BOOK.reset_paper_daily = bool((CFG.get("execution") or {}).get("reset_paper_daily", True))
