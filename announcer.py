@@ -432,7 +432,14 @@ def main():
                 # for a trade that filled before the boot. Seed open_pos from
                 # the broker's own positions (cost basis = entry).
                 try:
-                    _prs = wb.positions() or []
+                    # the positions endpoint is 2 per 2s and the bridge
+                    # shares it — a boot-time 429 answers [] — so retry
+                    _prs = []
+                    for _try in range(3):
+                        _prs = wb.positions() or []
+                        if _prs:
+                            break
+                        time.sleep(3)
                     print(time.strftime("%H:%M:%S"),
                           "adopt-at-boot: %d broker position(s)%s"
                           % (len(_prs), (" — keys: " + ",".join(sorted(_prs[0].keys()))[:160]) if _prs else ""))
