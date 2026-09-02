@@ -1957,12 +1957,17 @@ class WebullOptions:
                                           what + " +stop %.2f (one group)"
                                           % stop_born)
                     return m, c, _b
+                # CHECK BEFORE REDOING (9/2): Webull has refused the
+                # STOP_LOSS_LIMIT leg inside a group every single time since
+                # 8/20, yet it was still tried FIRST — one guaranteed-failing
+                # order call (~300ms + a budget token) on every entry while
+                # racing a room. The known-good STOP_LOSS leg goes first now.
                 try:
-                    master, child, body = _combo_try("STOP_LOSS_LIMIT")
+                    master, child, body = _combo_try("STOP_LOSS")
                 except Refused as _rf:
                     up = str(_rf).upper()
                     if "ORDER_TYPE" in up or "STOP_LOSS" in up:
-                        master, child, body = _combo_try("STOP_LOSS")
+                        master, child, body = _combo_try("STOP_LOSS_LIMIT")
                     else:
                         raise
                 _orders = [master]

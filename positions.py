@@ -1604,6 +1604,15 @@ class Book:
                         if q.get("unverified"):
                             q["unverified"] = False
                             _arm_now = True
+                if _arm_now and p_.get("adopted") and not p_.get("stop_order_id"):
+                    # HIS OWN TRADE (8/18 rule): adopted, never auto-stopped.
+                    # A restart used to forget that and arm a -10% stop on
+                    # it anyway (9/2 14:11: his hand-bought SPY 767C got a
+                    # 3.14 stop it never asked for). Confirm, stay hands-off.
+                    self._event(key, "update",
+                                "%s — the broker confirms your own trade; no "
+                                "auto-stop, as before" % p_.get("symbol"))
+                    continue
                 if _arm_now:
                     # KEEP THE RESTING STOP (9/2, G: "leave the stop and
                     # just check if it's still there"). A restart used to

@@ -503,3 +503,9 @@ Webull option snapshot = 60/min per key, no option streaming. Answer: the bus st
 
 ## 9/2 14:55 — ANNOUNCER PAUSED (G: "put the announcer off for a while, get this app working 100% first")
 announcer.stop = "stop" (revive task and START HERE step 4.5 both honour it). Bridge reports `announcer_stopped`; popup shows grey "announcer off (paused)" instead of the red warning. To bring it back: ANNOUNCER.bat (clears the stop file). Focus now: the sniper itself.
+
+## 9/2 15:10 — in-position sweep #2
+- **BUG: restart armed a stop on HIS OWN adopted trade.** 14:07 SPY 767C x1 adopted as "your own — no auto-stop" (8/18 rule); the 14:11 restart's restore path armed a 3.14 stop anyway; 14:54 a room's exit call sold it at 3.24. Fixed: restore path now honours `adopted` + no stop id → confirm and stay hands-off. OPEN QUESTION for G: adopted hand trades are still "closeable on the room's call" by design — keep that, or make his own trades fully untouchable?
+- Combo entry tried the STOP_LOSS_LIMIT leg first — refused by Webull every time since 8/20 — then STOP_LOSS. One wasted order call per entry while racing a room. STOP_LOSS first now.
+- IWM 294C 0DTE @0.18 (ZT bot, 15:05): bid worked 90s, no seller, pulled clean. QQQ 710C x4 = his, left alone (> bot size). Tape follows QQQ 710C for the popup.
+- Throttles since 14:55: positions ×4, order detail/history/open ×3 each, place ×1 (the LIMIT leg). "Invalid account or insufficient permissions" ×2 — likely the futures account id on an options endpoint; watch.
