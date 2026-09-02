@@ -2619,7 +2619,15 @@ class Handler(BaseHTTPRequestHandler):
     def _status(self):
         reload_settings()
         keys_in = bool((EXEC.get("webull") or {}).get("app_key"))
+        # ANNOUNCER heartbeat (9/2: it sat stopped 13:27-14:24 and nobody
+        # knew — the 14:07 SPY fill never posted). Age of .announcer.alive.
+        try:
+            _aa = time.time() - os.path.getmtime(os.path.join(HERE, ".announcer.alive"))
+        except OSError:
+            _aa = None
         return {"mode": "per-room",
+                "announcer_alive": (_aa is not None and _aa < 120),
+                "announcer_age": (int(_aa) if _aa is not None else None),
                 # No global live any more — rooms go live one by one in the
                 # popup, and each ORDER carries its own flag.
                 "live": False,

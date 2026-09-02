@@ -472,9 +472,14 @@ function paintBridgeLive() {
   dot.style.background = _bridgeLastCheck ? (ok ? "#4ade80" : "#dc2626") : "#52525b";
   // Just the verdict, no clock (his ask, 8/17: "i dont need to know how
   // many seconds passed"). refreshMode refreshes this every 4s regardless.
+  // Announcer rides on the same line (9/2): it was silently stopped for an
+  // hour and a real fill never posted. Red text when its heartbeat is stale.
+  const annOk = ok && modeStatus.announcer_alive;
+  const annTxt = !ok ? "" : annOk ? " · announcer on"
+    : " · ✕ ANNOUNCER OFF — run ANNOUNCER.bat";
   txt.textContent = !_bridgeLastCheck ? "checking bridge…"
-    : ok ? "✓ Bridge connected" : "✕ Bridge NOT reachable — run 🎯 START HERE";
-  txt.style.color = _bridgeLastCheck && !ok ? "#fca5a5" : "#9aa3b5";
+    : ok ? "✓ Bridge connected" + annTxt : "✕ Bridge NOT reachable — run 🎯 START HERE";
+  txt.style.color = _bridgeLastCheck && (!ok || !annOk) ? "#fca5a5" : "#9aa3b5";
 }
 
 /* ---- where futures trade: Webull / NinjaTrader / Tradovate ----------------

@@ -493,3 +493,10 @@ Applies at the next restart (code watcher: safe window or the close).
 
 ## 9/2 14:36 — P&L faster than the 1/s option door (tick interpolation)
 Webull option snapshot = 60/min per key, no option streaming. Answer: the bus stamps every swept row with the underlying's streamed price (`_und_at_sweep`, `_und_sym`; QuoteBus `und_price` hook = STREAM.price). `/positions` walks the last real bid forward on SPY's tick stream: `bid + delta·ΔS + ½·gamma·ΔS²` (delta/gamma from the snapshot row). Popup shows "≈3.31" for an estimate, plain number for a real quote; popup refresh 1s; `und_now` in the row. Stops/ratchet/watchdog use REAL quotes only — the estimate is display-only. A second app key would double the door to 2/s (his to create). Extension 3.5.4.
+
+## 9/2 14:50 — market-open sweep (G: "check any other mistakes")
+- **Announcer was OFF 13:27→14:24** (a non-empty announcer.stop after its 13:26 boot; only STOP ANNOUNCER.bat writes one). The 14:07 SPY fill never posted. Nobody could see it. Fix: bridge `/mode` now reports `announcer_alive`/`announcer_age` (heartbeat .announcer.alive < 120s) and the popup's bridge line says "· announcer on" or red "✕ ANNOUNCER OFF — run ANNOUNCER.bat". Extension 3.5.5. Rule: never write announcer.stop to restart it — use announcer.restart.
+- AAPL alert AI-read twice 2s apart (14:43). Harmless today (buying power), and the `_place_impl` ECHO guard already refuses the same contract OPEN within 20s — I briefly added a second dedup, found the existing one, removed mine. Watch: why the same alert reached the reader twice (embed re-render vs. two rooms) — needs the extension log.
+- `_expiry_age` strptime("%m/%d") without a year: Python 3.15 will break it; year now pinned explicitly.
+- Positions endpoint still 429s ~4 per 10 min (broker_positions + futures_positions + probes). Low impact (cached row served); noted.
+- Announcer adopt-at-boot 429 item: resolved (14:25 boot adopted 1 position first try).
