@@ -1753,7 +1753,27 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     const tabId = sender && sender.tab && sender.tab.id;
     let started = false;
     if (tabId != null && !LISTENING.has(tabId)) {
-      const r = await startListening(tabId, room);
+      // AUTO-JOIN (9/2): click into the live channel first so the tab has
+      // audio to capture; give Discord a few seconds to connect. The
+      // audible-tab listener may beat us to it — LISTENING check covers it.
+      // ONE join per 10 min across ALL tabs: several tabs of the same server
+      // each see the LIVE badge, and Discord allows one voice connection per
+      // account — a second join from another tab would yank the first.
+      const _now = Date.now();
+      const _recentJoin = (globalThis.VOICE_JOIN_AT || 0);
+      if (_now - _recentJoin < 10 * 60 * 1000) {
+        await addLog({ kind: "update",
+          why: "🔴 " + room + " — another room was joined <10 min ago; not switching voice", text: "" });
+      } else try {
+        globalThis.VOICE_JOIN_AT = _now;
+        const j = await chrome.tabs.sendMessage(tabId, { type: "JOIN_VOICE" });
+        await addLog({ kind: "update",
+          why: "🔴 " + room + " — auto-join: " + ((j && j.why) || "no answer"),
+          text: "" });
+        await new Promise(res => setTimeout(res, 5000));
+      } catch (e) { /* tab busy or reloading — fall through to the old path */ }
+      if (LISTENING.has(tabId)) { started = true; }
+      const r = started ? { ok: true } : await startListening(tabId, room);
       started = !!(r && r.ok);
       if (!started && r) {
         await addLog({ kind: "ignored",

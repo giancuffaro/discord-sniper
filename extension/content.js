@@ -326,6 +326,7 @@ try {
     if (!msg) return;
     if (msg.type === "GRAB_HISTORY") { grabHistory(msg.untilTs || 0); reply && reply({ ok: true }); }
     else if (msg.type === "STOP_GRAB") { grabbing = false; reply && reply({ ok: true }); }
+    else if (msg.type === "JOIN_VOICE") { joinLiveVoice().then(r => reply && reply(r)); return true; }
   });
 } catch (e) { /* orphaned copy after an update; the fresh one registers instead */ }
 
@@ -367,6 +368,51 @@ function liveScan() {
       channelId: channelId(), channelName: channelName(),
       where: hit, url: location.href }).catch(() => {});
   } catch (e) {}
+}
+
+/* AUTO-JOIN (9/2, G: "last time I knew it joined itself"). When a room
+ * shows the LIVE badge, click into that voice/stage channel so the tab
+ * starts playing audio — which is what makes the ears start. Same ethos
+ * as everything else here: it clicks what you could click, in your own
+ * browser, in a room you pay for. Best effort; the notification path
+ * stays as the fallback. */
+async function joinLiveVoice() {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const clickBtn = (rx) => {
+    for (const b of document.querySelectorAll("button, [role='button']")) {
+      const t = (b.textContent || b.getAttribute("aria-label") || "").trim();
+      if (rx.test(t)) { b.click(); return t; }
+    }
+    return null;
+  };
+  try {
+    // 1) already in a voice channel? Discord shows a "Disconnect" control.
+    for (const b of document.querySelectorAll("button, [role='button']")) {
+      const t = (b.getAttribute("aria-label") || b.textContent || "").trim();
+      if (/^disconnect$/i.test(t)) return { ok: true, why: "already in voice" };
+    }
+    // 2) the live channel in the sidebar: the LIVE pill's nearest link/row
+    let target = null;
+    const badge = document.querySelector(
+      '[class*="liveBadge" i], [class*="liveTag" i], [aria-label*="live" i][class*="badge" i]');
+    if (badge) target = badge.closest("a, [role='link'], [role='button'], li");
+    if (!target) {
+      for (const sp of document.querySelectorAll("nav span, aside span")) {
+        const t = (sp.textContent || "").trim();
+        if (t === "LIVE" || t === "Live") { target = sp.closest("a, [role='link'], [role='button'], li"); break; }
+      }
+    }
+    if (!target) return { ok: false, why: "no LIVE channel row found" };
+    target.click();
+    await sleep(1500);
+    // 3) a stage/voice channel opens with a join prompt — press it
+    let pressed = clickBtn(/^(join|join voice|join channel|join stage|join as audience|join the stage)$/i);
+    await sleep(1500);
+    if (!pressed) pressed = clickBtn(/^(join|join voice|join channel|join stage|join as audience)$/i);
+    return { ok: true, why: pressed ? ("pressed " + pressed) : "clicked the live channel" };
+  } catch (e) {
+    return { ok: false, why: String(e && e.message || e).slice(0, 80) };
+  }
 }
 
 // Belt-and-suspenders for the MutationObserver: re-read every message on
