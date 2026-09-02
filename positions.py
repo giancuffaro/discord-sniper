@@ -1691,11 +1691,28 @@ class Book:
             money = " — cost $%.0f" % paid
         if is_fut:
             money = " — futures: no premium out, the money moves at the exit"
+        # UNDERLYING AT FILL (9/1, G: "what price of the underlying are these
+        # entries filling at?"): read the stock right now, keep it on the
+        # position, and print it in the FILLED line so the journal and the
+        # announcer can carry it. Best effort — a quote hiccup never blocks.
+        und_s = ""
+        if not is_fut:
+            try:
+                _wbu = self._wbfor(p0) if p0 else None
+                _u = _wbu.stock_price(sym) if _wbu is not None else None
+                if _u:
+                    with self._lock:
+                        _pu = self._pos.get(key)
+                        if _pu is not None:
+                            _pu["und_at_fill"] = round(float(_u), 2)
+                    und_s = " · %s @ %.2f" % (sym, float(_u))
+            except Exception:                           # noqa: BLE001
+                und_s = ""
         self._event(key, "filled",
-                    "%s — filled %s at %.2f%s%s%s" % (sym, qty, float(price),
-                                                      "" if first else
-                                                      " (now holding %d)" % total,
-                                                      money, assumed))
+                    "%s — filled %s at %.2f%s%s%s%s" % (sym, qty, float(price),
+                                                        "" if first else
+                                                        " (now holding %d)" % total,
+                                                        und_s, money, assumed))
         self._arm_stop(key, side, strike, expiry, total, blended)
 
     def _became_nofill(self, key, why):

@@ -282,7 +282,16 @@ def main():
                             occ = None
                         open_pos[con] = {"entry": f["px"], "qty": f["qty"],
                                          "hit": set(), "occ": occ}
-                    line = "ENTRY %s @ %s x%s" % (con, f["px"], f["qty"])
+                    # underlying at fill (9/1, G's ask) — best effort
+                    _u = ""
+                    if f["strike"]:
+                        try:
+                            _up = wb.stock_price(f["sym"])
+                            if _up:
+                                _u = "  (%s @ %.2f)" % (f["sym"], float(_up))
+                        except Exception:               # noqa: BLE001
+                            _u = ""
+                    line = "ENTRY %s @ %s x%s%s" % (con, f["px"], f["qty"], _u)
                 else:
                     p = open_pos.pop(con, None)
                     pct = None
