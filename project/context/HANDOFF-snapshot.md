@@ -509,3 +509,6 @@ announcer.stop = "stop" (revive task and START HERE step 4.5 both honour it). Br
 - Combo entry tried the STOP_LOSS_LIMIT leg first — refused by Webull every time since 8/20 — then STOP_LOSS. One wasted order call per entry while racing a room. STOP_LOSS first now.
 - IWM 294C 0DTE @0.18 (ZT bot, 15:05): bid worked 90s, no seller, pulled clean. QQQ 710C x4 = his, left alone (> bot size). Tape follows QQQ 710C for the popup.
 - Throttles since 14:55: positions ×4, order detail/history/open ×3 each, place ×1 (the LIMIT leg). "Invalid account or insufficient permissions" ×2 — likely the futures account id on an options endpoint; watch.
+
+## 9/2 15:12 — TODO (G, "later"): MANAGE button for hand positions
+His QQQ 710C x4 (hand-bought, +17%) got no ratchet: adopt() leaves anything above bot size alone, and adopted trades never get a watchdog. Build: popup "MANAGE" on a broker row → bridge adopts it into the book with ratchet ON (stop_below at the current tier, resting stop + watchdog, exits only by ratchet/emergency). Real-money: placing that first stop needs his click. Also pending his answer: hand trades closeable on a room's exit call, or untouchable.
