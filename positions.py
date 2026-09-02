@@ -2238,8 +2238,9 @@ class Book:
                     return
                 # Accepted but NEVER filled, twice — the truth is you're
                 # still holding. Hand the claim back and keep watching;
-                # pretending it sold is how CLF/MP went wrong.
-                self.release(key)
+                # pretending it sold is how CLF/MP went wrong. No re-arm:
+                # the next tick claims again and would pull it right back.
+                self.release(key, rearm=False)
                 self._event(key, "stop-warn",
                             "%s — the stop's sell was accepted but never "
                             "FILLED (tried twice, repriced once). Still "
@@ -3080,9 +3081,12 @@ class Book:
                        else "; you still hold %d." % held))
         return held
 
-    def release(self, key):
+    def release(self, key, rearm=True):
         """The close didn't happen after all. Put it back — the claim AND the
-        resting stop claim() pulled on the way in.
+        resting stop claim() pulled on the way in (rearm=False for the one
+        caller that is about to claim again on its very next tick: the
+        watchdog's own stop-out loop, where a re-placed stop would only be
+        pulled a second later).
 
         9/2 11:43, SPY 766C 9/3: the pullback's stock-stop claimed the
         position (stop pulled at Webull), the sell was then refused as a
@@ -3098,7 +3102,7 @@ class Book:
             if p:
                 p["closing"] = False
                 pulled = p.pop("pulled_stop", None)
-        if pulled:
+        if pulled and rearm:
             try:
                 self.rearm_stop_after_failed_exit(key)
             except Exception:                           # noqa: BLE001

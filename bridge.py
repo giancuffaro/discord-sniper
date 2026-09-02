@@ -2326,6 +2326,29 @@ def _place_impl(order):
                     order["strike"] = held_pos.get("strike")
                 if not order.get("side") and held_pos.get("side"):
                     order["side"] = held_pos.get("side")
+                # SELL WHAT IS HELD (9/2 evening). NO-OTM buys the first OTM
+                # rung, not the strike they called (their IREN 42C -> our
+                # 40C today), and swings often carry a different expiry than
+                # the exit line names. Their "out IREN 42C" then tried to
+                # sell a 42C nobody holds: 417, four retries, the held 40C
+                # left standing with its stop pulled. The book resolved this
+                # exit to THEIR position in this ticker; the contract on that
+                # record is the one that leaves.
+                try:
+                    _hk = held_pos.get("strike")
+                    if held_pos.get("state") == positions.FILLED \
+                            and _hk is not None and order.get("strike") not in (None, "") \
+                            and abs(float(_hk) - float(order.get("strike"))) > 0.001:
+                        note("EXIT     %s — their %s was translated to your held "
+                             "%s at entry; selling the %s you actually hold"
+                             % (sym, order.get("strike"), _hk, _hk))
+                        order["strike"] = _hk
+                        if held_pos.get("expiry"):
+                            order["expiry"] = held_pos.get("expiry")
+                        if held_pos.get("side"):
+                            order["side"] = held_pos.get("side")
+                except (TypeError, ValueError):
+                    pass
                 # An exit reference so the sell never hinges on a live quote:
                 # their posted %, the last bid the watchdog saw, or — failing
                 # everything — the entry fill, so the exit records ~breakeven
