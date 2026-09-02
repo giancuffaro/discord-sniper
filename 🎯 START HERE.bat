@@ -292,7 +292,12 @@ rem  needs the url (2nd field).
 if defined CHROME (
   rem  The flags do two jobs. The first three stop Chrome throttling background
   rem  tabs - a room you're not looking at still gets read the instant a
-  rem  message lands. --process-per-site is the big RAM saver: all the discord
+  rem  message lands. (--process-per-site is GONE, 9/1: it packed every Discord
+  rem  tab into ONE renderer, Discord web bloats to 0.5-2 GB per tab after
+  rem  hours, and that single process hit Chrome's per-process V8 ceiling =
+  rem  "Chrome ran out of memory". One renderer per tab costs more total RAM
+  rem  but no single process can hit the wall; the extension's 2-hour
+  rem  memory-shed reload keeps each tab's bloat in check.) Old note: all the discord
   rem  tabs (same site) share ONE renderer process instead of one each, and the
   rem  Whop tabs share another - it cuts memory hard with this many rooms open.
   rem  --disable-features drops translate, casting and the occlusion check that
@@ -303,7 +308,7 @@ if defined CHROME (
   rem  rooms.txt and would open a second time in the loop below, but the
   rem  extension's own dupe-closer (oneTabPerChannel) tidies that up within
   rem  30 seconds - harmless.
-  start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --process-per-site --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!"
+  start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!"
   rem  Give Chrome itself a moment to be up before the flood.
   timeout /t 6 /nobreak >nul
   rem  THREE AT A TIME (his ask, 8/23): all ~40 rooms at once choked Chrome
