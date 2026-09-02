@@ -230,6 +230,21 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   from testing rooms. paper_app_key/secret in settings = dead config.
   TESTING mode itself is unchanged and still the default for every room.
 
+- CHROME OUT OF MEMORY (9/1): CAUSE = our own --process-per-site flag
+  packed every Discord tab into ONE renderer; Discord web bloats 0.5-2 GB
+  per tab after hours; that single process hit Chrome's per-process V8
+  ceiling. FIX: flag removed from START HERE (one renderer per tab — more
+  total RAM, no single-process wall) + MEMORY SHED in background.js
+  (v3.4.11): every 30s tick reloads at most ONE Discord room tab whose
+  last reload is 2h+ old — never the active tab, never a voice tab, never
+  9:28-9:40. Reloads are safe (content re-attaches; on-screen history is
+  never traded). Discord API is NOT an option for reading others' servers:
+  user-token automation = ToS ban risk; official bots need the server
+  owner to add them (same "install my app" pattern as Whop).
+- UNDERLYING AT FILL (9/1, G's ask): positions record und_at_fill; the
+  FILLED log line carries "· SYM @ price"; the announcer ENTRY post shows
+  "(SYM @ price)"; the journal has an "Underlying at fill" column.
+
 ## Operational truths
 - settings.json: ALL keys, gitignored, never pushed. Never run git write ops
   from the sandbox (locks can't be unlinked); AUTO PUSH.bat is a resident
