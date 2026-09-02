@@ -20,7 +20,7 @@ rem  a number on a menu lives in "EXTRAS.bat", for the rare day
 rem  something needs poking.
 rem
 rem  The 9:25 alarm is GONE (his call, 8/10) - mornings are his.
-rem  Re-running this file never touches tabs that are already open.
+rem  Re-running this file CLOSES Chrome and reopens every room (his call 9/2).
 rem ===========================================================
 
 set "SERVER_ID=525113944239767562"
@@ -273,24 +273,22 @@ rem  been opened"). Visible windows = his tabs, leave them alone. Background
 rem  only = kill it quietly and cold-start, so the performance flags apply.
 powershell -NoProfile -Command "$w = Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle }; if ($w) { exit 0 } else { exit 1 }"
 if not errorlevel 1 (
+  rem  HIS CALL 9/2 ("have it close Chrome and reopen everything itself")
+  rem  replaces the 8/10 leave-tabs-alone rule: a click means a fresh
+  rem  start, every time. Five-second countdown so a mis-click can be
+  rem  cancelled with Ctrl+C. The bridge and its resting stops are
+  rem  untouched - only the browser restarts (~3 min of room reading).
   echo.
-  echo   ==========================================================
-  echo   [5/5] Chrome is ALREADY OPEN - so no tabs were touched.
-  echo         That is the rule you set: a re-run never disturbs
-  echo         open tabs. Everything else was checked and is fine.
-  echo.
-  echo         Want the fresh 26-room open? CLOSE CHROME first
-  echo         ^(every window^), then run this again.
-  echo   ==========================================================
-  echo.
-  echo   This window closes in 15 seconds.
-  timeout /t 15 >nul
-  goto chromedone
+  echo   [5/5] Chrome is open - closing it and reopening every room
+  echo         fresh in 5 seconds. Ctrl+C now to keep it as it is.
+  timeout /t 5 >nul
+  taskkill /F /IM chrome.exe >nul 2>&1
+  timeout /t 3 /nobreak >nul
 )
 tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
 if not errorlevel 1 (
-  echo   [5/5] Chrome was only running in the BACKGROUND - no windows,
-  echo         no tabs. Closing that ghost so the rooms open fresh...
+  echo   [5/5] Chrome is still running in the background - closing it
+  echo         so the rooms open fresh...
   taskkill /F /IM chrome.exe >nul 2>&1
   timeout /t 2 /nobreak >nul
 )

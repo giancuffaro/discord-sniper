@@ -333,6 +333,13 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   resolveAdd/resolve_add turn an "added <full contract>" you are NOT in
   into an OPEN entry. A bare "added to SPY" with no contract still refuses.
 
+- START HERE = FRESH START (G, 9/2): a click now CLOSES Chrome (5s
+  countdown, Ctrl+C aborts) and reopens every room, replacing the 8/10
+  "never touch open tabs" rule. It also launches the Fill Announcer
+  (step 4.5, single-instance, honours a non-empty announcer.stop). The
+  logon Startup entry waits 60s before launching the announcer (the
+  instant fire threw "Can not find script file").
+
 ## Operational truths
 - settings.json: ALL keys, gitignored, never pushed. Never run git write ops
   from the sandbox (locks can't be unlinked); AUTO PUSH.bat is a resident
