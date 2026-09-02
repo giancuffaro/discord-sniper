@@ -2046,6 +2046,6 @@ wireDrafts();
 loadRoomsForPopup().then(render);
 setInterval(render, 2000);
 refreshMode();
-setInterval(refreshMode, 4000);
+setInterval(refreshMode, 2000);
 loadDays();
 loadScoreboard();

@@ -2864,8 +2864,9 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     live_px = None
                     if d.get("kind") == "option" and d.get("expiry") and d.get("strike"):
-                        occ = webull_options.occ_symbol(
-                            d["symbol"], str(d["expiry"]),
+                        from webull_options import occ_symbol as _occ
+                        occ = _occ(
+                            d["symbol"], str(d["expiry"])[:10],
                             "CALL" if d.get("side") == "CALLS" else "PUT", d["strike"])
                         qb = getattr(BOOK, "quotes", None) if BOOK is not None else None
                         if qb is not None:

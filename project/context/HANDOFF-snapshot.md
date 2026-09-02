@@ -473,3 +473,6 @@ What streams now, per data type (the honest ceiling for each):
 - **Option quotes** → no stream exists at Webull (MQTT = stocks/ETFs/futures/crypto only). The 1/s batched quote bus stays the ceiling. `option_tape.csv` now actually records every sweep (`QuoteBus.record_to`) — earlier note said it did; it hadn't landed.
 
 Verify after RESTART BRIDGE: `curl 127.0.0.1:8787/stream` → `connected: true`, `msgs` climbing, `fresh: {SPY: ...}`. Bridge log line "STREAM on". If you see `[stream] dropped (403...)` the app key lacks the OpenAPI market-data subscription (developer.webull.com → Subscribe Advanced Quotes) — HTTP prices keep working meanwhile. If "SDK has no DataStreamingClient" the bridge Python needs `paho-mqtt` (FIX SDK DEPS.bat pins it).
+
+## 9/2 PM — popup P&L lag (G: "huge delay in pnl at the popup")
+Cause: /positions served Webull's positions endpoint (cached 8s, broker mark lags) and the popup asked every 4s → 10–15s stale. Fix: /positions now overlays the quote bus bid (1/s) for options and the MQTT push for stocks onto every row (`live_quote: true`); broker numbers only when nothing fresh. Popup refresh 4s→2s. Extension 3.5.3 — reload it in chrome://extensions.
