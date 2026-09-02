@@ -15,6 +15,13 @@
 const RE_CALLER = /@\s*([A-Za-z0-9_.\-]{2,24})\s*\((admin|mod|analyst|scribe)\)/i;
 const RE_PING = /@(everyone|here)\b/gi;
 const RE_HDR = /^([A-Za-z0-9_.\- ]{2,24})\s*\((scribe|admin|mod)\)\s*[—\-]+\s*\d{1,2}:\d{2}\s*(AM|PM)\s*/i;
+// SERVER TAG junk (9/2, found on Vero's SPY 763C that parsed as nothing):
+// Discord's 2026 "Server Tag" badge leaks into the captured text as
+// "Vero [PAID], Server Tag: PAID PAID Owner — 10:18 AM Wednesday, September
+// 2, 2026 at 10:18 AM" — before, after, or on both sides of the call. Strip
+// every copy: name + [TAG], the "Server Tag: X X" echo, an optional role
+// word, and the dash-timestamp that follows. Mirrors signals.py.
+const RE_STAG = /(?:[A-Za-z0-9_.$|&' \-]{1,40}?\s*\[[^\]]{1,16}\],?\s*)?Server Tag:\s*\S{1,16}(?:\s+\S{1,16})?(?:\s+(?:Owner|Admin|Founder|CEO|Mod|Moderator|Analyst|Trader))?(?:\s*[—\-]+\s*(?:\d{1,2}\/\d{1,2}\/\d{2,4},?\s*)?\d{1,2}:\d{2}\s*[AP]M(?:\s+[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?)?/gi;
 const RE_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2190}-\u{27BF}\u{FE0F}\u{200D}]/gu;
 
 // The $ before the strike is Brett's habit: "In NVDA $210C to July 29th".
@@ -354,7 +361,7 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "NOW", "DONE", "OFF"]);
 
 function cleanText(raw) {
-  let t = String(raw || "").trim().replace(RE_HDR, "");
+  let t = String(raw || "").trim().replace(RE_STAG, " ").replace(RE_HDR, "");
   // ANSI color codes in Namrood's alerts ("[1;37;44mMETA") glued their
   // trailing "m" onto the ticker — META became MMETA (live, 8/17-18).
   // Strip them, with or without the ESC byte. Mirrors signals.py.
