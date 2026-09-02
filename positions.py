@@ -46,7 +46,7 @@ import threading
 import time
 # v3.5.0 (9/2, G: "live tomorrow"): tiered ratchet off what he PAID
 from ratchet_tiers import (ratchet_locked_pct as tier_locked_pct,
-                           ratchet_stop_price, ratchet_plan)
+                           ratchet_stop_price, ratchet_plan, anti_clip)
 
 
 def _tick_round(px):
@@ -2477,6 +2477,10 @@ class Book:
             locked = tier_locked_pct(gain, fill)
             if locked is None:
                 return           # hasn't reached the first rung yet
+            # ANTI-CLIP (9/2): never closer than 40% of the gain — the tier
+            # rungs cap out at 60% of what the trade has made, so a +200%
+            # runner keeps 80% of room instead of being scratched by a rung.
+            locked = anti_clip(locked, gain)
             already = p.get("ratchet_locked_pct")
             if already is not None and locked <= float(already):
                 return           # never loosen a stop that's already this high
