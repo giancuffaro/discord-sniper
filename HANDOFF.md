@@ -464,3 +464,12 @@ At the end of any session that changed a rule, add/edit the rule above,
 bump the "Last updated" line, and let AUTO PUSH sweep it. The bridge's own
 daily handoffs/HANDOFF-<date>.md is a thin status snapshot only — this file
 is the memory.
+
+## 9/2 PM — STREAM BUS: "stream all data from the best source we can"
+
+What streams now, per data type (the honest ceiling for each):
+- **Fills** → Webull gRPC push (`TradeEventsClient`). Announcer already wakes on it; bridge still polls fills at `fill_poll_seconds` (1s) — good enough, push wiring for the bridge is a next step.
+- **Underlying stock/ETF prices** → Webull MQTT (`stream_bus.py`, `StockStream`). Attached to every client as `wb.stream`; `stock_price()` answers from the push when <3s old, else the old HTTP path. Bridge pre-watches SPY/QQQ/IWM + Mag7; anything else auto-subscribes on first ask. One connection (limit 5/key), fresh session id on every reconnect, daemon thread, all try/except — cannot block trading.
+- **Option quotes** → no stream exists at Webull (MQTT = stocks/ETFs/futures/crypto only). The 1/s batched quote bus stays the ceiling. `option_tape.csv` now actually records every sweep (`QuoteBus.record_to`) — earlier note said it did; it hadn't landed.
+
+Verify after RESTART BRIDGE: `curl 127.0.0.1:8787/stream` → `connected: true`, `msgs` climbing, `fresh: {SPY: ...}`. Bridge log line "STREAM on". If you see `[stream] dropped (403...)` the app key lacks the OpenAPI market-data subscription (developer.webull.com → Subscribe Advanced Quotes) — HTTP prices keep working meanwhile. If "SDK has no DataStreamingClient" the bridge Python needs `paho-mqtt` (FIX SDK DEPS.bat pins it).
