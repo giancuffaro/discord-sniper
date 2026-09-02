@@ -752,19 +752,28 @@ class WebullOptions:
             fns = [f for f in fns if f[0] == remembered_fn] + \
                   [f for f in fns if f[0] != remembered_fn]
 
+        tries = []
         for _name, fn in fns:
             for shape in shapes:
                 args, kwargs = shape
                 try:
                     self._pace_batch()
                     body = fn(*args, **kwargs)
-                except Exception:                       # noqa: BLE001
+                except Exception as _e:                 # noqa: BLE001
+                    tries.append("%s%s: %s" % (_name, "" if not tries else "", str(_e)[:40]))
                     continue
                 parsed = self._parse_batch(body, occs)
                 if parsed:
                     self._batch_shape = shape
                     self._batch_fn = _name
+                    if tries and time.time() - getattr(self, "_hunt_said", 0) > 60:
+                        # HUNT TELL (9/2): every failed try here is a real
+                        # HTTP call and a budget token. Say what was wasted.
+                        self._hunt_said = time.time()
+                        print("[webull] batch quote won on %s after %d failed tries: %s"
+                              % (_name, len(tries), " | ".join(tries[:4])))
                     return parsed
+                tries.append("%s: empty (%s)" % (_name, str(body)[:60]))
 
         # Batched form unavailable on this SDK — fall back one at a time, and
         # say so ONCE so the log explains why sweeps got expensive.
