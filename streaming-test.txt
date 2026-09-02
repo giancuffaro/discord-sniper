@@ -1,1 +1,50 @@
 === venv pip install ===
+  error: subprocess-exited-with-error
+  
+  Getting requirements to build wheel did not run successfully.
+  exit code: 1
+  
+  [21 lines of output]
+  Traceback (most recent call last):
+    File "C:\Users\Hulk\Desktop\discord-sniper\.venv-stream\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 389, in <module>
+      main()
+    File "C:\Users\Hulk\Desktop\discord-sniper\.venv-stream\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 373, in main
+      json_out["return_val"] = hook(**hook_input["kwargs"])
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\Hulk\Desktop\discord-sniper\.venv-stream\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 143, in get_requires_for_build_wheel
+      return hook(config_settings)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\Hulk\AppData\Local\Temp\pip-build-env-oj6cy6vt\overlay\Lib\site-packages\setuptools\build_meta.py", line 333, in get_requires_for_build_wheel
+      return self._get_build_requires(config_settings, requirements=[])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\Hulk\AppData\Local\Temp\pip-build-env-oj6cy6vt\overlay\Lib\site-packages\setuptools\build_meta.py", line 301, in _get_build_requires
+      self.run_setup()
+    File "C:\Users\Hulk\AppData\Local\Temp\pip-build-env-oj6cy6vt\overlay\Lib\site-packages\setuptools\build_meta.py", line 520, in run_setup
+      super().run_setup(setup_script=setup_script)
+    File "C:\Users\Hulk\AppData\Local\Temp\pip-build-env-oj6cy6vt\overlay\Lib\site-packages\setuptools\build_meta.py", line 317, in run_setup
+      exec(code, locals())  # noqa: S102 # exec is intentional here
+      ^^^^^^^^^^^^^^^^^^^^
+    File "<string>", line 43, in <module>
+  ModuleNotFoundError: No module named 'pkg_resources'
+  [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+error: subprocess-exited-with-error
+
+Getting requirements to build wheel did not run successfully.
+exit code: 1
+
+See above for output.
+
+note: This error originates from a subprocess, and is likely not a problem with pip.
+=== test === 
+====================================================================
+WEBULL STREAMING TEST — do options come through?
+Market: CLOSED (outside 9:30-16:00) — Wed 01:44 ET
+
+  MARKET IS CLOSED. No prices will arrive, and that is FINE.
+  The answer comes from whether the SUBSCRIPTION is accepted,
+  which Webull answers whether the market is open or not.
+====================================================================
+The Webull market-data SDK isn't installed. Run:
+    pip install webull-python-sdk-mdata webull-python-sdk-quotes-core
