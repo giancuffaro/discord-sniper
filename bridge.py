@@ -2851,7 +2851,43 @@ class Handler(BaseHTTPRequestHandler):
                                     .get("deepgram_key", "")})
         if self.path.startswith("/positions"):
             # The real Webull account positions, so the popup mirrors the broker.
-            return self._json(200, {"positions": broker_positions(),
+            # LIVE OVERLAY (9/2, G: "huge delay in pnl at the popup"): Webull's
+            # positions endpoint is cached 8s here and its own mark lags; the
+            # quote bus sweeps every option we hold once a second. So the
+            # popup's "now"/P&L is repainted from the freshest bus bid (or
+            # the MQTT push for stocks) on every ask; the broker row is the
+            # fallback when nothing fresh is in hand.
+            rows = broker_positions()
+            out = []
+            for r in rows:
+                d = dict(r)
+                try:
+                    live_px = None
+                    if d.get("kind") == "option" and d.get("expiry") and d.get("strike"):
+                        occ = webull_options.occ_symbol(
+                            d["symbol"], str(d["expiry"]),
+                            "CALL" if d.get("side") == "CALLS" else "PUT", d["strike"])
+                        qb = getattr(BOOK, "quotes", None) if BOOK is not None else None
+                        if qb is not None:
+                            qb.watch(occ)
+                            _a, _b, _ = qb.get(occ)
+                            if _b:
+                                live_px = float(_b)
+                        mult = 100.0
+                    elif d.get("kind") == "stock":
+                        st = getattr(WB, "stream", None)
+                        live_px = st.price(d["symbol"]) if st is not None else None
+                        mult = 1.0
+                    if live_px and d.get("fill"):
+                        q = abs(int(d.get("qty") or 0)) or 1
+                        d["last"] = live_px
+                        d["pl"] = round((live_px - float(d["fill"])) * mult * q, 2)
+                        d["pl_pct"] = round((live_px / float(d["fill"]) - 1.0) * 100, 1)
+                        d["live_quote"] = True
+                except Exception:                       # noqa: BLE001
+                    pass
+                out.append(d)
+            return self._json(200, {"positions": out,
                                     "connected": WB is not None})
         if self.path.startswith("/fills"):
             # What actually happened to the orders the browser sent. It asks
