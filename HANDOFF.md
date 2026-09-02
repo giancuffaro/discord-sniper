@@ -427,6 +427,16 @@ exposes, same day. All four of 8/31's finds were fixed within the hour:
 - Chrome: hardware acceleration OFF recommended (GPU black-tab disease).
 - His L account: verify no orphan positions after mirror exits.
 
+## The Claude Project (G's claude.ai project, set up 9/2)
+project/PROJECT-INSTRUCTIONS.md is its Instructions; project/context/ holds
+its Context uploads. RULE: whenever this HANDOFF changes materially (a rule
+added/changed, a system built or retired), copy it over
+project/context/HANDOFF-snapshot.md (fixed name, so a re-upload replaces),
+refresh rooms-snapshot.txt if rooms changed, and END THE REPLY with:
+"📌 Update the Project: re-upload project/context/HANDOFF-snapshot.md".
+The daily journal task does the copy automatically at 16:45; sessions do it
+by hand. The live HANDOFF.md always wins over the Project copy.
+
 ## How to update this file
 At the end of any session that changed a rule, add/edit the rule above,
 bump the "Last updated" line, and let AUTO PUSH sweep it. The bridge's own
