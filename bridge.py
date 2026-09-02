@@ -1388,7 +1388,13 @@ def _expiry_recently_past(exp):
         m = None
         for fmt in ("%m/%d/%Y", "%m/%d/%y", "%m/%d"):
             try:
-                m = datetime.strptime(s, fmt)
+                if fmt == "%m/%d":
+                    # Python 3.15 will stop guessing a year for "m/d"
+                    # (DeprecationWarning today): pin this year explicitly;
+                    # the roll-forward logic below still fixes January.
+                    m = datetime.strptime("%s/%d" % (s, eastern.now().year), "%m/%d/%Y")
+                else:
+                    m = datetime.strptime(s, fmt)
                 break
             except ValueError:
                 continue
@@ -1646,6 +1652,9 @@ def pullback_manager():
     return _PULLBACK
 
 
+_RECENT_CONTRACTS = {}
+
+
 def place(order):
     """Retry-safe wrapper around the real placement. The extension retries an
     order the socket refused (a bridge restart). If a retry lands after a first
@@ -1663,7 +1672,32 @@ def place(order):
             note("DEDUP    ignored a repeat of %s (retry) — not placed twice"
                  % coid)
             return prior[1]
+    # SAME-CONTRACT DEDUP (9/2, 14:43 AAPL read twice 2s apart — two
+    # reads of one alert, two coids): an OPEN for the exact contract that
+    # was OPENed in the last 15s is the same call arriving twice (a relay,
+    # an embed re-render, a re-scan), not a second trade. One in, once.
+    if order.get("action") == "OPEN":
+        try:
+            _ck = "%s|%s|%s|%s" % (str(order.get("symbol") or "").upper(),
+                                   order.get("strike"), order.get("expiry"),
+                                   str(order.get("side") or "").upper())
+            _now = time.time()
+            _prev = _RECENT_CONTRACTS.get(_ck)
+            if _prev is not None and _now - _prev[0] < 15:
+                note("DEDUP    %s already opened %.0fs ago — same call twice, not placed again"
+                     % (order.get("symbol"), _now - _prev[0]))
+                return _prev[1]
+        except Exception:                               # noqa: BLE001
+            _ck = None
+    else:
+        _ck = None
     result = _place_impl(order)
+    if _ck:
+        try:
+            if (result or {}).get("ok") is not False:
+                _RECENT_CONTRACTS[_ck] = (time.time(), result)
+        except Exception:                               # noqa: BLE001
+            pass
     if dedupe:
         try:
             _RECENT_COIDS[coid] = (time.time(), result)
