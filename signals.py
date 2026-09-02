@@ -129,7 +129,7 @@ RE_ADD = re.compile(r"\badd(?:ed|ing|s)?\s+(?:to|more|into)\b|\badding\b"
                     # "added $ONDS 10c 7/17" — past-tense add straight onto a
                     # contract. "adding" alone matched but "added <contract>"
                     # slipped through and read as nothing (a missed entry).
-                    r"|\badd(?:ed|ing)?\s+\$?[A-Za-z]{1,5}\s+\$?\d{1,4}(?:\.\d{1,2})?\s*[cp]\b"
+                    r"|\badd(?:ed|ing)?\s+\$?[A-Za-z]{1,5}\s+\$?\d{1,4}(?:\.\d{1,2})?\s*(?:calls?|puts?|[cp])\b"
                     r"|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b"
                     r"|\b(?:new|updated)\s+(?:avg|average)\b", re.IGNORECASE)
 # The premium on an add, read in priority order and NEVER off a stock level.

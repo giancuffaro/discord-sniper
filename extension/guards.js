@@ -376,6 +376,21 @@ async function resolveAdd(sig, author, cfg) {
   }
   const pos = findHeld(held, who, sig.symbol);
   if (!pos) {
+    // BOKA/RWGates dialect (9/2): "added $DRAM $57 calls 9/18" is how
+    // Jonny ANNOUNCES an entry — "added" is his buy verb. A full contract
+    // (strike + side + expiry) you are NOT in is an entry, not an average-
+    // in. A bare "added to SPY" with no contract still refuses: nothing
+    // says which strike.
+    if (sig.strike != null && sig.side && sig.expiry) {
+      sig.action = "OPEN";
+      sig.needs_add = false;
+      sig.qty = 1;
+      sig.fire = true;
+      sig.why = "entry: OPEN " + sig.symbol + " " + sig.strike +
+                (String(sig.side).startsWith("C") ? "C" : "P") + " " + sig.expiry +
+                " (their \"added\" is an entry — you're not in it)";
+      return sig;
+    }
     sig.why = "they added to their " + sig.symbol + ", but you're not in it — " +
               "there's nothing to average into";
     return sig;

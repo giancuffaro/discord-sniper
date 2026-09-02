@@ -235,7 +235,7 @@ const RE_BARE_FILL = /^(?:just\s+|we\s+|i\s+|i've\s+|ive\s+|we've\s+)*(?:filled|
 // "added $ONDS 10c 7/17" — past-tense add straight onto a contract. "adding"
 // alone matched but "added <contract>" slipped through and read as nothing (a
 // missed entry).
-const RE_ADD = /\badd(?:ed|ing|s)?\s+(?:to|more|into)\b|\badding\b|\badd(?:ed|ing)?\s+\$?[A-Za-z]{1,5}\s+\$?\d{1,4}(?:\.\d{1,2})?\s*[cp]\b|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b|\b(?:new|updated)\s+(?:avg|average)\b/i;
+const RE_ADD = /\badd(?:ed|ing|s)?\s+(?:to|more|into)\b|\badding\b|\badd(?:ed|ing)?\s+\$?[A-Za-z]{1,5}\s+\$?\d{1,4}(?:\.\d{1,2})?\s*(?:calls?|puts?|[cp])\b|\baverag(?:e|ed|ing)\s+(?:in|down|up)\b|\b(?:new|updated)\s+(?:avg|average)\b/i;
 // The price out of "new avg is 2.8", "avg 3.05", "average: $2.90". Never a
 // percentage — "avg gain 30%" is a result, not a price.
 const RE_AVG_PRICE = /\b(?:avg|average)\w*\s*(?:is|of|at|around|near|:|=|@)?\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)/i;

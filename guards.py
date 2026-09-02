@@ -384,6 +384,22 @@ class Guards:
 
         pos = self._find_held(who, sig.symbol)
         if not pos:
+            # BOKA/RWGates dialect (9/2): "added $DRAM $57 calls 9/18" is an
+            # ENTRY announcement when you're not in it (full contract only;
+            # a bare "added to SPY" still refuses — no strike named).
+            if (getattr(sig, "strike", None) is not None
+                    and getattr(sig, "side", None)
+                    and getattr(sig, "expiry", None)):
+                sig.action = "OPEN"
+                sig.needs_add = False
+                sig.qty = 1
+                sig.fire = True
+                sig.why = ("entry: OPEN %s %s%s %s (their \"added\" is an "
+                           "entry — you're not in it)"
+                           % (sig.symbol, sig.strike,
+                              "C" if str(sig.side).startswith("C") else "P",
+                              sig.expiry))
+                return sig
             sig.why = ("they added to their %s, but you're not in it — there's "
                        "nothing to average into" % sig.symbol)
             return sig
