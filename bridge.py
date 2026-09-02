@@ -1745,6 +1745,12 @@ def _place_impl(order):
             return False, "a stop move needs a level and a book"
         _k2 = find_key(order)
         _p2 = BOOK.info(_k2)
+        if BOOK.is_hand_trade(_p2):
+            # Their stock-level stop would arm a watcher that SELLS his
+            # trade when the level prints. His trade, his stop. (9/2)
+            return False, ("that %s is your own hand trade — a room's stop "
+                           "level doesn't apply to it; noted, nothing done"
+                           % sym)
         if not _p2 or _p2.get("state") != positions.FILLED:
             return False, ("no held %s position of theirs to move a stop "
                            "on — noted, nothing done" % sym)
@@ -1933,6 +1939,11 @@ def _place_impl(order):
     if action == "TRIM":
         if BOOK is None:
             return False, "no book yet, nothing to trim"
+        if BOOK.is_hand_trade(BOOK.info(key)):
+            note("TRIM     %s — that's YOUR own trade; a room's trim can't "
+                 "touch it. Nothing sent." % sym)
+            return False, ("that %s is your own hand trade — rooms can't trim "
+                           "it, so nothing was sent." % sym)
         st = BOOK.state_of(key)
         if st == positions.WORKING:
             return False, ("their trim landed while your bid on %s was still "
@@ -3834,7 +3845,9 @@ class Handler(BaseHTTPRequestHandler):
             _cands = []
             if BOOK is not None:
                 try:
-                    _cands = [(k, BOOK.info(k)) for k in BOOK.find_by_symbol(sym)]
+                    # rooms=True: his hand trades are not candidates (9/2)
+                    _cands = [(k, BOOK.info(k))
+                              for k in BOOK.find_by_symbol(sym, rooms=True)]
                     _cands = [(k, p) for k, p in _cands if p]
                     _who = str(order.get("trader") or "").strip().lower()
                     if _who and len(_cands) > 1:

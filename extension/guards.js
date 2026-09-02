@@ -254,6 +254,20 @@ async function guardCheck(sig, ctx, cfg) {
       return { allowed: false, reason: "you're not in " + sig.symbol +
         ", so there's nothing to " + (sig.action === "TRIM" ? "trim" : "close") +
         " — the order was not sent" };
+    // HIS HAND TRADES ARE UNTOUCHABLE (9/2, G: "they shouldn't"). If the
+    // only record(s) in this ticker are positions adopted off the account
+    // with no trader on them (or Gian's name), the room is talking about
+    // its own trade, not his. The bridge refuses this too; saying it here
+    // saves the round trip and names the reason in the log.
+    const _inSym = Object.keys(st.positions).filter(k => keySymbol(k) === sig.symbol);
+    const _hand = (k) => {
+      const p = st.positions[k] || {};
+      return !!p.adopted && ["?", "gian", ""].includes(String(p.who || "?").toLowerCase());
+    };
+    if (_inSym.length && _inSym.every(_hand) && !st.positions[posKey(who, sig.symbol)])
+      return { allowed: false, reason: "that " + sig.symbol + " is YOUR own hand " +
+        "trade (picked up off the account, not a room's call) — rooms can't " +
+        (sig.action === "TRIM" ? "trim" : "close") + " it. Nothing was sent." };
   }
 
   const last = st.recent[signalKey(sig)];
