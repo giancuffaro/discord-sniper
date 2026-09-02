@@ -1,0 +1,111 @@
+============================================================================
+THE ANTI-CLIP RULE — tight at first, then room to run
+============================================================================
+
+WHAT IT IS
+  The tier rungs stay exactly as they were. On top of them, one rule:
+
+     the stop may never sit closer than 40%% of the gain already made.
+
+  That does nothing on a normal trade -- with a 5%% rung it only starts
+  binding once you're up 12.5%%. Above that it takes over and keeps the
+  stop a proportional distance back, so a runner is never strangled.
+
+WHY PROPORTIONAL, NOT A THRESHOLD
+  How much room a trade needs depends on how far it has already gone.
+  A 15%% winner swinging 15%% is over. A 200%% winner swinging 15%% is
+  breathing. A fixed rung can't tell those apart; a share of the gain can.
+  It also means there is no "widen at +X%%" number to guess wrong.
+
+WHERE 0.40 CAME FROM -- AND WHAT IT ISN'T
+  520 simulated trades, nine names, real bars, then bootstrapped 4,000x.
+  k=0.40 and k=0.60 both beat the old rule in 100%% of resamples and are
+  statistically TIED with each other. 0.40 is the tighter of the two, so
+  it gives back less on a reversal. Anything from 0.35 to 0.60 is the same
+  decision. It is NOT a tuned optimum and should not be treated as one.
+
+============================================================================
+THE LADDER
+============================================================================
+
+  PAID $0.50   arms +25%, first lock +10%, rung 15.0%
+    gain     locks at    stop      driven by
+     +10%    -- not armed --
+     +15%    -- not armed --
+     +25%      +10.0%   $  0.55   tier rung
+     +40%      +24.0%   $  0.62   ANTI-CLIP
+     +50%      +25.0%   $  0.62   tier rung
+    +100%      +60.0%   $  0.80   ANTI-CLIP
+    +200%     +120.0%   $  1.10   ANTI-CLIP
+    +300%     +180.0%   $  1.40   ANTI-CLIP
+
+  PAID $1.50   arms +15%, first lock +0%, rung 10.0%
+    gain     locks at    stop      driven by
+     +10%    -- not armed --
+     +15%       +0.0%   $  1.50   tier rung
+     +25%      +10.0%   $  1.65   tier rung
+     +40%      +20.0%   $  1.80   tier rung
+     +50%      +30.0%   $  1.95   tier rung
+    +100%      +60.0%   $  2.40   ANTI-CLIP
+    +200%     +120.0%   $  3.30   ANTI-CLIP
+    +300%     +180.0%   $  4.20   ANTI-CLIP
+
+  PAID $2.50   arms +10%, first lock +5%, rung 5.0%
+    gain     locks at    stop      driven by
+     +10%       +5.0%   $  2.62   tier rung
+     +15%       +9.0%   $  2.73   ANTI-CLIP
+     +25%      +15.0%   $  2.88   ANTI-CLIP
+     +40%      +24.0%   $  3.10   ANTI-CLIP
+     +50%      +30.0%   $  3.25   ANTI-CLIP
+    +100%      +60.0%   $  4.00   ANTI-CLIP
+    +200%     +120.0%   $  5.50   ANTI-CLIP
+    +300%     +180.0%   $  7.00   ANTI-CLIP
+
+  PAID $5.00   arms +10%, first lock +5%, rung 5.0%
+    gain     locks at    stop      driven by
+     +10%       +5.0%   $  5.25   tier rung
+     +15%       +9.0%   $  5.45   ANTI-CLIP
+     +25%      +15.0%   $  5.75   ANTI-CLIP
+     +40%      +24.0%   $  6.20   ANTI-CLIP
+     +50%      +30.0%   $  6.50   ANTI-CLIP
+    +100%      +60.0%   $  8.00   ANTI-CLIP
+    +200%     +120.0%   $ 11.00   ANTI-CLIP
+    +300%     +180.0%   $ 14.00   ANTI-CLIP
+
+
+============================================================================
+RESULT ON THE BACKTEST
+============================================================================
+
+                       total        win rate
+  OLD 3.4.11           +2,436          20%
+  tiers, no anti-clip  +2,872          31%
+  tiers + anti-clip    +6,433          31%
+
+  mean +7.69 per trade, t = 2.93 -- this one IS significant in dollars,
+  where the plain tiers were not (t = 0.42).
+  Beats the old rule in 100%% of 4,000 bootstrap resamples.
+  Better on 95 trades, worse on 69.
+
+  Per symbol, versus the old rule:
+    TSLA +1,327   META +1,269   SPY  +787   NVDA +168   MSFT +159
+    AMZN   +154   GOOGL   +76   QQQ   +56   AAPL   +1
+  Nine of nine improved. Nothing got worse.
+
+  THE POINT: it recovers the runners the fixed tiers were clipping WITHOUT
+  giving up the win-rate gain. META went from +1,343 (clipped) to +3,589 --
+  ahead of even the old wide rule's +2,320.
+
+============================================================================
+WHAT THIS STILL ISN'T
+============================================================================
+
+  Three quiet days, nine names, one market regime, and my IV model rather
+  than real option quotes. The bootstrap proves the answer doesn't hinge on
+  a few specific trades WITHIN this sample. It cannot prove the sample
+  represents a fast tape, an event day, or your actual rooms.
+
+  The median trade is -9 under every version of this rule, same as before.
+  All the gain is in the tail. Your equity curve is still decided by rare
+  big winners -- this rule just stops the ratchet killing them.
+
