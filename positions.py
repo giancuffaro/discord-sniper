@@ -2513,20 +2513,45 @@ class Book:
             return
         if wb is None:
             return
+        _cancelled_old = False
         try:
-            if old_oid:
+            new_oid = placed = None
+            # v3.5.0 B4 — REPLACE first: modifies the resting stop in place,
+            # so there is never a moment with no stop. The old cancel-then-
+            # place left a real naked window and lied about it in the log.
+            if old_oid and hasattr(wb, "replace_stop"):
                 try:
-                    wb.cancel(old_oid)
+                    new_oid, placed = wb.replace_stop(old_oid, sym, side,
+                                                      strike, expiry, qty,
+                                                      fill, stop_price=new_stop)
                 except Exception:                       # noqa: BLE001
-                    pass
-            new_oid, placed = wb.place_stop(sym, side, strike, expiry, qty,
-                                            fill, stop_price=new_stop)
+                    new_oid = placed = None             # fall through
+            if placed is None:
+                if old_oid:
+                    try:
+                        wb.cancel(old_oid)
+                        _cancelled_old = True
+                    except Exception:                   # noqa: BLE001
+                        pass
+                new_oid, placed = wb.place_stop(sym, side, strike, expiry, qty,
+                                                fill, stop_price=new_stop)
         except Exception as e:                          # noqa: BLE001
+            # Tell the truth about what is resting (the old log line claimed
+            # the old stop was "still in place" even after cancelling it).
             self._event(key, "stop-warn",
                         "%s — up %.0f%%, but the ratchet couldn't move the "
-                        "resting stop to %.2f (%s). The old stop is still in "
-                        "place; the watchdog on this PC covers the gap."
-                        % (sym, gain, new_stop, str(e)[:90]))
+                        "resting stop to %.2f (%s). %s"
+                        % (sym, gain, new_stop, str(e)[:90],
+                           ("NO broker stop is resting right now — the "
+                            "watchdog on this PC is the only guard; retrying "
+                            "next pass." if _cancelled_old else
+                            "The old stop is still in place; the watchdog "
+                            "on this PC covers the gap.")))
+            if _cancelled_old:
+                with self._lock:
+                    q = self._pos.get(key)
+                    if q is not None:
+                        q["stop_order_id"] = None       # so the next pass re-arms
             return
         with self._lock:
             q = self._pos.get(key)

@@ -1633,6 +1633,38 @@ class WebullOptions:
             body, "client_order_id", "clientOrderId", "order_id", "orderId")
         return (str(oid) if oid else None), stop
 
+    def replace_stop(self, old_oid, symbol, side, strike, expiry, qty,
+                     fill_price, stop_price):
+        """v3.5.0 B4: move a resting stop IN PLACE — one call, no naked
+        moment. The ratchet used to cancel the old stop and then place the
+        new one; a failed placement between those two lines left the
+        position with no broker-side stop while the log claimed otherwise.
+        Sends the same order body as place_stop through the SDK's replace
+        verb with the EXISTING client_order_id. Raises if the SDK has no
+        replace verb or refuses — the caller then falls back to the old
+        cancel-then-place path, so a bad replace can never cost a stop."""
+        if getattr(self, "paper", False):
+            return str(old_oid), max(0.01, round(float(stop_price), 2))
+        option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
+        expiration = expiry_to_date(expiry)
+        stop = max(0.01, float(tick_round(float(stop_price))))
+        limit = max(0.01, round(stop * 0.90, 2))
+        _orders = self._order(symbol, expiration, option_type, strike,
+                              "SELL", qty, limit, stop=stop)
+        for o in _orders:
+            o["client_order_id"] = str(old_oid)
+        self._pace()
+        body, why = self._try_calls(["order_v3", "order"],
+                                    ["replace_option", "replace_order",
+                                     "replace"],
+                                    self.account_id, _orders)
+        if body is None:
+            raise Refused("replace not available (%s)" % str(why)[:80])
+        blob = str(body)
+        if "error" in blob.lower() and "code" in blob.lower():
+            raise Refused("replace refused: %s" % blob[:120])
+        return str(old_oid), stop
+
     def buy(self, symbol, side, strike, expiry, qty, their_price=None,
             price_mode=None, bracket_stop_pct=None):
         """side is CALLS or PUTS, the way the room writes it.
