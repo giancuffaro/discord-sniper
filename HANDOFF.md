@@ -327,6 +327,12 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   honours 16:15. (9) Webull retail lists SPX/XSP index options; whether
   the OpenAPI takes them is UNVERIFIED — our SPX->SPY translation stays.
 
+- "ADDED" IS AN ENTRY (9/2 retest, v3.5.1): Boka's/RWGates' "added $DRAM
+  $57 calls 9/18" only parsed on Saturday because the message also said
+  "buying". Now RE_ADD (both parsers) accepts "57 calls"/"$57 puts", and
+  resolveAdd/resolve_add turn an "added <full contract>" you are NOT in
+  into an OPEN entry. A bare "added to SPY" with no contract still refuses.
+
 ## Operational truths
 - settings.json: ALL keys, gitignored, never pushed. Never run git write ops
   from the sandbox (locks can't be unlinked); AUTO PUSH.bat is a resident
