@@ -263,16 +263,34 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   content.js heartbeats every 30s, and a room silent 3 beats (~90s) or
   detached is reloaded (log line "⚠ Chrome had DISCARDED..." / "reader
   stopped answering"). Memory-shed cadence 2h->4h. Extension 3.5.0.
-  STAGED, NOT APPLIED = Block B (tiered ratchet: <$1 arms +25% locks +10%
-  rungs 15%; $1-2 arms +15% BE rungs 10%; $2+ arms +10% locks +5% rungs
-  5% — CHANGES G'S EXIT RULES, needs his yes; ratchet_tiers.py is in the
-  repo), B4 naked-window replace_stop (needs new plumbing), Block C quote
-  bus (WEEKEND ONLY — rewires the position watchdog; quote_bus.py +
-  v3.5.0/_patch_ask_bid_many.py staged). Block D = free tests: TEST
-  STREAMING.bat (does Webull push option quotes? green = no rate limits
-  ever) and a trailing-stop paper test. tests: test_positions +
-  test_resolve pass; test_parity needs its python JSON arg (harness, not
-  a failure).
+  THEN G said "do everything now" (9/2 ~01:20) — ALL APPLIED, bridge
+  restarted clean 01:26 with "QUOTE BUS on": Block B tiers (see RATCHET
+  v3) + ANTI-CLIP (locked <= 60% of gain, v3.5.0/ANTI-CLIP.txt: 520-trade
+  study, +$6,433 vs +$2,872, nine of nine names better); B4 replace_stop
+  (webull_options.replace_stop via the SDK's replace verb, existing
+  client_order_id; ratchet tries REPLACE first, falls back to cancel+
+  place and now tells the truth — "NO broker stop is resting" — and
+  clears stop_order_id so the next pass re-arms); Block C quote bus
+  (bridge: Budget shared by all clients + QuoteBus on WB.ask_bid_many;
+  positions._watchdog reads the bus, falls back to a DIRECT quote at most
+  every 2s when the bus has nothing fresh — a dead bus can never blind a
+  stop; unwatch in the watchdog's finally; poll floor 0.2;
+  fill_poll_seconds 0.3). SWING STOPS through every path: _arm_stop uses
+  25% for a swing with no level (restore/re-arm used to hand swings the
+  -10% scalp stop — FLR 01:00 "1.50 -9%" -> now 1.25 -24%). Breach check
+  now applies to explicit (ratchet/swing) stops too.
+  BLOCK D: PARKED — the streaming SDK family (webullsdkcore) and the
+  bridge's (webull) pin incompatible protobuf/paho/cachetools/jmespath;
+  installing the test into the bridge's Python BROKE its pins (FIX SDK
+  DEPS.bat restored them, G ran it 01:10). TEST STREAMING.bat now only
+  runs inside a side-by-side Python 3.12 venv (.venv-stream) and refuses
+  otherwise. From the sandbox the MQTT port is blocked — inconclusive.
+  ANNOUNCER 429 STORM (9/2 01:30): the rewritten _recent_orders re-ran the
+  full SDK verb hunt every 1s on two accounts = 76,991 TOO_MANY_REQUESTS
+  in one night on the SHARED app key — the bridge's 429s were this
+  process. Fixed: hunt ONCE per account, remember the bound method, pace
+  0.20s, futures every 5th poll, 20s back-off on 429, poll 2s. tests:
+  test_positions + test_resolve pass.
 
 ## Operational truths
 - settings.json: ALL keys, gitignored, never pushed. Never run git write ops

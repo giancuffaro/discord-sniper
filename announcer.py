@@ -117,39 +117,71 @@ def _save_seen(seen):
         pass
 
 
-def _recent_orders(wb, account_id=None):
-    """Orders for one account via the SAME proven pattern as
-    webull_options.last_sell_fill — holders order_v3/order/trade/account_v2,
-    verb substring "history", and the dates passed BY KEYWORD (8/28 lesson:
-    positional dates land in the wrong SDK slots and 500 every time).
+_RO_WIN = {}     # account id -> (bound fn, args, kw) that worked — hunt ONCE
 
-    The old homemade hunt here guessed verbs his SDK doesn't have and
-    returned [] on every poll — the announcer sat online for three days
-    without seeing a single fill (found 9/1: announcer-seen.json was []
-    while the account did nine round trips)."""
-    import datetime as dt
-    acct = account_id or wb.account_id
-    today = dt.date.today()
-    start = (today - dt.timedelta(days=1)).isoformat()
-    end = (today + dt.timedelta(days=1)).isoformat()
-    body = None
-    for args, kw in (((acct,), {"start_date": start, "end_date": end}),
-                     ((acct, start, end), {}),
-                     ((acct,), {})):
-        try:
-            body, _why = wb._try_calls(
-                ["order_v3", "order", "trade", "account_v2"],
-                ["history", "list_orders", "orders", "query_orders"],
-                *args, **kw)
-        except Exception:                               # noqa: BLE001
-            body = None
-        if body is not None:
-            break
+
+def _rows_of(body):
     if body is None:
         return []
     if isinstance(body, list):
         return body
     return (body or {}).get("orders") or (body or {}).get("data") or []
+
+
+def _recent_orders(wb, account_id=None):
+    """Orders for one account. Hunts the SDK verb ONCE (the proven
+    last_sell_fill pattern: holders order_v3/order/trade/account_v2, verb
+    substring "history", dates BY KEYWORD) and then calls that exact bound
+    method every poll, paced at the shared 0.20s.
+
+    9/2 lesson: the previous version re-ran the whole holder x verb x args
+    hunt on EVERY 1-second poll for TWO accounts — dozens of HTTP calls a
+    second on the same app key the bridge trades with. 76,991 rate-limit
+    errors in one night, and the bridge's 429s were this process."""
+    import datetime as dt
+    acct = account_id or wb.account_id
+    win = _RO_WIN.get(acct)
+    if win:
+        fn, args, kw = win
+        try:
+            wb._pace()
+            res = fn(*args, **kw)
+            code = getattr(res, "status_code", 200)
+            if code == 200:
+                return _rows_of(res.json() if hasattr(res, "json") else res)
+            if code == 429:
+                time.sleep(20)
+            return []
+        except Exception as e:                          # noqa: BLE001
+            if "429" in str(e) or "TOO_MANY" in str(e).upper():
+                time.sleep(20)
+            else:
+                _RO_WIN.pop(acct, None)                 # re-hunt next poll
+            return []
+    today = dt.date.today()
+    start = (today - dt.timedelta(days=1)).isoformat()
+    end = (today + dt.timedelta(days=1)).isoformat()
+    for args, kw in (((acct,), {"start_date": start, "end_date": end}),
+                     ((acct, start, end), {}),
+                     ((acct,), {})):
+        try:
+            wb._pace()
+            body, name = wb._try_calls(
+                ["order_v3", "order", "trade", "account_v2"],
+                ["history", "list_orders", "orders", "query_orders"],
+                *args, **kw)
+        except Exception:                               # noqa: BLE001
+            body, name = None, ""
+        if body is not None and name and "." in str(name):
+            hn, m = str(name).split(".", 1)
+            try:
+                fn = getattr(getattr(wb.trade, hn), m)
+                _RO_WIN[acct] = (fn, args, kw)
+            except Exception:                           # noqa: BLE001
+                pass
+            return _rows_of(body)
+    time.sleep(5)                       # hunt failed — never spin on it
+    return []
 
 
 def _parse(od):
@@ -251,7 +283,9 @@ def main():
             # ---- fills: margin AND futures accounts -----------------------
             _rows = [(od, False) for od in _recent_orders(wb)]
             _fut = getattr(wb, "futures_account_id", None)
-            if _fut:
+            _tick = globals().setdefault("_FUT_TICK", [0])
+            _tick[0] += 1
+            if _fut and _tick[0] % 5 == 0:      # futures: every 5th poll
                 try:
                     _rows += [(od, True) for od in _recent_orders(wb, _fut)]
                 except Exception:                       # noqa: BLE001
