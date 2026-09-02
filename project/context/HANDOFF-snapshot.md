@@ -486,3 +486,7 @@ Note: every bridge restart cancels+re-places the resting stop on restored positi
 
 ## 9/2 14:25 — restart keeps the resting stop (G's ask)
 reconcile_gone: on the first broker confirmation of a RESTORED position, `order_status(stop_order_id)`; if "working" the stop is kept and only the watchdog starts ("stop still resting at Webull at X — kept as is"). Anything else → `_arm_stop` as before. Proven 14:25:37 on SPY (stop 3.14 kept). Ratchet moves unchanged (cancel+replace only when the price must move).
+
+## 9/2 14:35 — RULE: check before redoing (G: "do that to everything")
+Principle: before any cancel/re-place/re-hunt, ask the broker/SDK whether the thing is already there. New helper `Book._stop_still_resting(p)` (order_status(stop_order_id) == "working"). Used by: restore-after-restart (14:25) and now `rearm_overnight_stops` at 9:31 — a GTC stop that survived the close is kept, not cancelled and re-placed (closes the 9/2 "GTC stops accepted" watch item). Already following the rule: ratchet replace-first (B4), quote/positions/orders winner caches, bus-before-direct-quote in the watchdog, stream-before-HTTP for stock prices. Still legitimately "redo": stop moves (price must change), averaging-in (size changes), fill-time arming (nothing exists yet).
+Applies at the next restart (code watcher: safe window or the close).
