@@ -316,6 +316,7 @@ def main():
     import webull_options
     wb = webull_options.WebullOptions(cfg)
     wb.paper = False
+    wb.sdk_log_name = "webull_api-announcer.log"   # never share the bridge's
     wb.connect()
     print("Fill Announcer v3 up — fills at %.0fs, milestones on live quotes." % poll)
     _post(webhook, "📡 Fill Announcer v3 online — options fills, "
