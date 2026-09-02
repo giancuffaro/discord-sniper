@@ -2737,6 +2737,23 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/mode"):
             return self._json(200, self._status())
+        if self.path.startswith("/stream"):
+            # Is the MQTT stock stream alive, what is it carrying, how fresh.
+            try:
+                st = getattr(WB, "stream", None)
+                if st is None:
+                    return self._json(200, {"ok": False, "why": "stream not attached"})
+                out = st.status()
+                out["ok"] = True
+                qb = getattr(BOOK, "quotes", None)
+                if qb is not None:
+                    try:
+                        out["option_bus"] = qb.status()
+                    except Exception:                   # noqa: BLE001
+                        pass
+                return self._json(200, out)
+            except Exception as _e:                     # noqa: BLE001
+                return self._json(200, {"ok": False, "why": str(_e)[:120]})
         if self.path.startswith("/rooms"):
             # The one list of channels that trade (extension/rooms.txt),
             # parsed — so "what is the sniper actually listening to" is a

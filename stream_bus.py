@@ -141,8 +141,16 @@ class StockStream:
             return
         while True:
             try:
-                cli = DataStreamingClient(self.app_key, self.app_secret,
-                                          self.region, self.session)
+                # Production hosts spelled out (docs: api.webull.com /
+                # data-api.webull.com) so nothing can drift to sandbox.
+                try:
+                    cli = DataStreamingClient(self.app_key, self.app_secret,
+                                              self.region, self.session,
+                                              http_host="api.webull.com",
+                                              mqtt_host="data-api.webull.com")
+                except TypeError:
+                    cli = DataStreamingClient(self.app_key, self.app_secret,
+                                              self.region, self.session)
                 cli.on_connect_success = self._on_connect
                 cli.on_quotes_message = self._on_message
                 cli.on_subscribe_success = lambda c, a, s: None
