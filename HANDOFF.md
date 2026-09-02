@@ -4,12 +4,15 @@ every rule it trades by, and how G works. Update it whenever a rule changes.
 Last updated: 2026-09-02 evening (daily journal-and-fix run #2 — see
 "9/2 EVENING" at the bottom. Bot -$62 on 3 closes, Gian +$114 on 9 hand
 trades, account +$52 gross / +$45.71 net. Six bridge fixes + extension
-3.5.6 (RELOAD IT): pulled stops go back when an exit is abandoned, a
+3.5.7 (RELOAD IT): pulled stops go back when an exit is abandoned, a
 CLOSE never sells what the book doesn't hold, "price I never saw" now
 trues itself up from the broker, bare "out" can't touch his hand trades,
 symbol-aware ticks at the order choke point, exits sell the HELD strike,
 mashup calls attributed from the relay FOOTER, heartbeat reloads back off.
-IREN 40C 9/18 swing carries overnight with a GTC stop resting at 1.85.)
+RULE: his hand trades are UNTOUCHABLE by any room's exit/trim/stop-move
+(G, 9/2: "they shouldn't") — the 8/18 "closeable on the room's call" adopt
+rule is retired. IREN 40C 9/18 swing carries overnight, GTC stop 1.85
+confirmed SUBMITTED at Webull 17:45.)
 No secrets live here — keys and account ids stay in settings.json (gitignored).
 
 ## Who and what
@@ -23,7 +26,8 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
 - SEPARATE tool: "Market Sniper" (his own build, 127.0.0.1:8000) trades HIS
   manual scalps on the SAME Webull account. Coexistence rule: positions the
   bot didn't originate are HIS — visible, never stop-managed, never sold,
-  never blocking a room call in the same symbol.
+  never blocking a room call in the same symbol. ENFORCED 9/2 evening at
+  every exit door (Book.is_hand_trade — see "HAND TRADES ARE UNTOUCHABLE").
 
 ## Rules of the house (current, in force)
 - ENTRIES: bid the caller's price or better; pullback entries cross the ask
@@ -596,17 +600,23 @@ ALSO: test_signals.py has 4 failing checks that PREDATE tonight (Brett's
 STOPMOVE resolutions) — expectations written 8/15, before the 8/30 exit
 policy; not a regression, needs a look when the parser is next touched.
 
-OPEN QUESTION FOR G (from 15:10, still open, now sharper): a room's exit
-that NAMES the ticker ("out SPY") can still close an ADOPTED hand trade of
-his when the bot holds nothing else in that ticker (find_key: "the only
-live trade in that ticker, unattributed"). The house rule at the top says
-his positions are "never sold"; the 8/18 adopt rule says "closeable on the
-room's call". Tonight's fix only closed the symbol-LESS path. Say which:
-(a) rooms may close his hand trades when they name the ticker (today's
-behaviour), or (b) hand trades are untouchable, full stop (one line in
-find_key + plan_exit). Recommendation: (b) — since the state photo, the
-bot's own positions survive restarts, so adoption's original purpose
-(re-finding the bot's trade) no longer needs the door open to his.
+HAND TRADES ARE UNTOUCHABLE — RULE (G, 9/2 evening: "how do they manage
+to close them? they shouldn't"). HOW they could: adoption. Anything in the
+account the bot didn't place, up to 3 lots, was pulled onto the book as
+"?|SYM" (owner unknown) so a room's exit could re-find the bot's OWN trade
+after a restart (the 8/18 rule, written before the state photo existed).
+find_key then handed ANY trader's "out SPY" to "the only SPY on the book,
+unattributed" — his. Closed at every door: Book.is_hand_trade() = adopted
+with no inherited trader (who "Gian"); find_by_symbol(rooms=True) leaves
+those out of every room-side lookup (find_key, the bare-exit resolver);
+plan_exit / TRIM / STOPMOVE refuse them outright ("that's YOUR own trade
+— rooms can't close or trim it"); the extension (3.5.7) refuses before
+the round trip. Still HIS in the popup, still no stop, still counted in
+the journal under Gian. A bot trade re-found after a restart carries its
+trader's name (credit inherited) and stays closeable by that room — that
+is what adoption is for now. The 8/18 "closeable on the room's call" rule
+is RETIRED. The MANAGE button (15:12 TODO) stays the only way to hand one
+of his positions to the ratchet, and it needs his click.
 
 ANNOUNCER (paused by G at 14:55, announcer.stop="stop"): before the pause
 it posted only the 11:35 SPY 766C ENTRY today — it was down 11:17-11:35
