@@ -744,6 +744,13 @@ class WebullOptions:
         remembered = getattr(self, "_batch_shape", None)
         if remembered is not None:
             shapes = [remembered] + [s for s in shapes if s != remembered]
+        # ...and the METHOD too (9/2, "not fast"): remembering only the shape
+        # still walked every shape on the FIRST method before reaching the
+        # one that answers — up to 8 wasted HTTP calls per sweep.
+        remembered_fn = getattr(self, "_batch_fn", None)
+        if remembered_fn is not None:
+            fns = [f for f in fns if f[0] == remembered_fn] + \
+                  [f for f in fns if f[0] != remembered_fn]
 
         for _name, fn in fns:
             for shape in shapes:
@@ -756,6 +763,7 @@ class WebullOptions:
                 parsed = self._parse_batch(body, occs)
                 if parsed:
                     self._batch_shape = shape
+                    self._batch_fn = _name
                     return parsed
 
         # Batched form unavailable on this SDK — fall back one at a time, and
