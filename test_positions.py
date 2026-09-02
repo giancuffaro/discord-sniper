@@ -152,11 +152,11 @@ while time.time() - _t0 < 2.0 and not any(c[0] == "stop" for c in wb.calls):
 stops = [c for c in wb.calls if c[0] == "stop"]
 ok(len(stops) == 1, "a fill should place exactly one resting stop, got %d" % len(stops))
 # 20% off 2.77 is 2.216 — off YOUR fill, not off the 2.80 they posted —
-# and it rests at the exchange tick (0.05 under $3): 2.20. The book now
-# hands the broker the tick-rounded price it will actually hold (9/2; the
-# 8/25 SLV lesson: the log once said 2.46 while Webull held 2.45).
-ok(stops and abs(stops[0][3] - 2.20) < 0.005,
-   "the stop goes 20%% under what you paid, tick-rounded (2.20), got %s"
+# and SPY quotes in PENNIES at every price (Penny Program, 9/2 reference),
+# so it rests at 2.22, not the nickel-rounded 2.20 a non-penny name gets.
+# The book hands the broker the exact tick-rounded price it will hold.
+ok(stops and abs(stops[0][3] - 2.22) < 0.005,
+   "the stop goes 20%% under what you paid, at SPY's penny tick (2.22), got %s"
    % (stops[0][3] if stops else None))
 
 # --- nobody takes it --------------------------------------------------------
