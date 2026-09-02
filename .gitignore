@@ -59,3 +59,5 @@ announcer.log
 announcer.log.*
 .venv-stream/
 streaming-test.txt
+option_tape.csv
+option_tape.csv.*

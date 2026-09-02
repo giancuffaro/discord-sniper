@@ -292,6 +292,18 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   0.20s, futures every 5th poll, 20s back-off on 429, poll 2s. tests:
   test_positions + test_resolve pass.
 
+- OPTION TAPE (9/2, v3.5.0/HANDOFF-OPTION-DATA.md): Webull's API has NO
+  historical option prices (US_OPTION unsupported) — every ratchet
+  backtest so far ran on MODELLED (Black-Scholes) premiums, the weakest
+  link in the anti-clip analysis. The quote bus now RECORDS every quote it
+  sees to option_tape.csv (ts,occ,bid,ask, ~300ms; gitignored; rotate
+  monthly). In ~3 weeks the tiers/anti-clip can be re-checked on real
+  bids from exactly the contracts the rooms call. Free next step G can do
+  any time: chart 5-10 contracts from 8/28-9/01 in thinkorswim and
+  compare to the modelled premiums. Buy-once backfill (Databento free
+  credit / ThetaData one month) ONLY if the model checks out and he'll
+  actually re-run the analysis.
+
 ## Operational truths
 - settings.json: ALL keys, gitignored, never pushed. Never run git write ops
   from the sandbox (locks can't be unlinked); AUTO PUSH.bat is a resident
