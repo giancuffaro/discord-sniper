@@ -244,6 +244,13 @@ class QuoteBus:
                 self._log("quote-bus sweep error: %s" % str(e)[:120])
             took = time.time() - started
             self.last_sweep_ms = took * 1000.0
+            # SLOW-SWEEP TELL (9/2): if one batched call is eating more than
+            # the whole sweep budget, say so once a minute with the number —
+            # that's the difference between "bus is slow" and "Webull is slow".
+            if took > self._sweep_every * 1.4 and time.time() - getattr(self, "_slow_said", 0) > 60:
+                self._slow_said = time.time()
+                self._log("quote sweep took %.2fs (target %.2fs, %d contracts) — Webull HTTP latency, not the bus"
+                          % (took, self._sweep_every, len(self._watch)))
             gap = self._sweep_every - took
             if gap > 0:
                 self._stop.wait(gap)

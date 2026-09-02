@@ -1198,6 +1198,32 @@ class WebullOptions:
             h = getattr(self.trade, hn, None)
             if h is not None:
                 holders.append((hn, h))
+        # WINNER CACHE (9/2, G: "not fast"): the hunt used to fire EVERY
+        # call — positions() cost 2-4 HTTP hits against a 2-per-2s door
+        # (the 14:0x wall of 429s on /assets/positions), and every fill
+        # poll paid the same tax. Remember which method answered per
+        # (holders, verbs, arg-count) and call that one first; only if it
+        # fails does the full hunt run again.
+        ck = (tuple(holder_names), tuple(verbs), len(args), tuple(sorted(kw)))
+        cache = self.__dict__.setdefault("_tc_win", {})
+        win = cache.get(ck)
+        if win:
+            hname, m = win
+            fn = getattr(getattr(self.trade, hname, None), m, None)
+            if callable(fn):
+                try:
+                    res = fn(*args, **kw)
+                    if getattr(res, "status_code", 200) == 200:
+                        return (res.json() if hasattr(res, "json") else res), "%s.%s" % (hname, m)
+                    errors.append("%s.%s: HTTP %s" % (hname, m, getattr(res, "status_code", "?")))
+                    if getattr(res, "status_code", 0) == 429:
+                        return None, " | ".join(errors)     # throttled: don't hunt on top of it
+                except TypeError:
+                    pass
+                except Exception as e:                  # noqa: BLE001
+                    errors.append("%s.%s: %s" % (hname, m, str(e)[:80]))
+                    if "429" in str(e) or "TOO_MANY" in str(e):
+                        return None, " | ".join(errors)
         for hname, h in holders:
             for m in dir(h):
                 if m.startswith("_"):
@@ -1205,6 +1231,8 @@ class WebullOptions:
                 low = m.lower()
                 if not any(v in low for v in verbs):
                     continue
+                if win and (hname, m) == tuple(win):
+                    continue                    # already tried above
                 fn = getattr(h, m, None)
                 if not callable(fn):
                     continue
@@ -1220,6 +1248,7 @@ class WebullOptions:
                                   % (hname, m, getattr(res, "status_code", "?")))
                     continue
                 body = res.json() if hasattr(res, "json") else res
+                cache[ck] = (hname, m)
                 return body, "%s.%s" % (hname, m)
         return None, " | ".join(errors[:3])
 
