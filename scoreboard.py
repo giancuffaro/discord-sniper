@@ -26,10 +26,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DAYS_BACK = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 10
 SINCE = date.today() - timedelta(days=DAYS_BACK)
 
-RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\d+)\]  (.*)$")
+RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)\]  (.*)$")
 RE_DID = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  <(\w+)>  (.*)$")
 # a message that names a contract: "SPY 645C", "$57 calls", "255P 9/4", "NVDA 225 call"
-RE_CONTRACT = re.compile(r"\b[A-Z]{1,5}\b[^\n]{0,40}?\$?\d{1,5}(?:\.\d+)?\s*(?:[CP]\b|calls?\b|puts?\b)", re.I)
+RE_CONTRACT = re.compile(r"\b[A-Z]{1,5}\b[^\n]{0,40}?\$?\d{1,5}(?:\.\d+)?\s*(?:[CP]\b|calls?\b|puts?\b)"
+                         r"|\b(?:MNQ|MES|NQ|ES|MGC|GC|CL|MCL|YM|MYM|RTY|M2K|MBT|BTC)[A-Z]?\d?\b[^\n]{0,30}?\d{3,6}", re.I)
 RE_ENTRY = re.compile(r"\b(bto|buy|bought|entry|entering|in\b|added|adding|long|lotto|scalp|swing)\b", re.I)
 RE_EXIT = re.compile(r"\b(all out|out of|sold|sell|close[d]?|trim|trimm|stc|exit|took profit|stopped)\b", re.I)
 
@@ -106,9 +107,24 @@ def main():
     R = defaultdict(lambda: {"msgs": 0, "signals": 0, "entries": 0, "exits": 0,
                              "last": "", "last_text": "", "days": set(), "authors": defaultdict(int),
                              "sent": 0, "skipped": 0, "ignored": 0, "label": "", "cid": ""})
+    def norm(cid, room, text):
+        """Whop ids come as whop:/.../exp_X/app or a slug ending in the same
+        code; voice transcripts arrive as 'this room' with a mic on the text."""
+        if cid.startswith("whop:"):
+            m = re.search(r"(?:exp_|-)([A-Za-z0-9]{12,})/app", cid)
+            code = m.group(1) if m else cid
+            for k, v in rooms.items():
+                if code in v.get("url", "") or code in k:
+                    return k, v.get("label") or room
+            return "whop:" + code, room
+        if text.startswith("\U0001f399") or text.startswith("🎙"):
+            return "voice", "Voice rooms (Deepgram transcript)"
+        return cid, room
+
     for d, t, room, cid, text in msgs:
         if d < SINCE.isoformat():
             continue
+        cid, room = norm(cid, room, text)
         r = R[cid]
         r["label"] = room
         r["cid"] = cid
