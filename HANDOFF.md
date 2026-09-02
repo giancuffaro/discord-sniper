@@ -483,3 +483,6 @@ Root cause: ask_bid_many passed the SDK's requests **Response object** to `_pars
 Also: `_try_calls` winner cache (positions/orders hunting cost 2-4 HTTP calls per poll into a 2-per-2s endpoint → 429 wall at 14:0x); `ask_bid` remembers its winning method+shape; `_parse_batch` matches a symbol from any string value in the row.
 Verify any time: http://127.0.0.1:8787/stream → `last_sweep_ms` ~100-200, `budget_takes` ≈ 2×`sweeps`, `budget_left` ~280.
 Note: every bridge restart cancels+re-places the resting stop on restored positions (3 times today). Not stacking, but each is a brief naked moment — restart only when it matters.
+
+## 9/2 14:25 — restart keeps the resting stop (G's ask)
+reconcile_gone: on the first broker confirmation of a RESTORED position, `order_status(stop_order_id)`; if "working" the stop is kept and only the watchdog starts ("stop still resting at Webull at X — kept as is"). Anything else → `_arm_stop` as before. Proven 14:25:37 on SPY (stop 3.14 kept). Ratchet moves unchanged (cancel+replace only when the price must move).
