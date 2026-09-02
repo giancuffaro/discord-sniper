@@ -1530,6 +1530,7 @@ _RECENT_COIDS = {}          # coid -> (timestamp, (ok, msg)) — retry dedup
 # This is the bridge-side backstop every path must pass: an OPEN for a
 # contract that was accepted in the last 20s is the echo, whoever sent it.
 _RECENT_CONTRACTS = {}      # "SYM|side|strike|expiry" -> timestamp
+_IMG_SEEN = {}              # sha1(images+caption) -> (ts, verdict)  (24h)
 WHOP_FEED = []              # whop-api reader queue: [{_i, platform, text...}]
 WHOP_FEED_N = [0]           # monotonic counter for /whopfeed cursors
 WHOP_FEED_OK = [0.0]        # ts of the last SUCCESSFUL room read — "active"
@@ -3320,6 +3321,22 @@ class Handler(BaseHTTPRequestHandler):
         caption = str(body.get("text") or "").strip()
         if not images:
             return self._json(200, {"ok": False, "why": "no image"})
+        # SAME PICTURE, SAME ANSWER (9/2): the Whop 2K room re-sent one
+        # image post every ~6 minutes all day — 36 vision calls for one
+        # screenshot. Hash the images (+caption); a repeat within 24h gets
+        # yesterday's verdict back without asking the model again.
+        try:
+            import hashlib
+            _h = hashlib.sha1((json.dumps(images, sort_keys=True) + "|" + caption)
+                              .encode("utf-8", "replace")).hexdigest()
+            _now = time.time()
+            for _k in [k for k, v in list(_IMG_SEEN.items()) if _now - v[0] > 86400]:
+                _IMG_SEEN.pop(_k, None)
+            _prev = _IMG_SEEN.get(_h)
+            if _prev is not None:
+                return self._json(200, _prev[1])
+        except Exception:                                   # noqa: BLE001
+            _h = None
         try:
             import ai_reader
         except Exception as e:                              # noqa: BLE001
@@ -3342,13 +3359,19 @@ class Handler(BaseHTTPRequestHandler):
         ok, why, cleaned = ai_reader.validate(read, check_text, allowed)
         if not ok:
             note("IMG READ no call — %s" % (why or "")[:80])
-            return self._json(200, {"ok": False, "why": why})
+            _out = {"ok": False, "why": why}
+            if _h:
+                _IMG_SEEN[_h] = (time.time(), _out)
+            return self._json(200, _out)
         canon = ai_reader.canonical(cleaned)
         note("IMG READ  [screenshot]  ->  %s   (saw: '%s')"
              % (canon, seen[:60]))
-        return self._json(200, {"ok": True, "canonical": canon,
-                                "read": cleaned, "seen_text": seen,
-                                "confidence": cleaned.get("confidence", 0)})
+        _out = {"ok": True, "canonical": canon,
+                "read": cleaned, "seen_text": seen,
+                "confidence": cleaned.get("confidence", 0)}
+        if _h:
+            _IMG_SEEN[_h] = (time.time(), _out)
+        return self._json(200, _out)
 
     def _self_update(self):
         """Pull the latest build from GitHub and restart the bridge onto it —
