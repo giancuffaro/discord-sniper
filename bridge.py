@@ -347,7 +347,7 @@ def build_book():
         QUOTES = QuoteBus(WB.ask_bid_many, budget=BUDGET, log=print)
         QUOTES.start()
         BOOK.quotes = QUOTES
-        note("QUOTE BUS on — batched quotes every ~300ms, one budget for all calls")
+        note("QUOTE BUS on — one batched quote call per second (Webull: 60/min, 20 contracts each), one budget for all calls")
     except Exception as _qe:                            # noqa: BLE001
         BOOK.quotes = None
         note("QUOTE BUS off (%s) — per-position quotes as before" % str(_qe)[:80])
