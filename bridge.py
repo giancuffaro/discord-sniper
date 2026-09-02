@@ -3978,8 +3978,24 @@ def main():
         base = snap()
         pending_since = None
         warned_open = False
+        _RF = os.path.join(HERE, "bridge.restart")
         while True:
             time.sleep(20)
+            # FORCED RESTART (9/2, G: "restart automatically"): a NON-EMPTY
+            # bridge.restart file skips the safe-window wait. Still compile-
+            # checks; still refuses while a bid is WORKING (money in flight).
+            # Armed pullback hunts are dropped and named in the log. Empty
+            # file = inert (the sandbox can write but not delete).
+            forced = False
+            try:
+                if os.path.exists(_RF) and os.path.getsize(_RF) > 0:
+                    forced = True
+                    try:
+                        os.remove(_RF)
+                    except OSError:
+                        open(_RF, "w").close()
+            except Exception:                           # noqa: BLE001
+                forced = False
             cur = snap()
             if cur != base:
                 if pending_since is None:
@@ -3987,7 +4003,24 @@ def main():
                          "settles (after the close if the market's open)")
                 pending_since = time.time()
                 base = cur
-                continue
+                if not forced:
+                    continue
+            if forced:
+                try:
+                    _h, _w = BOOK.restart_exposure() if BOOK is not None else ([], [])
+                except Exception:                       # noqa: BLE001
+                    _h, _w = [], ["?"]
+                if _w:
+                    note("CODE     forced restart REFUSED — bid working on %s; "
+                         "try again when it fills or cancels" % ",".join(map(str, _w)))
+                    continue
+                try:
+                    _hunts = sorted(_PULLBACK._armed) if (_PULLBACK is not None and _PULLBACK._armed) else []
+                except Exception:                       # noqa: BLE001
+                    _hunts = []
+                note("CODE     forced restart (bridge.restart)%s" % (
+                    " — dropping armed hunt(s): %s" % ", ".join(map(str, _hunts)) if _hunts else ""))
+                pending_since = time.time() - 61
             if pending_since is None:
                 continue
             if time.time() - pending_since < 60:
@@ -4000,7 +4033,7 @@ def main():
                     (9 * 60 + 20) <= _mins <= (16 * 60 + 15)
             except Exception:                           # noqa: BLE001
                 is_open = False
-            if is_open:
+            if is_open and not forced:
                 # SAFE-WINDOW RESTART (8/26, his ask: "restart automatically
                 # when it's safe"). Mid-market, a new build no longer waits
                 # for the close if NOTHING is in flight: no resting bids, no

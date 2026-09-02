@@ -63,3 +63,4 @@ option_tape.csv
 option_tape.csv.*
 announcer.restart
 .announcer-board-sig
+bridge.restart
