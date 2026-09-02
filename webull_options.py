@@ -172,7 +172,7 @@ def occ_symbol(symbol, expiration, option_type, strike):
     return "%s%s%s%08d" % (symbol.upper(), d, cp, int(round(float(strike) * 1000)))
 
 
-def stop_below(reference, pct):
+def stop_below(reference, pct, symbol=None):
     """A protective stop strictly BELOW the reference price: pct down, tick
     rounded, and NEVER at or above the reference. 8/31 IWM lesson: 0.22 bid
     * 0.90 = 0.198 nearest-rounded UP to 0.20 — the exact fill — and the
@@ -181,28 +181,64 @@ def stop_below(reference, pct):
     whenever rounding lands at/above the reference."""
     ref = float(reference)
     raw = ref * (1 - float(pct) / 100.0)
-    px = max(0.01, float(tick_round(raw)))
-    step = 0.05 if ref < 3.00 else 0.10
+    px = max(0.01, float(tick_round(raw, symbol)))
+    step = tick_step(ref, symbol)
     if px >= ref - 1e-9:
         px = max(0.01, round(ref - step, 2))
     return px
 
 
-def tick_round(px):
+# TICK CLASSES (9/2, v3.5.0/OPTIONS-BROKER-REFERENCE.md, Cboe notice 57916 +
+# SEC 34-104157): SPY/QQQ/IWM quote in $0.01 at EVERY price. Penny Interval
+# Program names quote $0.01 under $3.00 and $0.05 at/above. Everything else
+# is $0.05 under $3.00 / $0.10 at/above. Rounding a penny name to nickels is
+# legal but gives cents away on every stop and limit; rounding a non-penny
+# name to pennies is a 417 OPTION_PRICE_STEP_LT. Unknown symbol = the old
+# conservative $0.05/$0.10 (always legal). The full ~300-name Cboe list
+# rotates each January/April; this is the slice the rooms actually call.
+PENNY_ALWAYS = {"SPY", "QQQ", "IWM"}
+PENNY_PROGRAM = {
+    "AAPL", "TSLA", "NVDA", "META", "AMZN", "MSFT", "GOOGL", "GOOG", "AMD",
+    "NFLX", "INTC", "BAC", "F", "PLTR", "SOFI", "HOOD", "COIN", "MSTR", "DIA",
+    "GLD", "SLV", "TLT", "XLF", "XLE", "UBER", "BA", "DIS", "NKE", "PYPL",
+    "SNAP", "RIVN", "LCID", "NIO", "MARA", "RIOT", "SMCI", "ARM", "AVGO",
+    "CRM", "ORCL", "QCOM", "MU", "WMT", "COST", "JPM", "C", "WFC", "GS",
+    "XOM", "CVX", "PFE", "MRNA", "ABT", "KWEB", "FXI", "EEM", "EFA", "HYG",
+    "UVXY", "VXX", "SQQQ", "TQQQ", "SOXL", "SOXS", "SPXL", "ARKK", "XBI",
+    "IBIT", "GME", "AMC", "T", "VZ", "KO", "PEP", "MCD", "SBUX", "V", "MA",
+    "HD", "LOW", "TGT", "CVS", "UNH", "LLY", "JNJ", "MRK", "CAT", "DE", "GE",
+    "GM", "AAL", "DAL", "UAL", "CCL", "NCLH", "RCL", "PYPL", "SQ", "SHOP",
+    "ROKU", "ZM", "DKNG", "ABNB", "LYFT", "RBLX", "U", "NET", "CRWD", "PANW",
+    "SNOW", "DDOG", "MDB", "ZS", "OKTA", "TTD", "SPOT", "PINS", "BABA", "JD",
+    "PDD", "TSM", "ASML", "LRCX", "AMAT", "KLAC", "ON", "MRVL", "MPWR", "TXN",
+    "ADBE", "NOW", "INTU", "IBM", "CSCO", "HPQ", "DELL", "WDC", "STX",
+}
+
+
+def tick_step(px, symbol=None):
+    """The legal price increment for this contract at this price."""
+    sym = str(symbol or "").upper().split()[0] if symbol else ""
+    if sym in PENNY_ALWAYS:
+        return 0.01
+    if sym in PENNY_PROGRAM:
+        return 0.01 if float(px) < 3.0 else 0.05
+    return 0.05 if float(px) < 3.0 else 0.10
+
+
+def tick_round(px, symbol=None):
     """Snap an option price to the exchange's legal increment. Webull rejects a
     limit that isn't on the price step — HTTP 417 OPTION_PRICE_STEP_LT — and the
     rooms post odd-cent premiums all the time (AAOI 170C @ 2.38, QQQ @ 4.66).
-    The rule: $0.05 steps below $3.00, $0.10 at or above. Snapping to the
-    nearest legal tick is the difference between an accepted order and a reject.
-    A price that rounds to 0 is floored to one tick so it's still a real
-    order."""
+    Symbol-aware since 9/2 (see tick_step); without a symbol it falls back to
+    the always-legal $0.05/$0.10. A price that rounds to 0 is floored to one
+    tick so it's still a real order."""
     try:
         p = float(px)
     except (TypeError, ValueError):
         return px
     if p <= 0:
-        return 0.05
-    step = 0.05 if p < 3.0 else 0.10
+        return tick_step(0.01, symbol)
+    step = tick_step(p, symbol)
     snapped = round(round(p / step) * step, 2)
     return snapped if snapped > 0 else step
 
@@ -1568,7 +1604,7 @@ class WebullOptions:
         if stop_price is not None:
             stop = max(0.01, round(float(stop_price), 2))
         else:
-            stop = stop_below(fill_price, self.stop_pct)
+            stop = stop_below(fill_price, self.stop_pct, symbol)
         # Webull validates a SELL stop against the LIVE market, not your fill.
         # On a wide options spread the bid right after you buy at the ask is
         # often already below a fill-based stop, so Webull 417s it
@@ -1587,7 +1623,7 @@ class WebullOptions:
             mkt = None
         stop_clamped = False
         if mkt and float(mkt) > 0:
-            step = 0.10 if float(mkt) >= 3 else 0.05
+            step = tick_step(float(mkt), symbol)
             ceiling = round(float(mkt) - step, 2)
             if ceiling < 0.01:
                 ceiling = 0.01
@@ -1613,7 +1649,7 @@ class WebullOptions:
         # here too, so the value returned (then logged, journaled, and used by
         # the watchdog) is the broker's number and not a phantom penny off it.
         # 8/25 SLV: the log said 2.46 while the resting order was 2.45.
-        stop = max(0.01, float(tick_round(stop)))
+        stop = max(0.01, float(tick_round(stop, symbol)))
         what = "STOP %d %s %g%s %s @ %.2f%s" % (qty, symbol, float(strike),
                                                 option_type[0], expiration, stop,
                                                 " (clamped under market)" if stop_clamped else "")
@@ -1648,7 +1684,7 @@ class WebullOptions:
             return str(old_oid), max(0.01, round(float(stop_price), 2))
         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
         expiration = expiry_to_date(expiry)
-        stop = max(0.01, float(tick_round(float(stop_price))))
+        stop = max(0.01, float(tick_round(float(stop_price), symbol)))
         limit = max(0.01, round(stop * 0.90, 2))
         _orders = self._order(symbol, expiration, option_type, strike,
                               "SELL", qty, limit, stop=stop)
@@ -1793,7 +1829,7 @@ class WebullOptions:
                 # recorded as bracket_stop must be the price actually resting,
                 # or the book carries a stop that doesn't exist (8/25 SLV: the
                 # log said "stop 2.51 born with it", the resting leg was 2.50).
-                stop_born = stop_below(limit, bracket_stop_pct)
+                stop_born = stop_below(limit, bracket_stop_pct, symbol)
                 slim = max(0.01, round(stop_born * 0.90, 2))
 
                 def _combo_try(child_type):
