@@ -432,7 +432,11 @@ def main():
                 # for a trade that filled before the boot. Seed open_pos from
                 # the broker's own positions (cost basis = entry).
                 try:
-                    for pr in (wb.positions() or []):
+                    _prs = wb.positions() or []
+                    print(time.strftime("%H:%M:%S"),
+                          "adopt-at-boot: %d broker position(s)%s"
+                          % (len(_prs), (" — keys: " + ",".join(sorted(_prs[0].keys()))[:160]) if _prs else ""))
+                    for pr in _prs:
                         if not pr.get("strike") or not pr.get("expiry"):
                             continue
                         _f = {"sym": pr.get("symbol"), "strike": pr.get("strike"),
