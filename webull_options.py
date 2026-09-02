@@ -652,6 +652,14 @@ class WebullOptions:
                   (([occ], "US_OPTION"), {}), ((), {"symbols": occ}),
                   ((), {"symbols": [occ]}),
                   ((), {"symbols": [occ], "category": "US_OPTION"})]
+        # WINNER FIRST (9/2): the method+shape that answered last time leads;
+        # a hunt is only for when it stops answering. Shapes are stored with
+        # the occ swapped for a placeholder so they carry across contracts.
+        _win = getattr(self, "_single_win", None)
+        if _win:
+            _wname, _wi = _win
+            fns = [f for f in fns if f[0] == _wname] + [f for f in fns if f[0] != _wname]
+            shapes = [shapes[_wi]] + [sh for i, sh in enumerate(shapes) if i != _wi]
         for name, fn in fns:
             for args, kw in shapes:
                 try:
@@ -674,9 +682,18 @@ class WebullOptions:
                 a = _find(row, "ask", "ask_price", "askPrice")
                 b = _find(row, "bid", "bid_price", "bidPrice")
                 try:
-                    return (float(a) if a else None), (float(b) if b else None), row
+                    out = (float(a) if a else None), (float(b) if b else None), row
                 except (TypeError, ValueError):
                     continue
+                try:
+                    _base = [((occ,), {}), (([occ],), {}), ((occ, "US_OPTION"), {}),
+                             (([occ], "US_OPTION"), {}), ((), {"symbols": occ}),
+                             ((), {"symbols": [occ]}),
+                             ((), {"symbols": [occ], "category": "US_OPTION"})]
+                    self._single_win = (name, _base.index((args, kw)))
+                except Exception:                       # noqa: BLE001
+                    pass
+                return out
         joined = " | ".join(errors[:3])
         if "INVALID_SYMBOL" in joined or "Invalid Symbol" in joined:
             raise Refused("Webull doesn't have a contract called %s. Either the "
@@ -758,10 +775,26 @@ class WebullOptions:
                 args, kwargs = shape
                 try:
                     self._pace_batch()
-                    body = fn(*args, **kwargs)
+                    res = fn(*args, **kwargs)
+                except TypeError:
+                    continue                    # wrong signature: no HTTP call made
                 except Exception as _e:                 # noqa: BLE001
-                    tries.append("%s%s: %s" % (_name, "" if not tries else "", str(_e)[:40]))
+                    tries.append("%s: %s" % (_name, str(_e)[:40]))
                     continue
+                # THE BUG (9/2, found by the who-spends tell: 8 tokens per
+                # sweep, every sweep "batch unavailable"): the SDK hands back
+                # a requests Response, and this parsed the Response OBJECT
+                # instead of its .json() — so every shape looked empty, the
+                # hunt walked all 8 shapes per method, then fell back to the
+                # per-contract path. Sweeps cost 9 calls instead of 1.
+                code = getattr(res, "status_code", 200)
+                if code == 403:
+                    raise Refused("Webull returned 403 for market data - the OPRA "
+                                  "options-data subscription isn't active on the API.")
+                if code != 200:
+                    tries.append("%s: HTTP %s" % (_name, code))
+                    continue
+                body = res.json() if hasattr(res, "json") else res
                 parsed = self._parse_batch(body, occs)
                 if parsed:
                     self._batch_shape = shape
@@ -837,6 +870,11 @@ class WebullOptions:
                 if v is not None and str(v).upper() in want:
                     sym = want[str(v).upper()]
                     break
+            if sym is None:
+                for v in row.values():
+                    if isinstance(v, str) and v.upper() in want:
+                        sym = want[v.upper()]
+                        break
             if sym is None:
                 continue
             ask = _find(row, "ask_price", "askPrice", "ask", "bestAsk",
