@@ -2,14 +2,16 @@
 title Webull Streaming Test - do options come through?
 cd /d "%~dp0"
 echo.
-echo Installing the two streaming packages if they are missing...
-python -m pip install --quiet --disable-pip-version-check webull-python-sdk-mdata webull-python-sdk-quotes-core
+echo Installing the streaming SDK packages (a different family than the
+echo bridge's SDK) - this may take a minute. Output is saved too.
 echo.
-echo Running the test. Everything it prints is ALSO saved to streaming-test.txt
-echo so Claude can read it even if this window closes.
-echo.
-python -u "TEST_MQTT_OPTIONS.py" > "streaming-test.txt" 2>&1
+> "streaming-test.txt" echo === pip install ===
+python -m pip install --disable-pip-version-check webull-python-sdk-core webull-python-sdk-mdata webull-python-sdk-quotes-core >> "streaming-test.txt" 2>&1
 type "streaming-test.txt"
+echo.
+echo === test === >> "streaming-test.txt"
+python -u "TEST_MQTT_OPTIONS.py" >> "streaming-test.txt" 2>&1
+python -u "TEST_MQTT_OPTIONS.py" 2>&1 | more
 echo.
 echo ==========================================================
 echo  Saved to streaming-test.txt. This window stays open now.
