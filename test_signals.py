@@ -947,6 +947,18 @@ zcheck("mnq long 29100 Do not take this as financial advice! || 09:56:24 EST", a
        fire=True, symbol="MNQ", limit=29100.0)
 zcheck("@everyone Update SPY 08/19 771P @.89 (+25%) Jpm Options", action=None)
 zcheck("Idea Watching AMZN 260 call 8/28 @Namrood", action=None)
+# Partial sells are trims, gains-reported closes are closes (9/2 corpus)
+zcheck("sold 1/2 UPS here", action="TRIM", fire=False, symbol="UPS", pct=50.0)
+zcheck("sell 2/3 UPS 105 calls sept 18th from 1.75 to 2.60 for 45-50% WIN!!", action="TRIM", symbol="UPS")
+zcheck("sold the rest of UPS", action="CLOSE", fire=True, symbol="UPS")
+zcheck("closed AAPL for +20%", action="CLOSE", fire=True, symbol="AAPL")
+zcheck("QQQ OUT @ 150% PROFIT", action="CLOSE", fire=True, symbol="QQQ")
+zcheck("sold some AAPL 315C into strength, holding the rest", action="TRIM", symbol="AAPL")
+# Discord row junk around a forwarded call
+zcheck("ZTRADEZ BOT APP — 9:44 AM Wednesday, September 2, 2026 at 9:44 AM Forwarded @everyone Open SPY 09/02 763C @1.04 Jpm Options | For Informational Purposes Only",
+       action="OPEN", fire=True, symbol="SPY", strike=763.0, side="CALLS", limit=1.04)
+zcheck(":green_alert: AAPL | $335 C SEPT 18 3.65-3.70 @everyone Spoiler", action="OPEN", fire=True,
+       symbol="AAPL", strike=335.0, side="CALLS", limit=3.65)
 zcheck("Comment TSLA $400c on watch", fire=False, action=None)
 zcheck("Comment NVDA $187.5c on watch, will be quarter sized again", fire=False,
        action=None)

@@ -1642,7 +1642,10 @@ function parseSignalInner(text, cfg) {
   // "closed AAPL for +20%" / "sold NVDA at +35%" is a FULL exit reporting its
   // gain — not a 20% trim (9/2 corpus). A trim word anywhere keeps it a trim.
   {
-    const fx = /\b(closed|sold|out of|exited|stopped out of)\s+(?:my\s+)?\$?([A-Za-z]{1,5})\b[^%\n]{0,30}?\b(?:for|at|up)\s+[+-]?\d{1,4}(?:\.\d+)?\s*%/i.exec(t);
+    const fx = /\b(closed|sold|out of|exited|stopped out of)\s+(?:my\s+)?\$?([A-Za-z]{1,5})\b[^%\n]{0,30}?\b(?:for|at|up)\s+[+-]?\d{1,4}(?:\.\d+)?\s*%/i.exec(t)
+      || /\b\$?([A-Za-z]{1,5})\s+(out|closed|sold|exited)\s*(?:@|at|for|up)\s*[+-]?\d{1,4}(?:\.\d+)?\s*%/i.exec(t) && (() => {
+           const m = /\b\$?([A-Za-z]{1,5})\s+(out|closed|sold|exited)\s*(?:@|at|for|up)\s*[+-]?\d{1,4}(?:\.\d+)?\s*%/i.exec(t);
+           return [m[0], m[2], m[1]]; })();
     if (fx && !RE_TRIM.test(low) && !RE_PARTIAL.test(low) && !NOT_TICKERS.has(fx[2].toUpperCase())) {
       const c = findContract(t);
       s.symbol = c ? c.symbol : fx[2].toUpperCase();
@@ -1863,12 +1866,12 @@ function parseSignalInner(text, cfg) {
   //    trimmed. A fraction/partial word next to the sell word is a trim.
   const partSell = /\b(?:sold|sell|selling|closed|closing|out|exited|took)\s+(?:out\s+)?(?:of\s+)?(?:(\d)\s*\/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d\/\d)\b/i.exec(t);
   const fullSell = /\b(?:sold|sell|selling|closed|closing|out|exited)\s+(?:out\s+)?(?:of\s+)?(?:the\s+)?(?:rest|remaining|remainder|all|everything|last|final)\b/i.test(t);
-  if ((RE_EXIT.test(low) || partSell) && !fullSell) {
+  if (RE_EXIT.test(low) || partSell) {
     const c = findContract(t);
     s.symbol = c ? c.symbol : bareSymbol(t, allowed);
     if (c) { s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
     if (!s.symbol) { s.why = "sounds like an exit but I couldn't tell which ticker"; return s; }
-    const part = partSell;
+    const part = fullSell ? null : partSell;
     if (part) {
       s.action = "TRIM"; s.matched = "partial sell"; s.fire = false;
       if (part[1] && part[2] && parseInt(part[2], 10) > 0)

@@ -1987,9 +1987,14 @@ def _parse_inner(text, author="", channel="", cfg=None):
     #    a real entry from being swallowed here.
     # "closed AAPL for +20%" = a FULL exit reporting its gain (9/2 corpus).
     fx = re.search(r"\b(closed|sold|out of|exited|stopped out of)\s+(?:my\s+)?\$?([A-Za-z]{1,5})\b[^%\n]{0,30}?\b(?:for|at|up)\s+[+-]?\d{1,4}(?:\.\d+)?\s*%", t, re.I)
-    if fx and not RE_TRIM.search(low) and not RE_PARTIAL.search(low) and fx.group(2).upper() not in NOT_TICKERS:
+    fx_sym = fx.group(2) if fx else None
+    if not fx:
+        m2 = re.search(r"\b\$?([A-Za-z]{1,5})\s+(out|closed|sold|exited)\s*(?:@|at|for|up)\s*[+-]?\d{1,4}(?:\.\d+)?\s*%", t, re.I)
+        if m2:
+            fx, fx_sym = m2, m2.group(1)
+    if fx and not RE_TRIM.search(low) and not RE_PARTIAL.search(low) and fx_sym.upper() not in NOT_TICKERS:
         c = _contract(t)
-        sig.symbol = c["symbol"] if c else fx.group(2).upper()
+        sig.symbol = c["symbol"] if c else fx_sym.upper()
         if c:
             sig.strike, sig.side, sig.expiry = c["strike"], c["side"], c["expiry"]
         sig.action, sig.matched = "CLOSE", "exit with gain"
@@ -2228,7 +2233,7 @@ def _parse_inner(text, author="", channel="", cfg=None):
                      r"(?:(\d)\s*/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d/\d)\b", t, re.I)
     full_sell = re.search(r"\b(?:sold|sell|selling|closed|closing|out|exited)\s+(?:out\s+)?(?:of\s+)?(?:the\s+)?"
                           r"(?:rest|remaining|remainder|all|everything|last|final)\b", t, re.I)
-    if (RE_EXIT.search(low) or part) and not full_sell:
+    if RE_EXIT.search(low) or part:
         c = _contract(t)
         sig.symbol = c["symbol"] if c else _bare_symbol(t, allowed)
         if c:
@@ -2237,7 +2242,7 @@ def _parse_inner(text, author="", channel="", cfg=None):
             sig.why = "sounds like an exit but I couldn't tell which ticker"
             return sig
         # PARTIAL SELLS ARE TRIMS (9/2 corpus) — mirrors parser.js.
-        if part:
+        if part and not full_sell:
             sig.action, sig.matched = "TRIM", "partial sell"
             sig.fire = False
             if part.group(1) and part.group(2) and int(part.group(2)) > 0:
