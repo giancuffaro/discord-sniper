@@ -244,7 +244,12 @@ const RE_BARE_FILL = /^(?:just\s+|we\s+|i\s+|i've\s+|ive\s+|we've\s+)*(?:filled|
 // 9/3 (history sweep): also "Took entry $META META260826C570 Fill: 5.15" —
 // the price comes AFTER the word fill, with a colon, and an OSI contract
 // sits between. Two orders now: "<price> fill" and "fill: <price>".
-const RE_TOOK_ENTRY_FILL = /\btook\s+entr(?:y|ies)\b[^\d%]{0,20}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b|\btook\s+entr(?:y|ies)\b[\s\S]{0,60}?\bfill(?:ed)?\s*[:@]\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b/i;
+// 9/3 (day-scoped audit): RWGates types it four ways and typos it — "took
+// entry 1.37 fill", "Took entry $META <OSI> Fill: 5.15", and on 9/3
+// "i took enry .HOOD260904C120 1.83 fill price". The verb match now
+// tolerates the transpositions of "entry" people actually type, and the
+// price may sit either side of the word fill.
+const RE_TOOK_ENTRY_FILL = /\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[^\d%]{0,40}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b|\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[\s\S]{0,60}?\bfill(?:ed)?\s*[:@]\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b/i;
 // "added to SPY @everyone new avg is 2.8" — they doubled up and their average
 // moved. Whether that buys you a second contract is a setting, not a parser
 // decision: resolveAdd in guards.js has the final word, because only the guards
