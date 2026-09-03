@@ -1030,3 +1030,14 @@ Labelled template 95 · unclassified 81 · futures phrasing 38 · date-first con
 Every file in the folder, what it's for, what must never move, and the one line that matters: **archive/ is safe to delete.**
 ### Verified after all of it
 All 16 modules import · every file referenced by every .bat is present · test_positions 0 failures · test_signals 4 pre-existing · test_parity 5 pre-existing · test_resolve green · bridge restarted 19:06 and re-confirmed the open XLF position with its stop still resting at 1.18.
+
+## 9/3 19:40 — HUNT #2: the ratchet could FAIL SILENTLY and the log lied about it
+Method: audited all 113 filled trades on record for the one shape that should be impossible — **went green past +10% but still closed red.** Two hits; one is a real bug that cost real money.
+### TSLA 350P, 8/26 — peaked +16%, closed −$45
+Filled 5.15, bracket stop born at 4.60. The ratchet then tried **three times** to move the stop to breakeven (5.15) — at +13%, +16%, +14% — and Webull refused all three with `DAY_BUYING_POWER_INSUFFICIENT`. The trade died at the original 4.60.
+**The bug isn't the refusal — it's what happened after.** That failure branch logs *"the old stop is still in place; the watchdog on this PC covers the gap."* **It did not.** The watchdog reads `p["stop"]`, and `p["stop"]` was only ever written on SUCCESS. After a refusal the local guard was still watching the OLD, lower level, so a winner that the ratchet had already decided to protect at breakeven was left guarded at −11%. Every "ratchet couldn't move the resting stop" line in the whole history (21 of them) had this hole behind it.
+### Fixed
+`auto_ratchet`'s failure path now records the level it WANTED as `soft_stop`; the watchdog guards `max(stop, soft_stop)`; a successfully placed resting stop clears it. So a refused ratchet move still protects the trade locally instead of only claiming to.
+New test reproduces it exactly: FakeWB gains `refuse_stop_moves`, accepts the bracket stop, then refuses every move — asserts the soft stop is recorded at 2.20 and sits above the stale resting stop. Suite green (test_positions 0 failures, others at their pre-existing counts).
+### The other hit, not a bug
+NFLX 8/20 peaked +10.0% — exactly the arm threshold, so the ratchet had nothing to lock yet. Left alone.
