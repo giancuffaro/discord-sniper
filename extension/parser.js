@@ -39,7 +39,7 @@ const RE_CONTRACT = /(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+(?:(\d{1,2}[/-]\d{1,2}(?:
 // The same contract written back to front: "205 calls Friday expiration on
 // NVDA". Requires the word "on" before the ticker — that's what keeps it from
 // reading "10% on SPY" as a contract, and it's how they actually write it.
-const RE_CONTRACT_REV = /(?<![A-Za-z\d.])\$?(\d{1,5}(?:\.\d{1,2})?)\s*(calls?|puts?)\b([^.!?]{0,40}?)\bon\s+\$?([A-Za-z]{1,5})\b/gi;
+const RE_CONTRACT_REV = /(?<![A-Za-z\d.])\$?(\d{1,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b([^.!?]{0,40}?)\b(?:on|for)\s+\$?([A-Za-z]{1,5})\b/gi;
 
 // TradeLikeGates ($STS / RWGates) posts in ThinkorSwim dotted form:
 // ".HOOD260702C118" = HOOD, 2026-07-02, Call, strike 118. Unambiguous, so first.
@@ -392,6 +392,37 @@ function cleanText(raw) {
   }
   // ".50" is a premium of 0.50 (9/2) — a leading-dot price never parsed.
   t = t.replace(/(^|[\s@$])\.(\d{1,2})\b/g, "$10.$2");
+  // COLLECTIVE CORPUS (9/2 evening, 13 days of every room replayed): the
+  // bot footers that ride on every alert carry veto words ("Do not take
+  // this as financial advice" vetoed EVERY Market Guru call on "do not";
+  // "None of this is financial advice" on Clutch; King Maker's "For
+  // Educational Purposes Only"; the ZT relay's "© 2021-2026, Horizon
+  // Analytics"). Cut the text at the first footer marker.
+  t = t.replace(/\s*(?:IG:\s*\S+\s*\|?\s*)?None of this is financial advice[\s\S]*$/i, " ")
+       .replace(/\s*Do not take this as financial advice[\s\S]*$/i, " ")
+       .replace(/\s*@\S*\s*-\s*For Educational Purposes Only[\s\S]*$/i, " ")
+       .replace(/\s*For (?:Educational|Informational) Purposes Only[\s\S]*$/i, " ")
+       .replace(/\s*©\s*20\d\d[\s\S]*$/, " ")
+       .replace(/\s*How I Trade\b[\s\S]*$/i, " ")
+       .replace(/\s*@Namrood\s*-\s*Live[\s\S]*$/i, " ")
+       .replace(/\s*Solely for informational purpose[\s\S]*$/i, " ");
+  // NGD futures radar: "MGC SHORT (1m) @ 4496.35 | TP:4484.35 SL:4504.35 |
+  // Prob:88% | R:R:1.5 NEW POTENTIAL SIGNAL ... probability ..." — the
+  // call is the head; the summary after it carries the veto word.
+  const radar = /^\s*(?:@\S+\s+)?([A-Z]{1,4})\s+(LONG|SHORT)\s*\(\d+m\)\s*@\s*(\d[\d,.]*)\s*\|\s*TP:\s*(\d[\d,.]*)\s*SL:\s*(\d[\d,.]*)/i.exec(t);
+  if (radar) t = radar[2].toUpperCase() + " " + radar[1].toUpperCase() + " @ " + radar[3] +
+                 " Stop " + radar[5] + " Target " + radar[4];
+  // Felony / Whop: "Short NQ @ 29530 Stop 29570 Target 29450 Very high risk
+  // here... if we break..." — a clean futures order followed by commentary
+  // full of soft words. Keep the order, drop the essay.
+  const fhead = /^\s*(?:@\S+\s+)?(long|short)\s+\$?\/?([A-Za-z0-9]{1,4})\s*(?:@|at)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?)\s+(?:stop|sl)\s*(?:@|at|:)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?)(?:\s+(?:target|tp)\s*(?:@|at|:)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?))?/i.exec(t);
+  if (fhead && FUT_SYMS.has(fhead[2].toUpperCase()))
+    t = fhead[1] + " " + fhead[2].toUpperCase() + " @ " + fhead[3] + " Stop " + fhead[4] +
+        (fhead[5] ? " Target " + fhead[5] : "");
+  // Mr. Top Hat: "MNQ 24674 long quick scalp" / "MES quick short here 7697"
+  // — the same order in two word orders the futures grammar never saw.
+  t = t.replace(/\b(NQ|MNQ|ES|MES|YM|MYM|RTY|M2K|GC|MGC|CL|MCL|SI|NG)\s+(\d{3,6}(?:\.\d+)?)\s+(long|short)\b/gi, "$3 $1 @ $2")
+       .replace(/\b(NQ|MNQ|ES|MES|YM|MYM|RTY|M2K|GC|MGC|CL|MCL|SI|NG)\s+(?:quick\s+)?(long|short)\s+(?:here\s+)?@?\s*(\d{3,6}(?:\.\d+)?)\b/gi, "$2 $1 @ $3");
   return t.replace(/\s+/g, " ").trim();
 }
 
@@ -903,7 +934,12 @@ function parseSignalInner(text, cfg) {
     s.why = "entry: " + s.direction + " " + s.symbol;
     return s;
   }
-  const bw = /^([A-Za-z]{1,5})\s*(\|)?\s*(\$)?(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b([\s\S]*)$/.exec(t);
+  // Clutch (9/2): a date, "0DTE" or "Swing:" may lead the same shape —
+  // "8/28 SLV 60C 1.68 swing", "0DTE GOOGL 345C .84", "Swing: 9/04 SMR 10C .54".
+  const bwPre = /^(?:(?:swing(?:ing)?|lotto|scalp|day\s*trade)\s*:?\s+)?(?:(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d*dte)\s+)?/i.exec(t);
+  const bwT = bwPre && bwPre[0] ? t.slice(bwPre[0].length) : t;
+  const bwLeadExp = bwPre && bwPre[1] ? bwPre[1] : null;
+  const bw = /^([A-Za-z]{1,5})\s*(\|)?\s*(\$)?(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b([\s\S]*)$/.exec(bwT);
   // 8/25: "AAPL 315 C 2.13" with no pipe and no $ is still his entry shape —
   // accept it when a plain decimal premium follows (a bare % never counts).
   if (bw && (bw[2] || bw[3] || /(?<![\d$.])\d+\.\d{1,2}(?!\s*%)/.test(bw[6] || ""))
@@ -914,6 +950,7 @@ function parseSignalInner(text, cfg) {
     s.side = bw[5].toUpperCase() === "C" ? "CALLS" : "PUTS";
     const md = /\b(\d{1,2}\/\d{1,2})\b/.exec(rest);
     if (md) s.expiry = md[1];
+    else if (bwLeadExp) s.expiry = /dte/i.test(bwLeadExp) ? bwLeadExp.toUpperCase() : bwLeadExp;
     const mp = /(?<![\d$])(\d+\.\d{1,2})\b/.exec(rest);
     s.limit = mp ? parseFloat(mp[1]) : null;
     s.action = "OPEN"; s.matched = "bullwinkle entry"; s.fire = true;
@@ -947,7 +984,8 @@ function parseSignalInner(text, cfg) {
   // ---- Nitro Trades: "Entry Contract: TSLA $390p Price: $1.75 Comments:none".
   //      Fully labeled — the "Entry Contract:" / "Price:" tags make it
   //      unambiguous. "Comment ... on watch" is a watch (vetoed above).
-  const ntr = /\bentry\s+contract:?\s*\$?([A-Za-z]{1,5})\s+\$?(\d{1,5}(?:\.\d{1,2})?)\s*([CcPp])\b(?:[\s\S]*?\bprice:?\s*\$?(\d+(?:\.\d{1,2})?))?/i.exec(t);
+  // ei.trades (9/2) drops the word "Entry": "Contract: QQQ $711 p Price: $1.68".
+  const ntr = /\b(?:entry\s+)?contract:?\s*\$?([A-Za-z]{1,5})\s+\$?(\d{1,5}(?:\.\d{1,2})?)\s*([CcPp])\b(?:[\s\S]*?\bprice:?\s*\$?(\d+(?:\.\d{1,2})?))?/i.exec(t);
   if (ntr && !NOT_TICKERS.has(ntr[1].toUpperCase())) {
     s.symbol = ntr[1].toUpperCase();
     s.strike = parseFloat(ntr[2]);
