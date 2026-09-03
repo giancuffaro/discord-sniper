@@ -740,6 +740,30 @@ ok(len(stops_30) == len(stops_after) + 1,
 # rules disagree; anti-clip wins until G says otherwise (9/3).
 ok(abs(stops_30[-1][3] - 2.36) < 0.005,
    "at +30%% his ladder wants +20%% but anti-clip caps at +18%% (60%% of 30) — a 2.36 stop, got %s" % stops_30[-1][3])
+
+# 0DTE / 1DTE: HIS LADDER WINS, no anti-clip (9/3, "my rule on 0 and 1dte and
+# anticlip on later expirations"). Same 2.00 fill, same +30% — but the
+# contract expires today, so the stop must be the full +20% = 2.40, not 2.36.
+import datetime as _dtt
+_ZWB = FakeWB(fills=True, ask=2.00, bid=2.00)
+_zb = book(_ZWB)
+_zb.ratchet_on = True
+_zb.take_profit_pct = 20.0
+_zb.stop_pct = 10.0
+_ZWB.limits["z0"] = 2.00; _ZWB.qtys["z0"] = 1
+_ztk = ticket(_ZWB, limit=2.00, oid="z0")
+_today = _dtt.date.today()
+_zorder = dict(ORDER, trader="ZeroDteGuy",
+               expiry="%d/%d" % (_today.month, _today.day))
+_zb.entry_sent(_zorder, _ztk)
+_ZKEY = positions.key_of("ZeroDteGuy", "SPY")
+settle(_zb, _ZKEY)
+_zb.auto_ratchet(_ZKEY, 2.40)        # +20% -> lock +10%
+_zb.auto_ratchet(_ZKEY, 2.60)        # +30% -> lock +20% (HIS number, uncapped)
+_zstops = [c for c in _ZWB.calls if c[0] == "stop"]
+ok(_zstops and abs(_zstops[-1][3] - 2.40) < 0.005,
+   "0DTE at +30%%: his ladder locks the full +20%% (2.40) — anti-clip does NOT "
+   "apply to same-day expiries, got %s" % (_zstops[-1][3] if _zstops else None))
 # Price dips back to +21% (still above the +20 rung, below the +30 rung) — the
 # already-locked +20% stop must NOT be loosened back down to +10%.
 rb.auto_ratchet(RKEY, 2.42)
