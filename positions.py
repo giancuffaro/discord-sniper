@@ -1692,15 +1692,37 @@ class Book:
                 # price, and that price is the trade's truth. None means the
                 # lookup failed, and finish() then says so out loud instead of
                 # crediting a quote.
-                px = self._broker_exit_price(p_, tries=2)
-                if px is not None:
+                # OUR OWN STOP FIRST (9/3, the C 139P case): the resting
+                # stop that was born with the entry FILLED at 1.14 and the
+                # book announced "you closed it yourself, at a price I never
+                # saw". The bot's own stop is the most likely closer and it
+                # has an order id — ask THAT before blaming him.
+                px = None
+                _kind = CLOSED
+                _sid = p_.get("stop_order_id")
+                if _sid and not self._sim(p_):
+                    try:
+                        _wbx = self._wbfor(p_)
+                        _sst, _sq, _spx = _wbx.order_status(_sid) if _wbx else ("unknown", 0, None)
+                        if _sst == FILLED or _sst == "filled":
+                            _kind = STOPPED
+                            px = float(_spx) if _spx else None
+                    except Exception:                   # noqa: BLE001
+                        pass
+                if px is None:
+                    px = self._broker_exit_price(p_, tries=2)
+                if _kind == STOPPED:
+                    why = ("your resting stop fired at Webull%s — that's what "
+                           "closed it, not you"
+                           % ((" and filled at %.2f" % px) if px is not None else ""))
+                elif px is not None:
                     why = ("closed at your broker for %.2f — the bot didn't "
                            "send this sell, so it read the fill back off the "
                            "account" % px)
                 else:
                     why = ("gone from your Webull account — you closed it "
                            "yourself, so the trade is marked done")
-                self.finish(key, CLOSED, why, price=px)
+                self.finish(key, _kind, why, price=px)
                 closed += 1
                 if px is None and p_.get("live"):
                     # TRUE-UP (9/2 journal): the lookup above answered None
