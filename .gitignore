@@ -64,3 +64,7 @@ option_tape.csv.*
 announcer.restart
 .announcer-board-sig
 bridge.restart
+
+# 9/3 cleanup: archived logs/exports/one-offs. Kept on disk so nothing is
+# lost, never committed — 187MB of rotated logs lived here at the start.
+archive/
