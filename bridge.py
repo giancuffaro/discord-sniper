@@ -1529,7 +1529,23 @@ _RECENT_COIDS = {}          # coid -> (timestamp, (ok, msg)) — retry dedup
 # set too late while the AI reads were still running — three real buys.
 # This is the bridge-side backstop every path must pass: an OPEN for a
 # contract that was accepted in the last 20s is the echo, whoever sent it.
+POSTCHECK_AT = [0.0]        # when the last postcheck ran (error window)
 _RECENT_CONTRACTS = {}      # "SYM|side|strike|expiry" -> timestamp
+
+
+def _err_count_since(ts):
+    """How many broker errors the SDK logged since ts. Cheap tail read."""
+    if not ts:
+        return 0
+    try:
+        p = os.path.join(HERE, "webull_api.log")
+        size = os.path.getsize(p)
+        with open(p, "rb") as f:
+            f.seek(max(0, size - 200000))
+            tail = f.read().decode("utf-8", "replace")
+        return tail.count("get_response exception")
+    except Exception:                                   # noqa: BLE001
+        return 0
 _IMG_SEEN = {}              # sha1(images+caption) -> (ts, verdict)  (24h)
 WHOP_FEED = []              # whop-api reader queue: [{_i, platform, text...}]
 WHOP_FEED_N = [0]           # monotonic counter for /whopfeed cursors
@@ -4367,6 +4383,146 @@ def main():
                     pass
             time.sleep(20)
     threading.Thread(target=_reconcile_loop, daemon=True).start()
+
+    # ---- POSTCHECK (9/3, G: "confirm everything is running after every
+    # trade to find errors fast"). Every terminal event — filled, closed,
+    # stopped, nofill, trimmed — triggers a self-check 6s later. It asks
+    # only things that have burned us before, and says ONE line: the ok
+    # line, or exactly what's wrong. Read-only; it never trades.
+    def _postcheck_loop():
+        seen_id = [0]
+        WATCH = ("filled", "closed", "stopped", "nofill", "trimmed", "failed")
+        first = [True]
+        while True:
+            try:
+                time.sleep(3)
+                if BOOK is None:
+                    continue
+                snap = BOOK.snapshot(seen_id[0])
+                evs = [e for e in (snap.get("events") or [])
+                       if str(e.get("kind")) in WATCH]
+                if snap.get("events"):
+                    seen_id[0] = max(int(e.get("id") or 0)
+                                     for e in snap["events"])
+                if first[0]:
+                    first[0] = False          # boot backlog isn't news
+                    continue
+                if not evs:
+                    continue
+                time.sleep(6)                 # let the fill/cancel settle
+                what = evs[-1]
+                bad = []
+                warn = []
+
+                # 1. quote bus fresh? (a stale bus means blind stops)
+                try:
+                    qb = getattr(BOOK, "quotes", None)
+                    st = qb.status() if qb is not None else None
+                    if st is None:
+                        warn.append("quote bus off")
+                    else:
+                        if float(st.get("last_sweep_ms") or 0) > 2500:
+                            bad.append("quote sweep %.0fms (Webull slow or the "
+                                       "batch shape broke)" % st["last_sweep_ms"])
+                        if int(st.get("rate_limited") or 0) > 0:
+                            warn.append("%d rate-limit backoff(s)" % st["rate_limited"])
+                except Exception:                       # noqa: BLE001
+                    warn.append("couldn't read the quote bus")
+
+                # 2. price stream alive?
+                try:
+                    _s = getattr(WB, "stream", None)
+                    if _s is None or not _s.status().get("connected"):
+                        warn.append("price stream down (HTTP prices only)")
+                except Exception:                       # noqa: BLE001
+                    pass
+
+                # 3. every position we HOLD has a real resting stop
+                try:
+                    for k, p in (snap.get("positions") or {}).items():
+                        if p.get("state") != "filled" or int(p.get("qty") or 0) <= 0:
+                            continue
+                        if p.get("kind") == "future" or p.get("adopted"):
+                            continue          # futures ride their own; his own trades are hands-off
+                        sid = p.get("stop_order_id")
+                        if not sid:
+                            bad.append("%s is held with NO resting stop — "
+                                       "watchdog only" % p.get("symbol"))
+                            continue
+                        try:
+                            _stt, _q, _a = WB.order_status(sid)
+                            if _stt != "working":
+                                bad.append("%s stop %s is '%s' at Webull, not "
+                                           "working" % (p.get("symbol"), sid[:8], _stt))
+                        except Exception:               # noqa: BLE001
+                            warn.append("couldn't verify %s's stop" % p.get("symbol"))
+                except Exception:                       # noqa: BLE001
+                    pass
+
+                # 4. book vs broker: same contracts held?
+                try:
+                    rows = broker_positions() or []
+                    if _POS.get("ok_live"):
+                        bsyms = set(str(r.get("symbol") or "").upper() for r in rows
+                                    if r.get("kind") != "future")
+                        ksyms = set(str(p.get("symbol") or "").upper()
+                                    for p in (snap.get("positions") or {}).values()
+                                    if p.get("state") == "filled"
+                                    and int(p.get("qty") or 0) > 0
+                                    and p.get("kind") != "future")
+                        ghost = ksyms - bsyms
+                        if ghost:
+                            bad.append("book holds %s, the account doesn't"
+                                       % ",".join(sorted(ghost)))
+                except Exception:                       # noqa: BLE001
+                    pass
+
+                # 5. bot-recorded exit vs the broker's real fill (the WMT
+                #    lesson: a +$4 trim journaled as +$0)
+                try:
+                    if str(what.get("kind")) in ("closed", "stopped", "trimmed"):
+                        for r in (snap.get("table") or []):
+                            if not r.get("exits"):
+                                continue
+                            if time.time() - float(r.get("closed") or 0) > 120:
+                                continue
+                            _last = r["exits"][-1]
+                            _real = WB.last_sell_fill(r.get("symbol"), r.get("side"),
+                                                      r.get("strike"), r.get("expiry"),
+                                                      since=time.time() - 180)
+                            if _real and float(_last.get("price") or 0) > 0:
+                                _d = abs(float(_real) - float(_last["price"]))
+                                if _d >= 0.02:
+                                    bad.append("%s recorded its exit at %.2f but "
+                                               "the broker filled %.2f (P&L is "
+                                               "wrong by $%.0f)"
+                                               % (r.get("symbol"), float(_last["price"]),
+                                                  float(_real),
+                                                  _d * 100 * int(_last.get("qty") or 1)))
+                except Exception:                       # noqa: BLE001
+                    pass
+
+                # 6. broker errors since the last check
+                try:
+                    _n = _err_count_since(POSTCHECK_AT[0])
+                    POSTCHECK_AT[0] = time.time()
+                    if _n >= 10:
+                        warn.append("%d broker errors since the last trade" % _n)
+                except Exception:                       # noqa: BLE001
+                    pass
+
+                _hdr = "POSTCHECK %s %s" % (str(what.get("kind")).upper(),
+                                            what.get("symbol") or "")
+                if bad:
+                    note("%s — PROBLEM: %s" % (_hdr, "; ".join(bad[:4])))
+                elif warn:
+                    note("%s — ok, with notes: %s" % (_hdr, "; ".join(warn[:3])))
+                else:
+                    note("%s — all good: stop resting at Webull, quote bus fresh, "
+                         "stream up, book matches the account" % _hdr)
+            except Exception:                           # noqa: BLE001
+                time.sleep(5)
+    threading.Thread(target=_postcheck_loop, daemon=True).start()
 
     # ---- WHOP API READER (8/30, dark until a key exists) -----------------
     # Whop has an official API (docs.whop.com/developer/guides/chat):
