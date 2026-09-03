@@ -360,8 +360,18 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "LETTING", "FOLKS", "GUYS", "EVERYONE", "EVERYBODY", "TODAY", "HERE",
   "NOW", "DONE", "OFF"]);
 
+// DISCORD ROW JUNK (9/2 corpus): when the reader hands over the whole row
+// (grouped messages, forwards, re-renders) the call arrives wrapped in
+// "ZTRADEZ BOT APP — 9:44 AM Wednesday, September 2, 2026 at 9:44 AM
+// Forwarded @everyone …", "[ 9:38 AM ] Wednesday, … at 9:38 AM …",
+// "Yesterday at 11:22 AM", trailing "2 Add Reaction". None of it is the call.
+const RE_ROWHDR = /^\s*[^\n—]{1,70}?\s+—\s+(?:Yesterday at |Today at |\d{1,2}\/\d{1,2}\/\d{2,4},\s*)?\d{1,2}:\d{2}\s*[AP]M(?:\s+[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?\s*/i;
+const RE_ROWTIME = /\[\s*\d{1,2}:\d{2}\s*[AP]M\s*\]\s*(?:[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?\s*/gi;
+const RE_ROWMISC = /\b(?:Yesterday|Today) at \d{1,2}:\d{2}\s*[AP]M\b|\bForwarded\b|\b\d{0,3}\s*Add Reaction\b|\(edited\)/gi;
+
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_STAG, " ").replace(RE_HDR, "");
+  t = t.replace(RE_ROWHDR, "").replace(RE_ROWTIME, " ").replace(RE_ROWMISC, " ");
   // ANSI color codes in Namrood's alerts ("[1;37;44mMETA") glued their
   // trailing "m" onto the ticker — META became MMETA (live, 8/17-18).
   // Strip them, with or without the ESC byte. Mirrors signals.py.

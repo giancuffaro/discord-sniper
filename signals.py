@@ -633,6 +633,10 @@ def clean_text(raw):
     """Strip the relay wrapper so the parser sees the call, not the plumbing."""
     t = RE_STAG.sub(" ", (raw or "").strip())      # Discord "Server Tag" junk (9/2)
     t = RE_HDR.sub("", t)
+    # Discord row junk (9/2 corpus) — mirrors parser.js RE_ROWHDR/ROWTIME/ROWMISC
+    t = re.sub(r"^\s*[^\n—]{1,70}?\s+—\s+(?:Yesterday at |Today at |\d{1,2}/\d{1,2}/\d{2,4},\s*)?\d{1,2}:\d{2}\s*[AP]M(?:\s+[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?\s*", "", t, flags=re.I)
+    t = re.sub(r"\[\s*\d{1,2}:\d{2}\s*[AP]M\s*\]\s*(?:[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?\s*", " ", t, flags=re.I)
+    t = re.sub(r"\b(?:Yesterday|Today) at \d{1,2}:\d{2}\s*[AP]M\b|\bForwarded\b|\b\d{0,3}\s*Add Reaction\b|\(edited\)", " ", t, flags=re.I)
     # ANSI color codes ride along in Namrood's alerts ("[1;37;44mMETA") and
     # the trailing "m" glued onto the ticker — META became MMETA, SPY MSPY,
     # SPCX MSPCX (seen live 8/17-18). Strip them, with or without the ESC
