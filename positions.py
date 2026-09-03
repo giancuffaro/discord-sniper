@@ -2693,10 +2693,37 @@ class Book:
             locked = tier_locked_pct(gain, fill)
             if locked is None:
                 return           # hasn't reached the first rung yet
-            # ANTI-CLIP (9/2): never closer than 40% of the gain — the tier
-            # rungs cap out at 60% of what the trade has made, so a +200%
-            # runner keeps 80% of room instead of being scratched by a rung.
-            locked = anti_clip(locked, gain)
+            # ANTI-CLIP, BUT NOT ON 0/1DTE (9/3, his rule in one line:
+            # "my rule on 0 and 1dte and anticlip on later expirations").
+            # A 0DTE has no tomorrow — theta eats whatever it doesn't lock,
+            # so his ladder takes the gain: +10% -> BE, +20% -> +10%,
+            # +30% -> +20%. From 2 days out the trade has room to breathe
+            # and anti-clip's 60%-of-gain cap keeps a runner from being
+            # strangled by a rung (the 9/2 study).
+            _dte = None
+            try:
+                import datetime as _dtx
+                _ex = p.get("expiry")
+                if _ex:
+                    _exd = str(_ex)
+                    if len(_exd) == 10 and _exd[4] == "-":
+                        _dte = (_dtx.date.fromisoformat(_exd) - _dtx.date.today()).days
+                    else:
+                        from webull_options import expiry_to_date as _e2dx
+                        _dte = (_dtx.date.fromisoformat(str(_e2dx(_exd)))
+                                - _dtx.date.today()).days
+            except Exception:                           # noqa: BLE001
+                _dte = None
+            if _dte is None or _dte >= 2:
+                _before = locked
+                locked = anti_clip(locked, gain)
+                if _before != locked:
+                    self._event(key, "update",
+                                "%s — anti-clip held the stop at +%.0f%% instead "
+                                "of +%.0f%% (never closer than 40%% of a +%.0f%% "
+                                "gain; %s days out)"
+                                % (sym, locked, _before, gain,
+                                   _dte if _dte is not None else "?"))
             already = p.get("ratchet_locked_pct")
             if already is not None and locked <= float(already):
                 return           # never loosen a stop that's already this high
