@@ -35,10 +35,20 @@ it earns the room for a better one.
 """
 
 # premium ceiling -> (arm_pct, first_lock_pct, step_pct)
+#
+# 9/3 — G, in his own words, restoring the ladder he wrote the bot around:
+#   "it was supposed to start all along from -10% and +10%. When it touched
+#    +10% the new stop becomes automatically 0%, and the next target is 20%.
+#    When 20% is touched the new stop is +10% and the new target is +30%.
+#    When +30% is touched the new stop is +20%, and so on and so forth."
+# So: ONE ladder for every premium — arm at +10%, first lock breakeven, then
+# a rung every +10%. The 9/2 price tiers (cheap contracts arming later so a
+# one-tick wiggle couldn't scratch them) are retired; his rule is the rule.
+# The two safety FLOORS below still apply and will say so in the log when
+# they move one of his numbers: a rung must clear 4 ticks, and the stop is
+# never placed inside the spread.
 TIERS = (
-    (1.00, (25.0, 10.0, 15.0)),      # premium  <  $1.00
-    (2.00, (15.0,  0.0, 10.0)),      # $1.00 <= premium < $2.00
-    (None, (10.0,  5.0,  5.0)),      # premium >= $2.00
+    (None, (10.0, 0.0, 10.0)),       # every premium: arm +10%, lock BE, +10% rungs
 )
 
 MIN_RUNG_TICKS = 4.0                 # floor 1
