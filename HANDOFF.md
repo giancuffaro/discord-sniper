@@ -1,11 +1,10 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-03 17:31 (G: "double check every single room, I need
-all rooms firing correctly" — full 26-room audit off today's real captures.
-3 real silent-drops found and FIXED (RWGates, Unraveller x2); 1 real bug
-found and flagged, NOT fixed — too risky to rush (Mike/AMD reply-quote
-guard). Extension 3.5.14 — RELOAD IT.)
+Last updated: 2026-09-03 17:42 (G: "can we add this kind of scan for missed
+entrys after every signal? we need to be catching these" — built a live,
+real-time missed-entry watcher (extension) PLUS a batch version wired into
+replay_check.py (autopilot). Extension 3.5.15 — RELOAD IT.)
 "9/2 EVENING" at the bottom. Bot -$62 on 3 closes, Gian +$114 on 9 hand
 trades, account +$52 gross / +$45.71 net. Six bridge fixes + extension
 3.5.7 (RELOAD IT): pulled stops go back when an exit is abandoned, a
@@ -926,3 +925,37 @@ normal. Whop Swing Trades — 0 today, Felony hasn't posted there since 8/27
 (known). RWGates' own HOOD entry (9:32am, 1.83) — correctly read via the
 AI-vision fallback and correctly REFUSED for buying power ($113 vs $251),
 not a bug.
+
+## 9/3 17:42 — MISSED-ENTRY WATCHER, live + batch (G: "we need to be catching these")
+Two additions, both READ-ONLY (log/notify only — never place, never touch
+sig.action, sig.fire, or any order):
+
+1. **Live, in the extension (background.js, right where a fully-unmatched
+   message currently logs NOTHING at all — "logging pure chatter would bury
+   the useful lines" was the old reasoning).** Now: if THIS trader has an
+   unconsumed LOADING call on the shelf (guards.js's own
+   remember_loading/resolve_loaded state — the exact mechanism all 3 of
+   today's bugs slipped past) within the loading window (default 4h) AND
+   this unmatched message carries a price-shaped number, it fires a Chrome
+   desktop notification ("⚠ POSSIBLE MISSED ENTRY — TICKER STRIKE") plus a
+   log line, same pattern as the existing 40-min silence alarm. Deliberately
+   narrow — needs an ARMED shelf, not just any price+word — so it can't
+   turn into log spam; pure chatter with no open loading call stays silent
+   exactly as before. Nothing is ever bought off this — it's a tap on the
+   shoulder to go look, same as G asked for.
+2. **Batch, in replay_check.py (`find_missed_entries`), wired into the same
+   run the daily close-out (step 4) already calls.** Separate from the
+   existing silent-drop check (which only fires when the parser ALREADY
+   assigned an action — structurally blind to a full parser miss, which is
+   what all 3 of today's bugs were). This one replays the day chronologically
+   per trader, arms/clears the same shelf concept in Python, and flags any
+   action=null message that lands while a trader's shelf is still armed and
+   carries a price. New output section: "POSSIBLE MISSED ENTRIES". Tested
+   against today's real data — correctly reproduces the fixed RWGates
+   pattern (now shows as a regular SILENT since the parser fix makes it
+   actionable again) and flags one true heuristic false-positive (RWGates'
+   HOOD entry, already handled fine via the AI-vision fallback, which this
+   Python-only replay can't see) — expected: it's a diagnostic net for a
+   human glance, not a claim every flag is a real miss.
+Both compile-checked (py_compile + node --check), full test suite still the
+same 4 known Brett-trim fails, 0 new. Extension 3.5.15 — **RELOAD IT**.
