@@ -1014,3 +1014,19 @@ Labelled template 95 · unclassified 81 · futures phrasing 38 · date-first con
 - Mike/Honeydrip reply-to-own-message fills swallowed by the reply-quote guard (deliberate, from a past bad-rebuy).
 - "Fill is 1.79 not using a lot of size here" (RWGates 8/19) and `Fully out @here 103%` — no ticker, needs the loading shelf; not yet wired for those two phrasings.
 - 3 tests added (2 watchlist, 1 took-entry-fill:). Suite: same 4 pre-existing failures, parity unchanged, resolve green.
+
+## 9/3 19:10 — FOLDER CLEANUP (G: "cleanup without breaking anything — can reorganizing improve the app?")
+**Answer to the question: yes, but not by moving code.** The Python modules import each other flat (`import positions`) and the .bat files use plain names — putting code in subfolders breaks every import and every launcher, on a live money system, for zero gain. Nothing in the engine moved. What the cleanup DID surface were three real improvements.
+### Moved (recoverable, nothing deleted)
+`archive/logs` 187MB of rotated logs (bridge.log.1/.2 75MB, announcer.log.1 45MB, webull_api rotations 32MB, webull_api-announcer 20MB) · `archive/broker-exports` 10 Webull CSVs · `archive/journals` 9 old journals (last 3 kept in place) · `archive/one-off` pitches, voice transcripts, scoreboard backups, 0-byte test files. Live logs (`bridge.log`, `webull_api.log`, `trades.log`, `announcer.log`) untouched. `archive/` added to .gitignore; git saw **0 tracked deletions** — everything moved was already ignored. **G can delete `archive/` any time to reclaim the 187MB.**
+### Improvement 1 — the log sweeper only knew one log family
+`_connect_extras` swept `webull_trade_sdk.log.*` older than 2 days and nothing else, which is how 187MB accumulated unwatched. Now it sweeps every rotated family (bridge / announcer / webull_api / streaming SDK) and, new, rolls any LIVE log past 40MB to `.old` once rather than letting it grow forever. `*.log.old` gitignored.
+### Improvement 2 — the audit tools were matching across DAYS (real correctness bug)
+`replay_check.py` and `audit_history.py` read `bridge.log`, whose lines carry **HH:MM:SS and no date** — so an 8/19 call could be "confirmed" by a 9/3 log line at the same clock time. `trades.log` is the same stream written by `note()` with a full ISO timestamp, going back to 8/01. Both tools now read trades.log, day-scoped. Every historical answer is honest for the first time.
+**That fix immediately paid for itself**: it surfaced a brand-new miss the same minute — RWGates 9/3 09:35, `@here $HOOD i took enry .HOOD260904C120 1.83 fill price`. He typo'd "entry" as "enry". Deliberately NOT fuzzy-matched: a widened regex was tried, started eating the OSI code's own digits (META...C570 became a limit of 570) and broke a test, so it was reverted. **A mistyped verb gets surfaced by the POSSIBLE MISSED ENTRY net for a human, never guessed into a real-money order.** The regex does now accept `Fill: <price>` and the common transpositions after a correctly-spelled "took".
+### Improvement 3 — dead menu entries in EXTRAS.bat
+`tune.py` and `drill.py` were deleted long ago; the menu still called them and threw a raw Python error. Both entries now check first and point at the tools that replaced them (replay_check / audit_history / scoreboard).
+### New: INDEX.md
+Every file in the folder, what it's for, what must never move, and the one line that matters: **archive/ is safe to delete.**
+### Verified after all of it
+All 16 modules import · every file referenced by every .bat is present · test_positions 0 failures · test_signals 4 pre-existing · test_parity 5 pre-existing · test_resolve green · bridge restarted 19:06 and re-confirmed the open XLF position with its stop still resting at 1.18.
