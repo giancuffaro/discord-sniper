@@ -190,12 +190,18 @@ const RECORD_ONLY = new Set([
  * moves until he flips the REAL MONEY switch himself. The set stays here
  * for the next new room that needs a proving day. */
 const SHADOW = new Set([
-  // The new server (8/23) proves itself here first — his call: "learn the
-  // parser and corpus before anything." Read for real, judged in the log
-  // ("would have read this as…"), fires NOTHING until graduated out.
-  "911389167169191946", "911390080285962290", "1086120203009658982",
-  "1533885258724937739", "983807207625859143",
-  "1537061197931618344",   // Rafita Trades 8/23 — proves itself first
+  // PROBATION: read for real, judged in the log ("would have read this
+  // as…"), fires NOTHING. A new server proves itself here first.
+  //
+  // GRADUATED 9/2 (his call, after the corpus replay showed the cost):
+  // 911389167169191946 Platinum-1 nitro, 911390080285962290 Platinum-2
+  // futures-alerts, 1086120203009658982 Platinum-3 day-trades,
+  // 1533885258724937739 Platinum-4 ei-alerts, 983807207625859143
+  // Platinum equity-swings, 1537061197931618344 NGD ngd-trades.
+  // Between them, 106 read-and-graded entries in 10 days never fired —
+  // that, not a parser gap, was the "40 signals / 0 sent" on the
+  // scoreboard. They now route like every other room: TEST unless the
+  // popup has them LIVE. Add an id back here to re-benchmark a room.
 ]);
 
 /* rooms.txt is the ONE list of channels that trade (his ask, 8/17) — the
