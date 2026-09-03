@@ -24,7 +24,7 @@ from datetime import date, datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import signals  # noqa: E402  (the Python mirror of extension/parser.js)
+import jsparse  # noqa: E402  (the PRODUCTION parser via node)
 DAYS_BACK = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 10
 SINCE = date.today() - timedelta(days=DAYS_BACK)
 
@@ -123,9 +123,9 @@ def main():
             return "voice", "Voice rooms (Deepgram transcript)"
         return cid, room
 
-    for d, t, room, cid, text in msgs:
-        if d < SINCE.isoformat():
-            continue
+    msgs = [m for m in msgs if m[0] >= SINCE.isoformat()]
+    _parsed = jsparse.parse_many([(m[4].split(": ", 1)[1] if ": " in m[4][:60] else m[4]) for m in msgs])
+    for (d, t, room, cid, text), _sig in zip(msgs, _parsed):
         cid, room = norm(cid, room, text)
         r = R[cid]
         r["label"] = room
@@ -137,13 +137,7 @@ def main():
         # miss: my regex didn't know his ".NBIS260904C215" notation and
         # called a live room silent). signals.py mirrors parser.js — if it
         # reads an action, the bot read one too.
-        body = text.split(": ", 1)[1] if ": " in text[:60] else text
-        act = None
-        try:
-            sig = signals.parse(body)
-            act = sig.action if sig else None
-        except Exception:                                # noqa: BLE001
-            act = None
+        act = (_sig or {}).get("action")
         if act or RE_CONTRACT.search(text):
             r["signals"] += 1
             r["authors"][author] += 1

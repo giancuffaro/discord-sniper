@@ -5,7 +5,7 @@ you to run everything?").
 with canned phrases. It never replayed the day's REAL room messages. This does:
 
   1. every message the reader captured today (DS Logs export, RAW section)
-  2. through the Python mirror of the parser (signals.py)
+  2. through the PRODUCTION parser (extension/parser.js via node)
   3. anything the parser reads as an ACTION is looked up in
        - the extension's verdicts (<sent>/<skipped>/<ignored>, same export)
        - bridge.log (ORDER IN / refused / AI READ lines with the ticker)
@@ -24,7 +24,7 @@ from datetime import date
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import signals  # noqa: E402
+import jsparse  # noqa: E402  (the PRODUCTION parser via node; Python mirror only as fallback)
 
 DAY = sys.argv[1] if len(sys.argv) > 1 else date.today().isoformat()
 RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)\]  (.*)$")
@@ -94,20 +94,17 @@ def main():
     msgs, dids = load(fn)
     blog = bridge_lines()
     per = defaultdict(lambda: {"msgs": 0, "actionable": 0, "judged": 0, "silent": []})
-    for t, room, cid, text in msgs:
-        if any(room.startswith(x) for x in SKIP_ROOMS) or text.startswith("🎙"):
-            continue
+    keep = [(t, room, cid, text) for (t, room, cid, text) in msgs
+            if not any(room.startswith(x) for x in SKIP_ROOMS) and not text.startswith("🎙")]
+    parsed = jsparse.parse_many([strip_header(x[3]) for x in keep])
+    for (t, room, cid, text), sig in zip(keep, parsed):
         p = per[room]
         p["msgs"] += 1
         body = strip_header(text)
-        try:
-            sig = signals.parse(body)
-        except Exception:                               # noqa: BLE001
-            continue
-        if not sig or not sig.action:
+        if not sig or not sig.get("action"):
             continue
         p["actionable"] += 1
-        sym = str(sig.symbol or "").upper()
+        sym = str(sig.get("symbol") or "").upper()
         # any verdict within 3 min naming the ticker or quoting the text?
         judged = False
         for vt, kind, vtext in dids:
@@ -123,7 +120,7 @@ def main():
         if judged:
             p["judged"] += 1
         else:
-            p["silent"].append((t, sig.action, sym, body[:150]))
+            p["silent"].append((t, sig.get("action"), sym, body[:150]))
 
     print("REPLAY CHECK for %s — export: %s" % (DAY, os.path.basename(fn)))
     total_silent = 0
