@@ -2511,6 +2511,45 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         }
         await addLog({ kind: "ignored", why: (sig.why || "") + mark,
                        text: msg.text, author: msg.author });
+      } else {
+        // POSSIBLE MISSED ENTRY (G, 9/3: "we need to be catching these" —
+        // after finding 3 real entries silently dropped in one day, all
+        // with the SAME shape: a trader has an unconsumed LOADING call on
+        // the shelf, then confirms the fill in a phrasing the parser didn't
+        // recognize AT ALL, so nothing gets logged, not even "ignored").
+        // Deliberately narrow so it can't turn into log spam: only fires
+        // when BOTH are true — (1) this trader has a loading call that
+        // never got used, (2) THIS message carries a price-shaped number.
+        // Pure chatter with no price stays silent, same as before.
+        try {
+          const _who = String(sig.caller || msg.author || "").toLowerCase();
+          const _st = await guardState();
+          const _cand = (_st.loaded || {})[_who];
+          const _hasPrice = /\b\d{1,4}\.\d{1,2}\b/.test(String(msg.text || ""));
+          const _winS = parseFloat((c.guards || {}).loading_window_seconds);
+          const _windowS = isNaN(_winS) ? 14400 : _winS;
+          const _age = _cand ? (Date.now() - _cand.ts) / 1000 : Infinity;
+          if (_cand && !_cand.used && _hasPrice && _age <= _windowS) {
+            const _ageMin = Math.round(_age / 60);
+            const _what = _cand.symbol +
+              (_cand.strike != null ? " " + _cand.strike +
+               (_cand.side === "PUTS" ? "P" : "C") : "");
+            const _msg2 = (sig.caller || msg.author || "?") +
+              " has a LOADING call on " + _what + " (" + _ageMin +
+              " min ago, never confirmed) and just posted a price with no " +
+              "match — nothing was sent. Check by hand: " +
+              String(msg.text || "").slice(0, 140);
+            try {
+              chrome.notifications.create({
+                type: "basic", iconUrl: "icon128.png",
+                title: "⚠ POSSIBLE MISSED ENTRY — " + _what,
+                message: _msg2
+              });
+            } catch (e2) {}
+            await addLog({ kind: "skipped", why: "⚠ POSSIBLE MISSED ENTRY — " + _msg2,
+                           text: msg.text, author: msg.author });
+          }
+        } catch (e) {}
       }
       reply({ ok: true });
       return;
