@@ -2291,10 +2291,29 @@ def _parse_inner(text, author="", channel="", cfg=None):
         return sig
 
     # 7. "My avg is $3.05" — the fill price, posted a minute after the entry as
-    #    its own message. Nothing to do with it: the order is long gone by then
-    #    by then. Named here only so
-    #    the log says something useful instead of "nothing in it".
+    #    its own message. USUALLY nothing to do with it: the order already
+    #    fired off a full contract+price message and this is a redundant echo.
+    #    But (9/3, Unraveller/META) when the ONLY thing that came before is a
+    #    LOADING notice — no full-contract message ever fired — this line IS
+    #    the fill confirmation ("Loading meta 610 puts weeklies" then, 12
+    #    minutes later, "Meta avg 5.7 @here"), same shape as "Filled 3.95
+    #    starters" above. A named ticker is required before this tries the
+    #    loading shelf — a bare "my avg is $3.05" with no ticker stays exactly
+    #    as informational as before (too ambiguous which position it means).
     if RE_AVG.search(low):
+        sym_avg = _bare_symbol(t, allowed)
+        m_avg = RE_AVG_PRICE.search(t)
+        if sym_avg and m_avg:
+            sig.action = "OPEN"
+            sig.matched = "average fill on a loaded contract"
+            sig.needs_loaded = True
+            sig.named_symbol = sym_avg
+            sig.limit = float(m_avg.group(1))
+            sig.why = ('their average ("%s avg %s") with no contract in it — '
+                       'looking for the LOADING call it belongs to, otherwise '
+                       'this is just their fill price on a trade already open'
+                       % (sym_avg, m_avg.group(1)))
+            return sig
         sig.matched = "their fill price"
         sig.why = ("that's their average fill on a trade they already called — "
                    "nothing to do with it")
