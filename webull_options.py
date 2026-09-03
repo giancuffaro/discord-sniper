@@ -1377,7 +1377,7 @@ class WebullOptions:
             return "filled", None, None
         body, _why = self._try_calls(
             ["order_v3", "order"], ["detail", "query", "get_order"],
-            self.account_id, order_id)
+            self.account_id, order_id, _avoid=["open", "history", "list", "batch"])
         # THROTTLED = STOP (9/2 15:05, autopilot): the IWM fill-watch got 429
         # on /order/detail every poll for 90s, and each time this one-arg
         # fallback re-hunted with the CLIENT ORDER ID in the account_id slot
@@ -1388,7 +1388,8 @@ class WebullOptions:
         # honest answer and is never read as a fill upstream.
         if body is None and not ("429" in str(_why) or "TOO_MANY" in str(_why)):
             body, _why = self._try_calls(
-                ["order_v3", "order"], ["detail", "query", "get_order"], order_id)
+                ["order_v3", "order"], ["detail", "query", "get_order"], order_id,
+                _avoid=["open", "history", "list", "batch"])
         if body is None:
             return "unknown", 0, None
         row = body[0] if isinstance(body, list) and body else body
