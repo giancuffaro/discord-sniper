@@ -2275,21 +2275,37 @@ def _place_impl(order):
                     # word — UBER 9/18 wicked out on a 25-cent stock move
                     # and reclaimed the level ten minutes later. Far-dated
                     # contracts get swing treatment by construction.
-                    if not order.get("swing"):
-                        try:
-                            from webull_options import expiry_to_date
-                            import datetime as _dt2
-                            _ed = _dt2.date.fromisoformat(
-                                str(expiry_to_date(order.get("expiry"))))
-                            if (_ed - _dt2.date.today()).days >= 14:
-                                order["swing"] = True
-                                note("SWING    %s — expiry %s is %d days out"
-                                     ": treated as a swing (wide stop), no"
-                                     " matter what the call said"
-                                     % (order["symbol"], _ed.isoformat(),
-                                        (_ed - _dt2.date.today()).days))
-                        except Exception:               # noqa: BLE001
-                            pass
+                    # The promotion (14+ days = swing) and, since 9/3, the
+                    # DEMOTION that was missing. C 139P expiring in ONE day
+                    # came in labelled "swing", so it got the wide -25% stop
+                    # (1.24 off a 1.66 fill), never got near the +15% the
+                    # ratchet needs to arm, and the stop took -$52. A
+                    # contract that expires tomorrow cannot "breathe for
+                    # weeks" — the whole reason a swing gets a loose stop.
+                    # 2 days or less is a scalp no matter what the room
+                    # called it, and it keeps the tight scalp stop.
+                    try:
+                        from webull_options import expiry_to_date
+                        import datetime as _dt2
+                        _ed = _dt2.date.fromisoformat(
+                            str(expiry_to_date(order.get("expiry"))))
+                        _dte = (_ed - _dt2.date.today()).days
+                        if not order.get("swing") and _dte >= 14:
+                            order["swing"] = True
+                            note("SWING    %s — expiry %s is %d days out"
+                                 ": treated as a swing (wide stop), no"
+                                 " matter what the call said"
+                                 % (order["symbol"], _ed.isoformat(), _dte))
+                        elif order.get("swing") and _dte <= 2:
+                            order["swing"] = False
+                            order.pop("their_stop", None)
+                            note("SCALP    %s — they called it a swing but it "
+                                 "expires in %d day(s) (%s). A swing stop on a "
+                                 "contract that dies tomorrow is just a bigger "
+                                 "loss — keeping the tight scalp stop."
+                                 % (order["symbol"], max(_dte, 0), _ed.isoformat()))
+                    except Exception:                   # noqa: BLE001
+                        pass
                     # SWING stops (his call, 8/24 — the HOOD lesson: a
                     # 3-week swing died in 3 minutes on a scalp's -10%).
                     # A swing with THEIR stock level runs on that level
