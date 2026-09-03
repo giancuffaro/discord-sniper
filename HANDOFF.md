@@ -733,3 +733,10 @@ Live at 15:43. Open decision for G: the tier ARM thresholds (<$1 arms +25%, $1�
 "It was supposed to start all along from -10% and +10%. When it touched +10% the new stop becomes automatically 0%, and the next target is 20%. When 20% is touched the new stop is +10% and the new target is +30%. When +30% is touched the new stop is +20%, and so on and so forth."
 The 9/2 price tiers are RETIRED. `ratchet_tiers.TIERS` is now a single rule for every premium: **arm +10%, first lock 0% (breakeven), +10% a rung.** Verified: +10%→BE, +20%→+10%, +30%→+20%, +40%→+30%, +50%→+40%. The two safety floors stay (a rung must clear 4 ticks; the stop is never placed inside the spread) and they log when they move one of his numbers. test_positions updated to his ladder.
 **ONE CONFLICT HE NEEDS TO SETTLE:** ANTI-CLIP (approved 9/2 off the 520-trade study) says the stop may never sit closer than 40% of the gain, so it CAPS his ladder above +20%: at +30% his rule says lock +20%, anti-clip allows +18%; at +50% his rule says +40%, anti-clip allows +30%; at +100% his rule says +90%, anti-clip allows +60%. Below +30% the two agree exactly. Anti-clip currently WINS. Asked; awaiting his answer.
+
+## 9/3 16:25 — ANTI-CLIP SPLIT BY EXPIRY (his rule: "my rule on 0 and 1dte and anticlip on later expirations")
+- **0DTE and 1DTE: his ladder, uncapped.** +10%→BE, +20%→+10%, +30%→+20%, +40%→+30%, +100%→+90%. A same-day contract has no tomorrow; theta eats whatever isn't locked, so the gain gets taken.
+- **2+ days out: anti-clip applies** — the stop never sits closer than 40% of the gain (so +30%→+18%, +50%→+30%, +100%→+60%). Runners keep room to breathe (the 9/2 520-trade study).
+- Unknown/unparseable expiry → anti-clip applies (safe default).
+- When anti-clip moves one of his numbers it now SAYS so: "anti-clip held the stop at +18% instead of +20% (never closer than 40% of a +30% gain; 9 days out)".
+- test_positions: existing +30% case (far expiry) still expects 2.36; NEW case proves a same-day expiry locks the full 2.40. Suite green.
