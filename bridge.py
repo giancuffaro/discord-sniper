@@ -3747,6 +3747,33 @@ class Handler(BaseHTTPRequestHandler):
         sym = str(order.get("symbol", "")).upper()
         if not sym:
             return self._reply(400, "no symbol in that order")
+        # ENTRIES ONLY (9/3, his word: "we only follow entries and let our
+        # ratchet do its thing. Remove anything we have on trims and close").
+        # A room's TRIM / CLOSE / STOPMOVE never sells here — the ratchet's
+        # stop at the broker is the only exit. The extension has the same
+        # gate; this copy is the backstop for a stale extension or any other
+        # poster. The bridge's OWN exits carry a "source" (pullback stock
+        # stop, underlying hard stop) and never touch do_POST, so they are
+        # untouched. 9/3 10:35: Ari trimmed WMT 108C, the bot's 1-lot sold
+        # out while he stayed in — that is the line this closes. Written to
+        # trades.log WITH the room's text, so the next "why did it exit?"
+        # has its answer. settings.json execution.exit_policy:"full" is
+        # the one-line way back to obeying room exits.
+        if order.get("action") in ("TRIM", "CLOSE", "STOPMOVE") \
+                and not order.get("source"):
+            _xp = str((EXEC.get("exit_policy") or CFG.get("exit_policy")
+                       or "entries_only")).lower()
+            if _xp != "full":
+                note("EXIT-IGNORED %s %s — entries only: the ratchet owns "
+                     "the exit (%s said: %s)"
+                     % (order.get("action"), sym,
+                        str(order.get("trader") or "the room")[:30],
+                        str(order.get("raw") or "")[:100].replace("\n", " ")))
+                return self._reply(400,
+                    "entries only — %s's %s on %s was noted, not traded; the "
+                    "ratchet stop is the exit" %
+                    (str(order.get("trader") or "the room")[:30],
+                     str(order.get("action")).lower(), sym))
         # "BTO MNQ1 29115 quickie" — that room writes the CONTRACT COUNT onto
         # the root, so the symbol lands here as "MNQ1": not a futures root, not
         # a real ticker either, so it matched no gate below and the call was
