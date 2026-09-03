@@ -378,7 +378,10 @@ function cleanText(raw) {
   // Rewrite the labels into the grammar every other room already speaks:
   // "BTO SPY 764 C @ 0.50". Risk/TP percentages go — they tripped the
   // "that's their risk" bail before the contract was ever looked at.
-  if (/\b(?:ticker|contract|entry(?:\s*zone)?)\s*:/i.test(t)) {
+  // Only the Blue Collar shape (both labels) — ZT's "Entering Option: …
+  // Entry: 0.82" and Nitro's "Entry Contract: TSLA $390p Price:" have
+  // their own rules and must not be rewritten.
+  if (/\bticker\s*:/i.test(t) && /\bcontract\s*:/i.test(t)) {
     t = t.replace(/\b(?:long|short)\s+setup\b/gi, "BTO")
          .replace(/\bticker\s*:\s*/gi, " ")
          .replace(/\bcontract\s*:\s*/gi, " ")

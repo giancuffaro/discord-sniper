@@ -652,7 +652,7 @@ def clean_text(raw):
     # LABELLED TEMPLATE (9/2, Platinum Blue Collar) — mirrors parser.js:
     # "LONG SETUP Ticker: SPY Contract: 764 C Entry Zone: .50 Risk: 20% ..."
     # becomes "BTO SPY 764 C @ 0.50".
-    if re.search(r"\b(?:ticker|contract|entry(?:\s*zone)?)\s*:", t, re.I):
+    if re.search(r"\bticker\s*:", t, re.I) and re.search(r"\bcontract\s*:", t, re.I):
         t = re.sub(r"\b(?:long|short)\s+setup\b", "BTO", t, flags=re.I)
         t = re.sub(r"\bticker\s*:\s*", " ", t, flags=re.I)
         t = re.sub(r"\bcontract\s*:\s*", " ", t, flags=re.I)

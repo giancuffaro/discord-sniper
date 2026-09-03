@@ -914,6 +914,18 @@ zcheck("Entry Contract: TSLA $390p Price: $1.75 Comments:none", action="OPEN",
        fire=True, symbol="TSLA", strike=390.0, side="PUTS", limit=1.75)
 zcheck("Entry Contract: TSLA $412.5c Price: $2.22 Comments:none", action="OPEN",
        fire=True, symbol="TSLA", strike=412.5, side="CALLS", limit=2.22)
+# Platinum Blue Collar (9/2): labelled template with a risk % and a
+# leading-dot premium — was bailing as "that's their risk" before the
+# contract was read. Both parsers must see BTO SPY 764C @ 0.50.
+zcheck("Challenge Account LONG SETUP Ticker: SPY Contract: 764 C Entry Zone: .50 "
+       "Risk: 20% Stop TP1: 20% TP2: 763.93 @Options Scalps", action="OPEN",
+       fire=True, symbol="SPY", strike=764.0, side="CALLS", limit=0.5)
+zcheck("SHORT SETUP Ticker: QQQ Contract: 705 P Entry Zone: 1.10 Risk: 25%", action="OPEN",
+       fire=True, symbol="QQQ", strike=705.0, side="PUTS", limit=1.1)
+# Discord "Server Tag" junk around a call (9/2, Vero's SPY 763C parsed as nothing)
+zcheck("Vero [PAID], Server Tag: PAID PAID SPY 763C 9/2 1.22 2 CONTRACTS @vero-alerts",
+       action="OPEN", fire=True, symbol="SPY", strike=763.0, side="CALLS", limit=1.22)
+zcheck("risking 20% on this one", action=None)
 zcheck("Comment TSLA $400c on watch", fire=False, action=None)
 zcheck("Comment NVDA $187.5c on watch, will be quarter sized again", fire=False,
        action=None)
