@@ -2269,22 +2269,43 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // since i want every room to act individually. its either testing or
     // they are live.. just like that." Each room's own toggle decides, per
     // order. Every room resets to TESTING when Chrome starts.
-    // EXIT POLICY (8/30, his word: "we're taking everybody's entry, but we
-    // are letting the ratchet do its thing" — chose RATCHET + EMERGENCY
-    // OUT): callers' TRIMS and STOP-MOVES are recorded, never traded — the
-    // ratchet owns profit-taking and stop management. A caller's FULL exit
-    // ("all out", "stopped out") still fires: their emergency word can beat
-    // a trailing stop on real news. settings.json exit_policy:"full" is the
-    // one-line way back to the old obey-everything behavior.
+    // EXIT POLICY — ENTRIES ONLY (9/3, his word: "we only follow entries
+    // and let our ratchet do its thing. Remove anything we have on trims
+    // and close"). Every caller-side exit — TRIM, STOPMOVE and the full
+    // CLOSE ("all out", "stopped out", "closed everything") — is written
+    // down and NEVER traded. The ratchet's stop at the broker is the only
+    // exit. The 8/30 gate only looked at sig.fire, and the parser hands a
+    // trim over with fire=false (the block below used to light it), so a
+    // trim slid straight past it: 9/3 10:35, Ari trimmed WMT 108C and the
+    // bot's 1-lot sold out while he stayed in. The gate now keys off the
+    // ACTION alone, before anything can set fire. settings.json
+    // exit_policy:"full" is still the one-line way back to obeying exits.
     {
-      const _xp = String(c.exit_policy || "ratchet_emergency");
-      if (_xp !== "full" && sig.fire &&
-          (sig.action === "TRIM" || sig.action === "STOPMOVE")) {
+      const _xp = String(c.exit_policy || "entries_only");
+      if (_xp !== "full" &&
+          (sig.action === "TRIM" || sig.action === "STOPMOVE" ||
+           sig.action === "CLOSE")) {
+        const _what = sig.action === "TRIM" ? "trim"
+                    : sig.action === "STOPMOVE" ? "stop move" : "exit";
+        // Their exit is still information: what was YOUR contract worth at
+        // that moment? Best effort, never blocks the ignore.
+        let _mark = "";
+        try {
+          if (sig.symbol) {
+            const m = await markPosition(sig.symbol, sig.caller || msg.author, c);
+            if (m && m.ok && m.pct != null) {
+              _mark = "  —  yours is at " + Number(m.bid).toFixed(2) + ", " +
+                      (m.pct >= 0 ? "+" : "") + m.pct + "% on the " +
+                      Number(m.fill).toFixed(2) + " you paid";
+            }
+          }
+        } catch (e) {}
         await addLog({ kind: "ignored",
-          why: "exit policy: the ratchet owns " +
-               (sig.action === "TRIM" ? "trims" : "stop moves") + " — " +
-               (sig.caller || msg.author || "?") + "'s call noted, not traded",
-          text: String(msg.text || "").slice(0, 140) });
+          why: "entries only — the ratchet owns the exit; " +
+               (sig.caller || msg.author || "?") + "'s " + _what +
+               (sig.symbol ? " on " + sig.symbol : "") +
+               " noted, not traded" + _mark,
+          text: String(msg.text || "").slice(0, 140), author: msg.author });
         reply({ ok: true });
         return;
       }
