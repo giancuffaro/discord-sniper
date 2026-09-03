@@ -1041,3 +1041,12 @@ Filled 5.15, bracket stop born at 4.60. The ratchet then tried **three times** t
 New test reproduces it exactly: FakeWB gains `refuse_stop_moves`, accepts the bracket stop, then refuses every move — asserts the soft stop is recorded at 2.20 and sits above the stale resting stop. Suite green (test_positions 0 failures, others at their pre-existing counts).
 ### The other hit, not a bug
 NFLX 8/20 peaked +10.0% — exactly the arm threshold, so the ratchet had nothing to lock yet. Left alone.
+
+## 9/3 20:00 — "why not a conditional order at the round number?" (G)
+**Because Webull's API doesn't offer one for options.** Checked against v3.5.0/OPTIONS-BROKER-REFERENCE.md, sourced to developer.webull.com:
+- Options accept only `LIMIT`, `STOP_LOSS`, `STOP_LOSS_LIMIT`. No MARKET, no trailing.
+- `OTO`, `OCO`, `OTOCO` are **stock-only** — option orders do not support them even on a SINGLE strategy.
+- Nothing in the API triggers an order off a DIFFERENT instrument. There is no "buy SPY 645C when SPY *stock* touches 761."
+- The nearest thing, a BUY `STOP_LOSS_LIMIT` on the option, triggers on the OPTION's own price and only on the way UP — backwards for a pullback, where we want to buy after the stock dips and the call gets cheaper. It would suit a breakout entry, not this.
+So the polling hunt isn't a shortcut around a broker feature; it IS the trigger, and the only thing that matters is how fast it sees the touch.
+**Improvement shipped instead:** the hunt's entry poll was a flat 1.0s from when every price was an HTTP call. Since 9/2 the underlying comes from the MQTT push, so a poll is a dict lookup costing zero rate budget. The hunt now watches at **0.25s while the stream has that symbol fresh** and falls straight back to 1.0s if the stream drops (`Pullback(streamed_fn=..., entry_poll_streamed=0.25)`, `_pullback_streamed` in bridge.py, both tunable in settings under `pullback`). **4x less lag between the touch and the bid going in, for free.**

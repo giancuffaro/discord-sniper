@@ -1564,6 +1564,15 @@ WHOP_FEED_OK = [0.0]        # ts of the last SUCCESSFUL room read — "active"
 _PULLBACK = None
 
 
+def _pullback_streamed(sym):
+    """Is the underlying's price coming from the MQTT push right now?"""
+    try:
+        st = getattr(WB, "stream", None) or getattr(WB_LIVE, "stream", None)
+        return bool(st is not None and st.price(sym))
+    except Exception:                                   # noqa: BLE001
+        return False
+
+
 def _pullback_quote(sym):
     """Underlying stock price, borrowed from whichever client can answer."""
     last = None
@@ -1691,7 +1700,13 @@ def pullback_manager():
             poll_seconds=float(pcfg.get("poll_seconds", 2)),
             # Entry wait polls every second (his ask, 8/17) — the touch is
             # the whole game there. Management keeps the calmer 2s above.
-            entry_poll_seconds=float(pcfg.get("entry_poll_seconds", 1)))
+            entry_poll_seconds=float(pcfg.get("entry_poll_seconds", 1)),
+            # True when the MQTT push has a fresh price for this symbol, in
+            # which case the hunt polls at entry_poll_streamed instead — the
+            # closest thing to a broker-side "trigger at $761" that Webull's
+            # option API actually allows (9/3).
+            streamed_fn=_pullback_streamed,
+            entry_poll_streamed=float(pcfg.get("entry_poll_streamed", 0.25)))
     return _PULLBACK
 
 

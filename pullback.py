@@ -79,7 +79,8 @@ class Pullback:
 
     def __init__(self, quote_fn, enter_fn, close_fn, note,
                  timeout_seconds=300.0, poll_seconds=2.0,
-                 manage_seconds=6.5 * 3600, entry_poll_seconds=1.0):
+                 manage_seconds=6.5 * 3600, entry_poll_seconds=1.0,
+                 streamed_fn=None, entry_poll_streamed=0.25):
         self.quote_fn = quote_fn
         self.enter_fn = enter_fn
         self.close_fn = close_fn
@@ -93,6 +94,18 @@ class Pullback:
         # real Webull quote request that counts against rate limits.
         self.poll = float(poll_seconds)
         self.entry_poll = float(entry_poll_seconds)
+        # 9/3 (G: "why not a conditional order at the level?"). Webull's API
+        # has no conditional that triggers an OPTION order off the
+        # UNDERLYING's price — OTO/OCO/OTOCO are stock-only and an option
+        # stop triggers on the OPTION's own price, which for a pullback is
+        # backwards. So this poll IS the trigger, and the only thing that
+        # matters is how fast it sees the touch. Since the underlying price
+        # now comes from the MQTT push (stream_bus) instead of an HTTP call,
+        # a poll costs a dict lookup and zero rate budget — so when the
+        # stream has this symbol fresh we watch 4x faster. If the stream
+        # drops we fall straight back to the 1s HTTP cadence.
+        self.entry_poll_streamed = float(entry_poll_streamed)
+        self.streamed_fn = streamed_fn
         self.manage_seconds = float(manage_seconds)
         self._lock = threading.Lock()
         # 8/24: keyed per trader+contract, not per symbol. Vero's QQQ 705P
@@ -198,7 +211,13 @@ class Pullback:
         misses = 0
         try:
             while time.time() < deadline:
-                time.sleep(self.entry_poll)
+                _fast = False
+                if self.streamed_fn is not None:
+                    try:
+                        _fast = bool(self.streamed_fn(sym))
+                    except Exception:                   # noqa: BLE001
+                        _fast = False
+                time.sleep(self.entry_poll_streamed if _fast else self.entry_poll)
                 with self._lock:
                     if akey in self._cancelled:
                         self._cancelled.discard(akey)
