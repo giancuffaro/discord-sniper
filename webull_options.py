@@ -960,6 +960,14 @@ class WebullOptions:
                     fn = getattr(h, m, None)
                     if callable(fn):
                         found.append(("%s.%s" % (hname, m), fn))
+        # STOCK FIRST (9/3 12:40 autopilot): dir() hands the holders back
+        # alphabetically — crypto, event, futures, THEN stock — so every
+        # post-restart hunt fired ~34-68 doomed requests (417
+        # UNSUPPORTED_CATEGORY on crypto/event/futures snapshot) before the
+        # stock snapshot answered. Four restarts today = four bursts. Put the
+        # methods that say "stock" at the front; the winner is found in the
+        # first few tries and the burst is gone.
+        found.sort(key=lambda nf: 0 if "stock" in nf[0].lower() else 1)
         self._sfns = found
         return found
 
