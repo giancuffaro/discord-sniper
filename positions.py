@@ -2722,7 +2722,7 @@ class Book:
                                 "%s — anti-clip held the stop at +%.0f%% instead "
                                 "of +%.0f%% (never closer than 40%% of a +%.0f%% "
                                 "gain; %s days out)"
-                                % (sym, locked, _before, gain,
+                                % (p.get("symbol"), locked, _before, gain,
                                    _dte if _dte is not None else "?"))
             already = p.get("ratchet_locked_pct")
             if already is not None and locked <= float(already):
