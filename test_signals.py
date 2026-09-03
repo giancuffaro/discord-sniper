@@ -235,6 +235,40 @@ ok(got.fire and got.symbol == "NVDA" and got.strike == 205.0
 again = lg.resolve_loaded(sigmod.parse("Filled 4.20 more", cfg=CFG), "Unraveller")
 ok(not again.fire, "a second bare fill must not re-open the same trade: %s" % again.why)
 
+# --- 9/3: RWGates' shape — "$TICKER I took entry $PRICE fill" ---------------
+# Same two-message entry as 7/21 above, but the ticker leads the confirmation
+# line and "fill" trails the price instead of a fill verb leading it, so the
+# original RE_BARE_FILL (message must START with filled/bought/bto/entered)
+# never matched it. Silently dropped an NVDA 230C entry on 9/3 (real money:
+# nothing was sent, the caller ran it to +100%).
+half2 = sigmod.parse("@here $NVDA I took entry 1.37 fill", cfg=CFG)
+ok(half2.action == "OPEN" and not half2.fire and half2.needs_loaded
+   and half2.limit == 1.37 and not half2.symbol
+   and half2.named_symbol == "NVDA",
+   "a took-entry fill should be held back with the ticker pinned, not "
+   "dropped: %s" % half2.why)
+
+lg2 = Guards(dict(RES, allowed_symbols=CFG["allowed_symbols"]), here=NOSTOP)
+lg2.remember_loading(sigmod.parse("Loaded $NVDA .NVDA260904C230", cfg=CFG),
+                     "TradeLikeGates")
+got2 = lg2.resolve_loaded(
+    sigmod.parse("@here $NVDA I took entry 1.37 fill", cfg=CFG),
+    "TradeLikeGates")
+ok(got2.fire and got2.symbol == "NVDA" and got2.strike == 230.0
+   and got2.side == "CALLS" and got2.limit == 1.37,
+   "the took-entry fill should take the contract from the loading call, "
+   "got %r (%s)" % (got2.human(), got2.why))
+
+# A different ticker's loaded contract must never get paired with a
+# took-entry fill that named its own ticker.
+lg2.remember_loading(sigmod.parse("Loaded $META .META260904C630", cfg=CFG),
+                     "TradeLikeGates")
+wrong = lg2.resolve_loaded(
+    sigmod.parse("@here $NVDA I took entry 1.37 fill", cfg=CFG),
+    "TradeLikeGates")
+ok(not wrong.fire, "a took-entry fill naming NVDA must not buy the trader's "
+   "last-loaded META instead: %s" % wrong.why)
+
 # --- averaging in -----------------------------------------------------------
 # The average_in switch and the add ceiling are DELETED — adds always follow.
 # The one rule left isn't a preference: you can only add to a trade you hold.
