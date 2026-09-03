@@ -3775,8 +3775,13 @@ class Handler(BaseHTTPRequestHandler):
         # trades.log WITH the room's text, so the next "why did it exit?"
         # has its answer. settings.json execution.exit_policy:"full" is
         # the one-line way back to obeying room exits.
+        # 9/3 11:45 autopilot: the extension stamps EVERY order
+        # source:"discord-extension", so `not order.get("source")` never
+        # matched and this backstop was dead — the 11:00 "CLOSE NVDA" walked
+        # straight past it to the strike/expiry check. Only the bridge's OWN
+        # exit sources are exempt; a room poster of any name is gated.
         if order.get("action") in ("TRIM", "CLOSE", "STOPMOVE") \
-                and not order.get("source"):
+                and str(order.get("source") or "") not in ("pullback", "under-stop"):
             _xp = str((EXEC.get("exit_policy") or CFG.get("exit_policy")
                        or "entries_only")).lower()
             if _xp != "full":
