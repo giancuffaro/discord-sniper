@@ -2166,6 +2166,26 @@ def _parse_inner(text, author="", channel="", cfg=None):
                 sig.why = ('an "in" with detail around it — looking for the '
                            'PREP it belongs to')
                 return sig
+            # "$NVDA I took entry 1.37 fill" — RWGates' shape (9/3): the
+            # contract was named in an earlier LOADING call, this message
+            # only confirms the fill. "took entry" already reads as an entry
+            # verb above, but nothing caught it here because it doesn't start
+            # the message and isn't in RE_BARE_FILL's fill-verb list — it
+            # fell through to "no contract" and was silently dropped
+            # (RWGates NVDA 230C 9/4 @1.37, 9/3, never sent).
+            mte = RE_TOOK_ENTRY_FILL.search(t)
+            if mte:
+                sig.action = "OPEN"
+                sig.matched = "took-entry fill on a loaded contract"
+                sig.needs_loaded = True
+                sig.limit = float(mte.group(1))
+                # If they named a ticker ("$NVDA I took entry..."), pin it so
+                # resolve_loaded won't pair it with a different ticker's load.
+                sig.named_symbol = _bare_symbol(t, allowed)
+                sig.why = ('a fill confirmation ("took entry ... fill") with '
+                           'no contract in it — looking for the LOADING call '
+                           'it belongs to')
+                return sig
             sig.why = "sounds like an entry but there's no full contract in it"
             return sig
         sig.symbol, sig.strike = c["symbol"], c["strike"]
