@@ -649,6 +649,20 @@ def clean_text(raw):
     # A1 - normalize smart quotes so a quoted premium ("2.21") parses.
     t = t.replace("“", '"').replace("”", '"')
     t = t.replace("‘", "'").replace("’", "'")
+    # LABELLED TEMPLATE (9/2, Platinum Blue Collar) — mirrors parser.js:
+    # "LONG SETUP Ticker: SPY Contract: 764 C Entry Zone: .50 Risk: 20% ..."
+    # becomes "BTO SPY 764 C @ 0.50".
+    if re.search(r"\b(?:ticker|contract|entry(?:\s*zone)?)\s*:", t, re.I):
+        t = re.sub(r"\b(?:long|short)\s+setup\b", "BTO", t, flags=re.I)
+        t = re.sub(r"\bticker\s*:\s*", " ", t, flags=re.I)
+        t = re.sub(r"\bcontract\s*:\s*", " ", t, flags=re.I)
+        t = re.sub(r"\bentry(?:\s*zone)?\s*:\s*", " @ ", t, flags=re.I)
+        t = re.sub(r"\b(?:risk|tp\d?|target\d?|stop)\s*:\s*\$?\d+(?:\.\d+)?\s*%?", " ", t, flags=re.I)
+        t = re.sub(r"\b(?:risk|tp\d?)\s*:", " ", t, flags=re.I)
+        if not re.search(r"\b(bto|buy|in|entry|long)\b", t, re.I):
+            t = "BTO " + t
+    # ".50" is a premium of 0.50 (9/2) — a leading-dot price never parsed.
+    t = re.sub(r"(^|[\s@$])\.(\d{1,2})\b", r"\g<1>0.\2", t)
     return re.sub(r"\s+", " ", t).strip()
 
 
@@ -1926,7 +1940,8 @@ def _parse_inner(text, author="", channel="", cfg=None):
     #    opens a position by posting "34%". The no-contract test is what keeps
     #    a real entry from being swallowed here.
     pct_m = RE_PCT.search(t) or RE_PCT_ANY.search(t)
-    if pct_m and not RE_TRIM.search(low) and RE_PCT_RISK.search(t):
+    _has_contract = bool(RE_CONTRACT.search(t) or RE_CONTRACT_OSI.search(t))
+    if pct_m and not RE_TRIM.search(low) and RE_PCT_RISK.search(t) and not _has_contract:
         sig.why = ("that percentage is their risk, not a gain — nothing to act "
                    "on")
         return sig

@@ -373,6 +373,22 @@ function cleanText(raw) {
   t = t.replace(/^\s*\d{1,3}\.\s+/, "");
   // A1 - normalize smart quotes so a quoted premium ("2.21") parses.
   t = t.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  // LABELLED TEMPLATE (9/2, Platinum Blue Collar: "LONG SETUP Ticker: SPY
+  // Contract: 764 C Entry Zone: .50 Risk: 20% Stop TP1: 20% TP2: 763.93").
+  // Rewrite the labels into the grammar every other room already speaks:
+  // "BTO SPY 764 C @ 0.50". Risk/TP percentages go — they tripped the
+  // "that's their risk" bail before the contract was ever looked at.
+  if (/\b(?:ticker|contract|entry(?:\s*zone)?)\s*:/i.test(t)) {
+    t = t.replace(/\b(?:long|short)\s+setup\b/gi, "BTO")
+         .replace(/\bticker\s*:\s*/gi, " ")
+         .replace(/\bcontract\s*:\s*/gi, " ")
+         .replace(/\bentry(?:\s*zone)?\s*:\s*/gi, " @ ")
+         .replace(/\b(?:risk|tp\d?|target\d?|stop)\s*:\s*\$?\d+(?:\.\d+)?\s*%?/gi, " ")
+         .replace(/\b(?:risk|tp\d?)\s*:/gi, " ");
+    if (!/\b(bto|buy|in|entry|long)\b/i.test(t)) t = "BTO " + t;
+  }
+  // ".50" is a premium of 0.50 (9/2) — a leading-dot price never parsed.
+  t = t.replace(/(^|[\s@$])\.(\d{1,2})\b/g, "$10.$2");
   return t.replace(/\s+/g, " ").trim();
 }
 
@@ -1549,7 +1565,10 @@ function parseSignalInner(text, cfg) {
   //    position by posting "34%". The no-contract test is what stops a real
   //    entry from being swallowed here.
   const pctM = RE_PCT.exec(t) || RE_PCT_ANY.exec(t);
-  if (pctM && !RE_TRIM.test(low) && RE_PCT_RISK.test(t)) {
+  // ...unless the line also NAMES A CONTRACT — then it's an entry that
+  // happens to state its risk (Blue Collar's template, 9/2), not a risk note.
+  const _hasContract = new RegExp(RE_CONTRACT.source, "i").test(t) || RE_CONTRACT_OSI.test(t);
+  if (pctM && !RE_TRIM.test(low) && RE_PCT_RISK.test(t) && !_hasContract) {
     s.why = "that percentage is their risk, not a gain — nothing to act on";
     return s;
   }
