@@ -269,6 +269,43 @@ wrong = lg2.resolve_loaded(
 ok(not wrong.fire, "a took-entry fill naming NVDA must not buy the trader's "
    "last-loaded META instead: %s" % wrong.why)
 
+# --- 9/3: Unraveller's shape — "$TICKER avg $PRICE" with only a LOADING
+# behind it, no full-contract message ever fired --------------------------
+# "Loading meta 610 puts weeklies" then, 12 minutes later, "Meta avg 5.7
+# @here" — the avg line IS the fill. Silently dropped on 9/3 (real money:
+# nothing was sent).
+avg_half = sigmod.parse("Meta avg 5.7 @here", cfg=CFG)
+ok(avg_half.action == "OPEN" and not avg_half.fire and avg_half.needs_loaded
+   and avg_half.limit == 5.7 and avg_half.named_symbol == "META",
+   "a named-ticker avg should be held back with the ticker pinned, not "
+   "dropped: %s" % avg_half.why)
+
+lg3 = Guards(dict(RES, allowed_symbols=CFG["allowed_symbols"]), here=NOSTOP)
+lg3.remember_loading(sigmod.parse("Loading meta 610 puts weeklies", cfg=CFG),
+                     "Unraveller")
+got3 = lg3.resolve_loaded(sigmod.parse("Meta avg 5.7 @here", cfg=CFG),
+                          "Unraveller")
+ok(got3.fire and got3.symbol == "META" and got3.strike == 610.0
+   and got3.side == "PUTS" and got3.limit == 5.7,
+   "the avg fill should take the contract from the loading call, got %r (%s)"
+   % (got3.human(), got3.why))
+
+# A bare "my avg is $3.05" with NO ticker must stay exactly as before —
+# purely informational, never tried against the loading shelf (too
+# ambiguous which position it means).
+bare_avg = sigmod.parse("My avg is $3.05", cfg=CFG)
+ok(bare_avg.action is None and not bare_avg.needs_loaded,
+   "a bare avg with no ticker must stay informational, got action=%r why=%s"
+   % (bare_avg.action, bare_avg.why))
+
+# And an avg that follows a trade ALREADY filled (no PREPARE on the shelf)
+# must still refuse rather than invent a position — same as before this fix.
+lg3b = Guards(dict(RES, allowed_symbols=CFG["allowed_symbols"]), here=NOSTOP)
+already = lg3b.resolve_loaded(sigmod.parse("SPY avg 2.10 @here", cfg=CFG),
+                              "Random Trader")
+ok(not already.fire, "an avg with a ticker but nothing loaded for that "
+   "trader must refuse, not fire: %s" % already.why)
+
 # --- averaging in -----------------------------------------------------------
 # The average_in switch and the add ceiling are DELETED — adds always follow.
 # The one rule left isn't a preference: you can only add to a trade you hold.
