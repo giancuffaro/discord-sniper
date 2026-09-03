@@ -1,10 +1,11 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-03 17:16 (G asked about RWGates specifically — found and
-fixed a real silent-drop: "$TICKER I took entry $PRICE fill" with no contract
-repeated in the message, RWGates' actual live shape, fell through the parser
-entirely. Extension 3.5.13 — RELOAD IT.)
+Last updated: 2026-09-03 17:31 (G: "double check every single room, I need
+all rooms firing correctly" — full 26-room audit off today's real captures.
+3 real silent-drops found and FIXED (RWGates, Unraveller x2); 1 real bug
+found and flagged, NOT fixed — too risky to rush (Mike/AMD reply-quote
+guard). Extension 3.5.14 — RELOAD IT.)
 "9/2 EVENING" at the bottom. Bot -$62 on 3 closes, Gian +$114 on 9 hand
 trades, account +$52 gross / +$45.71 net. Six bridge fixes + extension
 3.5.7 (RELOAD IT): pulled stops go back when an exit is abandoned, a
@@ -857,3 +858,71 @@ is Python-tooling-only (bridge.py never imports it), no bridge restart needed.
 **Not investigated further today:** whether other rooms use this same
 "$TICKER I took entry $PRICE fill" shape (RWGates is the only one confirmed
 so far) — worth a corpus check next time replay_check runs across more days.
+
+## 9/3 17:31 — FULL 26-ROOM AUDIT (G: "double check every single room, I need all rooms firing correctly")
+
+**IMPORTANT LIMITATION FOUND FIRST:** replay_check.py's "0 silent drops" this
+morning was blind to all of this. Its whole method is "the parser assigned
+an action (OPEN/ADD/CLOSE) but nothing downstream acted on it" — it has NO
+way to catch a message the parser doesn't even recognize as actionable at
+all (`action: null`), which is exactly the shape of every bug below. Built a
+one-off heuristic instead for today (every raw message today, run through
+jsparse, action=null AND contains an entry word + a price) — 731 raw
+messages -> 11 suspects -> 3 real bugs, rest were false positives (analysis/
+"WATCHING" chatter that happens to mention a price) or already-known-working
+(RWGates' HOOD, resolved by the AI-vision fallback). This blind spot in
+replay_check.py itself is unresolved — worth a proper fix (some kind of
+per-room "expected signal rate" baseline) next time there's room to build it.
+
+**3 bugs found and FIXED today** (all the same root shape — a fill
+confirmation with no strike, where the strike was named in an earlier
+LOADING message; all now pin `named_symbol` so they can only resolve against
+that SAME trader's SAME ticker, never a different one they also loaded):
+1. RWGates "$TICKER I took entry $PRICE fill" (NVDA 230C, see above).
+2. Unraveller/Honeydrip "$TICKER avg $PRICE" ("Meta avg 5.7" — the RE_AVG
+   branch used to always say "nothing to do with it," now checks the
+   loading shelf first when a ticker is named).
+3. Unraveller/Honeydrip "Filled $PRICE ... on $TICKER" ("Filled 2.26 starter
+   size on AAPL" — RE_BARE_FILL used to disable ITSELF the moment a ticker
+   appeared in the message, on the theory a named ticker meant something
+   else was going on; it fell through to the stateless AI-vision fallback,
+   which guessed a nonsense "AAPL EQUITY @ 2.26" — AAPL doesn't trade near
+   $2 — instead of resolving the AAPL 330P Unraveller had loaded 3 min
+   before). This is the same class as #1 and #2, found by the audit sweep.
+All 3: extension/parser.js + signals.py mirrored, 6 new test_signals.py
+cases (2 per bug: parse-level + end-to-end resolve-through-the-shelf), 2 new
+samples.txt lines, parity-checked (same 5 pre-existing gaps, 0 new),
+test_signals/test_positions/test_resolve all green (same 4 known Brett-trim
+fails, 0 new). Extension 3.5.14 — **RELOAD IT**.
+
+**1 bug found, NOT fixed — flagged for G's call:** Mike (Honeydrip
+daytrades) replied to his own "Loading AMD 9/4 445 Puts" with "Filled
+starters at 4.60" (9:41am) — background.js's reply-quote guard
+(`if (msg.reply) { ... }`, added specifically to stop a past incident where
+"Mike replying to his own morning entry" made the bot re-buy AMD at top
+tick off the quoted old text) treats EVERY reply as pure quoted noise and
+refuses it outright, never even trying needs_loaded resolution. That guard
+is doing its job in general — but it can't currently tell "a reply that
+quotes an unrelated OLD trade" (must suppress) from "a reply that IS the
+fresh fill confirmation for the SAME loading call it's replying to" (should
+resolve), because content.js flattens the quoted text and the new reply
+text into one string with no boundary. Fixing this needs content.js to
+capture reply-quoted text separately from the new body — a bigger,
+higher-risk change than the 3 above (this exact guard exists BECAUSE a bad
+fix here once caused a real wrong re-buy), so it's flagged rather than
+rushed. Likely low financial cost today specifically (buying power was
+$65-$113 most of the morning — probably would have been refused anyway,
+same as the other AMD/GOOGL/TSLA misses), but worth fixing properly when
+there's room to test it against the original incident.
+
+**Every other room checked against today's baseline and explained, not
+bugs:** Whop Futures / Whop High Risk / NGD ngd-trades / all futures rooms —
+zero activity or not, doesn't matter, every futures broker is OFF (a
+switch, not a parser problem). Options Insider — 0 today, known deathwatch
+(last real post 8/12, cancel-by 9/11). Vero 2 — 0 today, posts ~weekly, last
+9/1, within normal cadence. Boka 2 — 0 today, known low-frequency/equity-
+swings room. Platinum-3 (day-trades) — 0 today, ~1 msg/10 days historically,
+normal. Whop Swing Trades — 0 today, Felony hasn't posted there since 8/27
+(known). RWGates' own HOOD entry (9:32am, 1.83) — correctly read via the
+AI-vision fallback and correctly REFUSED for buying power ($113 vs $251),
+not a bug.
