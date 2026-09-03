@@ -682,3 +682,16 @@ There is ONE parser for every room (extension/parser.js; signals.py mirrors it f
   • "closed AAPL for +20%", "QQQ OUT @ 150% PROFIT", "sold NVDA at +35%" read as 20%/150%/35% TRIMS (ignored by exit policy) → now full CLOSE ("they posted the gain, not a trim size").
 - Suite: test_signals same 4 pre-existing failures (Brett trims); parity 5 pre-existing field gaps; test_resolve green. Extension 3.5.11 — reload.
 - replay_check now flags only OPEN/ADD/CLOSE silence (PREPARE/trims are silent by design). NGD's 86 radar signals/day are OPENs that go nowhere because every futures broker is OFF — a switch, noted.
+
+## 9/2 22:00 — "one collective parser?" — it already IS one; the per-room stuff is PERMISSIONS
+There is exactly ONE grammar: extension/parser.js (signals.py mirrors it for tests/tools only). No room has its own parser and never did — a format learned in one room works in all 26. Nothing to merge or delete.
+What IS per-room is routing/permission, not reading:
+1. `channel_live` — LIVE (real money) vs TEST. HIS switch.
+2. `channel_disabled` — room OFF (drops everything; now logs once/hour when a real call is dropped).
+3. `SHADOW` (hardcoded in background.js) — read + graded, FIRES NOTHING. Probation.
+4. `spx_entry_channels` — only Boka 3 may fire SPX as SPY.
+5. `bare_pct_trims=false` for Whop — a bare "20%" there is a progress update, not a trim.
+Those 5 should stay: they're money controls, not parsing.
+**THE REAL FINDING — the SHADOW list is what's costing signals.** 6 rooms on probation since 8/23: Platinum-1 (nitro), Platinum-2 (futures-alerts), Platinum-3 (day-trades), Platinum-4 (ei-alerts), Platinum equity-swings, NGD ngd-trades. **106 entries in the last 10 days were read, graded, and never fired** (NGD 89, nitro 11, futures-alerts 4, ei-alerts 1, day-trades 1). This — not a parser gap — is why the scoreboard showed nitro "40 signals / 0 sent" and NGD "86 signals / 0 judged".
+Correction to the 9/1 Blue Collar SPY 764C mystery: Platinum day-trades is a SHADOW room, so it could never have fired anyway. The parser bug was real and is fixed, but the room is on probation.
+Also note: Platinum day-trades appears in BOTH channel_live and SHADOW — shadow wins (returns first). Graduating it would make it fire LIVE. G's call.
