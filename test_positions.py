@@ -77,8 +77,16 @@ class FakeWB:
         self.calls.append(("cancel", oid))
         return True
 
+    # 9/3: set refuse_stop_moves=True to reproduce the TSLA 8/26 failure —
+    # the bracket stop is accepted, then every ratchet move is refused by the
+    # broker (there: DAY_BUYING_POWER_INSUFFICIENT, three times at +13/16/14%).
+    refuse_stop_moves = False
+
     def place_stop(self, symbol, side, strike, expiry, qty, fill_price,
                     stop_price=None):
+        if self.refuse_stop_moves and any(c[0] == "stop" for c in self.calls):
+            raise RuntimeError("HTTP Status: 417, Code: "
+                               "OPENAPI_DAY_BUYING_POWER_INSUFFICIENT")
         self.next_id += 1
         stop = (max(0.01, round(float(stop_price), 2)) if stop_price is not None
                 else max(0.01, round(float(fill_price) * 0.80, 2)))
@@ -764,6 +772,32 @@ _zstops = [c for c in _ZWB.calls if c[0] == "stop"]
 ok(_zstops and abs(_zstops[-1][3] - 2.40) < 0.005,
    "0DTE at +30%%: his ladder locks the full +20%% (2.40) — anti-clip does NOT "
    "apply to same-day expiries, got %s" % (_zstops[-1][3] if _zstops else None))
+
+# ---- THE TSLA 8/26 FAILURE (found 9/3 by auditing every filled trade for
+# "went green past +10%% but closed red"). The bracket stop is accepted, then
+# the broker REFUSES every ratchet move. The old code logged "the watchdog on
+# this PC covers the gap" and left p["stop"] at the ORIGINAL level, so the
+# watchdog guarded the wrong price and a +16%% winner died at -11%% for -$45.
+# The intended level must now be enforced locally as a soft stop.
+_FWB = FakeWB(fills=True, ask=2.00, bid=2.00)
+_fb = book(_FWB)
+_fb.ratchet_on = True
+_fb.take_profit_pct = 20.0
+_fb.stop_pct = 10.0
+_FWB.limits["f0"] = 2.00; _FWB.qtys["f0"] = 1
+_ftk = ticket(_FWB, limit=2.00, oid="f0")
+_fb.entry_sent(dict(ORDER, trader="RefusedGuy"), _ftk)
+_FKEY = positions.key_of("RefusedGuy", "SPY")
+settle(_fb, _FKEY)
+_FWB.refuse_stop_moves = True                 # broker says no from here on
+_fb.auto_ratchet(_FKEY, 2.40)                 # +20% -> wants the stop at +10%
+_soft = (_fb.info(_FKEY) or {}).get("soft_stop")
+ok(_soft is not None and abs(float(_soft) - 2.20) < 0.005,
+   "when the broker REFUSES the ratchet's stop move, the level it wanted is "
+   "still recorded as a soft stop the watchdog enforces (2.20), got %s" % _soft)
+ok(float(_soft) > float((_fb.info(_FKEY) or {}).get("stop") or 0),
+   "the soft stop sits ABOVE the stale resting stop — that gap is exactly "
+   "what cost $45 on TSLA 8/26")
 # Price dips back to +21% (still above the +20 rung, below the +30 rung) — the
 # already-locked +20% stop must NOT be loosened back down to +10%.
 rb.auto_ratchet(RKEY, 2.42)
