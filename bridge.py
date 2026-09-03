@@ -4396,7 +4396,8 @@ def main():
     # line, or exactly what's wrong. Read-only; it never trades.
     def _postcheck_loop():
         seen_id = [0]
-        WATCH = ("filled", "closed", "stopped", "nofill", "trimmed", "failed")
+        WATCH = ("filled", "closed", "stopped", "nofill", "trimmed", "failed",
+                 "pulled")   # 9/3: a pull is exactly when a real fill hides
         first = [True]
         while True:
             try:
@@ -4479,6 +4480,35 @@ def main():
                         if ghost:
                             bad.append("book holds %s, the account doesn't"
                                        % ",".join(sorted(ghost)))
+                        # ORPHAN — the one that bit on 9/3: the ACCOUNT holds
+                        # a contract the book has no live position for (SPY
+                        # 771P sat there four hours after a bad "no fill").
+                        # Anything the bot ever placed and now thinks it's
+                        # flat on is an orphan; his own trades are adopted
+                        # separately and skipped by size/adopted rules.
+                        _knew = set()
+                        for _p in (snap.get("positions") or {}).values():
+                            if _p.get("kind") == "future":
+                                continue
+                            _knew.add("%s|%s|%s" % (str(_p.get("symbol") or "").upper(),
+                                                    _p.get("strike"), _p.get("expiry")))
+                        _live_keys = set()
+                        for _p in (snap.get("positions") or {}).values():
+                            if _p.get("state") == "filled" and int(_p.get("qty") or 0) > 0:
+                                _live_keys.add("%s|%s|%s" % (str(_p.get("symbol") or "").upper(),
+                                                             _p.get("strike"), _p.get("expiry")))
+                        for _r in rows:
+                            if _r.get("kind") == "future" or not _r.get("strike"):
+                                continue
+                            _k = "%s|%s|%s" % (str(_r.get("symbol") or "").upper(),
+                                               _r.get("strike"), _r.get("expiry"))
+                            if _k in _knew and _k not in _live_keys:
+                                bad.append("the ACCOUNT holds %s %s%s x%s that the "
+                                           "book thinks is closed — orphan, nothing "
+                                           "is managing it"
+                                           % (_r.get("symbol"), _r.get("strike"),
+                                              "C" if str(_r.get("side")) == "CALLS" else "P",
+                                              _r.get("qty")))
                 except Exception:                       # noqa: BLE001
                     pass
 
