@@ -1836,6 +1836,11 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
         if (t) { clearTimeout(t); VOICE_QUIET.delete(tabId); }
         if (LISTENING.has(tabId)) return;   // the grace held; nothing to start
         if (!(await dgKey())) return;               // no Deepgram key = no ears
+        // Our own server's notification pings are not a trader talking
+        // (9/2: "auto-listening to #sniper-alerts-options" — a Deepgram
+        // session on the announcer channel). Text channels that merely
+        // beep are skipped; only voice/live rooms get ears.
+        if (/sniper-alerts|sniper hq/i.test(tab.title || "")) return;
         const label = (tab.title || "voice").replace(/ \| Discord.*/i, "").slice(0, 40);
         const r = await startListening(tabId, label);
         if (r && r.ok) {
