@@ -647,3 +647,14 @@ Built from DS Logs exports (every message the reader saw + bot verdicts) and day
 - **Whop Day/High Risk/Futures:** read fine (53/41/35 signals) — Felony's NQ futures calls; all futures brokers OFF → nothing fires (a switch).
 - **"Rafita Trades" 1537061197931618344 is actually NGD #ngd-trades (Ninjago Futures Radar bot, MGC).** Relabelled in rooms.txt. Futures → also gated by the OFF brokers.
 - Unlisted-but-signaling = the old individual ZT rooms (last 8/28, covered by the mashup) and Sniper HQ (our own announcer server — must never be traded). Fine.
+
+## 9/2 20:00 — "why aren't we finding bugs like these when I tell you to run everything?"
+Honest answer: "run everything" tested plumbing (bridge, bus, stream, unit tests with canned phrases). It never replayed the day's REAL room messages against what the bot decided. Now it does:
+- **replay_check.py** — every captured message today → signals.parse → cross-checked with extension verdicts + bridge.log; lists SILENT DROPS per room. Wired into the 16:45 daily task (step 4) and into any "run everything" from now on. RULE: a silent drop in a LIVE room is a bug until proven otherwise.
+- **Corrections to my 19:20 findings:** RWGates IS read and traded — his `.NBIS260904C215` dot notation parses (PREPARE on "loaded", OPEN on "took entry … Fill: 1.80", ADD on "adding"); 9:44 NBIS was AI-read, strike-translated to 205C and REFUSED for buying power ($511 vs $157). My scoreboard regex missed the dot notation — the scoreboard was wrong, not the bot. Options Insider stays configured (G may rejoin).
+- **Extension log cap 400 → 2500**: the 400 cap meant today's export had NO verdicts before 10:51, so morning misses (e.g. Nitro "Entry Contract: TSLA $350p Price: $1.59" 9:38 — parses OPEN, no bridge line, no verdict) can't be audited. Tomorrow they can.
+- **Fresh ≠ history (content.js)**: a discarded/reloaded room tab filed every on-screen message as history, including calls seconds old. Now a message < 3 min old is live regardless of reader start; the stale gate still refuses older OPEN/ADD.
+- **OFF rooms are loud**: a room switched OFF in the popup now logs once/hour when a real call is dropped, and the export's CURRENT STATE lists OFF rooms and SHADOW rooms.
+- ZT mashup readings today: ORCL 147C (refused $), AMD (refused $), TSLA 360C lotto (pullback hunt), SPY (refused $), IWM 294C (bid 90s, no fill), SPX 7665C (ignored — SPX→SPY not enabled for the mashup channel), IREN 42C (sent → 40C held), SLV 60C (refused $ at 15:59). ZT is read.
+- Cosmetic: bridge answers a buying-power refusal with HTTP 502 → extension logs `<failed>` instead of `<skipped>`. Fix later.
+Extension 3.5.9 — reload.
