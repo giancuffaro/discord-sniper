@@ -818,3 +818,42 @@ sync-watch runs — see below).
   healthy.
 - Announcer: still paused (G, 8/31 14:55) — skipped per standing
   instruction, not re-enabled.
+
+## 9/3 17:16 — RWGates wasn't silent: a real entry was silently dropped, fixed
+G asked directly why his RWGates/Summit Trading Strategies ($189/mo) looked
+quiet. It wasn't — checked the live room via Claude-in-Chrome and found two
+real TradeLikeGates entries this morning that never made it into trades.log:
+- **9:32 HOOD 260904C120 @1.83 — correctly read, correctly REFUSED** (buying
+  power was $113, needed $251). Not a bug.
+- **9:40-9:44 NVDA 260904C230 @1.37 — silently dropped, no REFUSED line, no
+  trace at all.** He posted "Loaded $NVDA .NVDA260904C230" (PREPARE, parsed
+  fine), then a few minutes later "$NVDA I took entry 1.37 fill" with NO
+  contract repeated in that second message. Ran to +100% per his own 9:55
+  recap; the account was never in it.
+
+**ROOT CAUSE, found and fixed:** the two-message entry ("Loading X" then a
+bare fill) is a known, handled shape — but only when the fill line itself
+STARTS with a fill verb (filled/bought/bto/entered — RE_BARE_FILL) or starts
+with "in" (RE_BARE_IN). RWGates' actual phrasing puts the ticker first and
+"fill" at the END ("$NVDA I took entry 1.37 fill"), which is not in the verb
+list and doesn't start the line — it fell through every branch to "sounds
+like an entry but there's no full contract in it" and was dropped with zero
+trace, not even a why-not log line.
+
+**FIX (extension/parser.js + signals.py, mirrored; both compile-checked,
+parity-checked against samples.txt, test_signals.py green + 3 new cases):**
+new RE_TOOK_ENTRY_FILL branch — `\btook\s+entr(?:y|ies)\b...fill\b` — anywhere
+in the message (not anchored to the start), sets needs_loaded + pins
+named_symbol so resolveLoaded can't pair it with a different ticker's most
+recent load (same safety rail as the existing "loose in" branch). Verified:
+the exact NVDA text now resolves through the existing loading-shelf mechanism
+(rememberLoading/resolveLoaded in guards.js — a 4-hour per-trader shelf that
+already existed and already worked for RE_BARE_FILL/RE_BARE_IN, just never
+saw this shape). test_signals.py: same 4 pre-existing Brett-trim failures,
+0 new. test_parity.js: same 5 pre-existing gaps, 0 new. Extension 3.5.13 —
+**RELOAD IT** (chrome://extensions) for this to take effect live; signals.py
+is Python-tooling-only (bridge.py never imports it), no bridge restart needed.
+
+**Not investigated further today:** whether other rooms use this same
+"$TICKER I took entry $PRICE fill" shape (RWGates is the only one confirmed
+so far) — worth a corpus check next time replay_check runs across more days.
