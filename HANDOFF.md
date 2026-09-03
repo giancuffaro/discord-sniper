@@ -1,10 +1,11 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-03 17:16 (G asked about RWGates specifically — found and
-fixed a real silent-drop: "$TICKER I took entry $PRICE fill" with no contract
-repeated in the message, RWGates' actual live shape, fell through the parser
-entirely. Extension 3.5.13 — RELOAD IT.)
+Last updated: 2026-09-03 17:31 (G: "double check every single room, I need
+all rooms firing correctly" — full 26-room audit off today's real captures.
+3 real silent-drops found and FIXED (RWGates, Unraveller x2); 1 real bug
+found and flagged, NOT fixed — too risky to rush (Mike/AMD reply-quote
+guard). Extension 3.5.14 — RELOAD IT.)
 "9/2 EVENING" at the bottom. Bot -$62 on 3 closes, Gian +$114 on 9 hand
 trades, account +$52 gross / +$45.71 net. Six bridge fixes + extension
 3.5.7 (RELOAD IT): pulled stops go back when an exit is abandoned, a
