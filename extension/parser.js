@@ -767,6 +767,30 @@ function parseSignalInner(text, cfg) {
   }
   s.clean = t;
   const low = t.toLowerCase();
+
+  // LEVELS / WATCHLIST ROW (9/3 history sweep, TradingTheTrend's daily post:
+  // "QQQ 726c > 725.00 715p < 716.00 MU 1000c > 980.00 NVDA 224c > 223.00").
+  // This parsed as OPEN QQQ 726C paying $725.00 — a false BUY at 600x the
+  // real premium. Two tells, either is enough: a ">" or "<" sitting between
+  // a contract and a number (these are stock TRIGGER levels, not prices), or
+  // three-plus different contracts in one message (nobody buys 4 at once in
+  // one line). Neither shape is ever an order.
+  if (/\d\s*[cp]\b\s*[><]\s*\d/i.test(t)) {
+    s.why = "a levels/watchlist row (\"726c > 725.00\" is a trigger level, " +
+            "not a premium) — nothing was sent";
+    return s;
+  }
+  {
+    const _re = /(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?\s*(?:calls?|puts?|c|p)\b/gi;
+    const _seen = new Set();
+    let _m;
+    while ((_m = _re.exec(t)) !== null) _seen.add(_m[0].toLowerCase().replace(/\s+/g, ""));
+    if (_seen.size >= 3) {
+      s.why = "a watchlist — " + _seen.size + " different contracts in one " +
+              "message, that's a list, not an order";
+      return s;
+    }
+
   // HARD VETO — a trader saying NO outranks every pattern below, including
   // the trader-specific formats that return before the normal veto list is
   // consulted. 8/24: bullwinkle's "SNDK $1500 C 41.00 I AM NOT GETTING IN
@@ -1223,28 +1247,6 @@ function parseSignalInner(text, cfg) {
 
   if (t.includes("?")) { s.why = "it's a question, not a call"; return s; }
 
-  // LEVELS / WATCHLIST ROW (9/3 history sweep, TradingTheTrend's daily post:
-  // "QQQ 726c > 725.00 715p < 716.00 MU 1000c > 980.00 NVDA 224c > 223.00").
-  // This parsed as OPEN QQQ 726C paying $725.00 — a false BUY at 600x the
-  // real premium. Two tells, either is enough: a ">" or "<" sitting between
-  // a contract and a number (these are stock TRIGGER levels, not prices), or
-  // three-plus different contracts in one message (nobody buys 4 at once in
-  // one line). Neither shape is ever an order.
-  if (/\d\s*[cp]\b\s*[><]\s*\d/i.test(t)) {
-    s.why = "a levels/watchlist row (\"726c > 725.00\" is a trigger level, " +
-            "not a premium) — nothing was sent";
-    return s;
-  }
-  {
-    const _re = /(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?\s*(?:calls?|puts?|c|p)\b/gi;
-    const _seen = new Set();
-    let _m;
-    while ((_m = _re.exec(t)) !== null) _seen.add(_m[0].toLowerCase().replace(/\s+/g, ""));
-    if (_seen.size >= 3) {
-      s.why = "a watchlist — " + _seen.size + " different contracts in one " +
-              "message, that's a list, not an order";
-      return s;
-    }
   }
 
   // An explicit buy-to-open with a real contract is an ORDER, not chatter — a
