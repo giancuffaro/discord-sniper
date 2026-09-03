@@ -445,3 +445,17 @@ Trade Alert TRADE ENTRY - MNQ Shorts - 1/4 Size Position Entry: 29868.25 Sl: 298
 TRADE ENTRY - MNQ Shorts Entry: 29868.25 Sl: 29888.25 TP 1 : 29818.25
 TRADE ENTRY - MNQ Long Entry: 29868.25 Sl: 29848.25 TP 1 : 29918.25
 TRADE ENTRY - MNQ Long Entry: 29868.25 Sl: 29888.25
+@everyone 0DTE GOOGL 345C .84 IG: ClutchInvestments | None of this is financial advice
+@everyone 8/28 SLV 60C 1.68 swing IG: ClutchInvestments | None of this is financial advice
+@everyone Swing: 9/04 SMR 10C .54 Grabeed HALF POSITION. Will add on pullback if we get one.
+Contract: QQQ $711 p Price: $1.68 @Options Scalps
+Aapl Aug 26 315 call at 1.75 Tartet 2.10
+I'm in 80 C 9/18s for uber
+Short NQ @ 29530 Stop 29570 Target 29450 Very high risk here as we are hovering right over intraday lows + PWL. Entering early as if we break this should see a nice move
+MGC SHORT (1m) @ 4496.35 | TP:4484.35 SL:4504.35 | Prob:88.4% | R:R:1.5 NEW POTENTIAL SIGNAL - MGC SHORT A setup has been detected on the futures radar. probability
+MNQ 24674 long quick scalp PT 29692 tight sl
+@everyone MES quick short here 7697
+mnq long 29100 Do not take this as financial advice! || ⏱︎ 09:56:24 EST
+Challenge Account LONG SETUP Ticker: SPY Contract: 764 C Entry Zone: .50 Risk: 20% Stop TP1: 20% TP2: 763.93 @Options Scalps
+Vero [PAID], Server Tag: PAID PAID SPY 763C 9/2 1.22 2 CONTRACTS @vero-alerts
+@everyone SOFI 08/28 $18 Calls @$0.51 SL: None @1KingMaker1 - For Educational Purposes Only!

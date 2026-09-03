@@ -926,6 +926,27 @@ zcheck("SHORT SETUP Ticker: QQQ Contract: 705 P Entry Zone: 1.10 Risk: 25%", act
 zcheck("Vero [PAID], Server Tag: PAID PAID SPY 763C 9/2 1.22 2 CONTRACTS @vero-alerts",
        action="OPEN", fire=True, symbol="SPY", strike=763.0, side="CALLS", limit=1.22)
 zcheck("risking 20% on this one", action=None)
+# COLLECTIVE CORPUS (9/2 evening): formats found by replaying 13 days of every room.
+zcheck("@everyone 0DTE GOOGL 345C .84 IG: ClutchInvestments | None of this is financial advice",
+       action="OPEN", fire=True, symbol="GOOGL", strike=345.0, side="CALLS", limit=0.84)
+zcheck("@everyone Swing: 9/04 SMR 10C .54 Grabeed HALF POSITION. Will add on pullback if we get one.",
+       action="OPEN", fire=True, symbol="SMR", strike=10.0, side="CALLS", limit=0.54)
+zcheck("Contract: QQQ $711 p Price: $1.68 @Options Scalps", action="OPEN", fire=True,
+       symbol="QQQ", strike=711.0, side="PUTS", limit=1.68)
+zcheck("Aapl Aug 26 315 call at 1.75 Tartet 2.10", action="OPEN", fire=True,
+       symbol="AAPL", strike=315.0, side="CALLS", limit=1.75)
+zcheck("I'm in 80 C 9/18s for uber", action="OPEN", fire=True, symbol="UBER", strike=80.0, side="CALLS")
+zcheck("Short NQ @ 29530 Stop 29570 Target 29450 Very high risk here as we are hovering right over "
+       "intraday lows + PWL. Entering early as if we break this should see a nice move",
+       action="OPEN", fire=True, symbol="NQ", limit=29530.0)
+zcheck("MGC SHORT (1m) @ 4496.35 | TP:4484.35 SL:4504.35 | Prob:88.4% | R:R:1.5 NEW POTENTIAL SIGNAL - "
+       "MGC SHORT A setup has been detected on the futures radar. probability",
+       action="OPEN", fire=True, symbol="MGC", limit=4496.35)
+zcheck("@everyone MES quick short here 7697", action="OPEN", fire=True, symbol="MES", limit=7697.0)
+zcheck("mnq long 29100 Do not take this as financial advice! || 09:56:24 EST", action="OPEN",
+       fire=True, symbol="MNQ", limit=29100.0)
+zcheck("@everyone Update SPY 08/19 771P @.89 (+25%) Jpm Options", action=None)
+zcheck("Idea Watching AMZN 260 call 8/28 @Namrood", action=None)
 zcheck("Comment TSLA $400c on watch", fire=False, action=None)
 zcheck("Comment NVDA $187.5c on watch, will be quarter sized again", fire=False,
        action=None)
