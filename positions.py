@@ -2895,6 +2895,24 @@ class Book:
                                      ref_price=price)
                 except TypeError:
                     self._sell_retry(wb0, key, sym0, side0, strike0, expiry0, n)
+                # BROKER PRICE, NOT THE BID (9/3, WMT): the trim was written
+                # down at p["last_bid"] — WMT sold at the broker for 2.21 and
+                # the book recorded 2.17, so a +$4 trade journaled as +$0.
+                # Same lesson as the 8/27 phantom exit: ask what it ACTUALLY
+                # sold for. Only overwrite on a sane answer; the bid stands
+                # if the broker can't say.
+                try:
+                    _real = wb0.last_sell_fill(sym0, side0, strike0, expiry0,
+                                               since=time.time() - 120)
+                    if _real and float(_real) > 0 and abs(float(_real) - price) < max(0.5, price * 0.5):
+                        if abs(float(_real) - price) >= 0.005:
+                            self._event(key, "update",
+                                        "%s — the broker filled that trim at %.2f, "
+                                        "not the %.2f bid I quoted; using the real "
+                                        "fill" % (sym0, float(_real), price))
+                        price = float(_real)
+                except Exception:                       # noqa: BLE001
+                    pass
             except Exception as e:                      # noqa: BLE001
                 # A trim can collide with a stop exactly like a close can
                 # (his pick #6, 8/18). If the broker shows nothing left, the
