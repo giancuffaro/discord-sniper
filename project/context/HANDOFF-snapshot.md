@@ -1,8 +1,11 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-03 17:42 (G: "can we add this kind of scan for missed
-entrys after every signal? we need to be catching these" — built a live,
+Last updated: 2026-09-03 18:05 (ran the missed-entry scan retroactively
+across every day since the bot went live — 4 more historical RWGates
+misses found, see bottom section). Prior: G: "can we add this kind of
+scan for missed entrys after every signal? we need to be catching these"
+— built a live,
 real-time missed-entry watcher (extension) PLUS a batch version wired into
 replay_check.py (autopilot). Extension 3.5.15 — RELOAD IT.)
 "9/2 EVENING" at the bottom. Bot -$62 on 3 closes, Gian +$114 on 9 hand
@@ -959,3 +962,41 @@ sig.action, sig.fire, or any order):
    human glance, not a claim every flag is a real miss.
 Both compile-checked (py_compile + node --check), full test suite still the
 same 4 known Brett-trim fails, 0 new. Extension 3.5.15 — **RELOAD IT**.
+
+## 9/3 18:05 — HISTORICAL missed-entry catch-up (all days since bot went live)
+G: "did you run it already or can you run it now for today and every past
+day since the bot has been alive to catch up?"
+
+First fixed a real bug in replay_check.py itself: `newest_export()` always
+loaded the single most-recently-modified DS Logs file no matter what DAY
+was requested — running it for a past date would silently load TODAY's
+file, find no matching date string, and report a false "0 results" for
+every historical day. Added `export_for_day(day)` (resolves the actual
+`DS Logs/signal-room-chat <Mon>-<DD>-<YYYY>.txt` for the requested day,
+filename first, content-scan fallback) and wired it into `main()`. Compile
+clean. This is a diagnostic-tool fix only, not the trading path.
+
+Ran `find_missed_entries` for every day we have a DS Logs export for —
+Aug 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 31, Sep 1, 2, 3 (2026) — the
+full range since the bot's chat capture started.
+
+**Result — the RWGates "took entry / avg / fill" pattern (fixed today as
+RE_TOOK_ENTRY_FILL) was ALSO silently missed on 4 earlier days, not just
+today:**
+- 8/19 09:35 — META 535P, "Fill is 1.79 not using a lot of size here"
+- 8/20 09:38 — NFLX 80C, "I took entry $NFLX NFLX260821C80 1.28"
+- 8/21 09:59 — HOOD 102C, "3.65 took entry"
+- 8/26 09:35 — MSFT 495C, "1.56 fill took entry"
+- 8/25 09:37 — flagged but symbol mismatch (shelf had MRNA loaded, message
+  named META) — likely two different unconfirmed calls, not one clean miss;
+  didn't count it as a clean instance.
+
+Two more flags were heuristic noise, not real misses (confirmed by
+reading the message body): 8/25 10:28 KingBeeAri TSLA — a "watching above
+353.5" note, not a fill; 9/2 09:50 Midas SPY — "will be my add point once
+I fill," a forward-looking plan, not a fill. Every other day: 0 flags.
+
+These are historical — the bug is fixed going forward (extension 3.5.15),
+and nothing can be done about entries the bot missed on 8/19–8/26; this is
+reported for the record, not actioned. No trades were placed as part of
+this check — read-only replay against saved logs only.
