@@ -438,6 +438,9 @@ $F took entry .F260731C15.5 Fill: 0.72
 # 9/3: same idea, Unraveller's shape — "Loading meta 610 puts weeklies" then
 # 12 minutes later this is the only fill confirmation that ever comes.
 Meta avg 5.7 @here
+# 9/3: bare-fill WITH a named ticker — "Load aapl 330 puts friday exp" then
+# "Filled 2.26 starter size on AAPL" — used to disable RE_BARE_FILL entirely.
+Filled 2.26 starter size on AAPL @here
 Loaded .AAPL260710C310 $AAPL no position yet
 $MSFT entry / exit for a 20% gain. Waited for proper break of trigger
 

@@ -2121,11 +2121,22 @@ def _parse_inner(text, author="", channel="", cfg=None):
             # before it. Held back rather than dropped, the same way a bare trim
             # is: guards.resolve_loaded finds the loading call, and if it can't,
             # nothing is sent.
+            # A ticker CAN be named too ("Load aapl 330 puts friday exp" then
+            # "Filled 2.26 starter size on AAPL" — Unraveller, 9/3): used to
+            # skip this branch entirely on a named ticker, so it fell through
+            # to "no contract" and the AI-vision fallback (stateless, one
+            # message only) guessed a nonsense AAPL EQUITY fill at $2.26
+            # instead. Now the named ticker just PINS named_symbol, same
+            # safety rail as every other needs_loaded branch, instead of
+            # disabling resolution. Mirrors parser.js.
             mf = RE_BARE_FILL.match(t)
-            if mf and not _bare_symbol(t, allowed):
+            if mf:
                 sig.action, sig.matched = "OPEN", "fill on a loaded contract"
                 sig.needs_loaded = True
                 sig.limit = float(mf.group(1))
+                named_sym = _bare_symbol(t, allowed)
+                if named_sym:
+                    sig.named_symbol = named_sym
                 mq = RE_QTY.search(t)
                 if mq:
                     sig.qty = int(mq.group(1))

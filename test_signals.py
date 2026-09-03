@@ -306,6 +306,37 @@ already = lg3b.resolve_loaded(sigmod.parse("SPY avg 2.10 @here", cfg=CFG),
 ok(not already.fire, "an avg with a ticker but nothing loaded for that "
    "trader must refuse, not fire: %s" % already.why)
 
+# --- 9/3: Unraveller's shape again — "Filled $PRICE ... on $TICKER" with a
+# NAMED ticker. RE_BARE_FILL used to disable itself the moment a ticker
+# appeared in the message, so this fell through to "no contract" and the
+# stateless AI-vision fallback guessed a nonsense "AAPL EQUITY @ 2.26" read
+# instead of resolving the AAPL 330P Unraveller had just loaded 3 min prior.
+named_fill = sigmod.parse("Filled 2.26 starter size on AAPL @here", cfg=CFG)
+ok(named_fill.action == "OPEN" and not named_fill.fire
+   and named_fill.needs_loaded and named_fill.limit == 2.26
+   and named_fill.named_symbol == "AAPL",
+   "a named-ticker bare fill should be held back with the ticker pinned, "
+   "not dropped: %s" % named_fill.why)
+
+lg4 = Guards(dict(RES, allowed_symbols=CFG["allowed_symbols"]), here=NOSTOP)
+lg4.remember_loading(sigmod.parse("Load aapl 330 puts friday exp", cfg=CFG),
+                     "Unraveller")
+got4 = lg4.resolve_loaded(
+    sigmod.parse("Filled 2.26 starter size on AAPL @here", cfg=CFG),
+    "Unraveller")
+ok(got4.fire and got4.symbol == "AAPL" and got4.strike == 330.0
+   and got4.side == "PUTS" and got4.limit == 2.26,
+   "the named-ticker fill should take the contract from the loading call, "
+   "got %r (%s)" % (got4.human(), got4.why))
+
+# The original no-ticker shape ("Filled 3.95 starters") must still work
+# exactly as before — this fix only ADDS the named-ticker path.
+still_bare = sigmod.parse("Filled 3.95 starters @here", cfg=CFG)
+ok(still_bare.action == "OPEN" and still_bare.needs_loaded
+   and still_bare.limit == 3.95 and not still_bare.named_symbol,
+   "the original bare (no-ticker) fill shape must be unaffected: %s"
+   % still_bare.why)
+
 # --- averaging in -----------------------------------------------------------
 # The average_in switch and the add ceiling are DELETED — adds always follow.
 # The one rule left isn't a preference: you can only add to a trade you hold.
