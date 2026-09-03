@@ -185,6 +185,16 @@ RE_BARE_FILL = re.compile(
     r"[^\d%]{0,14}\$?(\d{1,3}\.\d{1,2})\b(?!\s*%)",
     re.IGNORECASE)
 
+# "$NVDA I took entry 1.37 fill" (RWGates shape, 9/3) — same two-message
+# entry as RE_BARE_FILL above, but the ticker leads the line and "fill"
+# trails the price instead of a fill verb leading it, so RE_BARE_FILL (which
+# requires the message to START with filled/bought/bto/entered) never
+# matches. "took entry" is not anchored to the front on purpose — the ticker
+# or an "@here" can sit in front of it. Mirrors parser.js RE_TOOK_ENTRY_FILL.
+RE_TOOK_ENTRY_FILL = re.compile(
+    r"\btook\s+entr(?:y|ies)\b[^\d%]{0,20}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b",
+    re.IGNORECASE)
+
 # ---- futures ----------------------------------------------------------------
 # Felony's grammar, from his real posts: "Short NQ @ 28660  Stop 29700
 # Target 28550". A futures call names no strike and no expiry — the symbol,

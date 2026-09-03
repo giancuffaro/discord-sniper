@@ -235,6 +235,13 @@ const RE_EXIT = /\b(?:exited|exiting|closed|closing|stc|sold|selling|out|cutting
 // Only a line that STARTS with the fill verb counts — "trimmed at 3.95" and
 // "their avg was 3.95" are the same numbers meaning the opposite thing.
 const RE_BARE_FILL = /^(?:just\s+|we\s+|i\s+|i've\s+|ive\s+|we've\s+)*(?:filled|fills|filling|fill|bought|bto|entered)\b[^\d%]{0,14}\$?(\d{1,3}\.\d{1,2})\b(?!\s*%)/i;
+// "$NVDA I took entry 1.37 fill" (RWGates shape, 9/3) — same two-message
+// entry as RE_BARE_FILL above, but the ticker leads the line and "fill"
+// trails the price instead of a fill verb leading it, so RE_BARE_FILL (which
+// requires the message to START with filled/bought/bto/entered) never
+// matches. "took entry" is not anchored to the front on purpose — the
+// ticker or an "@here" can sit in front of it.
+const RE_TOOK_ENTRY_FILL = /\btook\s+entr(?:y|ies)\b[^\d%]{0,20}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b/i;
 // "added to SPY @everyone new avg is 2.8" — they doubled up and their average
 // moved. Whether that buys you a second contract is a setting, not a parser
 // decision: resolveAdd in guards.js has the final word, because only the guards
@@ -1790,6 +1797,24 @@ function parseSignalInner(text, cfg) {
         }
         s.limit = lim;
         s.why = "an \"in\" with detail around it — looking for the PREP it belongs to";
+        return s;
+      }
+      // "$NVDA I took entry 1.37 fill" — RWGates' shape (9/3): the contract
+      // was named in an earlier LOADING call, this message only confirms the
+      // fill. "took entry" already reads as an entry verb above, but nothing
+      // caught it here because it doesn't start the message and isn't in
+      // RE_BARE_FILL's fill-verb list — it fell through to "no contract" and
+      // was silently dropped (RWGates NVDA 230C 9/4 @1.37, 9/3, never sent).
+      const mte = RE_TOOK_ENTRY_FILL.exec(t);
+      if (mte) {
+        s.action = "OPEN"; s.matched = "took-entry fill on a loaded contract";
+        s.needs_loaded = true;
+        s.limit = parseFloat(mte[1]);
+        // If they named a ticker ("$NVDA I took entry..."), pin it so
+        // resolveLoaded won't pair it with a different ticker's load.
+        s.named_symbol = bareSymbol(t, allowed);
+        s.why = "a fill confirmation (\"took entry ... fill\") with no contract " +
+                "in it — looking for the LOADING call it belongs to";
         return s;
       }
       s.why = "sounds like an entry but there's no full contract in it";
