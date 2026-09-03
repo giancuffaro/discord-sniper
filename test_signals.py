@@ -1061,6 +1061,14 @@ zcheck("ZTRADEZ BOT APP — 9:44 AM Wednesday, September 2, 2026 at 9:44 AM Forw
        action="OPEN", fire=True, symbol="SPY", strike=763.0, side="CALLS", limit=1.04)
 zcheck(":green_alert: AAPL | $335 C SEPT 18 3.65-3.70 @everyone Spoiler", action="OPEN", fire=True,
        symbol="AAPL", strike=335.0, side="CALLS", limit=3.65)
+# 9/3 HISTORY SWEEP (8/18-9/3 replayed). A levels/watchlist row read as a
+# live BUY paying the TRIGGER as the premium — QQQ 726C at $725.00, ~600x
+# the real price. TradingTheTrend posts one every morning.
+zcheck("QQQ 726c > 725.00 715p < 716.00 MU 1000c > 980.00 NVDA 224c > 223.00", action=None)
+zcheck("SPY 770c > 768.20 763p < 764.00 HOOD 105c > 102.00", action=None)
+# RWGates again, 8/25 shape: price AFTER the word fill, with an OSI contract
+# in between. The 9/3 fix only matched "<price> fill".
+zcheck("@here Took entry $META META260826C570 Fill: 5.15", action="OPEN", limit=5.15)
 zcheck("Comment TSLA $400c on watch", fire=False, action=None)
 zcheck("Comment NVDA $187.5c on watch, will be quarter sized again", fire=False,
        action=None)

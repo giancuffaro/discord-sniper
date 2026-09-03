@@ -1072,6 +1072,19 @@ def _parse_inner(text, author="", channel="", cfg=None):
         t = re.sub(r"\s+", " ", t).strip()
     sig.clean = t
     low = t.lower()
+
+    # LEVELS / WATCHLIST ROW (9/3) — mirrors parser.js.
+    if re.search(r"\d\s*[cp]\b\s*[><]\s*\d", t, re.I):
+        sig.why = ("a levels/watchlist row (\"726c > 725.00\" is a trigger "
+                   "level, not a premium) — nothing was sent")
+        return sig
+    _seen = set()
+    for _m in re.finditer(r"(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?\s*(?:calls?|puts?|c|p)\b", t, re.I):
+        _seen.add(re.sub(r"\s+", "", _m.group(0).lower()))
+    if len(_seen) >= 3:
+        sig.why = ("a watchlist — %d different contracts in one message, "
+                   "that's a list, not an order" % len(_seen))
+        return sig
     # Swing wording anywhere on the line tags the signal (harmless on
     # non-entries — only entries ever store or show it). Mirrors parser.js.
     sig.swing = bool(re.search(r"\bswing(?:ing|s)?\b", low))
@@ -1536,18 +1549,7 @@ def _parse_inner(text, author="", channel="", cfg=None):
         sig.why = "it's a question, not a call"
         return sig
 
-    # LEVELS / WATCHLIST ROW (9/3) — mirrors parser.js.
-    if re.search(r"\d\s*[cp]\b\s*[><]\s*\d", t, re.I):
-        sig.why = ("a levels/watchlist row (\"726c > 725.00\" is a trigger "
-                   "level, not a premium) — nothing was sent")
-        return sig
-    _seen = set()
-    for _m in re.finditer(r"(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?\s*(?:calls?|puts?|c|p)\b", t, re.I):
-        _seen.add(re.sub(r"\s+", "", _m.group(0).lower()))
-    if len(_seen) >= 3:
-        sig.why = ("a watchlist — %d different contracts in one message, "
-                   "that's a list, not an order" % len(_seen))
-        return sig
+
 
     # An explicit buy-to-open with a real contract is an ORDER, not chatter. A
     # stray soft word in a risk note — "BTO $MSFT 400c @0.43 cheapie, watch
