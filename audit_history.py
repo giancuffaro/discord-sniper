@@ -207,6 +207,14 @@ def main():
     tot_m = sum(len(v["missed"]) for v in rooms.values())
     tot_b = sum(len(v["blind"]) for v in rooms.values())
     print("\nTOTAL  missed(action) %d   blind(no action) %d" % (tot_m, tot_b))
+    print("\n  READ THIS BEFORE TRUSTING 'MISSED': until 9/2 the extension kept only")
+    print("  the last 400 verdicts of a day (LOG_MAX). Every export from 8/19-8/31")
+    print("  shows exactly 400 while capturing 700-8,400 messages, so the MORNING")
+    print("  verdicts of every one of those days are simply gone. A 'missed' on")
+    print("  those days can mean the bot never judged it OR the record was trimmed")
+    print("  — the two are indistinguishable now. The cap is 2500 since 9/3, so")
+    print("  from here on 'missed' means missed. BLIND is trustworthy on every day:")
+    print("  it is the parser's own verdict on the text, not a logging artifact.")
 
     print("\nBY ROOM  (days spoken / msgs / tradable calls / traded / missed / blind)")
     for room, v in sorted(rooms.items(),

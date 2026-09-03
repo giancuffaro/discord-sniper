@@ -1000,3 +1000,17 @@ These are historical — the bug is fixed going forward (extension 3.5.15),
 and nothing can be done about entries the bot missed on 8/19–8/26; this is
 reported for the record, not actioned. No trades were placed as part of
 this check — read-only replay against saved logs only.
+
+## 9/3 17:10 — FULL HISTORY ALERT AUDIT (G: "find alert fails since the beginning of time, why some rooms were silent")
+New tool **audit_history.py** → **ALERT-AUDIT.html**: replays EVERY export (8/18–9/3) through the production parser and sorts each room into TRADED / MISSED (parser read an action, nothing happened) / BLIND (parser read nothing while a loading shelf was armed and a price was present) / NO CALLS / SILENT, then groups every miss BY SHAPE so a fix covers a class.
+### The honest caveat, in the tool's own output
+Until 9/2 the extension kept only the last **400 verdicts per day** (LOG_MAX). Every export 8/19–8/31 shows exactly 400 while capturing 748–8,367 messages — **the morning of every one of those days is gone**. So a historical "MISSED" can mean never-judged OR record-trimmed; they are indistinguishable now. Cap is 2500 since 9/3, so from here MISSED means missed. BLIND is trustworthy on every day (it is the parser's verdict on the text, not a logging artifact).
+### Two REAL bugs the sweep found, both fixed this pass (extension 3.5.16)
+1. **DANGEROUS false positive — watchlist rows read as live BUYS.** TradingTheTrend posts a levels row every morning: `QQQ 726c > 725.00 715p < 716.00 MU 1000c > 980.00`. The parser read `OPEN QQQ 726C @ 725.00` — paying the TRIGGER LEVEL as the premium, ~600x the real price. Only buying power stopped it from ever firing. Two guards now, ahead of every entry rule in both parsers: a `>`/`<` between a contract and a number is a trigger level, not a price; and 3+ distinct contracts in one message is a list, not an order. Seen on 9 separate days.
+2. **RWGates missed AGAIN, a second shape.** 8/25: `Took entry $META META260826C570 Fill: 5.15` — price AFTER the word fill, with a colon and an OSI contract in between. The 9/3 fix only matched `<price> fill`. RE_TOOK_ENTRY_FILL now takes both orders.
+### What the shapes say (why rooms looked quiet)
+Labelled template 95 · unclassified 81 · futures phrasing 38 · date-first contract 13 · Server Tag junk 11 · bot footer 4 · ticker-first fill 3 · avg-price 3. Everything except "unclassified" is a grammar already fixed in the last two days — the volume is the measure of what those fixes recovered, not a live backlog.
+### Still open (his call, not rushed)
+- Mike/Honeydrip reply-to-own-message fills swallowed by the reply-quote guard (deliberate, from a past bad-rebuy).
+- "Fill is 1.79 not using a lot of size here" (RWGates 8/19) and `Fully out @here 103%` — no ticker, needs the loading shelf; not yet wired for those two phrasings.
+- 3 tests added (2 watchlist, 1 took-entry-fill:). Suite: same 4 pre-existing failures, parity unchanged, resolve green.
