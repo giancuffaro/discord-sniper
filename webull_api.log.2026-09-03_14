@@ -1,0 +1,558 @@
+443184 Thread-9894 (_watchdog) 2026-09-03 13:51:55,176 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/trade/order/replace",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {},
+  "_method": "POST",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-03T17:51:54Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "657ff6a1-0790-548d-9ab3-e0a6da3b35c2",
+    "x-signature": "ZDPaScu0kePN0ixA3Ur2GPyZ9YqnULhRBFMf+SKXjY0=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk",
+    "Content-Length": "540",
+    "Content-Type": "application/json"
+  },
+  "_body_params": {
+    "account_id": "ENIQGUV4LUTT3JSAA9NKLDDU19",
+    "modify_orders": [
+      {
+        "client_order_id": "c7790b604c304b0895d5518ec89ee044",
+        "combo_type": "NORMAL",
+        "option_strategy": "SINGLE",
+        "order_type": "STOP_LOSS_LIMIT",
+        "limit_price": "1.11",
+        "quantity": "1",
+        "side": "SELL",
+        "time_in_force": "GTC",
+        "entrust_type": "QTY",
+        "instrument_type": "OPTION",
+        "market": "US",
+        "symbol": "SPY",
+        "legs": [
+          {
+            "side": "SELL",
+            "quantity": "1",
+            "symbol": "SPY",
+            "strike_price": "772.00",
+            "option_expire_date": "2026-09-03",
+            "instrument_type": "OPTION",
+            "option_type": "CALL",
+            "market": "US"
+          }
+        ],
+        "stop_price": "1.23"
+      }
+    ]
+  },
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": "{\"account_id\":\"ENIQGUV4LUTT3JSAA9NKLDDU19\",\"modify_orders\":[{\"client_order_id\":\"c7790b604c304b0895d5518ec89ee044\",\"combo_type\":\"NORMAL\",\"option_strategy\":\"SINGLE\",\"order_type\":\"STOP_LOSS_LIMIT\",\"limit_price\":\"1.11\",\"quantity\":\"1\",\"side\":\"SELL\",\"time_in_force\":\"GTC\",\"entrust_type\":\"QTY\",\"instrument_type\":\"OPTION\",\"market\":\"US\",\"symbol\":\"SPY\",\"legs\":[{\"side\":\"SELL\",\"quantity\":\"1\",\"symbol\":\"SPY\",\"strike_price\":\"772.00\",\"option_expire_date\":\"2026-09-03\",\"instrument_type\":\"OPTION\",\"option_type\":\"CALL\",\"market\":\"US\"}],\"stop_price\":\"1.23\"}]}",
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Invalid parameter.', 'error_code': 'OPENAPI_THE_REQUIRED_PARAM_IS_NULL'} ServerException:HTTP Status: 417, Code: OPENAPI_THE_REQUIRED_PARAM_IS_NULL, Msg: Invalid parameter., RequestID: b06d5aea-3a5b-454d-a96c-4ca653539a75
+443184 Thread-9894 (_watchdog) 2026-09-03 13:51:55,182 webull.core.client ERROR get_response exception. {
+  "error_code": "OPENAPI_THE_REQUIRED_PARAM_IS_NULL",
+  "error_msg": "Invalid parameter.",
+  "http_status": 417,
+  "request_id": "b06d5aea-3a5b-454d-a96c-4ca653539a75"
+}
+443184 Thread-9894 (_watchdog) 2026-09-03 13:51:55,182 webull.core.client ERROR get_response exception. {
+  "error_code": "OPENAPI_THE_REQUIRED_PARAM_IS_NULL",
+  "error_msg": "Invalid parameter.",
+  "http_status": 417,
+  "request_id": "b06d5aea-3a5b-454d-a96c-4ca653539a75"
+}
+443184 Thread-9894 (_watchdog) 2026-09-03 13:51:55,402 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/trade/option/order/replace",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {},
+  "_method": "POST",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-03T17:51:55Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "d3b4ad8d-16c1-5c36-afef-c7e5f346f50b",
+    "x-signature": "1uQs1BemlgtXJvcHeLzdDAMzPcDb2xC7lFFGdIErhW8=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk",
+    "Content-Length": "540",
+    "Content-Type": "application/json"
+  },
+  "_body_params": {
+    "modify_orders": [
+      {
+        "client_order_id": "c7790b604c304b0895d5518ec89ee044",
+        "combo_type": "NORMAL",
+        "option_strategy": "SINGLE",
+        "order_type": "STOP_LOSS_LIMIT",
+        "limit_price": "1.11",
+        "quantity": "1",
+        "side": "SELL",
+        "time_in_force": "GTC",
+        "entrust_type": "QTY",
+        "instrument_type": "OPTION",
+        "market": "US",
+        "symbol": "SPY",
+        "legs": [
+          {
+            "side": "SELL",
+            "quantity": "1",
+            "symbol": "SPY",
+            "strike_price": "772.00",
+            "option_expire_date": "2026-09-03",
+            "instrument_type": "OPTION",
+            "option_type": "CALL",
+            "market": "US"
+          }
+        ],
+        "stop_price": "1.23"
+      }
+    ],
+    "account_id": "ENIQGUV4LUTT3JSAA9NKLDDU19"
+  },
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": "{\"modify_orders\":[{\"client_order_id\":\"c7790b604c304b0895d5518ec89ee044\",\"combo_type\":\"NORMAL\",\"option_strategy\":\"SINGLE\",\"order_type\":\"STOP_LOSS_LIMIT\",\"limit_price\":\"1.11\",\"quantity\":\"1\",\"side\":\"SELL\",\"time_in_force\":\"GTC\",\"entrust_type\":\"QTY\",\"instrument_type\":\"OPTION\",\"market\":\"US\",\"symbol\":\"SPY\",\"legs\":[{\"side\":\"SELL\",\"quantity\":\"1\",\"symbol\":\"SPY\",\"strike_price\":\"772.00\",\"option_expire_date\":\"2026-09-03\",\"instrument_type\":\"OPTION\",\"option_type\":\"CALL\",\"market\":\"US\"}],\"stop_price\":\"1.23\"}],\"account_id\":\"ENIQGUV4LUTT3JSAA9NKLDDU19\"}",
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Invalid parameter.', 'error_code': 'OPENAPI_THE_REQUIRED_PARAM_IS_NULL'} ServerException:HTTP Status: 417, Code: OPENAPI_THE_REQUIRED_PARAM_IS_NULL, Msg: Invalid parameter., RequestID: 1fe5ca5a-6f01-4bb9-bf71-1ce41715d113
+443184 Thread-9894 (_watchdog) 2026-09-03 13:51:55,402 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/trade/option/order/replace",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {},
+  "_method": "POST",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-03T17:51:55Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "d3b4ad8d-16c1-5c36-afef-c7e5f346f50b",
+    "x-signature": "1uQs1BemlgtXJvcHeLzdDAMzPcDb2xC7lFFGdIErhW8=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk",
+    "Content-Length": "540",
+    "Content-Type": "application/json"
+  },
+  "_body_params": {
+    "modify_orders": [
+      {
+        "client_order_id": "c7790b604c304b0895d5518ec89ee044",
+        "combo_type": "NORMAL",
+        "option_strategy": "SINGLE",
+        "order_type": "STOP_LOSS_LIMIT",
+        "limit_price": "1.11",
+        "quantity": "1",
+        "side": "SELL",
+        "time_in_force": "GTC",
+        "entrust_type": "QTY",
+        "instrument_type": "OPTION",
+        "market": "US",
+        "symbol": "SPY",
+        "legs": [
+          {
+            "side": "SELL",
+            "quantity": "1",
+            "symbol": "SPY",
+            "strike_price": "772.00",
+            "option_expire_date": "2026-09-03",
+            "instrument_type": "OPTION",
+            "option_type": "CALL",
+            "market": "US"
+          }
+        ],
+        "stop_price": "1.23"
+      }
+    ],
+    "account_id": "ENIQGUV4LUTT3JSAA9NKLDDU19"
+  },
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": "{\"modify_orders\":[{\"client_order_id\":\"c7790b604c304b0895d5518ec89ee044\",\"combo_type\":\"NORMAL\",\"option_strategy\":\"SINGLE\",\"order_type\":\"STOP_LOSS_LIMIT\",\"limit_price\":\"1.11\",\"quantity\":\"1\",\"side\":\"SELL\",\"time_in_force\":\"GTC\",\"entrust_type\":\"QTY\",\"instrument_type\":\"OPTION\",\"market\":\"US\",\"symbol\":\"SPY\",\"legs\":[{\"side\":\"SELL\",\"quantity\":\"1\",\"symbol\":\"SPY\",\"strike_price\":\"772.00\",\"option_expire_date\":\"2026-09-03\",\"instrument_type\":\"OPTION\",\"option_type\":\"CALL\",\"market\":\"US\"}],\"stop_price\":\"1.23\"}],\"account_id\":\"ENIQGUV4LUTT3JSAA9NKLDDU19\"}",
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Invalid parameter.', 'error_code': 'OPENAPI_THE_REQUIRED_PARAM_IS_NULL'} ServerException:HTTP Status: 417, Code: OPENAPI_THE_REQUIRED_PARAM_IS_NULL, Msg: Invalid parameter., RequestID: 1fe5ca5a-6f01-4bb9-bf71-1ce41715d113
+443184 Thread-9894 (_watchdog) 2026-09-03 13:51:55,414 webull.core.client ERROR get_response exception. {
+  "error_code": "OPENAPI_THE_REQUIRED_PARAM_IS_NULL",
+  "error_msg": "Invalid parameter.",
+  "http_status": 417,
+  "request_id": "1fe5ca5a-6f01-4bb9-bf71-1ce41715d113"
+}
+443184 Thread-9894 (_watchdog) 2026-09-03 13:51:55,414 webull.core.client ERROR get_response exception. {
+  "error_code": "OPENAPI_THE_REQUIRED_PARAM_IS_NULL",
+  "error_msg": "Invalid parameter.",
+  "http_status": 417,
+  "request_id": "1fe5ca5a-6f01-4bb9-bf71-1ce41715d113"
+}
+443184 Thread-9894 (_watchdog) 2026-09-03 13:52:36,075 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/trade/order/replace",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {},
+  "_method": "POST",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-03T17:52:35Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "e3e7ab41-34fa-5706-a1f5-2070a1ac42a6",
+    "x-signature": "P1SDg0BycCcHPw4/CaMpLfL/7XDGLyAWhkH+4Nn4m5o=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk",
+    "Content-Length": "540",
+    "Content-Type": "application/json"
+  },
+  "_body_params": {
+    "account_id": "ENIQGUV4LUTT3JSAA9NKLDDU19",
+    "modify_orders": [
+      {
+        "client_order_id": "57801e5e2a3c4739973c5333435bb26c",
+        "combo_type": "NORMAL",
+        "option_strategy": "SINGLE",
+        "order_type": "STOP_LOSS_LIMIT",
+        "limit_price": "1.22",
+        "quantity": "1",
+        "side": "SELL",
+        "time_in_force": "GTC",
+        "entrust_type": "QTY",
+        "instrument_type": "OPTION",
+        "market": "US",
+        "symbol": "SPY",
+        "legs": [
+          {
+            "side": "SELL",
+            "quantity": "1",
+            "symbol": "SPY",
+            "strike_price": "772.00",
+            "option_expire_date": "2026-09-03",
+            "instrument_type": "OPTION",
+            "option_type": "CALL",
+            "market": "US"
+          }
+        ],
+        "stop_price": "1.35"
+      }
+    ]
+  },
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": "{\"account_id\":\"ENIQGUV4LUTT3JSAA9NKLDDU19\",\"modify_orders\":[{\"client_order_id\":\"57801e5e2a3c4739973c5333435bb26c\",\"combo_type\":\"NORMAL\",\"option_strategy\":\"SINGLE\",\"order_type\":\"STOP_LOSS_LIMIT\",\"limit_price\":\"1.22\",\"quantity\":\"1\",\"side\":\"SELL\",\"time_in_force\":\"GTC\",\"entrust_type\":\"QTY\",\"instrument_type\":\"OPTION\",\"market\":\"US\",\"symbol\":\"SPY\",\"legs\":[{\"side\":\"SELL\",\"quantity\":\"1\",\"symbol\":\"SPY\",\"strike_price\":\"772.00\",\"option_expire_date\":\"2026-09-03\",\"instrument_type\":\"OPTION\",\"option_type\":\"CALL\",\"market\":\"US\"}],\"stop_price\":\"1.35\"}]}",
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Invalid parameter.', 'error_code': 'OPENAPI_THE_REQUIRED_PARAM_IS_NULL'} ServerException:HTTP Status: 417, Code: OPENAPI_THE_REQUIRED_PARAM_IS_NULL, Msg: Invalid parameter., RequestID: 7bed1129-ff6b-4119-9cb0-1e20957a7868
+443184 Thread-9894 (_watchdog) 2026-09-03 13:52:36,075 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/trade/order/replace",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {},
+  "_method": "POST",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-03T17:52:35Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "e3e7ab41-34fa-5706-a1f5-2070a1ac42a6",
+    "x-signature": "P1SDg0BycCcHPw4/CaMpLfL/7XDGLyAWhkH+4Nn4m5o=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk",
+    "Content-Length": "540",
+    "Content-Type": "application/json"
+  },
+  "_body_params": {
+    "account_id": "ENIQGUV4LUTT3JSAA9NKLDDU19",
+    "modify_orders": [
+      {
+        "client_order_id": "57801e5e2a3c4739973c5333435bb26c",
+        "combo_type": "NORMAL",
+        "option_strategy": "SINGLE",
+        "order_type": "STOP_LOSS_LIMIT",
+        "limit_price": "1.22",
+        "quantity": "1",
+        "side": "SELL",
+        "time_in_force": "GTC",
+        "entrust_type": "QTY",
+        "instrument_type": "OPTION",
+        "market": "US",
+        "symbol": "SPY",
+        "legs": [
+          {
+            "side": "SELL",
+            "quantity": "1",
+            "symbol": "SPY",
+            "strike_price": "772.00",
+            "option_expire_date": "2026-09-03",
+            "instrument_type": "OPTION",
+            "option_type": "CALL",
+            "market": "US"
+          }
+        ],
+        "stop_price": "1.35"
+      }
+    ]
+  },
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": "{\"account_id\":\"ENIQGUV4LUTT3JSAA9NKLDDU19\",\"modify_orders\":[{\"client_order_id\":\"57801e5e2a3c4739973c5333435bb26c\",\"combo_type\":\"NORMAL\",\"option_strategy\":\"SINGLE\",\"order_type\":\"STOP_LOSS_LIMIT\",\"limit_price\":\"1.22\",\"quantity\":\"1\",\"side\":\"SELL\",\"time_in_force\":\"GTC\",\"entrust_type\":\"QTY\",\"instrument_type\":\"OPTION\",\"market\":\"US\",\"symbol\":\"SPY\",\"legs\":[{\"side\":\"SELL\",\"quantity\":\"1\",\"symbol\":\"SPY\",\"strike_price\":\"772.00\",\"option_expire_date\":\"2026-09-03\",\"instrument_type\":\"OPTION\",\"option_type\":\"CALL\",\"market\":\"US\"}],\"stop_price\":\"1.35\"}]}",
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Invalid parameter.', 'error_code': 'OPENAPI_THE_REQUIRED_PARAM_IS_NULL'} ServerException:HTTP Status: 417, Code: OPENAPI_THE_REQUIRED_PARAM_IS_NULL, Msg: Invalid parameter., RequestID: 7bed1129-ff6b-4119-9cb0-1e20957a7868
+443184 Thread-9894 (_watchdog) 2026-09-03 13:52:36,077 webull.core.client ERROR get_response exception. {
+  "error_code": "OPENAPI_THE_REQUIRED_PARAM_IS_NULL",
+  "error_msg": "Invalid parameter.",
+  "http_status": 417,
+  "request_id": "7bed1129-ff6b-4119-9cb0-1e20957a7868"
+}
+443184 Thread-9894 (_watchdog) 2026-09-03 13:52:36,077 webull.core.client ERROR get_response exception. {
+  "error_code": "OPENAPI_THE_REQUIRED_PARAM_IS_NULL",
+  "error_msg": "Invalid parameter.",
+  "http_status": 417,
+  "request_id": "7bed1129-ff6b-4119-9cb0-1e20957a7868"
+}
+443184 Thread-9894 (_watchdog) 2026-09-03 13:52:36,231 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/trade/option/order/replace",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {},
+  "_method": "POST",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-03T17:52:36Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "1c94f784-d384-5b65-b931-bff763cd5dff",
+    "x-signature": "kF1Fmz0ThdLDWyXMrHDQDOCEyPB6OBCnnrGeZjW0fhY=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk",
+    "Content-Length": "540",
+    "Content-Type": "application/json"
+  },
+  "_body_params": {
+    "modify_orders": [
+      {
+        "client_order_id": "57801e5e2a3c4739973c5333435bb26c",
+        "combo_type": "NORMAL",
+        "option_strategy": "SINGLE",
+        "order_type": "STOP_LOSS_LIMIT",
+        "limit_price": "1.22",
+        "quantity": "1",
+        "side": "SELL",
+        "time_in_force": "GTC",
+        "entrust_type": "QTY",
+        "instrument_type": "OPTION",
+        "market": "US",
+        "symbol": "SPY",
+        "legs": [
+          {
+            "side": "SELL",
+            "quantity": "1",
+            "symbol": "SPY",
+            "strike_price": "772.00",
+            "option_expire_date": "2026-09-03",
+            "instrument_type": "OPTION",
+            "option_type": "CALL",
+            "market": "US"
+          }
+        ],
+        "stop_price": "1.35"
+      }
+    ],
+    "account_id": "ENIQGUV4LUTT3JSAA9NKLDDU19"
+  },
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": "{\"modify_orders\":[{\"client_order_id\":\"57801e5e2a3c4739973c5333435bb26c\",\"combo_type\":\"NORMAL\",\"option_strategy\":\"SINGLE\",\"order_type\":\"STOP_LOSS_LIMIT\",\"limit_price\":\"1.22\",\"quantity\":\"1\",\"side\":\"SELL\",\"time_in_force\":\"GTC\",\"entrust_type\":\"QTY\",\"instrument_type\":\"OPTION\",\"market\":\"US\",\"symbol\":\"SPY\",\"legs\":[{\"side\":\"SELL\",\"quantity\":\"1\",\"symbol\":\"SPY\",\"strike_price\":\"772.00\",\"option_expire_date\":\"2026-09-03\",\"instrument_type\":\"OPTION\",\"option_type\":\"CALL\",\"market\":\"US\"}],\"stop_price\":\"1.35\"}],\"account_id\":\"ENIQGUV4LUTT3JSAA9NKLDDU19\"}",
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Invalid parameter.', 'error_code': 'OPENAPI_THE_REQUIRED_PARAM_IS_NULL'} ServerException:HTTP Status: 417, Code: OPENAPI_THE_REQUIRED_PARAM_IS_NULL, Msg: Invalid parameter., RequestID: 6a70bdf3-b099-4003-ad53-fcf5ab073bac
+443184 Thread-9894 (_watchdog) 2026-09-03 13:52:36,231 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/trade/option/order/replace",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {},
+  "_method": "POST",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-03T17:52:36Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "1c94f784-d384-5b65-b931-bff763cd5dff",
+    "x-signature": "kF1Fmz0ThdLDWyXMrHDQDOCEyPB6OBCnnrGeZjW0fhY=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk",
+    "Content-Length": "540",
+    "Content-Type": "application/json"
+  },
+  "_body_params": {
+    "modify_orders": [
+      {
+        "client_order_id": "57801e5e2a3c4739973c5333435bb26c",
+        "combo_type": "NORMAL",
+        "option_strategy": "SINGLE",
+        "order_type": "STOP_LOSS_LIMIT",
+        "limit_price": "1.22",
+        "quantity": "1",
+        "side": "SELL",
+        "time_in_force": "GTC",
+        "entrust_type": "QTY",
+        "instrument_type": "OPTION",
+        "market": "US",
+        "symbol": "SPY",
+        "legs": [
+          {
+            "side": "SELL",
+            "quantity": "1",
+            "symbol": "SPY",
+            "strike_price": "772.00",
+            "option_expire_date": "2026-09-03",
+            "instrument_type": "OPTION",
+            "option_type": "CALL",
+            "market": "US"
+          }
+        ],
+        "stop_price": "1.35"
+      }
+    ],
+    "account_id": "ENIQGUV4LUTT3JSAA9NKLDDU19"
+  },
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": "{\"modify_orders\":[{\"client_order_id\":\"57801e5e2a3c4739973c5333435bb26c\",\"combo_type\":\"NORMAL\",\"option_strategy\":\"SINGLE\",\"order_type\":\"STOP_LOSS_LIMIT\",\"limit_price\":\"1.22\",\"quantity\":\"1\",\"side\":\"SELL\",\"time_in_force\":\"GTC\",\"entrust_type\":\"QTY\",\"instrument_type\":\"OPTION\",\"market\":\"US\",\"symbol\":\"SPY\",\"legs\":[{\"side\":\"SELL\",\"quantity\":\"1\",\"symbol\":\"SPY\",\"strike_price\":\"772.00\",\"option_expire_date\":\"2026-09-03\",\"instrument_type\":\"OPTION\",\"option_type\":\"CALL\",\"market\":\"US\"}],\"stop_price\":\"1.35\"}],\"account_id\":\"ENIQGUV4LUTT3JSAA9NKLDDU19\"}",
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Invalid parameter.', 'error_code': 'OPENAPI_THE_REQUIRED_PARAM_IS_NULL'} ServerException:HTTP Status: 417, Code: OPENAPI_THE_REQUIRED_PARAM_IS_NULL, Msg: Invalid parameter., RequestID: 6a70bdf3-b099-4003-ad53-fcf5ab073bac
+443184 Thread-9894 (_watchdog) 2026-09-03 13:52:36,233 webull.core.client ERROR get_response exception. {
+  "error_code": "OPENAPI_THE_REQUIRED_PARAM_IS_NULL",
+  "error_msg": "Invalid parameter.",
+  "http_status": 417,
+  "request_id": "6a70bdf3-b099-4003-ad53-fcf5ab073bac"
+}
+443184 Thread-9894 (_watchdog) 2026-09-03 13:52:36,233 webull.core.client ERROR get_response exception. {
+  "error_code": "OPENAPI_THE_REQUIRED_PARAM_IS_NULL",
+  "error_msg": "Invalid parameter.",
+  "http_status": 417,
+  "request_id": "6a70bdf3-b099-4003-ad53-fcf5ab073bac"
+}
+601104 MainThread 2026-09-03 14:10:51,867 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-03T18:10:51Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'f5ac416b-22b4-5b65-9781-d2e912840c9b', 'Host': 'api.webull.com'}
+601104 MainThread 2026-09-03 14:10:51,868 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+601104 MainThread 2026-09-03 14:10:51,868 webull.core.auth.composer.default_signature_composer DEBUG body:None
+601104 MainThread 2026-09-03 14:10:51,868 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+601104 MainThread 2026-09-03 14:10:51,868 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Df5ac416b-22b4-5b65-9781-d2e912840c9b%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-03T18%3A10%3A51Z
+601104 MainThread 2026-09-03 14:10:51,868 webull.core.auth.composer.default_signature_composer DEBUG signature:MB273SxzLjAwbFMGowXyKWHCsOqYMNQB3wXQOyJesfM=
+601104 MainThread 2026-09-03 14:10:52,049 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Thu, 03 Sep 2026 18:10:53 GMT', 'X-Request-Id': 'c447f598-c3d5-42a1-b755-276b679608c2', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 6b86b9c766a229b60c0727e0e8fbf5c2.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'JfMU8-MT4S5rSmlQZKsd_1slVFj2B7ZvoS-bSE45GDL52Mh4Zn2bbg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+601104 MainThread 2026-09-03 14:10:52,049 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+601104 MainThread 2026-09-03 14:10:52,051 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-03T18:10:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '549011de-c9a8-5ad5-9697-033033fa2021', 'Host': 'api.webull.com'}
+601104 MainThread 2026-09-03 14:10:52,051 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+601104 MainThread 2026-09-03 14:10:52,051 webull.core.auth.composer.default_signature_composer DEBUG body:None
+601104 MainThread 2026-09-03 14:10:52,051 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+601104 MainThread 2026-09-03 14:10:52,051 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D549011de-c9a8-5ad5-9697-033033fa2021%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-03T18%3A10%3A52Z
+601104 MainThread 2026-09-03 14:10:52,051 webull.core.auth.composer.default_signature_composer DEBUG signature:ng8xcHUkHeITcI13ZiKRfNV/yYIZjtREg4bwaV4roF4=
+601104 MainThread 2026-09-03 14:10:52,175 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Thu, 03 Sep 2026 18:10:53 GMT', 'X-Request-Id': '0b6fb823-7c4f-4792-be5c-5a9f8c1b8762', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 1a3dcaecd9011185610c9c21661a9ca8.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '9615SmT1EcXMV5JQYkm57KcpmQ2o1Ha4LE4FKBPdS17ySvknvTrGAA==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+601104 MainThread 2026-09-03 14:10:52,175 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+601104 MainThread 2026-09-03 14:10:52,177 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-03T18:10:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'ed776128-3513-572b-a0ad-002b231aa98e', 'Host': 'api.webull.com'}
+601104 MainThread 2026-09-03 14:10:52,177 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+601104 MainThread 2026-09-03 14:10:52,177 webull.core.auth.composer.default_signature_composer DEBUG body:None
+601104 MainThread 2026-09-03 14:10:52,177 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+601104 MainThread 2026-09-03 14:10:52,177 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Ded776128-3513-572b-a0ad-002b231aa98e%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-03T18%3A10%3A52Z
+601104 MainThread 2026-09-03 14:10:52,177 webull.core.auth.composer.default_signature_composer DEBUG signature:smesF3hbDNteqxvwbTF9gEhuG5xUNQ5LejgquO3kiJ4=
+601104 MainThread 2026-09-03 14:10:52,292 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Thu, 03 Sep 2026 18:10:53 GMT', 'X-Request-Id': 'cef3d7f3-377a-46fd-a328-1668e3aaea2d', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9f337434d21174716459ffba539793e0.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'm2j4lTvW2yZYWnxQBbe6jVCwc-WQ9qOJw7Cf_F_5mGCGqvoQWNVrig==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-03T18:10:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '1851724c-afe5-51e1-ad76-f309ac2f3235', 'Host': 'api.webull.com'}
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-03T18:10:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '1851724c-afe5-51e1-ad76-f309ac2f3235', 'Host': 'api.webull.com'}
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG body:None
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG body:None
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D1851724c-afe5-51e1-ad76-f309ac2f3235%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-03T18%3A10%3A52Z
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D1851724c-afe5-51e1-ad76-f309ac2f3235%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-03T18%3A10%3A52Z
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG signature:QMdDvaYyQxFTqyCi3fRAQRjI+s100dWpmPkU26NN6/c=
+601104 MainThread 2026-09-03 14:10:52,295 webull.core.auth.composer.default_signature_composer DEBUG signature:QMdDvaYyQxFTqyCi3fRAQRjI+s100dWpmPkU26NN6/c=
+601104 MainThread 2026-09-03 14:10:52,415 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Thu, 03 Sep 2026 18:10:53 GMT', 'X-Request-Id': '0345c6e1-4330-4ce6-ab22-66b491b1777f', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 176385fa690830512181df5d31c8e1b8.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '7uePnBNf7PG1zFxrObIXCA5HkxBEWgWLyh59kJzsxDH4MKc2X8gR4Q==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+601104 MainThread 2026-09-03 14:10:52,415 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Thu, 03 Sep 2026 18:10:53 GMT', 'X-Request-Id': '0345c6e1-4330-4ce6-ab22-66b491b1777f', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 176385fa690830512181df5d31c8e1b8.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '7uePnBNf7PG1zFxrObIXCA5HkxBEWgWLyh59kJzsxDH4MKc2X8gR4Q==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+601104 MainThread 2026-09-03 14:10:52,415 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+601104 MainThread 2026-09-03 14:10:52,415 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-03T18:10:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'e1c9824c-c5a8-5b83-b3d6-9926a00571d1', 'Host': 'api.webull.com'}
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-03T18:10:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'e1c9824c-c5a8-5b83-b3d6-9926a00571d1', 'Host': 'api.webull.com'}
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG body:None
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG body:None
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3De1c9824c-c5a8-5b83-b3d6-9926a00571d1%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-03T18%3A10%3A52Z
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3De1c9824c-c5a8-5b83-b3d6-9926a00571d1%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-03T18%3A10%3A52Z
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG signature:MlXWLQBN5qQWmiaBpJ4PAfdB7ioLxOGidGDzjaPuyWE=
+601104 MainThread 2026-09-03 14:10:52,417 webull.core.auth.composer.default_signature_composer DEBUG signature:MlXWLQBN5qQWmiaBpJ4PAfdB7ioLxOGidGDzjaPuyWE=
+601104 MainThread 2026-09-03 14:10:52,530 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Thu, 03 Sep 2026 18:10:54 GMT', 'X-Request-Id': 'd0590518-7daf-47a0-8db9-67ec35d18103', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 7fef7f53603caec06083092934074a5e.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'cMtJlGFBv_3oAWA3vylrPZ8DmR4niRtfs2EiPsdabFIkxW83t548Kg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+601104 MainThread 2026-09-03 14:10:52,530 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Thu, 03 Sep 2026 18:10:54 GMT', 'X-Request-Id': 'd0590518-7daf-47a0-8db9-67ec35d18103', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 7fef7f53603caec06083092934074a5e.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'cMtJlGFBv_3oAWA3vylrPZ8DmR4niRtfs2EiPsdabFIkxW83t548Kg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+601104 MainThread 2026-09-03 14:10:52,530 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+601104 MainThread 2026-09-03 14:10:52,530 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-03T18:10:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'c519cbd5-10c4-5f12-be8d-9747f3c22801', 'Host': 'api.webull.com'}
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-03T18:10:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'c519cbd5-10c4-5f12-be8d-9747f3c22801', 'Host': 'api.webull.com'}
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG body:None
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG body:None
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dc519cbd5-10c4-5f12-be8d-9747f3c22801%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-03T18%3A10%3A52Z
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dc519cbd5-10c4-5f12-be8d-9747f3c22801%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-03T18%3A10%3A52Z
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG signature:wHCd1TiAxjgDNYIwuoDirgL9sOI0TfNJeZS9wieL8FA=
+601104 MainThread 2026-09-03 14:10:52,532 webull.core.auth.composer.default_signature_composer DEBUG signature:wHCd1TiAxjgDNYIwuoDirgL9sOI0TfNJeZS9wieL8FA=
+601104 MainThread 2026-09-03 14:10:52,652 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Thu, 03 Sep 2026 18:10:54 GMT', 'X-Request-Id': 'cb681c1b-1474-4002-b7c2-70710feb62c1', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 84ee72f7470310cc4167f95ed9189afa.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'xiq_oRdsoPl5LQgtYMoi_GjglJnygK_FeI_PhkSrjhr8QgMIdVhWIw==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+601104 MainThread 2026-09-03 14:10:52,652 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Thu, 03 Sep 2026 18:10:54 GMT', 'X-Request-Id': 'cb681c1b-1474-4002-b7c2-70710feb62c1', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 84ee72f7470310cc4167f95ed9189afa.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'xiq_oRdsoPl5LQgtYMoi_GjglJnygK_FeI_PhkSrjhr8QgMIdVhWIw==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
