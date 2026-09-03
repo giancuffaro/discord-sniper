@@ -1,7 +1,10 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-03 11:45 (sync-watch run — order_status "unknown" bug + dead bridge exit gate, both fixed; SPY 771P −$15 missing from the ledger)
+Last updated: 2026-09-03 16:35 (daily close-out run — journal built + corrected
+from broker truth, WMT trim room-exit-bug and SPY 771P ledger-miss documented
+(both already fixed earlier today), replay_check 0 silent drops, no new code
+bugs found, everything green.)
 "9/2 EVENING" at the bottom. Bot -$62 on 3 closes, Gian +$114 on 9 hand
 trades, account +$52 gross / +$45.71 net. Six bridge fixes + extension
 3.5.7 (RELOAD IT): pulled stops go back when an exit is abandoned, a
