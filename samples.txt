@@ -432,6 +432,9 @@ STC $NVDA 205c 08/07 @2.10 @everyone
 $HOOD Took entry .HOOD260702C118 Fill: 1.77
 $TSLA took entry .TSLA260717P382.5 Fill: 2.36
 $F took entry .F260731C15.5 Fill: 0.72
+# 9/3: no dot-notation in THIS message — the contract was in an earlier
+# "Loaded $NVDA .NVDA260904C230" line. Held back (needs_loaded), not dropped.
+@here $NVDA I took entry 1.37 fill
 Loaded .AAPL260710C310 $AAPL no position yet
 $MSFT entry / exit for a 20% gain. Waited for proper break of trigger
 

@@ -1,10 +1,10 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-03 16:35 (daily close-out run — journal built + corrected
-from broker truth, WMT trim room-exit-bug and SPY 771P ledger-miss documented
-(both already fixed earlier today), replay_check 0 silent drops, no new code
-bugs found, everything green.)
+Last updated: 2026-09-03 17:16 (G asked about RWGates specifically — found and
+fixed a real silent-drop: "$TICKER I took entry $PRICE fill" with no contract
+repeated in the message, RWGates' actual live shape, fell through the parser
+entirely. Extension 3.5.13 — RELOAD IT.)
 "9/2 EVENING" at the bottom. Bot -$62 on 3 closes, Gian +$114 on 9 hand
 trades, account +$52 gross / +$45.71 net. Six bridge fixes + extension
 3.5.7 (RELOAD IT): pulled stops go back when an exit is abandoned, a
