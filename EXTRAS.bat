@@ -115,6 +115,13 @@ echo   Nothing here can place a trade. This only shows you how it
 echo   reads the lines in samples.txt.
 echo.
 call :needpython || goto back
+if not exist "%~dp0tune.py" (
+  echo   The parser tuner was retired. Use these instead:
+  echo     python replay_check.py        - what did we miss today
+  echo     python audit_history.py       - what have we missed ever
+  echo     python scoreboard.py 10       - which rooms actually signal
+  goto :eof
+)
 python tune.py
 goto back
 
@@ -142,6 +149,10 @@ set /p XF="   Export file (Enter = Downloads\signal-room-chat.txt): "
 if "!XF!"=="" set "XF=%USERPROFILE%\Downloads\signal-room-chat.txt"
 set "ROOMPICK="
 set /p ROOMPICK="   One room only? (Enter = all, or: main / aristotle / midas / aristotle-small): "
+if not exist "%~dp0drill.py" (
+  echo   The room drill was retired. audit_history.py covers it now.
+  goto :eof
+)
 python drill.py "!XF!" !ROOMPICK!
 if exist "drill-report.txt" start "" notepad "drill-report.txt"
 goto back
