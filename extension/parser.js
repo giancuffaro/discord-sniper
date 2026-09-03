@@ -372,6 +372,7 @@ const RE_ROWMISC = /\b(?:Yesterday|Today) at \d{1,2}:\d{2}\s*[AP]M\b|\bForwarded
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_STAG, " ").replace(RE_HDR, "");
   t = t.replace(RE_ROWHDR, "").replace(RE_ROWTIME, " ").replace(RE_ROWMISC, " ");
+  t = t.replace(/:[a-z0-9_]{2,32}:/gi, " ");      // ":green_alert:" shortcodes (9/2)
   // ANSI color codes in Namrood's alerts ("[1;37;44mMETA") glued their
   // trailing "m" onto the ticker — META became MMETA (live, 8/17-18).
   // Strip them, with or without the ESC byte. Mirrors signals.py.

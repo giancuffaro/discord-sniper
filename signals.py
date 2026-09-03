@@ -637,6 +637,7 @@ def clean_text(raw):
     t = re.sub(r"^\s*[^\n—]{1,70}?\s+—\s+(?:Yesterday at |Today at |\d{1,2}/\d{1,2}/\d{2,4},\s*)?\d{1,2}:\d{2}\s*[AP]M(?:\s+[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?\s*", "", t, flags=re.I)
     t = re.sub(r"\[\s*\d{1,2}:\d{2}\s*[AP]M\s*\]\s*(?:[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?\s*", " ", t, flags=re.I)
     t = re.sub(r"\b(?:Yesterday|Today) at \d{1,2}:\d{2}\s*[AP]M\b|\bForwarded\b|\b\d{0,3}\s*Add Reaction\b|\(edited\)", " ", t, flags=re.I)
+    t = re.sub(r":[a-z0-9_]{2,32}:", " ", t, flags=re.I)   # ":green_alert:" shortcodes
     # ANSI color codes ride along in Namrood's alerts ("[1;37;44mMETA") and
     # the trailing "m" glued onto the ticker — META became MMETA, SPY MSPY,
     # SPCX MSPCX (seen live 8/17-18). Strip them, with or without the ESC
@@ -2219,6 +2220,22 @@ def _parse_inner(text, author="", channel="", cfg=None):
             sig.strike, sig.side, sig.expiry = c["strike"], c["side"], c["expiry"]
         if not sig.symbol:
             sig.why = "sounds like an exit but I couldn't tell which ticker"
+            return sig
+        # PARTIAL SELLS ARE TRIMS (9/2 corpus) — mirrors parser.js.
+        part = re.search(r"\b(?:sold|sell|selling|closed|closing|out|exited|took)\s+(?:out\s+)?(?:of\s+)?"
+                         r"(?:(\d)\s*/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d/\d)\b", t, re.I)
+        if part and not re.search(r"\b(?:rest|remaining|all|everything|last|final)\b", t, re.I):
+            sig.action, sig.matched = "TRIM", "partial sell"
+            sig.fire = False
+            if part.group(1) and part.group(2) and int(part.group(2)) > 0:
+                sig.pct = round(100 * int(part.group(1)) / int(part.group(2)))
+            elif re.search(r"half", part.group(0), re.I):
+                sig.pct = 50
+            elif re.search(r"third", part.group(0), re.I):
+                sig.pct = 33
+            elif re.search(r"quarter", part.group(0), re.I):
+                sig.pct = 25
+            sig.why = "partial sell on %s — a trim, not the exit" % sig.symbol
             return sig
         sig.action, sig.matched = "CLOSE", "exit"
         sig.fire = True
