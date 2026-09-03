@@ -6,7 +6,7 @@ import signals as sigmod
 from guards import Guards
 
 CFG = {"allowed_symbols": ["SPY", "AAPL", "AMD", "NVDA", "NFLX", "QQQ",
-                           "AMZN", "MSFT"]}
+                           "AMZN", "MSFT", "META"]}
 NOSTOP = "/tmp/__no_stop_here__"
 fails = []
 TOTAL_FAILS = 0

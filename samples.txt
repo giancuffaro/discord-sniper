@@ -435,6 +435,9 @@ $F took entry .F260731C15.5 Fill: 0.72
 # 9/3: no dot-notation in THIS message — the contract was in an earlier
 # "Loaded $NVDA .NVDA260904C230" line. Held back (needs_loaded), not dropped.
 @here $NVDA I took entry 1.37 fill
+# 9/3: same idea, Unraveller's shape — "Loading meta 610 puts weeklies" then
+# 12 minutes later this is the only fill confirmation that ever comes.
+Meta avg 5.7 @here
 Loaded .AAPL260710C310 $AAPL no position yet
 $MSFT entry / exit for a 20% gain. Waited for proper break of trigger
 
