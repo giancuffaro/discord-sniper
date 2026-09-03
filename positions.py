@@ -3115,6 +3115,43 @@ class Book:
                         break
             except Exception:                           # noqa: BLE001
                 pass
+            # THE ACCOUNT IS THE LAST WORD (9/3, SPY 771P): the probe said
+            # not-filled and the bid was declared dead — but Webull had
+            # filled it at 2.02 seventy-nine seconds EARLIER. The position
+            # then sat outside the book for four hours, guarded only by the
+            # bracket stop that was born with the order. An order probe can
+            # lie (throttled, renamed endpoint, unknown); the positions list
+            # cannot. Ask it before saying "you own nothing".
+            if not held and wb is not None and not self._sim(p):
+                try:
+                    for _r in (wb.positions() or []):
+                        if str(_r.get("symbol") or "").upper() != sym.upper():
+                            continue
+                        if _r.get("strike") is not None and p.get("strike") is not None \
+                                and abs(float(_r["strike"]) - float(p["strike"])) > 0.001:
+                            continue
+                        _rs = str(_r.get("side") or "").upper()
+                        if _rs and p.get("side") and _rs != str(p["side"]).upper():
+                            continue
+                        _q = abs(int(float(_r.get("qty") or 0)))
+                        if _q <= 0:
+                            continue
+                        with self._lock:
+                            p3 = self._pos.get(key)
+                            if p3 is not None:
+                                p3["state"] = FILLED
+                                p3["qty"] = _q
+                                if _r.get("fill"):
+                                    p3["fill"] = float(_r["fill"])
+                                p3.pop("closed_at", None)
+                        held = _q
+                        self._event(key, "update",
+                                    "%s — the order probe said no fill, but the "
+                                    "ACCOUNT holds %d at %s. You DO own it; "
+                                    "managing it now." % (sym, _q, _r.get("fill") or "?"))
+                        break
+                except Exception:                       # noqa: BLE001
+                    pass
         self._event(key, "pulled",
                     "%s — %s. The bid is off the book%s"
                     % (sym, why, "; you own nothing here." if not held
