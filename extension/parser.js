@@ -1639,6 +1639,19 @@ function parseSignalInner(text, cfg) {
   //    percentage with no contract in the line is a trim — nobody opens a
   //    position by posting "34%". The no-contract test is what stops a real
   //    entry from being swallowed here.
+  // "closed AAPL for +20%" / "sold NVDA at +35%" is a FULL exit reporting its
+  // gain — not a 20% trim (9/2 corpus). A trim word anywhere keeps it a trim.
+  {
+    const fx = /\b(closed|sold|out of|exited|stopped out of)\s+(?:my\s+)?\$?([A-Za-z]{1,5})\b[^%\n]{0,30}?\b(?:for|at|up)\s+[+-]?\d{1,4}(?:\.\d+)?\s*%/i.exec(t);
+    if (fx && !RE_TRIM.test(low) && !RE_PARTIAL.test(low) && !NOT_TICKERS.has(fx[2].toUpperCase())) {
+      const c = findContract(t);
+      s.symbol = c ? c.symbol : fx[2].toUpperCase();
+      if (c) { s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
+      s.action = "CLOSE"; s.matched = "exit with gain"; s.fire = true;
+      s.why = "full exit on " + s.symbol + " (they posted the gain, not a trim size)";
+      return s;
+    }
+  }
   const pctM = RE_PCT.exec(t) || RE_PCT_ANY.exec(t);
   // ...unless the line also NAMES A CONTRACT — then it's an entry that
   // happens to state its risk (Blue Collar's template, 9/2), not a risk note.
@@ -1848,13 +1861,15 @@ function parseSignalInner(text, cfg) {
   //    UPS 105 calls", "sold some", "sold most", "sold a third" read as a
   //    FULL exit — the bot would have flattened a position the trader only
   //    trimmed. A fraction/partial word next to the sell word is a trim.
-  if (RE_EXIT.test(low)) {
+  const partSell = /\b(?:sold|sell|selling|closed|closing|out|exited|took)\s+(?:out\s+)?(?:of\s+)?(?:(\d)\s*\/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d\/\d)\b/i.exec(t);
+  const fullSell = /\b(?:sold|sell|selling|closed|closing|out|exited)\s+(?:out\s+)?(?:of\s+)?(?:the\s+)?(?:rest|remaining|remainder|all|everything|last|final)\b/i.test(t);
+  if ((RE_EXIT.test(low) || partSell) && !fullSell) {
     const c = findContract(t);
     s.symbol = c ? c.symbol : bareSymbol(t, allowed);
     if (c) { s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
     if (!s.symbol) { s.why = "sounds like an exit but I couldn't tell which ticker"; return s; }
-    const part = /\b(?:sold|sell|selling|closed|closing|out|exited|took)\s+(?:out\s+)?(?:of\s+)?(?:(\d)\s*\/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d\/\d)\b/i.exec(t);
-    if (part && !/\b(?:rest|remaining|all|everything|last|final)\b/i.test(t)) {
+    const part = partSell;
+    if (part) {
       s.action = "TRIM"; s.matched = "partial sell"; s.fire = false;
       if (part[1] && part[2] && parseInt(part[2], 10) > 0)
         s.pct = Math.round(100 * parseInt(part[1], 10) / parseInt(part[2], 10));

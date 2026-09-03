@@ -1985,6 +1985,17 @@ def _parse_inner(text, author="", channel="", cfg=None):
     #    A bare percentage with no contract in the line is a trim — nobody
     #    opens a position by posting "34%". The no-contract test is what keeps
     #    a real entry from being swallowed here.
+    # "closed AAPL for +20%" = a FULL exit reporting its gain (9/2 corpus).
+    fx = re.search(r"\b(closed|sold|out of|exited|stopped out of)\s+(?:my\s+)?\$?([A-Za-z]{1,5})\b[^%\n]{0,30}?\b(?:for|at|up)\s+[+-]?\d{1,4}(?:\.\d+)?\s*%", t, re.I)
+    if fx and not RE_TRIM.search(low) and not RE_PARTIAL.search(low) and fx.group(2).upper() not in NOT_TICKERS:
+        c = _contract(t)
+        sig.symbol = c["symbol"] if c else fx.group(2).upper()
+        if c:
+            sig.strike, sig.side, sig.expiry = c["strike"], c["side"], c["expiry"]
+        sig.action, sig.matched = "CLOSE", "exit with gain"
+        sig.fire = True
+        sig.why = "full exit on %s (they posted the gain, not a trim size)" % sig.symbol
+        return sig
     pct_m = RE_PCT.search(t) or RE_PCT_ANY.search(t)
     _has_contract = bool(RE_CONTRACT.search(t) or RE_CONTRACT_OSI.search(t))
     if pct_m and not RE_TRIM.search(low) and RE_PCT_RISK.search(t) and not _has_contract:
@@ -2213,7 +2224,11 @@ def _parse_inner(text, author="", channel="", cfg=None):
             return sig
 
     # 6. A plain exit word with a real contract behind it.
-    if RE_EXIT.search(low):
+    part = re.search(r"\b(?:sold|sell|selling|closed|closing|out|exited|took)\s+(?:out\s+)?(?:of\s+)?"
+                     r"(?:(\d)\s*/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d/\d)\b", t, re.I)
+    full_sell = re.search(r"\b(?:sold|sell|selling|closed|closing|out|exited)\s+(?:out\s+)?(?:of\s+)?(?:the\s+)?"
+                          r"(?:rest|remaining|remainder|all|everything|last|final)\b", t, re.I)
+    if (RE_EXIT.search(low) or part) and not full_sell:
         c = _contract(t)
         sig.symbol = c["symbol"] if c else _bare_symbol(t, allowed)
         if c:
@@ -2222,9 +2237,7 @@ def _parse_inner(text, author="", channel="", cfg=None):
             sig.why = "sounds like an exit but I couldn't tell which ticker"
             return sig
         # PARTIAL SELLS ARE TRIMS (9/2 corpus) — mirrors parser.js.
-        part = re.search(r"\b(?:sold|sell|selling|closed|closing|out|exited|took)\s+(?:out\s+)?(?:of\s+)?"
-                         r"(?:(\d)\s*/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d/\d)\b", t, re.I)
-        if part and not re.search(r"\b(?:rest|remaining|all|everything|last|final)\b", t, re.I):
+        if part:
             sig.action, sig.matched = "TRIM", "partial sell"
             sig.fire = False
             if part.group(1) and part.group(2) and int(part.group(2)) > 0:
