@@ -2260,6 +2260,12 @@ class Book:
                     if not q2 or q2.get("state") != FILLED:
                         return
                     stop = q2.get("stop")
+                    # The ratchet may have been REFUSED by the broker; the
+                    # level it wanted is still the level that protects this
+                    # trade, so the watchdog enforces the higher of the two.
+                    _soft = q2.get("soft_stop")
+                    if _soft is not None:
+                        stop = _soft if stop is None else max(float(stop), float(_soft))
             if bid is None or stop is None or float(bid) > float(stop):
                 continue
             if not self.claim(key):
@@ -2794,11 +2800,24 @@ class Book:
                             "next pass." if _cancelled_old else
                             "The old stop is still in place; the watchdog "
                             "on this PC covers the gap.")))
-            if _cancelled_old:
-                with self._lock:
-                    q = self._pos.get(key)
-                    if q is not None:
+            # SOFT STOP (9/3, the TSLA 8/26 post-mortem): this branch has
+            # always claimed "the watchdog on this PC covers the gap" — and
+            # it did not. The watchdog reads p["stop"], and p["stop"] was
+            # only ever updated on SUCCESS, so after a refusal the local
+            # guard was still watching the OLD, lower level. TSLA 350P
+            # peaked +16%, the ratchet tried three times to move the stop to
+            # breakeven (5.15) and Webull refused all three on
+            # DAY_BUYING_POWER_INSUFFICIENT, and the trade still died at the
+            # original 4.60 for -$45. Record the level we WANTED; the
+            # watchdog now enforces it locally even with no resting order.
+            with self._lock:
+                q = self._pos.get(key)
+                if q is not None:
+                    if _cancelled_old:
                         q["stop_order_id"] = None       # so the next pass re-arms
+                    _prev = q.get("soft_stop")
+                    if _prev is None or float(new_stop) > float(_prev):
+                        q["soft_stop"] = float(new_stop)
             return
         with self._lock:
             q = self._pos.get(key)
@@ -2806,6 +2825,7 @@ class Book:
                 q["stop"] = placed
                 q["stop_order_id"] = new_oid
                 q["ratchet_locked_pct"] = locked
+                q.pop("soft_stop", None)   # a real resting stop supersedes it
         self._event(key, "stop-set",
                     "%s — up %.0f%%, ratchet moved your stop to %.2f — locked "
                     "in +%.0f%%, can't go red from here" % (sym, gain, placed,
