@@ -86,6 +86,52 @@ def near(t1, t2, secs):
     return abs(s(t1) - s(t2)) <= secs
 
 
+RE_PRICE = re.compile(r"\b\d{1,4}\.\d{1,2}\b")
+
+
+def find_missed_entries(keep, parsed):
+    """Second pass, separate from the action-based silent-drop check above
+    (which is structurally blind to this — 9/3, G: "we need to be catching
+    these" after 3 real entries this exact shape were missed in one day).
+    That check only fires when the parser ALREADY assigned an action; this
+    one catches the case where it assigned NOTHING at all.
+
+    Simulates the extension's own per-trader LOADING shelf (guards.js
+    remember_loading/resolve_loaded) chronologically across the day: a
+    PREPARE arms the shelf for that trader; any recognized action after it
+    clears the shelf (they're done confirming); a message that parses to NO
+    action at all while the shelf is still armed AND the message carries a
+    price is flagged — the same shape as RWGates' NVDA and both Unraveller
+    misses on 9/3. Heuristic and deliberately narrow (needs an armed shelf,
+    not just any price+word combo) — a diagnostic net, not a trading
+    decision; nothing here is ever acted on.
+    """
+    rows = []
+    for (t, room, cid, text), sig in zip(keep, parsed):
+        author = text.split(": ", 1)[0] if ": " in text[:60] else "?"
+        rows.append((t, room, author.strip().lower(), text, sig))
+    rows.sort(key=lambda r: r[0])
+    shelf = {}                                    # trader -> (sym, strike, side, t)
+    flags = []
+    for t, room, author, text, sig in rows:
+        act = sig.get("action") if sig else None
+        if act == "PREPARE" and sig.get("symbol"):
+            shelf[author] = (sig.get("symbol"), sig.get("strike"), sig.get("side"), t)
+            continue
+        if act:
+            shelf.pop(author, None)               # confirmed some other way, or moved on
+            continue
+        cand = shelf.get(author)
+        if not cand:
+            continue
+        body = strip_header(text)
+        if not RE_PRICE.search(body):
+            continue
+        flags.append((t, room, author, cand[0], cand[1], cand[2], body[:150]))
+        del shelf[author]                          # one flag per loading call
+    return flags
+
+
 def main():
     fn = newest_export()
     if not fn:
@@ -138,6 +184,17 @@ def main():
         for t, act, sym, body in p["silent"][:8]:
             print("   %s  %-7s %-5s %s" % (t, act, sym, body))
     print("\nTOTAL silent drops: %d  (actionable per the parser, no verdict, no bridge line)" % total_silent)
+
+    missed = find_missed_entries(keep, parsed)
+    if missed:
+        print("\nPOSSIBLE MISSED ENTRIES (heuristic — parser found NO action at "
+              "all, but the trader had an unconfirmed LOADING call and this "
+              "message carries a price):")
+        for t, room, author, sym, strike, side, body in missed:
+            what = sym + (" " + str(strike) + ("P" if side == "PUTS" else "C")
+                          if strike is not None else "")
+            print("   %s  %-20s %-15s %s — %s" % (t, room[:20], author, what, body))
+    print("POSSIBLE MISSED ENTRIES: %d" % len(missed))
 
 
 if __name__ == "__main__":
