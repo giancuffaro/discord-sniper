@@ -135,6 +135,18 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   resolve to the held contract via the book. Pulled bids are confirmed
   dead — if the cancel lost the race, the exit sells the fill immediately.
   settings.json exit_policy:"full" = the one-line way back.
+- SUPERSEDED 9/3 — STANDING RULE: ENTRIES ONLY (G, 9/3): the bot follows
+  room ENTRIES (and adds) ONLY now — the 8/30 "full exit fires as the
+  emergency word" carve-out above is retired. Every room-side exit (trim,
+  stop-move, "all out", "stopped out", "closed everything") is logged
+  ("EXIT-IGNORED ... — entries only") and NEVER traded; the ratchet's own
+  resting stop at Webull is the ONLY exit (plus the bridge's own pullback
+  stock-stop / underlying hard-stop, which carry a "source"). A bot SELL
+  that traces to a room trim/close is a BUG: check bridge.py do_POST's
+  EXIT-IGNORED gate (order.get("source")), extension/background.js's
+  TRIM/STOPMOVE/CLOSE gate before sig.fire, and settings.json
+  execution.exit_policy != "full". Gate verified LIVE today (EXIT-IGNORED
+  fired correctly on SPY at 12:42 and 13:48).
 - RESTARTS: state photo on every event. On boot: expired options = dead
   paper, dropped, zero credit; everything else is UNVERIFIED until the
   broker confirms it (then watchdog+stop arm); gone = closed at "a price I
@@ -743,3 +755,66 @@ The 9/2 price tiers are RETIRED. `ratchet_tiers.TIERS` is now a single rule for 
 - Unknown/unparseable expiry → anti-clip applies (safe default).
 - When anti-clip moves one of his numbers it now SAYS so: "anti-clip held the stop at +18% instead of +20% (never closer than 40% of a +30% gain; 9 days out)".
 - test_positions: existing +30% case (far expiry) still expects 2.36; NEW case proves a same-day expiry locks the full 2.40. Suite green.
+
+## 9/3 16:35 — DAILY CLOSE-OUT (automated)
+Broker truth, 5 bot closes + 1 Gian scalp: **bot day -$51.55 corrected** (was
+booking $0/wrong on 3 of the 5 before today's earlier fixes), **Gian +$207.62**
+(QQQ 710P x4, clean). Combined realized +$156.07 + XLF's +$3.95 unrealized
+day-mark = **+$160.02**, matches Webull's own day P&L to the penny — FIFO
+math checks out. journal-2026-09-03.xlsx built (house format); trader-
+scoreboard.xlsx appended (ZTRADEZ BOT now 13 trades/-$136.55/AVOID,
+👑KingBeeAri🐝 now 2 trades/-$71.12/WATCH); Webull_Orders_2026-09-03_auto.csv
+written. Open overnight: XLF 58C 10/16 x1 @1.58, GTC stop 1.06/1.18 resting
+at Webull (SUBMITTED), mark +$10.50, watchdog on. replay_check.py: **0 silent
+drops**. scoreboard.py 10: 67 rooms heard from, 2 silent configured.
+test_positions/test_signals(4 known Brett fails)/test_resolve/py_compile/
+node --check: all green, no regressions, **no new code fixes needed today**
+(every bug the journal exposed was already fixed earlier in today's own
+sync-watch runs — see below).
+
+**What the journal caught (all pre-date today's own fixes, none are new bugs):**
+1. **WMT 108C 9/25 — ROOM EXIT-BUG, already fixed.** 👑KingBeeAri🐝's trim
+   at 10:35 actually sold a real contract (the bridge's entries-only gate
+   was dead until the 11:45 fix today). Also a ledger echo: journaled at
+   the entry price 2.17 (+$0) instead of the broker's real fill 2.21
+   (+$3.88 corrected). Gate confirmed working now — EXIT-IGNORED fired
+   clean on SPY at 12:42 and 13:48, no repeat.
+2. **C 139P 9/4 — already fixed.** Misattributed as a hand-close ("you
+   closed it yourself... price I never saw") by the reconcile_gone bug,
+   fixed today 15:22. Real cause: the bot's own -25% swing stop (1-day
+   expiry mistagged swing instead of scalp, also fixed today 15:43) firing
+   with 10c slippage to 1.14. Corrected: -$52.12.
+3. **SPY 771P 9/4 — already fixed, but the historical record was never
+   trued up.** cancel_entry declared this bid dead when the broker had
+   already filled it 2s earlier; the born-with stop caught it blind 4h
+   later at 1.87. days/2026-09-03.json still shows nofill/qty 0 and no
+   TRUED UP line ever posted for it — added to the journal from broker
+   order history by hand. Corrected: -$15.12.
+4. SPY 772C 0DTE and IREN 40C — clean hand-closes by Gian (Market Sniper,
+   "6a99..." client-id family), ledger just needed the real broker price:
+   +$32.88 and -$21.07.
+
+**Watch items (no code touched, flagging for the next session):**
+- **IBIT 47C NOFILL (15:59) drew 104 broker 429s** in its 90s fill-watch —
+  5 positions (WMT/C/SPY/XLF/IBIT-watch) were being polled concurrently
+  and stacked past the shared per-endpoint budget. POSTCHECK itself called
+  it "ok, with notes" (no missed fill, no wrong price) — not fixed today
+  since it caused no harm and a rushed rate-limit change with nobody
+  watching felt riskier than the 429s themselves. Worth tuning if
+  concurrent-position count keeps climbing.
+- **16:11 the extension auto-updated and reloaded** (cascading "reader
+  detached, reloading" 16:11-16:12); the popup export captured seconds
+  later (16:12:53) mid-reload shows "LIVE rooms: none (all testing)" —
+  almost certainly a stale snapshot (real fills happened continuously all
+  day including the 15:55 XLF entry, and bridge /mode + /rooms checked
+  live via Claude-in-Chrome at 16:5x show the bridge connected and XLF's
+  stop resting real at Webull). G should glance at the popup before
+  tomorrow's open to confirm rooms are still LIVE.
+- RWGates: zero captures today (was alive 9/2 with 28). Options Insider:
+  still silent, deathwatch continues (cancel-by 9/11 unless it posts).
+- Chrome: no DISCARDED/out-of-memory lines today. Clean.
+- /stream (checked live via Claude-in-Chrome, 16:5x): connected true,
+  last_sweep_ms 151.9, budget_left 284.5, budget_takes 888 ≈ 2×sweeps —
+  healthy.
+- Announcer: still paused (G, 8/31 14:55) — skipped per standing
+  instruction, not re-enabled.
