@@ -1,0 +1,1073 @@
+623772 Thread-1705 (_refresh) 2026-09-02 18:29:02,270 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:29:02Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "d365d8cd-6bb3-5d11-9a99-d8f3e47fbccb",
+    "x-signature": "YKVisGDZbh/Zp1aN64I6bFgXaWb643VvhMwzNWuQy3M=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: e21084bf-2d45-47ad-ab05-8b9e6c904919
+623772 Thread-1705 (_refresh) 2026-09-02 18:29:02,281 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "e21084bf-2d45-47ad-ab05-8b9e6c904919"
+}
+623772 Thread-1705 (_refresh) 2026-09-02 18:29:02,281 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "e21084bf-2d45-47ad-ab05-8b9e6c904919"
+}
+65524 Thread-1728 (_refresh) 2026-09-02 18:30:02,302 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:30:02Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "a1b5d39d-f41a-568b-82fc-d0ec169a25a9",
+    "x-signature": "uk6w3a7I7G4uVWtZDAMCcS0Uiw6RPPI0sSLUgyYgIK8=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: 5ea509df-19ad-4737-912a-942ed99a0d61
+65524 Thread-1728 (_refresh) 2026-09-02 18:30:02,302 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:30:02Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "a1b5d39d-f41a-568b-82fc-d0ec169a25a9",
+    "x-signature": "uk6w3a7I7G4uVWtZDAMCcS0Uiw6RPPI0sSLUgyYgIK8=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: 5ea509df-19ad-4737-912a-942ed99a0d61
+65524 Thread-1728 (_refresh) 2026-09-02 18:30:02,303 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "5ea509df-19ad-4737-912a-942ed99a0d61"
+}
+65524 Thread-1728 (_refresh) 2026-09-02 18:30:02,303 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "5ea509df-19ad-4737-912a-942ed99a0d61"
+}
+51212 Thread-1774 (_refresh) 2026-09-02 18:30:42,256 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:30:42Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "cecf8d00-5cb6-58d4-96e5-3c4e515c44c8",
+    "x-signature": "aju+DkDzEJIL8GOWGkJbmfUKmEOud6SFvZtWhI5Dl3A=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: bb5b347e-9ec6-40d3-bd9d-2dc7f58b2012
+51212 Thread-1774 (_refresh) 2026-09-02 18:30:42,256 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:30:42Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "cecf8d00-5cb6-58d4-96e5-3c4e515c44c8",
+    "x-signature": "aju+DkDzEJIL8GOWGkJbmfUKmEOud6SFvZtWhI5Dl3A=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: bb5b347e-9ec6-40d3-bd9d-2dc7f58b2012
+51212 Thread-1774 (_refresh) 2026-09-02 18:30:42,258 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "bb5b347e-9ec6-40d3-bd9d-2dc7f58b2012"
+}
+51212 Thread-1774 (_refresh) 2026-09-02 18:30:42,258 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "bb5b347e-9ec6-40d3-bd9d-2dc7f58b2012"
+}
+80848 Thread-1840 (_refresh) 2026-09-02 18:31:00,337 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:00Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "c9aeb7e6-1145-5138-8157-5d5cec76766b",
+    "x-signature": "nxLquM+YPOzMjY5nKq5tPo1nwLrcRvUe/urgatqKXxg=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: 38ef9a9d-7e48-4305-8133-60f1189392a9
+80848 Thread-1840 (_refresh) 2026-09-02 18:31:00,337 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:00Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "c9aeb7e6-1145-5138-8157-5d5cec76766b",
+    "x-signature": "nxLquM+YPOzMjY5nKq5tPo1nwLrcRvUe/urgatqKXxg=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: 38ef9a9d-7e48-4305-8133-60f1189392a9
+80848 Thread-1840 (_refresh) 2026-09-02 18:31:00,339 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "38ef9a9d-7e48-4305-8133-60f1189392a9"
+}
+80848 Thread-1840 (_refresh) 2026-09-02 18:31:00,339 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "38ef9a9d-7e48-4305-8133-60f1189392a9"
+}
+88772 Thread-1872 (_refresh) 2026-09-02 18:31:09,346 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:09Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "1a0473bc-975a-5692-a1ba-775936699040",
+    "x-signature": "Z4SPogLbjNs7wGzFm9MbgJ3ny+jRYO9oUVPkPPsJbLo=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: f235fad1-f0de-4604-b43e-97dae3ce77c2
+88772 Thread-1872 (_refresh) 2026-09-02 18:31:09,346 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:09Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "1a0473bc-975a-5692-a1ba-775936699040",
+    "x-signature": "Z4SPogLbjNs7wGzFm9MbgJ3ny+jRYO9oUVPkPPsJbLo=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: f235fad1-f0de-4604-b43e-97dae3ce77c2
+88772 Thread-1872 (_refresh) 2026-09-02 18:31:09,347 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "f235fad1-f0de-4604-b43e-97dae3ce77c2"
+}
+88772 Thread-1872 (_refresh) 2026-09-02 18:31:09,347 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "f235fad1-f0de-4604-b43e-97dae3ce77c2"
+}
+89212 Thread-1931 (_refresh) 2026-09-02 18:31:27,355 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:27Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "8c1b5763-5092-542a-b458-ab59efc1c76b",
+    "x-signature": "mrpbNJidID6NE98y7XKnjsmKzgX8XaXzAnPZaSOsQJk=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: 502b8903-c5d1-48e0-85ba-7b0d158da8d2
+89212 Thread-1931 (_refresh) 2026-09-02 18:31:27,355 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:27Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "8c1b5763-5092-542a-b458-ab59efc1c76b",
+    "x-signature": "mrpbNJidID6NE98y7XKnjsmKzgX8XaXzAnPZaSOsQJk=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: 502b8903-c5d1-48e0-85ba-7b0d158da8d2
+89212 Thread-1931 (_refresh) 2026-09-02 18:31:27,357 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "502b8903-c5d1-48e0-85ba-7b0d158da8d2"
+}
+89212 Thread-1931 (_refresh) 2026-09-02 18:31:27,357 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "502b8903-c5d1-48e0-85ba-7b0d158da8d2"
+}
+86516 Thread-1997 (_refresh) 2026-09-02 18:31:45,359 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:45Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "f666021c-414b-5545-8667-44734286d7ca",
+    "x-signature": "RgFFjkf2weloEJe8PVKTcilRaJipSK1jihhVHtgQ+QY=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: d0fe4488-e540-4c81-a55b-a04fbcf20858
+86516 Thread-1997 (_refresh) 2026-09-02 18:31:45,359 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:45Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "f666021c-414b-5545-8667-44734286d7ca",
+    "x-signature": "RgFFjkf2weloEJe8PVKTcilRaJipSK1jihhVHtgQ+QY=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: d0fe4488-e540-4c81-a55b-a04fbcf20858
+86516 Thread-1997 (_refresh) 2026-09-02 18:31:45,361 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "d0fe4488-e540-4c81-a55b-a04fbcf20858"
+}
+86516 Thread-1997 (_refresh) 2026-09-02 18:31:45,361 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "d0fe4488-e540-4c81-a55b-a04fbcf20858"
+}
+78412 Thread-2027 (_refresh) 2026-09-02 18:31:54,359 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:54Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "0a105442-8418-5ea3-b5e5-a9ff273795c4",
+    "x-signature": "3UY+lBOe3WEeY6JdBM2RHkdrv3gCYwzGGbJdIbIUNlo=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: ea249714-c4f8-4e10-b0f2-75e4678251aa
+78412 Thread-2027 (_refresh) 2026-09-02 18:31:54,359 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:31:54Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "0a105442-8418-5ea3-b5e5-a9ff273795c4",
+    "x-signature": "3UY+lBOe3WEeY6JdBM2RHkdrv3gCYwzGGbJdIbIUNlo=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: ea249714-c4f8-4e10-b0f2-75e4678251aa
+78412 Thread-2027 (_refresh) 2026-09-02 18:31:54,361 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "ea249714-c4f8-4e10-b0f2-75e4678251aa"
+}
+78412 Thread-2027 (_refresh) 2026-09-02 18:31:54,361 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "ea249714-c4f8-4e10-b0f2-75e4678251aa"
+}
+91448 Thread-2060 (_refresh) 2026-09-02 18:32:03,369 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:32:03Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "d8b60dd8-25e4-593e-bd8a-ba63577139fa",
+    "x-signature": "mays+Lh9dsMXmUgIDxEzH3BidQquDbbqX8DjNnoOwQc=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: e19a5dd5-02e9-4668-98bf-024619bc8610
+91448 Thread-2060 (_refresh) 2026-09-02 18:32:03,369 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:32:03Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "d8b60dd8-25e4-593e-bd8a-ba63577139fa",
+    "x-signature": "mays+Lh9dsMXmUgIDxEzH3BidQquDbbqX8DjNnoOwQc=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: e19a5dd5-02e9-4668-98bf-024619bc8610
+91448 Thread-2060 (_refresh) 2026-09-02 18:32:03,371 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "e19a5dd5-02e9-4668-98bf-024619bc8610"
+}
+91448 Thread-2060 (_refresh) 2026-09-02 18:32:03,371 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "e19a5dd5-02e9-4668-98bf-024619bc8610"
+}
+93148 Thread-2074 (_refresh) 2026-09-02 18:32:22,296 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:32:22Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "a94ad975-da18-5c0b-830a-ce3074635334",
+    "x-signature": "cphP030N6tZT0NkYh1ZtToTAYq1oLKjvZ1oBUx/kn1Y=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: b83b8b86-5ab2-4a68-9866-acf13b8e7c78
+93148 Thread-2074 (_refresh) 2026-09-02 18:32:22,296 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-02T22:32:22Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "a94ad975-da18-5c0b-830a-ce3074635334",
+    "x-signature": "cphP030N6tZT0NkYh1ZtToTAYq1oLKjvZ1oBUx/kn1Y=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: b83b8b86-5ab2-4a68-9866-acf13b8e7c78
+93148 Thread-2074 (_refresh) 2026-09-02 18:32:22,298 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "b83b8b86-5ab2-4a68-9866-acf13b8e7c78"
+}
+93148 Thread-2074 (_refresh) 2026-09-02 18:32:22,298 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "b83b8b86-5ab2-4a68-9866-acf13b8e7c78"
+}
+104152 MainThread 2026-09-02 18:35:02,408 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:35:02Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'd928ea55-df06-5b51-b1c2-513231d42298', 'Host': 'api.webull.com'}
+104152 MainThread 2026-09-02 18:35:02,408 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+104152 MainThread 2026-09-02 18:35:02,408 webull.core.auth.composer.default_signature_composer DEBUG body:None
+104152 MainThread 2026-09-02 18:35:02,408 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+104152 MainThread 2026-09-02 18:35:02,408 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dd928ea55-df06-5b51-b1c2-513231d42298%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A35%3A02Z
+104152 MainThread 2026-09-02 18:35:02,408 webull.core.auth.composer.default_signature_composer DEBUG signature:VXUS6bTwA9Q6invQ6YhQy2rpGm2GccC4ly7225YJSIA=
+104152 MainThread 2026-09-02 18:35:02,642 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:35:03 GMT', 'X-Request-Id': '91ea7584-b619-4432-8f08-e56072d31037', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 6b86b9c766a229b60c0727e0e8fbf5c2.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'UY7AmzLexllZGl_NbjzgetTf6oAQbIN9mIlB7txVoZrhaaXfXENq6g==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+104152 MainThread 2026-09-02 18:35:02,643 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+104152 MainThread 2026-09-02 18:35:02,645 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:35:02Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '110a9384-a1df-5431-96fb-0448e65aec3f', 'Host': 'api.webull.com'}
+104152 MainThread 2026-09-02 18:35:02,645 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+104152 MainThread 2026-09-02 18:35:02,645 webull.core.auth.composer.default_signature_composer DEBUG body:None
+104152 MainThread 2026-09-02 18:35:02,645 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+104152 MainThread 2026-09-02 18:35:02,645 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D110a9384-a1df-5431-96fb-0448e65aec3f%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A35%3A02Z
+104152 MainThread 2026-09-02 18:35:02,646 webull.core.auth.composer.default_signature_composer DEBUG signature:zHcVEXsSlhIewjtm/6SdSvEMXkmBskbz7AGo/BaKRc8=
+104152 MainThread 2026-09-02 18:35:02,790 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:35:03 GMT', 'X-Request-Id': '36bd2422-cce1-4380-8102-38d687b90e69', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 6d98d209257c056f71e56ce60e146cd4.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'o9Mjt1M1on-cwqwvCOms-FY9Ed6w4KPeUpMS04BHSBGpdpU84eeTmw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+104152 MainThread 2026-09-02 18:35:02,790 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+104152 MainThread 2026-09-02 18:35:02,793 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:35:02Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '8c99f4ad-7abb-583d-b482-937796b4079d', 'Host': 'api.webull.com'}
+104152 MainThread 2026-09-02 18:35:02,793 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+104152 MainThread 2026-09-02 18:35:02,793 webull.core.auth.composer.default_signature_composer DEBUG body:None
+104152 MainThread 2026-09-02 18:35:02,793 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+104152 MainThread 2026-09-02 18:35:02,793 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D8c99f4ad-7abb-583d-b482-937796b4079d%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A35%3A02Z
+104152 MainThread 2026-09-02 18:35:02,793 webull.core.auth.composer.default_signature_composer DEBUG signature:C+xUZXto6kNdt6DY8Re4ZpePxJS7c5iUVuuLsOjWZcA=
+104152 MainThread 2026-09-02 18:35:02,928 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:35:03 GMT', 'X-Request-Id': 'f0da91c9-fc48-4731-98aa-e7bf6fd4df21', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 176385fa690830512181df5d31c8e1b8.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'qn6fttcujWaFYCES7om27DD76Xi_zS0lFgw32izcQBAUBHVtKscG3g==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:35:02Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'e639ed24-1b4f-5bcc-bdb1-50fd31881274', 'Host': 'api.webull.com'}
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:35:02Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'e639ed24-1b4f-5bcc-bdb1-50fd31881274', 'Host': 'api.webull.com'}
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG body:None
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG body:None
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3De639ed24-1b4f-5bcc-bdb1-50fd31881274%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A35%3A02Z
+104152 MainThread 2026-09-02 18:35:02,931 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3De639ed24-1b4f-5bcc-bdb1-50fd31881274%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A35%3A02Z
+104152 MainThread 2026-09-02 18:35:02,932 webull.core.auth.composer.default_signature_composer DEBUG signature:bvuvPlULWzjB2AhTZP44niBKD63aEmr2jc9I2U78J5c=
+104152 MainThread 2026-09-02 18:35:02,932 webull.core.auth.composer.default_signature_composer DEBUG signature:bvuvPlULWzjB2AhTZP44niBKD63aEmr2jc9I2U78J5c=
+104152 MainThread 2026-09-02 18:35:03,067 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:35:03 GMT', 'X-Request-Id': '81bf8930-b0e4-4f2b-aa2f-bd76a9108d50', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 84ee72f7470310cc4167f95ed9189afa.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '-AFYMZ4snM8ubslXl_i_EMTjeyPrXEN-_xTDaogXAhMrV9qKu4zrOw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+104152 MainThread 2026-09-02 18:35:03,067 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:35:03 GMT', 'X-Request-Id': '81bf8930-b0e4-4f2b-aa2f-bd76a9108d50', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 84ee72f7470310cc4167f95ed9189afa.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '-AFYMZ4snM8ubslXl_i_EMTjeyPrXEN-_xTDaogXAhMrV9qKu4zrOw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+104152 MainThread 2026-09-02 18:35:03,067 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+104152 MainThread 2026-09-02 18:35:03,067 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+104152 MainThread 2026-09-02 18:35:03,069 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:35:03Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'ed77c970-5d14-52f9-baa3-a71571a40fa9', 'Host': 'api.webull.com'}
+104152 MainThread 2026-09-02 18:35:03,069 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:35:03Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'ed77c970-5d14-52f9-baa3-a71571a40fa9', 'Host': 'api.webull.com'}
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG body:None
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG body:None
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Ded77c970-5d14-52f9-baa3-a71571a40fa9%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A35%3A03Z
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Ded77c970-5d14-52f9-baa3-a71571a40fa9%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A35%3A03Z
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG signature:c72bMBHX9I20ArqyFxXYnqdi9sZp1vXcKmWHDom07pQ=
+104152 MainThread 2026-09-02 18:35:03,070 webull.core.auth.composer.default_signature_composer DEBUG signature:c72bMBHX9I20ArqyFxXYnqdi9sZp1vXcKmWHDom07pQ=
+104152 MainThread 2026-09-02 18:35:03,204 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:35:03 GMT', 'X-Request-Id': '96a4235e-62b0-4b8f-b937-94ccfc71e60d', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 6d98d209257c056f71e56ce60e146cd4.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'ucIMVcKWghnkIg0IeelDvOQGWEznebiq47Lc3w4AeCWL1q5TlOl4xg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+104152 MainThread 2026-09-02 18:35:03,204 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:35:03 GMT', 'X-Request-Id': '96a4235e-62b0-4b8f-b937-94ccfc71e60d', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 6d98d209257c056f71e56ce60e146cd4.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'ucIMVcKWghnkIg0IeelDvOQGWEznebiq47Lc3w4AeCWL1q5TlOl4xg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+104152 MainThread 2026-09-02 18:35:03,204 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+104152 MainThread 2026-09-02 18:35:03,204 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:35:03Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'bb9870d4-e528-55e6-9889-2a172bc726fb', 'Host': 'api.webull.com'}
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:35:03Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'bb9870d4-e528-55e6-9889-2a172bc726fb', 'Host': 'api.webull.com'}
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG body:None
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG body:None
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dbb9870d4-e528-55e6-9889-2a172bc726fb%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A35%3A03Z
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dbb9870d4-e528-55e6-9889-2a172bc726fb%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A35%3A03Z
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG signature:IciaYdp0De7jKAffPX16Uo6HmMMShDLSFRuWybUrmr4=
+104152 MainThread 2026-09-02 18:35:03,206 webull.core.auth.composer.default_signature_composer DEBUG signature:IciaYdp0De7jKAffPX16Uo6HmMMShDLSFRuWybUrmr4=
+104152 MainThread 2026-09-02 18:35:03,346 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:35:03 GMT', 'X-Request-Id': '9da434d6-dd52-4a6e-a08f-73190a18580d', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '9k5ez1rjKW7ht7YXYlvI0jvJRnXcZ_0ybDFp_3PvF59Rpn5ok4274Q==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+104152 MainThread 2026-09-02 18:35:03,346 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:35:03 GMT', 'X-Request-Id': '9da434d6-dd52-4a6e-a08f-73190a18580d', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '9k5ez1rjKW7ht7YXYlvI0jvJRnXcZ_0ybDFp_3PvF59Rpn5ok4274Q==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+134872 MainThread 2026-09-02 18:49:25,242 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:49:25Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'f034b53f-99e3-5563-a9d8-2c26c9a5d573', 'Host': 'api.webull.com'}
+134872 MainThread 2026-09-02 18:49:25,242 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+134872 MainThread 2026-09-02 18:49:25,242 webull.core.auth.composer.default_signature_composer DEBUG body:None
+134872 MainThread 2026-09-02 18:49:25,243 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+134872 MainThread 2026-09-02 18:49:25,243 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Df034b53f-99e3-5563-a9d8-2c26c9a5d573%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A49%3A25Z
+134872 MainThread 2026-09-02 18:49:25,243 webull.core.auth.composer.default_signature_composer DEBUG signature:w+r3QnSQt9lYUnb5H6IxYNw3hbXYe8DCMu1gdBByhIw=
+134872 MainThread 2026-09-02 18:49:25,443 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:49:25 GMT', 'X-Request-Id': '98915d7f-4073-4a0d-a4c4-27a69b1de424', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9f337434d21174716459ffba539793e0.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'b0eNt_6l9o_sz3EjX0t9equ4q5qpkPxQbsJ_j_wXS7TrbQfTNcwMfw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+134872 MainThread 2026-09-02 18:49:25,443 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+134872 MainThread 2026-09-02 18:49:25,445 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:49:25Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '2d6825d2-a08b-52fb-9e4c-c9e53ea060f1', 'Host': 'api.webull.com'}
+134872 MainThread 2026-09-02 18:49:25,445 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+134872 MainThread 2026-09-02 18:49:25,445 webull.core.auth.composer.default_signature_composer DEBUG body:None
+134872 MainThread 2026-09-02 18:49:25,445 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+134872 MainThread 2026-09-02 18:49:25,445 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D2d6825d2-a08b-52fb-9e4c-c9e53ea060f1%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A49%3A25Z
+134872 MainThread 2026-09-02 18:49:25,445 webull.core.auth.composer.default_signature_composer DEBUG signature:aa1ACP8OSQfhfWqorrB7Y7jXpTHSSOnwT96+/cj8+I4=
+134872 MainThread 2026-09-02 18:49:25,566 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:49:26 GMT', 'X-Request-Id': '09f01edc-f886-43b2-9cff-92fb3dfd329c', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 5f93a09a614ee9f56f9851cb7dfe2d5c.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'gbByFm6wO7AdfWnolnnxaFom_1X4EXtU5HTnztjCIj8_7XQM8e-JHg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+134872 MainThread 2026-09-02 18:49:25,566 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+134872 MainThread 2026-09-02 18:49:25,568 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:49:25Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '1846b644-5301-5622-b185-dc0bd69945b5', 'Host': 'api.webull.com'}
+134872 MainThread 2026-09-02 18:49:25,568 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+134872 MainThread 2026-09-02 18:49:25,568 webull.core.auth.composer.default_signature_composer DEBUG body:None
+134872 MainThread 2026-09-02 18:49:25,568 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+134872 MainThread 2026-09-02 18:49:25,568 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D1846b644-5301-5622-b185-dc0bd69945b5%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A49%3A25Z
+134872 MainThread 2026-09-02 18:49:25,568 webull.core.auth.composer.default_signature_composer DEBUG signature:0/yxwRmi7j4jW6iDghhPqJwrjorl4oejAPeRhWDe9Os=
+134872 MainThread 2026-09-02 18:49:25,678 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:49:26 GMT', 'X-Request-Id': '352283dc-3fef-4b48-9ef5-e6db51d0b528', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 6b86b9c766a229b60c0727e0e8fbf5c2.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'vLCk3AL-oi0BJa0Do-yexNJntYwFDmBQipXKeI2JV7mwsxnhKh9PRQ==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+134872 MainThread 2026-09-02 18:49:25,680 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:49:25Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'd3782711-c7ef-58eb-844f-a9f7aa575695', 'Host': 'api.webull.com'}
+134872 MainThread 2026-09-02 18:49:25,680 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:49:25Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'd3782711-c7ef-58eb-844f-a9f7aa575695', 'Host': 'api.webull.com'}
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG body:None
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG body:None
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dd3782711-c7ef-58eb-844f-a9f7aa575695%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A49%3A25Z
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dd3782711-c7ef-58eb-844f-a9f7aa575695%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A49%3A25Z
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG signature:Y3Hni4Pn1acgGxGaVXTcyGeAxA8dqSasVX8pT5Dx/Hc=
+134872 MainThread 2026-09-02 18:49:25,681 webull.core.auth.composer.default_signature_composer DEBUG signature:Y3Hni4Pn1acgGxGaVXTcyGeAxA8dqSasVX8pT5Dx/Hc=
+134872 MainThread 2026-09-02 18:49:25,799 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:49:26 GMT', 'X-Request-Id': '80d47421-1e6f-4441-ab99-2f9830bce355', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'S00FyK7f2c4v_pjtf2Onh8_q2PnWmy00-A8M3J7FUMIw5uiFFvfdlw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+134872 MainThread 2026-09-02 18:49:25,799 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:49:26 GMT', 'X-Request-Id': '80d47421-1e6f-4441-ab99-2f9830bce355', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'S00FyK7f2c4v_pjtf2Onh8_q2PnWmy00-A8M3J7FUMIw5uiFFvfdlw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+134872 MainThread 2026-09-02 18:49:25,799 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+134872 MainThread 2026-09-02 18:49:25,799 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:49:25Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '39f8d5f1-0024-554b-838f-36b3e5e8e8d0', 'Host': 'api.webull.com'}
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:49:25Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '39f8d5f1-0024-554b-838f-36b3e5e8e8d0', 'Host': 'api.webull.com'}
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG body:None
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG body:None
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D39f8d5f1-0024-554b-838f-36b3e5e8e8d0%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A49%3A25Z
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D39f8d5f1-0024-554b-838f-36b3e5e8e8d0%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A49%3A25Z
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG signature:5rOcB65lr7Syfo/5nurl0qlxsNvKjF/zmdR02CR5yzY=
+134872 MainThread 2026-09-02 18:49:25,801 webull.core.auth.composer.default_signature_composer DEBUG signature:5rOcB65lr7Syfo/5nurl0qlxsNvKjF/zmdR02CR5yzY=
+134872 MainThread 2026-09-02 18:49:25,923 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:49:26 GMT', 'X-Request-Id': '4d96c2c4-6752-4053-a061-ca45c0c3b0da', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 676871763bf908367dc9cdd585132d32.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'neRiMREOg2_omvdNnKRgr_gHD47kAyl_e49gSoaclfR5thUGNuUNMA==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+134872 MainThread 2026-09-02 18:49:25,923 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:49:26 GMT', 'X-Request-Id': '4d96c2c4-6752-4053-a061-ca45c0c3b0da', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 676871763bf908367dc9cdd585132d32.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'neRiMREOg2_omvdNnKRgr_gHD47kAyl_e49gSoaclfR5thUGNuUNMA==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+134872 MainThread 2026-09-02 18:49:25,923 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+134872 MainThread 2026-09-02 18:49:25,923 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:49:25Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '644394a8-658e-5dca-b59d-aa6e55d7bbab', 'Host': 'api.webull.com'}
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T22:49:25Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '644394a8-658e-5dca-b59d-aa6e55d7bbab', 'Host': 'api.webull.com'}
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG body:None
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG body:None
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D644394a8-658e-5dca-b59d-aa6e55d7bbab%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A49%3A25Z
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D644394a8-658e-5dca-b59d-aa6e55d7bbab%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T22%3A49%3A25Z
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG signature:UaVZoUlJ2fQVU5q3IJ5qzChG/oxUDPBTek+NwXC2m6Q=
+134872 MainThread 2026-09-02 18:49:25,925 webull.core.auth.composer.default_signature_composer DEBUG signature:UaVZoUlJ2fQVU5q3IJ5qzChG/oxUDPBTek+NwXC2m6Q=
+134872 MainThread 2026-09-02 18:49:26,040 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:49:26 GMT', 'X-Request-Id': 'a90bed22-36fe-4d47-99be-26163f61887c', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9b52e0894737f687463328cc17b81c30.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 't0nSlnSPb2joMHXxQYoi3OdeuWn7Ll5e98Rgci1AVFmKrt5ueJJh1Q==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+134872 MainThread 2026-09-02 18:49:26,040 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 22:49:26 GMT', 'X-Request-Id': 'a90bed22-36fe-4d47-99be-26163f61887c', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9b52e0894737f687463328cc17b81c30.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 't0nSlnSPb2joMHXxQYoi3OdeuWn7Ll5e98Rgci1AVFmKrt5ueJJh1Q==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+295940 MainThread 2026-09-02 19:30:28,077 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:30:28Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '78077ad7-25c0-55b4-acb8-24bf6ca2c473', 'Host': 'api.webull.com'}
+295940 MainThread 2026-09-02 19:30:28,077 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+295940 MainThread 2026-09-02 19:30:28,078 webull.core.auth.composer.default_signature_composer DEBUG body:None
+295940 MainThread 2026-09-02 19:30:28,078 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+295940 MainThread 2026-09-02 19:30:28,078 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D78077ad7-25c0-55b4-acb8-24bf6ca2c473%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A30%3A28Z
+295940 MainThread 2026-09-02 19:30:28,078 webull.core.auth.composer.default_signature_composer DEBUG signature:OEJ/2Yv42d4KOqR4CA4bfxU3/TDXeKHVdA00c8+RzOw=
+295940 MainThread 2026-09-02 19:30:28,308 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:30:28 GMT', 'X-Request-Id': 'de1edc99-5162-4393-aa2a-74a377492890', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 676871763bf908367dc9cdd585132d32.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'Ku0QNNUTS0dXpduKW1JTTJMY_Q-DNFbgIqyhaB1UKrmmm63gbHdEVw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+295940 MainThread 2026-09-02 19:30:28,308 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+295940 MainThread 2026-09-02 19:30:28,310 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:30:28Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'bd5b2575-72f4-5e34-b712-d8bb31cbda14', 'Host': 'api.webull.com'}
+295940 MainThread 2026-09-02 19:30:28,310 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+295940 MainThread 2026-09-02 19:30:28,310 webull.core.auth.composer.default_signature_composer DEBUG body:None
+295940 MainThread 2026-09-02 19:30:28,310 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+295940 MainThread 2026-09-02 19:30:28,310 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dbd5b2575-72f4-5e34-b712-d8bb31cbda14%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A30%3A28Z
+295940 MainThread 2026-09-02 19:30:28,310 webull.core.auth.composer.default_signature_composer DEBUG signature:gapNGqgLl2WQvbRh+v2j9Zx2qDC90Ej1qw/NN1o9z7Q=
+295940 MainThread 2026-09-02 19:30:28,430 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:30:28 GMT', 'X-Request-Id': '3951885c-b55e-4fb7-b150-d27d8581cea1', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '5L41nphjkdP-OjcJG5ODtnOcOGro-XEGa596xBYrHiUedxiDW4Y9xQ==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+295940 MainThread 2026-09-02 19:30:28,430 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+295940 MainThread 2026-09-02 19:30:28,432 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:30:28Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '05e11bb8-1bfd-5e34-b3a9-2de9334495e7', 'Host': 'api.webull.com'}
+295940 MainThread 2026-09-02 19:30:28,432 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+295940 MainThread 2026-09-02 19:30:28,432 webull.core.auth.composer.default_signature_composer DEBUG body:None
+295940 MainThread 2026-09-02 19:30:28,432 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+295940 MainThread 2026-09-02 19:30:28,432 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D05e11bb8-1bfd-5e34-b3a9-2de9334495e7%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A30%3A28Z
+295940 MainThread 2026-09-02 19:30:28,432 webull.core.auth.composer.default_signature_composer DEBUG signature:4f2QwxCsmvSkyt1VjA7MFGjj9LsyybqvXFxcyzenNbM=
+295940 MainThread 2026-09-02 19:30:28,556 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:30:29 GMT', 'X-Request-Id': 'f9d61284-c979-40f3-bed8-aa63e3f908e2', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 d0184cabab2a39c8bec624f31c47736a.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '81C9LKUaDCLIB8W-cFWEB5KeVx8oXfYzkq4yn6XVQfqs6yhVYynCOQ==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+295940 MainThread 2026-09-02 19:30:28,558 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:30:28Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'bbb31ef6-a601-5e2f-bdfb-1689e8edfcfd', 'Host': 'api.webull.com'}
+295940 MainThread 2026-09-02 19:30:28,558 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:30:28Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'bbb31ef6-a601-5e2f-bdfb-1689e8edfcfd', 'Host': 'api.webull.com'}
+295940 MainThread 2026-09-02 19:30:28,558 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+295940 MainThread 2026-09-02 19:30:28,558 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+295940 MainThread 2026-09-02 19:30:28,558 webull.core.auth.composer.default_signature_composer DEBUG body:None
+295940 MainThread 2026-09-02 19:30:28,558 webull.core.auth.composer.default_signature_composer DEBUG body:None
+295940 MainThread 2026-09-02 19:30:28,559 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+295940 MainThread 2026-09-02 19:30:28,559 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+295940 MainThread 2026-09-02 19:30:28,559 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dbbb31ef6-a601-5e2f-bdfb-1689e8edfcfd%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A30%3A28Z
+295940 MainThread 2026-09-02 19:30:28,559 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dbbb31ef6-a601-5e2f-bdfb-1689e8edfcfd%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A30%3A28Z
+295940 MainThread 2026-09-02 19:30:28,559 webull.core.auth.composer.default_signature_composer DEBUG signature:JKq+YmqcF3oW0AX1cq3gJDH7NchLHjwMnu7FlmwIQm8=
+295940 MainThread 2026-09-02 19:30:28,559 webull.core.auth.composer.default_signature_composer DEBUG signature:JKq+YmqcF3oW0AX1cq3gJDH7NchLHjwMnu7FlmwIQm8=
+295940 MainThread 2026-09-02 19:30:28,677 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:30:29 GMT', 'X-Request-Id': '210b62e8-066a-4448-adc0-3658390d6fd1', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9b52e0894737f687463328cc17b81c30.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '4cDtpfazEki27Vuo9HhZwnLLytiFAz_6GTOk6PaHoLWJOT0rk3-eyQ==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+295940 MainThread 2026-09-02 19:30:28,677 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:30:29 GMT', 'X-Request-Id': '210b62e8-066a-4448-adc0-3658390d6fd1', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9b52e0894737f687463328cc17b81c30.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '4cDtpfazEki27Vuo9HhZwnLLytiFAz_6GTOk6PaHoLWJOT0rk3-eyQ==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+295940 MainThread 2026-09-02 19:30:28,678 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+295940 MainThread 2026-09-02 19:30:28,678 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:30:28Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '9f5a8cfd-9db3-5213-89de-8214d81e953e', 'Host': 'api.webull.com'}
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:30:28Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '9f5a8cfd-9db3-5213-89de-8214d81e953e', 'Host': 'api.webull.com'}
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG body:None
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG body:None
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D9f5a8cfd-9db3-5213-89de-8214d81e953e%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A30%3A28Z
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D9f5a8cfd-9db3-5213-89de-8214d81e953e%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A30%3A28Z
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG signature:55tAWnQwzlq0xFuNeSeIOa83Vu1kO0VGJJG56PDyDYo=
+295940 MainThread 2026-09-02 19:30:28,679 webull.core.auth.composer.default_signature_composer DEBUG signature:55tAWnQwzlq0xFuNeSeIOa83Vu1kO0VGJJG56PDyDYo=
+295940 MainThread 2026-09-02 19:30:28,794 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:30:29 GMT', 'X-Request-Id': 'abe3bc59-fe9c-4a27-bc92-1c80171b341c', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'ixo7wt-HcJbZW3mg3D74oxZ5itk2dS3-_di0HbY4dN67j1F-IE6AKw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+295940 MainThread 2026-09-02 19:30:28,794 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:30:29 GMT', 'X-Request-Id': 'abe3bc59-fe9c-4a27-bc92-1c80171b341c', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'ixo7wt-HcJbZW3mg3D74oxZ5itk2dS3-_di0HbY4dN67j1F-IE6AKw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+295940 MainThread 2026-09-02 19:30:28,795 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+295940 MainThread 2026-09-02 19:30:28,795 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:30:28Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '0146b8cc-fcf8-50d7-a99c-5679dceea0d1', 'Host': 'api.webull.com'}
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:30:28Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '0146b8cc-fcf8-50d7-a99c-5679dceea0d1', 'Host': 'api.webull.com'}
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG body:None
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG body:None
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D0146b8cc-fcf8-50d7-a99c-5679dceea0d1%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A30%3A28Z
+295940 MainThread 2026-09-02 19:30:28,796 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D0146b8cc-fcf8-50d7-a99c-5679dceea0d1%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A30%3A28Z
+295940 MainThread 2026-09-02 19:30:28,797 webull.core.auth.composer.default_signature_composer DEBUG signature:kKnN7iD/Idih7NS/QOCQ8yhhX1QL9Huy6z7m3SISnUc=
+295940 MainThread 2026-09-02 19:30:28,797 webull.core.auth.composer.default_signature_composer DEBUG signature:kKnN7iD/Idih7NS/QOCQ8yhhX1QL9Huy6z7m3SISnUc=
+295940 MainThread 2026-09-02 19:30:28,906 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:30:29 GMT', 'X-Request-Id': '9c58ee16-320e-4e28-862e-fa3e26ee1096', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 5f93a09a614ee9f56f9851cb7dfe2d5c.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '0GPM06IBbKs4s05C4Ffw-WMhgFx8CWLAibegzVwJ9Wj1FB_unIpmCQ==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+295940 MainThread 2026-09-02 19:30:28,906 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:30:29 GMT', 'X-Request-Id': '9c58ee16-320e-4e28-862e-fa3e26ee1096', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 5f93a09a614ee9f56f9851cb7dfe2d5c.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '0GPM06IBbKs4s05C4Ffw-WMhgFx8CWLAibegzVwJ9Wj1FB_unIpmCQ==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+310952 MainThread 2026-09-02 19:33:50,839 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:33:50Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'd8a1b9e5-6790-535a-a4ee-bdc8a8c95327', 'Host': 'api.webull.com'}
+310952 MainThread 2026-09-02 19:33:50,839 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+310952 MainThread 2026-09-02 19:33:50,839 webull.core.auth.composer.default_signature_composer DEBUG body:None
+310952 MainThread 2026-09-02 19:33:50,839 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+310952 MainThread 2026-09-02 19:33:50,839 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dd8a1b9e5-6790-535a-a4ee-bdc8a8c95327%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A33%3A50Z
+310952 MainThread 2026-09-02 19:33:50,840 webull.core.auth.composer.default_signature_composer DEBUG signature:392rcou2dl3XRnd7S+FtIQNwcGTzXjPV9RRDTUktOww=
+310952 MainThread 2026-09-02 19:33:51,056 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:33:51 GMT', 'X-Request-Id': '404174e4-5528-4981-be77-3c1b1121589e', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'lgUOde5AJAAc84k9BC-zlT6Q7t-JUzRmxDkEBO-sL2xa5mFPwXpHlw==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+310952 MainThread 2026-09-02 19:33:51,056 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+310952 MainThread 2026-09-02 19:33:51,058 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:33:51Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'b542f935-724f-5e88-bffc-71e1aae13f0a', 'Host': 'api.webull.com'}
+310952 MainThread 2026-09-02 19:33:51,059 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+310952 MainThread 2026-09-02 19:33:51,059 webull.core.auth.composer.default_signature_composer DEBUG body:None
+310952 MainThread 2026-09-02 19:33:51,059 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+310952 MainThread 2026-09-02 19:33:51,059 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Db542f935-724f-5e88-bffc-71e1aae13f0a%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A33%3A51Z
+310952 MainThread 2026-09-02 19:33:51,059 webull.core.auth.composer.default_signature_composer DEBUG signature:4Aq6wBkZFhz1ZsZsqIrV2N10uGU29fAvsbrmfGU4pZI=
+310952 MainThread 2026-09-02 19:33:51,180 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:33:51 GMT', 'X-Request-Id': 'a5ad625a-5688-4731-93cc-ecc04990531d', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9f337434d21174716459ffba539793e0.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '4-QGo9BtriHexynDdUzDoG3qX1wTinEZnrqMRV_LyESj31pDChY02A==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+310952 MainThread 2026-09-02 19:33:51,180 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+310952 MainThread 2026-09-02 19:33:51,182 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:33:51Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'af7ca23c-b33d-52cb-bf15-073570fd42d1', 'Host': 'api.webull.com'}
+310952 MainThread 2026-09-02 19:33:51,182 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+310952 MainThread 2026-09-02 19:33:51,182 webull.core.auth.composer.default_signature_composer DEBUG body:None
+310952 MainThread 2026-09-02 19:33:51,182 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+310952 MainThread 2026-09-02 19:33:51,182 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Daf7ca23c-b33d-52cb-bf15-073570fd42d1%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A33%3A51Z
+310952 MainThread 2026-09-02 19:33:51,182 webull.core.auth.composer.default_signature_composer DEBUG signature:9wTyfMcJ5rxawq5iX3Oc1C2scDq54Ms9TJvSYdiy8UY=
+310952 MainThread 2026-09-02 19:33:51,295 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:33:51 GMT', 'X-Request-Id': '86068687-4f9b-46e3-a03d-50fd1b16f0e1', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 581e2df5b06c8f4e8c171002d310a3a8.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'cStBKwpjDdnmlv5VR2VznV1pW9BKgukVxPllxK30t1PZAuFn1FHbTg==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:33:51Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'a73dc168-8d16-5853-ad52-2ace4a5a206c', 'Host': 'api.webull.com'}
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:33:51Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'a73dc168-8d16-5853-ad52-2ace4a5a206c', 'Host': 'api.webull.com'}
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG body:None
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG body:None
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Da73dc168-8d16-5853-ad52-2ace4a5a206c%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A33%3A51Z
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Da73dc168-8d16-5853-ad52-2ace4a5a206c%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A33%3A51Z
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG signature:LC4dSfzJ4KKg7El6HQoJpv9kqgdGAIcK0jcDHifAoGE=
+310952 MainThread 2026-09-02 19:33:51,298 webull.core.auth.composer.default_signature_composer DEBUG signature:LC4dSfzJ4KKg7El6HQoJpv9kqgdGAIcK0jcDHifAoGE=
+310952 MainThread 2026-09-02 19:33:51,416 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:33:51 GMT', 'X-Request-Id': 'd8e2a14a-ea6b-4149-aa96-35d77cc4de0d', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 db57c90b8a856f668a786d31fa93e864.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'VE9Bps9XvswpaGIVM7SK5OddAMoK3YP5nnMkroLQC7gYpKXLPWRrvg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+310952 MainThread 2026-09-02 19:33:51,416 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:33:51 GMT', 'X-Request-Id': 'd8e2a14a-ea6b-4149-aa96-35d77cc4de0d', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 db57c90b8a856f668a786d31fa93e864.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'VE9Bps9XvswpaGIVM7SK5OddAMoK3YP5nnMkroLQC7gYpKXLPWRrvg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+310952 MainThread 2026-09-02 19:33:51,416 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+310952 MainThread 2026-09-02 19:33:51,416 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:33:51Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '32dd68b2-3868-542e-a4eb-0bf1e74cad4a', 'Host': 'api.webull.com'}
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:33:51Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '32dd68b2-3868-542e-a4eb-0bf1e74cad4a', 'Host': 'api.webull.com'}
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG body:None
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG body:None
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D32dd68b2-3868-542e-a4eb-0bf1e74cad4a%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A33%3A51Z
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D32dd68b2-3868-542e-a4eb-0bf1e74cad4a%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A33%3A51Z
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG signature:Pgsnk7aXXs79A4hPyKVIY9J7qtbXO5AyCWUYdVqrcuQ=
+310952 MainThread 2026-09-02 19:33:51,418 webull.core.auth.composer.default_signature_composer DEBUG signature:Pgsnk7aXXs79A4hPyKVIY9J7qtbXO5AyCWUYdVqrcuQ=
+310952 MainThread 2026-09-02 19:33:51,527 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:33:52 GMT', 'X-Request-Id': '75d9d6e0-0016-43d7-a5f4-aefe7b7da137', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 c653f3d778b52f7b4821c1280389c448.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'xaV2Awb8Yw0vhBAot0Ye9r0aTbpZPg8XIV2i5oQbnaNtkw-9WHt8ag==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+310952 MainThread 2026-09-02 19:33:51,527 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:33:52 GMT', 'X-Request-Id': '75d9d6e0-0016-43d7-a5f4-aefe7b7da137', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 c653f3d778b52f7b4821c1280389c448.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'xaV2Awb8Yw0vhBAot0Ye9r0aTbpZPg8XIV2i5oQbnaNtkw-9WHt8ag==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+310952 MainThread 2026-09-02 19:33:51,528 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+310952 MainThread 2026-09-02 19:33:51,528 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+310952 MainThread 2026-09-02 19:33:51,529 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:33:51Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '9917a146-2391-501d-8ee4-8ed6539faf6e', 'Host': 'api.webull.com'}
+310952 MainThread 2026-09-02 19:33:51,529 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:33:51Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '9917a146-2391-501d-8ee4-8ed6539faf6e', 'Host': 'api.webull.com'}
+310952 MainThread 2026-09-02 19:33:51,529 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+310952 MainThread 2026-09-02 19:33:51,529 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+310952 MainThread 2026-09-02 19:33:51,530 webull.core.auth.composer.default_signature_composer DEBUG body:None
+310952 MainThread 2026-09-02 19:33:51,530 webull.core.auth.composer.default_signature_composer DEBUG body:None
+310952 MainThread 2026-09-02 19:33:51,530 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+310952 MainThread 2026-09-02 19:33:51,530 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+310952 MainThread 2026-09-02 19:33:51,530 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D9917a146-2391-501d-8ee4-8ed6539faf6e%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A33%3A51Z
+310952 MainThread 2026-09-02 19:33:51,530 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D9917a146-2391-501d-8ee4-8ed6539faf6e%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A33%3A51Z
+310952 MainThread 2026-09-02 19:33:51,530 webull.core.auth.composer.default_signature_composer DEBUG signature:bpUa3/wVeFm6Wau1ibRJOmkZcRNA/g7Vfeuc3beUntg=
+310952 MainThread 2026-09-02 19:33:51,530 webull.core.auth.composer.default_signature_composer DEBUG signature:bpUa3/wVeFm6Wau1ibRJOmkZcRNA/g7Vfeuc3beUntg=
+310952 MainThread 2026-09-02 19:33:51,637 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:33:52 GMT', 'X-Request-Id': '266a3c56-0eee-4434-b7c8-e5b6a3ba104f', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 5449ad6ecf3b502788f40e66f49a4b9e.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'K8F0PthS8U7cDdgChaEQo0kbReQrepkAk7A1ljHbGjtJKv13MrxGPw==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+310952 MainThread 2026-09-02 19:33:51,637 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:33:52 GMT', 'X-Request-Id': '266a3c56-0eee-4434-b7c8-e5b6a3ba104f', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 5449ad6ecf3b502788f40e66f49a4b9e.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'K8F0PthS8U7cDdgChaEQo0kbReQrepkAk7A1ljHbGjtJKv13MrxGPw==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+362676 MainThread 2026-09-02 19:53:34,118 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:53:34Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '3d83b408-1e90-5701-9246-51a5d0359215', 'Host': 'api.webull.com'}
+362676 MainThread 2026-09-02 19:53:34,119 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+362676 MainThread 2026-09-02 19:53:34,119 webull.core.auth.composer.default_signature_composer DEBUG body:None
+362676 MainThread 2026-09-02 19:53:34,119 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+362676 MainThread 2026-09-02 19:53:34,119 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D3d83b408-1e90-5701-9246-51a5d0359215%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A53%3A34Z
+362676 MainThread 2026-09-02 19:53:34,120 webull.core.auth.composer.default_signature_composer DEBUG signature:uWhp3stdMII6qQ9e0L+2XpokXW6TSp2a61klq90ilzM=
+362676 MainThread 2026-09-02 19:53:34,408 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:53:34 GMT', 'X-Request-Id': 'abd795c0-de4b-48d5-8467-d0fa42304892', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 84ee72f7470310cc4167f95ed9189afa.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '2S-8RU1I8z2b6qUtL0sGqhCknrLikOK6iidFJzNIhpJ7KTJy2jaF4g==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+362676 MainThread 2026-09-02 19:53:34,408 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+362676 MainThread 2026-09-02 19:53:34,410 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:53:34Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'fa28893f-88c3-5d51-8c8e-7a2f03eed961', 'Host': 'api.webull.com'}
+362676 MainThread 2026-09-02 19:53:34,410 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+362676 MainThread 2026-09-02 19:53:34,410 webull.core.auth.composer.default_signature_composer DEBUG body:None
+362676 MainThread 2026-09-02 19:53:34,410 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+362676 MainThread 2026-09-02 19:53:34,411 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dfa28893f-88c3-5d51-8c8e-7a2f03eed961%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A53%3A34Z
+362676 MainThread 2026-09-02 19:53:34,411 webull.core.auth.composer.default_signature_composer DEBUG signature:K1JWgkZGNr1KnupgwM/6jM1sj2K1oTn2ZWQq5+K2YqY=
+362676 MainThread 2026-09-02 19:53:34,532 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:53:35 GMT', 'X-Request-Id': 'e500addf-91b4-4eaf-8dba-8ede3ea2a210', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 cb8320f36cd8529816dbe5a3e9645936.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'EmaG6ZRmWwemvXNOFRTX3Zu1M01gF4_6nAKjLT9Cyjz-3fjLAlLgtg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+362676 MainThread 2026-09-02 19:53:34,532 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+362676 MainThread 2026-09-02 19:53:34,534 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:53:34Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'ba98a127-dbe0-5bbf-858f-214de24d0256', 'Host': 'api.webull.com'}
+362676 MainThread 2026-09-02 19:53:34,534 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+362676 MainThread 2026-09-02 19:53:34,534 webull.core.auth.composer.default_signature_composer DEBUG body:None
+362676 MainThread 2026-09-02 19:53:34,534 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+362676 MainThread 2026-09-02 19:53:34,534 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dba98a127-dbe0-5bbf-858f-214de24d0256%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A53%3A34Z
+362676 MainThread 2026-09-02 19:53:34,534 webull.core.auth.composer.default_signature_composer DEBUG signature:3OY1ddBJAwrWc82mo0Xz6Tg4Th/Vyiv0xAUSo44Cxn8=
+362676 MainThread 2026-09-02 19:53:34,647 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:53:35 GMT', 'X-Request-Id': 'c8330d7a-1cce-400c-b086-85f0e601ff31', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 676871763bf908367dc9cdd585132d32.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '97FrxWFWNhcARj3vGT0KzxvsjYo9p0f2NqCYzj-rkzv39ThxnPqExg==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:53:34Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '1ac13ac8-b054-5b8e-8229-be63fa3744e6', 'Host': 'api.webull.com'}
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:53:34Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '1ac13ac8-b054-5b8e-8229-be63fa3744e6', 'Host': 'api.webull.com'}
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG body:None
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG body:None
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D1ac13ac8-b054-5b8e-8229-be63fa3744e6%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A53%3A34Z
+362676 MainThread 2026-09-02 19:53:34,651 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D1ac13ac8-b054-5b8e-8229-be63fa3744e6%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A53%3A34Z
+362676 MainThread 2026-09-02 19:53:34,652 webull.core.auth.composer.default_signature_composer DEBUG signature:gftsTJrhfWLxtvU+Q8zqdvibutUTGZ2m4sVPmXS5348=
+362676 MainThread 2026-09-02 19:53:34,652 webull.core.auth.composer.default_signature_composer DEBUG signature:gftsTJrhfWLxtvU+Q8zqdvibutUTGZ2m4sVPmXS5348=
+362676 MainThread 2026-09-02 19:53:34,783 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:53:35 GMT', 'X-Request-Id': '79b739cc-4600-4a1c-93ef-5018bbec7a51', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 176385fa690830512181df5d31c8e1b8.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'NSZO7nLRg7eaBG1Urk6jvHEhhM0rxtrJpSWYlG7UU3nyiktt-ncNqQ==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+362676 MainThread 2026-09-02 19:53:34,783 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:53:35 GMT', 'X-Request-Id': '79b739cc-4600-4a1c-93ef-5018bbec7a51', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 176385fa690830512181df5d31c8e1b8.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'NSZO7nLRg7eaBG1Urk6jvHEhhM0rxtrJpSWYlG7UU3nyiktt-ncNqQ==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+362676 MainThread 2026-09-02 19:53:34,783 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+362676 MainThread 2026-09-02 19:53:34,783 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:53:34Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'fcfed506-d701-5f4f-bea5-0c7c6d97a6d6', 'Host': 'api.webull.com'}
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:53:34Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'fcfed506-d701-5f4f-bea5-0c7c6d97a6d6', 'Host': 'api.webull.com'}
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG body:None
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG body:None
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dfcfed506-d701-5f4f-bea5-0c7c6d97a6d6%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A53%3A34Z
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dfcfed506-d701-5f4f-bea5-0c7c6d97a6d6%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A53%3A34Z
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG signature:HgT7OQKxbjB+G3bigy9m18+OOj7feaH7XP4xGYaosF4=
+362676 MainThread 2026-09-02 19:53:34,785 webull.core.auth.composer.default_signature_composer DEBUG signature:HgT7OQKxbjB+G3bigy9m18+OOj7feaH7XP4xGYaosF4=
+362676 MainThread 2026-09-02 19:53:34,909 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:53:35 GMT', 'X-Request-Id': 'ab28fcd5-1c80-476b-8d8f-b7d9229cf7a7', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 84ee72f7470310cc4167f95ed9189afa.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'a9FULfh0xo0mL-AvHzHE9M68mIYBuGcI3i_ujcaSSYQSnO5AfBNETg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+362676 MainThread 2026-09-02 19:53:34,909 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:53:35 GMT', 'X-Request-Id': 'ab28fcd5-1c80-476b-8d8f-b7d9229cf7a7', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 84ee72f7470310cc4167f95ed9189afa.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'a9FULfh0xo0mL-AvHzHE9M68mIYBuGcI3i_ujcaSSYQSnO5AfBNETg==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+362676 MainThread 2026-09-02 19:53:34,909 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+362676 MainThread 2026-09-02 19:53:34,909 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:53:34Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '01faf86b-2c79-544d-abeb-1bee51a248ea', 'Host': 'api.webull.com'}
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-02T23:53:34Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '01faf86b-2c79-544d-abeb-1bee51a248ea', 'Host': 'api.webull.com'}
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG body:None
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG body:None
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D01faf86b-2c79-544d-abeb-1bee51a248ea%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A53%3A34Z
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D01faf86b-2c79-544d-abeb-1bee51a248ea%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-02T23%3A53%3A34Z
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG signature:yzjEU3a/MjZnHhJWJCWFYoPtW7DSnRHwAbQ41E7AzWk=
+362676 MainThread 2026-09-02 19:53:34,911 webull.core.auth.composer.default_signature_composer DEBUG signature:yzjEU3a/MjZnHhJWJCWFYoPtW7DSnRHwAbQ41E7AzWk=
+362676 MainThread 2026-09-02 19:53:35,029 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:53:35 GMT', 'X-Request-Id': '40eed1a7-b698-4644-a0e3-43851f84a108', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 d052447d138dd6a18e9586b8271113de.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'Xd1_etCEsoxvSC4KYBMVDkFQ0EOw9s7IoPgS17_5kXoJoBC0VNnlmw==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+362676 MainThread 2026-09-02 19:53:35,029 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Wed, 02 Sep 2026 23:53:35 GMT', 'X-Request-Id': '40eed1a7-b698-4644-a0e3-43851f84a108', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 d052447d138dd6a18e9586b8271113de.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'Xd1_etCEsoxvSC4KYBMVDkFQ0EOw9s7IoPgS17_5kXoJoBC0VNnlmw==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
