@@ -1300,10 +1300,13 @@ class Book:
                         return              # somebody else resolved it
                     oid, occ, limit = p["order_id"], p["occ"], p["limit"]
                     want = p["want_qty"]
+                    _wb = self._wbfor(p)
 
+                # ask the broker that OWNS the order (9/3): a live bid is
+                # checked on the live client, same as the deadline path below
                 state, filled_qty, avg = self._probe(
                     oid, occ, limit, live=p.get("live"),
-                    paper=p.get("paper"), blind=p.get("blind"))
+                    paper=p.get("paper"), blind=p.get("blind"), wb=_wb)
                 if state == FILLED:
                     self._became_filled(key, filled_qty or want, avg or limit)
                     return

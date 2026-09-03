@@ -1347,6 +1347,8 @@ class WebullOptions:
                 low = m.lower()
                 if not any(v in low for v in verbs):
                     continue
+                if avoid and any(a in low for a in avoid):
+                    continue                    # the caller said not this one
                 if win and (hname, m) == tuple(win):
                     continue                    # already tried above
                 fn = getattr(h, m, None)
