@@ -23,6 +23,8 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import signals  # noqa: E402  (the Python mirror of extension/parser.js)
 DAYS_BACK = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 10
 SINCE = date.today() - timedelta(days=DAYS_BACK)
 
@@ -131,12 +133,23 @@ def main():
         r["msgs"] += 1
         r["days"].add(d)
         author = text.split(":", 1)[0][:40] if ":" in text else "?"
-        if RE_CONTRACT.search(text):
+        # THE REAL PARSER decides what a signal is (9/2, after the RWGates
+        # miss: my regex didn't know his ".NBIS260904C215" notation and
+        # called a live room silent). signals.py mirrors parser.js — if it
+        # reads an action, the bot read one too.
+        body = text.split(": ", 1)[1] if ": " in text[:60] else text
+        act = None
+        try:
+            sig = signals.parse(body)
+            act = sig.action if sig else None
+        except Exception:                                # noqa: BLE001
+            act = None
+        if act or RE_CONTRACT.search(text):
             r["signals"] += 1
             r["authors"][author] += 1
-            if RE_ENTRY.search(text):
+            if act in ("OPEN", "ADD", "PREPARE") or (not act and RE_ENTRY.search(text)):
                 r["entries"] += 1
-            if RE_EXIT.search(text):
+            if act in ("CLOSE", "TRIM", "STOPMOVE") or (not act and RE_EXIT.search(text)):
                 r["exits"] += 1
             stamp = "%s %s" % (d, t[:5])
             if stamp > r["last"]:
