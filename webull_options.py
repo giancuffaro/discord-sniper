@@ -1499,6 +1499,25 @@ class WebullOptions:
         want_c = str(side or "").upper().startswith("C")
         want_k = _num(strike)
         want_x = str(expiry or "")[:10]
+        # 9/3: the book keeps the ROOM's expiry ("0DTE", "9/18"); the broker
+        # leg carries ISO ("2026-09-03"). Comparing them raw skipped EVERY
+        # fill — SPY 772C's hand close at 1.56 sat in history for 3 minutes
+        # while the true-up asked 30 times and booked $0 (and 9/2's "429"
+        # true-up misses were really this). Resolve to ISO, anchored on the
+        # day the position was opened so yesterday's 0DTE still matches; if
+        # it can't be resolved, drop the expiry filter (side + strike +
+        # `since` already pin the contract) rather than match nothing.
+        try:
+            _anchor = None
+            if since:
+                _s = float(since)
+                if _s > 1e12:
+                    _s /= 1000.0
+                _anchor = _dt.datetime.fromtimestamp(_s).date()
+            want_x = expiry_to_date(expiry, today=_anchor)
+        except Exception:                                  # noqa: BLE001
+            if not re.match(r"^\d{4}-\d{2}-\d{2}$", want_x):
+                want_x = ""
         best_t, best_px = None, None
         for grp in (items or []):
             # order history nests: {orders:[{legs:[...], filled_price, ...}]}
