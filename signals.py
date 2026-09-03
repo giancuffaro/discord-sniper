@@ -192,7 +192,8 @@ RE_BARE_FILL = re.compile(
 # matches. "took entry" is not anchored to the front on purpose — the ticker
 # or an "@here" can sit in front of it. Mirrors parser.js RE_TOOK_ENTRY_FILL.
 RE_TOOK_ENTRY_FILL = re.compile(
-    r"\btook\s+entr(?:y|ies)\b[^\d%]{0,20}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b",
+    r"\btook\s+entr(?:y|ies)\b[^\d%]{0,20}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b"
+    r"|\btook\s+entr(?:y|ies)\b[\s\S]{0,60}?\bfill(?:ed)?\s*[:@]\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b",
     re.IGNORECASE)
 
 # ---- futures ----------------------------------------------------------------
@@ -1535,6 +1536,19 @@ def _parse_inner(text, author="", channel="", cfg=None):
         sig.why = "it's a question, not a call"
         return sig
 
+    # LEVELS / WATCHLIST ROW (9/3) — mirrors parser.js.
+    if re.search(r"\d\s*[cp]\b\s*[><]\s*\d", t, re.I):
+        sig.why = ("a levels/watchlist row (\"726c > 725.00\" is a trigger "
+                   "level, not a premium) — nothing was sent")
+        return sig
+    _seen = set()
+    for _m in re.finditer(r"(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?\s*(?:calls?|puts?|c|p)\b", t, re.I):
+        _seen.add(re.sub(r"\s+", "", _m.group(0).lower()))
+    if len(_seen) >= 3:
+        sig.why = ("a watchlist — %d different contracts in one message, "
+                   "that's a list, not an order" % len(_seen))
+        return sig
+
     # An explicit buy-to-open with a real contract is an ORDER, not chatter. A
     # stray soft word in a risk note — "BTO $MSFT 400c @0.43 cheapie, watch
     # sizing" — must not be vetoed by "watch". The hard "don't/do not" vetoes
@@ -2189,7 +2203,7 @@ def _parse_inner(text, author="", channel="", cfg=None):
                 sig.action = "OPEN"
                 sig.matched = "took-entry fill on a loaded contract"
                 sig.needs_loaded = True
-                sig.limit = float(mte.group(1))
+                sig.limit = float(mte.group(1) or mte.group(2))
                 # If they named a ticker ("$NVDA I took entry..."), pin it so
                 # resolve_loaded won't pair it with a different ticker's load.
                 sig.named_symbol = _bare_symbol(t, allowed)

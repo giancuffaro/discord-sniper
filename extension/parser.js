@@ -241,7 +241,10 @@ const RE_BARE_FILL = /^(?:just\s+|we\s+|i\s+|i've\s+|ive\s+|we've\s+)*(?:filled|
 // requires the message to START with filled/bought/bto/entered) never
 // matches. "took entry" is not anchored to the front on purpose — the
 // ticker or an "@here" can sit in front of it.
-const RE_TOOK_ENTRY_FILL = /\btook\s+entr(?:y|ies)\b[^\d%]{0,20}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b/i;
+// 9/3 (history sweep): also "Took entry $META META260826C570 Fill: 5.15" —
+// the price comes AFTER the word fill, with a colon, and an OSI contract
+// sits between. Two orders now: "<price> fill" and "fill: <price>".
+const RE_TOOK_ENTRY_FILL = /\btook\s+entr(?:y|ies)\b[^\d%]{0,20}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b|\btook\s+entr(?:y|ies)\b[\s\S]{0,60}?\bfill(?:ed)?\s*[:@]\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b/i;
 // "added to SPY @everyone new avg is 2.8" — they doubled up and their average
 // moved. Whether that buys you a second contract is a setting, not a parser
 // decision: resolveAdd in guards.js has the final word, because only the guards
@@ -1220,6 +1223,30 @@ function parseSignalInner(text, cfg) {
 
   if (t.includes("?")) { s.why = "it's a question, not a call"; return s; }
 
+  // LEVELS / WATCHLIST ROW (9/3 history sweep, TradingTheTrend's daily post:
+  // "QQQ 726c > 725.00 715p < 716.00 MU 1000c > 980.00 NVDA 224c > 223.00").
+  // This parsed as OPEN QQQ 726C paying $725.00 — a false BUY at 600x the
+  // real premium. Two tells, either is enough: a ">" or "<" sitting between
+  // a contract and a number (these are stock TRIGGER levels, not prices), or
+  // three-plus different contracts in one message (nobody buys 4 at once in
+  // one line). Neither shape is ever an order.
+  if (/\d\s*[cp]\b\s*[><]\s*\d/i.test(t)) {
+    s.why = "a levels/watchlist row (\"726c > 725.00\" is a trigger level, " +
+            "not a premium) — nothing was sent";
+    return s;
+  }
+  {
+    const _re = /(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?\s*(?:calls?|puts?|c|p)\b/gi;
+    const _seen = new Set();
+    let _m;
+    while ((_m = _re.exec(t)) !== null) _seen.add(_m[0].toLowerCase().replace(/\s+/g, ""));
+    if (_seen.size >= 3) {
+      s.why = "a watchlist — " + _seen.size + " different contracts in one " +
+              "message, that's a list, not an order";
+      return s;
+    }
+  }
+
   // An explicit buy-to-open with a real contract is an ORDER, not chatter — a
   // stray soft word in a risk note ("BTO $MSFT 400c @0.43 cheapie, watch
   // sizing") must not be vetoed by "watch". Hard "don't/do not" still fire, and
@@ -1818,7 +1845,7 @@ function parseSignalInner(text, cfg) {
       if (mte) {
         s.action = "OPEN"; s.matched = "took-entry fill on a loaded contract";
         s.needs_loaded = true;
-        s.limit = parseFloat(mte[1]);
+        s.limit = parseFloat(mte[1] || mte[2]);
         // If they named a ticker ("$NVDA I took entry..."), pin it so
         // resolveLoaded won't pair it with a different ticker's load.
         s.named_symbol = bareSymbol(t, allowed);
