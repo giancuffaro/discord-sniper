@@ -166,7 +166,7 @@ def find_missed_entries(keep, parsed):
 
 
 def main():
-    fn = newest_export()
+    fn = export_for_day(DAY) or newest_export()
     if not fn:
         print("no DS Logs export found")
         return
