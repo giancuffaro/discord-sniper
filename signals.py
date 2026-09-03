@@ -192,7 +192,7 @@ RE_BARE_FILL = re.compile(
 # matches. "took entry" is not anchored to the front on purpose — the ticker
 # or an "@here" can sit in front of it. Mirrors parser.js RE_TOOK_ENTRY_FILL.
 RE_TOOK_ENTRY_FILL = re.compile(
-    r"\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[\s\S]{0,50}?\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b"
+    r"\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[^\d%]{0,40}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b"
     r"|\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[\s\S]{0,60}?\bfill(?:ed)?\s*[:@]\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b",
     re.IGNORECASE)
 
