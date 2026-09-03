@@ -57,9 +57,9 @@ RE_CONTRACT = re.compile(
 # reading "10% on SPY" as a contract, and it's how they actually write it.
 RE_CONTRACT_REV = re.compile(
     r"(?<![A-Za-z\d.])\$?(?P<strike>\d{1,5}(?:\.\d{1,2})?)\s*"
-    r"(?P<kind>calls?|puts?)\b"
+    r"(?P<kind>calls?|puts?|c|p)\b"
     r"(?P<mid>[^.!?]{0,40}?)"
-    r"\bon\s+\$?(?P<symbol>[A-Za-z]{1,5})\b", re.IGNORECASE)
+    r"\b(?:on|for)\s+\$?(?P<symbol>[A-Za-z]{1,5})\b", re.IGNORECASE)
 
 # "Friday expiration" is not a missing date — it's the same weekly the room's
 # pinned rules already default to, said out loud. Kept as the token WEEKLY so
@@ -663,6 +663,27 @@ def clean_text(raw):
             t = "BTO " + t
     # ".50" is a premium of 0.50 (9/2) — a leading-dot price never parsed.
     t = re.sub(r"(^|[\s@$])\.(\d{1,2})\b", r"\g<1>0.\2", t)
+    # COLLECTIVE CORPUS (9/2): bot footers carry veto words — cut at the
+    # first footer marker. Mirrors parser.js cleanText.
+    for pat in (r"\s*(?:IG:\s*\S+\s*\|?\s*)?None of this is financial advice.*$",
+                r"\s*Do not take this as financial advice.*$",
+                r"\s*@\S*\s*-\s*For Educational Purposes Only.*$",
+                r"\s*For (?:Educational|Informational) Purposes Only.*$",
+                r"\s*©\s*20\d\d.*$", r"\s*How I Trade\b.*$",
+                r"\s*@Namrood\s*-\s*Live.*$", r"\s*Solely for informational purpose.*$"):
+        t = re.sub(pat, " ", t, flags=re.I | re.S)
+    radar = re.match(r"^\s*(?:@\S+\s+)?([A-Z]{1,4})\s+(LONG|SHORT)\s*\(\d+m\)\s*@\s*(\d[\d,.]*)\s*\|\s*TP:\s*(\d[\d,.]*)\s*SL:\s*(\d[\d,.]*)", t, re.I)
+    if radar:
+        t = "%s %s @ %s Stop %s Target %s" % (radar.group(2).upper(), radar.group(1).upper(),
+                                              radar.group(3), radar.group(5), radar.group(4))
+    fhead = re.match(r"^\s*(?:@\S+\s+)?(long|short)\s+\$?/?([A-Za-z0-9]{1,4})\s*(?:@|at)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?)\s+(?:stop|sl)\s*(?:@|at|:)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?)(?:\s+(?:target|tp)\s*(?:\d\s*:)?\s*(?:@|at|:)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?))?", t, re.I)
+    if fhead and fhead.group(2).upper() in FUT_SYMS and \
+            re.search(r"[a-z]{4,}\s+[a-z]{3,}\s+[a-z]{3,}", t[fhead.end():], re.I):
+        t = "%s %s @ %s Stop %s%s" % (fhead.group(1), fhead.group(2).upper(), fhead.group(3),
+                                      fhead.group(4), (" Target " + fhead.group(5)) if fhead.group(5) else "")
+    fut = r"(NQ|MNQ|ES|MES|YM|MYM|RTY|M2K|GC|MGC|CL|MCL|SI|NG)"
+    t = re.sub(r"\b" + fut + r"\s+(\d{3,6}(?:\.\d+)?)\s+(long|short)\b", r"\3 \1 @ \2", t, flags=re.I)
+    t = re.sub(r"\b" + fut + r"\s+(?:quick\s+)?(long|short)\s+(?:here\s+)?@?\s*(\d{3,6}(?:\.\d+)?)\b", r"\2 \1 @ \3", t, flags=re.I)
     return re.sub(r"\s+", " ", t).strip()
 
 
@@ -1184,8 +1205,12 @@ def _parse_inner(text, author="", channel="", cfg=None):
         sig.warn = "no price on the entry — it pays the market."
         sig.why = "entry: %s %s" % (sig.direction, sig.symbol)
         return sig
+    bw_pre = re.match(r"^(?:(?:swing(?:ing)?|lotto|scalp|day\s*trade)\s*:?\s+)?"
+                      r"(?:(\d{1,2}/\d{1,2}(?:/\d{2,4})?|\d*dte)\s+)?", t, re.I)
+    bw_t = t[bw_pre.end():] if bw_pre and bw_pre.group(0) else t
+    bw_lead = bw_pre.group(1) if bw_pre else None
     bw = re.match(r"^([A-Za-z]{1,5})\s*(\|)?\s*(\$)?"
-                  r"(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b(.*)$", t)
+                  r"(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b(.*)$", bw_t)
     if bw and (bw.group(2) or bw.group(3)
                or re.search(r"(?<![\d$.])\d+\.\d{1,2}(?!\s*%)",
                             bw.group(6) or "")) and \
@@ -1197,6 +1222,8 @@ def _parse_inner(text, author="", channel="", cfg=None):
         md = re.search(r"\b(\d{1,2}/\d{1,2})\b", rest)
         if md:
             sig.expiry = md.group(1)
+        elif bw_lead:
+            sig.expiry = bw_lead.upper() if "dte" in bw_lead.lower() else bw_lead
         # premium: the first plain decimal that isn't a $-prefixed stock level.
         mp = re.search(r"(?<![\d$])(\d+\.\d{1,2})\b", rest)
         sig.limit = float(mp.group(1)) if mp else None
@@ -1238,8 +1265,22 @@ def _parse_inner(text, author="", channel="", cfg=None):
     #      A fully labeled entry — the "Entry Contract:" tag and "Price:" make it
     #      unambiguous. Anything led by "Comment" is a watch/recap/exit, handled
     #      by the normal reader (and "on watch" is vetoed above).
+    # ---- TLM (9/2): full contract + "at <price>", no verb, short line.
+    bare = _contract(t)
+    atp = re.search(r"\b(?:at|@)\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)", t, re.I)
+    if bare and atp and len(t) <= 110 and bare.get("symbol") not in NOT_TICKERS and \
+            not re.search(r"\b(sold|sell|selling|out|close|closed|closing|trim|trimm|stop|stops|update|watch|watching|target hit|hedge|spread|avg|average|now)\b", t, re.I):
+        px = float(atp.group(1))
+        if px > 0 and px != bare.get("strike"):
+            sig.symbol, sig.strike, sig.side = bare["symbol"], bare["strike"], bare["side"]
+            sig.expiry, sig.limit = bare.get("expiry"), px
+            sig.action, sig.matched = "OPEN", "bare priced entry"
+            sig.fire = True
+            sig.why = "entry: %s" % sig.human()
+            return sig
+
     ntr = re.search(
-        r"\bentry\s+contract:?\s*\$?([A-Za-z]{1,5})\s+\$?"
+        r"\b(?:entry\s+)?contract:?\s*\$?([A-Za-z]{1,5})\s+\$?"
         r"(\d{1,5}(?:\.\d{1,2})?)\s*([CcPp])\b"
         r"(?:.*?\bprice:?\s*\$?(\d+(?:\.\d{1,2})?))?", t, re.IGNORECASE)
     if ntr and ntr.group(1).upper() not in NOT_TICKERS:
