@@ -688,7 +688,17 @@ class WebullOptions:
             _wname, _wi = _win
             fns = [f for f in fns if f[0] == _wname] + [f for f in fns if f[0] != _wname]
             shapes = [shapes[_wi]] + [sh for i, sh in enumerate(shapes) if i != _wi]
+        # DEAD CONTRACT = NO HUNT (9/3 autopilot): when the shape that answered
+        # last time says INVALID_SYMBOL, the contract doesn't exist — every
+        # other shape asks the same endpoint the same question. The hunt used
+        # to run on anyway: 2 more real 417s (and 3 tracebacks in bridge.log)
+        # per NO-OTM strike probe (NVDA 228.5/229, HOOD 118.5 on 9/3). Same
+        # fix as stock_price 8/24. A winner that fails any OTHER way still
+        # triggers the full hunt, exactly as before.
+        _dead = False
         for name, fn in fns:
+            if _dead:
+                break
             for args, kw in shapes:
                 try:
                     res = fn(*args, **kw)
@@ -696,6 +706,11 @@ class WebullOptions:
                     continue
                 except Exception as e:                  # noqa: BLE001
                     errors.append("%s: %s" % (name, str(e)[:100]))
+                    if (_win and name == _wname and (args, kw) == shapes[0]
+                            and ("INVALID_SYMBOL" in str(e)
+                                 or "Invalid Symbol" in str(e))):
+                        _dead = True
+                        break
                     continue
                 code = getattr(res, "status_code", 200)
                 if code == 403:
