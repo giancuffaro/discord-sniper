@@ -1757,11 +1757,20 @@ function parseSignalInner(text, cfg) {
       // then a minute later "Filled 3.95 starters". This second line really is
       // the order — the contract is just in the message before it. Held back
       // rather than dropped, the same way a bare trim is.
+      // A ticker CAN be named too ("Load aapl 330 puts friday exp" then
+      // "Filled 2.26 starter size on AAPL" — Unraveller, 9/3): used to skip
+      // this branch entirely on a named ticker, so it fell through to "no
+      // contract" and the AI-vision fallback (stateless, one message only)
+      // guessed a nonsense AAPL EQUITY fill at $2.26 instead. Now the named
+      // ticker just PINS named_symbol, same safety rail as every other
+      // needs_loaded branch, instead of disabling resolution.
       const mf = RE_BARE_FILL.exec(t);
-      if (mf && !bareSymbol(t, allowed)) {
+      if (mf) {
         s.action = "OPEN"; s.matched = "fill on a loaded contract";
         s.needs_loaded = true;
         s.limit = parseFloat(mf[1]);
+        const namedSym = bareSymbol(t, allowed);
+        if (namedSym) s.named_symbol = namedSym;
         const mq0 = RE_QTY.exec(t);
         if (mq0) s.qty = parseInt(mq0[1], 10);
         s.why = "a fill price with no contract in it — looking for the LOADING call it belongs to";
