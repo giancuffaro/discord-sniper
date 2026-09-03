@@ -415,8 +415,11 @@ function cleanText(raw) {
   // Felony / Whop: "Short NQ @ 29530 Stop 29570 Target 29450 Very high risk
   // here... if we break..." — a clean futures order followed by commentary
   // full of soft words. Keep the order, drop the essay.
-  const fhead = /^\s*(?:@\S+\s+)?(long|short)\s+\$?\/?([A-Za-z0-9]{1,4})\s*(?:@|at)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?)\s+(?:stop|sl)\s*(?:@|at|:)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?)(?:\s+(?:target|tp)\s*(?:@|at|:)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?))?/i.exec(t);
-  if (fhead && FUT_SYMS.has(fhead[2].toUpperCase()))
+  const fhead = /^\s*(?:@\S+\s+)?(long|short)\s+\$?\/?([A-Za-z0-9]{1,4})\s*(?:@|at)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?)\s+(?:stop|sl)\s*(?:@|at|:)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?)(?:\s+(?:target|tp)\s*(?:\d\s*:)?\s*(?:@|at|:)?\s*\$?(\d[\d,]*(?:\.\d{1,3})?))?/i.exec(t);
+  // Only rewrite when the order is followed by prose (the essay case);
+  // a clean multi-target line ("Target 1: 7600 Target 2: 7650") already
+  // parses and must keep every target.
+  if (fhead && FUT_SYMS.has(fhead[2].toUpperCase()) && /[a-z]{4,}\s+[a-z]{3,}\s+[a-z]{3,}/i.test(t.slice(fhead[0].length)))
     t = fhead[1] + " " + fhead[2].toUpperCase() + " @ " + fhead[3] + " Stop " + fhead[4] +
         (fhead[5] ? " Target " + fhead[5] : "");
   // Mr. Top Hat: "MNQ 24674 long quick scalp" / "MES quick short here 7697"
@@ -978,6 +981,26 @@ function parseSignalInner(text, cfg) {
         s.warn = "no entry price posted — it pays the market.";
       s.why = "entry: " + human(s);
       return s;
+    }
+  }
+
+  // ---- TLM (9/2): "Aapl Aug 26 315 call at 1.75 Target 2.10" — a full
+  //      contract and a price, no verb at all. Short, verb-less, priced =
+  //      an entry; anything with a sell/trim/update word stays out of here.
+  {
+    const bare = findContract(t);
+    const atp = /\b(?:at|@)\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)/i.exec(t);
+    if (bare && atp && t.length <= 110 &&
+        !/\b(sold|sell|selling|out|close|closed|closing|trim|trimm|stop|stops|update|watch|watching|target hit|hedge|spread|avg|average|now)\b/i.test(t) &&
+        !NOT_TICKERS.has(bare.symbol)) {
+      const px = parseFloat(atp[1]);
+      if (px > 0 && px !== bare.strike) {
+        s.symbol = bare.symbol; s.strike = bare.strike; s.side = bare.side;
+        s.expiry = bare.expiry || null; s.limit = px;
+        s.action = "OPEN"; s.matched = "bare priced entry"; s.fire = true;
+        s.why = "entry: " + human(s);
+        return s;
+      }
     }
   }
 
