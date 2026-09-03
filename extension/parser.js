@@ -1843,11 +1843,26 @@ function parseSignalInner(text, cfg) {
   }
 
   // 6. A plain exit word with something identifiable behind it.
+  //    PARTIAL SELLS ARE TRIMS (9/2 corpus): "sold 1/2 UPS here", "sell 2/3
+  //    UPS 105 calls", "sold some", "sold most", "sold a third" read as a
+  //    FULL exit — the bot would have flattened a position the trader only
+  //    trimmed. A fraction/partial word next to the sell word is a trim.
   if (RE_EXIT.test(low)) {
     const c = findContract(t);
     s.symbol = c ? c.symbol : bareSymbol(t, allowed);
     if (c) { s.strike = c.strike; s.side = c.side; s.expiry = c.expiry; }
     if (!s.symbol) { s.why = "sounds like an exit but I couldn't tell which ticker"; return s; }
+    const part = /\b(?:sold|sell|selling|closed|closing|out|exited|took)\s+(?:out\s+)?(?:of\s+)?(?:(\d)\s*\/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d\/\d)\b/i.exec(t);
+    if (part && !/\b(?:rest|remaining|all|everything|last|final)\b/i.test(t)) {
+      s.action = "TRIM"; s.matched = "partial sell"; s.fire = false;
+      if (part[1] && part[2] && parseInt(part[2], 10) > 0)
+        s.pct = Math.round(100 * parseInt(part[1], 10) / parseInt(part[2], 10));
+      else if (/half/i.test(part[0])) s.pct = 50;
+      else if (/third/i.test(part[0])) s.pct = 33;
+      else if (/quarter/i.test(part[0])) s.pct = 25;
+      s.why = "partial sell on " + s.symbol + " — a trim, not the exit";
+      return s;
+    }
     s.action = "CLOSE"; s.matched = "exit"; s.fire = true;
     s.why = "exit on " + s.symbol;
     return s;
