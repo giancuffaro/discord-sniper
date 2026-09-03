@@ -664,3 +664,21 @@ Extension 3.5.9 — reload.
 - 9/1 11:05 Blue Collar SPY 764C: no AI READ in bridge.log and the 9/1 export's verdicts were wiped by the 400 cap → cannot say whether the AI reader was consulted. Cap now 2500.
 - **Voice today:** 238 transcript lines, all from Honeydrip's live room 10:55–11:25 (Unraveller commentary: "first break of EMAs on SPY", "if you shorted SPY use 765.8 as risk"). Zero spoken entries with a full contract → nothing to fire; parser's bare-% "trims" on speech are harmless (exit policy ignores trims). Listener cycles on/off with the audio (quiet 60s → stop). It also auto-listened to OUR #sniper-alerts-options tab (notification pings) — now skipped.
 - **Self-learning loop (G: "everything should learn from mistakes")** — what's real vs. planned, see reply.
+
+## 9/2 21:30 — COLLECTIVE CORPUS PASS (G: "exchange parsers room to room, fill the parser blanks")
+There is ONE parser for every room (extension/parser.js; signals.py mirrors it for tests/tools). Per-room settings are only behaviour flags (SPX→SPY channels, Whop bare-% trims, exit policy) — grammar learned in one room applies everywhere. What was missing was a collective CORPUS to test it against; now:
+- **jsparse.py + extension/parse_batch.js**: audit tools (replay_check, scoreboard) run the PRODUCTION parser via node, never the Python mirror (which lagged — it called "Open SPY 09/01 764P @.95" nothing while the bot read it fine).
+- **13 days × every room replayed** (1,228 contract-naming messages). Blanks 547 → 365; the rest are updates/watchlists/recaps by design. Formats added to BOTH parsers, with tests in test_signals.py and samples.txt (parity):
+  • Clutch date-first entries "0DTE GOOGL 345C .84", "8/28 SLV 60C 1.68 swing", "Swing: 9/04 SMR 10C .54"
+  • ei.trades "Contract: QQQ $711 p Price: $1.68" (no "Entry" label)
+  • TLM "Aapl Aug 26 315 call at 1.75" (bare priced contract, no verb)
+  • Aristotle "I'm in 80 C 9/18s for uber" (ticker after the contract, "for")
+  • Felony "Short NQ @ 29530 Stop 29570 Target 29450 <essay with 'if you'>" (order head kept, commentary dropped)
+  • NGD radar "MGC SHORT (1m) @ 4496.35 | TP:… SL:… | Prob:…" (rewritten to the futures grammar; "probability" veto no longer kills it)
+  • Mr. Top Hat "MNQ 24674 long quick scalp", "MES quick short here 7697"
+  • Bot footers stripped before veto words fire: "Do not take this as financial advice" (vetoed EVERY Market Guru call), "None of this is financial advice" (Clutch), "For Educational/Informational Purposes Only", "© 2021-2026 Horizon Analytics", "How I Trade…", "@Namrood - Live…"
+  • Discord row junk stripped: "NAME APP — 9:44 AM Wednesday, September 2, 2026 at 9:44 AM Forwarded", "[ 9:38 AM ] …", "Yesterday at", "N Add Reaction", "(edited)", ":green_alert:" shortcodes — these also made "loading GOOGL…" lines look like ENTRIES in the export replay (LOADING never buys; now PREPARE)
+  • **SAFETY FIX — partial sells are TRIMS**: "sold 1/2 UPS", "sell 2/3 UPS 105 calls", "sold some… holding the rest" read as a FULL exit → would have flattened a position the trader only trimmed. Now TRIM with pct. "sold the rest/all" stays CLOSE.
+  • "closed AAPL for +20%", "QQQ OUT @ 150% PROFIT", "sold NVDA at +35%" read as 20%/150%/35% TRIMS (ignored by exit policy) → now full CLOSE ("they posted the gain, not a trim size").
+- Suite: test_signals same 4 pre-existing failures (Brett trims); parity 5 pre-existing field gaps; test_resolve green. Extension 3.5.11 — reload.
+- replay_check now flags only OPEN/ADD/CLOSE silence (PREPARE/trims are silent by design). NGD's 86 radar signals/day are OPENs that go nowhere because every futures broker is OFF — a switch, noted.

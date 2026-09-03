@@ -104,6 +104,11 @@ def main():
         if not sig or not sig.get("action"):
             continue
         p["actionable"] += 1
+        # Only the calls that MUST produce a record: entries, adds, full
+        # exits. PREPARE (loading) and trims are ignored by design (exit
+        # policy = ratchet), so their silence is expected, not a drop.
+        if sig.get("action") not in ("OPEN", "ADD", "CLOSE"):
+            continue
         sym = str(sig.get("symbol") or "").upper()
         # any verdict within 3 min naming the ticker or quoting the text?
         judged = False
