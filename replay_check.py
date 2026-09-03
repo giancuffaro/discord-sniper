@@ -95,17 +95,30 @@ def load(fn):
     return list(msgs.values()), dids
 
 
-def bridge_lines():
+def bridge_lines(day=None):
+    """9/3 CLEANUP FINDING — read trades.log, not bridge.log.
+
+    bridge.log is stdout: its lines carry HH:MM:SS and NO DATE, so matching
+    a 9:41 message against a 9:41 log line matched ACROSS DAYS — an 8/19
+    call could be "confirmed" by a 9/3 log line at the same clock time.
+    trades.log is the same stream written by note() with a full ISO
+    timestamp, and it goes back to 8/01. Same information, dated, and it
+    makes every historical answer honest. Returns "HH:MM:SS  text" lines
+    for `day` so callers keep their existing shape.
+    """
     out = []
     try:
-        with open(os.path.join(HERE, "bridge.log"), encoding="utf-8", errors="replace") as f:
+        with open(os.path.join(HERE, "trades.log"), encoding="utf-8",
+                  errors="replace") as f:
             for ln in f:
-                if re.match(r"^\d{2}:\d{2}:\d{2}  ", ln):
-                    out.append(ln.rstrip("\n"))
+                if len(ln) < 20 or ln[4] != "-" or "\t" not in ln:
+                    continue
+                if day and not ln.startswith(day):
+                    continue
+                out.append("%s  %s" % (ln[11:19], ln.split("\t", 1)[1].rstrip("\n")))
     except OSError:
         pass
     return out
-
 
 def strip_header(text):
     # "Author: " prefix the export adds, then the parser's own cleaners
@@ -171,7 +184,7 @@ def main():
         print("no DS Logs export found")
         return
     msgs, dids = load(fn)
-    blog = bridge_lines()
+    blog = bridge_lines(DAY)
     per = defaultdict(lambda: {"msgs": 0, "actionable": 0, "judged": 0, "silent": []})
     keep = [(t, room, cid, text) for (t, room, cid, text) in msgs
             if not any(room.startswith(x) for x in SKIP_ROOMS) and not text.startswith("🎙")]

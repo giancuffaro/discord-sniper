@@ -73,18 +73,30 @@ def load(fn, day):
     return list(msgs.values()), dids
 
 
-def bridge_lines():
+def bridge_lines(day=None):
+    """9/3 CLEANUP FINDING — read trades.log, not bridge.log.
+
+    bridge.log is stdout: its lines carry HH:MM:SS and NO DATE, so matching
+    a 9:41 message against a 9:41 log line matched ACROSS DAYS — an 8/19
+    call could be "confirmed" by a 9/3 log line at the same clock time.
+    trades.log is the same stream written by note() with a full ISO
+    timestamp, and it goes back to 8/01. Same information, dated, and it
+    makes every historical answer honest. Returns "HH:MM:SS  text" lines
+    for `day` so callers keep their existing shape.
+    """
     out = []
     try:
-        with open(os.path.join(HERE, "bridge.log"), encoding="utf-8",
+        with open(os.path.join(HERE, "trades.log"), encoding="utf-8",
                   errors="replace") as f:
             for ln in f:
-                if re.match(r"^\d{2}:\d{2}:\d{2}  ", ln):
-                    out.append(ln.rstrip("\n"))
+                if len(ln) < 20 or ln[4] != "-" or "\t" not in ln:
+                    continue
+                if day and not ln.startswith(day):
+                    continue
+                out.append("%s  %s" % (ln[11:19], ln.split("\t", 1)[1].rstrip("\n")))
     except OSError:
         pass
     return out
-
 
 def strip_header(text):
     return text.split(": ", 1)[1] if ": " in text[:60] else text
@@ -126,7 +138,6 @@ def main():
     days = [(day_of(f), f) for f in files]
     days = [(d, f) for d, f in days if d]
     days.sort()
-    blog = bridge_lines()
 
     rooms = defaultdict(lambda: {"days_spoke": set(), "msgs": 0, "traded": 0,
                                  "missed": [], "blind": [], "calls": 0})
@@ -135,6 +146,7 @@ def main():
 
     for day, fn in days:
         msgs, dids = load(fn, day)
+        blog = bridge_lines(day)
         keep = [m for m in msgs
                 if not any(m[1].startswith(x) for x in SKIP)
                 and not m[3].startswith("\U0001f399")]

@@ -4123,11 +4123,40 @@ def connect_broker(quiet=False):
         for _nm in list(logging.root.manager.loggerDict):
             if "webull" in _nm.lower():
                 logging.getLogger(_nm).setLevel(logging.WARNING)
+        # 9/3 CLEANUP: the sweeper only knew about webull_trade_sdk rotations,
+        # so everything else piled up unwatched — 187MB of dead logs by today
+        # (bridge.log.1/.2 75MB, announcer.log.1 45MB, webull_api rotations
+        # 32MB, the announcer's own SDK log 20MB). Every audit tool that
+        # scans a log got slower for it. Sweep EVERY rotated family, and
+        # retire a live log that has grown past LOG_MAX_MB by rotating it
+        # once to .old (never delete a live log — the day's story is in it).
         _cut = time.time() - 2 * 86400
+        _ROT = ("webull_trade_sdk.log.", "webull_api.log.2",
+                "bridge.log.", "announcer.log.", "webull_data_streaming_sdk.log.")
         for _fn in os.listdir(HERE):
-            if _fn.startswith("webull_trade_sdk.log.") \
-                    and os.path.getmtime(os.path.join(HERE, _fn)) < _cut:
-                os.remove(os.path.join(HERE, _fn))
+            try:
+                if not any(_fn.startswith(x) for x in _ROT):
+                    continue
+                _fp = os.path.join(HERE, _fn)
+                if os.path.isfile(_fp) and os.path.getmtime(_fp) < _cut:
+                    os.remove(_fp)
+                    note("LOGS     swept %s (rotated, older than 2 days)" % _fn)
+            except OSError:
+                pass
+        LOG_MAX_MB = 40
+        for _live in ("bridge.log", "announcer.log", "webull_api.log",
+                      "webull_api-announcer.log", "webull_data_streaming_sdk.log"):
+            try:
+                _fp = os.path.join(HERE, _live)
+                if os.path.isfile(_fp) and os.path.getsize(_fp) > LOG_MAX_MB * 1048576:
+                    _old = _fp + ".old"
+                    if os.path.exists(_old):
+                        os.remove(_old)
+                    os.rename(_fp, _old)
+                    note("LOGS     %s passed %dMB — rolled to .old, starting fresh"
+                         % (_live, LOG_MAX_MB))
+            except OSError:
+                pass
     except Exception:                                   # noqa: BLE001
         pass
 
