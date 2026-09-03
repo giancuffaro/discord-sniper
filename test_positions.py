@@ -721,12 +721,13 @@ stops_after = [c for c in RWB.calls if c[0] == "stop"]
 ok(len(stops_after) == len(stops_before) + 1,
    "the ratchet cancels the old resting stop and places exactly one new one")
 new_stop = stops_after[-1][3]
-# v3.5.0 TIERS (9/2): a $2+ fill arms at +10% with a +5% first lock and 5%
-# rungs, so +20% = +15% locked = a 2.30 stop (the old 10/10 rule said BE).
-# ANTI-CLIP (9/2): the $2+ tier would lock +15% at +20%, but the stop may
-# never sit closer than 40% of the gain -> locked = 60% of 20 = +12% -> 2.24.
-ok(abs(new_stop - 2.24) < 0.005,
-   "at +20%% a $2.00 fill locks +12%% (tier +15%%, anti-clip caps at 60%% of gain) — 2.24, got %s" % new_stop)
+# G'S LADDER, restored 9/3 in his words: "-10% to start; at +10% the stop
+# becomes 0%, next target 20%; at +20% the stop is +10%, next target +30%;
+# at +30% the stop is +20%, and so on." One ladder for every premium.
+# At +20% that locks +10% on a 2.00 fill -> a 2.20 stop. ANTI-CLIP (60% of
+# the gain = +12%) does not bind here, so his number stands.
+ok(abs(new_stop - 2.20) < 0.005,
+   "at +20%% a $2.00 fill locks +10%% (his ladder) — 2.20, got %s" % new_stop)
 ok(any(c[0] == "cancel" for c in RWB.calls),
    "the old stop order gets cancelled before the new one goes in")
 # Price keeps climbing to +30% — the stop should walk up again, to +10%.
@@ -734,8 +735,11 @@ rb.auto_ratchet(RKEY, 2.60)
 stops_30 = [c for c in RWB.calls if c[0] == "stop"]
 ok(len(stops_30) == len(stops_after) + 1,
    "a further rung places another new stop")
+# At +30% his ladder says lock +20% (a 2.40 stop) but ANTI-CLIP caps the
+# stop at 60% of the gain = +18% -> 2.36. This is the ONE place the two
+# rules disagree; anti-clip wins until G says otherwise (9/3).
 ok(abs(stops_30[-1][3] - 2.36) < 0.005,
-   "at +30%% anti-clip caps the lock at +18%% (60%% of 30) — a 2.36 stop, got %s" % stops_30[-1][3])
+   "at +30%% his ladder wants +20%% but anti-clip caps at +18%% (60%% of 30) — a 2.36 stop, got %s" % stops_30[-1][3])
 # Price dips back to +21% (still above the +20 rung, below the +30 rung) — the
 # already-locked +20% stop must NOT be loosened back down to +10%.
 rb.auto_ratchet(RKEY, 2.42)
