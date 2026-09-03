@@ -38,6 +38,39 @@ def newest_export():
     return fs[-1] if fs else None
 
 
+def export_for_day(day):
+    """9/3, G: run this for every past day. newest_export() always returns
+    the single most-recently-modified file no matter what DAY was asked
+    for — fine for "today" but silently wrong for anything historical
+    (it would filter the newest file for a date string that isn't in it
+    and report zero results). Resolve DAY to the actual export file:
+    first by filename ("signal-room-chat Aug-18-2026.txt" -> 2026-08-18),
+    falling back to scanning file contents for that date if the name
+    doesn't decode cleanly.
+    """
+    fs = sorted(glob.glob(os.path.join(HERE, "DS Logs", "signal-room-chat*.txt")))
+    for f in fs:
+        m = re.search(r"signal-room-chat (\w+-\d+-\d+)\.txt$", os.path.basename(f))
+        if not m:
+            continue
+        try:
+            from datetime import datetime
+            d = datetime.strptime(m.group(1), "%b-%d-%Y").date().isoformat()
+        except ValueError:
+            continue
+        if d == day:
+            return f
+    for f in fs:
+        try:
+            with open(f, encoding="utf-8", errors="replace") as fh:
+                for ln in fh:
+                    if ln.startswith(day + " "):
+                        return f
+        except OSError:
+            continue
+    return None
+
+
 def load(fn):
     msgs, dids = {}, []
     sec = None
