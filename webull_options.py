@@ -1296,6 +1296,17 @@ class WebullOptions:
         """Webull has renamed these endpoints between SDK versions, so they get
         hunted the same way the quote and balance endpoints already are. Returns
         (body, name) for the first call that answers, or (None, errors)."""
+        # _avoid (9/3 11:40 autopilot, the SPY 771P ghost): order_status()
+        # started passing _avoid=[...] at 10:53 but nothing here consumed
+        # it — it went straight into every SDK method as a kwarg, every
+        # one raised TypeError, and order_status answered "unknown" for
+        # EVERY order from the 10:56 restart on. The SPY 771P bid filled
+        # at 2.02 in 1s; the pullback stop then asked "did it fill?" four
+        # times, heard "unknown", declared "you own nothing here" — and
+        # the born-with stop sold a real position at 1.87 that the book
+        # never knew it held. Consume it HERE: skip any SDK method whose
+        # name contains one of these words (open/history/list/batch).
+        avoid = [str(a).lower() for a in (kw.pop("_avoid", None) or [])]
         errors = []
         holders = []
         for hn in holder_names:
@@ -1308,7 +1319,8 @@ class WebullOptions:
         # poll paid the same tax. Remember which method answered per
         # (holders, verbs, arg-count) and call that one first; only if it
         # fails does the full hunt run again.
-        ck = (tuple(holder_names), tuple(verbs), len(args), tuple(sorted(kw)))
+        ck = (tuple(holder_names), tuple(verbs), len(args), tuple(sorted(kw)),
+              tuple(avoid))
         cache = self.__dict__.setdefault("_tc_win", {})
         win = cache.get(ck)
         if win:
