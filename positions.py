@@ -2186,6 +2186,19 @@ class Book:
                     p["watching"] = True
                     threading.Thread(target=self._watchdog, args=(key,),
                                      daemon=True).start()
+        # SUBSCRIBE AT ARM TIME, not only from inside the watchdog loop
+        # (9/4). The watchdog is one thread that can return early — no occ,
+        # no stop, a broker that won't resolve — and when it does, the
+        # contract is never handed to the quote bus and nothing is ever
+        # taped for it. Subscribing here means the tape starts the moment
+        # the position is armed, independent of that thread's health.
+        try:
+            _b = getattr(self, "quotes", None)
+            _o = (self._pos.get(key) or {}).get("occ")
+            if _b is not None and _o:
+                _b.watch(_o)
+        except Exception:                               # noqa: BLE001
+            pass
         if self._sim(p):
             _pa = ((1 - stop_price / float(fill)) * 100
                    if float(fill or 0) > 0 else self.stop_pct)
@@ -2229,6 +2242,16 @@ class Book:
                     if bid is None and time.time() - _last_direct >= 2.0:
                         _last_direct = time.time()
                         _ask, bid, _row = wb.ask_bid(occ)
+                        # TAPE THE FALLBACK (9/4). When the bus has nothing
+                        # fresh, this direct quote is the ONLY price anyone
+                        # will ever see for this contract — and until today
+                        # it was thrown away, which is why 9/4 has no NVDA
+                        # ticks at all despite the ratchet moving four times
+                        # off these very quotes. Record it.
+                        try:
+                            _bus.tape(occ, bid, _ask)
+                        except Exception:               # noqa: BLE001
+                            pass
                 else:
                     _ask, bid, _row = wb.ask_bid(occ)
             except Exception:                           # noqa: BLE001

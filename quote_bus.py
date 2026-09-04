@@ -176,6 +176,16 @@ class QuoteBus:
         self.sweeps = 0
         self.last_sweep_ms = 0.0
         self._tape = None                  # path of option_tape.csv (record_to)
+        # BLIND-WATCH DETECTOR (9/4). On 9/4 the bus taped XLF every second
+        # for forty minutes and recorded NOT ONE tick of NVDA 235C or INTC
+        # 94C — the two contracts the bot actually traded that morning. It
+        # was watching them and the sweep kept coming back without them, and
+        # nothing anywhere said so, because a missing row is silent. Count
+        # the sweeps a watched contract comes back empty and say it out loud
+        # once. option_tape.csv is the only option price history that exists;
+        # a hole in it is not allowed to be quiet.
+        self._misses = {}                  # occ -> consecutive empty sweeps
+        self._miss_told = set()
 
     # ---- option tape (9/2, HANDOFF-OPTION-DATA) -------------------------
     def record_to(self, path):
@@ -190,6 +200,19 @@ class QuoteBus:
                     f.write("ts,occ,bid,ask\n")
         except Exception:                                # noqa: BLE001
             self._tape = None
+
+    def tape(self, occ, bid, ask, now=None):
+        """Record a quote this bus did NOT fetch itself (9/4).
+
+        The watchdog falls back to a direct ask_bid() whenever the bus has
+        nothing fresh — which is exactly the case where the tape has a hole,
+        because the sweep is what writes it. So the fallback writes its own
+        quote here. The managed contract then has a price record no matter
+        which path produced the price, which is the whole point of the tape.
+        """
+        if bid is None and ask is None:
+            return
+        self._tape_write([(str(occ), bid, ask)], now or time.time())
 
     def _tape_write(self, rows, now):
         if not self._tape or not rows:
@@ -312,6 +335,27 @@ class QuoteBus:
                 tape_rows.append((str(occ), bid, ask))
         self.sweeps += 1
         self._tape_write(tape_rows, now)
+        # BLIND-WATCH DETECTOR (9/4) — see __init__. Anything we ASKED for
+        # and did not get back is counted; at 30 straight misses (~30s) it
+        # says so once, by name. Getting it back resets the count, so a
+        # single dropped sweep never cries wolf.
+        try:
+            _got = set(str(k) for k in got)
+            for _o in occs:
+                if _o in _got:
+                    self._misses.pop(_o, None)
+                    self._miss_told.discard(_o)
+                    continue
+                n = self._misses.get(_o, 0) + 1
+                self._misses[_o] = n
+                if n >= 30 and _o not in self._miss_told:
+                    self._miss_told.add(_o)
+                    self._log("QUOTE BUS BLIND on %s — asked for it in %d "
+                              "straight sweeps and Webull returned no row. "
+                              "Nothing is being taped for that contract; the "
+                              "watchdog is running on direct quotes." % (_o, n))
+        except Exception:                                # noqa: BLE001
+            pass
         self._recover()
 
     def _on_429(self):
