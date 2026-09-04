@@ -1,7 +1,17 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-03 18:05 (ran the missed-entry scan retroactively
+Last updated: 2026-09-04 10:30 — **SWING TRADES ARE PAUSED** (G's call, right
+after the INTC 96C 9/18). A call for a contract 14+ days out, or one a room
+labels a swing, is now REFUSED at the entry gate in bridge.py `_place_impl`
+("SWING-OFF ... refused"). Nothing is sent; scalps trade normally; positions
+already held are untouched and keep their stops. Switch: `swings_paused` in
+settings.json, toggled from the popup's Strategies tab (extension 3.5.17 —
+RELOAD IT), reported in /mode so the state is never a guess.
+Also today: the bracket stop born WITH the entry now gets clamped under the
+live bid (INTC 94C's 0.86 stop filled 308ms after the buy because the bid was
+already 0.83). Prior:
+(2026-09-03 18:05 — ran the missed-entry scan retroactively
 across every day since the bot went live — 4 more historical RWGates
 misses found, see bottom section). Prior: G: "can we add this kind of
 scan for missed entrys after every signal? we need to be catching these"
