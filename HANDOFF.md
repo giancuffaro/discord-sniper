@@ -1,7 +1,17 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-04 10:30 — **SWING TRADES ARE PAUSED** (G's call, right
+Last updated: 2026-09-04 16:55 — DAILY CLOSE-OUT run (see bottom section
+"9/4 16:55" for the full writeup). Account flat overnight, no open positions.
+Bot day -$34, Gian +$154, combined +$120 broker-verified. One real, unfixed
+gap found: two of Gian's fast SPY scalps (770P, 769P) never reached
+days/2026-09-04.json despite postdating today's 10:30 DATA RULE fix — flagged,
+not fixed (root cause unconfirmed). Everything else that looked wrong today
+(INTC 94C -$12 born-stop, the ratchet's refused breakeven move) was already
+diagnosed and fixed earlier in today's own 10:20 session, before this
+close-out ran. ENTRIES ONLY gate verified solid: 96 room exits logged
+"ignored" today, zero traded. 0 silent drops, 0 missed entries on replay.
+Prior: Last updated: 2026-09-04 10:30 — **SWING TRADES ARE PAUSED** (G's call, right
 after the INTC 96C 9/18). A call for a contract 14+ days out, or one a room
 labels a swing, is now REFUSED at the entry gate in bridge.py `_place_impl`
 ("SWING-OFF ... refused"). Nothing is sent; scalps trade normally; positions
@@ -530,6 +540,80 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
    types SNIPER into the popup's NinjaTrader field.
 6. Topstep XFA: locked/paused — unlock in TopstepX Risk Settings (-$680
    pre-existing on it).
+
+## 9/4 16:55 — DAILY CLOSE-OUT + FIX (automated, Friday EOW run)
+Account flat as of 16:36 (get_account_positions = []) — no open positions,
+nothing to guard overnight. Announcer confirmed PAUSED (announcer.stop="stop",
+G's 8/31 standing call) — announcer.log/seen.json/push-subscribed checks
+skipped per standing instruction.
+
+**Broker truth (11 round trips, order history via Webull connector,
+account ENIQGUV4LUTT3JSAA9NKLDDU19):**
+- Bot (1-lot LIMIT+bracket entries, incl. swings): NVDA 235C x2 entries
+  (KingBeeAri +$10, Mr M Trades 🤖 +$10 — both ratchet-managed, +10% rung
+  locked and stopped out clean, textbook); INTC 94C (ZTRADEZ BOT, -$12 —
+  the born-already-triggered stop bug from this morning's 10:20 fix, this
+  trade predates the fix, nothing new to do); INTC 96C 9/18 swing (TB22,
+  -$10, Gian hand-closed — the exact trade that triggered today's 10:30
+  swing pause); XLF 58C 10/16 swing (Vero, carried from 9/3 @1.58,
+  Gian hand-closed today at 1.26, -$32, well clear of its 1.18 resting
+  stop which never fired). **Bot day: -$34.**
+- Gian (multi-lot MARKET scalps): SPY 773P +$6, SPY 770P -$24, SPY 769P
+  +$40, QQQ 722.5C -$14, SPY 768C +$56, QQQ 719P +$90. **Gian day: +$154.**
+- **Combined: +$120**, all realized, account flat.
+
+**Real finding, NOT fixed (flagged for G/next session):** SPY 770P (11:40,
+45-sec round trip) and SPY 769P (11:44-11:48, this is literally the
+5-lot example the 10:30 SOURCE-OF-TRUTH note in this file describes) never
+reached days/2026-09-04.json — NOT booked $0, entirely ABSENT — despite
+closing well after today's 10:30 DATA RULE fix that was supposed to make
+live-trade recording unconditional. SPY 768C and QQQ 719P (also Gian,
+also after 10:30) recorded correctly, so the fix mostly works. Best guess,
+unconfirmed: `adopt()` in positions.py dedupes by symbol only (`have` set
+keyed on `p.get("symbol")`, no strike — see the "Keyed under an UNKNOWN
+owner" docstring) and only sees the broker on its own periodic sweep; a
+45-second hand round trip can open and close between two sweeps and never
+get adopted at all, so reconcile_gone never has anything to finish. Not
+fixed today — root cause unconfirmed and this touches live adoption/
+reconcile code, too risky to guess at unattended. journal-2026-09-04.xlsx
+carries the correct broker numbers regardless (broker truth, not the
+ledger, is what the journal is built from).
+Also true-up gave up after its 3-minute retry window on 3 trades today
+(INTC 94C, XLF, INTC 96C swing) during/after the 09:48-09:52 rate-limit
+burst (76 broker errors per POSTCHECK) — same shape as 9/3's IBIT 429
+storm watch item, still open, still not fixed (low-risk/no-cost so far,
+noted again).
+
+**ENTRIES ONLY verified solid:** 96 room exits logged "ignored — entries
+only" today (extension-side, DS Logs export) and 0 EXIT-IGNORED lines in
+trades.log (no room exit even reached the bridge to need the second gate)
+— zero traded. Both gates checked in code and intact: bridge.py do_POST's
+EXIT-IGNORED check (order.get("source") not in pullback/under-stop) and
+background.js's pre-sig.fire TRIM/STOPMOVE/CLOSE gate. settings.json has
+no execution.exit_policy key at all (defaults to entries_only, never
+"full"). Notable ignored exits today: ZTRADEZ BOT's INTC trims (12:52/
+12:55, on a position the bot's own stop had already closed hours earlier),
+TB22's INTC 96C partials (15:49-15:57, after Gian's hand-close AND after
+the 10:30 swing pause — correctly refused twice more as SWING-OFF too).
+
+replay_check.py: 0 silent drops, 0 possible missed entries. scoreboard.py 10:
+66 rooms heard from, 3 silent configured (unchanged). SCOREBOARD.html
+regenerated. Options Insider still silent (deathwatch continues, cancel-by
+9/11). No Chrome DISCARDED/out-of-memory lines today. /stream unreachable
+from this sandbox (localhost isn't the user's machine here) — not treated
+as a bug, note for G to eyeball the popup Monday.
+
+Deliverables written: Webull_Orders_2026-09-04_auto.csv (27 order legs),
+journal-2026-09-04.xlsx (11 trades + By Trader, house format, LibreOffice-
+recalculated), trader-scoreboard.xlsx appended (5 new rows in "Every trade",
+Scoreboard sheet fully recomputed from all days, pre-8/19 caveat note and
+every dated footnote preserved intact).
+
+**Friday/weekend note for G:** account is flat, nothing resting overnight,
+swings are paused so nothing new can be opened as a multi-day carry before
+Monday. The two missing-ledger-row trades above are a paper-trail gap only
+(no money at risk, no wrong trade) — safe to leave for a proper look
+Monday rather than a rushed weekend fix.
 
 ## Subscriptions (audited 8/28 from Whop billing + G)
 Whop, card ****4000, ~17.5% tax on top of sticker:

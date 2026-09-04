@@ -1,7 +1,145 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-03 18:05 (ran the missed-entry scan retroactively
+Last updated: 2026-09-04 16:55 — DAILY CLOSE-OUT run (see bottom section
+"9/4 16:55" for the full writeup). Account flat overnight, no open positions.
+Bot day -$34, Gian +$154, combined +$120 broker-verified. One real, unfixed
+gap found: two of Gian's fast SPY scalps (770P, 769P) never reached
+days/2026-09-04.json despite postdating today's 10:30 DATA RULE fix — flagged,
+not fixed (root cause unconfirmed). Everything else that looked wrong today
+(INTC 94C -$12 born-stop, the ratchet's refused breakeven move) was already
+diagnosed and fixed earlier in today's own 10:20 session, before this
+close-out ran. ENTRIES ONLY gate verified solid: 96 room exits logged
+"ignored" today, zero traded. 0 silent drops, 0 missed entries on replay.
+Prior: Last updated: 2026-09-04 10:30 — **SWING TRADES ARE PAUSED** (G's call, right
+after the INTC 96C 9/18). A call for a contract 14+ days out, or one a room
+labels a swing, is now REFUSED at the entry gate in bridge.py `_place_impl`
+("SWING-OFF ... refused"). Nothing is sent; scalps trade normally; positions
+already held are untouched and keep their stops. Switch: `swings_paused` in
+settings.json, toggled from the popup's Strategies tab (extension 3.5.17 —
+RELOAD IT), reported in /mode so the state is never a guess.
+**THE DATA RULE (9/4, G: "i want to get more weeks data off of trades").**
+Webull's API has NO historical option prices, so anything not recorded as it
+happens is gone forever. Two holes were found and closed:
+- **option_tape.csv had no ticks for the contracts we traded.** 9/4 recorded
+  2,284 ticks of XLF (G's own hand position, rendered by /positions) and ZERO
+  for NVDA 235C and INTC 94C. Two silent failures stacked: the batched sweep
+  kept returning without them, and the watchdog's direct-quote fallback threw
+  its quote away instead of taping it. Now: the bus `tape()`s the fallback
+  quote, positions subscribe at ARM time (not only from inside the watchdog
+  thread, which can return early), and the bus SAYS "QUOTE BUS BLIND on <occ>"
+  after 30 empty sweeps. Locked by `test_tape.py`.
+- **Live trades were never written to the day book at all.** The whole
+  closed-trade row sat inside `if not p_live`, so only PRETEND trades were
+  recorded — 26 day files hold 2 rows between them while trades.log shows 125
+  fills. The wallet maths is still gated (a live trade never moves the pretend
+  cash); only the RECORD is unconditional now, tagged `live`.
+- The row now carries the SHAPE of the trade, not just its ends:
+  `max_runup_pct`, `max_drawdown_pct`, occ, side, strike, expiry, dte, swing,
+  `stop_at_exit`, why, state, live. Run-up/drawdown were already tracked in
+  memory by `_mark_excursion` since 8/19 and thrown away at close. They are
+  the only way to ever answer "how far did a WINNER go against me first",
+  which is the question every breathing-room rule depends on.
+**TASTYTRADE IS OAUTH NOW — HIS PASSWORD IS NEVER ASKED FOR (9/4).** The old
+username+password `/sessions` flow is fallback only. Current path: he makes an
+OAuth application at my.tastytrade.com -> Manage -> API Access -> OAuth
+Applications (callback `http://localhost:8000`, SAVE THE CLIENT SECRET, shown
+once), then Manage -> Create Grant for a REFRESH TOKEN. Those two strings go
+in settings.json; `_session()` POSTs them to `/oauth/token` for a **15-minute**
+access token (not 24h — it refreshes on a 60s margin) and sends it as
+`Bearer`, while the legacy token is still sent raw. Refresh tokens never
+expire and can be revoked without changing his password. `SETUP TASTYTRADE.bat`
++ `setup_tastytrade.py` rewritten to match; `test_brokers.py` pins BOTH auth
+header shapes. **Claude never types his password or pastes his secrets — he
+does that himself, in his own browser and his own terminal.**
+
+**THE SOURCE-OF-TRUTH RULE (9/4, after getting it wrong twice in one hour).**
+
+    positions -> ask the ACCOUNT
+    prices    -> ask the ORDER HISTORY
+    reasoning -> read the logs
+    ...and NEVER substitute one for another.
+
+What happened: Claude told G he was holding a 5-lot SPY position. He wasn't —
+it had closed an hour earlier. The claim came from a log line that was TRUE
+when written and FALSE when read: `11:44:59 ADOPT left SPY x5 alone`. **A log
+is a narrative in the past tense. It is not a statement of state.** Same class
+of error as the bot saying "you closed it yourself" when its own stop fired.
+Then, compounding it, Claude saw `ADOPTED x2` + `ADOPTED x3`, decided 2+3=5,
+and accused the adopt code of inventing the position. The order history said
+otherwise: a REAL 5-lot SPY 769P, bought 11:44:30 @ 0.46, sold 11:48:49 @
+0.54, +$40. **The code was right.** A tidy theory beat a ten-second check.
+Before any claim about what he holds: `now.py` / `WHAT DO I HOLD.bat`, or the
+Webull connector's get_account_positions + get_order_history. Never the log.
+TODO after the close: `webull_options` has no `order_history()`, so section 4
+of now.py is a stub — add it.
+
+**GREEKS ARE LIVE AND RECORDING (9/4 12:05).** G funded tastytrade; the token
+flipped from `level: demo` on `/delayed` to **`level: api` on `/realtime`**
+within minutes. `GREEKS on` at bridge start. Real numbers flowing, e.g. INTC
+9/18 96C: delta 0.4798, gamma 0.0377, theta -0.1486, vega 0.0745, IV 0.5658.
+- **`dxlink.py` is STDLIB ONLY — no pip install, on purpose.** A ~150-line
+  RFC 6455 client (socket+ssl+struct+base64+hashlib). The obvious
+  `pip install websockets` is exactly what broke the SDK pins on 9/2 and
+  `FIX SDK DEPS.bat` exists to undo. Nothing here can move a pin.
+- **The DXLink handshake is SEQUENTIAL, not a burst.** Firing SETUP, AUTH,
+  CHANNEL_REQUEST and FEED_SETUP back-to-back gets `AUTH step missing`
+  forever while the socket stays happily connected — a silent no-data
+  failure. Each step waits for its confirmation (`_await`).
+- **Delayed data is REFUSED, not used.** `live_level()` checks the token; a
+  demo/delayed feed stands down with a one-line explanation rather than
+  serving stale gamma that looks live.
+- Wiring: greeks are a DATA feed only — `execution.broker` is untouched and
+  **Webull still places every order.** Positions subscribe at arm time, and
+  `_greeks_sync` in bridge.py mirrors the quote bus every 2s to cover
+  restored/adopted ones. Output: `greeks_tape.csv`, plus `greeks_in` and
+  `greeks_out` on every closed-trade row (entry greeks stamped by the
+  watchdog within the first 60s only — after that they are not "entry"
+  greeks and calling them that would be a lie).
+- NOTE: the position dict field is **`sent_at`**, not `opened_at`. Two of
+  today's edits assumed `opened_at` and were silently falling back to
+  `time.time()`.
+PRIOR STATE, kept for the record —
+**TASTYTRADE WAS CONNECTED BUT DELAYED (9/4 11:38).** G created the OAuth client and ran the setup; the adapter
+authenticates, lists the account, reads balances and positions. Then the live
+checklist against the REAL server:
+```
+ ok   login / accounts / balances / positions / greeks stream token
+ FAIL stock quote        GET /market-data/by-type -> HTTP 403
+ ??   OTOCO entry        still unverified — prove it in cert
+```
+DXLink was driven by hand end to end (SETUP -> AUTH -> CHANNEL_REQUEST ->
+FEED_SUBSCRIPTION) and real greeks arrived for `.SPY260918C660`:
+delta 0.9868, gamma 0.000629, theta -0.0646, vega 0.051, IV 0.356. **The
+plumbing works.** BUT the token comes back `level: demo` and the URL is
+`wss://tasty-demo-dxlink-md-ws.dxfeed.com/**delayed**`. Delayed greeks are
+worthless for a 0DTE ratchet and dangerous if mistaken for live.
+CAUSE: the account is UNFUNDED (buying power 0.0), so it has no market-data
+entitlement — which is also why the REST quote 403s. UNBLOCKING IT IS HIS AND
+ONLY HIS: fund the account, accept the market-data agreements. Until the token
+comes back at a live level, **nothing may consume this feed for a trading
+decision**; treat it as plumbing that is ready, not as data.
+Account id is in settings.json (gitignored) — it does not belong in this file.
+
+NEXT, and it needs G: greeks. tastytrade STREAMS them over DXLink (delta,
+gamma, theta, vega, rho, IV, theo — per tick). Tradier's come from ORATS on
+the REST chains endpoint with `greeks=true`, refresh rate undocumented —
+MEASURE it off `greeks.updated_at` before trusting it. Plan is tastytrade as
+a DATA feed with Webull still executing; no rule changes until weeks of
+greeks-tagged trades exist.
+
+Also today, two more:
+- **1-STRIKE-OTM IS NOW 0/1DTE ONLY** (G, 9/4). It exists because a far-OTM
+  strike expiring TODAY is a lottery ticket. From 2 SESSIONS out (sessions,
+  not calendar days — a Friday's next expiry is Monday) the room's own strike
+  stands. TB22 called a 9/18 100C at $2.41; this rule bought a 96C at $4.05,
+  68% more money at a different delta, so his call ran +10% while ours sat
+  at -4%. `_no_otm_translate` in bridge.py returns early now.
+- The bracket stop born WITH the entry now gets clamped under the live bid
+  (INTC 94C's 0.86 stop filled 308ms after the buy because the bid was
+  already 0.83).
+Prior:
+(2026-09-03 18:05 — ran the missed-entry scan retroactively
 across every day since the bot went live — 4 more historical RWGates
 misses found, see bottom section). Prior: G: "can we add this kind of
 scan for missed entrys after every signal? we need to be catching these"
@@ -402,6 +540,80 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
    types SNIPER into the popup's NinjaTrader field.
 6. Topstep XFA: locked/paused — unlock in TopstepX Risk Settings (-$680
    pre-existing on it).
+
+## 9/4 16:55 — DAILY CLOSE-OUT + FIX (automated, Friday EOW run)
+Account flat as of 16:36 (get_account_positions = []) — no open positions,
+nothing to guard overnight. Announcer confirmed PAUSED (announcer.stop="stop",
+G's 8/31 standing call) — announcer.log/seen.json/push-subscribed checks
+skipped per standing instruction.
+
+**Broker truth (11 round trips, order history via Webull connector,
+account ENIQGUV4LUTT3JSAA9NKLDDU19):**
+- Bot (1-lot LIMIT+bracket entries, incl. swings): NVDA 235C x2 entries
+  (KingBeeAri +$10, Mr M Trades 🤖 +$10 — both ratchet-managed, +10% rung
+  locked and stopped out clean, textbook); INTC 94C (ZTRADEZ BOT, -$12 —
+  the born-already-triggered stop bug from this morning's 10:20 fix, this
+  trade predates the fix, nothing new to do); INTC 96C 9/18 swing (TB22,
+  -$10, Gian hand-closed — the exact trade that triggered today's 10:30
+  swing pause); XLF 58C 10/16 swing (Vero, carried from 9/3 @1.58,
+  Gian hand-closed today at 1.26, -$32, well clear of its 1.18 resting
+  stop which never fired). **Bot day: -$34.**
+- Gian (multi-lot MARKET scalps): SPY 773P +$6, SPY 770P -$24, SPY 769P
+  +$40, QQQ 722.5C -$14, SPY 768C +$56, QQQ 719P +$90. **Gian day: +$154.**
+- **Combined: +$120**, all realized, account flat.
+
+**Real finding, NOT fixed (flagged for G/next session):** SPY 770P (11:40,
+45-sec round trip) and SPY 769P (11:44-11:48, this is literally the
+5-lot example the 10:30 SOURCE-OF-TRUTH note in this file describes) never
+reached days/2026-09-04.json — NOT booked $0, entirely ABSENT — despite
+closing well after today's 10:30 DATA RULE fix that was supposed to make
+live-trade recording unconditional. SPY 768C and QQQ 719P (also Gian,
+also after 10:30) recorded correctly, so the fix mostly works. Best guess,
+unconfirmed: `adopt()` in positions.py dedupes by symbol only (`have` set
+keyed on `p.get("symbol")`, no strike — see the "Keyed under an UNKNOWN
+owner" docstring) and only sees the broker on its own periodic sweep; a
+45-second hand round trip can open and close between two sweeps and never
+get adopted at all, so reconcile_gone never has anything to finish. Not
+fixed today — root cause unconfirmed and this touches live adoption/
+reconcile code, too risky to guess at unattended. journal-2026-09-04.xlsx
+carries the correct broker numbers regardless (broker truth, not the
+ledger, is what the journal is built from).
+Also true-up gave up after its 3-minute retry window on 3 trades today
+(INTC 94C, XLF, INTC 96C swing) during/after the 09:48-09:52 rate-limit
+burst (76 broker errors per POSTCHECK) — same shape as 9/3's IBIT 429
+storm watch item, still open, still not fixed (low-risk/no-cost so far,
+noted again).
+
+**ENTRIES ONLY verified solid:** 96 room exits logged "ignored — entries
+only" today (extension-side, DS Logs export) and 0 EXIT-IGNORED lines in
+trades.log (no room exit even reached the bridge to need the second gate)
+— zero traded. Both gates checked in code and intact: bridge.py do_POST's
+EXIT-IGNORED check (order.get("source") not in pullback/under-stop) and
+background.js's pre-sig.fire TRIM/STOPMOVE/CLOSE gate. settings.json has
+no execution.exit_policy key at all (defaults to entries_only, never
+"full"). Notable ignored exits today: ZTRADEZ BOT's INTC trims (12:52/
+12:55, on a position the bot's own stop had already closed hours earlier),
+TB22's INTC 96C partials (15:49-15:57, after Gian's hand-close AND after
+the 10:30 swing pause — correctly refused twice more as SWING-OFF too).
+
+replay_check.py: 0 silent drops, 0 possible missed entries. scoreboard.py 10:
+66 rooms heard from, 3 silent configured (unchanged). SCOREBOARD.html
+regenerated. Options Insider still silent (deathwatch continues, cancel-by
+9/11). No Chrome DISCARDED/out-of-memory lines today. /stream unreachable
+from this sandbox (localhost isn't the user's machine here) — not treated
+as a bug, note for G to eyeball the popup Monday.
+
+Deliverables written: Webull_Orders_2026-09-04_auto.csv (27 order legs),
+journal-2026-09-04.xlsx (11 trades + By Trader, house format, LibreOffice-
+recalculated), trader-scoreboard.xlsx appended (5 new rows in "Every trade",
+Scoreboard sheet fully recomputed from all days, pre-8/19 caveat note and
+every dated footnote preserved intact).
+
+**Friday/weekend note for G:** account is flat, nothing resting overnight,
+swings are paused so nothing new can be opened as a multi-day carry before
+Monday. The two missing-ledger-row trades above are a paper-trail gap only
+(no money at risk, no wrong trade) — safe to leave for a proper look
+Monday rather than a rushed weekend fix.
 
 ## Subscriptions (audited 8/28 from Whop billing + G)
 Whop, card ****4000, ~17.5% tax on top of sticker:
