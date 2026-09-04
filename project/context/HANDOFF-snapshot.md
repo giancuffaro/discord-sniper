@@ -1106,3 +1106,15 @@ The LIVE client construction is pluggable and **opt-in**: unless `execution.brok
 3. If a shape differs from the canned one, fix the adapter and pin it in test_brokers.py.
 4. Only then flip `broker` and route ONE room.
 Suite: test_brokers all green, test_positions 0 failures, others pre-existing. Bridge restarted on Webull.
+
+## 9/3 22:00 — tastytrade account is ready; setup tool built (password-safe)
+G: "tastytrade is ready, what do you need from me? tradier they're waiting to approve my account."
+**Nothing sensitive is needed from him.** New `setup_tastytrade.py` + **`SETUP TASTYTRADE.bat`**: he types his username and password INTO HIS OWN WINDOW (`getpass`, no echo), it logs in exactly once, trades the password for a **remember token**, and writes only `username` + `remember_token` + `account_id` into settings.json. **The password is never saved, never logged, never leaves the machine** except in that one login request, and the code explicitly `pop`s any lingering `password` key. The remember token can be revoked from his tastytrade account without changing the password.
+It then lists accounts (picks automatically if there's one), saves the choice, and runs the read-only `verify()` checklist. It **places nothing** and **deliberately leaves `execution.broker` alone** — the machine keeps trading Webull until he decides otherwise.
+**Proven end-to-end against the fake server before he ever runs it**: login → remember-token captured → accounts listed → verify's six checks all report. Full dry run passed.
+### Notes that matter when he runs it
+- **tastytrade's cert/sandbox environment needs its OWN separate credentials** — a live login will NOT work against api.cert.tastyworks.com. So `sandbox` defaults to false and verify runs against live; every check in it is read-only, so that is safe.
+- The account needs options approval and funding before balances/positions look like anything.
+- What he sends back is the checklist text, which contains **no secrets** — account number and buying power only.
+### Tradier
+Waiting on their approval. Its adapter is already written and fake-server tested; when the token arrives it's the same shape of job, and a matching `SETUP TRADIER.bat` can be written in minutes (Tradier is simpler — a plain access token, no password involved).

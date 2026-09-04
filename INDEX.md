@@ -20,6 +20,7 @@ was archived.
 | `EXTRAS.bat` | Keys, log tail, odd jobs. |
 | `FIX SDK DEPS.bat` | Repairs the bridge's Python packages if the Webull SDK pins break. |
 | `MAKE DESKTOP ICON.bat` | Desktop / taskbar shortcut for START HERE. |
+| `SETUP TASTYTRADE.bat` | Connects tastytrade read-only. Password typed in that window, traded for a token, never saved. Places no orders, does not switch the bot off Webull. |
 | `SEND CHANGES TO GITHUB.bat` | Manual push. (AUTO PUSH already sweeps every 45s.) |
 
 Emergency brake: create a file named `STOP` (or `STOP.txt`). The bridge stays
