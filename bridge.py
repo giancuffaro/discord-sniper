@@ -2894,6 +2894,16 @@ class Handler(BaseHTTPRequestHandler):
                 # never a guess — a silent gate that refuses trades is the
                 # kind of thing that has to be VISIBLE.
                 "swings_paused": bool(CFG.get("swings_paused")),
+                # GREEKS FEED HEALTH (9/4). tastytrade silently drops an
+                # account back to DELAYED data if it ever goes unfunded, and
+                # a feed that quietly went stale is the same class of lie as
+                # the announcer being off and nobody knowing. Surface it:
+                # live True/False, the level tastytrade reports, and whether
+                # events are actually arriving.
+                "greeks": (GREEKS.status() if GREEKS is not None
+                           else {"connected": False, "live": False,
+                                 "level": None, "watching": 0,
+                                 "with_greeks": 0, "events": 0}),
                 "restart_check": (lambda _he=(BOOK.restart_exposure()
                                               if BOOK is not None
                                               else ([], []))
