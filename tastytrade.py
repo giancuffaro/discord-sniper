@@ -24,12 +24,24 @@ WHY TASTYTRADE IS WORTH A SECOND ADAPTER
   * **OTOCO on options is supported** (confirmed in their docs and SDK), so
     the round-number conditional entry has a real home here too.
 
-CREDENTIALS — READ THIS
-tastytrade authenticates with your ACCOUNT LOGIN, not an API key: it exchanges
-username+password for a session token. That password lives in settings.json,
-which is gitignored and must never be committed or pasted anywhere. G enters
-it himself. `remember_token` is preferred once obtained — it avoids keeping
-the password on disk at all.
+CREDENTIALS — OAUTH, NO PASSWORD (rewritten 9/4/26)
+tastytrade has moved to OAuth, and it is strictly better for us: **G's password
+is never typed into this program, never stored, and never seen by anyone.**
+
+He does two things once, in his own browser, signed into his own account:
+  1. my.tastytrade.com -> Manage -> API Access -> OAuth Applications ->
+     create one, tick the scopes, callback http://localhost:8000.
+     SAVE THE CLIENT SECRET — it is shown once.
+  2. On that application: Manage -> Create Grant -> SAVE THE REFRESH TOKEN.
+
+Those two strings go in settings.json (gitignored, never committed). From then
+on this class POSTs them to /oauth/token for a 15-minute access token and
+refreshes itself. Refresh tokens do not expire, so this is a one-time setup,
+and a leaked refresh token can be revoked from his account without touching
+his password.
+
+The old username+password /sessions flow is kept ONLY as a fallback for an
+account that still allows it; nothing new should use it.
 """
 import json
 import threading
