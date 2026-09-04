@@ -17,6 +17,7 @@ was archived.
 | `🎯 START HERE.bat` | The one button. Pulls latest code, closes Chrome, reopens all 26 rooms, starts the bridge keep-alive, AUTO PUSH, and the announcer. |
 | `RESTART BRIDGE.bat` | Restart onto new code by hand. (The bridge also restarts itself on a safe window, or instantly on a non-empty `bridge.restart` file.) |
 | `ANNOUNCER.bat` / `STOP ANNOUNCER.bat` | Fill announcer on / off. **Currently paused on purpose.** |
+| `WHAT DO I HOLD.bat` | **"What is true RIGHT NOW."** Positions and resting orders straight from Webull, then the bot's book, then the feeds — and it says plainly that when the book and the account disagree, the account wins. Read-only. |
 | `EXTRAS.bat` | Keys, log tail, odd jobs. |
 | `FIX SDK DEPS.bat` | Repairs the bridge's Python packages if the Webull SDK pins break. |
 | `MAKE DESKTOP ICON.bat` | Desktop / taskbar shortcut for START HERE. |
@@ -51,6 +52,7 @@ down until you delete it.
 
 | File | Answers |
 |---|---|
+| `now.py` | Behind WHAT DO I HOLD.bat. Exists because a log line was read as current state (9/4 SPY x5) — logs are past tense, the account is the present. |
 | `replay_check.py` | "What did we miss TODAY?" Replays the day's real messages, flags silent drops and possible missed entries. |
 | `audit_history.py` | "What have we missed EVER, and why was a room quiet?" → `ALERT-AUDIT.html` |
 | `scoreboard.py` | Per-room signal/trade scoreboard → `SCOREBOARD.html` |
