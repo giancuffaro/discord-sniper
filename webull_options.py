@@ -2054,6 +2054,36 @@ class WebullOptions:
                 # or the book carries a stop that doesn't exist (8/25 SLV: the
                 # log said "stop 2.51 born with it", the resting leg was 2.50).
                 stop_born = stop_below(limit, bracket_stop_pct, symbol)
+                # UNDER THE BID, NOT JUST UNDER THE FILL (9/4, INTC 94C).
+                # place_stop() has clamped stops under the live market since
+                # 9/1 — but the BRACKET leg born with the entry never saw
+                # that clamp, and it is the one that rests on almost every
+                # trade. INTC bought at the caller's 0.95 into a market whose
+                # BID was already ~0.83; the -10%-of-fill stop at 0.86 was
+                # therefore ABOVE the bid, i.e. already triggered, and Webull
+                # filled it at 0.83 **308 milliseconds after the buy filled**
+                # — a guaranteed -$12 with no trade in between. A stop is
+                # only a stop if it sits below where the thing can be sold.
+                # Clamp one tick under the live bid. This can only ever
+                # TIGHTEN the stop's distance from the fill, never widen it.
+                try:
+                    _a, _b, _ = self.ask_bid(occ)
+                    _mkt = _b if (_b and float(_b) > 0) else None
+                    if _mkt and float(_mkt) > 0:
+                        _ceil = round(float(_mkt) - tick_step(float(_mkt), symbol), 2)
+                        if _ceil >= 0.01 and stop_born >= _ceil:
+                            _was = stop_born
+                            stop_born = max(0.01, float(tick_round(_ceil, symbol)))
+                            print("[webull] STOP-BORN %s — the bid is %.2f, "
+                                  "so a %.2f stop was already triggered at "
+                                  "birth; resting it at %.2f instead (wide "
+                                  "spread on the entry)"
+                                  % (symbol, float(_mkt), _was, stop_born),
+                                  flush=True)
+                except Refused:
+                    pass
+                except Exception:                       # noqa: BLE001
+                    pass
                 slim = max(0.01, round(stop_born * 0.90, 2))
 
                 def _combo_try(child_type):
