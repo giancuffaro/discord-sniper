@@ -172,7 +172,11 @@ def _tradier_factory(cfg, **kw):
 def _tastytrade_factory(cfg, **kw):
     from tastytrade import TastytradeOptions
     t = (cfg.get("execution") or {}).get("tastytrade") or {}
-    return TastytradeOptions(username=t.get("username"),
+    # OAuth first (9/4): client_secret + refresh_token. username/password is
+    # only still passed so an older settings.json keeps working.
+    return TastytradeOptions(client_secret=t.get("client_secret"),
+                             refresh_token=t.get("refresh_token"),
+                             username=t.get("username"),
                              password=t.get("password"),
                              remember_token=t.get("remember_token"),
                              account_id=t.get("account_id"),
