@@ -30,6 +30,19 @@ happens is gone forever. Two holes were found and closed:
   memory by `_mark_excursion` since 8/19 and thrown away at close. They are
   the only way to ever answer "how far did a WINNER go against me first",
   which is the question every breathing-room rule depends on.
+**TASTYTRADE IS OAUTH NOW — HIS PASSWORD IS NEVER ASKED FOR (9/4).** The old
+username+password `/sessions` flow is fallback only. Current path: he makes an
+OAuth application at my.tastytrade.com -> Manage -> API Access -> OAuth
+Applications (callback `http://localhost:8000`, SAVE THE CLIENT SECRET, shown
+once), then Manage -> Create Grant for a REFRESH TOKEN. Those two strings go
+in settings.json; `_session()` POSTs them to `/oauth/token` for a **15-minute**
+access token (not 24h — it refreshes on a 60s margin) and sends it as
+`Bearer`, while the legacy token is still sent raw. Refresh tokens never
+expire and can be revoked without changing his password. `SETUP TASTYTRADE.bat`
++ `setup_tastytrade.py` rewritten to match; `test_brokers.py` pins BOTH auth
+header shapes. **Claude never types his password or pastes his secrets — he
+does that himself, in his own browser and his own terminal.**
+
 NEXT, and it needs G: greeks. tastytrade STREAMS them over DXLink (delta,
 gamma, theta, vega, rho, IV, theo — per tick). Tradier's come from ORATS on
 the REST chains endpoint with `greeks=true`, refresh rate undocumented —
