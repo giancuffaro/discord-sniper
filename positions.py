@@ -3391,6 +3391,7 @@ class Book:
             p.pop("pulled_stop", None)      # the exit happened; nothing to put back
 
         money = ""
+        _recorded = False
         if settle and self.cash is not None and qty and price is not None:
             if fut:
                 # Points times multiplier times direction. No premium came
@@ -3420,6 +3421,7 @@ class Book:
                         self.wins += 1
                     else:
                         self.losses += 1
+                _recorded = True
                 if True:
                     # RECORD THE LIVE ONES TOO (9/4). Everything below used
                     # to sit inside `if not p_live`, so the ONLY trades ever
