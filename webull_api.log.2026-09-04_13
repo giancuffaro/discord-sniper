@@ -1,0 +1,1395 @@
+25892 MainThread 2026-09-04 13:41:52,753 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-04T17:41:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '125720e0-ad5a-583d-91d6-4ed2ae05de5d', 'Host': 'api.webull.com'}
+25892 MainThread 2026-09-04 13:41:52,755 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+25892 MainThread 2026-09-04 13:41:52,755 webull.core.auth.composer.default_signature_composer DEBUG body:None
+25892 MainThread 2026-09-04 13:41:52,755 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+25892 MainThread 2026-09-04 13:41:52,755 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D125720e0-ad5a-583d-91d6-4ed2ae05de5d%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-04T17%3A41%3A52Z
+25892 MainThread 2026-09-04 13:41:52,755 webull.core.auth.composer.default_signature_composer DEBUG signature:a1RhrPSJ57n4ZkFf3CARXrSWIozq/AaA+F6Jfkxs15I=
+25892 MainThread 2026-09-04 13:41:52,982 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Fri, 04 Sep 2026 17:41:55 GMT', 'X-Request-Id': '055b0259-b539-454d-838a-88e7ab730657', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 17fdc24d3b67fe6b9de441260b81199e.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'RVwop7631r6S_Bk5-TD99UpoCZ5yOE2KoUN7XoJObObW7EX0hzDOjQ==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+25892 MainThread 2026-09-04 13:41:52,982 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+25892 MainThread 2026-09-04 13:41:52,983 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-04T17:41:52Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '5a4e16cd-d78c-5fc1-a4a3-beacd77b219c', 'Host': 'api.webull.com'}
+25892 MainThread 2026-09-04 13:41:52,983 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+25892 MainThread 2026-09-04 13:41:52,983 webull.core.auth.composer.default_signature_composer DEBUG body:None
+25892 MainThread 2026-09-04 13:41:52,983 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+25892 MainThread 2026-09-04 13:41:52,983 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D5a4e16cd-d78c-5fc1-a4a3-beacd77b219c%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-04T17%3A41%3A52Z
+25892 MainThread 2026-09-04 13:41:52,983 webull.core.auth.composer.default_signature_composer DEBUG signature:u6CE/tIZiZCK4H3uKLJaN6V+3wu/MCCMD0L07/PVPNg=
+25892 MainThread 2026-09-04 13:41:53,108 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Fri, 04 Sep 2026 17:41:55 GMT', 'X-Request-Id': 'a95b0e00-8694-4b8e-a942-6dfbc7989a8a', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9d3f5a69f1cdcf03dc4192ed7941ebaa.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': '1ScYKPJlieNCFBEXoZoPqlivD_B2uwy08jm9hFHjwgKbnK67lMVm0A==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+25892 MainThread 2026-09-04 13:41:53,108 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+25892 MainThread 2026-09-04 13:41:53,110 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-04T17:41:53Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'f271e7d6-9038-55f2-acf2-e8037308357e', 'Host': 'api.webull.com'}
+25892 MainThread 2026-09-04 13:41:53,110 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+25892 MainThread 2026-09-04 13:41:53,110 webull.core.auth.composer.default_signature_composer DEBUG body:None
+25892 MainThread 2026-09-04 13:41:53,110 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+25892 MainThread 2026-09-04 13:41:53,110 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Df271e7d6-9038-55f2-acf2-e8037308357e%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-04T17%3A41%3A53Z
+25892 MainThread 2026-09-04 13:41:53,110 webull.core.auth.composer.default_signature_composer DEBUG signature:5o/HUWOMCnMQCLhrZv+FNXCq+yy1NNtnDS3RY+BG3Lg=
+25892 MainThread 2026-09-04 13:41:53,235 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Fri, 04 Sep 2026 17:41:56 GMT', 'X-Request-Id': '80395b5d-b18e-4b51-9e59-d2ca62b1a59e', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 d052447d138dd6a18e9586b8271113de.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'OkkOppd9ax78MSRGf3LN5hziOCnynxE6FPm6uZkb4nxMtIKjeXA24A==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-04T17:41:53Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'a1c675d1-1181-5482-a4db-d0042dfd68b6', 'Host': 'api.webull.com'}
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-04T17:41:53Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'a1c675d1-1181-5482-a4db-d0042dfd68b6', 'Host': 'api.webull.com'}
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG body:None
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG body:None
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Da1c675d1-1181-5482-a4db-d0042dfd68b6%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-04T17%3A41%3A53Z
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Da1c675d1-1181-5482-a4db-d0042dfd68b6%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-04T17%3A41%3A53Z
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG signature:KHIJq0akTrMnmH7+c7ch3aG/xj95aDKfLDjAzLU/gBQ=
+25892 MainThread 2026-09-04 13:41:53,239 webull.core.auth.composer.default_signature_composer DEBUG signature:KHIJq0akTrMnmH7+c7ch3aG/xj95aDKfLDjAzLU/gBQ=
+25892 MainThread 2026-09-04 13:41:53,351 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Fri, 04 Sep 2026 17:41:56 GMT', 'X-Request-Id': '0e8a773e-441f-4b08-9315-35fbf80f80ef', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'Mxi6khnLU6wHvixjxBGMGPhr0fFuV78QxHk-Li5K4VmsYm1fKNpa_w==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+25892 MainThread 2026-09-04 13:41:53,351 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Fri, 04 Sep 2026 17:41:56 GMT', 'X-Request-Id': '0e8a773e-441f-4b08-9315-35fbf80f80ef', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 e296fdb0cf913cf54b830187faac5fca.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'Mxi6khnLU6wHvixjxBGMGPhr0fFuV78QxHk-Li5K4VmsYm1fKNpa_w==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+25892 MainThread 2026-09-04 13:41:53,351 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+25892 MainThread 2026-09-04 13:41:53,351 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-04T17:41:53Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'c65b3160-eb95-544e-985f-66f9fb34e28d', 'Host': 'api.webull.com'}
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-04T17:41:53Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': 'c65b3160-eb95-544e-985f-66f9fb34e28d', 'Host': 'api.webull.com'}
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG body:None
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG body:None
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dc65b3160-eb95-544e-985f-66f9fb34e28d%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-04T17%3A41%3A53Z
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Fconfig%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3Dc65b3160-eb95-544e-985f-66f9fb34e28d%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-04T17%3A41%3A53Z
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG signature:ZpyI9aIYl2/6XoQJiEKLQjvwp5Q5uBSZvKlxLThJlfs=
+25892 MainThread 2026-09-04 13:41:53,353 webull.core.auth.composer.default_signature_composer DEBUG signature:ZpyI9aIYl2/6XoQJiEKLQjvwp5Q5uBSZvKlxLThJlfs=
+25892 MainThread 2026-09-04 13:41:53,467 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Fri, 04 Sep 2026 17:41:56 GMT', 'X-Request-Id': '43bfbcf4-b247-4f4a-97d5-00d45a529d3b', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 676871763bf908367dc9cdd585132d32.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'L6y1cP5QCY89RnCvIcu9LAVht2PL7YrwMRjxx5aznRhXsBGhhJ_9Ug==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+25892 MainThread 2026-09-04 13:41:53,467 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '29', 'Connection': 'keep-alive', 'Date': 'Fri, 04 Sep 2026 17:41:56 GMT', 'X-Request-Id': '43bfbcf4-b247-4f4a-97d5-00d45a529d3b', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 676871763bf908367dc9cdd585132d32.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'L6y1cP5QCY89RnCvIcu9LAVht2PL7YrwMRjxx5aznRhXsBGhhJ_9Ug==', 'Vary': 'Origin'}, body:b'{"token_check_enabled":false}'
+25892 MainThread 2026-09-04 13:41:53,467 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+25892 MainThread 2026-09-04 13:41:53,467 webull.core.http.initializer.client_initializer INFO _check_token_enable result is False
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-04T17:41:53Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '45a8ecf6-3d40-5881-9d3e-c744e9021434', 'Host': 'api.webull.com'}
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG sign_headers:{'x-app-key': '53a77ca9e6c56a74be896b66272e4859', 'x-timestamp': '2026-09-04T17:41:53Z', 'x-signature-version': '1.0', 'x-signature-algorithm': 'HMAC-SHA256', 'x-signature-nonce': '45a8ecf6-3d40-5881-9d3e-c744e9021434', 'Host': 'api.webull.com'}
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG sign_queries:{}
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG body:None
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG body:None
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG body_string:None
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D45a8ecf6-3d40-5881-9d3e-c744e9021434%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-04T17%3A41%3A53Z
+25892 MainThread 2026-09-04 13:41:53,469 webull.core.auth.composer.default_signature_composer DEBUG string_to_sign:%2Fopenapi%2Faccount%2Flist%26host%3Dapi.webull.com%26x-app-key%3D53a77ca9e6c56a74be896b66272e4859%26x-signature-algorithm%3DHMAC-SHA256%26x-signature-nonce%3D45a8ecf6-3d40-5881-9d3e-c744e9021434%26x-signature-version%3D1.0%26x-timestamp%3D2026-09-04T17%3A41%3A53Z
+25892 MainThread 2026-09-04 13:41:53,470 webull.core.auth.composer.default_signature_composer DEBUG signature:meA88XV5dpPTeHqPH56iLwP31yH3MYqcs+PQWk/UUmg=
+25892 MainThread 2026-09-04 13:41:53,470 webull.core.auth.composer.default_signature_composer DEBUG signature:meA88XV5dpPTeHqPH56iLwP31yH3MYqcs+PQWk/UUmg=
+25892 MainThread 2026-09-04 13:41:53,584 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Fri, 04 Sep 2026 17:41:56 GMT', 'X-Request-Id': 'cabf9afd-c61d-4d7a-897e-08e61950e186', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 5f93a09a614ee9f56f9851cb7dfe2d5c.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'v4qasa-ur4HOGHg7koOI0WEZMuvNJyRD8N2Lo8K9HSszSv2qTYr0zw==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+25892 MainThread 2026-09-04 13:41:53,584 webull.core.client DEBUG Response received, status:200, headers:{'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '548', 'Connection': 'keep-alive', 'Date': 'Fri, 04 Sep 2026 17:41:56 GMT', 'X-Request-Id': 'cabf9afd-c61d-4d7a-897e-08e61950e186', 'Server': 'WEBULL OPENAPI', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 5f93a09a614ee9f56f9851cb7dfe2d5c.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'MIA50-P9', 'X-Amz-Cf-Id': 'v4qasa-ur4HOGHg7koOI0WEZMuvNJyRD8N2Lo8K9HSszSv2qTYr0zw==', 'Vary': 'Origin'}, body:b'[{"account_id":"ENIQGUV4LUTT3JSAA9NKLDDU19","account_number":"CVV3JZWB","account_type":"MARGIN","account_label":"Individual Margin","account_class":"INDIVIDUAL_MARGIN","user_id":"1060076438"},{"account_id":"MOI680KKJ1F36VPUA5FGOFS7MA","account_number":"CUS6C8Y1","account_type":"CASH","account_label":"Individual Cash","account_class":"INDIVIDUAL_CASH","user_id":"1060076438"},{"account_id":"R8IECPMDTO73FABD0UH7UT3T0B","account_number":"CUV9D9V8","account_type":"MARGIN","account_label":"Futures","account_class":"FUTURES","user_id":"1060076438"}]'
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,050 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_CRYPTO"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:57Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "af4d393e-516a-5010-ab8e-d1771aa338f8",
+    "x-signature": "VlLRv3wb1RCNxQYXVgeRQQX040rg2lGvNz2kUv+RTLg=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'INVALID_SYMBOL', 'message': 'The symbols does not exist in the category. [QQQ].', 'status': 417} ServerException:HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbols does not exist in the category. [QQQ]., RequestID: 0ec79f02-3837-406d-8e9a-57bee7e81835
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,050 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_CRYPTO"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:57Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "af4d393e-516a-5010-ab8e-d1771aa338f8",
+    "x-signature": "VlLRv3wb1RCNxQYXVgeRQQX040rg2lGvNz2kUv+RTLg=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'INVALID_SYMBOL', 'message': 'The symbols does not exist in the category. [QQQ].', 'status': 417} ServerException:HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbols does not exist in the category. [QQQ]., RequestID: 0ec79f02-3837-406d-8e9a-57bee7e81835
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,118 webull.core.client ERROR get_response exception. {
+  "error_code": "INVALID_SYMBOL",
+  "error_msg": "The symbols does not exist in the category. [QQQ].",
+  "http_status": 417,
+  "request_id": "0ec79f02-3837-406d-8e9a-57bee7e81835"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,118 webull.core.client ERROR get_response exception. {
+  "error_code": "INVALID_SYMBOL",
+  "error_msg": "The symbols does not exist in the category. [QQQ].",
+  "http_status": 417,
+  "request_id": "0ec79f02-3837-406d-8e9a-57bee7e81835"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,241 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_CRYPTO"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "de65de17-d3ae-59ef-9b68-49def41cdefe",
+    "x-signature": "7v6l72KrhzfXqUlXvRg6E3O9xamRQuJQX0KXLCuJ8mA=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'INVALID_SYMBOL', 'message': 'The symbols does not exist in the category. [QQQ].', 'status': 417} ServerException:HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbols does not exist in the category. [QQQ]., RequestID: 5b22dce3-7d55-4fe3-bddc-f1ed07221207
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,241 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_CRYPTO"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "de65de17-d3ae-59ef-9b68-49def41cdefe",
+    "x-signature": "7v6l72KrhzfXqUlXvRg6E3O9xamRQuJQX0KXLCuJ8mA=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'INVALID_SYMBOL', 'message': 'The symbols does not exist in the category. [QQQ].', 'status': 417} ServerException:HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbols does not exist in the category. [QQQ]., RequestID: 5b22dce3-7d55-4fe3-bddc-f1ed07221207
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,243 webull.core.client ERROR get_response exception. {
+  "error_code": "INVALID_SYMBOL",
+  "error_msg": "The symbols does not exist in the category. [QQQ].",
+  "http_status": 417,
+  "request_id": "5b22dce3-7d55-4fe3-bddc-f1ed07221207"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,243 webull.core.client ERROR get_response exception. {
+  "error_code": "INVALID_SYMBOL",
+  "error_msg": "The symbols does not exist in the category. [QQQ].",
+  "http_status": 417,
+  "request_id": "5b22dce3-7d55-4fe3-bddc-f1ed07221207"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,363 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "2d034780-6e64-55cd-b5c3-cd5f4fc89d64",
+    "x-signature": "gzbMI0MjrsSDytPpe02OaPwY5nd1D2JhPgfoVTnRzts=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: aeece551-85cd-4766-9dfe-c99d01727941
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,363 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "2d034780-6e64-55cd-b5c3-cd5f4fc89d64",
+    "x-signature": "gzbMI0MjrsSDytPpe02OaPwY5nd1D2JhPgfoVTnRzts=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: aeece551-85cd-4766-9dfe-c99d01727941
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,365 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "aeece551-85cd-4766-9dfe-c99d01727941"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,365 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "aeece551-85cd-4766-9dfe-c99d01727941"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,490 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "7e10f849-7784-5a06-801a-a28b8c8934ff",
+    "x-signature": "KOFSfkMNAGn0AdeIutdBKr9L/ioJqsWFs5Uf9gSrikQ=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: dde0016b-c72f-4b8f-a500-d201329e7327
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,490 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "7e10f849-7784-5a06-801a-a28b8c8934ff",
+    "x-signature": "KOFSfkMNAGn0AdeIutdBKr9L/ioJqsWFs5Uf9gSrikQ=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: dde0016b-c72f-4b8f-a500-d201329e7327
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,491 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "dde0016b-c72f-4b8f-a500-d201329e7327"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,491 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "dde0016b-c72f-4b8f-a500-d201329e7327"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,612 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_CRYPTO"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "78ae7c1b-f533-571d-a053-a54884d6c39e",
+    "x-signature": "BrVa2UHOzj6GvUSs5ydn6a92dwfkup20yT8nwAn8Bik=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'INVALID_SYMBOL', 'message': 'The symbols does not exist in the category. [QQQ].', 'status': 417} ServerException:HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbols does not exist in the category. [QQQ]., RequestID: 98163bcc-2309-441d-930d-ce69f8322e4c
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,612 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_CRYPTO"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "78ae7c1b-f533-571d-a053-a54884d6c39e",
+    "x-signature": "BrVa2UHOzj6GvUSs5ydn6a92dwfkup20yT8nwAn8Bik=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'INVALID_SYMBOL', 'message': 'The symbols does not exist in the category. [QQQ].', 'status': 417} ServerException:HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbols does not exist in the category. [QQQ]., RequestID: 98163bcc-2309-441d-930d-ce69f8322e4c
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,614 webull.core.client ERROR get_response exception. {
+  "error_code": "INVALID_SYMBOL",
+  "error_msg": "The symbols does not exist in the category. [QQQ].",
+  "http_status": 417,
+  "request_id": "98163bcc-2309-441d-930d-ce69f8322e4c"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,614 webull.core.client ERROR get_response exception. {
+  "error_code": "INVALID_SYMBOL",
+  "error_msg": "The symbols does not exist in the category. [QQQ].",
+  "http_status": 417,
+  "request_id": "98163bcc-2309-441d-930d-ce69f8322e4c"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,732 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_CRYPTO"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "205ee9ca-ab01-5a4b-955f-c697b5eab31f",
+    "x-signature": "JlYk/PO3mR5+m2ucScJYwC07ooh+NApWVPV+79f5CWI=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'INVALID_SYMBOL', 'message': 'The symbols does not exist in the category. [QQQ].', 'status': 417} ServerException:HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbols does not exist in the category. [QQQ]., RequestID: 369fb8e3-e502-4197-beda-6c0079341ce1
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,732 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_CRYPTO"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "205ee9ca-ab01-5a4b-955f-c697b5eab31f",
+    "x-signature": "JlYk/PO3mR5+m2ucScJYwC07ooh+NApWVPV+79f5CWI=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'INVALID_SYMBOL', 'message': 'The symbols does not exist in the category. [QQQ].', 'status': 417} ServerException:HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbols does not exist in the category. [QQQ]., RequestID: 369fb8e3-e502-4197-beda-6c0079341ce1
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,734 webull.core.client ERROR get_response exception. {
+  "error_code": "INVALID_SYMBOL",
+  "error_msg": "The symbols does not exist in the category. [QQQ].",
+  "http_status": 417,
+  "request_id": "369fb8e3-e502-4197-beda-6c0079341ce1"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,734 webull.core.client ERROR get_response exception. {
+  "error_code": "INVALID_SYMBOL",
+  "error_msg": "The symbols does not exist in the category. [QQQ].",
+  "http_status": 417,
+  "request_id": "369fb8e3-e502-4197-beda-6c0079341ce1"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,863 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "cbed3252-3ff8-5003-ba6d-784892a7932e",
+    "x-signature": "RY2ZA+Gj9iGPBiok0+d9EFY9A1Gbpj4LS6jeDwxLMc4=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 117ea570-516c-453d-96dc-9786dc5d713e
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,863 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/crypto/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "cbed3252-3ff8-5003-ba6d-784892a7932e",
+    "x-signature": "RY2ZA+Gj9iGPBiok0+d9EFY9A1Gbpj4LS6jeDwxLMc4=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 117ea570-516c-453d-96dc-9786dc5d713e
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,864 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "117ea570-516c-453d-96dc-9786dc5d713e"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,864 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "117ea570-516c-453d-96dc-9786dc5d713e"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,989 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_EVENT"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "a1f511a3-dfb5-58ec-9661-5621d28c42e2",
+    "x-signature": "i51RvuB4+3NmvwDm6BL8JMtZyGq4No4TyQ3/+ZHRuMw=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_SYMBOL', 'message': 'invalid symbols: [QQQ]', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_SYMBOL, Msg: invalid symbols: [QQQ], RequestID: 67a68a90-e0e1-49f6-856b-5e7827df2e2b
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:58,989 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_EVENT"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:58Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "a1f511a3-dfb5-58ec-9661-5621d28c42e2",
+    "x-signature": "i51RvuB4+3NmvwDm6BL8JMtZyGq4No4TyQ3/+ZHRuMw=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_SYMBOL', 'message': 'invalid symbols: [QQQ]', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_SYMBOL, Msg: invalid symbols: [QQQ], RequestID: 67a68a90-e0e1-49f6-856b-5e7827df2e2b
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,001 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_SYMBOL",
+  "error_msg": "invalid symbols: [QQQ]",
+  "http_status": 417,
+  "request_id": "67a68a90-e0e1-49f6-856b-5e7827df2e2b"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,001 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_SYMBOL",
+  "error_msg": "invalid symbols: [QQQ]",
+  "http_status": 417,
+  "request_id": "67a68a90-e0e1-49f6-856b-5e7827df2e2b"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,126 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_EVENT"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "743eaf68-72b8-51d1-8a2f-978dad21de0f",
+    "x-signature": "s+oPXHy6XeanMbCFkFILA+Xj3QemmOEfttfq0CjphG4=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_SYMBOL', 'message': 'invalid symbols: [QQQ]', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_SYMBOL, Msg: invalid symbols: [QQQ], RequestID: acb3ab28-6e52-463c-8962-ae9d04f90628
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,126 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_EVENT"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "743eaf68-72b8-51d1-8a2f-978dad21de0f",
+    "x-signature": "s+oPXHy6XeanMbCFkFILA+Xj3QemmOEfttfq0CjphG4=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_SYMBOL', 'message': 'invalid symbols: [QQQ]', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_SYMBOL, Msg: invalid symbols: [QQQ], RequestID: acb3ab28-6e52-463c-8962-ae9d04f90628
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,127 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_SYMBOL",
+  "error_msg": "invalid symbols: [QQQ]",
+  "http_status": 417,
+  "request_id": "acb3ab28-6e52-463c-8962-ae9d04f90628"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,127 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_SYMBOL",
+  "error_msg": "invalid symbols: [QQQ]",
+  "http_status": 417,
+  "request_id": "acb3ab28-6e52-463c-8962-ae9d04f90628"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,271 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "ede9394e-6a9f-55c5-a0ec-042423a86778",
+    "x-signature": "0flC8uq+aSblxwaihoEbdBSf91wo2Y9KGnetiHGRDT4=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 9ec6d0f0-f40e-4ea5-9d7f-170e8bce66eb
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,271 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "ede9394e-6a9f-55c5-a0ec-042423a86778",
+    "x-signature": "0flC8uq+aSblxwaihoEbdBSf91wo2Y9KGnetiHGRDT4=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 9ec6d0f0-f40e-4ea5-9d7f-170e8bce66eb
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,273 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "9ec6d0f0-f40e-4ea5-9d7f-170e8bce66eb"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,273 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "9ec6d0f0-f40e-4ea5-9d7f-170e8bce66eb"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,393 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "a298da7e-2c4f-526f-ab6f-b5b9e965e73a",
+    "x-signature": "suhJbz6tl4WzH6i2gPEZHUNEgny5RiLdkFSxpi4e9io=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 0d8a8872-d1f4-4114-8e10-fa96be1913cc
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,393 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "a298da7e-2c4f-526f-ab6f-b5b9e965e73a",
+    "x-signature": "suhJbz6tl4WzH6i2gPEZHUNEgny5RiLdkFSxpi4e9io=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 0d8a8872-d1f4-4114-8e10-fa96be1913cc
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,395 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "0d8a8872-d1f4-4114-8e10-fa96be1913cc"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,395 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "0d8a8872-d1f4-4114-8e10-fa96be1913cc"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,516 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_EVENT"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "d93ebe09-f886-5c3e-871b-3ec1e6f68a72",
+    "x-signature": "6x7jGlIvQiAYEsG9YKjOH7Ku8Am5FD/6K6ze7Mz0z/U=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_SYMBOL', 'message': 'invalid symbols: [QQQ]', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_SYMBOL, Msg: invalid symbols: [QQQ], RequestID: 02742759-ff19-433d-a8a5-c4f6fba9812f
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,516 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_EVENT"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "d93ebe09-f886-5c3e-871b-3ec1e6f68a72",
+    "x-signature": "6x7jGlIvQiAYEsG9YKjOH7Ku8Am5FD/6K6ze7Mz0z/U=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_SYMBOL', 'message': 'invalid symbols: [QQQ]', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_SYMBOL, Msg: invalid symbols: [QQQ], RequestID: 02742759-ff19-433d-a8a5-c4f6fba9812f
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,517 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_SYMBOL",
+  "error_msg": "invalid symbols: [QQQ]",
+  "http_status": 417,
+  "request_id": "02742759-ff19-433d-a8a5-c4f6fba9812f"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,517 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_SYMBOL",
+  "error_msg": "invalid symbols: [QQQ]",
+  "http_status": 417,
+  "request_id": "02742759-ff19-433d-a8a5-c4f6fba9812f"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,655 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_EVENT"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "d5fe7236-847c-5a96-8dd4-6354485fa69d",
+    "x-signature": "FpgIa3LqaTR3ZVDIcuISu5cIsMtc/UCFphdUCqDFT4M=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_SYMBOL', 'message': 'invalid symbols: [QQQ]', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_SYMBOL, Msg: invalid symbols: [QQQ], RequestID: 994522aa-02ff-4704-9ac1-1c9d6e70dfde
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,655 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_EVENT"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "d5fe7236-847c-5a96-8dd4-6354485fa69d",
+    "x-signature": "FpgIa3LqaTR3ZVDIcuISu5cIsMtc/UCFphdUCqDFT4M=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_SYMBOL', 'message': 'invalid symbols: [QQQ]', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_SYMBOL, Msg: invalid symbols: [QQQ], RequestID: 994522aa-02ff-4704-9ac1-1c9d6e70dfde
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,656 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_SYMBOL",
+  "error_msg": "invalid symbols: [QQQ]",
+  "http_status": 417,
+  "request_id": "994522aa-02ff-4704-9ac1-1c9d6e70dfde"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,656 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_SYMBOL",
+  "error_msg": "invalid symbols: [QQQ]",
+  "http_status": 417,
+  "request_id": "994522aa-02ff-4704-9ac1-1c9d6e70dfde"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,792 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "79c56185-06b6-576a-81b7-2fa0bc5e4a95",
+    "x-signature": "sEvDXzGliUjC1rn+QMWMFLDwQiFWMj1/0JSdxLkFugY=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 4d81e3ce-5e0e-4567-be23-c29dc85ad2e1
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,792 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/event/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "79c56185-06b6-576a-81b7-2fa0bc5e4a95",
+    "x-signature": "sEvDXzGliUjC1rn+QMWMFLDwQiFWMj1/0JSdxLkFugY=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 4d81e3ce-5e0e-4567-be23-c29dc85ad2e1
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,809 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "4d81e3ce-5e0e-4567-be23-c29dc85ad2e1"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,809 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "4d81e3ce-5e0e-4567-be23-c29dc85ad2e1"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,923 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/futures/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "322ef3c5-0e46-5c4e-8408-e26b16d96a8b",
+    "x-signature": "ZbWx1SKTKhaBU4eoLvIidN99XLo8DZBgY46P+81xvS0=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 162ff8e1-e3b0-4346-81af-b3c721ffd162
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,923 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/futures/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "322ef3c5-0e46-5c4e-8408-e26b16d96a8b",
+    "x-signature": "ZbWx1SKTKhaBU4eoLvIidN99XLo8DZBgY46P+81xvS0=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 162ff8e1-e3b0-4346-81af-b3c721ffd162
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,934 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "162ff8e1-e3b0-4346-81af-b3c721ffd162"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:57:59,934 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "162ff8e1-e3b0-4346-81af-b3c721ffd162"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:58:00,045 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/futures/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "6717a2fc-3687-5284-97b3-cf55e0daf05f",
+    "x-signature": "jJfCmasvLGI97K3eFE3w7htr9MucBNY2l/p5nC7+vKU=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: c60ba7d4-ac96-46b0-9829-43828f85f55e
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:58:00,045 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/futures/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:57:59Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "6717a2fc-3687-5284-97b3-cf55e0daf05f",
+    "x-signature": "jJfCmasvLGI97K3eFE3w7htr9MucBNY2l/p5nC7+vKU=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: c60ba7d4-ac96-46b0-9829-43828f85f55e
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:58:00,047 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "c60ba7d4-ac96-46b0-9829-43828f85f55e"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:58:00,047 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "c60ba7d4-ac96-46b0-9829-43828f85f55e"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:58:00,163 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/futures/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:58:00Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "ee87ed4a-615f-551b-b93c-056ced00c295",
+    "x-signature": "CFJxUp1uMoek3oNZ21CKK6D5bW8Fim3v/enhmRVvWJI=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 49f6fd2a-8928-495b-abb3-282e27efb5fc
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:58:00,163 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/market-data/futures/snapshot",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "symbols": "QQQ",
+    "category": "US_STOCK"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-04T17:58:00Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "ee87ed4a-615f-551b-b93c-056ced00c295",
+    "x-signature": "CFJxUp1uMoek3oNZ21CKK6D5bW8Fim3v/enhmRVvWJI=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'error_code': 'UNSUPPORTED_CATEGORY', 'message': 'The category is not supported by this interface:US_STOCK', 'status': 417} ServerException:HTTP Status: 417, Code: UNSUPPORTED_CATEGORY, Msg: The category is not supported by this interface:US_STOCK, RequestID: 49f6fd2a-8928-495b-abb3-282e27efb5fc
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:58:00,165 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "49f6fd2a-8928-495b-abb3-282e27efb5fc"
+}
+89384 Thread-3367 (_wait_entry) 2026-09-04 13:58:00,165 webull.core.client ERROR get_response exception. {
+  "error_code": "UNSUPPORTED_CATEGORY",
+  "error_msg": "The category is not supported by this interface:US_STOCK",
+  "http_status": 417,
+  "request_id": "49f6fd2a-8928-495b-abb3-282e27efb5fc"
+}
