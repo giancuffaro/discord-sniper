@@ -651,8 +651,37 @@ async function paintStatus() {
   fix.style.color = steps.length ? "#fbbf24" : "#34d399";
 }
 
+/* SWINGS PAUSED (9/4). A gate that silently refuses trades has to be visible,
+ * so the button reads its truth from the bridge's /mode every paint — never
+ * from a local guess that could drift out of step with what the bridge is
+ * actually doing. */
+let swingPause = false;
+function paintSwingPause() {
+  const btn = $("swingpause");
+  if (!btn) return;
+  swingPause = !!(modeStatus && modeStatus.swings_paused);
+  btn.textContent = swingPause ? "PAUSED" : "off";
+  btn.className = "tgl " + (swingPause ? "live" : "safe");
+}
+if ($("swingpause")) {
+  $("swingpause").onclick = async () => {
+    const want = !swingPause;
+    try {
+      modeStatus = await askBridge("/config", { swings_paused: want });
+    } catch (e) {
+      if ($("swingpausestate")) {
+        $("swingpausestate").textContent =
+          "couldn't reach the bridge — START HERE first";
+      }
+      return;
+    }
+    paintSwingPause();
+  };
+}
+
 let paperOn = false;
 function paintPaper() {
+  paintSwingPause();
   const s = modeStatus || {};
   paperOn = !!s.paper;
   const btn = $("paperbtn");

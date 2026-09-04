@@ -255,7 +255,17 @@
 
   <!-- ===== STRATEGIES ===== -->
   <div class="tabpane" data-tab="strategies">
-    <label>One-click bracket — <span style="color:#fbbf24">real money, live &amp; paper</span></label>
+    <label>Swing trades</label>
+    <div class="row" style="margin-bottom:4px">
+      <span class="grow" style="font-size:12px">Pause swings (14+ days out, or called a swing)</span>
+      <button id="swingpause" class="tgl safe">off</button>
+    </div>
+    <div class="note" id="swingpausestate">On: a call for a contract 14 or more days
+      out — or one the room labels a swing — is <b>refused, nothing sent</b>.
+      Scalps keep trading normally. Positions you already hold are untouched
+      and keep their stops.</div>
+
+    <label style="margin-top:10px">One-click bracket — <span style="color:#fbbf24">real money, live &amp; paper</span></label>
     <div class="row" style="margin-bottom:4px">
       <span class="grow" style="font-size:12px">Bracket: 1 contract, -10% stop to start</span>
       <button id="bracketstrat" class="tgl safe">off</button>
