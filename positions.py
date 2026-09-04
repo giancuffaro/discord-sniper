@@ -3356,6 +3356,16 @@ class Book:
                         self.wins += 1
                     else:
                         self.losses += 1
+                if True:
+                    # RECORD THE LIVE ONES TOO (9/4). Everything below used
+                    # to sit inside `if not p_live`, so the ONLY trades ever
+                    # written to the day book were the pretend ones — the
+                    # real-money trades, the entire point of the exercise,
+                    # left no structured record at all. 26 day files hold
+                    # exactly 2 rows between them while trades.log shows 125
+                    # fills. The wallet maths stays gated above, because a
+                    # live trade must never move the pretend cash; only the
+                    # RECORD is unconditional now, tagged with which it was.
                     # THE SHAPE OF THE TRADE, not just its ends (9/4, G:
                     # "i want to get more weeks data off of trades").
                     # _mark_excursion has tracked hi_pct/lo_pct on every
@@ -3398,7 +3408,8 @@ class Book:
                          "swing": bool(_pp.get("swing")),
                          "stop_at_exit": _pp.get("stop"),
                          "why": why,
-                         "state": state})
+                         "state": state,
+                         "live": p_live})
                 pot = self.cash
             day = ""
             if self.unlimited:
