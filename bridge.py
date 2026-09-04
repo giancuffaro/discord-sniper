@@ -1223,6 +1223,23 @@ def _no_otm_translate(order, client):
             if held.get("strike") is not None:
                 order["strike"] = held["strike"]
                 return None
+        # 0/1DTE ONLY (9/4, G's call after TB22's INTC 9/18). This rule exists
+        # because a far-OTM strike on a contract that expires TODAY is a
+        # lottery ticket — no time for the stock to travel, so the closer
+        # rung is the honest version of their trade. From 2 days out that
+        # reasoning stops holding: TB22 called a 9/18 100C at $2.41, this
+        # translated it to a 96C and paid $4.05 — 68% more money at a
+        # different delta, so when his call ran +10% ours sat at -4%.
+        # From 2 DTE out we buy the strike the room actually said.
+        try:
+            from webull_options import expiry_to_date as _e2d_o
+            import datetime as _dt_o
+            _dte_o = (_dt_o.date.fromisoformat(
+                str(_e2d_o(order.get("expiry")))) - _dt_o.date.today()).days
+            if _dte_o >= 2:
+                return None      # their strike, their price — untouched
+        except Exception:                       # noqa: BLE001
+            pass                 # unreadable expiry -> fall through as before
         px = None
         for _c in (client, WB_LIVE, WB):
             if _c is None:
