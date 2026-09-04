@@ -8,9 +8,17 @@ labels a swing, is now REFUSED at the entry gate in bridge.py `_place_impl`
 already held are untouched and keep their stops. Switch: `swings_paused` in
 settings.json, toggled from the popup's Strategies tab (extension 3.5.17 —
 RELOAD IT), reported in /mode so the state is never a guess.
-Also today: the bracket stop born WITH the entry now gets clamped under the
-live bid (INTC 94C's 0.86 stop filled 308ms after the buy because the bid was
-already 0.83). Prior:
+Also today, two more:
+- **1-STRIKE-OTM IS NOW 0/1DTE ONLY** (G, 9/4). It exists because a far-OTM
+  strike expiring TODAY is a lottery ticket. From 2 SESSIONS out (sessions,
+  not calendar days — a Friday's next expiry is Monday) the room's own strike
+  stands. TB22 called a 9/18 100C at $2.41; this rule bought a 96C at $4.05,
+  68% more money at a different delta, so his call ran +10% while ours sat
+  at -4%. `_no_otm_translate` in bridge.py returns early now.
+- The bracket stop born WITH the entry now gets clamped under the live bid
+  (INTC 94C's 0.86 stop filled 308ms after the buy because the bid was
+  already 0.83).
+Prior:
 (2026-09-03 18:05 — ran the missed-entry scan retroactively
 across every day since the bot went live — 4 more historical RWGates
 misses found, see bottom section). Prior: G: "can we add this kind of
