@@ -43,6 +43,28 @@ expire and can be revoked without changing his password. `SETUP TASTYTRADE.bat`
 header shapes. **Claude never types his password or pastes his secrets — he
 does that himself, in his own browser and his own terminal.**
 
+**TASTYTRADE IS CONNECTED AND THE GREEKS STREAM IS PROVEN — BUT DELAYED
+(9/4 11:38).** G created the OAuth client and ran the setup; the adapter
+authenticates, lists the account, reads balances and positions. Then the live
+checklist against the REAL server:
+```
+ ok   login / accounts / balances / positions / greeks stream token
+ FAIL stock quote        GET /market-data/by-type -> HTTP 403
+ ??   OTOCO entry        still unverified — prove it in cert
+```
+DXLink was driven by hand end to end (SETUP -> AUTH -> CHANNEL_REQUEST ->
+FEED_SUBSCRIPTION) and real greeks arrived for `.SPY260918C660`:
+delta 0.9868, gamma 0.000629, theta -0.0646, vega 0.051, IV 0.356. **The
+plumbing works.** BUT the token comes back `level: demo` and the URL is
+`wss://tasty-demo-dxlink-md-ws.dxfeed.com/**delayed**`. Delayed greeks are
+worthless for a 0DTE ratchet and dangerous if mistaken for live.
+CAUSE: the account is UNFUNDED (buying power 0.0), so it has no market-data
+entitlement — which is also why the REST quote 403s. UNBLOCKING IT IS HIS AND
+ONLY HIS: fund the account, accept the market-data agreements. Until the token
+comes back at a live level, **nothing may consume this feed for a trading
+decision**; treat it as plumbing that is ready, not as data.
+Account id is in settings.json (gitignored) — it does not belong in this file.
+
 NEXT, and it needs G: greeks. tastytrade STREAMS them over DXLink (delta,
 gamma, theta, vega, rho, IV, theo — per tick). Tradier's come from ORATS on
 the REST chains endpoint with `greeks=true`, refresh rate undocumented —
