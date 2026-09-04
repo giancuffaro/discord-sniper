@@ -250,6 +250,37 @@ WB_ACCOUNT = ""
 WB_PAPER = None     # the sandbox client — every TEST room fills here
 WB_LIVE = None      # the real-money client — only a room flipped LIVE routes here
 BOOK = None         # positions.Book — what filled, what didn't, and the stops
+GREEKS = None       # dxlink.GreeksBus — live delta/gamma/theta/vega/IV, or None
+
+
+def _greeks_sync():
+    """Keep the greeks feed subscribed to exactly what the quote bus watches.
+
+    One integration point on purpose (9/4). The alternative — calling
+    greeks.watch() from every place a position is armed, restored or adopted
+    — is four more chances to forget one and end up with a trade that has no
+    greeks, which is the same class of silent hole the option tape just had.
+    The quote bus already knows every contract we hold, so mirror it.
+    """
+    seen = set()
+    while True:
+        try:
+            time.sleep(2.0)
+            # via BOOK, not a module global: QUOTES is a LOCAL of build_book,
+            # so a global reference here would raise on every pass and be
+            # swallowed by the except below — a loop that looks alive and
+            # does nothing. BOOK.quotes is the handle that actually exists.
+            _qb = getattr(BOOK, "quotes", None) if BOOK is not None else None
+            if GREEKS is None or _qb is None:
+                continue
+            want = set(_qb.watching())
+            for occ in want - seen:
+                GREEKS.watch(occ)
+            for occ in seen - want:
+                GREEKS.unwatch(occ)
+            seen = want
+        except Exception:                               # noqa: BLE001
+            pass        # a greeks hiccup must never disturb the order path
 # More Webull accounts firing from the same bot (his ask, 8/18). Each entry:
 # {"name", "client", "book"} — a full live client AND a full book of its own,
 # so every extra account gets its own resting stop, ratchet, trims, and
@@ -372,6 +403,29 @@ def build_book():
             note("STREAM on — stock/ETF prices pushed over MQTT (options stay on the 1/s bus)")
         except Exception as _se:                        # noqa: BLE001
             note("STREAM off (%s) — HTTP stock prices as before" % str(_se)[:80])
+        # GREEKS (9/4, G: "greeks data ... to understand breathing room").
+        # tastytrade streams delta/gamma/theta/vega/IV per tick over DXLink.
+        # It is a DATA feed only — Webull still executes, `execution.broker`
+        # is untouched. Entirely optional: no tastytrade keys, or a delayed
+        # (unfunded) token, and this stays off and says why. It can never
+        # break an order path, and it adds NO pip dependency — dxlink.py is
+        # stdlib only, on purpose (the 9/2 pin incident).
+        try:
+            _tt = (CFG.get("execution") or {}).get("tastytrade") or {}
+            if _tt.get("client_secret") and _tt.get("refresh_token"):
+                import broker as _bk2
+                from dxlink import GreeksBus as _GB
+                _ttc = _bk2.get_broker(CFG, "tastytrade")
+                GREEKS = _GB(lambda: _ttc.quote_token(), log=print,
+                             tape=os.path.join(HERE, "greeks_tape.csv"))
+                GREEKS.start()
+                BOOK.greeks = GREEKS
+                threading.Thread(target=_greeks_sync, daemon=True).start()
+                note("GREEKS on — tastytrade DXLink (data only; Webull still "
+                     "places every order)")
+        except Exception as _ge:                        # noqa: BLE001
+            GREEKS = None
+            note("GREEKS off (%s) — quotes and stops unaffected" % str(_ge)[:90])
     except Exception as _qe:                            # noqa: BLE001
         BOOK.quotes = None
         note("QUOTE BUS off (%s) — per-position quotes as before" % str(_qe)[:80])
