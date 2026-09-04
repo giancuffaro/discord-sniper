@@ -26,6 +26,57 @@ and everyone else's calls 429'd with it. Market Sniper MUST:
 If Market Sniper polls quotes per-symbol every second, it will starve the
 bot's stops. That is the failure to avoid above all others.
 
+## 0. THE BIGGEST WIN: get Market Sniper's QUOTES OFF WEBULL (added 9/4/26)
+
+Read the rate-budget rule above again, then this. As of 9/4 both of G's
+other brokerage accounts are live, funded and verified, and either one can
+serve market data **without touching the shared Webull budget at all**:
+
+  * **tastytrade** — funded, `level: api`, real-time. **STREAMS** option
+    quotes AND greeks (delta/gamma/theta/vega/IV) over DXLink. Webull has NO
+    option streaming at any price, which is the only reason Discord Sniper
+    polls a 1/sec batched sweep in the first place.
+  * **Tradier** — funded ($500 BP), production key. Stock quotes work well
+    (SPY 770.19 on 9/4) and there is no published request cap. Its REST
+    market data answered where tastytrade's 403'd, so it is the better
+    fallback for plain underlying prices.
+
+**Split it this way:** orders, positions and balances STAY on Webull —
+that is where the money is and it cannot move. ONLY market data moves.
+Quotes are the bulk of the call volume, so this is nearly all of the win
+with nearly none of the risk.
+
+Why it matters, in numbers: `bridge.log` on 9/4 carried **1,052 throttle
+events**, and during the 09:48-09:52 burst the bot's ratchet was running on
+direct fallback quotes because the shared bus could not keep up. Every quote
+Market Sniper stops asking Webull for is budget handed back to the bot's
+stops — which is the exact failure the rule at the top of this file exists
+to prevent.
+
+**What to copy:** `discord-sniper/dxlink.py`, whole. It is a ~150-line
+RFC 6455 WebSocket client written on the **standard library only** — socket,
+ssl, struct, base64, hashlib. No pip install, deliberately: the last
+streaming SDK installed into a bridge Python broke its pins and
+`FIX SDK DEPS.bat` exists to undo that. It cannot move a dependency.
+Also copy the auth from `tastytrade.py` (`_session`, `quote_token`).
+
+Three traps already paid for, do not rediscover them:
+  1. **The DXLink handshake is SEQUENTIAL.** Firing SETUP, AUTH,
+     CHANNEL_REQUEST and FEED_SETUP back-to-back returns `AUTH step missing`
+     forever while the socket stays connected and healthy-looking. Wait for
+     each confirmation — see `_await()`.
+  2. **Check the token level.** An unfunded account gets `level: demo` on a
+     URL ending `/delayed`. Delayed greeks that read as live would move a
+     stop off stale gamma. `live_level()` refuses them and says so.
+  3. **OAuth access tokens last 15 MINUTES**, not 24 hours. Refresh on a
+     60s margin or you get a 401 mid-position.
+
+Sizing note: dxfeed publishes Greeks on a SLOW cadence — roughly one event
+on subscribe and then infrequently (measured 1-2 per 20s, and no
+`acceptAggregationPeriod` setting changed it). Fine for entry/exit stamps,
+useless as a tick-by-tick delta feed. Subscribe `Quote` alongside `Greeks`
+if per-tick prices are needed.
+
 ## What to port, in order (safest first)
 
 ### 1. `stop_below()` — a stop can never rest AT the fill (10 min)
