@@ -1,88 +1,59 @@
-"""SETUP TASTYTRADE (9/3/26) — connect the account without your password ever
-being stored, logged, or shown to anyone.
+"""SETUP TASTYTRADE (rewritten 9/4/26) — OAuth. Your password is never asked
+for, never typed, never stored.
 
 Run it:  double-click "SETUP TASTYTRADE.bat"   (or: python setup_tastytrade.py)
 
-WHAT IT DOES, in order
-  1. Asks for your tastytrade username and password AT YOUR OWN TERMINAL.
-     The password echoes as asterisks only (see read_password) — it is never
-     printed, never written to disk, and never leaves this machine except in
-     the single login request to tastytrade itself.
-  2. Logs in ONCE and asks tastytrade for a REMEMBER TOKEN.
-  3. Writes ONLY the username + remember token into settings.json.
-     **The password is not saved anywhere.** The remember token is what the
-     bot uses from then on, and it can be revoked from your tastytrade
-     account without changing your password.
-  4. Lists your accounts and saves the one you pick.
-  5. Runs the read-only verify() checklist — balances, a quote, positions,
-     and whether the greeks stream token is reachable.
+BEFORE YOU RUN THIS, do these once in your browser, signed into tastytrade:
 
-WHAT IT DOES NOT DO
+  1. Go to  my.tastytrade.com  ->  Manage  ->  API Access
+     ->  OAuth Applications  ->  create a new application.
+     Tick the scopes you want (read, trade, openid), and put
+        http://localhost:8000
+     as the callback URL.
+     ** COPY THE CLIENT SECRET. It is shown ONCE and never again. **
+
+  2. On that same application:  Manage  ->  Create Grant.
+     ** COPY THE REFRESH TOKEN. **
+
+Then run this and paste those two strings. That is the whole setup — refresh
+tokens never expire, so you do it once and never again.
+
+WHY THIS IS BETTER THAN THE OLD PASSWORD FLOW
+  Your account password stays yours. Nothing here can log into your account
+  as you; a refresh token only does what its scopes allow and can be revoked
+  from your tastytrade account at any time without changing your password.
+
+WHAT THIS DOES NOT DO
   It never places, cancels or modifies an order. It never flips the bot over
   to tastytrade — `execution.broker` is deliberately left as it is, so the
   machine keeps trading Webull exactly as before until you decide otherwise.
 """
-import getpass
 import json
 import os
 import sys
-
-
-def read_password(prompt):
-    """Read a password with VISIBLE feedback (9/3, G: "I can type in the
-    username section but not the password").
-
-    getpass() hides the password so completely that nothing moves on screen —
-    no asterisks, no cursor — so it looks frozen even though it is reading
-    fine. On Windows we read a character at a time with msvcrt and echo a
-    '*' per keystroke, which shows it working without showing the password.
-    Backspace works. Anywhere else, or if the console won't allow it, we
-    fall back to getpass and say so.
-    """
-    try:
-        import msvcrt                                    # Windows only
-    except ImportError:
-        try:
-            return getpass.getpass(prompt)
-        except Exception:                                # noqa: BLE001
-            print("  (this terminal won't hide input — it WILL be visible)")
-            return input(prompt)
-
-    sys.stdout.write(prompt)
-    sys.stdout.flush()
-    buf = []
-    while True:
-        ch = msvcrt.getwch()
-        if ch in ("\r", "\n"):                           # Enter
-            sys.stdout.write("\n")
-            sys.stdout.flush()
-            return "".join(buf)
-        if ch == "\003":                                  # Ctrl-C
-            raise KeyboardInterrupt
-        if ch in ("\b", "\x7f"):                          # Backspace
-            if buf:
-                buf.pop()
-                sys.stdout.write("\b \b")
-                sys.stdout.flush()
-            continue
-        if ch in ("\000", "\xe0"):                        # arrow/function key
-            msvcrt.getwch()                              # eat the second byte
-            continue
-        buf.append(ch)
-        sys.stdout.write("*")
-        sys.stdout.flush()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 SETTINGS = os.path.join(HERE, "settings.json")
 
 
+def ask(prompt):
+    """Read a value. These are pasted, not typed, so they are shown — you
+    need to SEE that a long paste landed intact. Nothing is echoed to any log
+    and nothing but settings.json (gitignored) ever holds them."""
+    try:
+        return input(prompt).strip()
+    except (EOFError, KeyboardInterrupt):
+        return ""
+
+
 def main():
-    print("=" * 66)
-    print("  CONNECT TASTYTRADE — read-only setup")
-    print("=" * 66)
-    print("  Your password is typed here, used once to get a token, and then")
-    print("  forgotten. It is NOT saved to settings.json and NOT logged.")
+    print("=" * 70)
+    print("  CONNECT TASTYTRADE — OAuth, read-only checks")
+    print("=" * 70)
+    print("  No password is asked for here. If you have not made the OAuth")
+    print("  application yet, close this and follow the steps at the top of")
+    print("  setup_tastytrade.py (or just ask Claude to walk you through it).")
     print()
 
     try:
@@ -92,48 +63,46 @@ def main():
         return 1
 
     tt = cfg.setdefault("execution", {}).setdefault("tastytrade", {})
-    user = (tt.get("username") or "").strip()
-    prompt = "  tastytrade username%s: " % (" [%s]" % user if user else "")
-    typed = input(prompt).strip()
-    if typed:
-        user = typed
-    if not user:
-        print("  No username given. Nothing changed.")
+
+    have_secret = bool(tt.get("client_secret"))
+    have_refresh = bool(tt.get("refresh_token"))
+    secret = ask("  CLIENT SECRET%s: "
+                 % (" [keep the saved one — press Enter]" if have_secret else ""))
+    if not secret:
+        secret = tt.get("client_secret") or ""
+    refresh = ask("  REFRESH TOKEN%s: "
+                  % (" [keep the saved one — press Enter]" if have_refresh else ""))
+    if not refresh:
+        refresh = tt.get("refresh_token") or ""
+
+    if not secret or not refresh:
+        print("\n  Need both the client secret and the refresh token.")
+        print("  Nothing was changed.")
         return 1
 
-    print("  (you'll see a * for each character — the password itself is")
-    print("   never shown, never saved, never logged)")
-    pw = read_password("  tastytrade password: ")
-    if not pw:
-        print("  No password given. Nothing changed.")
-        return 1
-
-    # --- log in once, purely to trade the password for a token ------------
+    # --- log in with them BEFORE writing anything -------------------------
     try:
         from tastytrade import TastytradeOptions
-        cli = TastytradeOptions(username=user, password=pw)
-        print("\n  Logging in ...")
+        cli = TastytradeOptions(client_secret=secret, refresh_token=refresh,
+                                sandbox=bool(tt.get("sandbox", False)))
+        print("\n  Exchanging the refresh token for an access token ...")
         cli._session()                                  # noqa: SLF001
     except Exception as e:                              # noqa: BLE001
-        print("  Login FAILED: %s" % str(e)[:200])
-        print("  Nothing was written. Check the username/password, and that")
-        print("  the account is open and approved for options.")
+        print("  FAILED: %s" % str(e)[:220])
+        print("\n  Nothing was written. Most likely causes:")
+        print("   - the client secret or refresh token was truncated on paste")
+        print("   - the grant was made on a DIFFERENT OAuth application")
+        print("   - the account is not yet approved for options")
         return 1
-    finally:
-        pw = None                                       # drop it immediately
-
-    remember = getattr(cli, "_remember", None)
-    if remember:
-        print("  Login OK — got a remember token, so the password is not needed again.")
-    else:
-        print("  Login OK, but tastytrade returned no remember token.")
-        print("  You'll be asked for the password again next time; nothing is saved.")
+    print("  OK — got an access token. (They last 15 minutes and refresh")
+    print("      themselves; the refresh token never expires.)")
 
     # --- which account ----------------------------------------------------
     try:
         accts = cli.accounts()
     except Exception as e:                              # noqa: BLE001
         print("  Could not list accounts: %s" % str(e)[:160])
+        print("  Check that the OAuth application has a READ scope ticked.")
         return 1
     nums = []
     for a in accts:
@@ -141,7 +110,7 @@ def main():
         if n:
             nums.append(str(n))
     if not nums:
-        print("  Logged in but no accounts came back. Is the account funded/open?")
+        print("  Authenticated, but no accounts came back. Is it funded/open?")
         return 1
     if len(nums) == 1:
         acct = nums[0]
@@ -150,7 +119,7 @@ def main():
         print("\n  Accounts on this login:")
         for i, n in enumerate(nums, 1):
             print("    %d) %s" % (i, n))
-        pick = input("  Which one should the bot use? [1]: ").strip() or "1"
+        pick = ask("  Which one should the bot use? [1]: ") or "1"
         try:
             acct = nums[int(pick) - 1]
         except Exception:                               # noqa: BLE001
@@ -158,23 +127,19 @@ def main():
             return 1
     cli.account_id = acct
 
-    # --- write settings (username + token + account ONLY) -----------------
-    tt["username"] = user
+    # --- write settings ---------------------------------------------------
+    tt["client_secret"] = secret
+    tt["refresh_token"] = refresh
     tt["account_id"] = acct
-    if remember:
-        tt["remember_token"] = remember
-    tt.pop("password", None)          # make sure a password never lingers
-    tt.setdefault("sandbox", False)   # tastytrade's cert env needs its OWN
-                                      # credentials; a live login won't work
-                                      # there, so verify against live (the
-                                      # checks below are all read-only).
+    tt.setdefault("sandbox", False)
+    for dead in ("password", "remember_token"):
+        tt.pop(dead, None)      # the password flow is retired — leave nothing
     # settings.json holds EVERY key this machine owns. Never rewrite it in
     # place — a half-written file would take the Webull keys down with it.
     # Back it up, write a temp alongside, verify the temp parses, then swap.
     try:
         import shutil
-        bak = SETTINGS + ".bak"
-        shutil.copy2(SETTINGS, bak)
+        shutil.copy2(SETTINGS, SETTINGS + ".bak")
         tmp = SETTINGS + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
@@ -183,8 +148,8 @@ def main():
         with open(tmp, encoding="utf-8") as f:           # prove it re-reads
             json.load(f)
         os.replace(tmp, SETTINGS)                        # atomic on Windows
-        print("\n  Saved to settings.json: username, account, remember token.")
-        print("  NOT saved: your password.")
+        print("\n  Saved to settings.json: client secret, refresh token, account.")
+        print("  NOT saved (never asked for): your password.")
         print("  (a backup of the previous settings is at settings.json.bak)")
     except Exception as e:                              # noqa: BLE001
         print("  Could not write settings.json: %s" % e)
@@ -200,13 +165,13 @@ def main():
     except Exception as e:                              # noqa: BLE001
         print("   verify() blew up: %s" % str(e)[:200])
 
-    print("\n" + "=" * 66)
+    print("\n" + "=" * 70)
     print("  DONE. The bot is STILL trading Webull — nothing was switched.")
     print("  execution.broker is untouched on purpose.")
     print()
-    print("  Send Claude the checklist above (it contains no secrets) and he")
-    print("  will pin any response that differs from the documented shape.")
-    print("=" * 66)
+    print("  Send Claude the checklist above. It contains NO secrets — just")
+    print("  your account number, buying power, and which checks passed.")
+    print("=" * 70)
     return 0
 
 

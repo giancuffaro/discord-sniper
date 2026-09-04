@@ -59,6 +59,10 @@ TRADIER = {
 TASTY = {
     "/sessions": {"data": {"session-token": "TOK123",
                            "remember-token": "REM456"}},
+    # OAuth (9/4): refresh token -> 15-minute access token. This is the
+    # supported path now; the password /sessions flow above is fallback only.
+    "/oauth/token": {"access_token": "ACC789", "expires_in": 900,
+                     "token_type": "Bearer"},
     "/customers/me/accounts": {"data": {"items": [
         {"account": {"account-number": "5WX00001"}}]}},
     "/accounts/5WX00001/positions": {"data": {"items": [
@@ -201,9 +205,13 @@ def test_tastytrade():
     import tastytrade
     srv, base = serve(TASTY)
     try:
-        b = tastytrade.TastytradeOptions(username="u", password="p",
+        b = tastytrade.TastytradeOptions(client_secret="SEC", refresh_token="REF",
                                          account_id="5WX00001")
         b.base = base
+        ok(b.oauth is True, "client_secret+refresh_token selects the OAuth path")
+        ok(b._session() == "ACC789",
+           "OAuth exchanges the refresh token for an access token, got %r"
+           % b._session())
 
         occ = b.tasty_occ("SPY", "2026-09-04", "PUTS", 771)
         ok(occ == "SPY   260904P00771000",
@@ -235,13 +243,28 @@ def test_tastytrade():
         last = b.last_sell_fill("SPY", "PUTS", 771.0, "2026-09-04")
         ok(last == 1.87, "tastytrade last_sell_fill -> 1.87, got %s" % last)
 
+        # AUTH HEADER SHAPE (9/4). OAuth access tokens are BEARER tokens;
+        # the legacy session token is sent raw. Sending the wrong one is a
+        # 401 in the middle of managing a position, so both are pinned.
         auths = [s[2] for s in Handler.seen if s[2]]
-        ok(auths and auths[0] == "TOK123",
-           "tastytrade sends the RAW session token (no 'Bearer '), got %r"
+        ok(auths and auths[0] == "Bearer ACC789",
+           "an OAuth client sends 'Bearer <access_token>', got %r"
            % (auths[0] if auths else None))
-        ok(b._remember == "REM456",
-           "tastytrade captures the remember-token so the password can leave "
-           "settings.json, got %r" % b._remember)
+
+        Handler.seen = []
+        legacy = tastytrade.TastytradeOptions(username="u", password="p",
+                                              account_id="5WX00001")
+        legacy.base = base
+        ok(legacy.oauth is False,
+           "username+password still selects the legacy session path")
+        legacy.buying_power()
+        lauths = [s[2] for s in Handler.seen if s[2]]
+        ok(lauths and lauths[0] == "TOK123",
+           "a legacy client still sends the RAW session token (no 'Bearer '), "
+           "got %r" % (lauths[0] if lauths else None))
+        ok(legacy._remember == "REM456",
+           "the legacy path still captures the remember-token so a password "
+           "can leave settings.json, got %r" % legacy._remember)
 
         try:
             b.place_conditional_entry("SPY", "CALLS", 650, "2026-09-04", 1,
@@ -276,7 +299,7 @@ def test_contract():
     ok(t.positions() == [],
        "tradier positions() returns [] on a dead server instead of raising")
 
-    y = tastytrade.TastytradeOptions(username="u", password="p",
+    y = tastytrade.TastytradeOptions(client_secret="SEC", refresh_token="REF",
                                      account_id="A")
     y.base = "http://127.0.0.1:9"
     y.timeout = 0.4
