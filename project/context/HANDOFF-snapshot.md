@@ -1118,3 +1118,8 @@ It then lists accounts (picks automatically if there's one), saves the choice, a
 - What he sends back is the checklist text, which contains **no secrets** — account number and buying power only.
 ### Tradier
 Waiting on their approval. Its adapter is already written and fake-server tested; when the token arrives it's the same shape of job, and a matching `SETUP TRADIER.bat` can be written in minutes (Tradier is simpler — a plain access token, no password involved).
+
+## 9/3 22:15 — setup script: password now echoes asterisks + atomic settings write
+G: "I can type in the username section but not the password." Diagnosis: nothing was broken — `getpass` hides input SO completely (no asterisks, no cursor movement) that the window looks frozen. Bad feedback, not a bug.
+**Fixed** with `read_password()`: on Windows it reads a character at a time via `msvcrt.getwch()` and echoes a `*` per keystroke (backspace works, arrow keys eaten, Ctrl-C honoured). The password itself is still never displayed, saved or logged. Non-Windows falls back to getpass, and if the console refuses even that it says plainly that input WILL be visible rather than pretending otherwise.
+**Also hardened, unprompted:** the script was rewriting `settings.json` in place — the file holding EVERY key this machine owns, including the live Webull credentials. A half-written file would have taken the whole bot down. Now: copy to `settings.json.bak` → write `settings.json.tmp` → fsync → **re-parse the temp to prove it is valid JSON** → `os.replace()` (atomic on Windows). On any failure the original is left untouched and it says so. Proven on a COPY of the real settings: Webull keys survive, tastytrade block added, no `password` key present. `.bak`/`.tmp` added to .gitignore.

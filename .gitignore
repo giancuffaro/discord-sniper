@@ -69,3 +69,5 @@ bridge.restart
 # lost, never committed — 187MB of rotated logs lived here at the start.
 archive/
 *.log.old
+settings.json.bak
+settings.json.tmp

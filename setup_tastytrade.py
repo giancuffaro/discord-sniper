@@ -5,7 +5,7 @@ Run it:  double-click "SETUP TASTYTRADE.bat"   (or: python setup_tastytrade.py)
 
 WHAT IT DOES, in order
   1. Asks for your tastytrade username and password AT YOUR OWN TERMINAL.
-     The password is read with getpass — it does not echo, it is never
+     The password echoes as asterisks only (see read_password) — it is never
      printed, never written to disk, and never leaves this machine except in
      the single login request to tastytrade itself.
   2. Logs in ONCE and asks tastytrade for a REMEMBER TOKEN.
@@ -26,6 +26,51 @@ import getpass
 import json
 import os
 import sys
+
+
+def read_password(prompt):
+    """Read a password with VISIBLE feedback (9/3, G: "I can type in the
+    username section but not the password").
+
+    getpass() hides the password so completely that nothing moves on screen —
+    no asterisks, no cursor — so it looks frozen even though it is reading
+    fine. On Windows we read a character at a time with msvcrt and echo a
+    '*' per keystroke, which shows it working without showing the password.
+    Backspace works. Anywhere else, or if the console won't allow it, we
+    fall back to getpass and say so.
+    """
+    try:
+        import msvcrt                                    # Windows only
+    except ImportError:
+        try:
+            return getpass.getpass(prompt)
+        except Exception:                                # noqa: BLE001
+            print("  (this terminal won't hide input — it WILL be visible)")
+            return input(prompt)
+
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    buf = []
+    while True:
+        ch = msvcrt.getwch()
+        if ch in ("\r", "\n"):                           # Enter
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+            return "".join(buf)
+        if ch == "\003":                                  # Ctrl-C
+            raise KeyboardInterrupt
+        if ch in ("\b", "\x7f"):                          # Backspace
+            if buf:
+                buf.pop()
+                sys.stdout.write("\b \b")
+                sys.stdout.flush()
+            continue
+        if ch in ("\000", "\xe0"):                        # arrow/function key
+            msvcrt.getwch()                              # eat the second byte
+            continue
+        buf.append(ch)
+        sys.stdout.write("*")
+        sys.stdout.flush()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -56,7 +101,9 @@ def main():
         print("  No username given. Nothing changed.")
         return 1
 
-    pw = getpass.getpass("  tastytrade password (hidden, not saved): ")
+    print("  (you'll see a * for each character — the password itself is")
+    print("   never shown, never saved, never logged)")
+    pw = read_password("  tastytrade password: ")
     if not pw:
         print("  No password given. Nothing changed.")
         return 1
@@ -121,13 +168,27 @@ def main():
                                       # credentials; a live login won't work
                                       # there, so verify against live (the
                                       # checks below are all read-only).
+    # settings.json holds EVERY key this machine owns. Never rewrite it in
+    # place — a half-written file would take the Webull keys down with it.
+    # Back it up, write a temp alongside, verify the temp parses, then swap.
     try:
-        with open(SETTINGS, "w", encoding="utf-8") as f:
+        import shutil
+        bak = SETTINGS + ".bak"
+        shutil.copy2(SETTINGS, bak)
+        tmp = SETTINGS + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        with open(tmp, encoding="utf-8") as f:           # prove it re-reads
+            json.load(f)
+        os.replace(tmp, SETTINGS)                        # atomic on Windows
         print("\n  Saved to settings.json: username, account, remember token.")
         print("  NOT saved: your password.")
+        print("  (a backup of the previous settings is at settings.json.bak)")
     except Exception as e:                              # noqa: BLE001
         print("  Could not write settings.json: %s" % e)
+        print("  Nothing was changed — the original file is intact.")
         return 1
 
     # --- read-only verification ------------------------------------------
