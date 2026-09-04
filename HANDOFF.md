@@ -43,8 +43,33 @@ expire and can be revoked without changing his password. `SETUP TASTYTRADE.bat`
 header shapes. **Claude never types his password or pastes his secrets — he
 does that himself, in his own browser and his own terminal.**
 
-**TASTYTRADE IS CONNECTED AND THE GREEKS STREAM IS PROVEN — BUT DELAYED
-(9/4 11:38).** G created the OAuth client and ran the setup; the adapter
+**GREEKS ARE LIVE AND RECORDING (9/4 12:05).** G funded tastytrade; the token
+flipped from `level: demo` on `/delayed` to **`level: api` on `/realtime`**
+within minutes. `GREEKS on` at bridge start. Real numbers flowing, e.g. INTC
+9/18 96C: delta 0.4798, gamma 0.0377, theta -0.1486, vega 0.0745, IV 0.5658.
+- **`dxlink.py` is STDLIB ONLY — no pip install, on purpose.** A ~150-line
+  RFC 6455 client (socket+ssl+struct+base64+hashlib). The obvious
+  `pip install websockets` is exactly what broke the SDK pins on 9/2 and
+  `FIX SDK DEPS.bat` exists to undo. Nothing here can move a pin.
+- **The DXLink handshake is SEQUENTIAL, not a burst.** Firing SETUP, AUTH,
+  CHANNEL_REQUEST and FEED_SETUP back-to-back gets `AUTH step missing`
+  forever while the socket stays happily connected — a silent no-data
+  failure. Each step waits for its confirmation (`_await`).
+- **Delayed data is REFUSED, not used.** `live_level()` checks the token; a
+  demo/delayed feed stands down with a one-line explanation rather than
+  serving stale gamma that looks live.
+- Wiring: greeks are a DATA feed only — `execution.broker` is untouched and
+  **Webull still places every order.** Positions subscribe at arm time, and
+  `_greeks_sync` in bridge.py mirrors the quote bus every 2s to cover
+  restored/adopted ones. Output: `greeks_tape.csv`, plus `greeks_in` and
+  `greeks_out` on every closed-trade row (entry greeks stamped by the
+  watchdog within the first 60s only — after that they are not "entry"
+  greeks and calling them that would be a lie).
+- NOTE: the position dict field is **`sent_at`**, not `opened_at`. Two of
+  today's edits assumed `opened_at` and were silently falling back to
+  `time.time()`.
+PRIOR STATE, kept for the record —
+**TASTYTRADE WAS CONNECTED BUT DELAYED (9/4 11:38).** G created the OAuth client and ran the setup; the adapter
 authenticates, lists the account, reads balances and positions. Then the live
 checklist against the REAL server:
 ```
