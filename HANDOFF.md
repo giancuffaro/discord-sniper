@@ -43,6 +43,27 @@ expire and can be revoked without changing his password. `SETUP TASTYTRADE.bat`
 header shapes. **Claude never types his password or pastes his secrets — he
 does that himself, in his own browser and his own terminal.**
 
+**THE SOURCE-OF-TRUTH RULE (9/4, after getting it wrong twice in one hour).**
+
+    positions -> ask the ACCOUNT
+    prices    -> ask the ORDER HISTORY
+    reasoning -> read the logs
+    ...and NEVER substitute one for another.
+
+What happened: Claude told G he was holding a 5-lot SPY position. He wasn't —
+it had closed an hour earlier. The claim came from a log line that was TRUE
+when written and FALSE when read: `11:44:59 ADOPT left SPY x5 alone`. **A log
+is a narrative in the past tense. It is not a statement of state.** Same class
+of error as the bot saying "you closed it yourself" when its own stop fired.
+Then, compounding it, Claude saw `ADOPTED x2` + `ADOPTED x3`, decided 2+3=5,
+and accused the adopt code of inventing the position. The order history said
+otherwise: a REAL 5-lot SPY 769P, bought 11:44:30 @ 0.46, sold 11:48:49 @
+0.54, +$40. **The code was right.** A tidy theory beat a ten-second check.
+Before any claim about what he holds: `now.py` / `WHAT DO I HOLD.bat`, or the
+Webull connector's get_account_positions + get_order_history. Never the log.
+TODO after the close: `webull_options` has no `order_history()`, so section 4
+of now.py is a stub — add it.
+
 **GREEKS ARE LIVE AND RECORDING (9/4 12:05).** G funded tastytrade; the token
 flipped from `level: demo` on `/delayed` to **`level: api` on `/realtime`**
 within minutes. `GREEKS on` at bridge start. Real numbers flowing, e.g. INTC
