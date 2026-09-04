@@ -52,6 +52,15 @@ class BrokerBase(object):
     supports_streaming_greeks = False   # delta/gamma/theta/vega pushed live
     option_quote_limit_per_min = None   # None = no published cap
 
+    # ---- lifecycle ------------------------------------------------------
+    def connect(self):
+        """REQUIRED -> the account id, as a string.
+
+        Reads the account list and nothing else. It must NEVER place, cancel
+        or modify an order — the bridge calls this at boot, every boot.
+        """
+        raise NotImplementedError
+
     # ---- market data ----------------------------------------------------
     def ask_bid(self, occ):
         """REQUIRED -> (ask, bid, raw_row). Raises Refused if it can't."""

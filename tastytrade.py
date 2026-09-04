@@ -140,6 +140,28 @@ class TastytradeOptions(BrokerBase):
             return it
         return [d] if d else []
 
+    # ---- lifecycle ------------------------------------------------------
+    def connect(self):
+        """Read-only. Logs in and settles the account number."""
+        nums = []
+        for a in self.accounts():
+            n = a.get("account-number") or a.get("account_number")
+            if n:
+                nums.append(str(n))
+        if not nums:
+            raise Refused("tastytrade logged in but listed no accounts")
+        if self.account_id and self.account_id in nums:
+            return self.account_id
+        if len(nums) == 1:
+            self.account_id = nums[0]
+            return self.account_id
+        if self.account_id:
+            raise Refused("tastytrade account %s not on this login (found %s)"
+                          % (self.account_id, ", ".join(nums)))
+        raise Refused("this tastytrade login has several accounts (%s) — put "
+                      "the one to trade in execution.tastytrade.account_id"
+                      % ", ".join(nums))
+
     # ---- symbols --------------------------------------------------------
     @staticmethod
     def tasty_occ(symbol, expiry, side, strike):

@@ -4089,7 +4089,27 @@ def connect_broker(quiet=False):
                 lc = copy.deepcopy(CFG)
                 lc.setdefault("execution", {}).setdefault(
                     "webull", {})["paper_trading"] = False
-                wbl = WebullOptions(lc)
+                # PLUGGABLE BROKER (9/3). Opt-in and guarded: unless
+                # execution.broker NAMES something other than webull, this is
+                # byte-for-byte the old path. When it does name one (tradier /
+                # tastytrade) the adapter is built instead, and if that fails
+                # for any reason we fall back to Webull rather than leaving
+                # the machine with no broker at all.
+                _bname = str((CFG.get("execution") or {}).get("broker")
+                             or "webull").lower().strip()
+                wbl = None
+                if _bname and _bname != "webull":
+                    try:
+                        import broker as _bk
+                        wbl = _bk.get_broker(lc, _bname)
+                        note("BROKER   using %s instead of Webull — %s"
+                             % (_bname, _bk.capabilities(wbl)))
+                    except Exception as _be:            # noqa: BLE001
+                        note("BROKER   %s failed to build (%s) — falling back "
+                             "to Webull" % (_bname, str(_be)[:90]))
+                        wbl = None
+                if wbl is None:
+                    wbl = WebullOptions(lc)
                 acctl = wbl.connect()
                 if not getattr(wbl, "paper", False):
                     WB_LIVE = wbl

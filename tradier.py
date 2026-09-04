@@ -100,6 +100,31 @@ class TradierOptions(BrokerBase):
             return []
         return inner if isinstance(inner, list) else [inner]
 
+    # ---- lifecycle ------------------------------------------------------
+    def connect(self):
+        """Read-only. Confirms the token works and settles the account id."""
+        body = self._req("/v1/user/profile")
+        accts = []
+        prof = (body or {}).get("profile") or {}
+        for a in self._one(prof, "account"):
+            num = a.get("account_number")
+            if num:
+                accts.append(str(num))
+        if not accts:
+            raise Refused("Tradier answered but listed no accounts — check "
+                          "the access token")
+        if self.account_id and self.account_id in accts:
+            return self.account_id
+        if len(accts) == 1:
+            self.account_id = accts[0]
+            return self.account_id
+        if self.account_id:
+            raise Refused("Tradier account %s not on this login (found %s)"
+                          % (self.account_id, ", ".join(accts)))
+        raise Refused("this Tradier login has several accounts (%s) — put the "
+                      "one to trade in execution.tradier.account_id"
+                      % ", ".join(accts))
+
     # ---- market data ----------------------------------------------------
     def ask_bid(self, occ):
         got = self.ask_bid_many([occ])
