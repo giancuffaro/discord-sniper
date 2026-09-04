@@ -324,6 +324,27 @@ class Book:
             if now > self.peak:
                 self.peak = now
 
+    def _greeks_now(self, p):
+        """Live greeks for a position, trimmed to what is worth keeping, or
+        None. Never raises and never blocks — the greeks feed is a nice-to-
+        have that must never be able to delay an exit."""
+        try:
+            bus = getattr(self, "greeks", None)
+            if bus is None or not p:
+                return None
+            g = bus.get(p.get("occ"))
+            if not g:
+                return None
+            out = {}
+            for k in ("delta", "gamma", "theta", "vega", "volatility",
+                      "price"):
+                v = g.get(k)
+                if v is not None:
+                    out["iv" if k == "volatility" else k] = round(float(v), 6)
+            return out or None
+        except Exception:                               # noqa: BLE001
+            return None
+
     def _mark_excursion(self, key, bid):
         """The furthest a position ever ran green and the furthest it ever went
         red, as a % from the entry fill (his ask, 8/19: 'the lowest the
@@ -2199,6 +2220,19 @@ class Book:
                 _b.watch(_o)
         except Exception:                               # noqa: BLE001
             pass
+        # Stamp the ENTRY greeks once, here, because this runs seconds after
+        # the fill. Delta/IV at entry is half of every question worth asking
+        # later — a -$50 trade at 0.15 delta and a -$50 trade at 0.60 delta
+        # are not the same mistake.
+        try:
+            with self._lock:
+                _pg = self._pos.get(key)
+                if _pg is not None and not _pg.get("greeks_in"):
+                    _g = self._greeks_now(_pg)
+                    if _g:
+                        _pg["greeks_in"] = _g
+        except Exception:                               # noqa: BLE001
+            pass
         if self._sim(p):
             _pa = ((1 - stop_price / float(fill)) * 100
                    if float(fill or 0) > 0 else self.stop_pct)
@@ -3409,7 +3443,15 @@ class Book:
                          "stop_at_exit": _pp.get("stop"),
                          "why": why,
                          "state": state,
-                         "live": p_live})
+                         "live": p_live,
+                         # GREEKS AT BOTH ENDS (9/4). Entry greeks are
+                         # stamped when the stop is armed; these are the
+                         # exit ones. Delta says how much of the move we
+                         # actually captured, and IV at entry vs exit says
+                         # whether a loss was direction or just vol coming
+                         # out — which a P&L number alone can never tell.
+                         "greeks_in": _pp.get("greeks_in"),
+                         "greeks_out": self._greeks_now(_pp)})
                 pot = self.cash
             day = ""
             if self.unlimited:

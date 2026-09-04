@@ -277,13 +277,21 @@ class TastytradeOptions(BrokerBase):
         the piece no other broker on the shortlist offers, and the reason to
         keep this adapter even if Tradier wins on cost.
 
-        Deliberately NOT implemented yet: it needs a websocket client in the
-        bridge's Python, and the last time a streaming SDK was installed into
-        that environment it broke the bridge's pins (8/31, FIX SDK DEPS.bat).
-        Wire it only after the REST path is proven, and prefer a dependency-
-        free websocket over pulling in a whole SDK.
+        DONE, 9/4 — see dxlink.py, and it took the dependency-free route the
+        paragraph below insisted on: a ~150-line stdlib WebSocket, no pip
+        install, so it cannot move the SDK pins.
         """
         return self._get("/api-quote-tokens")
+
+    def quote_token(self):
+        """The dxfeed token payload: {token, dxlink-url, level, expires-at}.
+
+        `level` matters. An UNFUNDED account gets `level: demo` on a URL
+        ending /delayed; a funded one gets `level: api` on /realtime. The
+        greeks bus checks this and refuses to serve delayed data as if it
+        were live — see dxlink.live_level().
+        """
+        return (self._get("/api-quote-tokens") or {}).get("data") or {}
 
     # ---- account --------------------------------------------------------
     def accounts(self):

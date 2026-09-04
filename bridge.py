@@ -327,7 +327,7 @@ def build_book():
     exists to answer. In dry run it is `simulated`, which means it can read
     quotes but is not allowed to send anything.
     """
-    global BOOK
+    global BOOK, GREEKS
     # G's standing rule (Aug 2026): entries fill at the ASK for SPEED, not the
     # bid. Bidding at the bid is what left orders resting and filling a minute
     # late (or never) -- the root of the position desync. Forced onto every
