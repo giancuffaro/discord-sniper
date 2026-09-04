@@ -53,6 +53,30 @@ expire and can be revoked without changing his password. `SETUP TASTYTRADE.bat`
 header shapes. **Claude never types his password or pastes his secrets — he
 does that himself, in his own browser and his own terminal.**
 
+**A CLOSE ALWAYS LEAVES A ROW (9/4 evening — the journal caught my own
+half-fix the same day).** The morning fix moved the closed-trade record out of
+`if not p_live` so real trades would be written down. It was still inside
+`... and price is not None`, so **every exit where the fill price isn't known
+yet recorded NOTHING** — and that is every hand close ("sold, but at a price I
+never saw"), plus any exit the broker hasn't confirmed. Result: the 9/4 day
+book held **0 trades** while the journal counted 11. Now the row is written on
+every close path, with `exit`/`pl` NULL and `pending_price: true` when the
+price isn't known; `_true_up_exit` and the journal fill it in from the broker's
+order list. **Null is honest, zero would have been a lie, missing was worse.**
+Proven for live/paper × price/no-price, and the `_recorded` flag stops any
+path writing the row twice.
+ALSO: `restore_state` pops `hi_pct`/`lo_pct` on restart, so a position held
+across a restart loses its run-up/drawdown history. Not yet fixed — flagged.
+
+**BOTH NEW BROKERS ARE LIVE AND VERIFIED (9/4 18:10).** tastytrade: $250,
+`api`/REALTIME, greeks_tape.csv filling. Tradier: production key, **$500**
+buying power, balances + stock quote (SPY 770.19) + positions all reading
+against the real server. Tradier's stock quote WORKS where tastytrade's REST
+market data 403s. **`execution.broker` is still `webull` — neither is
+executing.** Unproven on Tradier: the option-quote path (needs a live OCC) and
+**OTOCO**, which is the whole point of it — prove that in their sandbox before
+it ever sees real money.
+
 **THE SOURCE-OF-TRUTH RULE (9/4, after getting it wrong twice in one hour).**
 
     positions -> ask the ACCOUNT
