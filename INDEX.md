@@ -55,6 +55,7 @@ down until you delete it.
 | `scoreboard.py` | Per-room signal/trade scoreboard → `SCOREBOARD.html` |
 | `jsparse.py` + `extension/parse_batch.js` | Let the Python tools call the REAL parser, so an audit can never disagree with the bot. |
 | `test_brokers.py` | Runs the Tradier/tastytrade adapters against a FAKE local server — proves the parsing with no credentials needed. |
+| `test_tape.py` | "Did this trade leave a price record?" Proves a managed contract still gets taped when the batched sweep is completely blind, and that the bus says so out loud. |
 | `test_positions.py`, `test_signals.py`, `test_resolve.js`, `test_parity.js` | The suite. Parity proves the JS and Python parsers agree. |
 | `dump_parse.py` + `samples.txt` | Feeds test_parity. |
 

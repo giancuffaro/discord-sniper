@@ -8,6 +8,35 @@ labels a swing, is now REFUSED at the entry gate in bridge.py `_place_impl`
 already held are untouched and keep their stops. Switch: `swings_paused` in
 settings.json, toggled from the popup's Strategies tab (extension 3.5.17 —
 RELOAD IT), reported in /mode so the state is never a guess.
+**THE DATA RULE (9/4, G: "i want to get more weeks data off of trades").**
+Webull's API has NO historical option prices, so anything not recorded as it
+happens is gone forever. Two holes were found and closed:
+- **option_tape.csv had no ticks for the contracts we traded.** 9/4 recorded
+  2,284 ticks of XLF (G's own hand position, rendered by /positions) and ZERO
+  for NVDA 235C and INTC 94C. Two silent failures stacked: the batched sweep
+  kept returning without them, and the watchdog's direct-quote fallback threw
+  its quote away instead of taping it. Now: the bus `tape()`s the fallback
+  quote, positions subscribe at ARM time (not only from inside the watchdog
+  thread, which can return early), and the bus SAYS "QUOTE BUS BLIND on <occ>"
+  after 30 empty sweeps. Locked by `test_tape.py`.
+- **Live trades were never written to the day book at all.** The whole
+  closed-trade row sat inside `if not p_live`, so only PRETEND trades were
+  recorded — 26 day files hold 2 rows between them while trades.log shows 125
+  fills. The wallet maths is still gated (a live trade never moves the pretend
+  cash); only the RECORD is unconditional now, tagged `live`.
+- The row now carries the SHAPE of the trade, not just its ends:
+  `max_runup_pct`, `max_drawdown_pct`, occ, side, strike, expiry, dte, swing,
+  `stop_at_exit`, why, state, live. Run-up/drawdown were already tracked in
+  memory by `_mark_excursion` since 8/19 and thrown away at close. They are
+  the only way to ever answer "how far did a WINNER go against me first",
+  which is the question every breathing-room rule depends on.
+NEXT, and it needs G: greeks. tastytrade STREAMS them over DXLink (delta,
+gamma, theta, vega, rho, IV, theo — per tick). Tradier's come from ORATS on
+the REST chains endpoint with `greeks=true`, refresh rate undocumented —
+MEASURE it off `greeks.updated_at` before trusting it. Plan is tastytrade as
+a DATA feed with Webull still executing; no rule changes until weeks of
+greeks-tagged trades exist.
+
 Also today, two more:
 - **1-STRIKE-OTM IS NOW 0/1DTE ONLY** (G, 9/4). It exists because a far-OTM
   strike expiring TODAY is a lottery ticket. From 2 SESSIONS out (sessions,
