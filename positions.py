@@ -3356,11 +3356,49 @@ class Book:
                         self.wins += 1
                     else:
                         self.losses += 1
+                    # THE SHAPE OF THE TRADE, not just its ends (9/4, G:
+                    # "i want to get more weeks data off of trades").
+                    # _mark_excursion has tracked hi_pct/lo_pct on every
+                    # poll since 8/19 — and this row, the only one that
+                    # survives the day, threw both away. Without them there
+                    # is no way to ever ask the one question that matters
+                    # for breathing room: how far did a WINNER go against
+                    # me first? Entry, exit and P&L cannot answer that.
+                    # Also kept: the contract, its DTE, and how it ended,
+                    # so a stop-out can be told from a called exit later.
+                    _pp = p or {}
+                    _dte_c = None
+                    try:
+                        import datetime as _dtc
+                        _ex_c = str(_pp.get("expiry") or "")[:10]
+                        if len(_ex_c) == 10:
+                            _dte_c = (_dtc.date.fromisoformat(_ex_c)
+                                      - _dtc.date.fromtimestamp(
+                                          _pp.get("opened_at") or time.time())
+                                      ).days
+                    except Exception:                   # noqa: BLE001
+                        _dte_c = None
                     self.closed_trades.append(
                         {"key": key, "who": who, "symbol": sym, "qty": qty,
                          "fill": entry, "exit": round(float(price), 2),
-                         "room": (p or {}).get("room"),
-                         "pl": round(total, 2), "t": time.time()})
+                         "room": _pp.get("room"),
+                         "pl": round(total, 2), "t": time.time(),
+                         # how far it ran green / red, in % of the entry
+                         "max_runup_pct": (round(float(_pp["hi_pct"]), 2)
+                                           if _pp.get("hi_pct") is not None
+                                           else None),
+                         "max_drawdown_pct": (round(float(_pp["lo_pct"]), 2)
+                                              if _pp.get("lo_pct") is not None
+                                              else None),
+                         "occ": _pp.get("occ"),
+                         "side": _pp.get("side"),
+                         "strike": _pp.get("strike"),
+                         "expiry": _pp.get("expiry"),
+                         "dte": _dte_c,
+                         "swing": bool(_pp.get("swing")),
+                         "stop_at_exit": _pp.get("stop"),
+                         "why": why,
+                         "state": state})
                 pot = self.cash
             day = ""
             if self.unlimited:
