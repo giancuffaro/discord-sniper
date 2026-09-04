@@ -481,9 +481,21 @@ function paintBridgeLive() {
   const annTxt = !ok ? "" : annOff ? " · announcer off (paused)"
     : modeStatus.announcer_alive ? " · announcer on"
     : " · ✕ ANNOUNCER OFF — run ANNOUNCER.bat";
+  // GREEKS on the same line (9/4). tastytrade drops an account back to
+  // DELAYED data the moment it looks unfunded. A delayed feed that reads as
+  // live is exactly the kind of quiet lie this line exists to prevent, so
+  // "delayed" is RED. Not configured at all is silent — it's optional.
+  const gk = (modeStatus && modeStatus.greeks) || null;
+  const gkBad = !!(ok && gk && gk.connected && !gk.live);
+  const gkTxt = !ok || !gk ? ""
+    : gk.live && gk.connected ? " · greeks live (" + gk.with_greeks + ")"
+    : gk.connected ? " · ✕ GREEKS DELAYED — fund tastytrade"
+    : gk.level ? " · greeks reconnecting" : "";
   txt.textContent = !_bridgeLastCheck ? "checking bridge…"
-    : ok ? "✓ Bridge connected" + annTxt : "✕ Bridge NOT reachable — run 🎯 START HERE";
-  txt.style.color = _bridgeLastCheck && (!ok || !annOk) ? "#fca5a5" : "#9aa3b5";
+    : ok ? "✓ Bridge connected" + annTxt + gkTxt
+         : "✕ Bridge NOT reachable — run 🎯 START HERE";
+  txt.style.color = _bridgeLastCheck && (!ok || !annOk || gkBad)
+    ? "#fca5a5" : "#9aa3b5";
 }
 
 /* ---- where futures trade: Webull / NinjaTrader / Tradovate ----------------
