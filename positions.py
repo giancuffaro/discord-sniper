@@ -2311,6 +2311,28 @@ class Book:
                             q["last_ask"] = None
                 # High-water / low-water mark of the trade, same live bid.
                 self._mark_excursion(key, float(bid))
+                # ENTRY GREEKS, stamped as soon as the stream delivers them
+                # (9/4). Arming the stop subscribes the contract, but the
+                # first Greeks event lands a second or two later, so trying
+                # to stamp them at arm time always got None. Keep trying on
+                # each pass — but only for the first 60 seconds, because
+                # after that they are not "entry" greeks and calling them
+                # that would be a lie in the record.
+                try:
+                    with self._lock:
+                        _q2 = self._pos.get(key)
+                        _need = (_q2 is not None and not _q2.get("greeks_in")
+                                 and (time.time()
+                                      - float(_q2.get("opened_at") or 0)) < 60)
+                    if _need:
+                        _gin = self._greeks_now(_q2)
+                        if _gin:
+                            with self._lock:
+                                _q3 = self._pos.get(key)
+                                if _q3 is not None and not _q3.get("greeks_in"):
+                                    _q3["greeks_in"] = _gin
+                except Exception:                       # noqa: BLE001
+                    pass
                 # His rule runs here, on the same live bid the stop watches.
                 # Take-profit first: if the position is up +N% it closes ALL of
                 # it and we're done — nothing else to manage. Then the sim-only
