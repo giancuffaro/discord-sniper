@@ -392,6 +392,17 @@ def _looks_like_futures_code(sym):
 
 
 class WebullOptions:
+    # BROKER CAPABILITIES (9/3) — read by broker.capabilities() so code and
+    # logs can ASK what this broker can do instead of assuming. Webull can
+    # born-with-the-order brackets (MASTER + STOP_LOSS), but has NO
+    # conditional order triggered by the underlying and NO option streaming
+    # at any price — which is exactly why broker.py exists.
+    name = "webull"
+    supports_bracket_entry = True
+    supports_conditional_on_underlying = False
+    supports_option_streaming = False
+    option_quote_limit_per_min = 60          # option snapshot endpoint
+
     def __init__(self, cfg):
         w = (cfg.get("execution", {}) or {}).get("webull", {}) or {}
         self.app_key = w.get("app_key", "")
