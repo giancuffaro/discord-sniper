@@ -2323,7 +2323,7 @@ class Book:
                         _q2 = self._pos.get(key)
                         _need = (_q2 is not None and not _q2.get("greeks_in")
                                  and (time.time()
-                                      - float(_q2.get("opened_at") or 0)) < 60)
+                                      - float(_q2.get("sent_at") or 0)) < 60)
                     if _need:
                         _gin = self._greeks_now(_q2)
                         if _gin:
@@ -3448,7 +3448,7 @@ class Book:
                         if len(_ex_c) == 10:
                             _dte_c = (_dtc.date.fromisoformat(_ex_c)
                                       - _dtc.date.fromtimestamp(
-                                          _pp.get("opened_at") or time.time())
+                                          _pp.get("sent_at") or time.time())
                                       ).days
                     except Exception:                   # noqa: BLE001
                         _dte_c = None
