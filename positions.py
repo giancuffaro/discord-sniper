@@ -3524,6 +3524,59 @@ class Book:
             # credited without inventing a number, so it says so instead of
             # quietly leaving the account short.
             money = " · sold, but at a price I never saw — account left as it was"
+
+        # A CLOSE ALWAYS LEAVES A ROW (9/4, second pass — the first one was
+        # incomplete and the journal caught it the same evening).
+        #
+        # This morning the record was moved out of `if not p_live` so real
+        # trades would be written down. It was still sitting inside
+        # `... and price is not None`, so every exit where the fill price
+        # isn't known YET — which is every hand close, and any exit the
+        # broker hasn't confirmed — recorded nothing at all. The day book
+        # ended 9/4 with ZERO trades in it while the journal counted eleven.
+        #
+        # An unknown exit price is not a reason to forget the trade happened.
+        # Write the row with exit/pl left NULL and `pending_price` set;
+        # _true_up_exit fills them in when the broker confirms, and the
+        # journal already trues up P&L from the order list regardless.
+        # Null is honest. Zero would have been a lie, and missing was worse.
+        if not _recorded:
+            with self._lock:
+                _fp = self._pos.get(key) or {}
+                _dte_f = None
+                try:
+                    import datetime as _dtf
+                    _exf = str(_fp.get("expiry") or "")[:10]
+                    if len(_exf) == 10:
+                        _dte_f = (_dtf.date.fromisoformat(_exf)
+                                  - _dtf.date.fromtimestamp(
+                                      _fp.get("sent_at") or time.time())).days
+                except Exception:                       # noqa: BLE001
+                    _dte_f = None
+                _tp = _fp.get("trade_pl")
+                self.closed_trades.append(
+                    {"key": key, "who": who, "symbol": sym, "qty": qty,
+                     "fill": entry,
+                     "exit": (round(float(price), 2) if price is not None
+                              else None),
+                     "pl": (round(float(_tp), 2) if _tp not in (None, 0)
+                            else None),
+                     "pending_price": price is None,
+                     "room": _fp.get("room"), "t": time.time(),
+                     "max_runup_pct": (round(float(_fp["hi_pct"]), 2)
+                                       if _fp.get("hi_pct") is not None
+                                       else None),
+                     "max_drawdown_pct": (round(float(_fp["lo_pct"]), 2)
+                                          if _fp.get("lo_pct") is not None
+                                          else None),
+                     "occ": _fp.get("occ"), "side": _fp.get("side"),
+                     "strike": _fp.get("strike"), "expiry": _fp.get("expiry"),
+                     "dte": _dte_f, "swing": bool(_fp.get("swing")),
+                     "stop_at_exit": _fp.get("stop"),
+                     "why": why, "state": state,
+                     "live": bool(_fp.get("live")),
+                     "greeks_in": _fp.get("greeks_in"),
+                     "greeks_out": self._greeks_now(_fp)})
         self._event(key, state, "%s — %s%s" % (sym, why, money))
 
     def force_drop(self, symbol, why="removed from the popup", live=None):
