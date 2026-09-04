@@ -65,11 +65,20 @@ class TastytradeOptions(BrokerBase):
     option_quote_limit_per_min = None
 
     def __init__(self, username=None, password=None, remember_token=None,
+                 client_secret=None, refresh_token=None,
                  account_id=None, sandbox=False, log=None, timeout=8.0):
-        if not username or not (password or remember_token):
-            raise Refused("tastytrade needs execution.tastytrade.username "
-                          "plus either password or remember_token")
-        self.username = str(username)
+        # OAUTH FIRST (9/4). client_secret + refresh_token is the supported
+        # path and needs no password at all. Username/password is accepted
+        # only so an older settings.json keeps working.
+        self._secret = client_secret or None
+        self._refresh = refresh_token or None
+        self.oauth = bool(self._secret and self._refresh)
+        if not self.oauth and not (username and (password or remember_token)):
+            raise Refused(
+                "tastytrade needs execution.tastytrade.client_secret plus "
+                "refresh_token (make them at my.tastytrade.com -> Manage -> "
+                "API Access -> OAuth Applications). Run 'SETUP TASTYTRADE.bat'.")
+        self.username = str(username or "")
         self._password = password
         self._remember = remember_token
         self.account_id = str(account_id or "")
@@ -78,15 +87,43 @@ class TastytradeOptions(BrokerBase):
         self.log = log or (lambda *a, **k: None)
         self._tok = None
         self._tok_at = 0.0
+        self._tok_ttl = 20 * 3600      # password sessions last ~24h
         self._lock = threading.Lock()
         self._last_call = 0.0
 
     # ---- auth -----------------------------------------------------------
     def _session(self):
-        """Session tokens are good for ~24h; refresh well before that."""
+        """A valid bearer token, refreshed before it expires.
+
+        OAuth access tokens live 15 MINUTES (expires_in, usually 900), not a
+        day — so this refreshes on a 60s safety margin. Getting that wrong
+        would mean a 401 in the middle of managing a position, which is the
+        worst possible moment to discover it.
+        """
         with self._lock:
-            if self._tok and (time.time() - self._tok_at) < 20 * 3600:
+            if self._tok and (time.time() - self._tok_at) < self._tok_ttl:
                 return self._tok
+
+        if self.oauth:
+            out = self._raw("POST", "/oauth/token",
+                            {"grant_type": "refresh_token",
+                             "client_secret": self._secret,
+                             "refresh_token": self._refresh}, auth=False)
+            tok = (out or {}).get("access_token")
+            if not tok:
+                raise Refused("tastytrade OAuth refresh failed: %s"
+                              % str(out)[:140])
+            try:
+                ttl = float((out or {}).get("expires_in") or 900)
+            except (TypeError, ValueError):
+                ttl = 900.0
+            with self._lock:
+                self._tok = tok
+                self._tok_at = time.time()
+                self._tok_ttl = max(60.0, ttl - 60.0)   # refresh a minute early
+            return tok
+
+        # --- legacy password/remember-token session (fallback only) -------
         body = {"login": self.username, "remember-me": True}
         if self._remember:
             body["remember-token"] = self._remember
@@ -100,6 +137,7 @@ class TastytradeOptions(BrokerBase):
         with self._lock:
             self._tok = tok
             self._tok_at = time.time()
+            self._tok_ttl = 20 * 3600
             # A remember-token lets the password come OUT of settings.json.
             if data.get("remember-token"):
                 self._remember = data["remember-token"]
@@ -119,9 +157,17 @@ class TastytradeOptions(BrokerBase):
         req.add_header("Content-Type", "application/json")
         req.add_header("Accept", "application/json")
         req.add_header("User-Agent", "discord-sniper/1.0")
+        # Live (not sandbox) wants an API version header; the cert environment
+        # rejects it. Mirrors the official SDK.
+        if self.base == LIVE:
+            req.add_header("Accept-Version", "v1")
         if auth:
-            # tastytrade takes the RAW session token — no "Bearer " prefix.
-            req.add_header("Authorization", self._session())
+            # OAuth access tokens are BEARER tokens. The legacy session token
+            # is sent raw, with no prefix. Sending the wrong one is a 401 in
+            # the middle of managing a position, so this is explicit.
+            tok = self._session()
+            req.add_header("Authorization",
+                           ("Bearer " + tok) if self.oauth else tok)
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
                 return json.loads(r.read().decode("utf-8", "replace") or "{}")
