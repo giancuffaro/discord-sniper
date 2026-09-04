@@ -43,6 +43,7 @@ TRADIER = {
     # trap that _one() exists to absorb.
     "/v1/accounts/ACCT/positions": {"positions": {"position":
         {"symbol": "SPY260904P00771000", "quantity": 1, "cost_basis": 202.0}}},
+    "/v1/user/profile": {"profile": {"account": {"account_number": "ACCT"}}},
     "/v1/accounts/ACCT/balances": {"balances": {"option_buying_power": 514.22}},
     "/v1/accounts/ACCT/orders/9001": {"order": {
         "id": 9001, "status": "filled", "exec_quantity": 1,
@@ -142,6 +143,9 @@ def test_tradier():
         b = tradier.TradierOptions("TOKEN", "ACCT")
         b.base = base
 
+        ok(b.connect() == "ACCT",
+           "tradier connect() settles the account id read-only")
+
         px = b.stock_price("SPY")
         ok(abs(px - 765.11) < 0.001, "tradier stock_price -> 765.11, got %s" % px)
 
@@ -209,6 +213,8 @@ def test_tastytrade():
            and back["expiry"] == "2026-09-04",
            "tastytrade OCC round-trips, got %s" % back)
 
+        ok(b.connect() == "5WX00001",
+           "tastytrade connect() logs in and settles the account number")
         ok(abs(b.stock_price("SPY") - 765.11) < 0.001, "tastytrade stock_price")
 
         rows = b.positions()
