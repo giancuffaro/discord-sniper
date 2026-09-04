@@ -49,6 +49,7 @@ class BrokerBase(object):
     supports_bracket_entry = False      # stop born WITH the entry, one group
     supports_conditional_on_underlying = False   # "buy when SPY touches 761"
     supports_option_streaming = False   # push option quotes, no polling
+    supports_streaming_greeks = False   # delta/gamma/theta/vega pushed live
     option_quote_limit_per_min = None   # None = no published cap
 
     # ---- market data ----------------------------------------------------
@@ -159,9 +160,20 @@ def _tradier_factory(cfg, **kw):
                           sandbox=bool(t.get("sandbox")), **kw)
 
 
+def _tastytrade_factory(cfg, **kw):
+    from tastytrade import TastytradeOptions
+    t = (cfg.get("execution") or {}).get("tastytrade") or {}
+    return TastytradeOptions(username=t.get("username"),
+                             password=t.get("password"),
+                             remember_token=t.get("remember_token"),
+                             account_id=t.get("account_id"),
+                             sandbox=bool(t.get("sandbox")), **kw)
+
+
 _REGISTRY = {
     "webull": _webull_factory,
     "tradier": _tradier_factory,
+    "tastytrade": _tastytrade_factory,
 }
 
 
@@ -188,4 +200,9 @@ def capabilities(client):
             bool(getattr(client, "supports_option_streaming", False)),
         "option_quote_limit_per_min":
             getattr(client, "option_quote_limit_per_min", None),
+        # 9/3: only tastytrade streams greeks. This is the flag the ratchet
+        # would branch on if it ever learns to reason about delta/theta
+        # instead of inferring everything from price.
+        "streaming_greeks":
+            bool(getattr(client, "supports_streaming_greeks", False)),
     }
