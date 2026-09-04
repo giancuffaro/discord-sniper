@@ -1867,6 +1867,45 @@ def _place_impl(order):
                            "the switch off in the popup to trade any time."
                            % _mn)
 
+    # SWINGS PAUSED (9/4, his call, right after the INTC 96C 9/18). A swing
+    # is a different trade from the scalps this machine is built around: it
+    # is held overnight, it runs a -25% stop so it can breathe, and a
+    # 14-day contract costs several times a 0DTE for the same call. He asked
+    # for a pause, so a swing is now REFUSED OUTRIGHT rather than entered
+    # with a wide stop.
+    #
+    # What counts as a swing here is exactly what counts as one downstream,
+    # decided the same two ways, so nothing can slip past this gate and then
+    # get promoted after the money is spent:
+    #   1. the call itself said swing, or
+    #   2. the expiry is 14+ days out (the AUTO-SWING promotion below — that
+    #      is how the INTC 9/18 100C got in at $405 off a $241 call).
+    # A trade already OPEN is untouched: this gates NEW entries only, never
+    # protection, never an exit, never an add to something already held.
+    if (action == "OPEN" and CFG.get("swings_paused")
+            and (order.get("kind") or "option") == "option"):
+        _sw = bool(order.get("swing"))
+        _swdte = None
+        if not _sw:
+            try:
+                from webull_options import expiry_to_date as _e2d_s
+                import datetime as _dts
+                _swdte = (_dts.date.fromisoformat(
+                    str(_e2d_s(order.get("expiry")))) - _dts.date.today()).days
+                if _swdte >= 14:
+                    _sw = True
+            except Exception:                           # noqa: BLE001
+                _swdte = None
+        if _sw:
+            _why = ("the call said swing" if order.get("swing")
+                    else "%s is %d days out (14+ days is a swing here)"
+                         % (order.get("expiry"), _swdte or 0))
+            note("SWING-OFF %s refused — swing trades are PAUSED (%s). "
+                 "Nothing was sent." % (sym, _why))
+            return False, ("swing trades are paused — %s, so this one was "
+                           "not entered. Scalps are trading normally; turn "
+                           "swings back on in the popup." % _why)
+
     # Round-number pullback mode, per-room. Only OPENs on the managed symbols
     # are deferred to the watcher; anything else (futures, equities, unlisted
     # tickers) falls straight through to the normal instant path — that IS the
@@ -2771,6 +2810,10 @@ class Handler(BaseHTTPRequestHandler):
                 "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key"))
                               and AI_KEY_OK is not False,
                 "pocket_scalps_only": bool(CFG.get("pocket_scalps_only")),
+                # Swings paused (9/4). Shown in the popup so the state is
+                # never a guess — a silent gate that refuses trades is the
+                # kind of thing that has to be VISIBLE.
+                "swings_paused": bool(CFG.get("swings_paused")),
                 "restart_check": (lambda _he=(BOOK.restart_exposure()
                                               if BOOK is not None
                                               else ([], []))
@@ -3488,7 +3531,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "message": "unreadable"})
         _known = ("futures_enabled", "simulation", "paper_trading",
                   "ai_enabled", "ai_api_key", "ai_model", "strategy",
-                  "futures_brokers", "webull_extra_accounts", "deepgram_key", "pocket_scalps_only")
+                  "futures_brokers", "webull_extra_accounts", "deepgram_key", "pocket_scalps_only",
+                  "swings_paused")
         if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
@@ -3640,6 +3684,14 @@ class Handler(BaseHTTPRequestHandler):
                 _connect_extras()
             except Exception as _e:                     # noqa: BLE001
                 note("ACCT     connect failed: %s" % str(_e)[:120])
+
+        if "swings_paused" in body:
+            data["swings_paused"] = bool(body["swings_paused"])
+            CFG["swings_paused"] = bool(body["swings_paused"])
+            note("SWING-OFF %s" % ("ON — swing calls (14+ DTE, or labelled "
+                                   "swing) are refused; scalps trade normally"
+                                   if CFG["swings_paused"]
+                                   else "off — swings trade again"))
 
         if "pocket_scalps_only" in body:
             data["pocket_scalps_only"] = bool(body["pocket_scalps_only"])
