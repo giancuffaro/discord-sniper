@@ -1075,3 +1075,19 @@ G asked to plug in Schwab, and which is better on data rate and pricing. Researc
 Nothing above the adapter changed. Suite: test_positions 0 failures, others at pre-existing counts. Bridge restarted on Webull as always.
 ### Next, when G is ready
 Open a Tradier account → put `{"execution": {"broker": "webull", "tradier": {"access_token": "...", "account_id": "...", "sandbox": true}}}` in settings → run `verify()` → prove otoco in the sandbox → then route ONE room to it and let the journal compare fills for two weeks.
+
+## 9/3 21:20 — TASTYTRADE ADAPTER BUILT TOO (G: "I like the greeks thing... maybe do 2")
+`tastytrade.py` joins `tradier.py` behind `broker.py`. Registry is now **webull (default) / tradier / tastytrade** — settings untouched still means Webull, unchanged.
+### Research question CLOSED
+**tastytrade DOES support OTOCO on options** — confirmed in their docs and the official Python SDK (which has `place_complex_order` with OTOCO built from a LimitOrder entry + StopOrder). That was the one unknown holding it back in the top-4 writeup; it is now a full contender on capability, not just on data.
+### Why it earns its own adapter — the greeks
+Its dxfeed stream carries **delta, gamma, theta, vega and IV per contract, live**. Every other broker on the shortlist makes the ratchet infer everything from price. With real greeks the machine could know that a position is only green because IV popped, or that theta is about to eat a 0DTE faster than the stop can walk up to it — decisions it literally cannot make today. New capability flag `supports_streaming_greeks` (only tastytrade: True) so the ratchet can branch on it later.
+### Cost shape
+**$1.00/contract to OPEN, $0.00 to CLOSE**, capped $10/leg. A bot that exits everything it opens pays once, not twice — ~$100/mo at his size vs Tradier's $55–80.
+### Built
+Session auth (username+password → session token, ~24h, auto-refresh, and it captures a `remember_token` so **the password can come back OUT of settings.json**), accounts, positions with tastytrade's space-padded OCC (`'SPY   260904P00771000'`), balances, order status incl. per-leg fills, live orders, cancel, sell, place_stop (**GTC**), last_sell_fill from real fills, flatten, and `stream_note()` documenting exactly how to wire the greeks stream via `/api-quote-tokens`.
+### Credentials warning, written into the file
+tastytrade authenticates with the **account login, not an API key** — the password would sit in settings.json (gitignored). G enters it himself; it must never be committed or pasted anywhere. Prefer the remember_token once obtained so the password stops living on disk.
+### Status — same honesty as tradier.py
+**Never touched a live server.** No credentials exist. Compile-checked, every endpoint from the published docs, all 15 BrokerBase methods present, OCC round-trips correctly. `verify()` is the read-only first-run checklist (login → accounts → balances → quote → positions → greeks-token). `place_conditional_entry` **deliberately raises Refused** until the OTOCO envelope is proven in their cert sandbox — the polling hunt stays in charge until then. **The greeks stream is deliberately NOT implemented**: it needs a websocket in the bridge's Python and the last streaming SDK install broke the pins (8/31). Wire it dependency-free, after the REST path is proven.
+Suite green (test_positions 0 failures, others pre-existing). Bridge restarted on Webull.
