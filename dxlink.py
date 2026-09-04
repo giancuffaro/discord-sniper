@@ -362,13 +362,31 @@ class GreeksBus:
         ws = WS(url)
         self._ws = ws
         try:
+            # THE HANDSHAKE IS SEQUENTIAL, NOT A BURST (9/4). Firing SETUP,
+            # AUTH, CHANNEL_REQUEST and FEED_SETUP back to back gets you
+            # "AUTH step missing" from the real endpoint, forever, while the
+            # socket stays happily connected — a silent no-data failure.
+            # Each step waits for the server to say it is ready.
             ws.send({"type": "SETUP", "channel": 0, "version": "0.1-ds/1.0",
                      "keepaliveTimeout": 60, "acceptKeepaliveTimeout": 60})
+            self._await(ws, lambda m: m.get("type") == "SETUP", "SETUP")
+
             ws.send({"type": "AUTH", "channel": 0, "token": tok})
+            self._await(ws,
+                        lambda m: (m.get("type") == "AUTH_STATE"
+                                   and m.get("state") == "AUTHORIZED"),
+                        "AUTH")
+
             ws.send({"type": "CHANNEL_REQUEST", "channel": 1,
                      "service": "FEED", "parameters": {"contract": "AUTO"}})
+            self._await(ws, lambda m: m.get("type") == "CHANNEL_OPENED",
+                        "CHANNEL_OPENED")
+
             ws.send({"type": "FEED_SETUP", "channel": 1,
                      "acceptEventFields": {"Greeks": GREEK_FIELDS}})
+            self._await(ws, lambda m: m.get("type") == "FEED_CONFIG",
+                        "FEED_CONFIG")
+
             with self._lock:
                 pending = sorted(self._want)
             if pending:
@@ -401,6 +419,31 @@ class GreeksBus:
             self.connected = False
             self._ws = None
             ws.close()
+
+    def _await(self, ws, test, what, seconds=15.0):
+        """Read until the server says `what` happened. Data frames that
+        arrive early are absorbed rather than dropped, and an ERROR is raised
+        with the server's own words instead of timing out silently."""
+        end = time.time() + seconds
+        while time.time() < end:
+            try:
+                m = ws.recv()
+            except socket.timeout:
+                continue
+            if not m:
+                continue
+            if m.get("type") == "KEEPALIVE":
+                ws.send({"type": "KEEPALIVE", "channel": 0})
+                continue
+            if m.get("type") == "FEED_DATA":
+                self._absorb(m.get("data"))
+                continue
+            if m.get("type") == "ERROR":
+                raise IOError("dxlink refused %s: %s"
+                              % (what, str(m.get("message") or m)[:120]))
+            if test(m):
+                return m
+        raise IOError("dxlink never confirmed %s" % what)
 
     def _absorb(self, data):
         """FEED_DATA arrives either as a list of dicts (COMPACT off) or as
