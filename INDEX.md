@@ -41,6 +41,8 @@ down until you delete it.
 | `ai_reader.py` | Hands a messy message to Claude, gets a clean call back. |
 | `announcer.py` | Posts fills / milestones / scoreboard to Discord. |
 | `webull_futures.py`, `props.py`, `eastern.py` | Futures accounts, prop accounts, market clock. |
+| `broker.py` | The broker CONTRACT — 16 methods + capability flags. `get_broker(cfg)` picks one; **defaults to Webull**, so untouched settings behave exactly as before. |
+| `tradier.py` · `tastytrade.py` | Second and third brokers. **Neither has touched a live server yet** — run their `verify()` the day a key exists. |
 | `extension/` | The Chrome extension. `parser.js` is **the** parser — one grammar for all 26 rooms. `rooms.txt` is the one room list. |
 
 ## Checking and auditing (read-only, safe any time)
@@ -51,6 +53,7 @@ down until you delete it.
 | `audit_history.py` | "What have we missed EVER, and why was a room quiet?" → `ALERT-AUDIT.html` |
 | `scoreboard.py` | Per-room signal/trade scoreboard → `SCOREBOARD.html` |
 | `jsparse.py` + `extension/parse_batch.js` | Let the Python tools call the REAL parser, so an audit can never disagree with the bot. |
+| `test_brokers.py` | Runs the Tradier/tastytrade adapters against a FAKE local server — proves the parsing with no credentials needed. |
 | `test_positions.py`, `test_signals.py`, `test_resolve.js`, `test_parity.js` | The suite. Parity proves the JS and Python parsers agree. |
 | `dump_parse.py` + `samples.txt` | Feeds test_parity. |
 
@@ -66,7 +69,7 @@ message the reader saw) · `corpus/` (room language samples)
 `HANDOFF.md` — **the living memory. Read this first.** Every rule in force and
 why. · `MAP.html` — how the machine works · `INDEX.md` — this file ·
 `README.md` — original setup notes · `v3.5.0/` — broker reference, methodology,
-TOS checksheet · `project/` — the Claude Project snapshot · `handoffs/` — older
+TOS checksheet, **BROKER-TOP4-2026-09.md** (which broker and why) · `project/` — the Claude Project snapshot · `handoffs/` — older
 handoffs
 
 ## Never touch

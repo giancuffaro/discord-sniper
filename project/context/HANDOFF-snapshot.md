@@ -1091,3 +1091,18 @@ tastytrade authenticates with the **account login, not an API key** — the pass
 ### Status — same honesty as tradier.py
 **Never touched a live server.** No credentials exist. Compile-checked, every endpoint from the published docs, all 15 BrokerBase methods present, OCC round-trips correctly. `verify()` is the read-only first-run checklist (login → accounts → balances → quote → positions → greeks-token). `place_conditional_entry` **deliberately raises Refused** until the OTOCO envelope is proven in their cert sandbox — the polling hunt stays in charge until then. **The greeks stream is deliberately NOT implemented**: it needs a websocket in the bridge's Python and the last streaming SDK install broke the pins (8/31). Wire it dependency-free, after the REST path is proven.
 Suite green (test_positions 0 failures, others pre-existing). Bridge restarted on Webull.
+
+## 9/3 21:45 — adapters PROVEN against a fake server + bridge can now select one
+G is opening the accounts; this is the work that de-risks the moment his keys arrive.
+### `test_brokers.py` — new
+Stands up a local HTTP server answering with the response shapes from each broker's published docs, points the adapters at it, and checks what comes out. **No credentials needed.** It proves: request paths, auth headers (Tradier `Bearer <token>` vs tastytrade's RAW session token), JSON walking, OCC building AND parsing both ways (incl. tastytrade's space-padded `'SPY   260904P00771000'`), Tradier's one-result-is-an-OBJECT-not-a-list trap, cost_basis 202.0 → a 2.02 per-share fill, per-leg fill reading, `connect()` settling the account id, that `place_conditional_entry` REFUSES loudly on both, and that **`positions()` returns [] on a dead server instead of raising** (the 8/31 ghost lesson — [] is "no verdict", never "you are flat").
+**Mutation-checked**: deliberately broke tradier's OCC parser and confirmed the suite goes red, then restored. A test that cannot fail proves nothing.
+What it still CANNOT prove: that the LIVE servers send these shapes. That is what `verify()` is for on day one. If a real response differs, test_brokers.py is where the fix gets pinned so it never regresses.
+### Bridge can now actually use a second broker
+The LIVE client construction is pluggable and **opt-in**: unless `execution.broker` NAMES something other than webull, the path is byte-for-byte what it was. When it does name one, the adapter is built and the capabilities are logged; **if it fails to build for any reason the bridge falls back to Webull** rather than leaving the machine with no broker. `connect()` added to the contract and both adapters (read-only, account-list only, never places an order).
+### When his keys land
+1. `settings.json` → `{"execution": {"broker": "webull", "tradier": {"access_token": "...", "sandbox": true}}}` — note broker STAYS "webull" while testing.
+2. `python -c "import json,broker;print(broker.get_broker(json.load(open('settings.json')),'tradier').verify())"` — read-only, places nothing.
+3. If a shape differs from the canned one, fix the adapter and pin it in test_brokers.py.
+4. Only then flip `broker` and route ONE room.
+Suite: test_brokers all green, test_positions 0 failures, others pre-existing. Bridge restarted on Webull.
