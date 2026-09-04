@@ -1231,13 +1231,22 @@ def _no_otm_translate(order, client):
         # translated it to a 96C and paid $4.05 — 68% more money at a
         # different delta, so when his call ran +10% ours sat at -4%.
         # From 2 DTE out we buy the strike the room actually said.
+        #
+        # Counted in SESSIONS, not calendar days — on a Friday the next
+        # expiry is Monday, three calendar days away but ONE trading day.
+        # A calendar count would quietly switch this rule off every Friday.
         try:
-            from webull_options import expiry_to_date as _e2d_o
+            from webull_options import expiry_to_date as _e2d_o, HOLIDAYS as _HOL
             import datetime as _dt_o
-            _dte_o = (_dt_o.date.fromisoformat(
-                str(_e2d_o(order.get("expiry")))) - _dt_o.date.today()).days
-            if _dte_o >= 2:
-                return None      # their strike, their price — untouched
+            _exp_o = _dt_o.date.fromisoformat(
+                str(_e2d_o(order.get("expiry"))))
+            _cur, _sess = _dt_o.date.today(), 0
+            while _cur < _exp_o and _sess < 2:
+                _cur += _dt_o.timedelta(days=1)
+                if _cur.weekday() <= 4 and _cur.isoformat() not in _HOL:
+                    _sess += 1
+            if _sess >= 2:
+                return None      # 2+ sessions out: their strike, their price
         except Exception:                       # noqa: BLE001
             pass                 # unreadable expiry -> fall through as before
         px = None
