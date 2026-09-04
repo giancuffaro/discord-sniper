@@ -2218,6 +2218,14 @@ class Book:
             _o = (self._pos.get(key) or {}).get("occ")
             if _b is not None and _o:
                 _b.watch(_o)
+            # Same line, same moment, for greeks. The bridge ALSO mirrors the
+            # quote bus into the greeks feed every 2s, which covers restored
+            # and adopted positions — but a new fill should not wait up to
+            # two seconds to start streaming, and this must not depend on
+            # that thread being alive.
+            _gb = getattr(self, "greeks", None)
+            if _gb is not None and _o:
+                _gb.watch(_o)
         except Exception:                               # noqa: BLE001
             pass
         # Stamp the ENTRY greeks once, here, because this runs seconds after
