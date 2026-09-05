@@ -335,8 +335,26 @@ if defined CHROME (
   rem  load, open the next 3. DISCORD rooms first, WHOP rooms LAST (8/23) -
   rem  by the time the browser is heavy with tabs, the slower Whop pages get
   rem  the tail end where the extra weight hurts least.
+  rem  CLOSING THE BROWSER MUST STOP THE TABS (9/4, his ask: "if i close the
+  rem  browser, tabs keep opening.. is there a way of the tabs to stop").
+  rem  `start chrome <url>` RELAUNCHES Chrome when it isn't running, so
+  rem  closing it mid-run did nothing - the loop kept reopening it, one room
+  rem  at a time, for another two minutes. Now every room checks Chrome is
+  rem  still alive first and the run stands down the moment it isn't.
+  set "ABORTED="
   set /a TABN=0
   for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+    if not defined ABORTED (
+    tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
+    if errorlevel 1 (
+      set "ABORTED=1"
+      echo.
+      echo         Chrome was closed - stopping. !TABN! room^(s^) had opened.
+      echo         Nothing else will be reopened. Run this again when ready.
+      echo.
+    )
+    )
+    if not defined ABORTED (
     if not "%%A"=="" (
       set "RID=%%A"
       if /i not "!RID:~0,5!"=="whop:" (
