@@ -367,9 +367,21 @@ if defined CHROME (
         )
       )
     )
+    )
   )
+  if defined ABORTED goto :tabs_done
   echo         Discord rooms open - now the Whop rooms...
   for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+    if not defined ABORTED (
+    tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
+    if errorlevel 1 (
+      set "ABORTED=1"
+      echo.
+      echo         Chrome was closed - stopping. !TABN! room^(s^) had opened.
+      echo.
+    )
+    )
+    if not defined ABORTED (
     if not "%%A"=="" (
       set "RID=%%A"
       if /i "!RID:~0,5!"=="whop:" (
@@ -382,8 +394,14 @@ if defined CHROME (
         )
       )
     )
+    )
   )
-  echo         All !TABN! rooms opened.
+  :tabs_done
+  if defined ABORTED (
+    echo         Rooms were NOT all opened - Chrome was closed part-way.
+  ) else (
+    echo         All !TABN! rooms opened.
+  )
   rem  Above-Normal priority for every Chrome process (8/23) - the Task
   rem  Manager bump that never survives a restart, reapplied each morning.
   timeout /t 5 /nobreak >nul
