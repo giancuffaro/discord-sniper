@@ -1929,12 +1929,25 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
          * which share no words with "👑│nitro" and can never be matched by
          * text. Resolve the id here, then get the URL from rooms.txt BY ID. */
         let hit = null, chanId = "";
-        for (const id of Object.keys(CHAN_NAMES)) {
-          const nm = norm(CHAN_NAMES[id]);
-          if (!nm) continue;
-          if (nm === norm(want)) { chanId = id; break; }
-          const shared = words(CHAN_NAMES[id]).filter(w => wantW.includes(w)).length;
-          if (shared && !chanId) chanId = id;
+        {
+          // Same generic-word trap as the rooms.txt path below: "trades" and
+          // "alerts" are in half the channel names, so a first-match-wins
+          // loop lands on the wrong room. Score on RARE words and take the
+          // best, not the first. (PROJECT-STATUS's rule: sweep the class.)
+          const cf = {};
+          for (const id of Object.keys(CHAN_NAMES)) {
+            for (const w of new Set(words(CHAN_NAMES[id]))) cf[w] = (cf[w] || 0) + 1;
+          }
+          let best = 0;
+          for (const id of Object.keys(CHAN_NAMES)) {
+            const nm = norm(CHAN_NAMES[id]);
+            if (!nm) continue;
+            if (nm === norm(want)) { chanId = id; best = 99; break; }
+            const shared = words(CHAN_NAMES[id]).filter(
+              w => wantW.includes(w) && (cf[w] || 0) <= 2).length;
+            if (shared > best) { best = shared; chanId = id; }
+          }
+          if (!best) chanId = "";
         }
         if (chanId) {
           const byId = Object.values(ROOM_TABS).find(v => v.id === chanId);
