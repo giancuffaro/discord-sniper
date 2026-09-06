@@ -1385,3 +1385,84 @@ The born-with-the-order stop now reads the live bid and, if the computed stop si
 ### Also seen, and now explained
 The 12 `OPTION_CAVERED_CALL_STOCK_NO_ENOUGH` errors and the two "ratchet couldn't move the stop to 0.95" warnings at 09:51:56/58 were the ratchet trying to move a stop on a position that had been gone since 09:51:03 — **symptoms of the INTC stop-out, not a separate fault**. Same for "book holds INTC/NVDA, the account doesn't": POSTCHECK caught the book lagging the broker by a few seconds during the burst, and it resolved on its own.
 Still watching: 32 "Too many requests" today (positions/orders endpoints during the 09:48–09:52 burst), and `invalid symbols: [QCOM]` ×4 — a stock_price lookup for QCOM that Webull rejects. Neither cost money today. Suite green; bridge restarted onto the fix.
+
+---
+
+# 9/4 EVENING — what changed after the close
+
+## THE BIG ONE: we trade the contract they actually called
+`_no_otm_translate` is **OFF** (`execution.translate_strikes`, default false).
+It had rewritten a caller's strike **72 times**, always pulling toward the
+money, and it discarded their limit price with it. Measured cost on 8 trades
+where both prices are known: **+$1.31 a contract, about DOUBLE the called
+price** — TSLA called at 2.80, bought at 5.85. It also made every trade
+at-the-money (all 9 trades with a recorded underlying sat within ±1% of the
+strike), which is why the ratchet could never be tuned by moneyness: there
+was no OTM or ITM sample to compare. Expect further-OTM contracts now:
+cheaper, more volatile in percent, more of them clearing the affordability
+check that refused 64 calls.
+
+## ANTI-CLIP IS OFF — plain ladder only
+G: *"I just want the regular ratchet until we gather information about the
+greeks."* `strategy.anticlip`, default false. At +30% the stop now locks
++20% (his ladder) instead of +18% (anti-clipped). The test proves BOTH
+states, so the switch is real and not decoration. Bonus: every trade from
+here runs one rule, so the next weeks are a clean sample.
+
+## SHADOW MODE — a second ratchet, scoring itself, trading nothing
+`positions._shadow()` runs beside the real ratchet on every poll and writes
+`shadow_ratchet.csv` on each close: entry time, hold length, real %, shadow %,
+whether the shadow exited, **legs** (new highs made — trend vs chop), peak %,
+DTE, delta and IV at entry. It sells nothing and places nothing.
+
+WHY it exists rather than just switching: a leg-retrace + 20%-floor rule beat
+his ladder +4.9% to +2.4% a trade over 48 contracts — then dropping its single
+best trade (META, +159%) made the LADDER win, and dropping two made the
+challenger negative. **The whole edge lived in 4 trades out of 48.** So
+nothing was switched; both rules now watch the same real fills and in a few
+weeks the comparison is real.
+
+## OPTION BARS — the data that makes any of this answerable
+* `bars_capture.py` — run after the close. Saves 1-minute bars for every
+  contract traded that day. **Tradier drops intraday history for expired
+  options**, so this is a nightly CAPTURE, not a backfill: 84 of 87 missing
+  contracts were expired. 108 contracts archived so far.
+* `ratchet_lab.py` — replays every saved trade across 80 rule combinations
+  and reports which knob actually matters. **Refuses to name a winner below
+  n=40**, because at n=15 the best rung was 15% and at n=22 it was 5%.
+* The structural finding that IS solid: his ladder locks a fixed % of the
+  ENTRY, so as a share of the CURRENT price it tightens as the trade runs —
+  9.1% room at +10%, 4.0% at +150%. Backwards. On META that meant stopping
+  at +20% on a trade that ran +245%.
+
+## BROWSER LAG — found and fixed (extension 3.5.24, RELOAD)
+`content.js` ran `handle()` over every visible row in every Discord tab every
+1.5s, and the dedupe sat AFTER `textOf()` and `imagesOf()` — so ~80,000 calls
+a minute each did two querySelectorAll walks and a regex before deciding
+nothing had changed. A single native `li.textContent.length` read now decides
+first. Late-embed hydration proven unchanged by test.
+
+## trades.log was 21% boot banner
+**1,735 of 8,210 lines** were startup sentences repeated across ~200 restarts.
+They still print to the console; they no longer enter the permanent record.
+See `_BOOT_NOISE` in bridge.py.
+
+## Smaller, same evening
+* Click a caller's name in the popup -> jumps to that room's tab, opening it
+  if closed. Matching ignores generic words ("trades", "alerts") because
+  those sent `vero-trades` to "Whop Day Trades" — a wrong tab is worse than
+  no tab.
+* `POST /channames` + `rename_rooms.py`: the extension reports each channel's
+  REAL Discord name, so rooms.txt stops saying "Platinum-1". Dry run by
+  default; only the label column is ever touched.
+* START HERE stops opening tabs if Chrome is closed mid-run.
+* Chrome's Above-Normal priority bump RETIRED — it was the lag, and it never
+  read a message. `CHROME_PRIORITY=AboveNormal` puts it back.
+
+## KNOWN AND STILL BROKEN
+* `signals.py` misses 4 no-ticker exits ("Out of 80% of my position").
+* `restore_state` drops `hi_pct`/`lo_pct` on restart — a position held across
+  a restart loses its run-up/drawdown history.
+* Tradier **OTOCO unverified** — the conditional entry, the main reason to
+  want Tradier. Prove it in their sandbox before it sees money.
+* Voice/Deepgram has produced **zero** transcripts in six weeks.
