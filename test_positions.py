@@ -743,11 +743,29 @@ rb.auto_ratchet(RKEY, 2.60)
 stops_30 = [c for c in RWB.calls if c[0] == "stop"]
 ok(len(stops_30) == len(stops_after) + 1,
    "a further rung places another new stop")
-# At +30% his ladder says lock +20% (a 2.40 stop) but ANTI-CLIP caps the
-# stop at 60% of the gain = +18% -> 2.36. This is the ONE place the two
-# rules disagree; anti-clip wins until G says otherwise (9/3).
-ok(abs(stops_30[-1][3] - 2.36) < 0.005,
-   "at +30%% his ladder wants +20%% but anti-clip caps at +18%% (60%% of 30) — a 2.36 stop, got %s" % stops_30[-1][3])
+# At +30% his ladder locks +20% -> a 2.40 stop.
+#
+# ANTI-CLIP IS OFF by default since 9/4 (G: "I just want the regular ratchet
+# until we gather information about the greeks, and then we'll do the
+# anti-clip"). With it off, his plain ladder stands and this is 2.40. This
+# used to assert 2.36 — the anti-clipped number — so it is the one check
+# that proves the switch actually changes behaviour rather than just
+# existing in settings.
+ok(abs(stops_30[-1][3] - 2.40) < 0.005,
+   "anti-clip OFF: at +30%% his plain ladder locks +20%% — a 2.40 stop, got %s" % stops_30[-1][3])
+
+# ...and with it ON, the same trade caps at 60% of the gain = +18% -> 2.36.
+_acb = book(FakeWB(fills=True, bid=2.60, ask=2.60))
+_acb.anticlip = True
+_ackey = "anti|SPY"
+_acb._pos[_ackey] = {"symbol": "SPY", "side": "CALLS", "strike": 700.0,
+                     "expiry": "2026-09-18", "qty": 1, "fill": 2.00,
+                     "state": FILLED, "stop": 1.80, "occ": "X", "live": False,
+                     "direction": 1, "sent_at": time.time()}
+_acb.auto_ratchet(_ackey, 2.60)
+ok(abs(float(_acb._pos[_ackey]["stop"]) - 2.36) < 0.005,
+   "anti-clip ON: the same +30%% caps at +18%% — a 2.36 stop, got %s"
+   % _acb._pos[_ackey].get("stop"))
 
 # 0DTE / 1DTE: HIS LADDER WINS, no anti-clip (9/3, "my rule on 0 and 1dte and
 # anticlip on later expirations"). Same 2.00 fill, same +30% — but the
