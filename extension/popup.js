@@ -498,7 +498,7 @@ function paintBridgeLive() {
     ? "#fca5a5" : "#9aa3b5";
 }
 
-/* ---- where futures trade: Webull / NinjaTrader / Tradovate ----------------
+/* ---- where futures trade: Webull / NinjaTrader / Topstep -----------------
  * Independent toggles, saved on the bridge. An alert fans out to every one
  * that's ON. Painted from the bridge's reported state so a reload is honest;
  * passwords are never sent back, only whether one is on file. */
@@ -512,7 +512,7 @@ function _fbBtn(id, on) {
 // The toggle ON/off intent lives in the BROWSER, so a status refresh (or the
 // bridge being momentarily down) can never flip a switch the user just set.
 // The bridge still ROUTES the orders, so every change is also pushed to it.
-let _fbLocal = { webull: true, ninja: false, tradovate: false, topstep: false };  // Webull futures ON always (8/13)
+let _fbLocal = { webull: true, ninja: false, topstep: false };  // Webull futures ON always (8/13)
 let _fbSeeded = false;
 try {
   chrome.storage.local.get("fb_toggles", r => {
@@ -528,19 +528,18 @@ try {
 function _fbPaintToggles() {
   _fbBtn("fbWebull", _fbLocal.webull);
   _fbBtn("fbNinja", _fbLocal.ninja);
-  _fbBtn("fbTradovate", _fbLocal.tradovate);
   _fbBtn("fbTopstep", _fbLocal.topstep);
 }
 
 function paintFuturesBrokers() {
   const fb = (modeStatus || {}).futures_brokers || {};
-  const nt = fb.ninjatrader || {}, tv = fb.tradovate || {}, ts = fb.topstep || {};
+  const nt = fb.ninjatrader || {}, ts = fb.topstep || {};
   // Seed toggles from the bridge ONCE, only if the browser never stored an
   // intent of its own. After that the browser copy wins — a refresh can't turn
   // a switch off under the user.
   if (!_fbSeeded && modeStatus) {
     _fbLocal = { webull: true, ninja: !!nt.enabled,   // Webull ON always (8/13)
-                 tradovate: !!tv.enabled, topstep: !!ts.enabled };
+                 topstep: !!ts.enabled };
     _fbSeeded = true;
     try { chrome.storage.local.set({ fb_toggles: _fbLocal }); } catch (e) {}
   }
@@ -558,11 +557,6 @@ function paintFuturesBrokers() {
     $("ninjaDir").value = nt.incoming_dir || "";
   if ($("ninjaAtm") && !$("ninjaAtm").value)
     $("ninjaAtm").value = nt.atm_template || "";
-  if ($("tvUser") && !$("tvUser").value)
-    $("tvUser").value = tv.username || "";
-  if ($("tvDemo")) $("tvDemo").checked = !!tv.demo;
-  if ($("tvPass") && tv.has_password && !$("tvPass").value)
-    $("tvPass").placeholder = "•••••• (saved — leave blank to keep)";
   if ($("tsUser") && !$("tsUser").value)
     $("tsUser").value = ts.username || "";
   if ($("tsUrl") && !$("tsUrl").value && ts.base_url)
@@ -580,19 +574,15 @@ async function saveFuturesBrokers() {
                    account: _fbVal("ninjaAccount"),
                    incoming_dir: _fbVal("ninjaDir"),
                    atm_template: _fbVal("ninjaAtm") },
-    tradovate: { enabled: _fbLocal.tradovate,
-                 username: _fbVal("tvUser"),
-                 demo: !!($("tvDemo") || {}).checked },
     topstep: { enabled: _fbLocal.topstep,
                username: _fbVal("tsUser"),
                base_url: _fbVal("tsUrl") || "https://api.topstepx.com" }
   };
-  const pw = _fbVal("tvPass"); if (pw) payload.tradovate.password = pw;
   const tk = _fbVal("tsKey");  if (tk) payload.topstep.api_key = tk;
   try {
     modeStatus = await askBridge("/config", { futures_brokers: payload });
     if ($("fbState")) $("fbState").textContent = "saved — futures route there now";
-    clearDrafts(["tsUser", "tsKey", "tsUrl", "tvUser", "tvPass",
+    clearDrafts(["tsUser", "tsKey", "tsUrl",
                  "ninjaAccount", "ninjaDir", "ninjaAtm"]);
   } catch (e) {
     if ($("fbState")) $("fbState").textContent = "saved on this PC — it'll sync when the bridge is up";
@@ -613,7 +603,6 @@ function _wireFb(id, key, fieldsId) {
 }
 _wireFb("fbWebull", "webull", null);
 _wireFb("fbNinja", "ninja", "ninjaFields");
-_wireFb("fbTradovate", "tradovate", "tradovateFields");
 _wireFb("fbTopstep", "topstep", "topstepFields");
 if ($("fbSave")) $("fbSave").onclick = saveFuturesBrokers;
 
@@ -2088,7 +2077,7 @@ $("dayspick").onchange = async () => {
  * CLEARS its fields' drafts, so secrets don't linger once they've reached
  * settings.json on the PC. */
 const DRAFT_IDS = ["wbkey", "wbsecret", "wbpkey", "wbpsecret",
-                   "tsUser", "tsKey", "tsUrl", "tvUser", "tvPass",
+                   "tsUser", "tsKey", "tsUrl",
                    "ninjaAccount", "ninjaDir", "ninjaAtm",
                    "exName", "exKey", "exSecret", "exAcctId", "aiKey", "dgKey"];
 function wireDrafts() {
