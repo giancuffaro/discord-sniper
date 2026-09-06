@@ -181,6 +181,87 @@ def flush(timeout=5.0):
     return _DROPPED
 
 
+def minutes_to_close(now=None):
+    """Minutes left to 16:00 ET. Negative after the bell, capped at 0.
+
+    Deliberately naive — it reads the local clock, and this PC runs on ET.
+    If that ever stops being true this returns nonsense, so it is only used
+    for a recorded diagnostic, never to decide an exit.
+    """
+    t = time.localtime(now or time.time())
+    return max(0.0, (16 - t.tm_hour) * 60.0 - t.tm_min - t.tm_sec / 60.0)
+
+
+def _entry_math(p, g, premium):
+    """THE CALCULATIONS DONE AT ENTRY (9/6, G's ask).
+
+    Four numbers, computed once when the position fills, recorded forever:
+
+    stop_room_pts   How far the STOCK must move to take out a -10% premium
+                    stop. This is the one that reframes everything: "-10%"
+                    is meaningless until you see it in the units the chart
+                    is drawn in. On the two contracts we have greeks for,
+                    a -10% stop was 0.20 SPY points and 0.13 QQQ points —
+                    both inside ordinary noise.
+
+    theta_per_min   Honest decay, read off EXTRINSIC value rather than the
+                    quoted daily theta, because on a 0DTE every cent of
+                    extrinsic is gone by the bell.
+
+    theta_break_min How long the trade has to work just to pay for its own
+                    decay: the minutes of theta the entry spread already
+                    costs you. If a caller's move typically plays out in 5
+                    minutes and this says 9, the trade was behind at birth.
+
+    gamma_read      How twitchy the contract is right now. Rises hard into
+                    the close — the same stop distance is a different risk
+                    at 15:30 than it was at 10:00.
+
+    All of it is DIAGNOSTIC. Nothing here moves a stop or blocks a trade.
+    Measure first, decide later, on our own numbers.
+    """
+    out = {"stop_room_pts": "", "stop_room_pct": "", "theta_per_min": "",
+           "theta_break_min": "", "gamma_read": ""}
+    try:
+        import greeks_math as gmath
+    except Exception:                                       # noqa: BLE001
+        return out
+    try:
+        spot = p.get("und_at_fill")
+        prem = float(premium or 0)
+        delta = g.get("delta")
+        gam = g.get("gamma") or 0.0
+        is_call = str(p.get("side") or "C").upper().startswith("C")
+        if spot and prem > 0 and delta:
+            room = gmath.stop_room(spot, prem, 10.0, delta, gam, is_call)
+            if room:
+                out["stop_room_pts"] = room["points"]
+                out["stop_room_pct"] = room["pct"]
+            reg = gmath.gamma_regime(gam, spot, prem)
+            if reg:
+                out["gamma_read"] = reg["read"]
+            # Only meaningful on an expiring contract; a 30DTE's extrinsic
+            # is not all burning off today and this would overstate it.
+            if str(p.get("dte") or "") in ("0", "0.0") or p.get("dte") == 0:
+                mins = minutes_to_close()
+                tpm = gmath.theta_per_minute_0dte(prem, spot,
+                                                  p.get("strike"), is_call,
+                                                  mins)
+                if tpm:
+                    out["theta_per_min"] = round(tpm, 5)
+                    # What the spread already cost us, priced in minutes.
+                    try:
+                        b, a = p.get("bid_at_send"), p.get("ask_at_send")
+                        if b and a and float(a) > float(b):
+                            out["theta_break_min"] = round(
+                                (float(a) - float(b)) / tpm, 1)
+                    except Exception:                       # noqa: BLE001
+                        pass
+    except Exception:                                       # noqa: BLE001
+        return out
+    return out
+
+
 def record_fill(p, quote=None, integrity="Reliable"):
     """One row per fill. `p` is the position dict; `quote` is an optional
     {bid, ask, underlying} snapshot taken at entry.
@@ -241,6 +322,7 @@ def record_fill(p, quote=None, integrity="Reliable"):
             "delta": g.get("delta", ""), "gamma": g.get("gamma", ""),
             "theta": g.get("theta", ""), "iv": g.get("iv", ""),
             "integrity": integrity,
+            **entry,
         })
     except Exception:                                       # noqa: BLE001
         pass            # an instrument may never take the engine down
