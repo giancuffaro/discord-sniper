@@ -61,6 +61,13 @@ announcer.log.*
 streaming-test.txt
 option_tape.csv
 option_tape.csv.*
+# Telemetry (9/6). Our own measurements, same class as option_tape: they can
+# never be re-derived from anywhere, and they must NOT go in git — that is
+# exactly how archive/logs put 68 MB in .git. Back them up like the tape.
+telemetry.csv
+telemetry.csv.*
+alert_decay.csv
+alert_decay.csv.*
 announcer.restart
 .announcer-board-sig
 bridge.restart
