@@ -1265,8 +1265,28 @@ def _no_otm_translate(order, client):
     """Rewrite an OTM order['strike'] to the nearest ATM/ITM strike. Returns a
     note string when it translated, None when the strike already qualifies or
     the rule can't be applied. Never raises — trouble leaves the caller's
-    strike untouched."""
+    strike untouched.
+
+    OFF BY DEFAULT SINCE 9/4 — G: "I wanna go back to the original contract
+    that the actual person emitting the alert is pointing out. Just choose
+    the contract that is calling. Don't modify it."
+
+    Why it mattered enough to switch off: this rule had rewritten a caller's
+    strike **72 times**, and it always pulled toward the money. The result
+    was that EVERY trade the bot took was at-the-money — all nine trades with
+    a recorded underlying sat within +/-1% of their strike. That made the
+    ratchet impossible to tune by moneyness, because there was no OTM or ITM
+    sample to compare: the machine only ever produced one kind of trade.
+
+    It also threw away the caller's own price (`limit = None`), because their
+    premium priced a DIFFERENT strike than the one being bought. So a call
+    for a $2.41 contract became a $4.05 one at a different delta (INTC, 9/4).
+
+    Turn it back on with execution.translate_strikes = true in settings.json.
+    """
     try:
+        if not (CFG.get("execution") or {}).get("translate_strikes", False):
+            return None          # trade what they called, untouched
         if order.get("action") not in ("OPEN", "ADD"):
             return None
         if order.get("kind") in ("future", "equity"):
