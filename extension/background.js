@@ -1922,12 +1922,29 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
           .replace(/[^a-z0-9]+/g, " ").trim();
         const words = (s) => norm(s).split(" ").filter(w => w.length > 2);
         const wantW = words(want);
-        let hit = ROOM_TABS[want] || null;
+
+        /* CHAN_NAMES FIRST — it is the name Discord actually shows, keyed by
+         * channel id, so it is an EXACT identification. rooms.txt labels are
+         * hand-written and often generic ("Platinum-1", "Vero 2", "Boka 3"),
+         * which share no words with "👑│nitro" and can never be matched by
+         * text. Resolve the id here, then get the URL from rooms.txt BY ID. */
+        let hit = null, chanId = "";
+        for (const id of Object.keys(CHAN_NAMES)) {
+          const nm = norm(CHAN_NAMES[id]);
+          if (!nm) continue;
+          if (nm === norm(want)) { chanId = id; break; }
+          const shared = words(CHAN_NAMES[id]).filter(w => wantW.includes(w)).length;
+          if (shared && !chanId) chanId = id;
+        }
+        if (chanId) {
+          const byId = Object.values(ROOM_TABS).find(v => v.id === chanId);
+          hit = byId || { url: "", id: chanId };
+        }
+        if (!hit) hit = ROOM_TABS[want] || null;
         if (!hit) {
           let best = 0;
           for (const k of Object.keys(ROOM_TABS)) {
-            const kw = words(k);
-            const shared = kw.filter(w => wantW.includes(w)).length;
+            const shared = words(k).filter(w => wantW.includes(w)).length;
             if (shared > best) { best = shared; hit = ROOM_TABS[k]; }
           }
           if (!best) hit = null;          // no shared word = not a match
@@ -1938,11 +1955,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
           tab = tabs.find(t => (t.url || "") === hit.url)
              || tabs.find(t => hit.id && (t.url || "").includes(hit.id));
         }
-        if (!tab) {
-          // fall back to a captured channel name
-          const id = Object.keys(CHAN_NAMES).find(
-            k => String(CHAN_NAMES[k] || "").toLowerCase().includes(want));
-          if (id) tab = tabs.find(t => (t.url || "").includes(id));
+        if (!tab && hit && hit.id) {
+          tab = tabs.find(t => (t.url || "").includes(hit.id));
         }
         if (!tab) {
           /* OPEN IT (9/4, his call). His point: the reader only reads OPEN
