@@ -230,6 +230,15 @@ function loadRoomsFile() {
         if (!t || t.startsWith("#")) continue;
         const id = t.split("|", 1)[0].trim();
         if (id) ids.push(id);
+        // JUMP TO THE ROOM (9/4, his ask: "I wanna see how the alert was
+        // emitted but I can't find the tab because so many of them").
+        // rooms.txt is id|url|shortName|group, and a position's `room` IS
+        // that shortName — so keep url+id per name and the popup can send
+        // one click straight to the tab.
+        const parts = t.split("|").map(s => s.trim());
+        if (parts.length >= 3 && parts[2]) {
+          ROOM_TABS[parts[2].toLowerCase()] = { url: parts[1], id: parts[0] };
+        }
       }
       return ids;
     } catch (e) {
