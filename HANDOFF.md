@@ -1,7 +1,20 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-04 16:55 — DAILY CLOSE-OUT run (see bottom section
+Last updated: 2026-09-04 LATE EVENING — see "9/4 EVENING" below for the six
+things that changed after the close. The short version, because it is a lot:
+**(1)** the bot now trades the contract the caller ACTUALLY named — the
+1-strike-OTM rewrite is off, it had been paying ~2x the called price;
+**(2)** anti-clip is OFF entirely, plain ladder only, his call;
+**(3)** SHADOW MODE is running — a second ratchet rule scores itself against
+every real fill into `shadow_ratchet.csv` and trades nothing;
+**(4)** `bars_capture.py` + `ratchet_lab.py` — real 1-minute option bars from
+Tradier, and the replay that tunes the ratchet on them;
+**(5)** the browser-lag fix in `content.js` (extension 3.5.24 — RELOAD IT);
+**(6)** `trades.log` no longer carries the boot banner — it was 21% of the file.
+Also: click a caller's name in the popup to jump to their room's tab.
+Read `CLEANUP-PROPOSAL.md` — it has removal decisions waiting for G.
+Prior: 2026-09-04 16:55 — DAILY CLOSE-OUT run (see bottom section
 "9/4 16:55" for the full writeup). Account flat overnight, no open positions.
 Bot day -$34, Gian +$154, combined +$120 broker-verified. One real, unfixed
 gap found: two of Gian's fast SPY scalps (770P, 769P) never reached
