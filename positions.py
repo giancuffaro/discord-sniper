@@ -2071,12 +2071,6 @@ class Book:
         # So: written AFTER the ledger is committed, and off the fill path
         # entirely. An instrument may never be what makes the engine wrong.
         # The window itself is still there and is worth closing separately.
-        if _tele is not None:
-            try:
-                _tele["cost"] = paid
-                _record_fill_async(_tele)
-            except Exception:                               # noqa: BLE001
-                pass
         self._mark_peak()
         # With no broker at all there is nothing to ask, so the dry run assumed
         # this filled. Said out loud every single time, because an assumed fill
@@ -2120,6 +2114,29 @@ class Book:
                                                         "" if first else
                                                         " (now holding %d)" % total,
                                                         und_s, money, assumed))
+        # TELEMETRY (9/6) — the row goes out HERE, last, after the cost
+        # ledger is committed and after the underlying has been read, so it
+        # carries everything the entry knew. Enqueue only: a non-blocking put
+        # on a bounded queue drained by one long-lived writer.
+        #
+        # It used to sit between `state=FILLED` and the cost ledger, on a
+        # thread spawned per fill. Nothing raised, every row was correct, and
+        # test_positions.py went from 5/5 clean to failing 2 runs in 3 — on
+        # stop placement and P&L, not on telemetry. An instrument that
+        # perturbs what it measures is not an instrument.
+        if _tele is not None:
+            try:
+                _tele["cost"] = paid
+                _tele["fill"] = blended
+                _tele["qty"] = total
+                with self._lock:
+                    _pf = self._pos.get(key)
+                    if _pf is not None:
+                        _tele["und_at_fill"] = _pf.get("und_at_fill")
+                        _tele["greeks_in"] = _pf.get("greeks_in")
+                _record_fill_async(_tele)
+            except Exception:                               # noqa: BLE001
+                pass
         self._arm_stop(key, side, strike, expiry, total, blended)
 
     def _became_nofill(self, key, why):

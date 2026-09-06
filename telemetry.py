@@ -89,6 +89,12 @@ FILL_COLS = [
     # conditions at entry — why the fill was good or bad
     "bid", "ask", "spread", "spread_pct", "underlying",
     "delta", "gamma", "theta", "iv",
+    # THE ENTRY MATH — computed once, at the fill, from the greeks above
+    "stop_room_pts",      # underlying points to a -10% premium stop
+    "stop_room_pct",      # same, as % of the stock price
+    "theta_per_min",      # honest 0DTE burn, off extrinsic not quoted theta
+    "theta_break_min",    # minutes the trade must work to outrun its own decay
+    "gamma_read",         # sleepy / normal / hot / VIOLENT
     # how sure are we this fill is real
     "integrity",
 ]
@@ -214,6 +220,7 @@ def record_fill(p, quote=None, integrity="Reliable"):
 
         g = p.get("greeks_in") or {}
         now = time.time()
+        entry = _entry_math(p, g, ours)
         _append(FILLS, FILL_COLS, {
             "ts": round(now, 3), "iso": _iso(now),
             "coid": p.get("coid") or "", "room": p.get("room") or "",
