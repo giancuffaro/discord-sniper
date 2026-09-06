@@ -1,0 +1,38 @@
+650112 Thread-11779 (_refresh) 2026-09-06 13:50:16,304 webull.core.client ERROR ServerException occurred. Host:api.webull.com SDK-Version:2.0.16 Request:{
+  "_version": "v2",
+  "_action_name": "/openapi/assets/positions",
+  "_protocol_type": "https",
+  "_accept_format": "JSON",
+  "_params": {
+    "account_id": "R8IECPMDTO73FABD0UH7UT3T0B"
+  },
+  "_method": "GET",
+  "_header": {
+    "x-version": "v2",
+    "Accept-Encoding": "gzip",
+    "x-app-key": "53a77ca9e6c56a74be896b66272e4859",
+    "x-timestamp": "2026-09-06T17:50:16Z",
+    "x-signature-version": "1.0",
+    "x-signature-algorithm": "HMAC-SHA256",
+    "x-signature-nonce": "b6779a79-25f9-5204-9afe-8f5e0f477867",
+    "x-signature": "4E4dY3KT11owBKdU+ZajxyKe75ZsyOakC+nGHWBKQ7Y=",
+    "User-Agent": "WebullApiSDK (Windows 10;AMD64) Python/3.14.6 Core/2.0.16 python-requests/2.34.2",
+    "x-webull-client-source": "sdk"
+  },
+  "_body_params": null,
+  "_uri_pattern": null,
+  "_uri_params": null,
+  "_content": null,
+  "_extra_user_agent": {},
+  "string_to_sign": "",
+  "_request_connect_timeout": null,
+  "_request_read_timeout": null,
+  "endpoint": "api.webull.com",
+  "_signer_spec": "<module 'webull.core.auth.algorithm.sha_hmac1' from 'C:\\\\Users\\\\Hulk\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\webull\\\\core\\\\auth\\\\algorithm\\\\sha_hmac1.py'>"
+} Response:{'message': 'Too many requests', 'error_code': 'TOO_MANY_REQUESTS'} ServerException:HTTP Status: 429, Code: TOO_MANY_REQUESTS, Msg: Too many requests, RequestID: 97ccb882-6c2b-4eec-82df-f3f4972ec967
+650112 Thread-11779 (_refresh) 2026-09-06 13:50:16,359 webull.core.client ERROR get_response exception. {
+  "error_code": "TOO_MANY_REQUESTS",
+  "error_msg": "Too many requests",
+  "http_status": 429,
+  "request_id": "97ccb882-6c2b-4eec-82df-f3f4972ec967"
+}
