@@ -1913,9 +1913,25 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         await loadRoomsFile();                       // fills ROOM_TABS
         const want = String(msg.room || "").trim().toLowerCase();
         if (!want) return reply({ ok: false, why: "no room on that trade" });
-        const hit = ROOM_TABS[want]
-          || ROOM_TABS[Object.keys(ROOM_TABS).find(k =>
-               k.includes(want) || want.includes(k)) || ""];
+        /* The name on a trade is whatever Discord SHOWED ("◽︱all-trades-
+         * mashup"); rooms.txt uses a hand label ("ZT all-trades-mashup").
+         * They rarely match as strings, so compare on WORDS with the emoji,
+         * separators and short filler stripped. "all-trades-mashup" is the
+         * part both forms share, and that is what identifies the room. */
+        const norm = (s) => String(s || "").toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ").trim();
+        const words = (s) => norm(s).split(" ").filter(w => w.length > 2);
+        const wantW = words(want);
+        let hit = ROOM_TABS[want] || null;
+        if (!hit) {
+          let best = 0;
+          for (const k of Object.keys(ROOM_TABS)) {
+            const kw = words(k);
+            const shared = kw.filter(w => wantW.includes(w)).length;
+            if (shared > best) { best = shared; hit = ROOM_TABS[k]; }
+          }
+          if (!best) hit = null;          // no shared word = not a match
+        }
         const tabs = await chrome.tabs.query({});
         let tab = null;
         if (hit) {
