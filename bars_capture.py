@@ -13,9 +13,10 @@ serve real 1-minute option bars. It failed, and the reason matters:
      24 still had intraday bars
      87 did not — and 84 of those were on contracts that had EXPIRED
 
-**Tradier drops intraday history once an option expires.** Most of his trades
-are 0DTE, so the bars are gone the same evening. There is no backfill for
-them. There never will be. The data only exists while the contract is alive.
+**Tradier drops intraday history for expired options.** Not instantly — the
+9/4 0DTEs were still there on 9/5, and captured — but every August expiry
+was already gone. The window is days, not hours, and it is not documented,
+so do not lean on it. Capture the same day and the question never comes up.
 
 So this is not a backfill, it is a NIGHTLY CAPTURE. Run it the day of the
 trade and the bars are ours forever, in bars/. Miss a day and that day's
@@ -134,9 +135,9 @@ def main():
             print("   %-24s FAILED %s" % (s, str(e)[:70]))
     print("\n  saved %d, already had %d, failed %d  ->  %s" % (got, have, fail, BARS))
     if fail:
-        print("  Re-run to retry the failures. Do it TODAY — Tradier drops")
-        print("  intraday history once a contract expires, and a 0DTE's bars")
-        print("  are gone tonight.")
+        print("  Re-run to retry. Do it soon — Tradier drops intraday history")
+        print("  for expired contracts within days, and it is not documented,")
+        print("  so an expired 0DTE left for a week is simply gone.")
     return 0
 
 
