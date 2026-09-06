@@ -2006,7 +2006,15 @@ class Book:
                  "price": round(float(price), 4)})
             sym = p["symbol"]
             side, strike, expiry = p["side"], p["strike"], p["expiry"]
-            _tele = dict(p)         # snapshot inside the lock, write outside
+            # Snapshot inside the lock, write outside. Wrapped because this
+            # line is on the fill path: if `p` is ever anything dict() can't
+            # copy, an instrument must not be what kills the arming of a
+            # real stop. (It did exactly that on the first run — the whole
+            # rest of _became_filled was skipped and six tests went red.)
+            try:
+                _tele = dict(p)
+            except Exception:                               # noqa: BLE001
+                _tele = None
         # TELEMETRY (9/6) — one row per fill: the latency chain, what the
         # caller said vs what we paid, and the spread we paid it into. This
         # is instrumentation, not logic: it runs after the lock is released,
