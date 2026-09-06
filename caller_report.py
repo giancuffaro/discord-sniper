@@ -99,6 +99,35 @@ def load(path=JOURNAL, since_days=None, room=None):
     return rows
 
 
+def split_own(rows):
+    """Separate G's OWN hand trades from room calls.
+
+    Found the moment this report first ran: 87 of 258 journal rows had
+    caller "?" — and every one of them had a BLANK room AND a BLANK signal.
+    Those are adopted positions, i.e. trades he placed himself at Webull
+    that the book picked up off the account. They are not a parsing failure
+    and they are not anybody's alerts.
+
+    Left in, they were a third of the sample and they dragged the house
+    numbers toward zero (65 of the 87 carry P&L 0.00). A caller scorecard
+    that silently includes the user's own trades is not a scorecard.
+
+    The test is deliberately narrow — no room AND no signal text. A room
+    call that merely lost its author is a PARSING bug and must stay in the
+    report as "?", loudly, instead of being quietly reclassified as his.
+    """
+    mine, theirs = [], []
+    for r in rows:
+        caller = (r.get("caller") or "").strip()
+        no_room = not (r.get("room") or "").strip()
+        no_sig = not (r.get("signal") or "").strip()
+        if (caller in ("", "?") and no_room and no_sig) or caller == "Gian":
+            mine.append(r)
+        else:
+            theirs.append(r)
+    return mine, theirs
+
+
 def score(rows):
     by = {}
     for r in rows:
@@ -226,12 +255,26 @@ def main():
         print("No closed, priced trades found in journal.csv"
               + (" for that filter." if (a.since or a.room) else "."))
         return 1
-    sc = score(rows)
-    title = "CALLER SCORECARD — %d closed trades%s%s" % (
-        len(rows),
+    mine, theirs = split_own(rows)
+    if not theirs:
+        print("No room calls in that slice — all %d rows are your own "
+              "hand trades." % len(mine))
+        return 1
+    sc = score(theirs)
+    title = "CALLER SCORECARD — %d room calls%s%s" % (
+        len(theirs),
         (", last %d days" % a.since) if a.since else "",
         (", room %s" % a.room) if a.room else "")
     render(sc, _latency(), title)
+    if mine:
+        m = score(mine)
+        tot = sum(v["total"] for v in m.values())
+        n = sum(v["n"] for v in m.values())
+        print()
+        print("YOUR OWN TRADES, held out of the scorecard above: %d trades, "
+              "%s$%.2f" % (n, "+" if tot >= 0 else "-", abs(tot)))
+        print("  (adopted off the Webull account — no room, no caller, not "
+              "anybody's alert)")
     return 0
 
 
