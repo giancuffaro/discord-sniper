@@ -2021,9 +2021,11 @@ class Book:
         # it cannot raise into the trading path, and if the whole module is
         # missing the bot does not notice.
         try:
-            import telemetry as _tm
-            _tm.record_fill(_tele, quote={"bid": _tele.get("bid_at_send"),
-                                          "ask": _tele.get("ask_at_send")})
+            if False:
+                import telemetry as _tm
+                _tm.record_fill(_tele,
+                                quote={"bid": _tele.get("bid_at_send"),
+                                       "ask": _tele.get("ask_at_send")})
         except Exception:                                   # noqa: BLE001
             pass
         # Promised money becomes spent money. The debit is what you actually
