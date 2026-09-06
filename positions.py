@@ -2344,6 +2344,8 @@ class Book:
                 if self.auto_take_profit(key, float(bid)):
                     return
                 self.auto_ratchet(key, float(bid))
+                # SHADOW (9/4) — runs beside the real ratchet, sells nothing.
+                self._shadow(key, float(bid))
                 self.auto_breakeven(key, float(bid))
                 self.auto_ladder(key, float(bid))
                 with self._lock:
