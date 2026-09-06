@@ -2021,7 +2021,7 @@ class Book:
         # it cannot raise into the trading path, and if the whole module is
         # missing the bot does not notice.
         try:
-            if False:
+            if _tele is not None:
                 import telemetry as _tm
                 _tm.record_fill(_tele,
                                 quote={"bid": _tele.get("bid_at_send"),
