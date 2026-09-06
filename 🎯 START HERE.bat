@@ -402,9 +402,25 @@ if defined CHROME (
   )
   rem  Above-Normal priority for every Chrome process (8/23) - the Task
   rem  Manager bump that never survives a restart, reapplied each morning.
+  rem
+  rem  RETIRED 9/4 - it was the lag. G: "since then it's been really really
+  rem  laggy." 26 room tabs, none of them ever discarded, all at ABOVE-NORMAL
+  rem  meant Chrome outranked Windows itself, the bridge and Market Sniper.
+  rem  That is a slow MACHINE, not just a slow browser.
+  rem
+  rem  Reading is untouched by this. What keeps a room alive is the three
+  rem  launch flags - renderer-backgrounding, occluded-windows and
+  rem  timer-throttling all disabled - plus autoDiscardable=false pinned in
+  rem  background.js and the 30s heartbeat. Priority never read a message.
+  rem  Set CHROME_PRIORITY=AboveNormal before running to put it back.
   timeout /t 5 /nobreak >nul
-  powershell -NoProfile -Command "Get-Process chrome -ErrorAction SilentlyContinue | ForEach-Object { $_.PriorityClass = 'AboveNormal' }" >nul 2>&1
-  echo         Chrome bumped to Above-Normal priority.
+  if /i "%CHROME_PRIORITY%"=="AboveNormal" (
+    powershell -NoProfile -Command "Get-Process chrome -ErrorAction SilentlyContinue | ForEach-Object { $_.PriorityClass = 'AboveNormal' }" >nul 2>&1
+    echo         Chrome bumped to Above-Normal priority ^(CHROME_PRIORITY set^).
+  ) else (
+    echo         Chrome left at Normal priority - rooms stay live via the
+    echo         launch flags and the heartbeat, not the priority bump.
+  )
 ) else (
   start "" "!DISCORD_URL!"
   for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
