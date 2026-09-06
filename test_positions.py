@@ -759,8 +759,9 @@ ok(abs(stops_30[-1][3] - 2.40) < 0.005,
 # because a hand-made position dict is missing the fields auto_ratchet
 # needs and silently does nothing, which would make this a test that
 # passes while proving nothing.
-ACWB = FakeWB(fills=True, bid=2.60, ask=2.00)
+ACWB = FakeWB(fills=True, ask=2.00, bid=2.00)
 acb = book(ACWB)
+acb.ratchet_on = True        # auto_ratchet returns immediately without it
 acb.anticlip = True
 acb.entry_sent(dict(ORDER, trader="AntiClipGuy"), ticket(ACWB, limit=2.00, oid="91"))
 ACKEY = positions.key_of("AntiClipGuy", "SPY")
