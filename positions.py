@@ -50,10 +50,11 @@ from ratchet_tiers import (ratchet_locked_pct as tier_locked_pct,
 
 
 def _record_fill_async(snap):
-    """Write one telemetry row, off the fill path, never raising.
+    """Hand one fill to the telemetry writer. Returns immediately — the row
+    goes on a bounded queue drained by a single long-lived thread.
 
-    Imported lazily so a missing/broken telemetry.py can never stop the book
-    from loading — the instruments are optional, the engine is not."""
+    Imported lazily so a missing or broken telemetry.py can never stop the
+    book from loading: the instruments are optional, the engine is not."""
     try:
         import telemetry
         telemetry.record_fill(snap, quote={"bid": snap.get("bid_at_send"),
@@ -2070,12 +2071,10 @@ class Book:
         # So: written AFTER the ledger is committed, and off the fill path
         # entirely. An instrument may never be what makes the engine wrong.
         # The window itself is still there and is worth closing separately.
-        if False:
+        if _tele is not None:
             try:
                 _tele["cost"] = paid
-                threading.Thread(
-                    target=_record_fill_async, args=(_tele,), daemon=True,
-                    name="tele-fill").start()
+                _record_fill_async(_tele)
             except Exception:                               # noqa: BLE001
                 pass
         self._mark_peak()

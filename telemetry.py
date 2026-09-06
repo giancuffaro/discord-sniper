@@ -51,6 +51,7 @@ HONEST LIMITS — say these out loud in any analysis built on this
 """
 import csv
 import os
+import queue
 import threading
 import time
 
@@ -59,6 +60,23 @@ FILLS = os.path.join(HERE, "telemetry.csv")
 DECAY = os.path.join(HERE, "alert_decay.csv")
 
 _LOCK = threading.Lock()
+
+# ONE writer thread, started on first use, fed by a bounded queue.
+#
+# The first version spawned a thread PER FILL. It never raised and it wrote
+# correct rows — and it made test_positions.py fail 2 runs in 3, on
+# assertions about stop placement and P&L that have nothing to do with
+# telemetry. Baseline without it: 5 of 5 clean. Thread churn on the fill
+# path was enough to change how the book's own threads interleaved.
+#
+# That is the whole lesson of this module in one paragraph: an instrument
+# that perturbs the thing it measures is not an instrument. Enqueue is a
+# non-blocking put on a bounded queue — no allocation of threads, no file
+# I/O, no lock the caller can wait on. If the queue is full the row is
+# DROPPED, on purpose: losing a measurement is free, delaying a stop is not.
+_Q = queue.Queue(maxsize=2000)
+_WRITER = None
+_DROPPED = 0
 
 FILL_COLS = [
     "ts", "iso", "coid", "room", "trader", "symbol", "side", "strike",
@@ -102,7 +120,7 @@ def _ms(a, b):
         return ""
 
 
-def _append(path, cols, row):
+def _write_now(path, cols, row):
     with _LOCK:
         new = not os.path.exists(path)
         with open(path, "a", newline="", encoding="utf-8") as fh:
@@ -110,6 +128,51 @@ def _append(path, cols, row):
             if new:
                 w.writeheader()
             w.writerow(row)
+
+
+def _drain():
+    while True:
+        try:
+            path, cols, row = _Q.get()
+        except Exception:                                   # noqa: BLE001
+            return
+        try:
+            _write_now(path, cols, row)
+        except Exception:                                   # noqa: BLE001
+            pass
+        finally:
+            try:
+                _Q.task_done()
+            except Exception:                               # noqa: BLE001
+                pass
+
+
+def _append(path, cols, row):
+    """Hand the row to the writer and return immediately. Never blocks,
+    never raises, never spawns per call."""
+    global _WRITER, _DROPPED
+    try:
+        if _WRITER is None or not _WRITER.is_alive():
+            _WRITER = threading.Thread(target=_drain, daemon=True,
+                                       name="telemetry-writer")
+            _WRITER.start()
+        _Q.put_nowait((path, cols, row))
+    except queue.Full:
+        _DROPPED += 1           # measurements are cheap; the fill path isn't
+    except Exception:                                       # noqa: BLE001
+        pass
+
+
+def flush(timeout=5.0):
+    """Wait for queued rows to reach disk. For scripts and shutdown only —
+    never call this from the trading path."""
+    try:
+        end = time.time() + float(timeout)
+        while not _Q.empty() and time.time() < end:
+            time.sleep(0.02)
+    except Exception:                                       # noqa: BLE001
+        pass
+    return _DROPPED
 
 
 def record_fill(p, quote=None, integrity="Reliable"):
