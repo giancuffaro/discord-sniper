@@ -542,7 +542,13 @@ async function badge() {
   }
 }
 
-async function sendOrder(sig, qty, c, author) {
+// postedAt (9/6): Discord's own <time datetime> on the message row — when the
+// CALLER posted, not when we noticed. content.js has always read it; it just
+// never reached the bridge. It is the start of the only latency chain that
+// matters, and nothing in this field measures it. Voice and vision alerts
+// have no such stamp and pass null on purpose: a blank is honest, a
+// Date.now() there would silently record every voice call as instant.
+async function sendOrder(sig, qty, c, author, postedAt) {
   const order = {
     action: sig.action, symbol: sig.symbol, side: sig.side, qty,
     strike: sig.strike, expiry: sig.expiry, limit: sig.limit,
@@ -574,6 +580,15 @@ async function sendOrder(sig, qty, c, author) {
     usd: (sig.usd === 0 || sig.usd) ? sig.usd : null,
     be: !!sig.be,     // breakeven-stops flag (8/29)
     source: "discord-extension", raw: sig.raw, ts: Date.now(),
+    // THE LATENCY CHAIN (9/6). alert_at is the caller's post time from
+    // Discord's own markup; seen_at is when this reader had it parsed. The
+    // bridge stamps sent_at and filled_at. Splitting it three ways is the
+    // point: a slow total that is all reader lag is an extension problem, a
+    // slow total that is all fill time means our limit is priced too
+    // politely. One number can't tell those apart, and they have opposite
+    // fixes. Null when there is no post time (voice, vision) — never faked.
+    alert_at: (postedAt ? postedAt / 1000 : null),
+    seen_at: Date.now() / 1000,
     // A stable id for THIS order across retries. If the bridge is mid-restart
     // when a call lands, the first POST is refused at the socket (nothing was
     // delivered) and we retry — the bridge dedupes on this id so a retry can
@@ -2619,7 +2634,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         await guardRecord(one, c, msg.author, msg.test);
         inFlight++;
         let r1;
-        try { r1 = await sendOrder(one, one.qty || 1, c, msg.author); }
+        try { r1 = await sendOrder(one, one.qty || 1, c, msg.author, msg.postedAt); }
         finally { inFlight--; }
         await bridgeStrike(r1);
         if (r1.ok) watchFills();
