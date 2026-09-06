@@ -2786,6 +2786,20 @@ class Book:
             locked = tier_locked_pct(gain, fill)
             if locked is None:
                 return           # hasn't reached the first rung yet
+            # ANTI-CLIP IS OFF ENTIRELY RIGHT NOW (9/4, his call): "I just
+            # want the regular ratchet until we gather information about the
+            # greeks, and then we'll do the anti-clip."
+            #
+            # So: his plain ladder and nothing else — +10% to breakeven,
+            # +20% locks +10%, +30% locks +20%, uncapped. One rule, at every
+            # expiry, which also makes the next few weeks of recorded trades
+            # a CLEAN sample: every trade ran the same rule, so the ratchet
+            # lab is comparing rules instead of comparing two half-samples.
+            #
+            # Turn it back on with strategy.anticlip = true in settings.json
+            # (or ask, and it goes back to the DTE-gated behaviour below).
+            _ac_on = bool((self.cfg_strategy or {}).get("anticlip", False)) \
+                if hasattr(self, "cfg_strategy") else False
             # ANTI-CLIP, BUT NOT ON 0/1DTE (9/3, his rule in one line:
             # "my rule on 0 and 1dte and anticlip on later expirations").
             # A 0DTE has no tomorrow — theta eats whatever it doesn't lock,
