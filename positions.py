@@ -49,6 +49,19 @@ from ratchet_tiers import (ratchet_locked_pct as tier_locked_pct,
                            ratchet_stop_price, ratchet_plan, anti_clip)
 
 
+def _record_fill_async(snap):
+    """Write one telemetry row, off the fill path, never raising.
+
+    Imported lazily so a missing/broken telemetry.py can never stop the book
+    from loading — the instruments are optional, the engine is not."""
+    try:
+        import telemetry
+        telemetry.record_fill(snap, quote={"bid": snap.get("bid_at_send"),
+                                           "ask": snap.get("ask_at_send")})
+    except Exception:                                       # noqa: BLE001
+        pass
+
+
 def _tick_step(px, sym=None):
     """Legal increment — symbol-aware since 9/2 (SPY/QQQ/IWM = $0.01 always;
     Penny Program names $0.01 under $3 / $0.05 above; else $0.05 / $0.10).
@@ -2015,19 +2028,6 @@ class Book:
                 _tele = dict(p)
             except Exception:                               # noqa: BLE001
                 _tele = None
-        # TELEMETRY (9/6) — one row per fill: the latency chain, what the
-        # caller said vs what we paid, and the spread we paid it into. This
-        # is instrumentation, not logic: it runs after the lock is released,
-        # it cannot raise into the trading path, and if the whole module is
-        # missing the bot does not notice.
-        try:
-            if _tele is not None:
-                import telemetry as _tm
-                _tm.record_fill(_tele,
-                                quote={"bid": _tele.get("bid_at_send"),
-                                       "ask": _tele.get("ask_at_send")})
-        except Exception:                                   # noqa: BLE001
-            pass
         # Promised money becomes spent money. The debit is what you actually
         # paid, which is not always what you bid — a seller can come down
         # further than your price. Futures pay no premium; their money story
@@ -2054,6 +2054,30 @@ class Book:
                 p["cost"] = float(p.get("cost") or 0) + paid
             if self.cash is not None and not is_fut and not is_live:
                 self.cash -= paid
+        # TELEMETRY (9/6) — one row per fill: the latency chain, what the
+        # caller said vs what we paid, and the spread we paid it into.
+        #
+        # IT LIVES HERE, ON A THREAD, FOR A REASON. The first version wrote
+        # the row between `state=FILLED` and this cost ledger, and six tests
+        # went red: cost read 0.0 and a trade's P&L printed as its sale
+        # PROCEEDS (+$435 instead of +$135) — the exact 8/18 bug the comment
+        # above describes. The telemetry never raised. A few milliseconds of
+        # file I/O was enough, because there is a REAL WINDOW between "the
+        # position says FILLED" and "the position knows what it cost", and
+        # anything that widens it — a disk hiccup, a GC pause — can be read
+        # by another thread as a filled position with no basis.
+        #
+        # So: written AFTER the ledger is committed, and off the fill path
+        # entirely. An instrument may never be what makes the engine wrong.
+        # The window itself is still there and is worth closing separately.
+        if _tele is not None:
+            try:
+                _tele["cost"] = paid
+                threading.Thread(
+                    target=_record_fill_async, args=(_tele,), daemon=True,
+                    name="tele-fill").start()
+            except Exception:                               # noqa: BLE001
+                pass
         self._mark_peak()
         # With no broker at all there is nothing to ask, so the dry run assumed
         # this filled. Said out loud every single time, because an assumed fill
