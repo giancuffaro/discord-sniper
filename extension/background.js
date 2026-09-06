@@ -381,6 +381,7 @@ function noteChannelName(channelId, name) {
   if (!id || !nm || nm.length > 80) return;
   if (CHAN_NAMES[id] === nm) return;
   CHAN_NAMES[id] = nm;
+  pushChannelNames();          // housekeeping, debounced to 10 min
   // Debounced write — a burst of messages shouldn't be a burst of disk writes.
   if (_chanSaveTimer) return;
   _chanSaveTimer = setTimeout(() => {
@@ -389,6 +390,26 @@ function noteChannelName(channelId, name) {
   }, 2000);
 }
 // Real captured name wins; the hand label is the fallback; then a bare id.
+/* TELL THE BRIDGE WHAT EACH CHANNEL IS REALLY CALLED (9/4).
+ * The extension has always known this and never shared it, so rooms.txt kept
+ * hand labels ("Platinum-1") that match nothing G sees in Discord. Debounced
+ * hard — this is housekeeping, not a trading path, and it must never compete
+ * with an order for the bridge's attention. Failure is silent on purpose:
+ * a naming nicety must never surface as an error during a trade. */
+let _namesSentAt = 0;
+async function pushChannelNames() {
+  try {
+    if (Date.now() - _namesSentAt < 10 * 60 * 1000) return;   // 10 min
+    if (!Object.keys(CHAN_NAMES).length) return;
+    _namesSentAt = Date.now();
+    await fetch("http://127.0.0.1:8787/channames", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ names: CHAN_NAMES })
+    });
+  } catch (e) { /* bridge down, or busy. Try again in ten minutes. */ }
+}
+
 function roomName(channelId) {
   const id = String(channelId || "");
   return (id && (CHAN_NAMES[id] || ROOM_LABELS[id])) || "this room";

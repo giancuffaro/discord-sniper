@@ -3923,7 +3923,51 @@ class Handler(BaseHTTPRequestHandler):
         note("PROPS    %s" % msg)
         return self._json(200, dict(self._status(), ok=True, message=msg))
 
+    def _chan_names(self):
+        """The extension tells us what each channel is REALLY called.
+
+        9/4, G: "I rather every single channel have its original name, not
+        like Platinum two, three or four — so when I go to Discord I know
+        which channel we're talking about."
+
+        The extension has always known this (it reads the channel header on
+        every attach) and never told anyone, so rooms.txt kept hand-written
+        labels like "Platinum-1" that match nothing a human sees. This lands
+        them on disk; `rename_rooms.py` puts them into rooms.txt.
+        Names only — nothing here trades, nothing is secret.
+        """
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:                                   # noqa: BLE001
+            return self._json(400, {"ok": False, "message": "unreadable"})
+        names = body.get("names") or {}
+        if not isinstance(names, dict) or not names:
+            return self._json(400, {"ok": False, "message": "no names"})
+        path = os.path.join(HERE, "chan_names.json")
+        try:
+            old = json.load(open(path, encoding="utf-8"))
+        except Exception:                                   # noqa: BLE001
+            old = {}
+        added = 0
+        for k, v in names.items():
+            k, v = str(k), str(v or "").strip()
+            if v and old.get(k) != v:
+                old[k] = v
+                added += 1
+        if added:
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(old, f, indent=2, ensure_ascii=False)
+            os.replace(tmp, path)
+            note("ROOMS    learned %d channel name(s) from the extension — "
+                 "run 'python rename_rooms.py' to put them in rooms.txt"
+                 % added)
+        return self._json(200, {"ok": True, "known": len(old), "new": added})
+
     def do_POST(self):
+        if self.path.startswith("/channames"):
+            return self._chan_names()
         if self.path.startswith("/mode"):
             return self._set_mode()
         if self.path.startswith("/flatten"):
