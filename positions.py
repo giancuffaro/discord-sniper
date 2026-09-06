@@ -413,17 +413,28 @@ class Book:
             with open(path, "a", encoding="utf-8", newline="") as f:
                 w = _csv.writer(f)
                 if new:
-                    w.writerow(["t", "occ", "symbol", "fill", "real_pct",
-                                "shadow_pct", "shadow_exited", "legs",
-                                "peak_pct", "dte"])
+                    w.writerow(["t", "entry_hhmm", "held_min", "occ",
+                                "symbol", "fill", "real_pct", "shadow_pct",
+                                "shadow_exited", "legs", "peak_pct", "dte",
+                                "delta_in", "iv_in"])
+                # TIME OF DAY + HOW LONG IT WAS HELD (9/4, his point: "it's
+                # later in the day, the deltas and the gammas change"). The
+                # entry hour and the hold length are what make that testable
+                # instead of arguable. delta/IV at entry ride along for the
+                # same reason.
+                _st = float(p.get("sent_at") or 0)
+                _hh = (time.strftime("%H:%M", time.localtime(_st)) if _st else "")
+                _held = (round((time.time() - _st) / 60.0, 1) if _st else "")
+                _gi = p.get("greeks_in") or {}
                 w.writerow([
-                    "%.0f" % time.time(), p.get("occ"), p.get("symbol"),
+                    "%.0f" % time.time(), _hh, _held,
+                    p.get("occ"), p.get("symbol"),
                     fill, (round(float(real_pct), 2)
                            if real_pct is not None else ""),
                     round(float(sh_pct or 0), 2), bool(out),
                     p.get("_sh_legs") or 0,
                     round((float(p.get("_sh_peak") or fill) - fill) / fill * 100.0, 2),
-                    p.get("dte")])
+                    p.get("dte"), _gi.get("delta", ""), _gi.get("iv", "")])
         except Exception:                               # noqa: BLE001
             pass
 
