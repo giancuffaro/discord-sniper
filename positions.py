@@ -418,7 +418,8 @@ class Book:
                                 "peak_pct", "dte"])
                 w.writerow([
                     "%.0f" % time.time(), p.get("occ"), p.get("symbol"),
-                    fill, round(float(real_pct or 0), 2),
+                    fill, (round(float(real_pct), 2)
+                           if real_pct is not None else ""),
                     round(float(sh_pct or 0), 2), bool(out),
                     p.get("_sh_legs") or 0,
                     round((float(p.get("_sh_peak") or fill) - fill) / fill * 100.0, 2),
@@ -3603,7 +3604,12 @@ class Book:
                          "greeks_out": self._greeks_now(_pp)})
                     # SHADOW MODE ACTIVATED — one row per closed trade into
                     # shadow_ratchet.csv. Nothing here trades.
-                    self._shadow_close(key, _pp, total)
+                    # PERCENT, not dollars. `total` is trade_pl in DOLLARS
+                    # and the shadow column is a percent — putting them in
+                    # the same table would compare $220 against +14%.
+                    _rp = (((float(price) - float(entry)) / float(entry) * 100.0)
+                           if (price is not None and entry) else None)
+                    self._shadow_close(key, _pp, _rp)
                 pot = self.cash
             day = ""
             if self.unlimited:
