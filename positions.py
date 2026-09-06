@@ -856,6 +856,19 @@ class Book:
                 "last_bid": prev.get("last_bid") if adding else None,
                 "reserved": 0.0,
                 "sent_at": (prev.get("sent_at") if adding else time.time()),
+                # THE LATENCY CHAIN (9/6). alert_at is when the CALLER posted
+                # (Discord's own <time datetime>), seen_at is when the reader
+                # had it parsed, sent_at is this line, filled_at comes on the
+                # fill. Nobody in this field measures alert->fill; it decides
+                # which of 26 rooms is worth its subscription. Both are None
+                # for voice and vision, which have no post time — telemetry
+                # records those as BLANK, never as zero, so a missing stamp
+                # can't drag an average toward "instant".
+                "alert_at": (prev.get("alert_at") if adding
+                             else order.get("alert_at")),
+                "seen_at": (prev.get("seen_at") if adding
+                            else order.get("seen_at")),
+                "coid": (prev.get("coid") if adding else order.get("coid")),
                 "closing": False,
                 "watching": prev.get("watching", False),
                 # A blind entry (no quote, no posted price) was priced at a
@@ -1993,6 +2006,18 @@ class Book:
                  "price": round(float(price), 4)})
             sym = p["symbol"]
             side, strike, expiry = p["side"], p["strike"], p["expiry"]
+            _tele = dict(p)         # snapshot inside the lock, write outside
+        # TELEMETRY (9/6) — one row per fill: the latency chain, what the
+        # caller said vs what we paid, and the spread we paid it into. This
+        # is instrumentation, not logic: it runs after the lock is released,
+        # it cannot raise into the trading path, and if the whole module is
+        # missing the bot does not notice.
+        try:
+            import telemetry as _tm
+            _tm.record_fill(_tele, quote={"bid": _tele.get("bid_at_send"),
+                                          "ask": _tele.get("ask_at_send")})
+        except Exception:                                   # noqa: BLE001
+            pass
         # Promised money becomes spent money. The debit is what you actually
         # paid, which is not always what you bid — a seller can come down
         # further than your price. Futures pay no premium; their money story

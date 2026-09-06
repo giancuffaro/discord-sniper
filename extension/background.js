@@ -2798,7 +2798,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     inFlight++;
     let res;
     try {
-      res = await sendOrder(sig, qty, c, msg.author);
+      res = await sendOrder(sig, qty, c, msg.author, msg.postedAt);
     } finally {
       inFlight--;     // must drop even if that threw, or updates stall forever
     }
