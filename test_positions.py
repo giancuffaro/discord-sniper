@@ -760,7 +760,7 @@ _acb.anticlip = True
 _ackey = "anti|SPY"
 _acb._pos[_ackey] = {"symbol": "SPY", "side": "CALLS", "strike": 700.0,
                      "expiry": "2026-09-18", "qty": 1, "fill": 2.00,
-                     "state": FILLED, "stop": 1.80, "occ": "X", "live": False,
+                     "state": positions.FILLED, "stop": 1.80, "occ": "X", "live": False,
                      "direction": 1, "sent_at": time.time()}
 _acb.auto_ratchet(_ackey, 2.60)
 ok(abs(float(_acb._pos[_ackey]["stop"]) - 2.36) < 0.005,
