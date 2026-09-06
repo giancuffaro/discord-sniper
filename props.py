@@ -425,6 +425,31 @@ def _send_projectx(prop, order, note):
                      "fixed stop instead" % prop.get("name"))
             break
         last_rej = "HTTP %s %s" % (r.status_code, r.text[:160])
+        # SAY WHAT TO DO, NOT WHAT THE JSON SAID (9/4). Every ProjectX
+        # refusal this account has ever had — 5 of them, 8/24 to 8/28 — was
+        # this exact message, and the log showed only raw JSON, so it read
+        # like a mystery instead of a two-click account setting:
+        #
+        #   "Brackets cannot be used with Position Brackets.
+        #    You must enable Auto OCO Brackets."
+        #
+        # It is NOT the bracket TYPE, so walking [5] -> [4] can never help;
+        # both are refused identically. The account is in Position Brackets
+        # mode, which forbids attaching a bracket to the order at all.
+        #
+        # We do NOT strip the bracket to get filled. Bracket-or-nothing is
+        # the rule (see the top of this function): a futures entry with no
+        # server-side stop is unprotected the moment this PC dies. Better a
+        # refused order than a naked one.
+        if "Auto OCO Brackets" in (r.text or ""):
+            raise PropRefused(
+                "%s: your ProjectX/Topstep account is in POSITION BRACKETS "
+                "mode, which refuses orders that carry their own stop and "
+                "target. Nothing was sent, and the bracket was NOT stripped "
+                "— an unprotected futures entry is worse than no entry. "
+                "FIX IT ONCE in the Topstep/ProjectX settings: enable "
+                "'Auto OCO Brackets'. Every futures order will keep being "
+                "refused until you do." % prop.get("name"))
         if len(bracket_types) == 1 or _bt == bracket_types[-1]:
             raise PropRefused("%s: ProjectX refused the order (%s)"
                               % (prop.get("name"), last_rej))
