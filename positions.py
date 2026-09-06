@@ -328,6 +328,104 @@ class Book:
             if now > self.peak:
                 self.peak = now
 
+    # ---- SHADOW RATCHET -------------------------------------------------
+    # Runs beside the real one on every poll. Sells NOTHING, places NOTHING,
+    # touches no order. It only writes down where a DIFFERENT rule would have
+    # put the stop, and when that rule would have exited.
+    #
+    # WHY (9/4/26). Tonight's backtest said a leg-retrace + 20%-floor rule
+    # beat G's ladder +4.9% to +2.4% a trade over 48 contracts. Then the
+    # robustness check: drop its single best trade (META, +159%) and the
+    # LADDER wins. Drop two and the challenger goes negative. The entire
+    # edge lived in 4 trades out of 48 — a lucky Tuesday, not a strategy.
+    #
+    # So nothing was switched. Instead both rules now watch the SAME real
+    # fills at the SAME moments, and in a few weeks the comparison is real
+    # instead of a backtest run on half-skipped calls at other people's
+    # entry prices.
+    #
+    # G's own objection is the thing to test, and it is recorded per trade:
+    # "if it's not a trend day, it's chop, then it's gonna kill the trade."
+    # A wide trailing stop is a trend-day rule. `legs` counts how many new
+    # highs the trade made — a trend day makes many, chop makes few — so the
+    # answer can be split trend vs chop instead of averaged into mush.
+    def _shadow(self, key, bid):
+        try:
+            with self._lock:
+                p = self._pos.get(key)
+                if not p or p.get("state") != FILLED or p.get("closing"):
+                    return
+                fill = float(p.get("fill") or 0)
+                if not fill or int(p.get("direction") or 1) < 0:
+                    return          # longs only for now
+                if p.get("_sh_out"):
+                    return          # already exited in the shadow
+                peak = float(p.get("_sh_peak") or fill)
+                anchor = float(p.get("_sh_anchor") or fill)
+                stop = float(p.get("_sh_stop") or fill * 0.90)
+                trough = p.get("_sh_trough")
+                legs = int(p.get("_sh_legs") or 0)
+
+                if bid <= stop:
+                    p["_sh_out"] = {"t": time.time(), "price": stop,
+                                    "pct": (stop - fill) / fill * 100.0,
+                                    "legs": legs}
+                    return
+                if bid > peak:
+                    if trough is not None and trough > anchor:
+                        anchor = trough      # a new leg starts at the dip
+                        legs += 1
+                    peak, trough = bid, None
+                else:
+                    trough = bid if trough is None else min(trough, bid)
+
+                if (peak - fill) / fill * 100.0 >= 10.0 and peak > anchor:
+                    leg_stop = peak - (peak - anchor) * 0.33
+                    floor = peak * 0.80          # never tighter than 20%
+                    stop = max(stop, min(leg_stop, floor))
+
+                p["_sh_peak"], p["_sh_anchor"] = peak, anchor
+                p["_sh_stop"], p["_sh_trough"] = stop, trough
+                p["_sh_legs"] = legs
+        except Exception:                               # noqa: BLE001
+            pass        # the shadow must never disturb a real position
+
+    def _shadow_close(self, key, p, real_pct):
+        """Write one row when the real trade ends. shadow_ratchet.csv is the
+        whole point of the exercise: same fill, same minutes, two rules."""
+        try:
+            import csv as _csv
+            import os as _os          # positions.py does NOT import os at
+            #                           module level — using a bare `os` here
+            #                           raises NameError, my own except eats
+            #                           it, and the file silently never gets
+            #                           written. Exactly the trap that made
+            #                           the anti-clip gate look fixed today.
+            fill = float(p.get("fill") or 0)
+            if not fill:
+                return
+            out = p.get("_sh_out") or {}
+            sh_pct = (out.get("pct") if out else
+                      ((float(p.get("last_bid") or fill) - fill) / fill * 100.0))
+            path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                                 "shadow_ratchet.csv")
+            new = not _os.path.exists(path)
+            with open(path, "a", encoding="utf-8", newline="") as f:
+                w = _csv.writer(f)
+                if new:
+                    w.writerow(["t", "occ", "symbol", "fill", "real_pct",
+                                "shadow_pct", "shadow_exited", "legs",
+                                "peak_pct", "dte"])
+                w.writerow([
+                    "%.0f" % time.time(), p.get("occ"), p.get("symbol"),
+                    fill, round(float(real_pct or 0), 2),
+                    round(float(sh_pct or 0), 2), bool(out),
+                    p.get("_sh_legs") or 0,
+                    round((float(p.get("_sh_peak") or fill) - fill) / fill * 100.0, 2),
+                    p.get("dte")])
+        except Exception:                               # noqa: BLE001
+            pass
+
     def _greeks_now(self, p):
         """Live greeks for a position, trimmed to what is worth keeping, or
         None. Never raises and never blocks — the greeks feed is a nice-to-
@@ -3503,6 +3601,9 @@ class Book:
                          # out — which a P&L number alone can never tell.
                          "greeks_in": _pp.get("greeks_in"),
                          "greeks_out": self._greeks_now(_pp)})
+                    # SHADOW MODE ACTIVATED — one row per closed trade into
+                    # shadow_ratchet.csv. Nothing here trades.
+                    self._shadow_close(key, _pp, total)
                 pot = self.cash
             day = ""
             if self.unlimited:
