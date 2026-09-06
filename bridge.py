@@ -787,6 +787,30 @@ def save_mode(new_mode):
     return True, "saved"
 
 
+# LINES THAT REPEAT AT EVERY BOOT AND MEAN NOTHING IN THE RECORD (9/4).
+# trades.log is the permanent dated record — every audit tool reads it, the
+# journal trues up from it, and it is the ONE thing that survives a git
+# reset. It currently carries ~1,300 lines of startup banner from ~200
+# restarts: 244 "test account: unlimited", 239 "Webull LIVE connected",
+# 226 "paper quotes now come from the LIVE feed", 199 "TOPSTEP key VERIFIED".
+# None of that is an event; it is the same sentence printed again.
+#
+# They still print to the CONSOLE, where they are genuinely useful — you want
+# to see the boot state in the window. They just stop being written to the
+# permanent record. Anything that actually HAPPENED is untouched.
+_BOOT_NOISE = (
+    "test account: unlimited",
+    "paper quotes now come from the LIVE data feed",
+    "key VERIFIED — connected for",
+    "STRATEGY forced ON at bridge start",
+    "AI READ  key verified",
+    "QUOTE BUS on —",
+    "STREAM on —",
+    "Webull PAPER connected",
+    "Webull LIVE connected",
+)
+
+
 def note(line):
     stamp = datetime.now(ET).strftime("%H:%M:%S")
     try:
@@ -801,6 +825,13 @@ def note(line):
                   .decode("ascii"), flush=True)
         except Exception:                               # noqa: BLE001
             pass
+    # Boot banner: console yes, permanent record no. See _BOOT_NOISE.
+    try:
+        _l = str(line)
+        if any(n in _l for n in _BOOT_NOISE):
+            return
+    except Exception:                                   # noqa: BLE001
+        pass
     try:
         with open(LOG, "a", encoding="utf-8") as f:
             f.write("%s\t%s\n" % (datetime.now(ET).isoformat(timespec="seconds"), line))
