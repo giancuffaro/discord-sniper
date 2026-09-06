@@ -128,10 +128,51 @@ def split_own(rows):
     return mine, theirs
 
 
+_ROLE = ("(admin)", "(owner)", "(mod)", "(moderator)", "(team)", "(staff)",
+         "(analyst)", "(vip)")
+
+
+def canon(name):
+    """Merge the same human posting under two display names.
+
+    The first run of this report split real callers in half:
+        Unraveller (12)  +  Unraveller (Admin) (1)
+        Bullwinkle (12)  +  bullwinkle0001 (2)
+    Sample size is the scarce resource here — nobody has 20 trades yet — so
+    a split name is not cosmetic, it is the difference between rankable and
+    not.
+
+    Deliberately CONSERVATIVE. It strips a trailing role tag and trailing
+    digits, and case-folds. It does NOT merge on similarity: "ZTRADEZ BOT"
+    and "ZTRADEZ Manager" stay separate, because in a room the bot and the
+    human are two different signals and a wrong merge is a silent lie about
+    whose money made what.
+    """
+    n = (name or "?").strip()
+    low = n.lower()
+    for tag in _ROLE:
+        if low.endswith(tag):
+            n = n[: -len(tag)].strip()
+            low = n.lower()
+            break
+    core = low.rstrip("0123456789").strip()
+    return core or low or "?"
+
+
 def score(rows):
     by = {}
+    disp = {}
     for r in rows:
-        c = (r.get("caller") or "?").strip() or "?"
+        raw = (r.get("caller") or "?").strip() or "?"
+        c = canon(raw)
+        # Show the cleanest spelling seen: prefer one without a role tag
+        # ("Unraveller" over "Unraveller (Admin)"), then the longest.
+        prev = disp.get(c, "")
+        raw_role = raw.lower().endswith(_ROLE)
+        prev_role = prev.lower().endswith(_ROLE) if prev else True
+        if not prev or (prev_role and not raw_role) or \
+                (raw_role == prev_role and len(raw) > len(prev)):
+            disp[c] = raw
         b = by.setdefault(c, {"pl": [], "pct": [], "dd": [], "run": [],
                               "rooms": set(), "wins": 0, "losses": 0,
                               "gross_win": 0.0, "gross_loss": 0.0})
@@ -158,7 +199,7 @@ def score(rows):
             continue
         total = sum(b["pl"])
         pf = (b["gross_win"] / b["gross_loss"]) if b["gross_loss"] else None
-        out[c] = {
+        out[disp.get(c, c)] = {
             "n": n,
             "rooms": sorted(b["rooms"]),
             "total": round(total, 2),
