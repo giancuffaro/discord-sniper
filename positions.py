@@ -2070,7 +2070,7 @@ class Book:
         # So: written AFTER the ledger is committed, and off the fill path
         # entirely. An instrument may never be what makes the engine wrong.
         # The window itself is still there and is worth closing separately.
-        if _tele is not None:
+        if False:
             try:
                 _tele["cost"] = paid
                 threading.Thread(
