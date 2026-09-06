@@ -135,8 +135,42 @@ function imagesOf(li) {
   return urls.slice(0, 3);
 }
 
+// Raw row length at the last full read. See the CHEAP GATE in handle().
+const RAW_LEN = new Map();
+
 function handle(li) {
   if (!li.id) return;
+
+  /* CHEAP GATE (9/4 — the browser-lag fix).
+   *
+   * liveSweep() calls handle() on EVERY visible row every 1.5s, in every one
+   * of ~21 Discord tabs. That is ~40 sweeps a minute per tab over ~100 rows
+   * — and the dedupe below sits AFTER textOf() and imagesOf(), so each of
+   * those ~80,000 calls a minute did two querySelectorAll walks and a regex
+   * before deciding it had nothing new. That is the lag G has been feeling
+   * since the discard fix pinned all 26 tabs in memory.
+   *
+   * `li.textContent.length` is a single native property read — no query, no
+   * regex. If the row has not grown since the last full read, there is
+   * nothing to re-parse and we leave immediately.
+   *
+   * This does NOT weaken the embed-hydration fix below: when Discord
+   * hydrates an embed the row's raw text grows too, so the gate opens and
+   * the full read runs exactly as before. Nor does it weaken anything for
+   * images: the existing text-length dedupe already returned early on an
+   * unchanged row regardless of images, so behaviour is identical — it just
+   * costs almost nothing to decide now.
+   */
+  if (SEEN.has(li.id)) {
+    let raw = 0;
+    try { raw = (li.textContent || "").length; } catch (e) { raw = -1; }
+    const prevRaw = RAW_LEN.get(li.id);
+    if (raw >= 0 && prevRaw !== undefined && raw <= prevRaw) return;
+    if (raw >= 0) RAW_LEN.set(li.id, raw);
+  } else {
+    try { RAW_LEN.set(li.id, (li.textContent || "").length); } catch (e) {}
+  }
+  if (RAW_LEN.size > 3000) RAW_LEN.clear();
   // EMBED RACE FIX (8/30, G: "every bot puts the trade inside an embed" —
   // HD Greeter, ZTRADEZ BOT, Options Insider Alerts, Nitro Trades all send
   // an empty body with the call in the embed): Discord paints the message
