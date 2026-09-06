@@ -432,6 +432,9 @@ def build_book():
     # Clear the paper/dry-run book at NY midnight so the popup starts each day
     # clean; live (real-money) holds are never touched. Default ON.
     BOOK.reset_paper_daily = bool((CFG.get("execution") or {}).get("reset_paper_daily", True))
+    # ANTI-CLIP off unless he turns it on (9/4). Plain ladder only, so the
+    # next weeks of recorded trades are one clean sample instead of two.
+    BOOK.anticlip = bool((CFG.get("strategy") or {}).get("anticlip", False))
     # Two-connection routing: a live position is managed on the real account, a
     # paper one on the sandbox. broker_for defaults everything not-explicitly-
     # live to paper, so the real account is never touched by accident.

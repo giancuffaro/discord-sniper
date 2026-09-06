@@ -173,6 +173,10 @@ class Book:
         self._seq = 0
         self.save_day = None            # bridge sets this; writes the day file
         self.reset_paper_daily = False  # bridge sets from settings; clear paper at NY midnight
+        # ANTI-CLIP: OFF by default (9/4, his call — plain ladder only until
+        # there are greeks to reason about). bridge sets it from
+        # settings.json strategy.anticlip.
+        self.anticlip = False
 
         # The account, and there are now two kinds of pretend one.
         #
@@ -2798,8 +2802,7 @@ class Book:
             #
             # Turn it back on with strategy.anticlip = true in settings.json
             # (or ask, and it goes back to the DTE-gated behaviour below).
-            _ac_on = bool((self.cfg_strategy or {}).get("anticlip", False)) \
-                if hasattr(self, "cfg_strategy") else False
+            _ac_on = bool(getattr(self, "anticlip", False))
             # ANTI-CLIP, BUT NOT ON 0/1DTE (9/3, his rule in one line:
             # "my rule on 0 and 1dte and anticlip on later expirations").
             # A 0DTE has no tomorrow — theta eats whatever it doesn't lock,
@@ -2821,7 +2824,7 @@ class Book:
                                 - _dtx.date.today()).days
             except Exception:                           # noqa: BLE001
                 _dte = None
-            if _dte is None or _dte >= 2:
+            if _ac_on and (_dte is None or _dte >= 2):
                 _before = locked
                 locked = anti_clip(locked, gain)
                 if _before != locked:
