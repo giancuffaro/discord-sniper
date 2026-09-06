@@ -1944,7 +1944,20 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
             k => String(CHAN_NAMES[k] || "").toLowerCase().includes(want));
           if (id) tab = tabs.find(t => (t.url || "").includes(id));
         }
-        if (!tab) return reply({ ok: false, why: "that room isn't open in a tab" });
+        if (!tab) {
+          /* OPEN IT (9/4, his call). His point: the reader only reads OPEN
+           * tabs, so if a trade exists the room WAS open — it has since been
+           * closed, or this is an older trade. Either way he wants to see it:
+           * "have it open one more. That's okay, I'll close it later."
+           * Only ever opens a URL that came from rooms.txt. */
+          if (!hit || !hit.url) {
+            return reply({ ok: false,
+              why: "that room isn't in rooms.txt, so there's no link to open" });
+          }
+          const made = await chrome.tabs.create({ url: hit.url, active: true });
+          try { await chrome.windows.update(made.windowId, { focused: true }); } catch (e) {}
+          return reply({ ok: true, opened: true });
+        }
         await chrome.tabs.update(tab.id, { active: true });
         try { await chrome.windows.update(tab.windowId, { focused: true }); } catch (e) {}
         reply({ ok: true });
