@@ -1,12 +1,10 @@
 """
 props.py — prop-firm accounts as extra sets of hands.
 
-The firms themselves (Apex, Topstep, Bulenox, MyFundedFutures...) don't hand
-out APIs. What they hand out is an account ON a platform, and the platform is
-what a program can talk to. Three kinds cover practically the whole industry:
+The firms themselves (Topstep, Bulenox...) don't hand out APIs. What they hand
+out is an account ON a platform, and the platform is what a program can talk
+to. Two kinds are supported here (Tradovate was removed 9/4 — see below):
 
-    tradovate   Tradovate's public REST API. Apex, MyFundedFutures, Tradeify
-                and others issue Tradovate accounts.
     projectx    The ProjectX Gateway API. TopstepX, Bulenox and a growing list
                 of firms run on ProjectX now.
     webhook     A plain HTTP POST of the order as JSON — the universal escape
@@ -22,8 +20,6 @@ the Webull keys, never in the browser.
 Config shape, written by the popup via POST /props:
 
     "props": [
-      {"name": "Apex 50K", "platform": "tradovate", "enabled": false,
-       "username": "...", "password": "...", "extra": "cid:sec or demo/live"},
       {"name": "Topstep 100K", "platform": "projectx", "enabled": false,
        "username": "...", "password": "...", "extra": "https://api.topstepx.com"},
       {"name": "PickMyTrade", "platform": "webhook", "enabled": false,
@@ -74,48 +70,14 @@ def _send_webhook(prop, order, note):
     return "sent to %s" % prop.get("name")
 
 
-# ---- tradovate ---------------------------------------------------------------
-TRADOVATE_LIVE = "https://live.tradovateapi.com/v1"
-TRADOVATE_DEMO = "https://demo.tradovateapi.com/v1"
-
-
-def _send_tradovate(prop, order, note):
-    """Auth + place, by the public API's book. The first order through a
-    Tradovate prop account is supervised — run it while watching the DOM."""
-    req = _requests()
-    base = TRADOVATE_DEMO if "demo" in str(prop.get("extra") or "").lower() \
-        else TRADOVATE_LIVE
-    auth = req.post(base + "/auth/accesstokenrequest", json={
-        "name": prop.get("username"), "password": prop.get("password"),
-        "appId": "DiscordSniper", "appVersion": "1.0",
-        "cid": 0, "sec": ""}, timeout=8)
-    if auth.status_code != 200 or "accessToken" not in (auth.json() or {}):
-        raise PropRefused("%s: Tradovate wouldn't log in (HTTP %s %s)"
-                          % (prop.get("name"), auth.status_code,
-                             auth.text[:120]))
-    tok = auth.json()["accessToken"]
-    hdr = {"Authorization": "Bearer " + tok}
-    accts = req.get(base + "/account/list", headers=hdr, timeout=8).json()
-    if not accts:
-        raise PropRefused("%s: logged in but no Tradovate account came back"
-                          % prop.get("name"))
-    acct = accts[0]
-    side = "Sell" if str(order.get("direction") or "").upper() == "SHORT" \
-        else "Buy"
-    if order.get("action") in ("CLOSE", "TRIM"):
-        side = "Buy" if side == "Sell" else "Sell"
-    body = {"accountSpec": acct.get("name"), "accountId": acct.get("id"),
-            "action": side, "symbol": order.get("symbol"),
-            "orderQty": int(order.get("qty") or 1),
-            "orderType": "Market", "isAutomated": True}
-    r = req.post(base + "/order/placeorder", headers=hdr, json=body, timeout=8)
-    if r.status_code != 200:
-        raise PropRefused("%s: Tradovate refused the order (HTTP %s %s)"
-                          % (prop.get("name"), r.status_code, r.text[:120]))
-    note("PROP     %s <- %s %s x%s (Tradovate accepted)"
-         % (prop.get("name"), side, order.get("symbol"), body["orderQty"]))
-    return "sent to %s" % prop.get("name")
-
+# ---- tradovate — REMOVED 9/4/26 -----------------------------------------
+# G: "tradovate remove". Evidence: ONE mention in trades.log in six weeks
+# (8/17, a config line listing enabled brokers) and ZERO orders ever sent.
+#
+# NOTE FOR WHOEVER NEEDS IT BACK: Tradovate was also the platform behind
+# Apex, MyFundedFutures and Tradeify — removing it removes those too. The
+# adapter was ~40 lines (auth -> /account/list -> /order/placeorder) and is
+# in git history if one of those firms is ever funded.
 
 # ---- projectx (TopstepX, Bulenox, and other ProjectX firms) -----------------
 # Docs: https://gateway.docs.projectx.com  |  TopstepX base = https://api.topstepx.com
@@ -606,7 +568,6 @@ def _send_ninjatrader(prop, order, note):
 
 
 ADAPTERS = {"webhook": _send_webhook,
-            "tradovate": _send_tradovate,
             "projectx": _send_projectx,
             "ninjatrader": _send_ninjatrader}
 

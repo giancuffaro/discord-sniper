@@ -1590,8 +1590,9 @@ def _futures_brokers_safe():
                           "account": nt.get("account", ""),
                           "incoming_dir": nt.get("incoming_dir", ""),
                           "atm_template": nt.get("atm_template", "")}
-    tv = fb.get("tradovate") or {}
-    out["tradovate"] = {"enabled": bool(tv.get("enabled")),
+    # tradovate removed 9/4 (never carried an order) — see props.py
+    tv = {}
+    out["tradovate"] = {"enabled": False,
                         "username": tv.get("username", ""),
                         "demo": bool(tv.get("demo")),
                         "has_password": bool(tv.get("password"))}
@@ -1635,7 +1636,7 @@ def _futures_brokers_safe():
 
 def _book_futures(order, key):
     """Keep the book in step for a futures order that went to a prop broker
-    (NinjaTrader/Tradovate) rather than Webull. Webull's own path updates the
+    (NinjaTrader) rather than Webull. Webull's own path updates the
     book itself; this covers the prop legs so a NinjaTrader-only trader still
     sees the position open, trim down, and close on the room's calls."""
     if BOOK is None:
@@ -2098,7 +2099,7 @@ def _place_impl(order):
             # closeContract — instead of stranding the prop position.
             _fb = CFG.get("futures_brokers") or {}
             _prop_on = any((_fb.get(_b) or {}).get("enabled")
-                           for _b in ("ninjatrader", "tradovate", "topstep"))
+                           for _b in ("ninjatrader", "topstep"))
             if order.get("kind") == "future" and _prop_on:
                 note("EXIT     %s — not on the Webull book, but a prop broker "
                      "is armed; forwarding the close there" % sym)
@@ -2285,7 +2286,7 @@ def _place_impl(order):
                                "futures switch is off. Flip it in the popup's "
                                "Settings once your Webull futures data "
                                "subscription is live.")
-            # Where futures trade, his call: Webull, NinjaTrader, Tradovate —
+            # Where futures trade, his call: Webull, NinjaTrader, Topstep —
             # each an independent toggle, so an order fans out to all of them or
             # just one. futures_brokers holds it all; when it's unset we keep the
             # old rule (Webull unless a legacy prop is armed). Refusals are
@@ -2307,14 +2308,8 @@ def _place_impl(order):
                         # template) and named here. Blank = no NT-side stop.
                         "atm_template": nt.get("atm_template", ""),
                         "enabled": True})
-                tv = fb.get("tradovate") or {}
-                if tv.get("enabled"):
-                    armed_props.append({"name": "Tradovate",
-                        "platform": "tradovate",
-                        "username": tv.get("username", ""),
-                        "password": tv.get("password", ""),
-                        "extra": "demo" if tv.get("demo") else "",
-                        "enabled": True})
+                # Tradovate removed 9/4 — never carried an order in six
+                # weeks. props.py has the note for putting it back.
                 ts = fb.get("topstep") or {}
                 if ts.get("enabled"):
                     armed_props.append({"name": "Topstep",
@@ -2387,7 +2382,7 @@ def _place_impl(order):
                             note("FUTURES  [%s] ERROR %s -> %s"
                                  % (_x["name"], what, str(_e)[:120]))
 
-            # NinjaTrader / Tradovate legs — also send; they only touch the book
+            # NinjaTrader / Topstep legs — also send; they only touch the book
             # if Webull didn't already (so the position is never counted twice).
             if armed_props:
                 import props as prop_mod
@@ -2410,7 +2405,7 @@ def _place_impl(order):
             summary = "; ".join(r for r in results if r)
             if not any_sent and not summary:
                 summary = ("no futures broker is turned on — pick Webull, "
-                           "NinjaTrader or Tradovate under 'Trade futures from'.")
+                           "NinjaTrader or Topstep under 'Trade futures from'.")
             return any_sent, summary
 
         from webull_options import Refused
@@ -2927,7 +2922,7 @@ class Handler(BaseHTTPRequestHandler):
                 # The one-click bracket strategy (1 contract, +15%/-15%), so the
                 # popup toggle can show its true state after a reload.
                 "strategy": CFG.get("strategy", {}),
-                # Where futures route (Webull/NinjaTrader/Tradovate), so the
+                # Where futures route (Webull/NinjaTrader/Topstep), so the
                 # popup toggles show their true state after a reload. Passwords
                 # are stripped — never send a credential back to a browser.
                 "futures_brokers": _futures_brokers_safe(),
@@ -3767,7 +3762,7 @@ class Handler(BaseHTTPRequestHandler):
             incoming = body["futures_brokers"]
             if "webull" in incoming:
                 fb["webull"] = bool(incoming["webull"])
-            for bk in ("ninjatrader", "tradovate", "topstep"):
+            for bk in ("ninjatrader", "topstep"):
                 if bk in incoming and isinstance(incoming[bk], dict):
                     cur = dict(fb.get(bk) or {})
                     cur.update(incoming[bk])
@@ -3781,8 +3776,6 @@ class Handler(BaseHTTPRequestHandler):
             _on = ["webull"] if fb.get("webull") else []
             if (fb.get("ninjatrader") or {}).get("enabled"):
                 _on.append("ninjatrader")
-            if (fb.get("tradovate") or {}).get("enabled"):
-                _on.append("tradovate")
             if (fb.get("topstep") or {}).get("enabled"):
                 _on.append("topstep")
             note("FUTURES  trade from: %s" % (", ".join(_on) or "nothing selected"))
