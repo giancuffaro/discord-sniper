@@ -1942,12 +1942,23 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         }
         if (!hit) hit = ROOM_TABS[want] || null;
         if (!hit) {
+          /* IGNORE WORDS THAT IDENTIFY NOTHING. "trades", "alerts",
+           * "options" appear in half the labels, so matching on them sent
+           * "vero-trades" to "Whop Day Trades" and "ryans-alerts" to
+           * "Option Alerts". A word only counts if it appears in at most
+           * two room labels — the rare word is the one that names a room.
+           * A wrong tab is worse than no tab. */
+          const freq = {};
+          for (const k of Object.keys(ROOM_TABS)) {
+            for (const w of new Set(words(k))) freq[w] = (freq[w] || 0) + 1;
+          }
           let best = 0;
           for (const k of Object.keys(ROOM_TABS)) {
-            const shared = words(k).filter(w => wantW.includes(w)).length;
+            const shared = words(k).filter(
+              w => wantW.includes(w) && (freq[w] || 0) <= 2).length;
             if (shared > best) { best = shared; hit = ROOM_TABS[k]; }
           }
-          if (!best) hit = null;          // no shared word = not a match
+          if (!best) hit = null;
         }
         const tabs = await chrome.tabs.query({});
         let tab = null;
