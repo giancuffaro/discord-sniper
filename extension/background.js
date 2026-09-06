@@ -107,6 +107,10 @@ function seenMessage(msg) {
  * percentages as PROGRESS ("65% on NVDA"), not trims — the verb decides —
  * so every whop room parses with bare_pct_trims off. Unknown whop rooms
  * stay capture-only until they're named here. */
+// shortName (lowercased) -> {url, id}. Filled by loadRoomsFile() so the
+// popup can jump straight to a room's tab. See the FOCUS-ROOM handler.
+const ROOM_TABS = {};
+
 const WHOP_ROOMS = [
   // hash = the stable room id Whop keeps in EVERY url shape — the new
   // profile serves "/firststeptrading/exp_<hash>/app" with no slug at all
@@ -1892,6 +1896,48 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "ATTACHED") { noteChannelName(msg.channelId, msg.channelName); badge(); reply({ ok: true }); return; }
+
+  /* FOCUS ROOM (9/4) — click a caller's name in the popup and land on the
+   * tab their alert came from. His ask: "I wanna see how the alert was
+   * emitted but I can't find the tab because so many of them."
+   *
+   * Match order, most reliable first:
+   *   1. rooms.txt shortName -> its exact URL, then find that open tab
+   *   2. the channel id inside any open Discord URL
+   *   3. a captured channel NAME (CHAN_NAMES) matching what was clicked
+   * It never OPENS a tab — if the room is closed it says so, because
+   * silently opening a 27th tab is the opposite of what he wants. */
+  if (msg && msg.type === "FOCUS_ROOM") {
+    (async () => {
+      try {
+        await loadRoomsFile();                       // fills ROOM_TABS
+        const want = String(msg.room || "").trim().toLowerCase();
+        if (!want) return reply({ ok: false, why: "no room on that trade" });
+        const hit = ROOM_TABS[want]
+          || ROOM_TABS[Object.keys(ROOM_TABS).find(k =>
+               k.includes(want) || want.includes(k)) || ""];
+        const tabs = await chrome.tabs.query({});
+        let tab = null;
+        if (hit) {
+          tab = tabs.find(t => (t.url || "") === hit.url)
+             || tabs.find(t => hit.id && (t.url || "").includes(hit.id));
+        }
+        if (!tab) {
+          // fall back to a captured channel name
+          const id = Object.keys(CHAN_NAMES).find(
+            k => String(CHAN_NAMES[k] || "").toLowerCase().includes(want));
+          if (id) tab = tabs.find(t => (t.url || "").includes(id));
+        }
+        if (!tab) return reply({ ok: false, why: "that room isn't open in a tab" });
+        await chrome.tabs.update(tab.id, { active: true });
+        try { await chrome.windows.update(tab.windowId, { focused: true }); } catch (e) {}
+        reply({ ok: true });
+      } catch (e) {
+        reply({ ok: false, why: String(e).slice(0, 120) });
+      }
+    })();
+    return true;                                     // async reply
+  }
   // ---- VOICE LISTENER control + transcripts ----
   if (msg && msg.from === "offscreen") { handleOffscreen(msg); reply({ ok: true }); return; }
   if (msg && msg.type === "EXPORT_NOW") { autoExportForLearning().then(() => reply({ ok: true })).catch(() => reply({ ok: false })); return true; }

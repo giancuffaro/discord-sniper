@@ -1380,12 +1380,41 @@ function renderTable(rows, el) {
     else if ((r.exits || []).length) bits.push(money(r.pl) + " so far");
     const dirTag = r.kind === "future"
       ? (r.direction < 0 ? "SHORT " : "LONG ") : "";
+    // CLICK THE CALLER, LAND ON THEIR ROOM (9/4). data-room carries the
+    // room this trade came from; the click handler below asks the background
+    // to focus that tab. Only clickable when we actually know the room —
+    // a dead-looking link is worse than plain text.
+    const _room = r.room || "";
+    const _who = _room
+      ? '<span class="gotoroom" data-room="' + esc(_room) + '" title="'
+        + esc("go to " + _room) + '">' + esc(r.who || "?") + "</span>"
+      : esc(r.who || "?");
     return '<div class="trow"><b>' + dirTag + contractStr(r) + "</b> · " +
-           (r.who || "?") + ' · <span class="tag ' + cls + '">' + state +
+           _who + ' · <span class="tag ' + cls + '">' + state +
            "</span><span class=\"sub\">" +
            (bits.join(" · ") || "nothing has happened yet") + "</span></div>";
   }).join("");
 }
+
+/* CLICK A CALLER'S NAME -> JUMP TO THEIR ROOM'S TAB (9/4).
+ * Delegated off document so it keeps working every time the trade rows are
+ * re-rendered (they redraw on every refresh; a per-row listener would be
+ * rebound or lost). Says so plainly when the room isn't open rather than
+ * opening a 27th tab, which is the opposite of what he asked for. */
+document.addEventListener("click", (ev) => {
+  const el = ev.target && ev.target.closest && ev.target.closest(".gotoroom");
+  if (!el) return;
+  ev.preventDefault();
+  const room = el.getAttribute("data-room") || "";
+  el.style.opacity = "0.5";
+  chrome.runtime.sendMessage({ type: "FOCUS_ROOM", room }, (res) => {
+    el.style.opacity = "";
+    if (res && res.ok) { window.close(); return; }   // popup closes, tab is there
+    el.title = (res && res.why) || "couldn't find that tab";
+    el.style.textDecoration = "line-through";
+    setTimeout(() => { el.style.textDecoration = ""; }, 2000);
+  });
+});
 
 /* Previous days live on the bridge as one file per date. Picking one swaps
  * the table to that day and stops the live refresh overwriting it; "today"
