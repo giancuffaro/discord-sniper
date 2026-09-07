@@ -15,3 +15,7 @@ ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err
 1788797297.009,closed,Tradier REST,8,8,215.2,227.7,382.3,
 1788797297.009,closed,tastytrade OAuth,8,8,951.4,1043.4,1139.9,
 1788797297.009,closed,Webull buying power,0,8,,,,"buying_power returned None — Webull would not say (throttled, or the account id could not be picked)"
+1788797350.48,closed,Bridge 8787,,8,,,,unreachable from this shell — run health.py ON the PC where the bridge runs
+1788797350.48,closed,Tradier REST,8,8,207.1,219.4,278.1,
+1788797350.48,closed,tastytrade OAuth,8,8,893.6,1184.2,1441.7,
+1788797350.48,closed,Webull connect+bal,0,8,,,,the Webull SDK isn't installed. Open START HERE in this folder - it installs what's missing and starts the bri

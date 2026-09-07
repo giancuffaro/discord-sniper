@@ -153,13 +153,21 @@ def check_webull(c, trials):
         #      empty app_key, so it reported a permanent connection failure
         #      that was entirely fabricated by the test.
         # A monitor that invents outages is worse than no monitor.
+        # connect() FIRST. `account_id` is blank in settings on purpose
+        # (auto-pick), and a fresh client has not discovered it yet — so
+        # buying_power() reads a balance for account None and returns None.
+        # That is not a broken key, it is an unconnected client, and the
+        # third version of this check was about to report it as an outage.
         from webull_options import WebullOptions
         cl = WebullOptions(c)
+        acct = cl.connect()
+        if not acct:
+            raise IOError("connect() returned no account id")
         bp = cl.buying_power()
         if bp is None:
-            raise IOError("buying_power returned None — Webull would not say "
-                          "(throttled, or the account id could not be picked)")
-    return ("Webull buying power",) + timed(go, min(trials, 3), pause=2.5)
+            raise IOError("connected as %s but Webull would not return a "
+                          "balance (throttled?)" % acct)
+    return ("Webull connect+bal",) + timed(go, min(trials, 3), pause=2.5)
 
 
 def check_bridge(c, trials):
