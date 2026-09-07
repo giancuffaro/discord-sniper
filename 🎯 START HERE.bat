@@ -290,14 +290,13 @@ if not errorlevel 1 (
   rem  emptied the 9/1 and 9/4 exports: "LIVE rooms: none (all testing)"
   rem  and 0/5 captured messages, on days that traded live and fine.
   rem  A graceful close first gives it the flush. Force is the fallback.
+  rem  Graceful only here. If Chrome ignores it, the block immediately
+  rem  below already checks and forces - reusing the pattern this file
+  rem  has always used at top level, rather than nesting a piped
+  rem  tasklist inside a parenthesised block, which is a fussier bit of
+  rem  cmd parsing than it is worth on the launcher he double-clicks.
   taskkill /IM chrome.exe >nul 2>&1
   timeout /t 6 /nobreak >nul
-  tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
-  if not errorlevel 1 (
-    echo         (Chrome did not close on its own - forcing it)
-    taskkill /F /IM chrome.exe >nul 2>&1
-    timeout /t 3 /nobreak >nul
-  )
 )
 tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
 if not errorlevel 1 (
