@@ -2067,6 +2067,7 @@ def _place_impl(order):
                                         strike=_p2.get("strike"),
                                         expiry=_p2.get("expiry"),
                                         live=bool(_p2.get("live"))),),
+                             name="under-stop:%s" % sym,
                              daemon=True).start()
         return True, ("their stop on %s is now %.2f on the stock — watched "
                       "on this PC" % (sym, float(_lvl)))
