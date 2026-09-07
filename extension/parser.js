@@ -717,6 +717,30 @@ function parseSignal(text, cfg) {
   const s = parseSignalInner(text, cfg);
   indexToEtf(s, cfg);
   directionSanity(s);
+  // TRAILING PARTIAL (9/7, ELITE OPTIONS). The partial-sell reader wants the
+  // fraction right after the verb ("sold 1/2 UPS"). Both Elite callers put it
+  // at the END, after the contract and the price:
+  //   Shoof:  "SOLD | SPY 9/4 767C at 2.60 (1/2)"
+  //   Brando: "SOLD | QQQ SEPT 4 710C $5.40 1/4 position"
+  // Those read as FULL EXITS, so a caller trimming a quarter would have closed
+  // the whole position and handed the rest of the move away — the exact thing
+  // the ratchet exists to prevent. Per the exit doctrine a caller's trim is
+  // noted and never traded; only a real "all out" fires, and Shoof writes that
+  // literally as "(ALL OUT)", so it stays the discriminator.
+  // Dates are the trap here (9/4, 8/28 are not fractions), so this only counts
+  // a fraction inside parentheses, or one followed by the word "position", and
+  // only when the numerator is smaller than the denominator.
+  if (s.action === "CLOSE" && !/\ball[\s-]*out\b|\bfully\s+out\b/i.test(String(s.clean || ""))) {
+    const raw = String(s.clean || "");
+    let m = /\(\s*([1-9])\s*\/\s*([1-9])\s*\)/.exec(raw)
+         || /\b([1-9])\s*\/\s*([1-9])\b(?=\s+(?:of\s+)?(?:my\s+|the\s+)?pos(?:ition)?\b)/i.exec(raw);
+    if (m && Number(m[1]) < Number(m[2])) {
+      s.action = "TRIM"; s.fire = false; s.matched = "trailing partial";
+      s.pct = Math.round(100 * Number(m[1]) / Number(m[2]));
+      s.why = "partial sell on " + (s.symbol || "it") + " (" + m[1] + "/" + m[2] +
+              ") — a trim, not the exit; the ratchet keeps running";
+    }
+  }
   if (s.action !== "OPEN" || s.kind === "future") return s;
   const low = (s.clean || "").toLowerCase();
   const isOption = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
