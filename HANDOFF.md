@@ -1,7 +1,31 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~01:45 — see "9/6-9/7 OVERNIGHT" at the bottom.
+Last updated: 2026-09-07 ~mid-day — G pasted TradingTheTrend's own format/
+glossary guide to sharpen the reader for that room. Their alert grammar
+("BTO AAPL 120c 11/06 @1.5" / "STC AAPL 120c 11/06 @.90 for -10%") already
+parsed clean — strike-then-expiry, leading-dot prices, BTO/STC verbs were all
+covered before today. What their glossary exposed: it spells out jargon
+(ITM/ATM/OTM, DD, MM, SS, FA, IPO, ETF, GTC, GTD, YOLO, FOMO, AH, ER, PRE) this
+reader had never seen written in caps, and bareSymbol's rule is "any all-caps
+1-5 letter word not on the exclude list IS a ticker" — so "trimming ATM 40%"
+or "out of DD" would have resolved ATM/DD as the traded symbol and could fire
+a phantom trim/close on a real position of that name. Added all fifteen to
+NOT_TICKERS in extension/parser.js (3.5.30 — RELOAD IT); confirmed the exact
+BTO/STC lines still fire and "trimming ATM 40%" / "out of DD" now correctly
+return symbol: null ("couldn't tell which ticker") instead of guessing.
+LEFT OUT ON PURPOSE: MOMO ("Momo" = momentum in their glossary) is also a
+real, actively-traded ticker (Hello Group) — same tradeoff already accepted
+for TA/DD elsewhere in the list, but this one's for G to bless, not assume.
+ALSO FOUND, NOT YET ACTED ON: the welcome message named three TTT channels
+never wired into rooms.txt — option-spread signals (808127664022880297),
+lottery-ticket plays (880503518878892143), and an auto-log of every
+option-alerts fill (800526679046225961, posted by bot 803669969895161876).
+The last one mirrors the option-alerts channel already wired — adding it
+would double-fire every trade from two sources. Spreads are multi-leg; this
+bot has no multi-leg order path. Flagged for G, not added — new rooms go
+LIVE by default and that's his call alone.
+Previously — Last updated: 2026-09-07 ~01:45 — see "9/6-9/7 OVERNIGHT" at the bottom.
 The short version: **telemetry** now records the alert→fill latency chain and
 the entry math on every fill (`telemetry.csv`); `caller_report.py` scores
 callers and found that **nobody has 20 closed trades yet**, so no auto-benching
