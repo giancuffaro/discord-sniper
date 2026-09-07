@@ -143,14 +143,22 @@ def check_webull(c, trials):
         return ("Webull balance", None, [], "no app_key/app_secret in settings")
 
     def go():
-        # buying_power(), not balance() — the method list on WebullOptions is
-        # buying_power / futures_buying_power / positions / futures_positions.
-        # I guessed `balance()` twice; asking the class was faster than both.
+        # TWO bugs lived in this five-line function, both mine, both the
+        # same shape — writing what I expected instead of reading what is
+        # there:
+        #   1. `balance()` does not exist. The methods are buying_power /
+        #      futures_buying_power / positions / futures_positions.
+        #   2. WebullOptions takes the WHOLE settings dict and digs out
+        #      execution.webull itself. Handing it the sub-dict gave it an
+        #      empty app_key, so it reported a permanent connection failure
+        #      that was entirely fabricated by the test.
+        # A monitor that invents outages is worse than no monitor.
         from webull_options import WebullOptions
-        cl = WebullOptions(dict(wb))
+        cl = WebullOptions(c)
         bp = cl.buying_power()
         if bp is None:
-            raise IOError("buying_power returned nothing")
+            raise IOError("buying_power returned None — Webull would not say "
+                          "(throttled, or the account id could not be picked)")
     return ("Webull buying power",) + timed(go, min(trials, 3), pause=2.5)
 
 
