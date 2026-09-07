@@ -226,7 +226,18 @@ const RE_BACKIN = /\bback\s+in\b/i;
 // "swinging" is an ENTRY verb here (his rule, 8/12: open today, close
 // tomorrow) — mirrors signals.py RE_ENTRY. Present-progressive only, so
 // "swing trade idea" / "that was a good swing" stay chatter.
+// 9/7: the bare imperative "buy" was MISSING here — only bought/buying were
+// listed. cranmer writes every call that way ("buy UPS 104$ calls Sep 18th for
+// 1.75", "buy NVDA Calls Sep 18 220 calls for 4.70") and the whole room read as
+// silence. It is left out of RE_ENTRY on purpose though, because "buy" also
+// appears in advice and in warnings — "DO NOT BUY IN" is a real Honeydrip line.
+// So it goes in guarded: RE_BUY_CMD below only counts an imperative buy that
+// nothing negates. RE_NO_BUY is checked first at the call site.
 const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b|\bswinging\b(?!\s+(?:trade|idea|setup|watch))/i;
+const RE_BUY_CMD = /\bbuy(?:s)?\b/i;
+// Anything that turns a "buy" into advice, a warning, or a hypothetical.
+// "or buy next week exp" (Midas chatter) is caught by the \bor\b arm.
+const RE_NO_BUY = /\b(?:do\s*n[o']?t|don'?t|dont|never|avoid|not|no|stop|quit|why|should|would|could|might|maybe|if|when|before|after|instead\s+of|rather\s+than|or)\s+(?:you\s+|we\s+|i\s+|to\s+)?buy\b|\bbuy\s+(?:the\s+)?(?:dip|rumou?r|side|signal|zone|area|level|back|and\s+hold)\b|\bgood\s+buy\b|\bbuy\b[^.\n]{0,12}\?/i;
 const RE_EXIT = /\b(?:exited|exiting|closed|closing|stc|sold|selling|out|cutting)\b/i;
 // "Filled 3.95 starters" — their entry arrives as TWO messages. The contract was
 // named minutes earlier in a "Loading 205 calls Friday expiration on NVDA"
