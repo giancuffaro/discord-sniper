@@ -1,7 +1,24 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~evening — NAMED-LEG VERTICALS NOW REFUSED. G asked to
+Last updated: 2026-09-07 ~evening — NO SPREADS, NO COVERED CALLS, AT THE ROOM
+LEVEL. G 9/7: "Whatever is a spread or covered calls and all that, I want you
+to delete those rooms. I do not want covered calls and spreads." Two of the six
+reopened rooms were cut on that rule, on evidence, not on vibes:
+  evapanda/opt-5 — his own 8/31-9/4 summary: RIVN 25C "This was a covered
+    call", BULL 15C "Covered Call - Collecting Prems", NOK 2028 leap, plus
+    TSLA/AMZN/URA swings. Fails the covered-call rule and the no-swings rule.
+  tlm/opt-4 — verticals in 2 of his last 5 entries: 9/4 "Msft Sep 9 497 put buy
+    490 put sell Total pay 2.20" (the one that fired a naked 497 put) and 8/18
+    "Swing Gld Aug 31 405 call buy 415 call sell" — a spread AND a swing.
+Every other live room was re-scanned for spread/covered-call business: clean.
+FOUR rooms remain reopened and BORN TESTING: cranmer/opt-9, madhatter/opt-1,
+stormzyy/fut-1, guru-futures/fut-2. 27 live rooms.
+NOTE: the parser refusing spreads (below) and cutting the rooms are two
+different defences and BOTH are wanted — the guard protects against a spread
+arriving from any room, the cut removes rooms whose business is spreads.
+
+Prior: Last updated: 2026-09-07 ~evening — NAMED-LEG VERTICALS NOW REFUSED. G asked to
 put the six reopened rooms LIVE. Before that (rooms LIVE stays his action) the
 six traders' REAL messages were run through parser.js, the one that fires. It
 found a money bug: TLM writes spreads WITHOUT the word "spread" —
