@@ -2735,9 +2735,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // inert on its own. Remove an id here only to change the born state.
     const BORN_TESTING = new Set([
       "1332090335005900800",  // cranmer / opt-9
-      "777750637613416479",   // evapanda / opt-5
       "1356793611420958732",  // madhatter / opt-1
-      "694197721430491266",   // tlm / opt-4
       "1525120298075029554",  // stormzyy / fut-1
       "1251181965252755517"   // guru-futures / fut-2
     ]);

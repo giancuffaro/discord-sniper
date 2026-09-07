@@ -76,16 +76,16 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 #   EvaPanda/opt-5 -55 | are-alerts/opt-2 -42
 #1135947475912495216|https://discord.com/channels/496871546963492874/1135947475912495216|MR.TOPHAT|ZTRADEZ
 #1248264554886991893|https://discord.com/channels/496871546963492874/1248264554886991893|ZT opt-2|ZTRADEZ
-# REOPENED 9/7 (evapanda/opt-5) — dark to the mashup; BORN TESTING until G flips it
-777750637613416479|https://discord.com/channels/496871546963492874/777750637613416479|ZT opt-5|ZTRADEZ
+# CUT 9/7 (evapanda/opt-5) — covered calls + leaps + swings. Live read 9/7 of his own 8/31-9/4 summary: RIVN 25C "This was a covered call", BULL 15C "Covered Call - Collecting Prems", NOK 25C 2028 leap, TSLA/AMZN/URA swings. G 9/7: "I do not want covered calls and spreads" — and his no-swings rule hits this room twice
+#777750637613416479|https://discord.com/channels/496871546963492874/777750637613416479|ZT opt-5|ZTRADEZ
 #1239624229583061052|https://discord.com/channels/496871546963492874/1239624229583061052|ZT opt-7|ZTRADEZ
 #829352738239414332|https://discord.com/channels/496871546963492874/829352738239414332|ZT top-flow|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #721821717328298066|https://discord.com/channels/496871546963492874/721821717328298066|ZT scalps|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1471700027662405712|https://discord.com/channels/496871546963492874/1471700027662405712|ZT fut-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 # REOPENED 9/7 (madhatter/opt-1) — dark to the mashup; BORN TESTING until G flips it
 1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ
-# REOPENED 9/7 (tlm/opt-4) — dark to the mashup; BORN TESTING until G flips it
-694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ
+# CUT 9/7 (tlm/opt-4) — verticals, 2 of his last 5 entries. 9/4 "Msft Sep 9 497 put buy 490 put sell Total pay 2.20" (this is the one that fired a NAKED 497 put) and 8/18 "Swing Gld Aug 31 405 call buy 415 call sell" — a spread AND a swing. G 9/7: "I do not want covered calls and spreads"
+#694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ
 #1331631786068938813|https://discord.com/channels/496871546963492874/1331631786068938813|ZT opt-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1209181195406024744|https://discord.com/channels/496871546963492874/1209181195406024744|ZT opt-8|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 # REOPENED 9/7 (cranmer/opt-9) — dark to the mashup; BORN TESTING until G flips it
