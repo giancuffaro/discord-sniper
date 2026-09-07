@@ -1055,7 +1055,6 @@ function chanLabel(id) {
  * tab). Both start empty and are populated once by loadRoomsForPopup()
  * before the first render — see the call at the bottom of this file. */
 let ROOM_NAMES = {};
-let SERVER_GROUPS = [];
 let _roomsLoaded = false;
 async function loadRoomsForPopup() {
   try {
@@ -1080,7 +1079,10 @@ async function loadRoomsForPopup() {
       groups[groupIndex[group]].ids.push(id);
     }
     ROOM_NAMES = names;
-    SERVER_GROUPS = groups;
+    // (SERVER_GROUPS was assigned here until 9/7. Nothing read it
+    //  once the Servers block went — chanLabel() uses ROOM_NAMES.
+    //  The local `groups` build below is left alone: it is cheap
+    //  and it is what would be needed if grouping ever returns.)
   } catch (e) {
     // Leave both empty rather than guess — an empty Channels tab with a
     // clear "couldn't load rooms.txt" is honest; a stale hardcoded list
@@ -1095,17 +1097,13 @@ async function loadRoomsForPopup() {
 // added later, or one of the many "added on request" ids in background.js's
 // channel_ids list) still needs a home so it isn't invisible in the Servers
 // list. Everything not claimed by a group goes in one catch-all row.
-function serverGroupsFor(allIds) {
-  const claimed = new Set(SERVER_GROUPS.flatMap(g => g.ids));
-  const leftover = allIds.filter(id => !claimed.has(id));
-  const groups = SERVER_GROUPS.map(g => ({ name: g.name,
-                                          ids: g.ids.filter(id => allIds.includes(id)) }))
-                              .filter(g => g.ids.length);
-  if (leftover.length) groups.push({ name: "Other rooms", ids: leftover });
-  return groups;
-}
+/* serverGroupsFor() and _expandedServer went with the Servers block on
+ * 9/7 — both had exactly one reference left in this file: their own
+ * definition. SERVER_GROUPS went too — I first wrote that it "stays
+ * because the group name labels a room", then checked: chanLabel()
+ * reads ROOM_NAMES, not groups. The comment was wrong, so the code
+ * got fixed instead of the comment getting kept. */
 
-let _expandedServer = null;   // which group's channel list is open, if any
 /* SERVERS BLOCK REMOVED 9/7 — his call: "i dont think we need this".
  *
  * renderServerToggles() and its whole-server on/off drew a SECOND, coarser
@@ -1115,10 +1113,10 @@ let _expandedServer = null;   // which group's channel list is open, if any
  * own export code. Two controls now, not three: rooms.txt decides which
  * rooms exist at all, and the per-room switch decides LIVE vs testing.
  *
- * Kept as a no-op because four call sites still invoke it; deleting those
- * blind is how you break a popup at 9:31. It costs one function call.
+ * The no-op stub that first stood here said it was "kept because four call
+ * sites still invoke it" — written before I removed the last caller in the
+ * same edit. Checked: zero callers. Gone.
  */
-function renderServerToggles() { /* removed 9/7 — see note above */ }
 
 /* Nothing may be left muted by a switch that no longer exists. Any room
  * still flagged off by the old server control is cleared once, and said out
