@@ -227,6 +227,89 @@ const SHADOW = new Set([
  * missing rooms.txt should do — so a fetch failure logs it and channel_ids
  * stays empty on purpose (nothing trades) rather than defaulting open. */
 let _roomsPromise = null;
+/* ACCESS PROBE (9/7) — knock on every sleeping room's door, once a day.
+ *
+ * His ask: park the rooms he can't read, and have the app notice by itself
+ * when a subscription comes back so those rooms just start working again.
+ *
+ * HOW IT TELLS: open the room in a BACKGROUND tab, give Discord/Whop time
+ * to render, then ask the content script how many message rows it can see.
+ * A room you have access to renders rows. A room you don't renders none.
+ * That is the same `rows` number the reader already reports every 30s in
+ * _readerHealth(), so this adds no new way of being wrong.
+ *
+ * DELIBERATELY CONSERVATIVE:
+ *  - one room per run, never a burst of tabs on his machine
+ *  - only outside market hours; a probe tab during the open would compete
+ *    with the rooms that are actually trading
+ *  - it does NOT auto-uncomment rooms.txt. It TELLS him, loudly, and the
+ *    popup offers the wake. Turning a room back on is a money decision:
+ *    that room starts feeding real alerts again, and per the house rule
+ *    those stay his. Waking is one click, not a surprise.
+ *  - a sleeping room is NEVER traded while parked, even if the probe finds
+ *    it readable — the probe closes its own tab straight after.
+ */
+const PROBE_EVERY_MS = 22 * 60 * 60 * 1000;      // ~daily, drifts off-peak
+const PROBE_SETTLE_MS = 25000;                   // let the app actually paint
+
+async function probeOne(room) {
+  let tab = null;
+  try {
+    tab = await chrome.tabs.create({ url: room.url, active: false });
+  } catch (e) { return null; }
+  try {
+    await new Promise(r => setTimeout(r, PROBE_SETTLE_MS));
+    let rows = 0;
+    try {
+      const res = await chrome.tabs.sendMessage(tab.id, { type: "HEALTH?" });
+      rows = (res && res.rows) || 0;
+    } catch (e) { rows = 0; }   // no content script = nothing rendered
+    return rows;
+  } finally {
+    try { if (tab && tab.id) await chrome.tabs.remove(tab.id); } catch (e) {}
+  }
+}
+
+async function accessCheck(force) {
+  try {
+    const { probe_at } = await chrome.storage.local.get("probe_at");
+    const now = Date.now();
+    if (!force && probe_at && now - probe_at < PROBE_EVERY_MS) return;
+    // Market hours are for trading, not for probing.
+    const et = new Date(new Date().toLocaleString("en-US",
+                        { timeZone: "America/New_York" }));
+    const mins = et.getHours() * 60 + et.getMinutes();
+    const weekday = et.getDay() >= 1 && et.getDay() <= 5;
+    if (!force && weekday && mins > 9 * 60 && mins < 16 * 60 + 30) return;
+
+    await loadRoomsFile();
+    if (!SLEEPING.length) return;
+    const { probe_i } = await chrome.storage.local.get("probe_i");
+    const i = ((probe_i || 0) % SLEEPING.length);
+    const room = SLEEPING[i];
+    await chrome.storage.local.set({ probe_at: now, probe_i: i + 1 });
+
+    const rows = await probeOne(room);
+    if (rows === null) return;
+    if (rows > 0) {
+      await addLog({ kind: "sent", what: "ACCESS BACK",
+        why: "🔓 " + room.name + " is READABLE again (" + rows + " messages " +
+             "on screen). It was parked because: " + room.why + ". It is " +
+             "still asleep and still not trading — take the # off its line " +
+             "in extension/rooms.txt to wake it." });
+      try {
+        chrome.notifications.create({ type: "basic",
+          iconUrl: "icon128.png", title: "🔓 " + room.name + " is back",
+          message: "Access returned. Still parked — wake it in rooms.txt." });
+      } catch (e) {}
+    } else {
+      await addLog({ kind: "ignored", what: "ACCESS CHECK",
+        why: "🔒 " + room.name + " still shows nothing — subscription looks " +
+             "to still be lapsed (" + room.why + "). Staying asleep." });
+    }
+  } catch (e) { /* a probe must never break the reader */ }
+}
+
 function loadRoomsFile() {
   if (_roomsPromise) return _roomsPromise;
   _roomsPromise = (async () => {
@@ -1399,6 +1482,9 @@ async function roomSilenceCheck() {
 }
 
 chrome.alarms.create("room-silence", { periodInMinutes: 5 });
+// ACCESS PROBE (9/7): every 30 min it CONSIDERS probing; accessCheck()
+// itself enforces once-a-day, one room, and never during market hours.
+chrome.alarms.create("access-check", { periodInMinutes: 30 });
 chrome.alarms.create("whop-watchdog", { periodInMinutes: 1 });
 chrome.alarms.create("watch-build", { periodInMinutes: 0.5 });
 // The self-learning pipe: every 30 minutes, drop the whole day — every raw
@@ -1435,6 +1521,7 @@ chrome.alarms.onAlarm.addListener(a => {
   if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
+  if (a.name === "access-check") accessCheck(false);
   if (a.name === "auto-export") autoExportForLearning();
 });
 

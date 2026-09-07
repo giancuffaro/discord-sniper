@@ -365,6 +365,12 @@ async function grabHistory(untilTs) {
 try {
   chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     if (!msg) return;
+    // ACCESS PROBE (9/7). The background opens a SLEEPING room in a hidden
+    // tab and asks this: how many message rows can you actually see? A room
+    // the subscription still covers renders rows; one it no longer covers
+    // renders none. Same number _readerHealth() already reports every 30s,
+    // so the probe cannot be wrong in a new way.
+    if (msg.type === "HEALTH?") { reply && reply(_readerHealth()); return; }
     if (msg.type === "GRAB_HISTORY") { grabHistory(msg.untilTs || 0); reply && reply({ ok: true }); }
     else if (msg.type === "STOP_GRAB") { grabbing = false; reply && reply({ ok: true }); }
     else if (msg.type === "JOIN_VOICE") { joinLiveVoice().then(r => reply && reply(r)); return true; }
