@@ -61,53 +61,17 @@ TASTY = os.path.join(HERE, "quote_shadow.csv")
 
 
 def dx_to_occ(dx):
-    """'.SPY260908C640' -> 'SPY260908C00640000'. None if it is not a dxfeed
-    option symbol — never guesses. Lives in occ.py since 9/7."""
+    """Kept as a name other code may import. Lives in occ.py since 9/7."""
     from occ import from_dx
     return from_dx(dx)
 
 
-def load_webull(path, since_ts):
-    by = {}
-    try:
-        fh = open(path, encoding="utf-8", errors="replace")
-    except OSError:
-        return by
-    for r in csv.DictReader(fh):
-        try:
-            ts = float(r["ts"])
-            if since_ts and ts < since_ts:
-                continue
-            bid, ask = float(r["bid"]), float(r["ask"])
-        except (TypeError, ValueError, KeyError):
-            continue
-        if bid <= 0 or ask <= 0 or bid >= ask:
-            continue
-        by.setdefault(r["occ"], []).append((ts, bid, ask))
-    for k in by:
-        by[k].sort()
-    return by
-
-
-def load_tasty(path, since_ts):
-    rows = []
-    try:
-        fh = open(path, encoding="utf-8", errors="replace")
-    except OSError:
-        return rows
-    for r in csv.DictReader(fh):
-        try:
-            ts = float(r["ts"])
-            if since_ts and ts < since_ts:
-                continue
-            occ = dx_to_occ(r["symbol"])
-            if not occ:
-                continue
-            rows.append((ts, occ, float(r["bid"]), float(r["ask"])))
-        except (TypeError, ValueError, KeyError):
-            continue
-    rows.sort()
-    return rows
+# load_webull() and load_tasty() are GONE (9/7). They each re-implemented
+# reading a tape, translating a symbol format and sorting by time — the same
+# job, twice, in the file that also hand-rolled the bisect join between them.
+# `tape.py` does all of it once, for every source, in OCC form. See the note
+# at the top of tape.py for why the READ side was consolidated and the write
+# side deliberately was not.
 
 
 def pct(v, p):
@@ -127,9 +91,16 @@ def main():
                     help="max seconds between paired rows (default 1.0)")
     a = ap.parse_args()
 
+    import tape
     since = (time.time() - a.since * 86400) if a.since else None
-    wb = load_webull(WEBULL, since)
-    tt = load_tasty(TASTY, since)
+    tt = tape.rows(occ=a.occ, since=since, sources=["tasty_quote"])
+    wb_rows = tape.rows(occ=a.occ, since=since, sources=["webull"])
+    wb = {}
+    for r in wb_rows:
+        if r.bid and r.ask:
+            wb.setdefault(r.occ, []).append((r.ts, r.bid, r.ask))
+    for k in wb:
+        wb[k].sort()
 
     if not tt:
         print("No streamed quotes yet — quote_shadow.csv is empty.")
@@ -147,8 +118,9 @@ def main():
     lead_tt = lead_wb = same = 0
     paired, unpaired, seen = 0, 0, {}
 
-    for ts, occ, tb, ta in tt:
-        if a.occ and occ != a.occ:
+    for _r in tt:
+        ts, occ, tb, ta = _r.ts, _r.occ, _r.bid, _r.ask
+        if tb is None or ta is None:
             continue
         series = wb.get(occ)
         if not series:
