@@ -1,7 +1,37 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~mid-day — G pasted TradingTheTrend's own format/
+Last updated: 2026-09-07 ~evening — THE MASHUP DOES NOT CARRY EVERYONE, and a
+new rule: BORN TESTING. Verified by reading all 19 cut ZTRADEZ rooms live in
+Discord and diffing their real 9/1-9/4 entries against 9 days of mashup
+capture. The mashup relays 10 of 19; NINE were dark. Eight of those nine had
+been cut on 8/30 for the reason "redundant: flows through the mashup" — which
+was never true. G reopened six (cranmer/opt-9, evapanda/opt-5, madhatter/opt-1,
+tlm/opt-4, stormzyy/fut-1, guru-futures/fut-2) and declined the three swing
+rooms (clutch/swing-1, king-maker/swing-3, kumo/swing-2 — "I don't want any
+swings channels").
+
+  NEW RULE — BORN TESTING (background.js, next to the 8/23 "always live"
+  default). A room with NO channel_live entry normally trades REAL MONEY the
+  moment its tab opens. Reopening six unproven rooms would therefore have put
+  six untested traders on real money without G flipping anything, and
+  flipping a room LIVE is his call alone. Those six ids now start in TESTING.
+  The gate only applies while channel_live has no entry — the instant he sets
+  either value in the popup his choice wins and the list goes inert. Proven
+  with 5 cases run against the real source block.
+
+  ALSO: rooms.txt field 4 is the POPUP GROUP LABEL (popup.js:1072). Never put
+  a trailing "(note)" on a live room line — it invents a new group in the
+  popup. Notes go on a '#' line above. Fixed one pre-existing offender (TTT
+  Lotto), which also explains why that room appeared unexplained earlier.
+
+  The mashup carries TWO streams: ZTRADEZ BOT (forwards, 7 rooms wired) and
+  ZTRADEZ Manager (house feed — Namrood + Bullwinkle/top-flow/scalps). The
+  Manager format is the cleanest alert grammar we receive
+  ("Buy To Open ORCL 147C 09/04 $1.5" with entry/expiry/running P&L) but it
+  wraps the contract in ANSI colour codes — the reader must strip them.
+
+Prior: Last updated: 2026-09-07 ~mid-day — G pasted TradingTheTrend's own format/
 glossary guide to sharpen the reader for that room. Their alert grammar
 ("BTO AAPL 120c 11/06 @1.5" / "STC AAPL 120c 11/06 @.90 for -10%") already
 parsed clean — strike-then-expiry, leading-dot prices, BTO/STC verbs were all
