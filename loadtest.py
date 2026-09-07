@@ -88,6 +88,15 @@ def main(n=10):
     deadman.arm(note=QUIET)
     wb = FakeWB()
     book = positions.Book(wb, QUIET, fill_seconds=1.0, poll_seconds=0.2)
+    # THE RATCHET IS OFF BY DEFAULT and `auto_ratchet` returns immediately
+    # without this. The first version of this file did not set it, watched
+    # the stop sit at its birth level through +40%, and I nearly reported a
+    # broken ratchet. It was a broken TEST. (test_positions.py says so in a
+    # comment right above its own ratchet case — reading it was faster than
+    # the twenty minutes I spent not reading it.)
+    book.ratchet_on = True
+    book.take_profit_pct = 20.0
+    book.stop_pct = 10.0
 
     base_threads = len(threading.enumerate())
     print("=" * 66)
@@ -135,24 +144,35 @@ def main(n=10):
     print("  threads at peak: %d  (+%d for %d trades)"
           % (peak, peak - base_threads, n))
 
-    # Now move the market on ALL of them at once and see the ratchet react.
+    born = sorted({round(float((book.info(k) or {}).get("stop") or 0), 2)
+                   for k in keys})
+    print("  stop born with each order: %s" % born)
+
+    # NOW MOVE THE MARKET ON ALL OF THEM AT ONCE. Every position goes +20%
+    # in the same instant and every ratchet is asked to walk its stop up —
+    # the case that would expose a shared lock or crossed state between
+    # trades.
     t1 = time.time()
-    wb.bid = wb.ask = 2.40                     # +20% on every position
-    end = time.time() + 25
-    moved = 0
-    while time.time() < end:
-        moved = sum(1 for k in keys
-                    if (book.info(k) or {}).get("stop") not in (None, 0))
-        if moved >= filled:
-            break
-        time.sleep(0.05)
-    print("  +20%% on all %d -> %d stops armed in %.2f s"
-          % (n, moved, time.time() - t1))
+    wb.bid = wb.ask = 2.40                     # +20% on a 2.00 fill
+    ths = [threading.Thread(target=book.auto_ratchet, args=(k, 2.40),
+                            name="ratchet-%d" % i)
+           for i, k in enumerate(keys)]
+    for t in ths:
+        t.start()
+    for t in ths:
+        t.join()
+    t_ratchet = time.time() - t1
 
     stops = sorted({round(float((book.info(k) or {}).get("stop") or 0), 2)
                     for k in keys})
-    print("  distinct stop prices: %s" % stops)
-    print("     (all equal = every trade ratcheted the same and independently)")
+    moved = sum(1 for k in keys
+                if round(float((book.info(k) or {}).get("stop") or 0), 2)
+                not in born)
+    print("  +20%% on all %d at once -> %d stops MOVED in %.0f ms"
+          % (n, moved, t_ratchet * 1000))
+    print("  stop after the ratchet:  %s" % stops)
+    print("     (one value = every trade ratcheted identically and did not")
+    print("      interfere with its neighbours)")
 
     d = deadman.report()
     print("\n  THREADS THAT DIED: %s" % (list(d["dead"]) or "none"))
