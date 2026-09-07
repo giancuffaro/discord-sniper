@@ -2878,6 +2878,76 @@ def _place_impl(order):
 
 _BP = {"t": 0.0, "v": None}
 _FBP = {"t": 0.0, "v": None}
+# bridge.py imports `datetime` at module scope but NOT `re`, and `_dt_o` is a
+# LOCAL alias inside another function. The first version of the clue reader
+# below used both at module level — it compiled clean and would have raised
+# NameError on the first dateless alert, i.e. exactly when it mattered.
+# Imported here explicitly.
+import re as _re_o                                       # noqa: E402
+import datetime as _date_o                               # noqa: E402
+
+_MONTHS = {"JANUARY": 1, "JAN": 1, "FEBRUARY": 2, "FEB": 2, "MARCH": 3,
+           "MAR": 3, "APRIL": 4, "APR": 4, "MAY": 5, "JUNE": 6, "JUN": 6,
+           "JULY": 7, "JUL": 7, "AUGUST": 8, "AUG": 8, "SEPTEMBER": 9,
+           "SEPT": 9, "SEP": 9, "OCTOBER": 10, "OCT": 10, "NOVEMBER": 11,
+           "NOV": 11, "DECEMBER": 12, "DEC": 12}
+
+# "next week" the way people actually type it, typos and all.
+_RE_NEXT_WEEK = _re_o.compile(r"\bnext\s*(?:w[ek]{1,3}k?|week)\b", re.I)
+# A month name standing on its own near a contract. NOT anchored loosely on
+# purpose: "may" is also an ordinary English word ("this may run"), so the
+# lowercase form is only accepted when it is clearly a date token.
+_RE_MONTH = _re_o.compile(
+    r"(?<![A-Za-z])(JANUARY|JAN|FEBRUARY|FEB|MARCH|MAR|APRIL|APR|MAY|JUNE|"
+    r"JUN|JULY|JUL|AUGUST|AUG|SEPTEMBER|SEPT|SEP|OCTOBER|OCT|NOVEMBER|NOV|"
+    r"DECEMBER|DEC)(?![A-Za-z])")
+
+
+def _third_friday(year, month):
+    d = _date_o.date(year, month, 1)
+    d += _date_o.timedelta(days=(4 - d.weekday()) % 7)     # first Friday
+    return d + _date_o.timedelta(days=14)                  # third Friday
+
+
+def _expiry_from_clues(order):
+    """Read the expiry the caller DID give, in words. -> (iso_date, why).
+
+    Only the two shapes the parser does not already handle:
+
+      "NEXT WEEK" / "next wk" / "NEXT WEK"  -> next week's Friday
+      a bare MONTH NAME ("MAY SWING")       -> that month's monthly (3rd Fri)
+
+    Deliberately conservative:
+      * The month must be UPPERCASE, because "may" is an ordinary English
+        word and "this may run to 5" is not an expiry. Rooms shout their
+        months; prose does not.
+      * A month already in the past this year rolls to next year, which is
+        what "JAN" means when it is said in December.
+      * Anything it cannot read confidently returns None and the caller
+        falls through to the ticker default — or to a refusal. Reading a
+        clue wrong is worse than not reading it.
+    """
+    raw = str(order.get("raw") or "")
+    if not raw:
+        return None
+    today = _date_o.date.today()
+
+    if _RE_NEXT_WEEK.search(raw):
+        # This week's Friday, plus seven.
+        fri = today + _date_o.timedelta(days=(4 - today.weekday()) % 7)
+        return ((fri + _date_o.timedelta(days=7)).isoformat(), "NEXT WEEK")
+
+    m = _RE_MONTH.search(raw)              # case-sensitive: shouted months
+    if m:
+        mon = _MONTHS[m.group(1).upper()]
+        year = today.year if mon >= today.month else today.year + 1
+        d = _third_friday(year, mon)
+        if d <= today:                     # this month's monthly already went
+            d = _third_friday(year + 1, mon)
+        return (d.isoformat(), "the month %s" % m.group(1))
+    return None
+
+
 _POS = {"t": 0.0, "v": []}
 # Circuit breaker for the Webull FUTURES position read — see the comment at
 # its call site. Three consecutive refusals and it stands down, doubling to
