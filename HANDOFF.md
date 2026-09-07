@@ -1,7 +1,42 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~night — "BUY" WAS NOT AN ENTRY VERB. Chasing why
+Last updated: 2026-09-07 ~night — ELITE OPTIONS PRO WIRED (G bought it that
+day). Scanned all 28 channels; free tier showed 15, Pro unlocked the two that
+matter. WIRED, born testing: Brando Alerts (1286022517869514874) and Shoof
+Alerts (1368263191632543956). Their grammars:
+  Brando  "@Elite BOUGHT | QQQ SEPT 2 717C $2.99 LOTTO"   month name, $price
+  Shoof   "@Elite ALERT BOUGHT | SPY 9/4 767C at 2.00"    numeric date, "at"
+Verified against 148 of their REAL alerts scraped from scrollback (Brando 100,
+Shoof 48): every one resolved to the right action, symbol and strike.
+Three parser faults this found, all fixed, each with ZERO corpus regression
+(7,168 lines diffed before/after on every change):
+  1. TRAILING PARTIAL — both callers put the size at the END, after the price:
+     "(1/2)" "(1/4)" "(1/8)" "1/4 position" "3/4 position". The partial reader
+     only looked right after the verb ("sold 1/2 UPS"), so ALL of these read as
+     FULL EXITS. A caller trimming a quarter would have closed the whole
+     position and handed back the rest of the move. Only "ALL OUT" fires now —
+     both callers write it literally, so it is a safe discriminator. Dates are
+     the trap (9/4 is not a fraction), so it only counts a fraction in
+     parentheses or followed by "position", and only when num < den.
+  2. SMH — blocked in NOT_TICKERS as "shaking my head", but Shoof trades the
+     ETF. Now rescued ONLY when the word wears a contract (strike + C/P).
+     "smh this market" is still slang. This also exposed that FIVE separate
+     places tested NOT_TICKERS; they now all route through blockedTicker().
+  3. SHARES — Brando posts stock trades in the same alert channel
+     ("SNDK 250 SHARES AT $1550.50"). That read as CLOSE SNDK and would have
+     dumped an SNDK OPTIONS position because he trimmed stock. Any line that
+     talks about shares and names no contract is refused; a line with a
+     contract ("sold shares, still holding the 580c") is untouched.
+NOT WIRED, deliberately: brando/shoof-commentary (level talk — "MU wants 1011,
+1020 next", ~1 tradeable contract a session), levels/flow/x-news/uwhale bots,
+trade-log + chartbook + market-recap + winning-trades (weekly IMAGES, not live
+entries), the two chatrooms, and live-voice-logs (a voice-path candidate).
+ALSO SCANNED 9/7 and rejected: The Options Cartel (no alerts channel at all,
+free tier only) and Low Key Stonks (per-trader alert channels exist but are
+behind the paywall; the visible member-picks is covered calls).
+
+Prior: Last updated: 2026-09-07 ~night — "BUY" WAS NOT AN ENTRY VERB. Chasing why
 cranmer's alerts never fired turned up three faults, one of them dangerous:
   1. RE_ENTRY listed bought/buying but NOT the bare imperative "buy". cranmer
      writes every call that way, so the whole room read as silence. "buy" is
