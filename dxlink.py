@@ -608,27 +608,58 @@ class GreeksBus:
             sym = r.get("eventSymbol")
             if not sym:
                 continue
-            try:
-                bid = r.get("bidPrice")
-                ask = r.get("askPrice")
-                bid = float(bid) if bid is not None else None
-                ask = float(ask) if ask is not None else None
-            except (TypeError, ValueError):
-                continue
-            # A locked or crossed book (bid >= ask) is a stale or corrupt
-            # snapshot, not a trading opportunity. Reg NMS forbids locking
-            # protected quotes, so if we see one it is our data that is
-            # wrong. Drop it rather than tape a number we would refuse to
-            # price off.
-            if bid is None or ask is None or bid <= 0 or ask <= 0 or bid >= ask:
+            # PARTIAL UPDATES ARE THE NORMAL CASE (9/7). dxfeed sends only
+            # what CHANGED: a bid-side tick arrives with askPrice null (or
+            # NaN in the compact form). The first version treated a missing
+            # side as a bad row and dropped it — which threw away most of
+            # the stream and made a live 88k-volume SPY contract look like
+            # it printed once and went silent. Carry the last known side
+            # forward instead; that is what the book actually is.
+            prev = None
+            with self._lock:
+                pv = self._quotes.get(sym)
+                if pv:
+                    prev = pv[0]
+
+            def _num(v, fallback):
+                try:
+                    if v is None:
+                        return fallback
+                    f = float(v)
+                    # dxfeed uses NaN for "unchanged"; NaN != NaN.
+                    if f != f or f <= 0:
+                        return fallback
+                    return f
+                except (TypeError, ValueError):
+                    return fallback
+
+            bid = _num(r.get("bidPrice"), prev.get("bid") if prev else None)
+            ask = _num(r.get("askPrice"), prev.get("ask") if prev else None)
+            if bid is None or ask is None or bid <= 0 or ask <= 0:
                 continue
             q = {"symbol": sym, "bid": bid, "ask": ask,
                  "bid_size": r.get("bidSize"), "ask_size": r.get("askSize"),
                  "t": now}
+
+            # A locked or crossed book (bid >= ask) is a stale or corrupt
+            # view, not a trading opportunity — Reg NMS forbids locking
+            # protected quotes, so if we see one it is OUR data that is
+            # wrong. Usually it is the carry-forward above: the bid ticked
+            # up in this frame and the matching ask is in the NEXT one.
+            #
+            # So keep the merged state (or the two sides can never
+            # re-converge and the contract freezes at a stale price) but do
+            # NOT tape it and do NOT count it as a good quote. `quote()`
+            # refuses to serve it. State advances, the record stays clean.
+            crossed = bid >= ask
             with self._lock:
-                self._quotes[sym] = (q, now)
-                self.quote_events += 1
-            keep.append(q)
+                if crossed:
+                    self._quotes[sym] = (dict(q, crossed=True), now)
+                else:
+                    self._quotes[sym] = (q, now)
+                    self.quote_events += 1
+            if not crossed:
+                keep.append(q)
         if keep and self._qtape:
             try:
                 new = not os.path.exists(self._qtape)
@@ -659,6 +690,8 @@ class GreeksBus:
         q, ts = v
         if max_age and (time.time() - ts) > max_age:
             return (None, None)
+        if q.get("crossed"):
+            return (None, None)     # mid-merge, not a book anyone can price off
         return (q["bid"], q["ask"])
 
     def _write_tape(self, rows, now):
