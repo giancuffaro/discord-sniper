@@ -289,6 +289,14 @@ class GreeksBus:
         self.connected = False
         self.events = 0
         self._told_delayed = False
+        # SHADOW QUOTE FEED (9/7). Streamed option bid/ask on the same
+        # socket. want_quotes can be switched off from settings if the extra
+        # event type ever misbehaves; the greeks feed is unaffected either
+        # way, because they are separate event types on one channel.
+        self._quotes = {}                  # dx symbol -> (dict, ts)
+        self._qtape = None
+        self.quote_events = 0
+        self.want_quotes = True
 
     # -- what to watch ---------------------------------------------------
     def watch(self, occ):
@@ -306,6 +314,11 @@ class GreeksBus:
         with self._lock:
             self._want.discard(dx)
             self._greeks.pop(dx, None)
+            self._quotes.pop(dx, None)
+
+    def quote_tape_to(self, path):
+        """Where to record the streamed bid/ask. Set before start()."""
+        self._qtape = path
 
     def get(self, occ, max_age=30.0):
         """Newest greeks for a contract, or None. Never returns delayed data

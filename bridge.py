@@ -418,11 +418,30 @@ def build_book():
                 _ttc = _bk2.get_broker(CFG, "tastytrade")
                 GREEKS = _GB(lambda: _ttc.quote_token(), log=print,
                              tape=os.path.join(HERE, "greeks_tape.csv"))
+                # SHADOW QUOTE STREAM (9/7). Webull cannot stream option
+                # quotes at all, so every bid/ask we own is a 1/sec poll
+                # against a 60/min door. DXLink carries Quote events on the
+                # socket we are already holding for greeks — free, no new
+                # key, no new connection.
+                #
+                # NOTHING READS IT YET. It tapes beside the Webull-polled
+                # tape so `quote_shadow.py` can say how far apart they are
+                # on OUR contracts, and whether a stop would have fired at a
+                # different moment. Promotion needs that evidence; a new
+                # quote source under a live exit path does not get switched
+                # on the night before an open.
+                GREEKS.want_quotes = bool(
+                    _tt.get("stream_quotes", True))
+                if GREEKS.want_quotes:
+                    GREEKS.quote_tape_to(os.path.join(HERE,
+                                                      "quote_shadow.csv"))
                 GREEKS.start()
                 BOOK.greeks = GREEKS
                 threading.Thread(target=_greeks_sync, daemon=True).start()
                 note("GREEKS on — tastytrade DXLink (data only; Webull still "
-                     "places every order)")
+                     "places every order)%s"
+                     % (" · shadow quote stream taping to quote_shadow.csv"
+                        if GREEKS.want_quotes else ""))
         except Exception as _ge:                        # noqa: BLE001
             GREEKS = None
             note("GREEKS off (%s) — quotes and stops unaffected" % str(_ge)[:90])
