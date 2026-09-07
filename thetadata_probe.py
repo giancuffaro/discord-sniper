@@ -86,8 +86,8 @@ def a_contract_tradier_lost():
                 continue
             day = line[:10]
             sym, strike, cp, exp = m.group(2), m.group(3), m.group(4), m.group(5)
-            occ = "%s%s%s%08d" % (sym, exp.replace("-", "")[2:], cp,
-                                  int(round(float(strike) * 1000)))
+            from occ import build as _occ_build
+            occ = _occ_build(sym, exp, cp, strike)
             have = os.path.exists(os.path.join(BARS, "%s_%s.json" % (occ, day)))
             if not have:
                 seen.append((sym, exp, strike, cp, day))

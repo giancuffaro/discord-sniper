@@ -223,12 +223,14 @@ class TastytradeOptions(BrokerBase):
     # ---- symbols --------------------------------------------------------
     @staticmethod
     def tasty_occ(symbol, expiry, side, strike):
-        """tastytrade pads the root to 6 chars: 'SPY   260904P00771000'."""
-        root = str(symbol).upper()[:6].ljust(6)
-        y, m, d = str(expiry)[2:4], str(expiry)[5:7], str(expiry)[8:10]
-        cp = "C" if str(side).upper().startswith("C") else "P"
-        return "%s%s%s%s%s%08d" % (root, y, m, d, cp,
-                                   int(round(float(strike) * 1000)))
+        """tastytrade pads the root to 6 chars: 'SPY   260904P00771000'.
+
+        Moved into occ.py on 9/7 so every spelling of a contract lives in
+        one file. Same output; the side is now read by `occ.side_letter`,
+        which accepts every real form and refuses what it cannot read
+        instead of quietly returning a PUT."""
+        from occ import to_tasty
+        return to_tasty(symbol, expiry, side, strike)
 
     # ---- market data ----------------------------------------------------
     def ask_bid(self, occ):

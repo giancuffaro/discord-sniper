@@ -156,5 +156,20 @@ def from_dx(dx):
         return None
 
 
+def to_tasty(symbol, expiry, side, strike):
+    """tastytrade's variant: the ROOT IS PADDED TO 6 CHARACTERS.
+
+        SPY   260908C00640000      (three trailing spaces after SPY)
+
+    Same OCC-21 layout otherwise. It lives here rather than in
+    `tastytrade.py` so that every way this project spells a contract is in
+    one file and discoverable — the padding is easy to miss and produces a
+    symbol that looks right and is rejected by the venue.
+    """
+    root = str(symbol or "").strip().upper()[:6].ljust(6)
+    return "%s%s%s%08d" % (root, _ymd(expiry), side_letter(side),
+                           int(round(float(strike) * 1000)))
+
+
 def is_occ(s):
     return parse(s) is not None

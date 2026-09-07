@@ -86,8 +86,8 @@ def trades_with_bars():
             t = pend.pop(m.group(1))
             t["fill"] = float(m.group(3))
             t["day"], t["hhmm"] = line[:10], line[11:16]
-            t["occ"] = "%s%s%s%08d" % (t["symbol"], t["expiry"].replace("-", "")[2:],
-                                       t["cp"], int(round(t["strike"] * 1000)))
+            from occ import build as _occ_build
+            t["occ"] = _occ_build(t["symbol"], t["expiry"], t["cp"], t["strike"])
             p = os.path.join(BARS, "%s_%s.json" % (t["occ"], t["day"]))
             if not os.path.exists(p):
                 continue

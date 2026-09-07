@@ -27,3 +27,7 @@ ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err
 1788800695.728,closed,Tradier REST,6,6,201.3,217.9,239.6,
 1788800695.728,closed,tastytrade OAuth,6,6,713.8,791.1,919.3,
 1788800695.728,closed,Webull connect+bal,,6,,,,not reachable from this shell — run  python health.py  ON the PC where the bridge runs
+1788800752.544,closed,Bridge 8787,6,6,10.5,15.6,22.9,
+1788800752.544,closed,Tradier REST,6,6,203.9,229.0,251.0,
+1788800752.544,closed,tastytrade OAuth,6,6,538.0,548.4,799.0,
+1788800752.544,closed,Webull connect+bal,0,6,,,,[Errno 13] Permission denied: 'C:\\Windows\\system32\\webull_trade_sdk.log'
