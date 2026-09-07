@@ -31,3 +31,7 @@ ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err
 1788800752.544,closed,Tradier REST,6,6,203.9,229.0,251.0,
 1788800752.544,closed,tastytrade OAuth,6,6,538.0,548.4,799.0,
 1788800752.544,closed,Webull connect+bal,0,6,,,,[Errno 13] Permission denied: 'C:\\Windows\\system32\\webull_trade_sdk.log'
+1788801636.46,closed,Bridge 8787,6,6,19.6,19.9,31.7,
+1788801636.46,closed,Tradier REST,6,6,206.5,211.1,225.4,
+1788801636.46,closed,tastytrade OAuth,6,6,546.6,710.4,762.3,
+1788801636.46,closed,Webull connect+bal,0,6,,,,[Errno 13] Permission denied: 'C:\\Windows\\system32\\webull_trade_sdk.log'
