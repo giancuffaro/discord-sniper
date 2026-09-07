@@ -76,23 +76,29 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 #   EvaPanda/opt-5 -55 | are-alerts/opt-2 -42
 #1135947475912495216|https://discord.com/channels/496871546963492874/1135947475912495216|MR.TOPHAT|ZTRADEZ
 #1248264554886991893|https://discord.com/channels/496871546963492874/1248264554886991893|ZT opt-2|ZTRADEZ
-777750637613416479|https://discord.com/channels/496871546963492874/777750637613416479|ZT opt-5|ZTRADEZ  (REOPENED 9/7 — dark to the mashup; BORN TESTING until G flips it)
+# REOPENED 9/7 (evapanda/opt-5) — dark to the mashup; BORN TESTING until G flips it
+777750637613416479|https://discord.com/channels/496871546963492874/777750637613416479|ZT opt-5|ZTRADEZ
 #1239624229583061052|https://discord.com/channels/496871546963492874/1239624229583061052|ZT opt-7|ZTRADEZ
 #829352738239414332|https://discord.com/channels/496871546963492874/829352738239414332|ZT top-flow|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #721821717328298066|https://discord.com/channels/496871546963492874/721821717328298066|ZT scalps|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1471700027662405712|https://discord.com/channels/496871546963492874/1471700027662405712|ZT fut-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ  (REOPENED 9/7 — dark to the mashup; BORN TESTING until G flips it)
-694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ  (REOPENED 9/7 — dark to the mashup; BORN TESTING until G flips it)
+# REOPENED 9/7 (madhatter/opt-1) — dark to the mashup; BORN TESTING until G flips it
+1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ
+# REOPENED 9/7 (tlm/opt-4) — dark to the mashup; BORN TESTING until G flips it
+694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ
 #1331631786068938813|https://discord.com/channels/496871546963492874/1331631786068938813|ZT opt-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1209181195406024744|https://discord.com/channels/496871546963492874/1209181195406024744|ZT opt-8|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-1332090335005900800|https://discord.com/channels/496871546963492874/1332090335005900800|ZT opt-9|ZTRADEZ  (REOPENED 9/7 — dark to the mashup; BORN TESTING until G flips it)
+# REOPENED 9/7 (cranmer/opt-9) — dark to the mashup; BORN TESTING until G flips it
+1332090335005900800|https://discord.com/channels/496871546963492874/1332090335005900800|ZT opt-9|ZTRADEZ
 #874280313038192670|https://discord.com/channels/496871546963492874/874280313038192670|Demon Alerts|ZTRADEZ  (cut 8/30, see mashup note)
 #1389300087829827745|https://discord.com/channels/496871546963492874/1389300087829827745|ZT swing-1|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #862419656382873650|https://discord.com/channels/496871546963492874/862419656382873650|ZT swing-2|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1061980561293443152|https://discord.com/channels/496871546963492874/1061980561293443152|ZT swing-3|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1179200811650252850|https://discord.com/channels/496871546963492874/1179200811650252850|ZT swing-4|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ  (REOPENED 9/7 — dark to the mashup; BORN TESTING until G flips it)
-1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ  (REOPENED 9/7 — dark to the mashup; BORN TESTING until G flips it)
+# REOPENED 9/7 (stormzyy/fut-1) — dark to the mashup; BORN TESTING until G flips it
+1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ
+# REOPENED 9/7 (guru-futures/fut-2) — dark to the mashup; BORN TESTING until G flips it
+1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ
 
 
 # SUBSCRIPTION LAPSED (checked on whop.com 9/7/26). A room whose
@@ -105,7 +111,8 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 
 769797179992571914|https://discord.com/channels/769790224921395200/769797179992571914|Option Alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 769797819770732554|https://discord.com/channels/769790224921395200/769797819770732554|Options Watchlist|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
-880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)  (wired 9/7, G: "wire lotto channel up" — same BTO/STC grammar as Option Alerts; label is a placeholder, self-corrects to the real Discord name once the tab attaches and reports via /channames)
+# TTT Lotto, wired 9/7 (TTT / RWGates / Vero / Insider / Platinum)  (wired 9/7, G: "wire lotto channel up" — same BTO/STC grammar as Option Alerts; label is a placeholder, self-corrects to the real Discord name once the tab attaches and reports via /channames)
+880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 # 9/7: Whop shows STS/Summit as LAPSED, but Discord access is INTACT —
 # verified by opening it: '#alert-room | Summit Trading Strategies',
 # 2,688 unread, messages from today. A lapsed subscription is NOT the
