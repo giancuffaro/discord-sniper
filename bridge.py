@@ -4241,6 +4241,26 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
+        # NO DATE, NO TRADE (9/7). G's rule: nothing assumed, nothing guessed
+        # — every number the machine acts on has to be real, polled or pulled.
+        # The weekly-expiry fill-in above is the one place a GUESS reached a
+        # real order: it fired 75 times and 18 of those became live trades.
+        # With `assume_weekly_expiry` off it no longer fires, and this says so
+        # in one clear sentence instead of letting the order die further down
+        # with an unreadable broker error. Refusing costs a missed trade;
+        # guessing buys a contract nobody named. Turn it back on in
+        # settings.json (execution.assume_weekly_expiry = true) if a room's
+        # rules genuinely make the date implied.
+        if (order.get("action") in ("OPEN", "ADD")
+                and (order.get("kind") or "option") == "option"
+                and order.get("strike") and not order.get("expiry")):
+            _nd = ("%s %s%s has NO EXPIRY in the call and guessing one is off "
+                   "— nothing was sent. Post the date, or set "
+                   "execution.assume_weekly_expiry back to true."
+                   % (sym, order.get("strike"), order.get("side") or ""))
+            note("NO-DATE  " + _nd)
+            return (False, _nd)
+
         # A bare futures exit ("close MGC") reaches here without its kind tag —
         # the reader marks entries, not one-word exits — and the option gate
         # below then demanded a strike/expiry a future never has. That block
