@@ -44,6 +44,13 @@ import time
 
 GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"     # RFC 6455
 
+# tastytrade access tokens live 15 minutes. Re-auth at 10, in place, on the
+# same socket — a third of the life left is plenty of margin for a slow
+# token fetch, and it means the feed never has to be rebuilt to stay signed
+# in. Before this, the socket died every 15 minutes and the greeks went dark
+# for as long as the reconnect took.
+REAUTH_AFTER = 600.0
+
 # dxfeed event fields we ask for, in the order they come back.
 GREEK_FIELDS = ["eventType", "eventSymbol", "price", "volatility",
                 "delta", "gamma", "theta", "rho", "vega"]
@@ -246,6 +253,7 @@ class GreeksBus:
 
     def __init__(self, token_fn, log=None, tape=None, allow_delayed=False):
         self._token_fn = token_fn
+        self._reauths = 0
         self._log = log or (lambda *a, **k: None)
         self._tape = tape
         self._allow_delayed = bool(allow_delayed)
@@ -396,10 +404,41 @@ class GreeksBus:
                       % (self.level or "?", len(pending)))
 
             last_ka = time.time()
+            authed_at = time.time()
             while not self._stop.is_set():
                 if time.time() - last_ka > 25:
                     ws.send({"type": "KEEPALIVE", "channel": 0})
                     last_ka = time.time()
+                # RE-AUTH BEFORE THE TOKEN DIES (9/7). tastytrade access
+                # tokens last 15 minutes. We used to ride one until the
+                # server said "your authentication token has expired,
+                # reauthentication is required" and dropped the socket —
+                # then the outer loop rebuilt the whole session. It healed
+                # itself, but every 15 minutes there was a hole in the
+                # greeks, and greeks feed the entry math and the stop-room
+                # numbers. A hole you reconnect out of is still a hole.
+                #
+                # So: fetch a fresh token and re-AUTH IN PLACE on the same
+                # socket, well before expiry. The subscriptions live on
+                # channel 1 and are untouched, so no data is missed. If the
+                # re-auth fails we raise and the outer loop reconnects —
+                # exactly what happened before, so this can only be better.
+                if time.time() - authed_at > REAUTH_AFTER:
+                    d2 = self._token_fn() or {}
+                    tok2 = d2.get("token")
+                    if not tok2:
+                        raise IOError("no dxlink token on re-auth")
+                    ws.send({"type": "AUTH", "channel": 0, "token": tok2})
+                    self._await(ws,
+                                lambda m: (m.get("type") == "AUTH_STATE"
+                                           and m.get("state") == "AUTHORIZED"),
+                                "RE-AUTH")
+                    authed_at = time.time()
+                    self._reauths += 1
+                    if self._reauths in (1, 10, 50):
+                        self._log("[greeks] token refreshed in place (%d) — "
+                                  "no reconnect, no gap in the feed"
+                                  % self._reauths)
                 try:
                     msg = ws.recv()
                 except socket.timeout:
@@ -413,6 +452,13 @@ class GreeksBus:
                 elif t == "ERROR":
                     self._log("[greeks] server error: %s"
                               % str(msg.get("message") or msg)[:140])
+                    # If it is specifically an auth complaint, do not wait
+                    # for the clock — re-auth on the next pass.
+                    _m = str(msg.get("message") or "").lower()
+                    if "auth" in _m or "expired" in _m:
+                        authed_at = 0.0
+                elif t == "AUTH_STATE" and msg.get("state") == "AUTHORIZED":
+                    authed_at = time.time()     # server confirmed us again
                 elif t == "FEED_DATA":
                     self._absorb(msg.get("data"))
         finally:
