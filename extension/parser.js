@@ -1844,7 +1844,11 @@ function parseSignalInner(text, cfg) {
   const _takingEntry = /\btaking\b/i.test(low)
       && !/\btaking\s+(?:profits?|gains?|some|off|half|the\s+l)\b/i.test(low)
       && !!findContract(t);
-  if ((RE_ENTRY.test(low) || _takingEntry || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
+  // The guarded imperative buy (9/7, see RE_BUY_CMD): counts as an entry only
+  // when nothing negates it AND the line actually names a contract, so advice
+  // and warnings ("DO NOT BUY IN", "or buy next week exp") stay chatter.
+  const _buyCmd = RE_BUY_CMD.test(low) && !RE_NO_BUY.test(low) && !!findContract(t);
+  if ((RE_ENTRY.test(low) || _takingEntry || _buyCmd || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
     const c = findContract(t);
     if (!c) {
       // The two-message entry: "Loading 205 calls Friday expiration on NVDA",
