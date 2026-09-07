@@ -54,8 +54,9 @@ ORDER_IN = re.compile(
 
 
 def occ(sym, expiry, cp, strike):
-    return "%s%s%s%08d" % (sym, expiry.replace("-", "")[2:], cp,
-                           int(round(float(strike) * 1000)))
+    """One of seven copies of this, consolidated into occ.py on 9/7."""
+    from occ import build
+    return build(sym, expiry, cp, strike)
 
 
 def contracts_traded(day):

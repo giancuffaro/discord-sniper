@@ -61,25 +61,10 @@ TASTY = os.path.join(HERE, "quote_shadow.csv")
 
 
 def dx_to_occ(dx):
-    """'.SPY260908C640' -> 'SPY260908C00640000'. Returns None if it doesn't
-    look like a dxfeed option symbol — never guesses."""
-    s = str(dx or "")
-    if not s.startswith("."):
-        return None
-    s = s[1:]
-    i = 0
-    while i < len(s) and s[i].isalpha():
-        i += 1
-    root, rest = s[:i], s[i:]
-    if len(rest) < 8 or not rest[:6].isdigit():
-        return None
-    ymd, cp, strike = rest[:6], rest[6:7], rest[7:]
-    if cp not in ("C", "P"):
-        return None
-    try:
-        return "%s%s%s%08d" % (root, ymd, cp, int(round(float(strike) * 1000)))
-    except ValueError:
-        return None
+    """'.SPY260908C640' -> 'SPY260908C00640000'. None if it is not a dxfeed
+    option symbol — never guesses. Lives in occ.py since 9/7."""
+    from occ import from_dx
+    return from_dx(dx)
 
 
 def load_webull(path, since_ts):

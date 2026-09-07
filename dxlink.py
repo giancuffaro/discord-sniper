@@ -233,20 +233,15 @@ class WS:
 def occ_to_dx(occ):
     """NVDA260904C00235000 -> .NVDA260904C235
 
-    dxfeed wants the strike written plainly, no zero padding and no trailing
-    .0 — `.SPY260918C660`, not `.SPY260918C660.0`. Half-strikes keep their
-    decimal (`.IWM260904P243.5`).
+    Moved to occ.py (9/7) so there is ONE place that knows what a contract
+    is called — this logic existed in seven. The behaviour here was correct
+    and is unchanged: strike written plainly, no zero padding, no trailing
+    '.0', half-strikes keep their decimal (`.IWM260904P243.5`). Kept as a
+    thin alias because `dxlink` is stdlib-only on purpose and callers
+    already import this name.
     """
-    s = str(occ or "").strip().replace(" ", "")          # tastytrade pads roots
-    if len(s) < 15:
-        return None
-    tail = s[-15:]                                       # YYMMDD C/P + 8 digits
-    root, ymd, cp, strike8 = s[:-15], tail[:6], tail[6], tail[7:]
-    if cp not in ("C", "P") or not strike8.isdigit():
-        return None
-    k = int(strike8) / 1000.0
-    ks = ("%.3f" % k).rstrip("0").rstrip(".")
-    return ".%s%s%s%s" % (root, ymd, cp, ks)
+    from occ import to_dx
+    return to_dx(occ)
 
 
 def live_level(level, url=""):

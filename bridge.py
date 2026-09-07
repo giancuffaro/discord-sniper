@@ -473,9 +473,14 @@ def build_book():
     # Adopted positions need a real OCC symbol or the TP/trim watchdog is
     # blind (the 8/11 NVDA +20% that never fired).
     def _occ_build(sym, side, strike, expiry):
-        from webull_options import occ_symbol, expiry_to_date
-        kind = "CALL" if str(side).upper().startswith("C") else "PUT"
-        return occ_symbol(sym, expiry_to_date(expiry), kind, strike)
+        # occ.build takes the side in whatever form the rooms wrote it and
+        # refuses what it cannot read, so the old
+        #   kind = "CALL" if str(side).upper().startswith("C") else "PUT"
+        # dance — copy-pasted at five call sites to stay on the right side
+        # of a function that silently returned PUT — is gone. (9/7)
+        from occ import build
+        from webull_options import expiry_to_date
+        return build(sym, expiry_to_date(expiry), side, strike)
     BOOK.occ_builder = _occ_build
     # Points x multiplier for adopted futures (MNQ 2, NQ 20, ES 50...).
     BOOK.fut_mult = FUT_MULT
@@ -1977,19 +1982,15 @@ def place(order):
                 and QUOTES is not None):
             import telemetry as _tm
 
-            # Build the OCC here rather than reach for a helper: the only
-            # builders in this file are nested inside other scopes, and the
-            # one in positions.py is a method. Same format as everywhere
-            # else — NVDA260904C00235000.
-            _occ = None
+            # This was an EIGHTH hand-rolled OCC builder, written inline here
+            # on 9/6 because "the only builders in this file are nested
+            # inside other scopes". That reasoning was the problem, not the
+            # solution. One import now. (9/7)
             try:
-                _e = str(order.get("expiry") or "").replace("-", "")
-                _cp = str(order.get("side") or "C").upper()[:1]
-                if _e and len(_e) == 8 and sym and order.get("strike") is not None:
-                    _occ = "%s%s%s%08d" % (
-                        sym, _e[2:], _cp,
-                        int(round(float(order["strike"]) * 1000)))
-            except (TypeError, ValueError):
+                from occ import build as _occ_b
+                _occ = _occ_b(sym, order.get("expiry"), order.get("side"),
+                              order.get("strike"))
+            except (ValueError, TypeError):
                 _occ = None
 
             def _decay_quote(_p, _o=_occ):
