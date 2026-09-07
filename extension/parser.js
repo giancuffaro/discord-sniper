@@ -378,7 +378,19 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // "OUT FOLKS" (Bullwinkle sign-off) -> phantom CLOSE FOLKS. Sign-off words,
   // never tickers; the real position is resolved from what's held.
   "LETTING", "FOLKS", "GUYS", "EVERYONE", "EVERYBODY", "TODAY", "HERE",
-  "NOW", "DONE", "OFF"]);
+  "NOW", "DONE", "OFF",
+  // TradingTheTrend's own glossary (9/7, pasted by G) spells out jargon this
+  // reader had never seen written in caps: "ITM calls only", "no FOMO",
+  // "did my DD", "MM's are pinning it" would each have read as a bare
+  // ticker via bareSymbol's ALL-CAPS-means-ticker rule and could fire a
+  // phantom trim/close on a real position of that name. Same tradeoff the
+  // list already makes for TA (a real ticker, Travelcenters of America) and
+  // DD below (DuPont) — jargon usage swamps the real-ticker case in a
+  // trading chat. MOMO is the one glossary word ("Momo" = momentum) that IS
+  // an actively-traded real ticker (Hello Group) — left OUT on purpose,
+  // flagged for G rather than silently blocked.
+  "ITM", "ATM", "OTM", "DD", "MM", "SS", "FA", "IPO", "ETF", "GTC", "GTD",
+  "YOLO", "FOMO", "AH", "ER", "PRE"]);
 
 // DISCORD ROW JUNK (9/2 corpus): when the reader hands over the whole row
 // (grouped messages, forwards, re-renders) the call arrives wrapped in
