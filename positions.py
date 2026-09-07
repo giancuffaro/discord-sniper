@@ -49,7 +49,7 @@ from ratchet_tiers import (ratchet_locked_pct as tier_locked_pct,
                            ratchet_stop_price, ratchet_plan, anti_clip)
 
 
-def _record_fill_async(snap):
+def _record_fill_async(snap, has_broker=False):
     """Hand one fill to the telemetry writer. Returns immediately — the row
     goes on a bounded queue drained by a single long-lived thread.
 
@@ -57,8 +57,11 @@ def _record_fill_async(snap):
     book from loading: the instruments are optional, the engine is not."""
     try:
         import telemetry
-        telemetry.record_fill(snap, quote={"bid": snap.get("bid_at_send"),
-                                           "ask": snap.get("ask_at_send")})
+        telemetry.record_fill(
+            snap,
+            quote={"bid": snap.get("bid_at_send"),
+                   "ask": snap.get("ask_at_send")},
+            integrity=telemetry.integrity_of(snap, has_broker))
     except Exception:                                       # noqa: BLE001
         pass
 
