@@ -1476,3 +1476,92 @@ See `_BOOT_NOISE` in bridge.py.
 * Tradier **OTOCO unverified** — the conditional entry, the main reason to
   want Tradier. Prove it in their sandbox before it sees money.
 * Voice/Deepgram has produced **zero** transcripts in six weeks.
+
+---
+
+## 9/6-9/7 OVERNIGHT — instrumentation, and three live bugs it exposed
+
+Built at G's ask after a research pass over every comparable tool in public.
+The headline from that research: **we are ahead of the open-source field on
+execution, exits and rate limiting, and alone on DOM-reading, voice and
+vision.** The one thing everyone else has that we did not was a per-caller
+scorecard — and nobody anywhere measures alert→fill latency. See UPGRADES.md.
+
+### NEW FILES
+* `telemetry.py` — one row per fill into `telemetry.csv`: the latency chain
+  (`posted_at → seen_at → sent_at → filled_at`, split three ways because a
+  slow read and a slow fill have opposite fixes), what the caller said vs
+  what we paid, the spread we paid it into, and the entry math below.
+  Also `alert_decay.csv`: the contract's mid at +1s/+5s/+30s/+60s after the
+  alert. **Nobody has published that curve.** It is how we settle
+  chase-vs-wait per caller on our own rooms.
+* `greeks_math.py` — delta+gamma second-order conversion. The one that
+  matters is `stop_room()`: how far the STOCK must move to take out a -10%
+  premium stop. **On the two contracts we had greeks for, that was 0.20 SPY
+  points and 0.13 QQQ points.** SPY moves that in seconds. "-10%" is not a
+  level, it is noise, and until now nothing could say so.
+* `caller_report.py` — expectancy, win rate, PF, worst drawdown per caller,
+  with a hard 20-trade floor for ranking and a 100-trade "solid" mark.
+* `quote_shadow.py` — compares the streamed tastytrade quote against the
+  Webull-polled one. Read p99, not p50.
+
+### CORRECTIONS TO WHAT I TOLD HIM (both mine)
+* I said our stops were "8 cents too tight from a linear delta conversion."
+  **We have no delta conversion anywhere.** The ratchet is premium-percent
+  and `_underlying_stop_watch` fires on the caller's stock level. The claim
+  did not apply. What is real is `stop_room` above, which is worse.
+* I called the Budget's `priority=True` lane a feature we have. **No caller
+  passes it.** What actually protects orders is `ORDER_RESERVE = 40.0` — the
+  quote sweep will not drain the last 40 tokens — and orders bypass the
+  budget entirely via `_pace()`. That is coherent, but it is not what I said.
+
+### THREE BUGS THE INSTRUMENTATION EXPOSED
+1. **A fill-path race, which I caused and then found.** Writing the telemetry
+   row between `state=FILLED` and the cost ledger made `test_positions` fail
+   2 runs in 3 — on stop placement and P&L, not on telemetry. Nothing raised;
+   a few ms of file I/O was enough. **There is a real window between "the
+   position says FILLED" and "the position knows what it cost."** Telemetry
+   now writes after the ledger, on a bounded queue drained by one long-lived
+   thread. The window itself is still there and is worth closing separately.
+2. **`watch_decay` was dead code.** Written, tested, never called. It would
+   have collected nothing. Wired into `place()` on accepted OPENs; reads the
+   quote-bus cache only, so it costs zero of the 60/min option budget.
+3. **`futures_positions()` burned 363 of 364 throttles in nine minutes** —
+   ungated, on the same 2-per-2s door the option stops use, asking Webull
+   for futures that live at Topstep. Pre-existing: it was 429ing on Saturday
+   with futures still off. Now backs off after 3 consecutive EMPTY reads
+   (capped 60s). **It backs off on empty, not on an exception, because a 429
+   here never raises** — `_try_calls` swallows it and returns `[]`, which is
+   indistinguishable from "flat". My first breaker watched for an exception
+   and never fired once.
+
+### GREEKS SOCKET — RE-AUTH IN PLACE
+tastytrade tokens last 15 minutes. We rode one until the server said
+"reauthentication is required" and dropped the socket. It healed itself, so
+it looked fine — but there was a hole in the greeks every 15 minutes, and
+greeks feed the entry math. Now re-AUTHs on the same socket at 10 minutes
+(`REAUTH_AFTER`), subscriptions untouched. Verified live: `token refreshed
+in place (1)`.
+
+### SHADOW QUOTE STREAM — READ BY NOTHING
+Webull has **no** option streaming; every bid/ask is a 1/sec poll against a
+60/min door, so with N positions each contract is seen once every N seconds.
+That is the ceiling on stop reaction and why the rungs must be spaced wide.
+DXLink carries `Quote` events on the socket we already hold. Subscribed,
+taping to `quote_shadow.csv`. **Zero call sites in any exit, stop or order
+path — audited.** tastytrade's quote is not Webull's book, and the broker
+filling you is the one whose book should price your order. A week of
+`quote_shadow.py` decides whether it is ever promoted. Off switch:
+`execution.tastytrade.stream_quotes = false`.
+
+### KNOWN AND NOT FIXED
+* `/openapi/assets/positions` 429s ~4/min. **Pre-existing** (614 in the old
+  log) and it is contention: Market Sniper is running on the SAME app key.
+  Orders are unaffected — zero 429s on `order/place`, checked.
+* The Webull streaming SDK cannot rotate its own log (`WinError 32`, file
+  held open) and dumps stack traces into `bridge.log` instead of failing
+  quietly.
+* Market Sniper sends **no server-side bracket** to ProjectX. Its futures
+  stop is the local ratchet only (initial rung −12.5 pts ≈ $25/contract on
+  MNQ) and dies with the PC. Discord Sniper's futures stop lives on Topstep's
+  servers. Same instruction, two different guarantees.
