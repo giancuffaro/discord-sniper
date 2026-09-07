@@ -68,6 +68,8 @@ telemetry.csv
 telemetry.csv.*
 alert_decay.csv
 alert_decay.csv.*
+quote_shadow.csv
+quote_shadow.csv.*
 announcer.restart
 .announcer-board-sig
 bridge.restart
