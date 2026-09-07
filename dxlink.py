@@ -55,6 +55,27 @@ REAUTH_AFTER = 600.0
 GREEK_FIELDS = ["eventType", "eventSymbol", "price", "volatility",
                 "delta", "gamma", "theta", "rho", "vega"]
 
+# STREAMING OPTION QUOTES (9/7) — the same socket, a second event type.
+#
+# Webull has NO option streaming. Every option bid/ask we own comes from a
+# 1-per-second poll against a 60/min door, so with N open positions each
+# contract is looked at once every N seconds. That is the hard ceiling on
+# how fast any premium stop can react, and the reason the ratchet rungs
+# have to be spaced wider than our worst-case staleness.
+#
+# DXLink carries Quote events — bidPrice/askPrice — over the connection we
+# are ALREADY holding open for greeks. No new socket, no new key, no cost.
+#
+# IT IS SHADOW ONLY. Nothing in the exit path reads it. tastytrade's quote
+# is not Webull's book: both derive from the NBBO but they are different
+# snapshots at different instants, and the broker filling you is the one
+# whose book should price your order. This tapes both side by side so we
+# can find out — from our own contracts — how far apart they actually are
+# and whether a stop would have fired at a different moment. A week of that
+# decides whether it ever gets promoted. Not before.
+QUOTE_FIELDS = ["eventType", "eventSymbol", "bidPrice", "askPrice",
+                "bidSize", "askSize"]
+
 
 # ---------------------------------------------------------------- WebSocket
 class WS:
@@ -329,8 +350,12 @@ class GreeksBus:
         if not ws or not dxs:
             return
         try:
-            ws.send({"type": "FEED_SUBSCRIPTION", "channel": 1,
-                     "add": [{"type": "Greeks", "symbol": d} for d in dxs]})
+            add = [{"type": "Greeks", "symbol": d} for d in dxs]
+            if self.want_quotes:
+                # Same contracts, same channel, second event type. Costs one
+                # extra entry in a subscription message, not a second socket.
+                add += [{"type": "Quote", "symbol": d} for d in dxs]
+            ws.send({"type": "FEED_SUBSCRIPTION", "channel": 1, "add": add})
         except Exception:                                # noqa: BLE001
             pass          # the reconnect re-subscribes everything anyway
 
@@ -390,8 +415,11 @@ class GreeksBus:
             self._await(ws, lambda m: m.get("type") == "CHANNEL_OPENED",
                         "CHANNEL_OPENED")
 
+            _accept = {"Greeks": GREEK_FIELDS}
+            if self.want_quotes:
+                _accept["Quote"] = QUOTE_FIELDS
             ws.send({"type": "FEED_SETUP", "channel": 1,
-                     "acceptEventFields": {"Greeks": GREEK_FIELDS}})
+                     "acceptEventFields": _accept})
             self._await(ws, lambda m: m.get("type") == "FEED_CONFIG",
                         "FEED_CONFIG")
 
@@ -493,17 +521,46 @@ class GreeksBus:
 
     def _absorb(self, data):
         """FEED_DATA arrives either as a list of dicts (COMPACT off) or as
-        ["Greeks", [flat, values, ...]] — handle both, guess at neither."""
-        rows = []
+        ["Greeks", [flat, values, ...]] — handle both, guess at neither.
+
+        NOW TWO EVENT TYPES SHARE THIS CHANNEL. The compact form names its
+        type in data[0], and the field COUNT differs (9 for Greeks, 6 for
+        Quote) — so unflattening a Quote payload with the Greeks stride
+        would produce rows that look plausible and are pure garbage: a
+        bidPrice read as `price`, an askPrice read as `volatility`, and a
+        delta invented out of the next event's symbol. Route on the name
+        FIRST, and refuse anything unrecognised rather than guessing a
+        stride. In the dict form each row carries its own `eventType`, so
+        the same rule applies row by row.
+        """
+        rows, qrows = [], []
         if isinstance(data, list) and len(data) == 2 \
                 and isinstance(data[0], str) and isinstance(data[1], list):
-            flat, n = data[1], len(GREEK_FIELDS)
-            for i in range(0, len(flat) - n + 1, n):
-                rows.append(dict(zip(GREEK_FIELDS, flat[i:i + n])))
-        elif isinstance(data, list):
-            rows = [r for r in data if isinstance(r, dict)]
-        elif isinstance(data, dict):
-            rows = [data]
+            kind, flat = data[0], data[1]
+            if kind == "Greeks":
+                n = len(GREEK_FIELDS)
+                for i in range(0, len(flat) - n + 1, n):
+                    rows.append(dict(zip(GREEK_FIELDS, flat[i:i + n])))
+            elif kind == "Quote":
+                n = len(QUOTE_FIELDS)
+                for i in range(0, len(flat) - n + 1, n):
+                    qrows.append(dict(zip(QUOTE_FIELDS, flat[i:i + n])))
+            else:
+                return              # unknown type: drop it, never guess
+        else:
+            _all = []
+            if isinstance(data, list):
+                _all = [r for r in data if isinstance(r, dict)]
+            elif isinstance(data, dict):
+                _all = [data]
+            for r in _all:
+                if str(r.get("eventType") or "") == "Quote":
+                    qrows.append(r)
+                else:
+                    rows.append(r)
+
+        if qrows:
+            self._absorb_quotes(qrows)
 
         now = time.time()
         taped = []
@@ -527,6 +584,69 @@ class GreeksBus:
             taped.append(g)
         if taped:
             self._write_tape(taped, now)
+
+    def _absorb_quotes(self, rows):
+        """Streaming option bid/ask. SHADOW ONLY — nothing in the exit path
+        reads this. It lands in a dict for the comparison tool and, if a
+        tape path was given, on disk next to the Webull-polled tape."""
+        now = time.time()
+        keep = []
+        for r in rows:
+            sym = r.get("eventSymbol")
+            if not sym:
+                continue
+            try:
+                bid = r.get("bidPrice")
+                ask = r.get("askPrice")
+                bid = float(bid) if bid is not None else None
+                ask = float(ask) if ask is not None else None
+            except (TypeError, ValueError):
+                continue
+            # A locked or crossed book (bid >= ask) is a stale or corrupt
+            # snapshot, not a trading opportunity. Reg NMS forbids locking
+            # protected quotes, so if we see one it is our data that is
+            # wrong. Drop it rather than tape a number we would refuse to
+            # price off.
+            if bid is None or ask is None or bid <= 0 or ask <= 0 or bid >= ask:
+                continue
+            q = {"symbol": sym, "bid": bid, "ask": ask,
+                 "bid_size": r.get("bidSize"), "ask_size": r.get("askSize"),
+                 "t": now}
+            with self._lock:
+                self._quotes[sym] = (q, now)
+                self.quote_events += 1
+            keep.append(q)
+        if keep and self._qtape:
+            try:
+                new = not os.path.exists(self._qtape)
+                with open(self._qtape, "a", encoding="utf-8", newline="") as f:
+                    w = csv.writer(f)
+                    if new:
+                        w.writerow(["ts", "symbol", "bid", "ask", "mid",
+                                    "bid_size", "ask_size"])
+                    for q in keep:
+                        w.writerow(["%.3f" % now, q["symbol"], q["bid"],
+                                    q["ask"], round((q["bid"] + q["ask"]) / 2, 4),
+                                    q["bid_size"], q["ask_size"]])
+            except OSError:
+                pass
+
+    def quote(self, occ, max_age=30.0):
+        """(bid, ask) streamed from tastytrade, or (None, None) if stale.
+
+        SHADOW. Provided for the comparison tool. Deliberately NOT wired
+        into any stop, exit, or order-pricing path — see the note at
+        QUOTE_FIELDS for why that promotion needs evidence first.
+        """
+        dx = occ_to_dx(occ) if occ and not str(occ).startswith(".") else occ
+        with self._lock:
+            v = self._quotes.get(dx)
+        if not v:
+            return (None, None)
+        q, ts = v
+        if max_age and (time.time() - ts) > max_age:
+            return (None, None)
+        return (q["bid"], q["ask"])
 
     def _write_tape(self, rows, now):
         if not self._tape:
