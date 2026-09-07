@@ -289,7 +289,6 @@ if not errorlevel 1 (
   rem  Chrome's recovery on the next launch REBUILDS IT EMPTY. That is what
   rem  emptied the 9/1 and 9/4 exports: "LIVE rooms: none (all testing)"
   rem  and 0/5 captured messages, on days that traded live and fine.
-  rem  A graceful close first gives it the flush. Force is the fallback.
   rem  Graceful only here. If Chrome ignores it, the block immediately
   rem  below already checks and forces - reusing the pattern this file
   rem  has always used at top level, rather than nesting a piped
