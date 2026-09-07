@@ -583,13 +583,25 @@ function findContract(text) {
 /* Lowercase ("30% on spy") only counts when there's an allowed-symbols list to
  * check it against. With no list there is nothing to check a lowercase word
  * against, and every third word in a sentence starts looking like a ticker. */
+/* SLANG THAT IS ALSO A REAL TICKER (9/7). SMH sits in NOT_TICKERS because it
+ * is "shaking my head" — right call for chat, wrong call for Shoof, who trades
+ * the semiconductor ETF: "SOLD | SMH 8/21 580C at 27.00 (1/4)" resolved to no
+ * symbol at all. The block is kept, and lifted only when the word is wearing a
+ * contract: a strike with C/P, or an expiry followed by one. "smh this market"
+ * has neither and stays slang. Add a symbol here only if it is genuinely both. */
+const SLANG_TICKERS = { SMH: /\bSMH\b(?=[^\n]{0,24}?(?:\d{1,2}\s*\/\s*\d{1,2}\s*)?\$?\d{1,5}(?:\.\d+)?\s*(?:C|P|CALLS?|PUTS?)\b)/i };
+
 function bareSymbol(text, allowed) {
   RE_BARE.lastIndex = 0;
   let m;
   while ((m = RE_BARE.exec(text)) !== null) {
     const raw = m[1];
     const s = raw.toUpperCase();
-    if (NOT_TICKERS.has(s)) continue;
+    if (NOT_TICKERS.has(s)) {
+      const rescue = SLANG_TICKERS[s];
+      if (rescue && rescue.test(String(text))) return s;
+      continue;
+    }
     // A futures symbol written in capitals is recognisable on its own —
     // "on NQ short - Trimmed" has to resolve whether or not NQ is on the
     // options allowed-list, because that list is about options.
