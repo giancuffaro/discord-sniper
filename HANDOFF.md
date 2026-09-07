@@ -1,7 +1,38 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~night — ELITE OPTIONS PRO WIRED (G bought it that
+Last updated: 2026-09-07 ~night — PHANTOM EXIT KILLED, and OWLS CAPITAL SCANNED
+AND REJECTED.
+  "OUT" IS ALSO HALF AN IDIOM. stormzyy's recap of a FINISHED trade — "let it
+  play OUT exactly how we wanted" — fired a real CLOSE MNQ off the bare "out"
+  in RE_EXIT. Hunting it found a SECOND live one already in the corpus: "I'm
+  officially checked out for the rest of the week", a sign-off message, was
+  firing CLOSE with the symbol "NOTES". A phantom exit is worse than a missed
+  one: it flattens a live position on somebody's victory lap. "out" no longer
+  counts when it is the tail of a phrasal verb (play/work/pan/ride/figure/
+  watch/check/find/reach/... out). "sold out" is deliberately still an exit.
+  test_exits.js locks 9 idioms out and 6 real exits in. Corpus: the ONLY line
+  that changed from firing to not firing is the "checked out" phantom.
+
+  OWLS CAPITAL (718624848812834903) — all 24 channels read, NOTHING WIRED:
+    jon-and-kian  trades COMMON STOCK ("CHGG commonst at .83", "22% on
+      commons"). Dangerous to wire because "Sold another SPCX at 5.70" names
+      nothing as stock and reads as a plain CLOSE — it would dump an SPCX
+      OPTIONS position. The text cannot tell; only the room can. The shares
+      veto now also covers "commons"/"commonst"/"common stock".
+    ab            real options, but entries are BARE contracts with no verb
+      ("$GOOGL 10/16 400c 1.88") so they never fire, while his closes DO.
+      A room that can close but cannot open can only ever end a ride early —
+      strictly worse than not having it.
+    tt            SPX 0DTE, sample is a spread ("7690/7675p 0dte 1.4").
+    muggzone      parses, but DROPS THE EXPIRY: the date sits BEFORE the
+      ticker ("ENTERED 9/11 MRVL 240 CALLS") and the reader only looks after
+      it. ZERO of our 7,168 corpus lines use that order, so nothing wired is
+      affected — left alone rather than widened on speculation.
+    giul-heatseeker trader is abroad and his bot is broken; members-plays is
+      member chat. Everything else is bot feeds and admin.
+
+Prior: Last updated: 2026-09-07 ~night — ELITE OPTIONS PRO WIRED (G bought it that
 day). Scanned all 28 channels; free tier showed 15, Pro unlocked the two that
 matter. WIRED, born testing: Brando Alerts (1286022517869514874) and Shoof
 Alerts (1368263191632543956). Their grammars:
