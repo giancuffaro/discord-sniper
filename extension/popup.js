@@ -1395,8 +1395,11 @@ document.addEventListener("click", (ev) => {
   if (!el) return;
   ev.preventDefault();
   const room = el.getAttribute("data-room") || "";
+  // data-chan is the EXACT channel id, set by the Rooms list which knows it.
+  // When it is there the background skips all name matching. (9/7)
+  const id = el.getAttribute("data-chan") || "";
   el.style.opacity = "0.5";
-  chrome.runtime.sendMessage({ type: "FOCUS_ROOM", room }, (res) => {
+  chrome.runtime.sendMessage({ type: "FOCUS_ROOM", room, id }, (res) => {
     el.style.opacity = "";
     if (res && res.ok) { window.close(); return; }   // popup closes, tab is there
     el.title = (res && res.why) || "couldn't find that tab";

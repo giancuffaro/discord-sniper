@@ -2058,6 +2058,30 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     (async () => {
       try {
         await loadRoomsFile();                       // fills ROOM_TABS
+        /* EXACT ID WINS (9/7). The Rooms list in the popup is drawn FROM
+         * the channel ids, so when the click comes from there it can say
+         * exactly which room it means and none of the word-matching below
+         * has to run. Everything else — a trade row, a caller name — still
+         * arrives as text and still goes through the scoring. Use the sure
+         * thing when you have it. */
+        const wantId = String(msg.id || "").trim();
+        if (wantId) {
+          const byId = Object.values(ROOM_TABS).find(v => v.id === wantId)
+                    || { url: "", id: wantId };
+          const tabsNow = await chrome.tabs.query({});
+          const t0 = tabsNow.find(t => (t.url || "").includes(wantId));
+          if (t0) {
+            await chrome.tabs.update(t0.id, { active: true });
+            try { await chrome.windows.update(t0.windowId, { focused: true }); }
+            catch (e) {}
+            return reply({ ok: true });
+          }
+          if (byId.url) {
+            await chrome.tabs.create({ url: byId.url, active: true });
+            return reply({ ok: true });
+          }
+          return reply({ ok: false, why: "that room has no tab open" });
+        }
         const want = String(msg.room || "").trim().toLowerCase();
         if (!want) return reply({ ok: false, why: "no room on that trade" });
         /* The name on a trade is whatever Discord SHOWED ("◽︱all-trades-
