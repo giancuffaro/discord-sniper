@@ -262,7 +262,45 @@ def _entry_math(p, g, premium):
     return out
 
 
-def record_fill(p, quote=None, integrity="Reliable"):
+def integrity_of(p, has_broker):
+    """WHERE DID THIS FILL PRICE COME FROM? Never defaults to trusted.
+
+    G's rule, 9/7: nothing assumed, nothing guessed — everything real,
+    polled or pulled; test data exists only to prove the plumbing works.
+    This column is how a row obeys that rule instead of claiming it.
+
+    The first version of this file defaulted every row to "Reliable" and no
+    caller ever passed anything else, which made the column a decoration
+    that said what I wanted rather than what happened. It now reads the
+    position:
+
+      BROKER   live money, a broker attached, a real fill price came back.
+               The only value that may be counted as evidence.
+      ASSUMED  no broker at all (dry run) — the fill was taken on faith.
+      PAPER    the test path, which fills at the marketable price it sent
+               rather than waiting on a match. Real mechanism, not a real
+               fill: fine for proving the plumbing, never for a statistic.
+      BLIND    priced at a ceiling with no live quote to check it against.
+      UNKNOWN  none of the above could be established. Say so.
+
+    Any analysis that mixes these is lying. `summary()` counts everything
+    that is not BROKER separately for exactly that reason.
+    """
+    try:
+        if p.get("assumed") or not has_broker:
+            return "ASSUMED"
+        if p.get("blind"):
+            return "BLIND"
+        if not p.get("live"):
+            return "PAPER"
+        if p.get("fill") is not None:
+            return "BROKER"
+    except Exception:                                       # noqa: BLE001
+        pass
+    return "UNKNOWN"
+
+
+def record_fill(p, quote=None, integrity="UNKNOWN"):
     """One row per fill. `p` is the position dict; `quote` is an optional
     {bid, ask, underlying} snapshot taken at entry.
 
@@ -423,8 +461,8 @@ def summary(path=FILLS, min_n=5):
                               "slip": [], "spread": [], "n": 0,
                               "rooms": set(), "assumed": 0})
         b["n"] += 1
-        if (r.get("integrity") or "") != "Reliable":
-            b["assumed"] += 1
+        if (r.get("integrity") or "") != "BROKER":
+            b["assumed"] += 1      # anything not broker-confirmed is not evidence
         if r.get("room"):
             b["rooms"].add(r["room"])
         for src, dst in (("total_ms", "total"), ("read_ms", "read"),

@@ -2134,7 +2134,14 @@ class Book:
                     if _pf is not None:
                         _tele["und_at_fill"] = _pf.get("und_at_fill")
                         _tele["greeks_in"] = _pf.get("greeks_in")
-                _record_fill_async(_tele)
+                        _tele["assumed"] = bool(_pf.get("assumed"))
+                        _tele["blind"] = bool(_pf.get("blind"))
+                # WHERE THE PRICE CAME FROM, recorded rather than presumed
+                # (his rule, 9/7: nothing assumed, nothing guessed). Only a
+                # live fill with a broker attached counts as BROKER; paper,
+                # blind and dry-run rows are labelled and held out of every
+                # statistic instead of quietly inflating the sample.
+                _record_fill_async(_tele, has_broker=(self.wb is not None))
             except Exception:                               # noqa: BLE001
                 pass
         self._arm_stop(key, side, strike, expiry, total, blended)
