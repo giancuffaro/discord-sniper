@@ -320,6 +320,29 @@ def run_once(trials, quiet=False):
                  "%.0f" % max(lat) if lat else "-",
                  "" if ok and not err else (err or "")))
 
+    # NODE — an UNDECLARED dependency of the audit tooling (9/7). scoreboard,
+    # replay_check and audit_history all parse through jsparse, which runs
+    # the real extension parser via `node`. Without node they silently fall
+    # back to signals.py, the hand-maintained Python mirror, which has
+    # drifted from production before. START HERE does not install or check
+    # for node, so this reports it.
+    if not quiet:
+        try:
+            import jsparse
+            have = jsparse.node_available()
+        except Exception:                                   # noqa: BLE001
+            have = False
+        print("-" * 66)
+        if have:
+            print("Node.js: present — audit tools use the REAL parser.")
+            print("         (signals.py, the 2,350-line Python mirror, is")
+            print("          therefore dead weight and can be deleted.)")
+        else:
+            print("Node.js: MISSING — scoreboard / replay_check /")
+            print("         audit_history are falling back to signals.py,")
+            print("         the hand-maintained mirror. Their numbers come")
+            print("         from a DIFFERENT parser than the bot uses.")
+
     dx = dxlink_from_log()
     if not quiet:
         print("-" * 66)
