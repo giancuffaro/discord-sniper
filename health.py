@@ -128,51 +128,93 @@ def check_tasty_oauth(c, trials):
 
 def check_webull(c, trials):
     """Balance read — the cheapest honest proof the trading key still works.
-    Budgeted at 2 per 2s, so this paces itself and uses few trials."""
+
+    Budgeted at 2 per 2 SECONDS on Webull's side and shared with the running
+    bridge and with Market Sniper, so this is paced hard and capped at 3
+    trials. A monitor that starves the thing it monitors is not a monitor.
+
+    (The first version called `wo.client_from_settings()`, a factory I
+    invented. It does not exist, so the check reported a permanent failure
+    that was entirely my own. The real entry point is `WebullOptions(cfg)`.)
+    """
+    ex = (c.get("execution") or {})
+    wb = (ex.get("webull") or {})
+    if not (wb.get("app_key") and wb.get("app_secret")):
+        return ("Webull balance", None, [], "no app_key/app_secret in settings")
+
     def go():
-        import webull_options as wo
-        cl = wo.client_from_settings(c) if hasattr(wo, "client_from_settings") \
-            else None
-        if cl is None:
-            raise IOError("no client factory in webull_options")
+        from webull_options import WebullOptions
+        cl = WebullOptions(dict(wb))
         b = cl.balance()
         if b is None:
             raise IOError("balance returned nothing")
-    return ("Webull balance",) + timed(go, min(trials, 4), pause=1.2)
+    return ("Webull balance",) + timed(go, min(trials, 3), pause=2.5)
 
 
 def check_bridge(c, trials):
+    """The bridge's own HTTP door.
+
+    ONLY MEANINGFUL ON THE MACHINE THE BRIDGE RUNS ON. 127.0.0.1 inside a
+    sandbox or container is that sandbox, not the Windows host — the first
+    run of this reported 0/6 "connection refused" and I nearly wrote it up
+    as the bridge being down when it was serving fine three feet away. A
+    connection-refused here is reported as UNREACHABLE, not as a failure,
+    because those are different facts.
+    """
     url = "http://127.0.0.1:8787/health"
 
     def go():
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=5) as fh:
             fh.read()
-    return ("Bridge 8787",) + timed(go, trials, pause=0.2)
+
+    ok, lat, err = timed(go, trials, pause=0.2)
+    if ok == 0 and err and ("refused" in err.lower() or "111" in err):
+        return ("Bridge 8787", None, [],
+                "unreachable from this shell — run health.py ON the PC "
+                "where the bridge runs")
+    return ("Bridge 8787", ok, lat, err)
 
 
-def dxlink_from_log(minutes=60):
+def dxlink_from_log(max_read=4000000):
     """DXLink health WITHOUT connecting — read the running session's own log.
 
     See the module docstring: opening a second session damages the live one.
-    This counts what the real session reported in the last `minutes`.
+
+    SCOPED TO THE CURRENT BRIDGE RUN, NOT TO A TIME WINDOW. The first
+    version took a `minutes` argument and converted it to bytes using a
+    GUESSED 120 KB/minute. It reported "340 greeks errors" that were months
+    of history, on a feed that had produced zero errors that hour — a
+    monitor crying wolf, built on exactly the kind of made-up constant this
+    project does not allow. There is no reliable bytes-per-minute rate: the
+    log's growth depends entirely on how much the SDK is complaining.
+
+    So it counts from the LAST bridge start marker onward and says so. That
+    boundary is a real string in the file, not an estimate.
     """
     path = os.path.join(HERE, "bridge.log")
     out = {"connected": 0, "closed": 0, "reauth_ok": 0, "reauth_refused": 0,
-           "errors": 0, "read_bytes": 0}
+           "errors": 0, "scoped": False, "lines": 0}
     try:
         size = os.path.getsize(path)
-        # ~120 KB per minute of log at the observed rate; cap the read.
-        want = min(size, max(400000, minutes * 120000))
+        want = min(size, max_read)
         with open(path, "rb") as fh:
             fh.seek(size - want)
             blob = fh.read().decode("utf-8", "replace")
-        out["read_bytes"] = want
     except OSError:
         return out
-    for line in blob.splitlines():
+
+    lines = blob.splitlines()
+    # Find the last boot marker and count only what came after it.
+    start = 0
+    for i in range(len(lines) - 1, -1, -1):
+        if "QUOTE BUS on" in lines[i] or "Webull LIVE connected" in lines[i]:
+            start, out["scoped"] = i, True
+            break
+    for line in lines[start:]:
         if "[greeks]" not in line:
             continue
+        out["lines"] += 1
         low = line.lower()
         if "connected" in low:
             out["connected"] += 1
@@ -182,7 +224,7 @@ def dxlink_from_log(minutes=60):
             out["reauth_refused"] += 1
         elif "refreshed in place" in low:
             out["reauth_ok"] += 1
-        elif "error" in low:
+        elif "server error" in low:
             out["errors"] += 1
     return out
 
@@ -249,9 +291,13 @@ def run_once(trials, quiet=False):
     if not quiet:
         print("-" * 66)
         print("DXLink greeks (read from bridge.log — NEVER connected to,")
-        print("because a second session breaks the live one):")
+        print("because a second session breaks the live one).")
+        print("Scope: %s"
+              % ("since the last bridge start" if dx["scoped"]
+                 else "WHOLE LOG TAIL — no boot marker found, so these "
+                      "counts may include old runs"))
         print("   connected %d · socket closed %d · re-auth ok %d · "
-              "REFUSED %d · errors %d"
+              "REFUSED %d · server errors %d"
               % (dx["connected"], dx["closed"], dx["reauth_ok"],
                  dx["reauth_refused"], dx["errors"]))
         if dx["reauth_refused"]:

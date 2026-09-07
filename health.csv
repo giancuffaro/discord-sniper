@@ -3,3 +3,7 @@ ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err
 1788797115.829,closed,Tradier REST,6,6,217.2,223.7,228.7,
 1788797115.829,closed,tastytrade OAuth,6,6,502.1,531.5,544.2,
 1788797115.829,closed,Webull balance,0,6,,,,no client factory in webull_options
+1788797213.288,closed,Bridge 8787,,6,,,,unreachable from this shell — run health.py ON the PC where the bridge runs
+1788797213.288,closed,Tradier REST,6,6,208.7,213.0,265.2,
+1788797213.288,closed,tastytrade OAuth,6,6,509.9,558.8,559.9,
+1788797213.288,closed,Webull balance,0,6,,,,'WebullOptions' object has no attribute 'balance'
