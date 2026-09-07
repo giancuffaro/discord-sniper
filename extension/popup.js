@@ -1106,78 +1106,36 @@ function serverGroupsFor(allIds) {
 }
 
 let _expandedServer = null;   // which group's channel list is open, if any
-function renderServerToggles(channelDisabled) {
-  const box = $("servertoggles");
-  if (!box) return;
-  const cd = channelDisabled || {};
-  const groups = serverGroupsFor(Object.keys(ROOM_NAMES));
-  box.innerHTML = groups.map((g, gi) => {
-    const offCount = g.ids.filter(id => cd[id]).length;
-    const allOff = offCount === g.ids.length;
-    const someOff = offCount > 0 && !allOff;
-    const expanded = _expandedServer === gi;
-    const rows = expanded ? g.ids.map(id => {
-      const on = !cd[id];
-      return '<div class="row" style="margin:2px 0 2px 14px">' +
-             '<span class="grow" style="font-size:11px;color:#9aa3b5">' +
-             chanLabel(id) + '</span>' +
-             '<button data-servchan="' + id + '" style="font-size:10px;' +
-             'padding:1px 8px;border-radius:9px;cursor:pointer;border:1px solid ' +
-             (on ? "#3a4254" : "#7f1d1d") + ';background:' +
-             (on ? "transparent" : "#2a1720") + ';color:' +
-             (on ? "#7d8697" : "#f87171") + '">' + (on ? "on" : "off") +
-             '</button></div>';
-    }).join("") : "";
-    return '<div class="row" style="margin-bottom:2px">' +
-           '<span class="grow" data-servexpand="' + gi + '" style="font-size:12px;' +
-           'cursor:pointer">' + (expanded ? "▾ " : "▸ ") + g.name +
-           (someOff ? ' <span style="color:#fbbf24;font-size:10px">(' + offCount +
-            '/' + g.ids.length + ' off)</span>' : "") + '</span>' +
-           '<button data-servtoggle="' + gi + '" style="font-size:10px;padding:1px 10px;' +
-           'border-radius:9px;cursor:pointer;border:1px solid ' +
-           (allOff ? "#7f1d1d" : "#3a4254") + ';background:' +
-           (allOff ? "#2a1720" : "transparent") + ';color:' +
-           (allOff ? "#f87171" : "#7d8697") + '">' +
-           (allOff ? "OFF" : (someOff ? "partial" : "on")) + '</button></div>' +
-           rows;
-  }).join("");
+/* SERVERS BLOCK REMOVED 9/7 — his call: "i dont think we need this".
+ *
+ * renderServerToggles() and its whole-server on/off drew a SECOND, coarser
+ * switch on top of the per-room one. It also failed the quiet way: a room
+ * switched off here was dropped in background.js with nothing anywhere
+ * saying so, which is the 9/2 RWGates mystery written down in this file's
+ * own export code. Two controls now, not three: rooms.txt decides which
+ * rooms exist at all, and the per-room switch decides LIVE vs testing.
+ *
+ * Kept as a no-op because four call sites still invoke it; deleting those
+ * blind is how you break a popup at 9:31. It costs one function call.
+ */
+function renderServerToggles() { /* removed 9/7 — see note above */ }
 
-  box.querySelectorAll("[data-servexpand]").forEach(el => {
-    el.onclick = () => {
-      const gi = parseInt(el.dataset.servexpand, 10);
-      _expandedServer = (_expandedServer === gi) ? null : gi;
-      renderServerToggles(cd);
-    };
-  });
-  box.querySelectorAll("button[data-servtoggle]").forEach(btn => {
-    btn.onclick = async () => {
-      const gi = parseInt(btn.dataset.servtoggle, 10);
-      const g = groups[gi];
-      const { settings } = await chrome.storage.local.get("settings");
-      const s = settings || {};
-      s.channel_disabled = s.channel_disabled || {};
-      const offCount = g.ids.filter(id => s.channel_disabled[id]).length;
-      const turnOff = offCount < g.ids.length;   // any on -> turn ALL off; all off -> turn ALL on
-      g.ids.forEach(id => {
-        if (turnOff) s.channel_disabled[id] = true;
-        else delete s.channel_disabled[id];
-      });
-      await chrome.storage.local.set({ settings: s });
-      renderServerToggles(s.channel_disabled);
-    };
-  });
-  box.querySelectorAll("button[data-servchan]").forEach(btn => {
-    btn.onclick = async () => {
-      const id = btn.dataset.servchan;
-      const { settings } = await chrome.storage.local.get("settings");
-      const s = settings || {};
-      s.channel_disabled = s.channel_disabled || {};
-      if (s.channel_disabled[id]) delete s.channel_disabled[id];
-      else s.channel_disabled[id] = true;
-      await chrome.storage.local.set({ settings: s });
-      renderServerToggles(s.channel_disabled);
-    };
-  });
+/* Nothing may be left muted by a switch that no longer exists. Any room
+ * still flagged off by the old server control is cleared once, and said out
+ * loud — a silently-dropped room is exactly what this removal is meant to
+ * make impossible. */
+async function clearLegacyServerOff() {
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const s = settings || {};
+    const cd = s.channel_disabled || {};
+    const stuck = Object.keys(cd).filter(id => cd[id]);
+    if (!stuck.length) return;
+    s.channel_disabled = {};
+    await chrome.storage.local.set({ settings: s });
+    console.log("[sniper] freed " + stuck.length +
+                " room(s) muted by the removed server switch:", stuck);
+  } catch (e) { /* never block the popup opening */ }
 }
 
 /* The per-room scoreboard he asked for: "trade information, won, lost,

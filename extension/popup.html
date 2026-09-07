@@ -223,14 +223,15 @@
 
   <!-- ===== CHANNELS ===== -->
   <div class="tabpane on" data-tab="channels">
-    <label>Servers — turn off a whole server at once</label>
-    <div id="servertoggles"></div>
-    <div class="note">Each server groups the channels opened for it. OFF stops
-      reading every channel in that server — no capture, no trades, nothing.
-      Tap a server name to expand it and turn any ONE of its channels back on
-      by itself, without re-enabling the rest.</div>
-
-    <label style="margin-top:14px">Rooms — each one is its own switch</label>
+    <!-- SERVERS BLOCK REMOVED 9/7 (his call: "i dont think we need this").
+         It was a second, coarser off-switch layered on top of the per-room
+         one, and it FAILED SILENTLY: a room disabled here was dropped in
+         background.js with nothing anywhere saying so — the 9/2 RWGates
+         mystery. rooms.txt decides which rooms exist, the per-room switch
+         below decides LIVE vs testing. Two controls, not three.
+         Any room still stuck off from the old switch is cleared on load;
+         see clearLegacyServerOff() in popup.js. -->
+    <label>Rooms — each one is its own switch</label>
     <div id="roomtoggles"></div>
     <div class="note">One click flips a room between TESTING (pretend money)
       and LIVE (your Webull account). Applies instantly and STAYS that way
