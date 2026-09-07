@@ -51,6 +51,15 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(HERE, "health.csv")
 
+# Two checks only mean anything on the PC the bridge runs on: the bridge's
+# own HTTP door (127.0.0.1 in any other shell is that shell, not his box)
+# and Webull (whose SDK is installed in the Windows Python). Reporting those
+# as FAILURES from anywhere else is how a monitor invents an outage — the
+# first run of this file did exactly that and I nearly wrote up a healthy
+# bridge as down. They are SKIPPED, with the reason said out loud.
+NOT_HERE = ("not reachable from this shell — run  python health.py  ON the "
+            "PC where the bridge runs")
+
 
 def cfg():
     try:
@@ -167,7 +176,14 @@ def check_webull(c, trials):
         if bp is None:
             raise IOError("connected as %s but Webull would not return a "
                           "balance (throttled?)" % acct)
-    return ("Webull connect+bal",) + timed(go, min(trials, 3), pause=2.5)
+    ok, lat, err = timed(go, min(trials, 3), pause=2.5)
+    # The Webull SDK lives in the Windows Python, not in every shell this
+    # file might be run from. "Not installed here" is an ENVIRONMENT fact,
+    # not a broker outage, and must not be coloured like one.
+    if ok == 0 and err and ("isn't installed" in err or "No module" in err
+                            or "ModuleNotFound" in err):
+        return ("Webull connect+bal", None, [], NOT_HERE)
+    return ("Webull connect+bal", ok, lat, err)
 
 
 def check_bridge(c, trials):
@@ -189,9 +205,7 @@ def check_bridge(c, trials):
 
     ok, lat, err = timed(go, trials, pause=0.2)
     if ok == 0 and err and ("refused" in err.lower() or "111" in err):
-        return ("Bridge 8787", None, [],
-                "unreachable from this shell — run health.py ON the PC "
-                "where the bridge runs")
+        return ("Bridge 8787", None, [], NOT_HERE)
     return ("Bridge 8787", ok, lat, err)
 
 
