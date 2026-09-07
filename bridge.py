@@ -4291,6 +4291,26 @@ class Handler(BaseHTTPRequestHandler):
         # gets its contract from the position you're holding, never from a
         # guess. Set assume_weekly_expiry to false in settings.json to turn this
         # off and have those calls refused instead.
+        # READ THE CLUES BEFORE GUESSING (9/7). The old code jumped straight
+        # to "this week's Friday" for anything with no date. Looking at the
+        # 27 real dateless alerts in the journal, **26 of them contained a
+        # clue the caller actually gave** and the blanket Friday overrode it:
+        #
+        #   "SPCX | $143 C 4.75 MAY SWING"   -> Friday. Wrong by MONTHS.
+        #   "TSLA | $352.5 C 7.36 NEXT WEK"  -> Friday. Wrong by a WEEK.
+        #
+        # The parser already reads 0dte / 4dte / an OSI symbol / futures.
+        # These two it does not, so they are read here from the raw message.
+        # This is context, not guessing: the caller said it, we just were
+        # not listening.
+        if (order.get("action") in ("OPEN", "ADD") and order.get("strike")
+                and not order.get("expiry")):
+            _got = _expiry_from_clues(order)
+            if _got:
+                order["expiry"], _why = _got
+                note("no explicit date, but the call said %s -> %s"
+                     % (_why, order["expiry"]))
+
         if (order.get("action") in ("OPEN", "ADD") and order.get("strike")
                 and not order.get("expiry")
                 and EXEC.get("assume_weekly_expiry", True)):
