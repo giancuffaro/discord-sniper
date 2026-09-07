@@ -2864,27 +2864,45 @@ def broker_positions():
                 # for this account the call quietly stops being made at all,
                 # which is the correct behaviour when futures live at
                 # Topstep rather than at Webull.
+                # IT BACKS OFF ON EMPTY, NOT ON AN EXCEPTION — because a 429
+                # here never raises. `_try_calls` catches the throttle and
+                # returns (None, why), so `futures_positions()` hands back a
+                # plain [] and looks exactly like "no futures held". The
+                # first version of this breaker watched for an exception and
+                # therefore never fired once: 81 more 429s in two minutes.
+                #
+                # So: count consecutive EMPTY reads and stand down after
+                # three. Capped at 60s, deliberately short — an empty answer
+                # is ambiguous (throttled, or genuinely flat), and a real
+                # Webull futures position must still be discovered inside a
+                # minute. Any non-empty answer resets it instantly.
                 _fb = _FUT_POS_BACKOFF
                 if time.time() >= _fb["until"]:
+                    _fut_rows = []
                     try:
-                        for p in (wb.futures_positions() or []):
-                            d = dict(p)
-                            d["live"] = True
-                            rows.append(d)
+                        _fut_rows = list(wb.futures_positions() or [])
+                    except Exception:                   # noqa: BLE001
+                        _fut_rows = []
+                    for p in _fut_rows:
+                        d = dict(p)
+                        d["live"] = True
+                        rows.append(d)
+                    if _fut_rows:
                         _fb["fails"] = 0
                         _fb["until"] = 0.0
-                    except Exception as _fe:            # noqa: BLE001
+                    else:
                         _fb["fails"] += 1
                         if _fb["fails"] >= 3:
-                            _wait = min(300.0, 10.0 * (2 ** (_fb["fails"] - 3)))
+                            _wait = min(60.0, 10.0 * (2 ** (_fb["fails"] - 3)))
                             _fb["until"] = time.time() + _wait
-                            if _fb["fails"] in (3, 6, 9):
-                                note("FUT-POS  Webull refused the futures "
-                                     "position read %d times (%s) — backing "
-                                     "off %.0fs so it stops spending the "
-                                     "budget your option stops need. Topstep "
-                                     "futures are unaffected."
-                                     % (_fb["fails"], str(_fe)[:60], _wait))
+                            if _fb["fails"] == 3:
+                                note("FUT-POS  Webull has returned no futures "
+                                     "position 3 times running — asking every "
+                                     "%.0fs instead of every sweep. It shares "
+                                     "the 2-per-2s door with the reads your "
+                                     "option stops need, and on 9/6 it burned "
+                                     "363 of 364 throttles. Topstep futures "
+                                     "are unaffected." % _wait)
             _POS["t"], _POS["v"] = time.time(), rows
         finally:
             _POS["busy"] = False
