@@ -885,6 +885,41 @@ def roll_day():
 STATE_PATH = os.path.join(HERE, "state.json")
 
 
+def write_json_atomic(path, payload):
+    """Write JSON so a crash can never leave a HALF file. (9/7)
+
+    `open(path, "w")` TRUNCATES FIRST. Every state file here was written that
+    way, which means a crash, a power cut or a kill between the truncate and
+    the flush leaves an empty or half-written file. And `load_state` catches
+    the parse error and returns SILENTLY — so the bridge boots believing it
+    holds nothing while real positions sit at the broker with no ratchet and
+    no stop management. That is the worst failure this file can have and it
+    left no trace.
+
+    Write to a sibling temp file, force it to the platter, then rename.
+    `os.replace` is atomic on Windows and POSIX: readers see either the old
+    complete file or the new complete file, never a torn one.
+
+    Keeps ONE backup. A file that fails to parse is worth more as evidence
+    than as a blank slate.
+    """
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f)
+        f.flush()
+        os.fsync(f.fileno())        # the rename is only atomic if it landed
+    try:
+        if os.path.exists(path):
+            _bak = path + ".bak"
+            try:
+                os.replace(path, _bak)
+            except OSError:
+                pass
+    except OSError:
+        pass
+    os.replace(tmp, path)
+
+
 def save_state():
     """The book's memory, written beside every day file. This is what lets a
     swing trade survive a bridge restart — and what stops a mid-day restart
@@ -892,28 +927,51 @@ def save_state():
     if BOOK is None:
         return
     try:
-        with open(STATE_PATH, "w", encoding="utf-8") as f:
-            json.dump({"date": today_str(), "state": BOOK.export_state()}, f)
+        write_json_atomic(STATE_PATH,
+                          {"date": today_str(), "state": BOOK.export_state()})
     except OSError:
         pass
     # Every extra account's book remembers its own swings the same way.
     for _x in WB_EXTRA:
         try:
-            with open(_extra_state_path(_x["name"]), "w",
-                      encoding="utf-8") as f:
-                json.dump({"date": today_str(),
-                           "state": _x["book"].export_state()}, f)
+            write_json_atomic(_extra_state_path(_x["name"]),
+                              {"date": today_str(),
+                               "state": _x["book"].export_state()})
         except Exception:                               # noqa: BLE001
             pass
 
 
 def load_state():
+    """Read the book's memory back.
+
+    IT SHOUTS NOW (9/7). This used to swallow a corrupt file and return —
+    so a torn state.json booted an EMPTY book while real positions sat at
+    the broker, and nothing anywhere said so. A missing file on a fresh
+    install is normal and stays quiet; a file that exists and will not parse
+    is an emergency, and it tries the .bak before giving up.
+    """
     if BOOK is None:
         return
-    try:
-        with open(STATE_PATH, encoding="utf-8") as f:
-            d = json.load(f)
-    except (OSError, ValueError):
+    d = None
+    for _p, _what in ((STATE_PATH, "state.json"),
+                      (STATE_PATH + ".bak", "state.json.bak")):
+        try:
+            with open(_p, encoding="utf-8") as f:
+                d = json.load(f)
+            if _what.endswith(".bak"):
+                note("STATE    state.json would not parse — recovered the "
+                     "previous copy from state.json.bak. CHECK YOUR OPEN "
+                     "POSITIONS against Webull before trusting the popup.")
+            break
+        except OSError:
+            continue                    # not there; fresh install is fine
+        except ValueError:
+            note("STATE    %s is CORRUPT (half-written). Trying the backup. "
+                 "If nothing loads, the book starts EMPTY and anything you "
+                 "are holding will have no stop management until it is "
+                 "adopted from the account." % _what)
+            continue
+    if d is None:
         return
     BOOK.restore_state(d.get("state") or {}, d.get("date") == today_str())
     # Day-old adopted futures the broker can't confirm are ghosts — his
@@ -953,9 +1011,11 @@ def save_day():
                     _tbl.append(_rr)
             except Exception:                           # noqa: BLE001
                 pass
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump({"date": today_str(), "mode": MODE,
-                       "table": _tbl, "wallet": BOOK.wallet()}, f)
+        # Atomic, same reason as save_state: this file is rewritten on EVERY
+        # event, so it is the one most likely to be mid-write when something
+        # dies — and it is the backtesting record for the whole day.
+        write_json_atomic(path, {"date": today_str(), "mode": MODE,
+                                 "table": _tbl, "wallet": BOOK.wallet()})
     except OSError:
         pass        # a full disk must never take down the trading path
     # HANDOFF-<date>.md — his ask (8/18): "make a file handoff every single
