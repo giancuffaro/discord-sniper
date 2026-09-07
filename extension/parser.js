@@ -997,9 +997,16 @@ function parseSignalInner(text, cfg) {
   // line that talks about shares and names no contract is not ours. Guarded on
   // "no contract present", so "sold shares, still holding the 580c" is
   // untouched — that line has a contract and is read on its own merits.
-  if (/\bshares?\b/i.test(low) && !findContract(t)) {
-    s.why = "that's a SHARES trade, not an option — no contract in it, and " +
-            "this bot only trades options, so nothing was sent";
+  // "commons" / "commonst" added 9/7 for OWLS Capital, where jon-and-kian
+  // trade common stock and say so: "1000% lotto CHGG commonst at .83",
+  // "sold some CHGG commons at 15%". Same veto, same reason.
+  // NOTE this only catches stock trades that NAME themselves. "Sold another
+  // SPCX at 5.70" is also stock in that room but reads as a plain exit, and
+  // nothing in the text says so — that one is a ROOM decision, not a parser
+  // one, which is why jon-and-kian is not wired.
+  if (/\bshares?\b|\bcommons?t?\b|\bcommon\s+stock\b/i.test(low) && !findContract(t)) {
+    s.why = "that's a SHARES/commons trade, not an option — no contract in " +
+            "it, and this bot only trades options, so nothing was sent";
     return s;
   }
 
