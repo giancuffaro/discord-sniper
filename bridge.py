@@ -4259,7 +4259,12 @@ class Handler(BaseHTTPRequestHandler):
                    "execution.assume_weekly_expiry back to true."
                    % (sym, order.get("strike"), order.get("side") or ""))
             note("NO-DATE  " + _nd)
-            return (False, _nd)
+            # This is do_POST, an HTTP handler — it answers with self._reply,
+            # not a (ok, msg) tuple. Returning a bare tuple here would leave
+            # the extension with NO RESPONSE on a refused order, which looks
+            # to it exactly like a dead bridge and triggers a retry. 403 is
+            # the same shape the futures-multiplier refusal above uses.
+            return self._reply(403, _nd)
 
         # A bare futures exit ("close MGC") reaches here without its kind tag —
         # the reader marks entries, not one-word exits — and the option gate
