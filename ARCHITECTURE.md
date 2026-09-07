@@ -117,6 +117,49 @@ is not a documentation change.
 
 ---
 
+## CONSOLIDATED 9/7 — three jobs the app was doing in many places
+
+**`occ.py` — what a contract is called.** Was SEVEN implementations
+(`webull_options.occ_symbol`, `bridge._occ_build`, `positions._occ_for`,
+`bars_capture.occ`, `dxlink.occ_to_dx`, `quote_shadow.dx_to_occ`, plus an
+eighth written inline in `bridge.py` on 9/6). All now delegate to `occ.py`;
+**zero hand-rolled `strike*1000` constructions remain outside it.** Output
+is byte-identical on every shape (parity-tested).
+
+It also removes a live landmine. `occ_symbol` decided the side with
+`cp = "C" if option_type == "CALL" else "P"` — so `"CALLS"`, `"call"`,
+`"c"`, `None` all silently became **PUTS**, and five call sites each
+repeated `"CALL" if side.startswith("C") else "PUT"` to stay clear of it.
+`occ.side_letter()` accepts every real spelling and **raises** on anything
+else. A refused build is a missed trade; a silent flip is the opposite trade.
+
+**`tape.py` — one reader for everything recorded.** Three files record the
+same contracts at the same moments in three schemas and two symbol formats
+(`option_tape.csv` keys on OCC, the other two on dxfeed). Every tool had to
+know all three and join by hand — `quote_shadow.py` did it with `bisect`.
+`tape.rows()` / `tape.at()` / `tape.contracts()` do it once, in OCC form.
+The READ side only: the writers still own their own files, because Webull
+keeps no historical option prices and those tapes cannot be regenerated.
+
+**Atomic state writes.** `save_state`, the extra-account books and
+`save_day` used `open(path, "w")`, which truncates first. A crash mid-write
+left a torn `state.json`, and `load_state` swallowed the parse error and
+returned — booting an EMPTY book while real positions sat at the broker with
+no stop management. A kill-mid-write drill measured it: **29 of 40 kills
+produced a corrupt file.** Now `.tmp` + `fsync` + `os.replace`, one `.bak`
+kept, and `load_state` shouts and tries the backup. Same drill after: 0/40.
+
+**Still pending: `signals.py`.** 2,350 lines of Python that mirror the real
+JS parser and are imported by nothing in the live order path — only
+`jsparse` (as a fallback), `dump_parse` and its own test. Deleting it is
+**gated on confirming Node.js is installed on the trading PC**, because
+`scoreboard`, `replay_check` and `audit_history` parse through `jsparse` and
+would otherwise go dark. `jsparse` now prints a loud warning and sets
+`USED_MIRROR` whenever it falls back; `health.py` reports whether node is
+present.
+
+---
+
 ## THE SEAMS — exact signatures, copied from the source
 
 These are the interfaces that got me. Look here first.

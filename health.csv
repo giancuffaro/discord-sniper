@@ -23,3 +23,7 @@ ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err
 1788797404.384,closed,Tradier REST,10,10,198.7,205.3,224.5,
 1788797404.384,closed,tastytrade OAuth,10,10,568.5,798.7,848.8,
 1788797404.384,closed,Webull connect+bal,,10,,,,not reachable from this shell — run  python health.py  ON the PC where the bridge runs
+1788800695.728,closed,Bridge 8787,,6,,,,not reachable from this shell — run  python health.py  ON the PC where the bridge runs
+1788800695.728,closed,Tradier REST,6,6,201.3,217.9,239.6,
+1788800695.728,closed,tastytrade OAuth,6,6,713.8,791.1,919.3,
+1788800695.728,closed,Webull connect+bal,,6,,,,not reachable from this shell — run  python health.py  ON the PC where the bridge runs

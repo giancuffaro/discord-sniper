@@ -87,6 +87,15 @@ def call_sites(kwarg, value_is_true=True):
     return out
 
 
+
+def _refuses(fn):
+    try:
+        fn()
+        return False
+    except Exception:
+        return True
+
+
 def main():
     print("ARCHITECTURE.md vs the source\n")
 
@@ -176,6 +185,42 @@ def main():
     check("known cycle still present (map warns about it)",
           "import bridge" in wf or "from bridge" in wf,
           "if this is gone, DELETE the warning from ARCHITECTURE.md")
+
+
+    # --- 9/7 consolidations ------------------------------------------------
+    import occ as _o
+    check("occ.build refuses a side it cannot read",
+          _refuses(lambda: _o.build("SPY", "2026-09-08", "bull", 640)))
+    check("occ.build accepts CALLS/call/C alike",
+          _o.build("SPY", "2026-09-08", "CALLS", 640)
+          == _o.build("SPY", "2026-09-08", "c", 640)
+          == "SPY260908C00640000")
+    check("occ round-trips through dxfeed",
+          _o.from_dx(_o.to_dx("IWM260904P00243500")) == "IWM260904P00243500")
+    hand = []
+    for f in os.listdir(HERE):
+        if not f.endswith(".py") or f in ("occ.py", os.path.basename(__file__)):
+            continue
+        txt = open(os.path.join(HERE, f), encoding="utf-8",
+                   errors="replace").read()
+        if "%08d" in txt and "1000" in txt:
+            hand.append(f)
+    check("no hand-rolled OCC construction outside occ.py", not hand,
+          "found in %s" % hand)
+    import tape as _t
+    check("tape.py exposes one reader for every source",
+          hasattr(_t, "rows") and hasattr(_t, "at")
+          and set(_t.SOURCES) == {"webull", "tasty_greeks", "tasty_quote"})
+    bsrc = open(os.path.join(HERE, "bridge.py"), encoding="utf-8",
+                errors="replace").read()
+    check("state is written atomically (tmp + fsync + os.replace)",
+          "os.replace(tmp, path)" in bsrc and "os.fsync" in bsrc)
+    check("load_state no longer swallows corruption",
+          "is CORRUPT" in bsrc)
+    jsrc = open(os.path.join(HERE, "jsparse.py"), encoding="utf-8",
+                errors="replace").read()
+    check("jsparse announces when it uses the stale mirror",
+          "USED_MIRROR" in jsrc and "PYTHON MIRROR" in jsrc)
 
     # --- the map itself has to exist --------------------------------------
     check("ARCHITECTURE.md is present",
