@@ -33,10 +33,42 @@ whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop
 whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing Trades|firststeptrading (Whop)
 
 # THE MASHUP (8/30, G: "one room that alerts everything so we can eliminate
-# six and have only one"): ZTRADEZ BOT relays EVERY ZT trader's call into
-# all-trades-mashup as embeds titled by trader ("Bishop's Ideas"). The
-# relay-unwrap in background.js books each call under the REAL trader name,
-# so the per-trader walls and the dedupe ladder still hold.
+# six and have only one"). The relay-unwrap in background.js books each call
+# under the REAL trader name, so the per-trader walls and the dedupe ladder
+# still hold.
+#
+# CORRECTED 9/7 — the old note here claimed the mashup "relays EVERY ZT
+# trader's call". THAT IS FALSE and it cost us 9 traders. Verified 9/7 by
+# reading all 19 cut rooms live in Discord and diffing their real 9/1-9/4
+# entries against 9 days of mashup capture (8/28-9/6, dense on 9/1-9/4):
+#
+#   The mashup carries TWO streams, not one:
+#     ZTRADEZ BOT     (793 msgs) forwards from some trader rooms
+#     ZTRADEZ Manager (292 msgs) the house/Namrood feed, best-formatted
+#                     alerts we get: "Buy To Open ORCL 147C 09/04 $1.5"
+#                     with entry, expiry and running P/L (ANSI color codes
+#                     wrapped around the contract - parser must strip them)
+#
+#   RELAYED, 10 of 19 - safe to leave cut:
+#     mr-top-hat, market-bishop/opt-7, jpm-investments/opt-6,
+#     sir-goldman/opt-8, are-swings/opt-2, demon, adex-swings/swing-4,
+#     namrood/fut-6, top-flow, scalps
+#
+#   DARK, 9 of 19 - these alerts reach us NOWHERE. Proof, all absent from
+#   the mashup on days it captured hundreds of lines:
+#     cranmer/opt-9      UPS 104C, AA 52C, NVDA 220C 9/18
+#     evapanda/opt-5     MU 1100C, MRVL 240C, URA 48C
+#     madhatter/opt-1    MCD 245P 10/16
+#     tlm/opt-4          AAPL 327C, MSFT 497/490P spread
+#     stormzyy/fut-1     MNQ
+#     guru-futures/fut-2 MNQ LONG 29525
+#     clutch/swing-1     SPCX
+#     kumo/swing-2       CAKE 120/125 debit spread
+#     king-maker/swing-3 GM 87.5C 9/18
+#
+#   Only evapanda was cut on journal evidence (-55). The other 8 were cut
+#   as "redundant: flows through the mashup" - a reason now disproven.
+#   Reopening any of them is G's call (rooms are his).
 1334236429655740457|https://discord.com/channels/496871546963492874/1334236429655740457|ZT all-trades-mashup|ZTRADEZ
 # CUT 8/30 (journals 8/19-8/28, every one a net loser, all covered by the
 # mashup above if they ever earn their way back):
@@ -44,23 +76,23 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 #   EvaPanda/opt-5 -55 | are-alerts/opt-2 -42
 #1135947475912495216|https://discord.com/channels/496871546963492874/1135947475912495216|MR.TOPHAT|ZTRADEZ
 #1248264554886991893|https://discord.com/channels/496871546963492874/1248264554886991893|ZT opt-2|ZTRADEZ
-#777750637613416479|https://discord.com/channels/496871546963492874/777750637613416479|ZT opt-5|ZTRADEZ
+#777750637613416479|https://discord.com/channels/496871546963492874/777750637613416479|ZT opt-5|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1239624229583061052|https://discord.com/channels/496871546963492874/1239624229583061052|ZT opt-7|ZTRADEZ
 #829352738239414332|https://discord.com/channels/496871546963492874/829352738239414332|ZT top-flow|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #721821717328298066|https://discord.com/channels/496871546963492874/721821717328298066|ZT scalps|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1471700027662405712|https://discord.com/channels/496871546963492874/1471700027662405712|ZT fut-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-#1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-#694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
+#1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
+#694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1331631786068938813|https://discord.com/channels/496871546963492874/1331631786068938813|ZT opt-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1209181195406024744|https://discord.com/channels/496871546963492874/1209181195406024744|ZT opt-8|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-#1332090335005900800|https://discord.com/channels/496871546963492874/1332090335005900800|ZT opt-9|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
+#1332090335005900800|https://discord.com/channels/496871546963492874/1332090335005900800|ZT opt-9|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #874280313038192670|https://discord.com/channels/496871546963492874/874280313038192670|Demon Alerts|ZTRADEZ  (cut 8/30, see mashup note)
-#1389300087829827745|https://discord.com/channels/496871546963492874/1389300087829827745|ZT swing-1|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-#862419656382873650|https://discord.com/channels/496871546963492874/862419656382873650|ZT swing-2|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-#1061980561293443152|https://discord.com/channels/496871546963492874/1061980561293443152|ZT swing-3|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
+#1389300087829827745|https://discord.com/channels/496871546963492874/1389300087829827745|ZT swing-1|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
+#862419656382873650|https://discord.com/channels/496871546963492874/862419656382873650|ZT swing-2|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
+#1061980561293443152|https://discord.com/channels/496871546963492874/1061980561293443152|ZT swing-3|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1179200811650252850|https://discord.com/channels/496871546963492874/1179200811650252850|ZT swing-4|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-#1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-#1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
+#1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
+#1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 
 
 # SUBSCRIPTION LAPSED (checked on whop.com 9/7/26). A room whose
