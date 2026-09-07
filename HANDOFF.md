@@ -1,7 +1,17 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-04 LATE EVENING — see "9/4 EVENING" below for the six
+Last updated: 2026-09-07 ~01:45 — see "9/6-9/7 OVERNIGHT" at the bottom.
+The short version: **telemetry** now records the alert→fill latency chain and
+the entry math on every fill (`telemetry.csv`); `caller_report.py` scores
+callers and found that **nobody has 20 closed trades yet**, so no auto-benching
+until there is a sample; a **shadow option-quote stream** rides the tastytrade
+socket into `quote_shadow.csv`, read by NOTHING; the greeks socket now
+**re-auths in place** instead of dying every 15 minutes; the Webull futures
+position read **backs off** after 3 empty reads (it was 363 of 364 throttles);
+futures + Topstep toggles are **ON** at G's instruction.
+
+Previously — 2026-09-04 LATE EVENING — see "9/4 EVENING" below for the six
 things that changed after the close. The short version, because it is a lot:
 **(1)** the bot now trades the contract the caller ACTUALLY named — the
 1-strike-OTM rewrite is off, it had been paying ~2x the called price;
