@@ -2799,6 +2799,10 @@ def _place_impl(order):
 _BP = {"t": 0.0, "v": None}
 _FBP = {"t": 0.0, "v": None}
 _POS = {"t": 0.0, "v": []}
+# Circuit breaker for the Webull FUTURES position read — see the comment at
+# its call site. Three consecutive refusals and it stands down, doubling to
+# five minutes, resetting the instant Webull answers.
+_FUT_POS_BACKOFF = {"fails": 0, "until": 0.0}
 
 
 def broker_positions():
@@ -2844,13 +2848,43 @@ def broker_positions():
                 # The FUTURES account is a separate Webull account, so it needs
                 # its own call — without this his futures positions were
                 # invisible everywhere (8/12). Always real money.
-                try:
-                    for p in (wb.futures_positions() or []):
-                        d = dict(p)
-                        d["live"] = True
-                        rows.append(d)
-                except Exception:                       # noqa: BLE001
-                    pass
+                # BACKOFF (9/7). This call is ungated and runs on every
+                # reconcile. On the night of 9/6 it produced 363 of the 364
+                # 429s in a nine-minute window — about 40 a minute, all of
+                # them spent on the SAME 2-per-2s door that Order Detail and
+                # Positions use to manage option stops. It is not caused by
+                # futures being switched on: the log shows it 429ing on
+                # Saturday with futures_enabled still False. It is simply
+                # asked for constantly and refused constantly.
+                #
+                # A refused call is not free — it costs the request, the
+                # round trip, and a slice of the shared budget. So: three
+                # strikes and it backs off, doubling to five minutes, and
+                # resets the moment it answers. If Webull holds no futures
+                # for this account the call quietly stops being made at all,
+                # which is the correct behaviour when futures live at
+                # Topstep rather than at Webull.
+                _fb = _FUT_POS_BACKOFF
+                if time.time() >= _fb["until"]:
+                    try:
+                        for p in (wb.futures_positions() or []):
+                            d = dict(p)
+                            d["live"] = True
+                            rows.append(d)
+                        _fb["fails"] = 0
+                        _fb["until"] = 0.0
+                    except Exception as _fe:            # noqa: BLE001
+                        _fb["fails"] += 1
+                        if _fb["fails"] >= 3:
+                            _wait = min(300.0, 10.0 * (2 ** (_fb["fails"] - 3)))
+                            _fb["until"] = time.time() + _wait
+                            if _fb["fails"] in (3, 6, 9):
+                                note("FUT-POS  Webull refused the futures "
+                                     "position read %d times (%s) — backing "
+                                     "off %.0fs so it stops spending the "
+                                     "budget your option stops need. Topstep "
+                                     "futures are unaffected."
+                                     % (_fb["fails"], str(_fe)[:60], _wait))
             _POS["t"], _POS["v"] = time.time(), rows
         finally:
             _POS["busy"] = False
