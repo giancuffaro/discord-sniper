@@ -62,27 +62,17 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 #1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 
-
-# SUBSCRIPTION LAPSED (checked on whop.com 9/7/26). A room whose
-# subscription has expired shows nothing, so the tab is dead weight:
-# it costs browser memory and reads no alerts. Delete the leading '#'
-# on a line below the moment you resubscribe and it opens again.
-# LAPSED: Boka Trading Premium — last paid Aug 7 2026, NOT in active subscriptions
-#1288291150083653652|https://discord.com/channels/1156381060108664884/1288291150083653652|Boka 1|Boka Trading
-# LAPSED: Boka Trading Premium — last paid Aug 7 2026, NOT in active subscriptions
-#1499190814482632825|https://discord.com/channels/1156381060108664884/1499190814482632825|Boka 2|Boka Trading
-# LAPSED: Boka Trading Premium — last paid Aug 7 2026, NOT in active subscriptions
-#1395159239164432515|https://discord.com/channels/1156381060108664884/1395159239164432515|Boka 3|Boka Trading
+1288291150083653652|https://discord.com/channels/1156381060108664884/1288291150083653652|Boka 1|Boka Trading
+1499190814482632825|https://discord.com/channels/1156381060108664884/1499190814482632825|Boka 2|Boka Trading
+1395159239164432515|https://discord.com/channels/1156381060108664884/1395159239164432515|Boka 3|Boka Trading
 
 769797179992571914|https://discord.com/channels/769790224921395200/769797179992571914|Option Alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 769797819770732554|https://discord.com/channels/769790224921395200/769797819770732554|Options Watchlist|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
-# LAPSED: STS (FULL ACCESS) / Summit Trading Strategies — last paid Aug 9 2026, NOT active
-#642437862930907158|https://discord.com/channels/588137369409159208/642437862930907158|RWGates|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+642437862930907158|https://discord.com/channels/588137369409159208/642437862930907158|RWGates|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 1323708708374450247|https://discord.com/channels/725117609275555851/1323708708374450247|Vero 1|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 760694103401955378|https://discord.com/channels/725117609275555851/760694103401955378|Vero 2|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 1095502893559316482|https://discord.com/channels/725117609275555851/1095502893559316482|Vero 3|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
-# LAPSED: The Insiders Pro Plan — last paid Aug 3 2026, NOT in active subscriptions
-#1527044644796366888|https://discord.com/channels/719580371997556737/1527044644796366888|Options Insider|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+1527044644796366888|https://discord.com/channels/719580371997556737/1527044644796366888|Options Insider|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 
 # New server (8/23) — in SHADOW while the parser learns their wording:
 # read + judged in the log, nothing fires until graduated.
