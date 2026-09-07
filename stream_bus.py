@@ -140,6 +140,34 @@ class StockStream:
                      % str(e)[:60])
             return
         while True:
+            # HANDLER LEAK (9/7, found during a routine sweep): the SDK wires
+            # up its own file logging on webull_data_streaming_sdk.log fresh
+            # inside every DataStreamingClient() construction and never tears
+            # the old handler down. connect_and_loop_forever() returns quietly
+            # (no exception) far more often than it raises — 102 reconnects
+            # logged tonight against 1 "dropped" message — so this loop was
+            # building a new handler on the SAME file every reconnect. Once
+            # more than one handler is live, each rolls the file over on its
+            # own schedule and Windows refuses the rename because a sibling
+            # handler still has it open — 3,384 "Logging error" stack traces
+            # in one bridge.log. Sweep every registered logger right before
+            # each (re)connect and drop any handler already pointed at that
+            # file so at most one is ever live.
+            try:
+                import logging
+                _target = "webull_data_streaming_sdk.log"
+                for _name in list(logging.Logger.manager.loggerDict.keys()) + [None]:
+                    _lg = logging.getLogger(_name) if _name else logging.getLogger()
+                    for _h in list(getattr(_lg, "handlers", [])):
+                        _bf = (getattr(_h, "baseFilename", "") or "").replace("\\", "/")
+                        if _bf.endswith(_target):
+                            try:
+                                _h.close()
+                            except Exception:                       # noqa: BLE001
+                                pass
+                            _lg.removeHandler(_h)
+            except Exception:                               # noqa: BLE001
+                pass
             try:
                 # Production hosts spelled out (docs: api.webull.com /
                 # data-api.webull.com) so nothing can drift to sandbox.
