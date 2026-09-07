@@ -1,7 +1,28 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~evening — THE MASHUP DOES NOT CARRY EVERYONE, and a
+Last updated: 2026-09-07 ~evening — NAMED-LEG VERTICALS NOW REFUSED. G asked to
+put the six reopened rooms LIVE. Before that (rooms LIVE stays his action) the
+six traders' REAL messages were run through parser.js, the one that fires. It
+found a money bug: TLM writes spreads WITHOUT the word "spread" —
+"Msft Sep 9 497 put buy 490 put sell  Total pay 2.20" — and that fired as a
+NAKED long MSFT 497 put. Different trade, different risk: his loss is capped at
+the $2.20 debit, a bare 497 put costs multiples of it. The old guard only
+matched the literal words credit/debit spread, which is why kumo's CAKE spread
+was correctly refused and TLM's was not.
+  FIX: structural, not vocabulary — two DIFFERENT strikes, each with its own
+  put/call word, one leg bought and one sold. test_spreads.js locks it: 6
+  multi-leg forms refused, ordinary single-leg entries still fire.
+  KNOWN GAPS, pre-existing and NOT caused by the fix (verified by diffing
+  parser.js with and without the block — identical): these real entries are
+  silently MISSED (money left on the table, never a wrong order) —
+  "buy UPS 104$ calls Sep 18th for 1.75" (cranmer, strike written 104$),
+  "Open ... Aapl sep4 327 call at 1.87" (tlm), "MCD Puts oct 16th exp, 245s"
+  (madhatter), and any entry that also names a sell target.
+  ALSO SEEN: a stormzyy RECAP of a finished trade ("Caught a clean MNQ long...
+  Both targets hit") fires a phantom CLOSE MNQ. Not yet fixed.
+
+Prior: Last updated: 2026-09-07 ~evening — THE MASHUP DOES NOT CARRY EVERYONE, and a
 new rule: BORN TESTING. Verified by reading all 19 cut ZTRADEZ rooms live in
 Discord and diffing their real 9/1-9/4 entries against 9 days of mashup
 capture. The mashup relays 10 of 19; NINE were dark. Eight of those nine had
