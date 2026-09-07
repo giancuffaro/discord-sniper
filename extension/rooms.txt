@@ -135,3 +135,31 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # mirroring the ZTRADEZ demon room already listed above. Adding it = the
 # same signal twice (8/23).
 1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|NGD ngd-trades (Ninjago Futures Radar)|NGD
+
+# ELITE OPTIONS (wired 9/7 — G bought Pro that day). Two callers, two grammars,
+# both pipe-delimited, verified against 148 of their REAL alerts pulled from
+# Discord scrollback: Brando 100, Shoof 48. Every one parsed to the right
+# action, symbol and strike (test_elite.js locks the shapes).
+#   Brando  "@Elite BOUGHT | QQQ SEPT 2 717C $2.99 LOTTO"   month name, $price
+#   Shoof   "@Elite ALERT BOUGHT | SPY 9/4 767C at 2.00"    numeric date, at
+# EXITS ARE THE DANGEROUS HALF and both put the size at the END, after the
+# price: "(1/2)" "(1/4)" "(1/8)" "1/4 position" "3/4 position". Those read as
+# FULL EXITS until the trailing-partial fix on 9/7 — a caller trimming a
+# quarter would have closed the whole position. "ALL OUT" is the only exit
+# that fires, and both write it literally.
+# Brando also posts SHARE trades in the same channel ("SNDK 500 SHARES AT
+# $1444.50"); those are refused outright, this bot is options-only.
+# BORN TESTING until G flips them in the popup.
+1286022517869514874|https://discord.com/channels/1286017515625119804/1286022517869514874|Brando Alerts|ELITE OPTIONS
+1368263191632543956|https://discord.com/channels/1286017515625119804/1368263191632543956|Shoof Alerts|ELITE OPTIONS
+# NOT WIRED, on purpose (scanned 9/7, all 28 channels):
+#   brando-commentary / shoof-commentary — live but it is LEVEL talk ("MU wants
+#     1011, 1020 next"). About one tradeable contract a session; the rest is
+#     bare numbers that a reader can only get wrong. Revisit with the vision
+#     reader, not the text one.
+#   levels-bot, flow-bot, x-news-bot, uwhale-news-bot, brandos-tweets — bots.
+#   trade-log, chartbook, market-recap, winning-trades, conference-calls —
+#     weekly recaps posted as IMAGES, never live entries.
+#   trading-chatroom, hangout-chatroom — chatter.
+#   live-voice-logs — transcripts of the daily voice call; candidate for the
+#     voice path later, not the typed one.

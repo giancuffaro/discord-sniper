@@ -2737,7 +2737,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       "1332090335005900800",  // cranmer / opt-9
       "1356793611420958732",  // madhatter / opt-1
       "1525120298075029554",  // stormzyy / fut-1
-      "1251181965252755517"   // guru-futures / fut-2
+      "1251181965252755517",  // guru-futures / fut-2
+      "1286022517869514874",  // ELITE OPTIONS / Brando Alerts
+      "1368263191632543956"   // ELITE OPTIONS / Shoof Alerts
     ]);
     const roomLive = (_lv === undefined
                       && BORN_TESTING.has(String(msg.channelId || "")))
