@@ -1881,6 +1881,58 @@ def place(order):
                              args=(dict(order),), daemon=True).start()
     except Exception:                                   # noqa: BLE001
         pass
+    # ALERT DECAY (9/7) — sample this contract's mid at +1s/+5s/+30s/+60s
+    # after the CALLER POSTED, and record each against the price he quoted.
+    # It answers "should we chase or wait?" from our own rooms instead of
+    # from somebody's blog, and nobody in this field has published it.
+    #
+    # FREE ON PURPOSE: it reads the quote bus CACHE only, never asks for a
+    # new snapshot. The contract is already being watched because we just
+    # bought it, so this costs zero of the 60/min option-snapshot budget.
+    # (Sampling alerts we REFUSED is the more valuable version and is not
+    # free — it would put an unwatched contract on the bus. Deliberately
+    # not done here; that is a decision about quota, not a missing feature.)
+    try:
+        if (ok0 and order.get("action") == "OPEN"
+                and (order.get("kind") or "option") != "future"
+                and QUOTES is not None):
+            import telemetry as _tm
+
+            # Build the OCC here rather than reach for a helper: the only
+            # builders in this file are nested inside other scopes, and the
+            # one in positions.py is a method. Same format as everywhere
+            # else — NVDA260904C00235000.
+            _occ = None
+            try:
+                _e = str(order.get("expiry") or "").replace("-", "")
+                _cp = str(order.get("side") or "C").upper()[:1]
+                if _e and len(_e) == 8 and sym and order.get("strike") is not None:
+                    _occ = "%s%s%s%08d" % (
+                        sym, _e[2:], _cp,
+                        int(round(float(order["strike"]) * 1000)))
+            except (TypeError, ValueError):
+                _occ = None
+
+            def _decay_quote(_p, _o=_occ):
+                # QUOTES.get returns (ASK, BID, row) — ask first. Getting
+                # that backwards would have taped every mid inverted and
+                # the whole decay curve would have been quietly wrong.
+                if not _o:
+                    return None
+                ask, bid, _row = QUOTES.get(_o)
+                try:
+                    if ask is None or bid is None:
+                        return None
+                    return (float(bid), float(ask))     # watch_decay wants (bid, ask)
+                except (TypeError, ValueError):
+                    return None
+
+            if _occ:
+                _d = dict(order)
+                _d["their_price"] = order.get("limit")
+                _tm.watch_decay(_d, _decay_quote)
+    except Exception:                                   # noqa: BLE001
+        pass
     return result
 
 
