@@ -144,9 +144,21 @@ def main(n=10):
     print("  threads at peak: %d  (+%d for %d trades)"
           % (peak, peak - base_threads, n))
 
+    # WAIT FOR EVERY STOP TO BE ARMED BEFORE MOVING THE MARKET. Arming is
+    # asynchronous, so the first version read the stops the instant the
+    # fills landed, saw 0.0, then ratcheted — and half the positions showed
+    # an un-ratcheted stop. That looked exactly like the ratchet failing
+    # under load. It was this test racing the engine.
+    end = time.time() + 20
+    while time.time() < end:
+        armed = sum(1 for k in keys
+                    if float((book.info(k) or {}).get("stop") or 0) > 0)
+        if armed >= filled:
+            break
+        time.sleep(0.05)
     born = sorted({round(float((book.info(k) or {}).get("stop") or 0), 2)
                    for k in keys})
-    print("  stop born with each order: %s" % born)
+    print("  stops armed: %d/%d, all at %s" % (armed, filled, born))
 
     # NOW MOVE THE MARKET ON ALL OF THEM AT ONCE. Every position goes +20%
     # in the same instant and every ratchet is asked to walk its stop up —
