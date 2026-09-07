@@ -19,3 +19,7 @@ ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err
 1788797350.48,closed,Tradier REST,8,8,207.1,219.4,278.1,
 1788797350.48,closed,tastytrade OAuth,8,8,893.6,1184.2,1441.7,
 1788797350.48,closed,Webull connect+bal,0,8,,,,the Webull SDK isn't installed. Open START HERE in this folder - it installs what's missing and starts the bri
+1788797404.384,closed,Bridge 8787,,10,,,,not reachable from this shell — run  python health.py  ON the PC where the bridge runs
+1788797404.384,closed,Tradier REST,10,10,198.7,205.3,224.5,
+1788797404.384,closed,tastytrade OAuth,10,10,568.5,798.7,848.8,
+1788797404.384,closed,Webull connect+bal,,10,,,,not reachable from this shell — run  python health.py  ON the PC where the bridge runs

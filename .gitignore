@@ -80,3 +80,7 @@ archive/
 *.log.old
 settings.json.bak
 settings.json.tmp
+
+# Health-check trend log (our own measurements, regrows on demand)
+health.csv
+health.csv.*
