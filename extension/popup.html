@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 <style>
   :root { color-scheme: dark; }
-  body { width: 440px; min-height: 600px; margin: 0; padding: 12px 14px 16px;
+  /* BIGGER POPUP (9/7, his ask). Chrome caps an extension popup at
+     800 x 600 — that is the browser's limit, not ours, so HEIGHT cannot go
+     past 600 no matter what is written here. Width is where the room is:
+     440 -> 760. Room names, contracts and the log all stop wrapping, which
+     is most of what made it feel cramped. The inner scroll panes get more
+     of the 600 too, now that the whole Servers block is gone. */
+  body { width: 760px; min-height: 600px; margin: 0; padding: 12px 14px 16px;
          font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
          background: #0b0d12; color: #e6e8ee;
          /* Everything is copyable. The popup stays open while you drag a
@@ -68,7 +74,7 @@
   details { margin-top: 10px; border-top: 1px solid #1c212c; padding-top: 8px; }
   summary { cursor: pointer; color: #9aa3b5; font-size: 12px; }
   #log { margin-top: 10px; border-top: 1px solid #1c212c; padding-top: 8px;
-         max-height: 340px; overflow-y: auto; }
+         max-height: 400px; overflow-y: auto; }
   .e { padding: 5px 0; border-bottom: 1px solid #141922; }
   .e b { display: block; font-size: 12px; }
   .e span { color: #7d8697; font-size: 11px; }
@@ -87,7 +93,7 @@
   .holding { font-size: 12px; color: #9aa4b5; background: transparent;
              border: 0; border-radius: 0;
              padding: 4px 2px 2px; margin: 0; line-height: 1.45;
-             max-height: 210px; overflow-y: auto; }
+             max-height: 260px; overflow-y: auto; }
   /* whose alert put you in this trade - its own line under the position */
   .poscredit { font-size: 10px; color: #7dd3fc; margin: 0 0 4px 14px;
                letter-spacing: .2px; }

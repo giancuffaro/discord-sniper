@@ -1741,7 +1741,8 @@ async function render() {
   }
   renderRoomStats(wallet, day_table);
 
-  renderServerToggles(s.channel_disabled || {});
+  // Free anything the removed server switch left muted, then draw the rooms.
+  clearLegacyServerOff();
   renderRoomToggles(s.channel_live || {}, s.channel_pullback || {}, s.channel_disabled || {});
   $("bridge").value = s.bridge_url;
 
