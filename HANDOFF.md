@@ -1,7 +1,29 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~evening — NO SPREADS, NO COVERED CALLS, AT THE ROOM
+Last updated: 2026-09-07 ~night — "BUY" WAS NOT AN ENTRY VERB. Chasing why
+cranmer's alerts never fired turned up three faults, one of them dangerous:
+  1. RE_ENTRY listed bought/buying but NOT the bare imperative "buy". cranmer
+     writes every call that way, so the whole room read as silence. "buy" is
+     genuinely risky ("DO NOT BUY IN" is a real Honeydrip line), so it is now
+     accepted only via RE_BUY_CMD, guarded by RE_NO_BUY (negations, questions,
+     "buy the dip", "or buy next week") AND only when the line names a contract.
+  2. TRAILING-DOLLAR STRIKES were unreadable: cranmer writes "104$", "61$",
+     "52$". Normalised away in parseSignalInner before any format reader.
+  3. MONTH NAMES were valid tickers. With 1+2 unfixed, "buy AA sep 18 Calls
+     52$" booked ticker SEP strike 18 — A REAL ORDER IN THE WRONG NAME. All
+     month and weekday abbreviations are now in NOT_TICKERS.
+  REGRESSION: all three ran against the full 7,168-line corpus versus the
+  pre-change parser. 7,165 identical, ZERO stopped firing, ZERO new false
+  positives; the 3 differences are trailing-$ contracts now read correctly on
+  exit lines. test_buy_verb.js locks it, and lists the remaining SAFE MISSES
+  (dash-before-strike, decimal strike, strike-after-side, madhatter's verbless
+  "MCD Puts oct 16th exp, 245s") — deliberately left, because widening the
+  contract reader for those risks bringing the SEP-style misparse back.
+  STILL OPEN: stormzyy's RECAP of a finished trade ("Caught a clean MNQ long...
+  Both targets hit") still fires a phantom CLOSE MNQ.
+
+Prior: Last updated: 2026-09-07 ~evening — NO SPREADS, NO COVERED CALLS, AT THE ROOM
 LEVEL. G 9/7: "Whatever is a spread or covered calls and all that, I want you
 to delete those rooms. I do not want covered calls and spreads." Two of the six
 reopened rooms were cut on that rule, on evidence, not on vibes:
