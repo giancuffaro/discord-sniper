@@ -167,10 +167,25 @@ def expiry_to_date(expiry, today=None):
 
 
 def occ_symbol(symbol, expiration, option_type, strike):
-    """SPY + 2026-07-28 + PUT + 745 -> SPY260728P00745000"""
-    d = expiration.replace("-", "")[2:]
-    cp = "C" if option_type == "CALL" else "P"
-    return "%s%s%s%08d" % (symbol.upper(), d, cp, int(round(float(strike) * 1000)))
+    """SPY + 2026-07-28 + PUT + 745 -> SPY260728P00745000
+
+    DELEGATES TO occ.py (9/7). This used to read:
+
+        cp = "C" if option_type == "CALL" else "P"
+
+    — so anything that was not the exact string "CALL" became a PUT,
+    silently. "CALLS", "call", "c", None: all puts. Five call sites each
+    repeated `"CALL" if side.upper().startswith("C") else "PUT"` to stay on
+    the right side of it, and the whole thing held together only because
+    everyone remembered.
+
+    `occ.build` accepts every real spelling and RAISES on anything it cannot
+    read. A refused build is a missed trade; a silent flip is the opposite
+    trade. Output is byte-identical for every input the old code handled
+    correctly — parity-checked across all five contract shapes.
+    """
+    from occ import build as _build
+    return _build(symbol, expiration, option_type, strike)
 
 
 def stop_below(reference, pct, symbol=None):
