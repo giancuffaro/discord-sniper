@@ -902,6 +902,38 @@ function parseSignalInner(text, cfg) {
     return s;
   }
 
+  // NAMED-LEG VERTICALS (9/7). The guard above needs the WORD "spread". TLM
+  // never writes it — he writes the two legs out:
+  //   "Msft Sep 9 497 put buy 490 put sell   Total pay 2.20"
+  // That parsed as a NAKED long MSFT 497 put and fired REAL MONEY. It is not
+  // the same trade: his risk is the $2.20 he paid for the spread, while a bare
+  // 497 put costs multiples of that and behaves nothing like it.
+  //
+  // Detected structurally, not by vocabulary: TWO DIFFERENT strikes, each
+  // carrying its own put/call word, one leg bought and one leg sold. That
+  // pairing only happens in a multi-leg order. Deliberately tight — a plain
+  // "buy NVDA 220 calls, sell at 6.00" has one strike and no side word on the
+  // sell, so it still fires; the battery in test_spreads.js holds this line.
+  const _legBuy  = /\b(\d+(?:\.\d+)?)\s*(?:p|c|puts?|calls?)\s+buy\b/gi;
+  const _legSell = /\b(\d+(?:\.\d+)?)\s*(?:p|c|puts?|calls?)\s+sell\b/gi;
+  const _buyAt  = /\bbuy(?:ing|s)?\s+(?:the\s+)?(\d+(?:\.\d+)?)\s*(?:p|c|puts?|calls?)\b/gi;
+  const _sellAt = /\bsell(?:ing|s)?\s+(?:the\s+)?(\d+(?:\.\d+)?)\s*(?:p|c|puts?|calls?)\b/gi;
+  const _grab = (re) => {
+    const out = new Set(); let m;
+    re.lastIndex = 0;
+    while ((m = re.exec(low)) !== null) out.add(m[1]);
+    return out;
+  };
+  const _bought = new Set([..._grab(_legBuy),  ..._grab(_buyAt)]);
+  const _sold   = new Set([..._grab(_legSell), ..._grab(_sellAt)]);
+  const _pair = [..._bought].some(b => [..._sold].some(v => v !== b));
+  if (_pair) {
+    s.why = "a two-leg vertical written out as legs (one strike bought, a " +
+            "different strike sold) — the buy-only bot can't follow it, and " +
+            "buying the long leg alone is a different trade at a different risk";
+    return s;
+  }
+
   // Promo / recruitment spam ("50% OFF A FUNDED PORT ... USING CODE ..."): it
   // carries a percent and "OFF" so it read as TRIM OFF. An ad, not a call.
   if (/\d{1,3}\s*%\s*off\b|\busing\s+code\b|\bfunded\s+(?:port|account|trader)\b|\bprop\s+firm\s+funding\b|\bsign\s*up\b/.test(low)) {
