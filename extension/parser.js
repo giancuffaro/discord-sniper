@@ -533,9 +533,20 @@ function expiryAnywhere(text) {
   return null;
 }
 
+/* ONE place decides whether a word is blocked as a ticker (9/7). It was four
+ * separate NOT_TICKERS tests in findContract plus one in bareSymbol, so the
+ * SMH rescue below only reached the exit path and Shoof's SMH ENTRIES stayed
+ * invisible. Every check now goes through here. */
+function blockedTicker(sym, text) {
+  const s = String(sym || "").toUpperCase();
+  if (!NOT_TICKERS.has(s)) return false;
+  const rescue = SLANG_TICKERS[s];
+  return !(rescue && rescue.test(String(text || "")));
+}
+
 function findContract(text) {
   const osi = RE_CONTRACT_OSI.exec(text);
-  if (osi && !NOT_TICKERS.has(osi[1].toUpperCase())) {
+  if (osi && !blockedTicker(osi[1], text)) {
     return { symbol: osi[1].toUpperCase(), strike: parseFloat(osi[6]),
              side: osi[5].toLowerCase() === "c" ? "CALLS" : "PUTS",
              expiry: parseInt(osi[3], 10) + "/" + parseInt(osi[4], 10) + "/" + osi[2] };
@@ -544,7 +555,7 @@ function findContract(text) {
   let m;
   while ((m = RE_CONTRACT.exec(text)) !== null) {
     const sym = m[1].toUpperCase();
-    if (NOT_TICKERS.has(sym)) continue;
+    if (blockedTicker(sym, text)) continue;
     const k = m[4].toLowerCase();
     let expiry = (m[2] || "").toUpperCase() || null;
     if (expiry && /^[A-Z]/.test(expiry) && !expiry.endsWith("DTE")) {
@@ -562,7 +573,7 @@ function findContract(text) {
   RE_CONTRACT_REV.lastIndex = 0;
   while ((m = RE_CONTRACT_REV.exec(text)) !== null) {
     const sym = m[4].toUpperCase();
-    if (NOT_TICKERS.has(sym)) continue;
+    if (blockedTicker(sym, text)) continue;
     const mid = m[3] || "";
     return { symbol: sym, strike: parseFloat(m[1]),
              side: m[2].toLowerCase().startsWith("c") ? "CALLS" : "PUTS",
@@ -572,7 +583,7 @@ function findContract(text) {
   // "QQQ 668 0 day puts" — the expiry sits BETWEEN strike and kind, which
   // neither shape above allows. Aristotle's habit.
   const md = /(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+\$?(\d{1,5}(?:\.\d{1,2})?)\s+(\d{1,2})\s*days?\s+(calls?|puts?)\b/i.exec(text);
-  if (md && !NOT_TICKERS.has(md[1].toUpperCase())) {
+  if (md && !blockedTicker(md[1], text)) {
     return { symbol: md[1].toUpperCase(), strike: parseFloat(md[2]),
              side: md[4].toLowerCase().startsWith("c") ? "CALLS" : "PUTS",
              expiry: parseInt(md[3], 10) + "DTE" };
@@ -597,11 +608,7 @@ function bareSymbol(text, allowed) {
   while ((m = RE_BARE.exec(text)) !== null) {
     const raw = m[1];
     const s = raw.toUpperCase();
-    if (NOT_TICKERS.has(s)) {
-      const rescue = SLANG_TICKERS[s];
-      if (rescue && rescue.test(String(text))) return s;
-      continue;
-    }
+    if (blockedTicker(s, text)) continue;
     // A futures symbol written in capitals is recognisable on its own —
     // "on NQ short - Trimmed" has to resolve whether or not NQ is on the
     // options allowed-list, because that list is about options.
