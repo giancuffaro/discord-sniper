@@ -1565,3 +1565,43 @@ filling you is the one whose book should price your order. A week of
   stop is the local ratchet only (initial rung −12.5 pts ≈ $25/contract on
   MNQ) and dies with the PC. Discord Sniper's futures stop lives on Topstep's
   servers. Same instruction, two different guarantees.
+
+### 9/7 MIDDAY — tastytrade CAPS CONCURRENT SESSIONS. Learn this one.
+
+Trying to prove the shadow quote stream with a standalone probe during
+market hours, I opened a SECOND DXLink session on the same tastytrade
+account. The bridge's own feed answered:
+
+```
+[greeks] dxlink refused RE-AUTH: The number of user sessions has
+         exceeded the configured limit, user=tasty/U48e04e91-...
+```
+
+Three RE-AUTH refusals, three forced reconnects. **The probe disrupted the
+live feed.** It recovered every time — the re-auth fallback raises and the
+outer loop rebuilds the session, exactly as designed — and greeks are
+data-only with no position open, so nothing traded differently. But the
+lesson is permanent:
+
+* **Market Sniper ALSO holds a DXLink session** (`main.py:175`, "DXLink
+  armed"). Two apps, one tastytrade account. That is already at the cap.
+* **NEVER open a third.** No probes, no scratch scripts, no test harness
+  against the live account while both apps are up. The cap is a shared
+  resource like the Webull app key, and it is easier to trip.
+* This is a SECOND cause of the `[greeks] server closed the websocket`
+  drops seen on 9/6, alongside the 15-minute token expiry.
+
+**Consequence for the shadow quote stream:** the subscription is accepted
+and the data is real — the probe returned SPY 260908C770 at 1.75/1.76,
+matching Tradier's chain exactly. What is NOT yet proven is CONTINUOUS
+streaming, because a capped-out second session receives one snapshot and
+then nothing. That proof can only come from the bridge's own session, and
+it arrives free the moment a position opens and `quote_shadow.csv` starts
+filling. **Until then, do not claim the stream ticks.**
+
+Also fixed while chasing this: dxfeed sends PARTIAL Quote frames (only the
+side that changed; the other arrives null or NaN). The first version treated
+a missing side as a bad row and dropped it. It now carries the last known
+side forward, and when that merge produces a transient crossed book it keeps
+the state — so the two sides can re-converge — while refusing to tape or
+serve it. Without that, a contract would freeze at a stale price.
