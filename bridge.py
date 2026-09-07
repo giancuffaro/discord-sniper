@@ -437,7 +437,7 @@ def build_book():
                                                       "quote_shadow.csv"))
                 GREEKS.start()
                 BOOK.greeks = GREEKS
-                threading.Thread(target=_greeks_sync, daemon=True).start()
+                threading.Thread(target=_greeks_sync, daemon=True, name="greeks_sync").start()
                 note("GREEKS on — tastytrade DXLink (data only; Webull still "
                      "places every order)%s"
                      % (" · shadow quote stream taping to quote_shadow.csv"
@@ -1961,8 +1961,9 @@ def place(order):
         if (ok0 and order.get("action") == "OPEN"
                 and (order.get("kind") or "option") != "future"
                 and order.get("their_stop")):
-            threading.Thread(target=_underlying_stop_watch,
-                             args=(dict(order),), daemon=True).start()
+            threading.Thread(
+                target=_underlying_stop_watch, args=(dict(order),),
+                name="under-stop:%s" % sym, daemon=True).start()
     except Exception:                                   # noqa: BLE001
         pass
     # ALERT DECAY (9/7) — sample this contract's mid at +1s/+5s/+30s/+60s
@@ -3067,7 +3068,7 @@ def broker_positions():
     if _POS["t"] == 0:
         _refresh()
     else:
-        threading.Thread(target=_refresh, daemon=True).start()
+        threading.Thread(target=_refresh, daemon=True, name="refresh").start()
     return _POS["v"]
 
 
@@ -3095,7 +3096,7 @@ def real_buying_power():
     if _BP["t"] == 0:
         _refresh()
     else:
-        threading.Thread(target=_refresh, daemon=True).start()
+        threading.Thread(target=_refresh, daemon=True, name="refresh").start()
     return _BP["v"]
 
 
@@ -3123,7 +3124,7 @@ def real_futures_buying_power():
     if _FBP["t"] == 0:
         _refresh()
     else:
-        threading.Thread(target=_refresh, daemon=True).start()
+        threading.Thread(target=_refresh, daemon=True, name="refresh").start()
     return _FBP["v"]
 
 
@@ -3907,7 +3908,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:                          # noqa: BLE001
                 note("self-update: restart failed, staying on old code (%s). "
                      "The new files are on disk for the next START HERE." % e)
-        threading.Thread(target=_restart, daemon=True).start()
+        threading.Thread(target=_restart, daemon=True, name="restart").start()
         note("SELF-UPDATE pulled %s..%s — restarting the bridge"
              % (old.stdout.strip()[:7], new.stdout.strip()[:7]))
         return self._json(200, {"ok": True,
@@ -4775,6 +4776,18 @@ def _install_network_failfast():
 
 def main():
     import eastern
+    # DEADMAN FIRST (9/7) — before anything can start a thread. This bot runs
+    # 23 of them, none were named, and NOTHING caught one dying: Python
+    # prints an unhandled thread exception to stderr and the thread is just
+    # gone, while the process keeps answering and the popup keeps drawing.
+    # A ratchet watchdog that died at 10:02 looked exactly like a quiet
+    # market until the account said otherwise.
+    try:
+        import deadman
+        deadman.arm(note)
+    except Exception as _de:                            # noqa: BLE001
+        print("  deadman OFF (%s) — a dying thread will be silent again"
+              % str(_de)[:70])
     _install_network_failfast()
     print("=" * 62)
     print("  DISCORD SNIPER BRIDGE")
@@ -4935,7 +4948,7 @@ def main():
                      "loads it" % e)
                 pending_since = None
                 warned_open = False
-    threading.Thread(target=_code_watch_loop, daemon=True).start()
+    threading.Thread(target=_code_watch_loop, daemon=True, name="code_watch_loop").start()
 
     # Keep the book in step with the REAL Webull account: adopt any open position
     # the book doesn't know about (one it never placed, or lost on a restart) so
@@ -5019,7 +5032,7 @@ def main():
                 except Exception:                       # noqa: BLE001
                     pass
             time.sleep(20)
-    threading.Thread(target=_reconcile_loop, daemon=True).start()
+    threading.Thread(target=_reconcile_loop, daemon=True, name="reconcile_loop").start()
 
     # ---- POSTCHECK (9/3, G: "confirm everything is running after every
     # trade to find errors fast"). Every terminal event — filled, closed,
@@ -5189,7 +5202,7 @@ def main():
                          "stream up, book matches the account" % _hdr)
             except Exception:                           # noqa: BLE001
                 time.sleep(5)
-    threading.Thread(target=_postcheck_loop, daemon=True).start()
+    threading.Thread(target=_postcheck_loop, daemon=True, name="postcheck_loop").start()
 
     # ---- WHOP API READER (8/30, dark until a key exists) -----------------
     # Whop has an official API (docs.whop.com/developer/guides/chat):
@@ -5287,7 +5300,7 @@ def main():
             del WHOP_FEED[:-400]        # bounded queue, newest 400 kept
             # fast only while it's actually working; walled/dead = 60s probes
             time.sleep(1.5 if time.time() - WHOP_FEED_OK[0] < 300 else 60)
-    threading.Thread(target=_whop_feed_loop, daemon=True).start()
+    threading.Thread(target=_whop_feed_loop, daemon=True, name="whop_feed_loop").start()
 
     print("=" * 62)
     print("Leave this window open. Close it and the extension can't trade.")

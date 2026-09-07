@@ -923,7 +923,8 @@ class Book:
                     "seller (%s)"
                     % (sym, who, float(ticket.get("limit") or 0),
                        int(ticket.get("qty") or 1), self._wait_label()))
-        t = threading.Thread(target=self._watch_fill, args=(key,), daemon=True)
+        t = threading.Thread(target=self._watch_fill, args=(key,),
+                             name="fill-watch:%s" % key, daemon=True)
         t.start()
 
     def _occ_for(self, b):
@@ -1817,9 +1818,10 @@ class Book:
                                 q = self._pos.get(key)
                                 if q is not None and not q.get("watching"):
                                     q["watching"] = True
-                                    threading.Thread(target=self._watchdog,
-                                                     args=(key,),
-                                                     daemon=True).start()
+                                    threading.Thread(
+                                        target=self._watchdog, args=(key,),
+                                        name="watchdog:%s" % key,
+                                        daemon=True).start()
                             self._event(key, "update",
                                         "%s — the broker confirms the restored "
                                         "position; stop still resting at Webull "
@@ -1899,8 +1901,9 @@ class Book:
                     # in the background and write the real price onto the
                     # record when it comes.
                     try:
-                        threading.Thread(target=self._true_up_exit,
-                                         args=(key, p_), daemon=True).start()
+                        threading.Thread(
+                            target=self._true_up_exit, args=(key, p_),
+                            name="trueup:%s" % key, daemon=True).start()
                     except Exception:                   # noqa: BLE001
                         pass
         return closed
@@ -2339,8 +2342,9 @@ class Book:
                     p["bracket_stop_id"] = None
                     if not p.get("watching"):
                         p["watching"] = True
-                        threading.Thread(target=self._watchdog, args=(key,),
-                                         daemon=True).start()
+                        threading.Thread(
+                            target=self._watchdog, args=(key,),
+                            name="watchdog:%s" % key, daemon=True).start()
                     self._event(key, "stop-set",
                                 "%s — stop was born WITH the order and is resting "
                                 "at Webull at %.2f (one group, no naked moment)"
@@ -2404,8 +2408,9 @@ class Book:
                 p["stop_order_id"] = oid
                 if not p.get("watching"):
                     p["watching"] = True
-                    threading.Thread(target=self._watchdog, args=(key,),
-                                     daemon=True).start()
+                    threading.Thread(
+                        target=self._watchdog, args=(key,),
+                        name="watchdog:%s" % key, daemon=True).start()
         # SUBSCRIBE AT ARM TIME, not only from inside the watchdog loop
         # (9/4). The watchdog is one thread that can return early — no occ,
         # no stop, a broker that won't resolve — and when it does, the
