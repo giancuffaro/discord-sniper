@@ -970,6 +970,22 @@ function parseSignalInner(text, cfg) {
     return s;
   }
 
+  // SHARES ARE NOT CONTRACTS (9/7, ELITE OPTIONS). Brando posts stock buys and
+  // sells in the SAME alert channel as his options calls:
+  //   "@Elite BOUGHT | SNDK 500 SHARES AT $1444.50"
+  //   "@Elite SOLD  | SNDK 250 SHARES AT $1550.50"
+  // The buy was harmless (no contract, so nothing fired), but the SELL resolved
+  // to a bare symbol and read as CLOSE SNDK — it would have dumped an SNDK
+  // OPTIONS position because he trimmed stock. This bot is options-only, so a
+  // line that talks about shares and names no contract is not ours. Guarded on
+  // "no contract present", so "sold shares, still holding the 580c" is
+  // untouched — that line has a contract and is read on its own merits.
+  if (/\bshares?\b/i.test(low) && !findContract(t)) {
+    s.why = "that's a SHARES trade, not an option — no contract in it, and " +
+            "this bot only trades options, so nothing was sent";
+    return s;
+  }
+
   // NAMED-LEG VERTICALS (9/7). The guard above needs the WORD "spread". TLM
   // never writes it — he writes the two legs out:
   //   "Msft Sep 9 497 put buy 490 put sell   Total pay 2.20"
