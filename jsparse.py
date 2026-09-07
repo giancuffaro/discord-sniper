@@ -56,17 +56,29 @@ def parse_many(texts):
                 return out
     except Exception:                                   # noqa: BLE001
         pass
-    # FALLBACK — and it says so, every time, to stderr.
+    # NO MIRROR TO FALL BACK TO — and that is deliberate (9/7).
+    #
+    # `signals.py` was 2,350 lines of hand-maintained Python that duplicated
+    # extension/parser.js. It never priced a trade: bridge.py never imported
+    # it, and only this fallback, its own test and a debug dumper did. What
+    # it DID do was drift — on 9/2 it disagreed with the real parser and
+    # called a room silent that the bot was reading fine.
+    #
+    # Two parsers means the audit tools can quietly answer a different
+    # question than the bot asks. One parser and a hard failure is safer
+    # than two parsers and a silent disagreement.
     global USED_MIRROR
     USED_MIRROR = True
-    sys.stderr.write(
-        "\n*** jsparse: `node` did not answer, so these %d message(s) were\n"
-        "*** parsed by signals.py — the PYTHON MIRROR, not the parser the\n"
-        "*** bot actually uses. The mirror is maintained by hand and HAS\n"
-        "*** drifted before. Do not trust these results for a decision.\n"
-        "*** Install Node.js and re-run.\n\n" % len(texts))
-    sys.path.insert(0, HERE)
-    import signals
+    raise RuntimeError(
+        "jsparse: Node.js did not answer, so %d message(s) could not be "
+        "parsed.\n"
+        "The audit tools (scoreboard, replay_check, audit_history) run the "
+        "REAL extension parser through node — there is no Python mirror any "
+        "more, on purpose: it drifted and gave different answers than the "
+        "bot.\n"
+        "Install Node.js from https://nodejs.org and re-run. Nothing is "
+        "wrong with the bot; only these read-only reports need node."
+        % len(texts))
     out = []
     for t in texts:
         try:
