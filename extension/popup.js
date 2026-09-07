@@ -1265,7 +1265,11 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
     // (his ask, 8/17) — no controls to misclick while the room isn't read.
     if (cd[id]) {
       return '<div class="row" style="margin-bottom:4px;opacity:.45">' +
-             '<span class="grow" style="font-size:12px">' + chanLabel(id) +
+             '<span class="grow gotoroom" data-chan="' + id + '" data-room="' +
+             chanLabel(id).replace(/"/g, "&quot;") + '" title="open this room\u2019s tab" ' +
+             'style="font-size:12px;cursor:pointer;text-decoration:underline;' +
+             'text-decoration-style:dotted;text-underline-offset:3px">' +
+             chanLabel(id) +
              '</span><span style="font-size:10px;color:#7d8697">' +
              'off — server switch</span></div>';
     }
@@ -1273,8 +1277,17 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
     // confirm, no Save step — his word. Red is reserved for real money.
     // (The per-room "instant/RN wait" pill lived here 8/11-8/17. Replaced by
     // ONE global Round-number toggle in the Strategies tab — his ask.)
+    // CLICK THE NAME, GET THE TAB (9/7, his ask). data-chan carries the
+    // EXACT channel id, so the background never has to guess which room he
+    // meant — the name-scoring path is only for clicks that arrive as text
+    // (a trade row, a caller). The toggle button beside it is untouched:
+    // the name jumps, the button still flips LIVE/testing.
     return '<div class="row" style="margin-bottom:4px">' +
-           '<span class="grow" style="font-size:12px">' + chanLabel(id) +
+           '<span class="grow gotoroom" data-chan="' + id + '" data-room="' +
+           chanLabel(id).replace(/"/g, "&quot;") + '" title="open this room’s tab" ' +
+           'style="font-size:12px;cursor:pointer;text-decoration:underline;' +
+           'text-decoration-style:dotted;text-underline-offset:3px">' +
+           chanLabel(id) +
            '</span>' +
            '<span style="font-size:11px;letter-spacing:.04em;width:52px;' +
            'text-align:right;color:' + (live ? "#f87171" : "#7d8697") + '">' +
