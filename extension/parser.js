@@ -349,6 +349,12 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
   // "SL HIT" — the stop got hit; HIT is a verb, not a ticker (8/11).
   "SOME", "HIT",
+  // 9/7: MONTH NAMES were never excluded. "buy AA sep 18 Calls 52$" booked
+  // the contract as ticker SEP, strike 18 — a real order in the wrong name.
+  // No month abbreviation is a ticker G trades, so all of them are vetoed.
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "SEPT",
+  "OCT", "NOV", "DEC", "MON", "TUE", "TUES", "WED", "THU", "THUR", "THURS",
+  "FRI", "SAT", "SUN",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
   "DO", "NOT", "BUY", "SELL", "IE", "ADMIN", "HERE", "EOD", "CPI", "FOMC",
   "PT", "SL", "TP", "AVG", "GO", "UP", "WE", "US", "NO",
@@ -798,6 +804,14 @@ function parseSignalInner(text, cfg) {
     const rel = t.match(/\bposted\b\s+.+?\s+[-–]\s+.+?\s+((?:entered|in|bto|open(?:ed|ing)?|taking|buying|bought|trimming|trimmed|closed|sold|out)\b[\s\S]*)$/i);
     if (rel) t = rel[1].replace(/\b(?:lotto|yolo)\b/gi, " ").replace(/\s+/g, " ").trim();
   }
+  // TRAILING-DOLLAR STRIKES (9/7). cranmer writes the $ AFTER the number:
+  // "buy UPS 104$ calls Sep 18th", "buy BAC sep 18th 61$ put", "AA ... 52$".
+  // Nothing downstream knew that shape, so the strike went unread — and in
+  // "buy AA sep 18 Calls 52$" the reader fell back to the NEXT number it could
+  // find and booked the contract as ticker SEP strike 18. A wrong contract is
+  // far worse than a missed one, so the $ is normalised away here, before any
+  // format reader runs. Only when a digit precedes it, so "$5.05" is untouched.
+  t = t.replace(/(\d)\$(?=\s|,|\)|$)/g, "$1");
   s.clean = t;
   const low = t.toLowerCase();
 
