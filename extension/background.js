@@ -2726,7 +2726,25 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // flips it to testing in the popup (stored false) — the old default was
     // the reverse. Shadow rooms still fire nothing at all.
     const _lv = (c.channel_live || {})[String(msg.channelId || "")];
-    const roomLive = _lv !== false;
+    // BORN TESTING (9/7). The six rooms reopened after the mashup audit have
+    // never been read by this build — the "always live" default above would
+    // put six unproven traders on real money the moment their tab opens, and
+    // flipping a room LIVE is G's call alone. So they start in TESTING.
+    // The instant he sets either value in the popup, channel_live has a real
+    // entry, _lv stops being undefined, and his choice wins — this list goes
+    // inert on its own. Remove an id here only to change the born state.
+    const BORN_TESTING = new Set([
+      "1332090335005900800",  // cranmer / opt-9
+      "777750637613416479",   // evapanda / opt-5
+      "1356793611420958732",  // madhatter / opt-1
+      "694197721430491266",   // tlm / opt-4
+      "1525120298075029554",  // stormzyy / fut-1
+      "1251181965252755517"   // guru-futures / fut-2
+    ]);
+    const roomLive = (_lv === undefined
+                      && BORN_TESTING.has(String(msg.channelId || "")))
+                     ? false
+                     : (_lv !== false);
     sig.live = roomLive;
     // The voice ears already took this one (8/24): the spoken call fired
     // seconds ago; this typed line is the scribe's copy of it. Entries only —
