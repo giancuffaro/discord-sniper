@@ -282,14 +282,33 @@ if not errorlevel 1 (
   echo   [5/5] Chrome is open - closing it and reopening every room
   echo         fresh in 5 seconds. Ctrl+C now to keep it as it is.
   timeout /t 5 >nul
-  taskkill /F /IM chrome.exe >nul 2>&1
-  timeout /t 3 /nobreak >nul
+  rem  ASK BEFORE FORCING (9/7). This used to be `taskkill /F` alone, and
+  rem  /F is TerminateProcess - Chrome gets no chance to flush. The
+  rem  extension's storage (every room's LIVE flag AND every captured
+  rem  message) is a LevelDB that Chrome writes lazily; killed mid-write,
+  rem  Chrome's recovery on the next launch REBUILDS IT EMPTY. That is what
+  rem  emptied the 9/1 and 9/4 exports: "LIVE rooms: none (all testing)"
+  rem  and 0/5 captured messages, on days that traded live and fine.
+  rem  A graceful close first gives it the flush. Force is the fallback.
+  taskkill /IM chrome.exe >nul 2>&1
+  timeout /t 6 /nobreak >nul
+  tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
+  if not errorlevel 1 (
+    echo         (Chrome did not close on its own - forcing it)
+    taskkill /F /IM chrome.exe >nul 2>&1
+    timeout /t 3 /nobreak >nul
+  )
 )
 tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
 if not errorlevel 1 (
   echo   [5/5] Chrome is still running in the background - closing it
   echo         so the rooms open fresh...
-  taskkill /F /IM chrome.exe >nul 2>&1
+  rem  Same rule as above: graceful first so the extension's storage gets
+  rem  flushed, force only if it will not go. (9/7)
+  taskkill /IM chrome.exe >nul 2>&1
+  timeout /t 5 /nobreak >nul
+  tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
+  if not errorlevel 1 taskkill /F /IM chrome.exe >nul 2>&1
   timeout /t 2 /nobreak >nul
 )
 echo   [5/5] Opening all the rooms fresh...
