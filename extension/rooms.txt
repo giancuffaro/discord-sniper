@@ -163,3 +163,34 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 #   trading-chatroom, hangout-chatroom — chatter.
 #   live-voice-logs — transcripts of the daily voice call; candidate for the
 #     voice path later, not the typed one.
+
+# OWLS CAPITAL — SCANNED 9/7, NOTHING WIRED. All 24 channels read. The six
+# per-trader "*" channels are the only alert candidates and not one of them is
+# safely tradeable by an options bot:
+#   jon-and-kian     COMMON STOCK, not options: "1000% lotto CHGG commonst at
+#     .83", "sold some CHGG commons at 15%", "22% on commons". DANGEROUS to
+#     wire: "Sold another SPCX at 5.70" carries no word saying it is stock, so
+#     it reads as a plain CLOSE and would dump an SPCX OPTIONS position. The
+#     parser cannot tell from that text — only the room can — which is exactly
+#     why this room stays out. (The lines that DO name themselves are now
+#     vetoed: "shares", "commons", "commonst", "common stock".)
+#   ab               real options, but entries are BARE contracts with no verb
+#     ("$GOOGL 10/16 400c 1.88") so they do not fire, while his closes
+#     ("$AAPL 10/16 330c 200% (Closed)") DO. A room that can close but cannot
+#     open is worse than no room at all — it can only ever end a ride early.
+#   tt               SPX 0DTE, and the sample is a SPREAD ("7690/7675p 0dte
+#     1.4") plus a lotto. Two alert lines in the whole scrollback.
+#   muggzone-options parses ("ENTERED 9/11 MRVL 240 CALLS @here 1.3" -> OPEN
+#     MRVL 240C @1.3) but DROPS THE EXPIRY, because the date sits BEFORE the
+#     ticker and the reader only looks after it. Zero of our 7,168 corpus
+#     lines use that order, so no wired room is affected and it was left
+#     alone rather than widened on speculation. Fix it if this room is ever
+#     wanted. Volume is 2 alerts in the visible history either way.
+#   giul-heatseeker  the trader is away ("going to korea and japan these next
+#     2 weeks") and his bot is broken ("bot may not be working right now").
+#   members-plays    member TA chat, not calls.
+# The rest: notable-flow / notable-etf-flow / news (bot feeds), admin-analysis,
+# ab-updates, gains-losses, risk-management, trading-floor, entrance-floor,
+# off-topic, keyz-soccer-bets, futures-trading, support, home, announcements.
+# REVISIT IF: ab starts writing a verb, or jon-and-kian starts trading options.
+
