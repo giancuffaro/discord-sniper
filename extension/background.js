@@ -252,6 +252,21 @@ let _roomsPromise = null;
 const PROBE_EVERY_MS = 22 * 60 * 60 * 1000;      // ~daily, drifts off-peak
 const PROBE_SETTLE_MS = 25000;                   // let the app actually paint
 
+/* DISCORD ANSWERS THE QUESTION OUTRIGHT — use that, not a row count.
+ *
+ * Opening all five sleeping rooms by hand on 9/7 showed three DIFFERENT
+ * shapes of "no", and only one of them is "zero rows":
+ *
+ *   RWGates          title "#alert-room | Summit Trading Strategies"  ACCESS
+ *   Boka 2 and 3     title "No Access | BOKA Trading"                 REFUSED
+ *   Boka 1           url REDIRECTED to #start-here                    REFUSED
+ *   Options Insider  url redirected to /channels/@me                  NOT IN IT
+ *
+ * The title and the URL are both decisive and both arrive in seconds. A row
+ * count is the weakest of the three: a real room that is simply quiet also
+ * has few rows, and a slow render looks identical to a locked door.
+ * Check the strong signals first and only fall back to counting.
+ */
 async function probeOne(room) {
   let tab = null;
   try {
@@ -259,15 +274,75 @@ async function probeOne(room) {
   } catch (e) { return null; }
   try {
     await new Promise(r => setTimeout(r, PROBE_SETTLE_MS));
+    let info = null;
+    try { info = await chrome.tabs.get(tab.id); } catch (e) {}
+    const title = String((info && info.title) || "");
+    const url = String((info && info.url) || "");
+
+    // Discord said it in words.
+    if (/no access/i.test(title)) return { ok: false, why: 'Discord says "No Access"' };
+    // Bounced out of the channel entirely — the friends list, or another room.
+    if (room.id && url && !url.includes(room.id)) {
+      return { ok: false, why: url.includes("/channels/@me")
+        ? "bounced to your friends list — you are not in that server"
+        : "bounced to a different channel — no access to this one" };
+    }
+    // Still on the room, so ask how much of it rendered.
     let rows = 0;
     try {
       const res = await chrome.tabs.sendMessage(tab.id, { type: "HEALTH?" });
       rows = (res && res.rows) || 0;
-    } catch (e) { rows = 0; }   // no content script = nothing rendered
-    return rows;
+    } catch (e) { rows = 0; }
+    return rows > 0
+      ? { ok: true, why: rows + " messages on screen", rows: rows }
+      : { ok: false, why: "the room loaded but rendered nothing" };
   } finally {
     try { if (tab && tab.id) await chrome.tabs.remove(tab.id); } catch (e) {}
   }
+}
+
+/* REVOKED WHILE YOU WERE PAYING (9/7). The mirror image of the probe, and
+ * the half that costs money: a room you are subscribed to quietly loses
+ * access — the seller re-rolls permissions, a bot mis-fires, a renewal
+ * fails — and the tab just sits there reading nothing. The bot cannot tell
+ * that from a quiet morning.
+ *
+ * No tabs are opened here. The room tabs are ALREADY open, and Discord
+ * writes the answer in the title: "No Access | BOKA Trading". Read the
+ * titles we already have. Zero cost, and it fires the day it happens
+ * instead of whenever someone next reads an export.
+ */
+async function revokeCheck() {
+  try {
+    await loadRoomsFile();
+    const tabs = await chrome.tabs.query({ url: ["https://discord.com/*",
+                                                 "https://*.discord.com/*"] });
+    const { revoked_seen } = await chrome.storage.local.get("revoked_seen");
+    const seen = revoked_seen || {};
+    let changed = false;
+    for (const t of tabs) {
+      const title = String(t.title || "");
+      if (!/no access/i.test(title)) continue;
+      const url = String(t.url || "");
+      const id = (url.match(/\/channels\/\d+\/(\d+)/) || [])[1];
+      if (!id) continue;
+      if (seen[id]) continue;                    // already told him once
+      seen[id] = Date.now(); changed = true;
+      const label = roomName(id) || id;
+      await addLog({ kind: "failed", what: "ACCESS LOST",
+        why: "🔒 " + label + " now says \"No Access\" — you are still opening " +
+             "this room and it is reading NOTHING. If you pay for it, the " +
+             "subscription or the seller's Discord role has gone. Check it, " +
+             "then either fix it or park the room with #SLEEP in " +
+             "extension/rooms.txt." });
+      try {
+        chrome.notifications.create({ type: "basic", iconUrl: "icon128.png",
+          title: "🔒 " + label + " — access lost",
+          message: "That room is open but reading nothing. Check the sub." });
+      } catch (e) {}
+    }
+    if (changed) await chrome.storage.local.set({ revoked_seen: seen });
+  } catch (e) { /* never break the reader */ }
 }
 
 async function accessCheck(force) {
@@ -289,23 +364,22 @@ async function accessCheck(force) {
     const room = SLEEPING[i];
     await chrome.storage.local.set({ probe_at: now, probe_i: i + 1 });
 
-    const rows = await probeOne(room);
-    if (rows === null) return;
-    if (rows > 0) {
+    const v = await probeOne(room);
+    if (!v) return;
+    if (v.ok) {
       await addLog({ kind: "sent", what: "ACCESS BACK",
-        why: "🔓 " + room.name + " is READABLE again (" + rows + " messages " +
-             "on screen). It was parked because: " + room.why + ". It is " +
-             "still asleep and still not trading — take the # off its line " +
-             "in extension/rooms.txt to wake it." });
+        why: "🔓 " + room.name + " is READABLE again — " + v.why + ". It was " +
+             "parked because: " + room.why + ". Still asleep and still not " +
+             "trading: take the #SLEEP off its line in extension/rooms.txt " +
+             "to wake it." });
       try {
         chrome.notifications.create({ type: "basic",
           iconUrl: "icon128.png", title: "🔓 " + room.name + " is back",
-          message: "Access returned. Still parked — wake it in rooms.txt." });
+          message: v.why + ". Still parked — wake it in rooms.txt." });
       } catch (e) {}
     } else {
       await addLog({ kind: "ignored", what: "ACCESS CHECK",
-        why: "🔒 " + room.name + " still shows nothing — subscription looks " +
-             "to still be lapsed (" + room.why + "). Staying asleep." });
+        why: "🔒 " + room.name + " — " + v.why + ". Staying asleep." });
     }
   } catch (e) { /* a probe must never break the reader */ }
 }
@@ -1521,7 +1595,7 @@ chrome.alarms.onAlarm.addListener(a => {
   if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
-  if (a.name === "access-check") accessCheck(false);
+  if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
   if (a.name === "auto-export") autoExportForLearning();
 });
 
