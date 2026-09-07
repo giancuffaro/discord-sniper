@@ -238,7 +238,24 @@ const RE_BUY_CMD = /\bbuy(?:s)?\b/i;
 // Anything that turns a "buy" into advice, a warning, or a hypothetical.
 // "or buy next week exp" (Midas chatter) is caught by the \bor\b arm.
 const RE_NO_BUY = /\b(?:do\s*n[o']?t|don'?t|dont|never|avoid|not|no|stop|quit|why|should|would|could|might|maybe|if|when|before|after|instead\s+of|rather\s+than|or)\s+(?:you\s+|we\s+|i\s+|to\s+)?buy\b|\bbuy\s+(?:the\s+)?(?:dip|rumou?r|side|signal|zone|area|level|back|and\s+hold)\b|\bgood\s+buy\b|\bbuy\b[^.\n]{0,12}\?/i;
-const RE_EXIT = /\b(?:exited|exiting|closed|closing|stc|sold|selling|out|cutting)\b/i;
+/* "OUT" IS ALSO HALF AN IDIOM (9/7). stormzyy's recap of a FINISHED trade —
+ * "Caught a clean MNQ long off the BOS + FVG setup and let it play OUT exactly
+ * how we wanted. Both targets hit for 45+ points" — fired a CLOSE MNQ off the
+ * bare "out" in "play out". A phantom exit is worse than a missed one: it can
+ * flatten a live futures position on somebody's victory lap. So "out" no
+ * longer counts as an exit when it is the tail of a phrasal verb that has
+ * nothing to do with selling. Every other exit word is untouched, and a real
+ * "out of NBIS" / "I'm out" still reads, because none of those verbs precede
+ * it. "sold out" is deliberately NOT on this list — that one IS an exit. */
+const IDIOM_OUT = "(?<!\\b(?:play|plays|played|playing|pan|pans|panned|panning" +
+  "|work|works|worked|working|ride|rides|rode|riding|sort|sorts|sorted|sorting" +
+  "|figure|figures|figured|figuring|watch|watches|watched|watching|check|checks" +
+  "|checked|checking|find|finds|found|finding|reach|reaches|reached|reaching" +
+  "|help|helps|helped|helping|hang|hangs|hung|hanging|start|starts|started" +
+  "|starting|shake|shakes|shook|shaking|stretch|stretches|stretched|max|maxed" +
+  "|miss|missed|missing|wait|waited|waiting|inside|way)\\s)";
+const RE_EXIT = new RegExp(
+  "\\b(?:exited|exiting|closed|closing|stc|sold|selling|" + IDIOM_OUT + "out|cutting)\\b", "i");
 // "Filled 3.95 starters" — their entry arrives as TWO messages. The contract was
 // named minutes earlier in a "Loading 205 calls Friday expiration on NVDA"
 // notice, and this line carries nothing but the price. On its own it is not an
