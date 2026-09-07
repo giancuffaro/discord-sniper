@@ -111,6 +111,11 @@ function seenMessage(msg) {
 // popup can jump straight to a room's tab. See the FOCUS-ROOM handler.
 const ROOM_TABS = {};
 
+// Rooms parked because the subscription lapsed. Filled by loadRoomsFile()
+// from "#SLEEP|" lines. They do not open and do not trade — but they are
+// still known, so accessCheck() can test them and wake them by itself.
+const SLEEPING = [];
+
 const WHOP_ROOMS = [
   // hash = the stable room id Whop keeps in EVERY url shape — the new
   // profile serves "/firststeptrading/exp_<hash>/app" with no slug at all
@@ -229,8 +234,27 @@ function loadRoomsFile() {
       const r = await fetch(chrome.runtime.getURL("rooms.txt"));
       const text = await r.text();
       const ids = [];
+      SLEEPING.length = 0;
       for (const line of text.split("\n")) {
         const t = line.trim();
+        // SLEEPING ROOMS (9/7, his ask: "put the no access channels kind of
+        // to sleep... then have the app check if access was revoked or
+        // subscribed to and go ahead and open them").
+        //
+        // "#SLEEP|<why>|<the normal room line>" is PARKED, not deleted:
+        // it does not open a tab and it does not trade, but the room is
+        // still here with its id and url, so the access probe below can
+        // knock on the door once a day and wake it the moment the
+        // subscription is back. Nothing about the PARSER changes — his
+        // RWGates rules and every other caller's stay exactly as they are.
+        if (t.startsWith("#SLEEP|")) {
+          const p = t.slice(7).split("|").map(s => s.trim());
+          if (p.length >= 4 && p[1]) {
+            SLEEPING.push({ why: p[0], id: p[1], url: p[2],
+                            name: p[3] || p[1] });
+          }
+          continue;
+        }
         if (!t || t.startsWith("#")) continue;
         const id = t.split("|", 1)[0].trim();
         if (id) ids.push(id);
