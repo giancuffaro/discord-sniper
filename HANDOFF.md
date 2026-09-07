@@ -1605,3 +1605,50 @@ a missing side as a bad row and dropped it. It now carries the last known
 side forward, and when that merge produces a transient crossed book it keeps
 the state — so the two sides can re-converge — while refusing to tape or
 serve it. Without that, a contract would freeze at a stale price.
+
+### 9/7 EVENING — subscriptions checked, 5 rooms parked, Chrome kill fixed
+
+**WHY THE ROOM READING WAS FLAWED.** `START HERE` ran `taskkill /F /IM
+chrome.exe`. `/F` is TerminateProcess — Chrome gets no chance to flush. The
+extension's `chrome.storage.local` (every room's LIVE flag AND every
+captured message) is a LevelDB written lazily; killed mid-write, Chrome
+rebuilds it EMPTY on the next launch.
+
+Evidence: the 9/1 and 9/4 exports both read `LIVE rooms: none (all testing)`
+with 0 and 5 captured messages — on days that placed live trades and logged
+326 actions. The reader was fine. The STORAGE was wiped, after the close.
+
+Cost: the audit trail for those days. **Risk if it ever lands BEFORE the
+open: all rooms come up "testing" and the bot trades nothing real all day,
+silently.** Fixed — graceful `taskkill` first, force only if Chrome refuses.
+
+**WHOP SUBSCRIPTIONS (checked on whop.com 9/7).** Five active:
+
+    #1 Live Trading WorldWide   $100/mo   -> the 5 Whop rooms (firststeptrading)
+    Platinum Trading Premium     $99/mo   -> Platinum x5
+    ZTRADEZ Full Access          $65/mo   -> ZT all-trades-mashup
+    VIP discord access           $65/mo   -> TradingTheTrend: Option Alerts,
+                                             Options Watchlist
+    VeroTrade Premium            $49/mo   -> Vero 1/2/3
+
+Three LAPSED (last paid early August, not renewing):
+
+    Boka Trading Premium      Aug 7  -> Boka 1, 2, 3
+    STS / Summit Strategies   Aug 9  -> RWGates
+    The Insiders Pro Plan     Aug 3  -> Options Insider
+
+Those 5 rooms are commented out in `extension/rooms.txt` (26 -> 21 active),
+each line tagged with which subscription lapsed and when. Uncomment to
+restore. **G's call 9/7: not renewing until the bot is proven at 100%** —
+prove it on the rooms he pays for before adding expensive ones back.
+
+**NOTE ON RWGATES.** `parser.js` carries dedicated rules for him:
+`RE_CONTRACT_OSI` for his ThinkorSwim dotted symbols (`.HOOD260702C118`),
+`RE_TOOK_ENTRY_FILL` for four phrasings, and tolerance for his typos
+(`enrty`, `enry`, `etnry`). That work is intact and idle. It costs nothing
+to leave, and it is ready the day the subscription comes back.
+
+**FOUR ROOMS DELIBERATELY LEFT ALONE:** Aristotle, Aristotle small,
+Honeydrip daytrades, Midas (all Honey Drip Network), plus NGD. No matching
+Whop subscription, but no evidence of a lapse either — they may be free or
+paid outside Whop. Not touched without evidence.
