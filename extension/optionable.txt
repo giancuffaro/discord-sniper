@@ -1,22 +1,16 @@
 # optionable.txt — THE one list of symbols this bot is allowed to trade.
 #
-# Pulled 2026-09-07 from tastytrade /instruments/equities/active (13,226 active
-# equities). A symbol is here if the broker publishes OPTION TICK SIZES for
-# it — i.e. an option chain actually exists. That is the only question that
-# matters: we trade options, so a real company with no chain is as untradeable
-# as a word someone typed.
+# Generated 2026-09-08 by refresh_optionable.py from tastytrade
+# /instruments/equities/active (13226 active equities). A symbol is here if
+# the broker publishes OPTION TICK SIZES for it — an option chain exists.
+# We trade options, so a real company with no chain is as untradeable as
+# a word somebody typed in chat.
 #
-# WHY THIS EXISTS: the reader used to take any capitalised word in front of a
-# strike as a ticker. It produced OPEN WITH 773C off the sentence "...then can
-# go with 773c", and CLOSE EXIT off "| EXIT ALERT Ticker: NBIS". Blocking
-# words one at a time is whack-a-mole — blocking VERY just moved it to GREEN.
-# An allowlist ends the game: if the broker does not list it, we do not send it.
+# Read by BOTH background.js and bridge.py. One file, two readers, no
+# drift — the same rule as rooms.txt. A symbol missing from here fails
+# LOUD at the bridge, it is never silently skipped.
 #
-# Read by BOTH background.js and bridge.py. One file, two readers, no drift —
-# the same rule as rooms.txt.
-#
-# 6337 equity/ETF option roots, 28 futures, 8 cash indexes.
-# Refresh: python3 refresh_optionable.py
+# 6337 equity/ETF option roots, 25 futures, 8 cash indexes.
 #
 # --- FUTURES ---
 6B
@@ -27,13 +21,10 @@ ES
 GC
 HG
 M2K
-M6E
 MBT
 MCL
 MES
-MET
 MGC
-MNG
 MNQ
 MYM
 NG
