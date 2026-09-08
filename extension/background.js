@@ -1499,6 +1499,35 @@ async function checkBuild() {
  * — Chrome does not put a fresh one back on its own, and it will not inject one
  * until that tab navigates. Since you're not going to reload Discord every time,
  * put it back here. */
+/* KEEP A READER IN EVERY ROOM TAB (9/8). reinject() runs once at come-up, but
+ * a tab that was OPEN BEFORE the extension loaded never gets a content script
+ * — Chrome only injects on navigation after install. That is exactly the Whop
+ * second profile: the 4 tabs were open, then the extension was loaded, so
+ * whop.js never attached and the bridge got nothing from Whop. This runs on
+ * the 30s alarm and injects the right reader into any matching tab we have not
+ * injected in the last 5 min. content.js/whop.js are idempotent (they stop the
+ * old copy first), so a re-inject never double-reads. Bounded by INJECTED_AT
+ * so a healthy tab isn't re-scripted every tick. */
+const INJECTED_AT = {};       // tabId -> last inject time
+async function ensureReaders() {
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
+      "https://*.discord.com/channels/*", "https://whop.com/*", "https://*.whop.com/*"] });
+  } catch (e) { return; }
+  const now = Date.now();
+  for (const t of tabs) {
+    if (t.discarded || t.status === "loading") continue;
+    if (now - (INJECTED_AT[t.id] || 0) < 300000) continue;   // did this one recently
+    const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
+    try {
+      await chrome.scripting.executeScript({ target: { tabId: t.id },
+        files: [isWhop ? "whop.js" : "content.js"] });
+      INJECTED_AT[t.id] = now;
+    } catch (e) { /* closed / mid-nav — next tick */ }
+  }
+}
+
 async function reinject() {
   // On EVERY come-up — a normal browser open OR a code update — put a fresh
   // content.js back into the tabs WITHOUT reloading the page. His rule: he
@@ -1917,7 +1946,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch.export_every_min) armAutoExport();
 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); evictOtherLane(); openMissingRooms(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); openMissingRooms(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
