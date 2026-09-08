@@ -1,7 +1,52 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 ~late — SWEEP 2: FALSE POSITIVES. The first sweep
+Last updated: 2026-09-08 — TWO NEW GATES: A REAL TICKER LIST, AND A VOLUME FLOOR.
+G pushed back on both, correctly, and both times the data moved the answer.
+
+  1. extension/optionable.txt — THE ONE LIST OF TRADEABLE SYMBOLS.
+     6,337 equity/ETF option roots + 25 futures + 8 cash indexes, pulled from
+     tastytrade /instruments/equities/active (13,226 active equities). A symbol
+     earns its place by the broker publishing OPTION TICK SIZES for it.
+     Rebuild any time: python3 refresh_optionable.py (refuses to write a
+     truncated file — an old list beats a short one).
+     WHY: the reader took any capitalised word in front of a strike as a
+     ticker. Blocking words one at a time is whack-a-mole — blocking VERY just
+     moved the misread to GREEN. An allowlist ends it.
+     I FIRST SEEDED THIS FROM TRADIER AND IT WAS WRONG. G: "your guessing makes
+     no sense.. use the internet and all the api keys we have connected". He
+     was right: the Tradier seed marked VSCO, WATT and SMX as not optionable
+     and all three ARE. tastytrade's full universe is the source of truth.
+     Checked against every symbol our alerts have ever produced: 33 would be
+     blocked and ALL 33 are junk (WITH, GREEN, FVG, TESLA, BREAK, YES, NOTES,
+     BABY, DAY, ONE, REST...) or small caps from Platinum equity, which is cut.
+     ZERO real alerts blocked. NOT YET ENFORCED — the file and refresher exist;
+     wiring it into background.js/bridge.py is the next step.
+
+  2. liquidity.py — A VOLUME FLOOR, DEFAULT 250 (G's number, 9/8).
+     His instinct: "even if you can buy a contract you still don't want to if
+     there's no open interest.. you wouldn't be able to sell it to no one
+     later." Right, and the measurement moved it one step: OPEN INTEREST IS
+     THE WRONG NUMBER for these names. At strikes within 2% of spot —
+         NVDA OI 3,403 / VOL 29,332      TSLA OI 1,076 / VOL 21,480
+         QQQ  OI   792 / VOL  6,604      SPY  OI 1,206 / VOL  4,205
+         MU   OI    94 / VOL  1,867      SNDK OI    27 / VOL    336
+     These are day-traded contracts: everyone flattens by the close, so OI
+     stays tiny while volume is huge. An OI gate would have blocked MU and
+     SNDK for nothing, and SNDK is a real part of Brando's book.
+     250 passes everything the rooms touch (SNDK's thinnest is 280) and only
+     ever fires on something genuinely dead.
+     READS THE PRIOR COMPLETED SESSION, on purpose: intraday volume starts at
+     zero at 9:30, so a gate on today's number would refuse every 0DTE trade
+     at the open. Served from a warm cache — the fire path pays no latency.
+     FAILS OPEN: unknown contract, no token or a slow broker all ALLOW, with a
+     note. The spread gate still stands behind it.
+     EXITS ARE NEVER GATED — being stuck is the thing this guards against.
+     Live-tested: MU 455C (0 traded) REFUSED, SPY 770C (87,921) ALLOWED.
+     Off switch: settings.json execution.min_contract_volume = 0.
+     Wired into webull_options.buy() beside the spread guard.
+
+Prior: Last updated: 2026-09-08 ~late — SWEEP 2: FALSE POSITIVES. The first sweep
 looked for MISSED signals. This one looked the other way — everything that
 FIRES, checked for things that should not. Method: list every symbol the parser
 has ever produced (135 distinct) and test each against English.
