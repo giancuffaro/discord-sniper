@@ -934,6 +934,25 @@ function parseSignalInner(text, cfg) {
     const v = (parseInt(whole, 10) + (cents ? parseFloat("0." + cents) : 0)) / 100;
     return v.toFixed(2);
   });
+
+  // THE TICKER HE NEVER TYPES (9/7, shabs / OWLS). He trades ONE underlying
+  // and says so in his own recap ("August Recap, SPX only"), so he writes
+  // "in 7655p 2.9" and "7760c at 300/con" — a complete call except for the
+  // symbol. Nothing parsed, because there is no ticker to find.
+  // cfg.default_symbol is set PER CHANNEL by background.js from settings.json
+  // (default_symbol_channels). It is deliberately NOT global: a bare "640c"
+  // in a room that trades everything is unknowable, and inventing a symbol
+  // there would buy the wrong underlying. Applied only when the line has a
+  // bare strike+side AND no real contract of its own, so an explicit ticker
+  // in the same message always wins.
+  if (cfg && cfg.default_symbol && !findContract(t)) {
+    const bare = /(?<![A-Za-z0-9.$])(\d{2,5}(?:\.\d{1,2})?)\s*([cp])\b(?![A-Za-z])/i.exec(t);
+    if (bare) {
+      t = t.slice(0, bare.index) + String(cfg.default_symbol).toUpperCase() + " " +
+          t.slice(bare.index);
+      s.assumed_symbol = String(cfg.default_symbol).toUpperCase();
+    }
+  }
   s.clean = t;
   const low = t.toLowerCase();
 

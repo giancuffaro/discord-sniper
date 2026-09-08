@@ -2389,6 +2389,21 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     c.spx_entries = ((c.spx_entry_channels || [])
       .map(String).includes(String(msg.channelId || "")));
 
+    // THE TICKER HE NEVER TYPES (9/7, shabs / OWLS). A caller who trades ONE
+    // underlying stops naming it: "in 7655p 2.9", "7760c at 300/con". Those
+    // are complete calls except for the symbol, so nothing parsed at all.
+    // settings.json default_symbol_channels maps a channel id to the symbol
+    // that room ALWAYS means: { "1519039282537300209": "SPX" }.
+    // PER CHANNEL on purpose — a bare "640c" in a room that trades everything
+    // is unknowable, and inventing a symbol there buys the wrong underlying.
+    // The parser only applies it when the line has no real contract of its
+    // own, so an explicitly named ticker in the same message always wins.
+    {
+      const _ds = (c.default_symbol_channels || {})[String(msg.channelId || "")];
+      if (_ds) c.default_symbol = String(_ds).toUpperCase();
+      else delete c.default_symbol;
+    }
+
     // RELAY UNWRAP (8/30, G: "one room that alerts everything"): the ZT
     // all-trades-mashup (and HD Greeter) post as ONE bot account relaying
     // every trader, with the real name leading the embed title — "Bishop's
