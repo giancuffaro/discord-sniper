@@ -30,12 +30,28 @@ has ever produced (135 distinct) and test each against English.
       trading path uses textOf() = message body + embeds, so reactions never
       reach it, and background.js gates history separately. Verified, not a bug.
 
-  STILL OPEN, and it is the "nothing guessed" rule: 161 OPTION entries fire
-  with NO EXPIRY and fall back to a GUESSED one — and that includes ALL of
-  Platinum nitro, whose format is "Contract: NVDA $175c Price: .72" with no
-  date at all. Nitro is the highest-producing room in the system (136 entries).
-  Worth deciding deliberately what its default should be rather than leaving it
-  to the generic fallback.
+  THE "161 DATELESS ENTRIES" — RESOLVED, NO CHANGE NEEDED. I flagged these as
+  running on a GUESS. That framing was wrong and is corrected here.
+  G's read of Platinum nitro was 0DTE ("the contract is so cheap"), and the
+  data backs the STYLE completely: nitro never states an expiry (6 date-words
+  in 885 messages, none a contract date), 119 contracts over 115 trading days
+  = 1.1 entries/day, NOTHING ever carried to the next day (the 8 repeated
+  strikes are months apart, not held), premiums $0.72-$2.33, and their own
+  words "today is friday so lot more riskier setups" — Friday is only riskier
+  if you are same-day.
+  BUT literal 0DTE would be unbuyable for most of that room. bridge.py already
+  splits it correctly, and the comment credits the rule to G on 9/7:
+      SPY / QQQ / IWM  -> TODAY. These are the only tickers with a midweek
+                         same-day listing, and it is what those rooms mean.
+      single stocks    -> THIS FRIDAY. "A single stock has FRIDAY WEEKLIES
+                         ONLY: a midweek 0DTE does not exist, so this Friday
+                         is the only listing there is, NOT a guess."
+  The split of the 161: 56 go to 0DTE, 104 go to this Friday — and the 104 are
+  NVDA (38), TSLA (34), AMZN, PLTR, AAPL, GOOG, HOOD, META, AMD, UBER. Every
+  one of those is a single stock with no midweek expiry to buy.
+  execution.assume_weekly_expiry = True, so this is live and nothing is being
+  refused. Setting nitro to a literal "0DTE" would ask the broker for contracts
+  that do not exist on 104 of 161 entries. LEAVE IT.
 
 Prior: Last updated: 2026-09-08 ~late — CROSS-ROOM PARSER AUDIT. G's ask: are we
 slipping or missing alerts, do the rooms disagree with each other. Method: run
