@@ -34,7 +34,15 @@ const RE_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2190}-\u{27BF}\u{FE0F}\u{200D}]/gu;
 // month alternative, "July" got read as the SYMBOL: entry came out TH 205C.
 // (8/30: month-name dates may carry a YEAR — Vero writes "MSTR SEP 18 2026
 // $150 CALLS" — so the date alternative accepts an optional ", 2026" tail.)
-const RE_CONTRACT = /(?<![A-Za-z])\$?([A-Za-z]{1,5})\s+(?:(\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d*dte|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?)\s+)?\$?(\d{1,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b/gi;
+/* 9/7: the expiry may sit on EITHER SIDE of the strike. A room G brought over
+ * writes "TSLA 357.5 0 DTE CALLS 1.30" — strike, then the expiry, THEN the
+ * side — and the old shape only allowed an expiry BEFORE the strike, so the
+ * whole contract went unread. "0 DTE" with a space is also now accepted.
+ * Groups: 1 symbol, 2 expiry-before, 3 strike, 4 expiry-after, 5 side. */
+const _EXP = "\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?|\\d*\\s*dte|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s+\\d{4})?";
+const RE_CONTRACT = new RegExp(
+  "(?<![A-Za-z])\\$?([A-Za-z]{1,5})\\s+(?:(" + _EXP + ")\\s+)?" +
+  "\\$?(\\d{1,5}(?:\\.\\d{1,2})?)\\s*(?:(" + _EXP + ")\\s*)?(calls?|puts?|c|p)\\b", "gi");
 
 // The same contract written back to front: "205 calls Friday expiration on
 // NVDA". Requires the word "on" before the ticker — that's what keeps it from
@@ -578,8 +586,8 @@ function findContract(text) {
   while ((m = RE_CONTRACT.exec(text)) !== null) {
     const sym = m[1].toUpperCase();
     if (blockedTicker(sym, text)) continue;
-    const k = m[4].toLowerCase();
-    let expiry = (m[2] || "").toUpperCase() || null;
+    const k = m[5].toLowerCase();
+    let expiry = ((m[2] || m[4]) || "").toUpperCase().replace(/\s+/g, "") || null;
     if (expiry && /^[A-Z]/.test(expiry) && !expiry.endsWith("DTE")) {
       const md = RE_MONTH_DAY.exec(expiry.toLowerCase());
       if (md) expiry = MONTHS[md[1]] + "/" + parseInt(md[2], 10);
