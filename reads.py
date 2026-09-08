@@ -27,7 +27,9 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(HERE, "reads.log")
 
-TICKERISH = re.compile(r"\b[A-Z]{2,5}\b|\b\d{2,5}\s*[cpCP]\b|\bcalls?\b|\bputs?\b", re.I)
+# A capitalised 2-5 letter word (case-SENSITIVE, or "image"/"the" would count),
+# a strike glued to c/p, or the words calls/puts.
+TICKERISH = re.compile(r"\b[A-Z]{2,5}\b|\b\d{2,5}\s*[cpCP]\b|(?i:\bcalls?\b|\bputs?\b)")
 
 
 def main(argv):
@@ -68,6 +70,9 @@ def main(argv):
             parts = line.split(" | ", 2)
             verdict = parts[1].strip() if len(parts) > 1 else ""
             heard = parts[2] if len(parts) > 2 else ""
+            # the bracketed note at the end is OURS (a refusal reason, a
+            # confidence) — never let it count as "something ticker-shaped"
+            heard = heard.split("   [", 1)[0]
             if only_calls and verdict in ("", "-"):
                 continue
             if only_misses and not (verdict in ("", "-") and TICKERISH.search(heard)):

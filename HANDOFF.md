@@ -37,7 +37,28 @@ Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE FOUND BY IT.
   the first) — worth remembering that consolidating five copies of
   something into one doesn't just save code, it's the only way a bug like
   this is findable at all.
-Previously — Last updated: 2026-09-08 — VISION / IMAGE SWEEP. The last unswept path.
+Previously — Last updated: 2026-09-08 — THE READER TAPE: reads.log + reads.py.
+  G: "so now they will read and transcribe? i need to see them in order to
+  help you analize." Yes — the listener transcribes whenever it is in a voice
+  room even with voice_entries OFF, and vision reads every image post. They
+  just landed in three different places (popup log, capture, bridge.log). Now
+  ONE chronological, human-readable file: reads.log.
+    time  🎙/📸  room  speaker | what the parser made of it | what was heard/seen [note]
+  VOICE: background.js posts every finalized transcript line to POST /reads
+  with a quick parse of it — fire-and-forget, never awaited, never allowed to
+  slow the ears. VISION: the bridge writes its own reads directly — the call
+  (with confidence), the refusal reason, or the FAILURE reason (which now
+  carries the API's message, see the vision sweep below).
+  VIEW IT:  python3 reads.py            last 60
+            python3 reads.py --voice / --vision / --calls / --today / -n 200
+            python3 reads.py --misses  lines with something ticker-shaped that
+                                       produced NOTHING — the ones to look at
+  The trading path never reads this file. It is for G's eyes, so he can point
+  at a line and say what it should have been. That is how the readers get
+  tuned from here on: not from me guessing, from him reading the stream.
+  TO FILL IT: run the listener during a live session (entries can stay off).
+
+Prior: Last updated: 2026-09-08 — VISION / IMAGE SWEEP. The last unswept path.
   THE DESIGN IS RIGHT AND IT IS WORTH KNOWING WHY. An image goes to the bridge
   /readimage; the model TRANSCRIBES what it sees (seen_text) and proposes a
   call; ai_reader.validate() then demands that the ticker, the strike and the
