@@ -128,5 +128,6 @@
     "poll_seconds": 2
   },
   "spx_entry_channels": [],
-  "default_symbol_channels": {}
+  "default_symbol_channels": {},
+  "entry_no_verb_channels": []
 }

@@ -2402,6 +2402,12 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       const _ds = (c.default_symbol_channels || {})[String(msg.channelId || "")];
       if (_ds) c.default_symbol = String(_ds).toUpperCase();
       else delete c.default_symbol;
+      // BARE CONTRACT + PRICE = AN ENTRY, in rooms whose callers skip the verb
+      // (9/7, TTT Lotto: "MU 8/28 965c @ 1.26"). PER CHANNEL and measured — see
+      // parser.js: globally this rule would fire on TradingTheTrend's own daily
+      // levels row, one line carrying eight contracts.
+      c.entry_no_verb = ((c.entry_no_verb_channels || [])
+        .map(String).includes(String(msg.channelId || "")));
     }
 
     // RELAY UNWRAP (8/30, G: "one room that alerts everything"): the ZT

@@ -2047,11 +2047,33 @@ function parseSignalInner(text, cfg) {
   // verb, so it counts as one, and only alongside a real contract.
   // Deliberately NOT triggered by an @everyone ping on its own: recaps and
   // victory laps ping the room too.
+  /* BARE CONTRACT + PRICE, PER ROOM (9/7, TTT Lotto). That room's callers mostly
+   * skip the verb: "MU 8/28 965c @ 1.26", "TSLA 9/4 360P .72", "NBIS 230C @.25",
+   * "AMD 0dte 445p @ .76". Nine of its entries fired and SEVEN were invisible.
+   *
+   * This is OFF unless settings.json entry_no_verb_channels names the channel,
+   * and that is not caution for its own sake — it was measured. Across the
+   * corpus, 51 currently-silent lines match "contract + price", and the biggest
+   * group is TradingTheTrend's own daily LEVELS row:
+   *     "QQQ 726c > 725.00  715p < 716.00  MU 1000c > 980.00 ..."
+   * one line carrying eight contracts. Global, this rule buys a watchlist.
+   * The rest were weekly recaps and victory laps ("runners up more than +560%").
+   * So: scoped to a room whose grammar is known, and even there the comparison
+   * operators, recap words and progress words below still veto it. */
+  const _bareEntry = cfg && cfg.entry_no_verb
+    && !!findContract(t)
+    && /(?:@\s*)?\$?\d{1,3}(?:\.\d{1,2})?\b/.test(t)
+    && !/[<>]/.test(t)                                   // a levels row, not a call
+    && !/\brecap\b|\bweekly\b|\bunrealized\b|\brunners?\s+up\b|\bbanger\b/i.test(low)
+    && !/\bon\s+watch\b|\bwatch(?:ing|list)\b|\bloading\b|\beyes\s+on\b|\bidea\b/i.test(low)
+    && !RE_EXIT.test(low) && !RE_TRIM.test(low)
+    && !/\bup\s+\d{1,4}\s*%|->|\bitm\b|\bhit\b/i.test(low);
+
   const _planEntry = !!findContract(t)
     && RE_ENTRY_PLAN.test(t)
     && !RE_EXIT.test(low) && !RE_TRIM.test(low) && !RE_PARTIAL.test(low)
     && !/\bhit\b|\bfilled\s+at\b|\bup\s+\d{1,4}\s*%|\bran\s+to\b/i.test(low);
-  if ((RE_ENTRY.test(low) || _takingEntry || _buyCmd || _planEntry || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
+  if ((RE_ENTRY.test(low) || _takingEntry || _buyCmd || _planEntry || _bareEntry || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
     const c = findContract(t);
     if (!c) {
       // The two-message entry: "Loading 205 calls Friday expiration on NVDA",
