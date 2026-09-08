@@ -287,10 +287,15 @@ if not errorlevel 1 (
   rem  NOTE - keep these rem lines free of round brackets: a close bracket in a
   rem  rem inside this bracketed block ends the block early in cmd. Known trap.
   echo.
-  echo   [5/5] Chrome is already open - leaving your tabs exactly as they are.
-  echo         The extension opens any missing rooms by itself within a minute
-  echo         and closes any duplicates. Nothing is restarted.
-  goto chromedone
+  echo   [5/5] Chrome is already open - leaving your Discord tabs as they are.
+  echo         The extension opens any missing Discord rooms by itself within
+  echo         a minute. Still making sure the Whop browser is up...
+  rem  WARM START used to `goto chromedone` here and SKIP the Whop launch
+  rem  entirely - that is why running this with Chrome already open opened
+  rem  nothing for the second browser (9/8). Now it jumps to the Whop launch
+  rem  instead, so the second profile comes up whether or not Chrome was
+  rem  already running. The Discord side is left untouched.
+  goto launch_whop
 )
 echo   [5/5] Chrome isn't running - cold start, opening all the rooms...
 rem  Dedicated Discord profile (8/23): chrome-profile.txt holds the
