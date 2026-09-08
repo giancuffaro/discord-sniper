@@ -2590,7 +2590,40 @@ class Book:
                             "HOLDING; the watchdog keeps trying." % sym)
                 continue
             except Exception as e:                      # noqa: BLE001
-                # FIRST: is there anything left to sell? (8/18) The resting
+                # FIRST: did the resting stop fill before claim()'s cancel
+                # reached it? (9/8: IWM's 0.72 stop filled at the broker a
+                # beat before the pull landed; Webull correctly refused
+                # every cancel variant with "Order cannot be cancelled", and
+                # the fresh sell that followed 417'd on insufficient buying
+                # power against a position that was already flat. That
+                # recorded FAILED with no exit and $0 P&L, while the broker
+                # had actually filled it clean. _gone_at_broker's positions()
+                # read can lag the same fill by a beat, and on an empty read
+                # it deliberately treats that as doubt, not confirmation, so
+                # it missed this one too. order_status on the stop's OWN
+                # order id (claim() stashes it in pulled_stop) is stronger
+                # than either — it is that exact order's real state, not an
+                # inference from the account snapshot — so check it first.
+                _poid = (self._pos.get(key) or {}).get(
+                    "pulled_stop", {}).get("oid")
+                if _poid:
+                    try:
+                        _fst, _ffq, _favg = wb.order_status(_poid)
+                    except Exception:                   # noqa: BLE001
+                        _fst, _favg = "unknown", None
+                    if str(_fst or "").lower() == "filled":
+                        _fpx = float(_favg) if _favg else None
+                        self._event(key, "stopped",
+                                    "%s — the resting stop had already "
+                                    "filled%s before the pull landed; "
+                                    "nothing left to sell" % (
+                                        sym, (" at %.2f" % _fpx) if _fpx
+                                        else ""))
+                        self.finish(key, STOPPED,
+                                    "the resting stop filled before it "
+                                    "could be pulled", price=_fpx)
+                        return
+                # NEXT: is there anything left to sell? (8/18) The resting
                 # stop at Webull often fills a beat before the watchdog
                 # fires, and every "failure" after that is the watchdog
                 # racing a sale that already happened. If the broker shows
@@ -3391,35 +3424,6 @@ class Book:
                 # exactly what killed the 8/12 META and LYFT stops, one second
                 # after the pull. So wait for the broker to actually let go.
                 self._await_cancel(wb, oid)
-                # The cancel can lose the race to the stop itself (9/8: IWM's
-                # resting 0.72 stop FILLED at the broker a beat before this
-                # cancel landed; Webull correctly answered every cancel
-                # variant "Order cannot be cancelled", and the fresh sell
-                # that followed 417'd on insufficient buying power against a
-                # position that was already flat -- recorded as "stop failed
-                # to sell" with no exit and $0 P&L, while the broker had
-                # actually filled it clean at 0.72). order_status on this
-                # SAME oid is ground truth, stronger than _gone_at_broker's
-                # positions() read (which can lag the fill by a beat and, on
-                # an empty read, is deliberately treated as doubt rather than
-                # confirmation). If Webull says this order is FILLED, the
-                # trade is done -- record it with the real fill price and
-                # stand down instead of chasing a sell that can only 417.
-                try:
-                    _fst, _ffq, _favg = wb.order_status(oid)
-                except Exception:                       # noqa: BLE001
-                    _fst, _favg = "unknown", None
-                if str(_fst or "").lower() == "filled":
-                    _fpx = float(_favg) if _favg else None
-                    self._event(key, "stopped",
-                                "%s — the resting stop had already filled%s "
-                                "before the pull landed; nothing left to "
-                                "sell" % (sym, (" at %.2f" % _fpx) if _fpx
-                                          else ""))
-                    self.finish(key, STOPPED,
-                                "the resting stop filled before it could be "
-                                "pulled", price=_fpx)
-                    return False
                 # Remembered so release() can put it BACK if the sell never
                 # goes out (9/2: SPY 766C sat naked five minutes after a
                 # pull-then-refuse).
