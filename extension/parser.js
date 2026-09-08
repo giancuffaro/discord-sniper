@@ -824,6 +824,17 @@ function parseSignal(text, cfg) {
       s.pct = Math.round(100 * Number(m[1]) / Number(m[2]));
       s.why = "partial sell on " + (s.symbol || "it") + " (" + m[1] + "/" + m[2] +
               ") — a trim, not the exit; the ratchet keeps running";
+    } else if (/\bpartial(?:s|ly)?\b|\b(?:took|taking|sold|selling)\s+some\b|\btrimm?(?:ed|ing)\b/i.test(raw)) {
+      // THE WORD ITSELF (9/7). "partial" was not recognised ANYWHERE — not in
+      // RE_PARTIAL (\bpart\b does not match "partial") and not here. So
+      // "STC TSLA 8/19 350c @ .36 partial" and "STC META 0dte 600c .94 partial
+      // make the free" both read as FULL EXITS: the caller sells a slice and
+      // the bot dumps the whole position. Older than tonight, and it hits any
+      // room that writes the word instead of a fraction — TTT Lotto and Option
+      // Alerts both do. No pct is set: he said partial, not how much.
+      s.action = "TRIM"; s.fire = false; s.matched = "trailing partial (word)";
+      s.why = "partial sell on " + (s.symbol || "it") +
+              " — he said partial, so it's a trim, not the exit; the ratchet keeps running";
     }
   }
   if (s.action !== "OPEN" || s.kind === "future") return s;
