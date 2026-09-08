@@ -95,7 +95,29 @@ Previously — Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE
   next time, not just this once — ANY backtest number on this project has
   to run through the actual exit rule, never a naive high/low, or it will
   overstate risk exactly like this did.
-Previously — Last updated: 2026-09-08 — MISSING ROOMS HEAL THEMSELVES; launcher stops
+Previously — Last updated: 2026-09-08 — WHOP IN ITS OWN BROWSER (his ask). Whop's 4 tabs are
+the heaviest thing running and were dragging the Discord tabs enough to get
+RWGates/Brando discarded. START HERE now opens Discord rooms in the main Chrome
+profile and the 4 Whop rooms in a SECOND profile (WHOP_PROFILE, default "Sniper
+Whop", override with whop-profile.txt) — a separate renderer set, so Whop's
+memory is off the Discord browser entirely. All still one bat.
+  ONE-TIME SETUP in the Whop profile, done once and it persists: log into Whop,
+  and install the Discord Sniper extension in it (puzzle piece / Load Unpacked
+  on the extension folder) exactly like the main profile. After that the
+  launcher opens both every run.
+  WHY IT DOESN'T DOUBLE-FIRE: both profiles run the same extension and read the
+  same rooms.txt, so openMissingRooms() is now LANE-AWARE — an instance only
+  opens rooms of a surface it already has a tab for. The launcher seeds each
+  profile with its own surface (Discord rooms to main, Whop rooms to WHOP_
+  PROFILE), so each adopts its lane and never opens the other's rooms. Discord
+  and Whop room sets are disjoint (22 vs 4, no shared channel), so there is no
+  overlap to collide on. Both post to the one bridge on 127.0.0.1 — it already
+  sends Access-Control-Allow-Origin:* and does not care which browser posts.
+  The Whop profile has its OWN channel_live flags; Whop rooms aren't in
+  BORN_TESTING so they come up live by the 8/23 default — no extra step.
+  Lane logic proven in isolation; extension 3.5.54.
+
+Prior: 2026-09-08 — MISSING ROOMS HEAL THEMSELVES; launcher stops
 nuking Chrome. G: "dont give me this option, check which are open and open the
 ones that are missing." This reverses the 9/2 "close everything and reopen"
 rule, which was a sledgehammer — it discarded tabs that were reading fine, and
