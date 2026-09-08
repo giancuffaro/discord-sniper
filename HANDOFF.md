@@ -126,7 +126,31 @@ Previously — Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE
   next time, not just this once — ANY backtest number on this project has
   to run through the actual exit rule, never a naive high/low, or it will
   overstate risk exactly like this did.
-Previously — Last updated: 2026-09-08 — WHOP IN ITS OWN BROWSER (his ask). Whop's 4 tabs are
+Previously — Last updated: 2026-09-08 — OWLS WIRED (shabs + eli), and a config-plumbing bug
+fixed on the way. G asked if we see Elite/OWLS. Elite (Brando+Shoof) was
+already live in rooms.txt; OWLS was never added — I built the parser support
+on 9/7 and skipped the room lines. Now both shabs (1513300726141419550) and
+eli (1519039282537300209) are in rooms.txt, BORN TESTING (gen 2026-09-08b),
+28 live rooms.
+  THE BUG, worth remembering: spx_entry_channels and default_symbol_channels
+  live in settings.json — but that is the BRIDGE's file. The EXTENSION's parser
+  does the SPX->SPY retarget and the implied-symbol fill, and it reads config
+  from chrome.storage, which never saw settings.json. So editing settings.json
+  enabled SPX on the bridge while the extension still refused it — they never
+  agreed. (That is also why the old lone 1395 entry's history was murky.)
+  FIX: the bridge now serves spx_entry_channels, default_symbol_channels and
+  entry_no_verb_channels on /mode; refreshBridgeChannels() in the extension
+  caches them and cfg() overlays them — settings.json is now the SINGLE source
+  for all three, for both processes. A popup/chrome.storage value still wins if
+  one exists. Proven: shabs "in 7655p 2.9" -> OPEN SPY 766P (SPX/10 retarget),
+  born-testing so it won't fire until G flips it.
+  Also fixed: I first wrote the OWLS keys under settings.execution (wrong
+  level) and nearly orphaned the existing 1395 spx channel. Moved both keys to
+  ROOT and merged 1395 back in. Now: spx_entry_channels = [1395..., shabs, eli].
+  NEEDS the bridge restart to serve the new /mode fields, AND an extension
+  reload to pick them up + open the two new rooms.
+
+Prior: 2026-09-08 — WHOP IN ITS OWN BROWSER (his ask). Whop's 4 tabs are
 the heaviest thing running and were dragging the Discord tabs enough to get
 RWGates/Brando discarded. START HERE now opens Discord rooms in the main Chrome
 profile and the 4 Whop rooms in a SECOND profile (WHOP_PROFILE, default "Sniper

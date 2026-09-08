@@ -1851,7 +1851,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch.export_every_min) armAutoExport();
 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); openMissingRooms(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); openMissingRooms(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
@@ -3391,8 +3391,8 @@ async function allRoomsTesting() {
   return;
 }
 
-chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); badge(); reinject(); startWhopFeed(); });
-chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); badge(); reinject(); startWhopFeed(); });
+chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); startWhopFeed(); });
+chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); startWhopFeed(); });
 
 /* MEMORY SHED (9/1, G: "sometimes I come back and Chrome has run out of
  * memory"). Discord web leaks: a room tab that starts at ~150 MB sits at
