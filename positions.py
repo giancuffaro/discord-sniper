@@ -2607,10 +2607,25 @@ class Book:
                 _poid = (self._pos.get(key) or {}).get(
                     "pulled_stop", {}).get("oid")
                 if _poid:
-                    try:
-                        _fst, _ffq, _favg = wb.order_status(_poid)
-                    except Exception:                   # noqa: BLE001
-                        _fst, _favg = "unknown", None
+                    # 9/8, SAME DAY THIS COMMENT WAS WRITTEN: IWM 295P still
+                    # fell through to FAILED with this check in place. A
+                    # single order_status read landed inside the same 429
+                    # contention window documented elsewhere (Market Sniper
+                    # shares this app key) and came back "unknown" instead
+                    # of "filled" on the first ask. Give it the same few-
+                    # tries-short-pause treatment _await_cancel already uses
+                    # for exactly this class of lag before believing "not
+                    # filled" — this only delays how fast a FAILED gets
+                    # printed, it never changes what gets bought or sold.
+                    _fst, _favg = "unknown", None
+                    for _pt in range(3):
+                        try:
+                            _fst, _ffq, _favg = wb.order_status(_poid)
+                        except Exception:               # noqa: BLE001
+                            _fst, _favg = "unknown", None
+                        if str(_fst or "").lower() == "filled":
+                            break
+                        time.sleep(0.5)
                     if str(_fst or "").lower() == "filled":
                         _fpx = float(_favg) if _favg else None
                         self._event(key, "stopped",
