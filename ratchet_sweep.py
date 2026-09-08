@@ -175,7 +175,7 @@ def main():
 
     current = next(r for r in rows_out if r["born_stop_pct"] == 10.0 and r["arm_to_be_pct"] == 10.0)
     print()
-    print("current rule (-10% born, arm +10%): total $%.2f, win rate %.1f%%, rank #%d of %d"
+    print("current rule (born 10%%, arm 10%%): total $%.2f, win rate %.1f%%, rank #%d of %d"
           % (current["total_pl_dollars"], current["win_rate_pct"],
              rows_out.index(current) + 1, len(rows_out)))
     print()
