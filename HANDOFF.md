@@ -1,7 +1,47 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 ~late — BOTH TURNED ON, G's call.
+Last updated: 2026-09-08 ~late — CROSS-ROOM PARSER AUDIT. G's ask: are we
+slipping or missing alerts, do the rooms disagree with each other. Method: run
+every room's captured messages (18 rooms, 3,769 unique) through the live
+parser, isolate lines that carry a REAL CONTRACT but produce NO ACTION, group
+by room. Two faults fell out, BOTH OLDER THAN THE AUDIT, both cost money:
+
+  1. THE WORD "partial" WAS NOT A TRIM ANYWHERE. RE_PARTIAL's \bpart\b does not
+     match "partial", and nothing else looked for it. So
+       "STC TSLA 8/19 350c @ .36 partial"
+       "STC META 0dte 600c .94 partial make the free"
+     read as FULL EXITS — the caller sells a SLICE and the bot dumps the WHOLE
+     position. NINETEEN corpus lines were doing exactly this, across Option
+     Alerts, TTT Lotto and Elite. Now downgraded to TRIM (fire=false, per the
+     exit doctrine: their trims are noted, never traded). No pct is set — he
+     said partial, not how much.
+
+  2. AN EXPLICIT STC WAS BEING SILENCED BY CHATTER. The chatter veto had a
+     carve-out for BUYS only (_explicitBuy). Explicit SELLS had none, so real
+     exits died on whatever the caller happened to say next:
+       "...partial. Taking some in case we don't hold"   killed by "don't"
+       "...stop hit on the rest, can probably..."        killed by "probably"
+       "...cutting in the green, will be watching"       killed by "watching"
+     The bare line closed fine; one casual sentence and the exit disappeared.
+     A MISSED EXIT IS THE EXPENSIVE MISTAKE — the position stays open on our
+     ratchet alone. An explicit STC with a real contract now skips the chatter
+     veto entirely; unlike a buy there is no "don't" to respect, because the
+     sell verb and contract are already stated.
+  Corpus: 27 lines changed — 19 CLOSE->TRIM (the dump-the-position bug), 6
+  newly-firing exits, 0 lost.
+
+  EVERYTHING ELSE CAME BACK CLEAN. Platinum nitro looked worst on paper (203 of
+  339 contract-lines silent, 60%) and is entirely correct: every one is
+  "$140p on watch" — a WATCHLIST. Same for Aristotle ("Watching AAPL above 313
+  for the 315 C"), Platinum ei-alerts ("WATCHING SPY $763 CALLS") and Aristotle
+  small ("Loading HOOD 130 C" = the PREPARE state). Those rooms are fine.
+  STILL OPEN, small: Honeydrip writes entries as prose ("I'm in @here 768P 1dte
+  at $3.30", "Filled spy puts 775 puts 1dte 3.12") and Vero 3 posts
+  "XOM 9/18 $170 C 2 cons @ 2.02" verbless — both readable, neither urgent, and
+  Vero 3's are swing-alerts anyway.
+
+Prior: Last updated: 2026-09-08 ~late — BOTH TURNED ON, G's call.
   TTT LOTTO verbless entries are LIVE. settings.json entry_no_verb_channels now
   contains 880503518878892143. One key added, 22 -> 23, nothing else touched and
   no secret read back. Its seven previously-invisible entries now fire, and its
