@@ -25,9 +25,11 @@ LOG = os.path.join(HERE, "trades.log")
 
 # Lines that are NOT entry-misses, even if a keyword matches: the futures
 # position-poll heartbeat, exit-sell failures, and book/broker bookkeeping.
-SKIP = re.compile(r"^FUT-POS|no futures position|the stop (tried|failed)|"
-                  r"you're not in|PHANTOM|POSTCHECK|ADOPT|DEADMAN|RESTORED|"
-                  r"STOP-SET|STOP-WARN|WORKING|FILLED|CODE ", re.I)
+# (Tag-anchored so we don't accidentally eat a real entry refusal whose text
+# happens to end "...you're not in it".)
+SKIP = re.compile(r"^(FUT-POS|PHANTOM|POSTCHECK|ADOPT|DEADMAN|RESTORED|"
+                  r"STOP-SET|STOP-WARN|WORKING|FILLED|CODE)\b|"
+                  r"stop (tried|failed) to sell| exit — |exit failed", re.I)
 
 # First match wins — specific reasons before catch-alls.
 CATS = [
@@ -58,7 +60,9 @@ _PROP_MSG = re.compile(r'errorMessage":"([^"]+)"')
 
 
 def _sym(msg):
-    for tok in re.findall(r"[A-Z]{2,6}", msg):      # case-SENSITIVE: real caps
+    # Whole all-caps words of 2-6 letters. \b..\b means "REFUSED"(7)/"PULLBACK"(8)
+    # etc. never match at all; the shorter tag words are caught by STOP.
+    for tok in re.findall(r"\b[A-Z]{2,6}\b", msg):
         if tok not in STOP:
             return tok
     return "?"
