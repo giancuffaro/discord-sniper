@@ -1,7 +1,30 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~night — SPX IS TRADEABLE, ON TASTYTRADE. Settled by
+Last updated: 2026-09-07 ~night — VOICE AUTO-JOIN STAYS AS IT IS. G's call,
+made with the tradeoff in front of him. Do not change it, and do not raise it
+again unless he does.
+  THE FACTS BEHIND THE DECISION. The extension makes ZERO requests to Discord —
+  the only network destination in all of extension/*.js is 127.0.0.1:8787. No
+  user token, no gateway, no messages, no typing. Discord's published detection
+  signals (messages with no typing event, typing across channels in 5-50ms,
+  channels iterated in ID order) are ALL emitted by sending; we send nothing.
+  Reading the DOM is structurally safer than every comparable project, all of
+  which drive the gateway with a selfbot token.
+  THE ONE EXCEPTION is content.js joinLiveVoice(), which clicks the LIVE badge
+  and presses Join. It is the only place the app acts as the user, and it does
+  produce a real server-side voice-state event.
+  G ASKED FOR A 3-4 SECOND DELAY on it. Not done, deliberately: Discord's own
+  policy names delays specifically — "captcha solving, token rotation, delays,
+  and human-like typing do not make a prohibited use compliant". A delay
+  changes nothing about what is sent, it only makes an automated action look
+  less automated, so it buys the appearance of safety and not the safety. He
+  was offered notify-and-tap (same few seconds, removes the account action
+  entirely) and chose to keep instant auto-join knowingly. That is a legitimate
+  choice about his own account and it is recorded here as his, not as an
+  oversight.
+
+Prior: Last updated: 2026-09-07 ~night — SPX IS TRADEABLE, ON TASTYTRADE. Settled by
 API, nothing submitted (Tradier preview=true and tastytrade /orders/dry-run
 both validate and stop):
   tastytrade  ACCEPTED "SPXW 260908C07760000", dry-run status Received,
