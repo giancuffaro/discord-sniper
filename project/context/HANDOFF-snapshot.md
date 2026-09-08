@@ -1,7 +1,1113 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-04 16:55 — DAILY CLOSE-OUT run (see bottom section
+Last updated: 2026-09-08 16:36 — DAILY CLOSE-OUT (automated): QQQ 716P PHANTOM-EXIT
+BUG (a real +20.8% win that silently became a -34.9% loss), ONE FIX SHIPPED,
+GIAN'S HAND-TRADE LEDGER GAP RECURS. Broker truth (Webull order history,
+account ENIQGUV4LUTT3JSAA9NKLDDU19): bot +$89 gross / Gian -$12 gross, fees
+-$3.42, net ~+$72.58 matching the account's own day-P&L. Account flat as of
+16:36, nothing resting overnight. Announcer PAUSED (announcer.stop="stop",
+8/31 standing call) — announcer checks skipped per standing instruction.
+
+  **HEADLINE BUG — Vero's QQQ 716P (10:15:46 entry, 1.06): a pullback-target
+  exit that only ever ACCEPTED, never FILLED.** At 10:18:28 the stock hit its
+  716.50 pullback target and the bridge fired a real SELL at 1.28 (+20.8%,
+  a clean win) — but bridge.py's CLOSE handler (`_place_impl`, the branch
+  gated by the EXIT-IGNORED check at do_POST's `order.get("source") in
+  ("pullback","under-stop")`) calls `BOOK._sell_retry(...)` directly and
+  books `positions.CLOSED` the moment an order_id comes back, unlike the
+  watchdog's own stop-out path which waits on `_sell_confirmed` for a real
+  FILLED status. This one never filled. ~2 min later (10:20:37) the reconcile
+  loop found the broker still holding it ("book recorded closed but broker
+  STILL holds it") and tried to finish the exit — by then the market had
+  reversed and a stray resting order on the same contract made every
+  completion attempt 417 (`OPENAPI_ORDER_NOT_SUPPORT_REVERSE_OPTION`),
+  including the watchdog's own follow-up stop-outs at 0.95 and 0.83
+  (BREACHED, unclampable per webull_options.py's own design — "the watchdog
+  should sell", but the watchdog's sell was ALSO blocked). Round-tripped
+  from +20.8% to -34.9% (~$60/contract) before finally clearing at 0.69 at
+  10:25:22. NOT A ROOM-EXIT VIOLATION — verified the entries-only gate is
+  intact (bridge.py do_POST's EXIT-IGNORED check present and correct,
+  execution.exit_policy absent/defaults to entries_only, extension gate
+  unreviewed but 0 EXIT-IGNORED lines fired today because 0 room CLOSEs
+  reached the bridge) — this is a phantom-fill bug in a legitimate,
+  gate-exempt bot-internal exit (pullback stock-target), the same "source"
+  family as underlying hard-stops, so BOTH share this exposure.
+  **NOT FIXED UNATTENDED** — touches the live CLOSE path shared by every
+  pullback and hard-stop exit; recommended fix (for a focused, tested
+  session, ideally at a safe restart window): route that CLOSE handler
+  through `positions.Book._sell_confirmed` (already does the wait-for-FILLED
+  + one reprice, used by the watchdog's own stop path) instead of trusting
+  order acceptance from `_sell_retry` alone.
+  Ledger fallout: days/2026-09-08.json fragmented this ONE trade into THREE
+  rows — the original "vero|QQQ" row phantom-closed at 1.27 (never happened),
+  plus two orphan re-adoptions wrongly attributed to **Gian** (who never
+  touched this contract) after the ADOPT path picked it up mid-crisis.
+  journal-2026-09-08.xlsx and trader-scoreboard.xlsx both correct this to
+  ONE row, Vero, broker truth (-$37). Vero's scoreboard verdict flipped to
+  AVOID on this — flagged as skewed by the bug, not the call, in both files.
+
+  **FIXED TODAY — positions.py, the IWM-shaped postcheck mis-record** (same
+  bug class, lower stakes: bookkeeping only, not a protection gap). Both
+  Vero's SPY 767P (-$1) and ZTRADEZ BOT's IWM 295P (-$6) filled CLEAN on
+  their own born resting stop at Webull, but the watchdog's own redundant
+  sell attempt raced a lagged `order_status` read (same rate-limit/
+  contention family as the pre-existing `/openapi/assets/positions` 429s —
+  Market Sniper shares this app key) and logged FAILED instead of
+  recognizing the fill — a clean stop-out mis-recorded as a failure with no
+  exit price. The existing 9/8 fix for this (checking `pulled_stop.oid`'s
+  order_status before falling back to `_gone_at_broker`) still lost the
+  race on a single read. Gave it the same few-tries-short-pause pattern
+  `_await_cancel` already uses elsewhere (3 tries, 0.5s apart) before
+  believing "not filled" — read-only, changes no order-placement behavior,
+  only which of two true/false paths a report takes. Verified: `python3 -m
+  py_compile positions.py` clean; test_positions.py, test_resolve.js,
+  test_architecture.py, test_brokers.py, test_phantom_exit.py, test_tape.py
+  all pass (test_signals.py does not exist in this repo — the CODE FIXES
+  instruction naming it appears stale; ran every test file that does exist
+  instead). Bridge restarts onto this automatically at the next safe window
+  or the close (nothing was in flight when this was written).
+
+  **STOP-PLACEMENT RELIABILITY, pre-12:01 restart (not a code bug found,
+  logged for the pattern):** every bot bracket trade from 09:36 through
+  10:35 (AMD x3, QQQ x3, TSLA, SPY) showed POSTCHECK "NO resting stop —
+  watchdog only" for some number of seconds after fill, because the born
+  bracket's stop almost always needs a REBASE (fill beats the limit, so the
+  -10%-of-fill stop differs from the -10%-of-limit born stop by more than
+  the 2-cent tolerance) and the replacement `place_stop()` call kept hitting
+  417s (`OPENAPI_STOP_PRICE_MUST_BE_LESS_THAN_MARKET_PRICE`,
+  `OPENAPI_DAY_BUYING_POWER_INSUFFICIENT`) during that window. The ONE trade
+  after the 12:01 restart (IWM, 13:00) filled AT its limit (no rebase
+  needed) and its born stop rested and filled cleanly start to finish.
+  One data point either way — not enough to say the 11:53-12:01 changes
+  (ratchet respacing) fixed or didn't fix the underlying rebase-window
+  exposure. Watch tomorrow's first hour for whether "NO resting stop" still
+  shows up on trades that DO need a rebase.
+
+  **GIAN'S HAND-TRADE LEDGER GAP RECURS** (first flagged 9/4, "root cause
+  unconfirmed"). Of Gian's 6 hand round trips today (multi-lot SPY MARKET
+  scalps via Market Sniper/the Webull app, net -$12 broker truth), only the
+  FIRST (SPY 766P, -$22) reached days/2026-09-08.json. The other five
+  (-$52, +$8, -$20 on the same SPY 766P contract, plus SPY 768C +$70 and
+  SPY 767C +$4, entirely unrecorded) are missing outright — same shape as
+  9/4's two missing SPY scalps, now a second occurrence. Still not
+  root-caused; both times it happened during/around a period of unusually
+  heavy concurrent order activity (today: the QQQ 716P crisis window).
+  Worth a dedicated look, not a today-fix.
+
+  **REPLAY (`replay_check.py`): 18 silent drops, most explained.** Filtered
+  to genuine OPEN/ADD misses (CLOSE/PREPARE/recap lines are expected to be
+  silent under entries-only and were skipped): Elite Shoof's 09:31 NBIS
+  250C and Elite Brando's 10:44 QQQ 720C are the SAME misses already
+  diagnosed and fixed earlier today (extension 3.5.53, "MISSING ROOMS HEAL
+  THEMSELVES" — see below in this file), not new. Four still open, none
+  traded real money, none investigated live in Discord (autopilot, no
+  browser dive without cause beyond a log check):
+    - ZT guru-futures 09:59 "MNQ SHORT Entry: 29500 Stoploss: 29550" — room
+      IS wired (Market Guru, already AVOID-rated in the scoreboard), format
+      may not match the parser's SHORT-verb grammar; needs a corpus check.
+    - ZT all-trades-mashup 11:05 "ABT ... averaging down here at 2.00" — a
+      relayed ADD phrased differently from the "added $X calls" shape the
+      9/2 ADD fix covers; ABT itself is read 92x today elsewhere in
+      bridge.log, so this is a phrasing gap, not a dead room.
+    - TradingTheTrend option-alerts 10:34 "benw ... BTO TSLA 9/9 375c @1.00"
+      — caller "benw" never appears anywhere in bridge.log today; possible
+      tab/attach gap for this specific poster, unconfirmed.
+    - Whop Day Trades 09:47 "Short NQ 29508 Sl 29550" — room has 138
+      signals captured today (per scoreboard.py) but 0 ever sent/traded,
+      all-time; may be a pre-existing quiet/never-parses room, not a new
+      regression — lower priority.
+  scoreboard.py 10: 81 rooms heard from (28 configured, 1 silent
+  configured — Options Insider, expected, see below), SCOREBOARD.html
+  regenerated. Options Insider still dark (lost server access 9/2, kept
+  configured, G's call not to renew). RWGates is AWAKE (subscription
+  lapsed but Discord access verified intact 9/7) — not a deathwatch item.
+
+  **Checked clean:** 0 Chrome DISCARDED/out-of-memory lines today. /stream
+  via Claude-in-Chrome: connected:true, budget_left 285, rate_limited 0,
+  option_bus.watching 0 (account flat) — last_sweep_ms 507 is above the
+  usual ~100-200 baseline but with nothing being watched right now that may
+  just be idle variance, not a fault. announcer-seen.json non-empty (15
+  ids) but irrelevant while paused.
+
+  **Deliverables:** Webull_Orders_2026-09-08_auto.csv (47 order legs),
+  journal-2026-09-08.xlsx (15 trades + By Trader, house format, recalced
+  clean), trader-scoreboard.xlsx (9 new caller rows — Gian's 6 hand trades
+  excluded per house rule —, Scoreboard fully recomputed from all 108
+  trade rows across 27 callers, pre-8/19 caveat and every prior footnote
+  preserved, 6 new footnotes added for today's corrections + the QQQ 716P
+  writeup).
+
+  **NOTE ON CONCURRENCY**: this close-out ran while at least one other
+  session/process was also editing this repo today — the ratchet respacing
+  (born 10%->7.5%, arm 10%->5%) and an "ALL ROOMS LIVE" extension change
+  (3.5.60, pending his reload) both landed in HANDOFF.md between when this
+  run started reading it and when it finished. Neither is this run's work;
+  both are left exactly as their own entries describe below. If HANDOFF.md
+  looks different from what this entry assumed by the time it's read,
+  trust the newer entry.
+Previously — Last updated: 2026-09-08 — ALL ROOMS LIVE (his call) + WHOP PATH VERIFIED HEALTHY.
+"check if every path is good": Discord path IS good — fired all morning
+(AMD 510C, MARA 12C, INTC 110C, SPY 767P, QQQ 720P vero); the liquidity floor
+refused META (67 traded last session) and SNDK (57) exactly as designed; vero's
+pullback waited and correctly skipped QQQ. Two changes made this session.
+  **(1) ALL ROOMS LIVE — extension 3.5.60, needs his RELOAD to take effect.**
+  Elite (Brando 1286022517869514874 / Shoof 1368263191632543956) and a few
+  others were still landing TEST ("nothing sent, paper execution is off")
+  because they carried an explicit channel_live=false the born-testing
+  migration never cleared (that one only deletes ids in BORN_TESTING, which is
+  empty). applyBornTesting() now has a SECOND one-shot sweep, gen ALL_LIVE_GEN
+  "2026-09-08-alllive": deletes EVERY channel_live===false so every room falls
+  through to live-by-default (roomLive = _lv !== false). Runs ONCE; after it, a
+  popup flip to TESTING writes a fresh false that STICKS. Popup log prints
+  "ALL LIVE — N room(s) ... cleared" on reload so it's provable. node --check
+  clean; manifest 3.5.59 -> 3.5.60.
+  **(2) WHOP PATH — VERIFIED, not broken.** Zero Whop reads today did NOT mean
+  the reader is dead. In G's own logged-in Chrome profile: whop.js IS live on
+  whop.com (its own console line fired — "[sniper] this is NOT a room URL", from
+  chrome-extension://.../whop.js:240) and the FirstStepTrading membership is
+  ACTIVE (full room sidebar loads). The 4 wired exp_ ids in rooms.txt are
+  CURRENT — they match Whop's live sidebar today exactly: day-trades
+  exp_cvgzKYDmcUEDGh, futures exp_26GaLgZVMzB2PL, high-risk exp_hpXJymtw0yMqzB,
+  2k-challenge exp_Yg9HGTPsXPhQ5D. So rooms.txt is NOT stale and access is NOT
+  lost. whop.js ONLY reads at whop.com/<biz>/exp_/app/ URLs and stays idle (that
+  warning) on Townhall / /messenger / dead /joined/ links. The one thing that
+  keeps Whop silent: a room tab not sitting on its /app/ URL. FIX IS G's, in the
+  Sniper Whop window — re-open each room from the sidebar so the URL ends
+  /exp_.../app/ and pin THAT tab. Could not enumerate his pinned tabs from here
+  (outside the automation tab group) and did NOT open a live room myself — a
+  first-attach read of a fresh alert in a live room could fire a real order,
+  which is his alone.
+  **Dead-but-harmless**: bridge.py's server-side _whop_feed_loop (the "tabs
+  optional" API reader) has never fed — it queries Whop with exp_ experience ids
+  at guessed /v1/messages paths, but Whop's real chat API wants chat_feed_ ids +
+  a chat-scoped token (docs.whop.com/developer/guides/chat). WHOP_FEED_OK stays
+  0, no "[whop-api] reader up" in 2 wks of bridge.log. It is ONLY the backup;
+  the real Whop path is the browser tabs above, so it can stay dead without
+  costing a read. Left alone (a proper fix needs the chat_feed_ ids via an
+  authenticated call + a restart — not worth a second guess now).
+  **NOT DONE — NEEDS G**: (a) reload the extension so 3.5.60's ALL LIVE sweep
+  runs (it defers to the close on its own while the market's open); (b) pin the
+  4 Whop room /app/ tabs in the Sniper Whop window.
+Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
+G, after seeing the sweep: "good on everything else... change this, dont
+break it please." Shipped the ratchet_sweep.py finding from earlier today.
+  **CODE**: settings.json strategy.stop_loss_pct 10 -> 7.5 (the born stop —
+  confirmed this is the only stop_loss_pct that matters; a second one at
+  execution.webull._stop_loss_pct:20 is a vestigial constructor default that
+  bridge.py's _sync_stop_pct() overwrites at boot, so it's inert).
+  ratchet_tiers.py TIERS (10.0,0.0,10.0) -> (5.0,0.0,5.0) — arm/lock/step,
+  confirmed this is the ONE live consumer (positions.auto_ratchet ->
+  tier_locked_pct -> here) by tracing the import; positions.py's OWN
+  ratchet_locked_pct(gain,sl,tp) is same-named but a DIFFERENT, dead
+  function only exercised by its own test — left untouched, on purpose.
+  **FOUND AND FIXED WHILE IN THERE**: two live boot-banner note() calls in
+  bridge.py (~line 526, ~line 4072) printed their arm/lock/step by
+  RECOMPUTING from take_profit_pct/stop_loss_pct instead of reading
+  ratchet_tiers — a comment right next to one of them already flagged this
+  exact failure mode from an 8/25 incident ("never let the banner recompute
+  the rule — read it off the function that owns it") but the code was never
+  actually updated when tier_locked_pct took over. It only ever LOOKED
+  right because arm/step/stop_loss_pct all happened to equal 10. The
+  instant they diverged today (7.5 born vs 5 arm/step) it would have
+  started printing "+10%" for a bot actually running "+5%" — a real-money
+  bot lying about its own stop in its own log. Both banners now import
+  ratchet_tiers and read TIERS directly; can't drift again.
+  **TEST SUITE**: test_positions.py's ratchet block (4 assertions) hardcoded
+  expected stop prices for the OLD 10/0/10 ladder on a $2.00 fill (2.20,
+  2.40, 2.40, 2.20). Recomputed by hand for 5/0/5 on the SAME stimulus bids
+  (never touched the inputs, only the expected outputs + the comments
+  explaining them): 2.30, 2.50, 2.50, 2.30. Anti-clip's own number (2.36)
+  needed NO change — its 60%-of-gain cap is a function of gain alone, and
+  it already sat tighter than either ladder's raw number at +30%, so it was
+  binding before and after. All 6 test files green after the edit
+  (test_positions/test_architecture/test_brokers/test_phantom_exit/
+  test_tape all rerun clean; test_positions' own ratchet summary print()
+  also had a pre-existing %% -> literal-double-percent bug, unrelated to
+  this change but in a line I was already touching — fixed to match the
+  file's own single-% convention for bare prints).
+  **NOT DONE — NEEDS G**: editing the .py files does not touch the running
+  bridge process. The new spacing is live in the files, not yet live in
+  the account, until the bridge restarts (however he normally restarts it —
+  I have no reach into his Windows process from here).
+Previously — Last updated: 2026-09-08 — TODAY'S 6 CALLS: PULLBACK BEAT "GOT IN WITH THEM"
+BY $89. G: "what would of been the original entry point if we didnt pull
+back.. what would of their trade got if we would of gotten in with them
+instead."
+  Built `today_entry_compare.py`. First had to establish ground truth: the
+  'opened' field in days/*.json is the pullback TOUCH (order-fire) moment,
+  NOT the alert — bridge.log's "AI READ" line is the real alert time, and
+  the gap between them ranged 8-347 seconds across today's 6 calls. Checked
+  whether our own tape has a real quote AT the alert moment before trusting
+  any number — it doesn't; the pullback hunt watches the STOCK while it
+  waits, nothing polls the OPTION's own bid/ask until the touch, and
+  Databento can't fill the gap (embargoed within 24h). Used their_avg (the
+  caller's own posted price, timestamped at the alert) as the honest stand-
+  in for "entering with them" — not a guess, the actual number they called.
+  Ran BOTH legs through the real live ratchet (ratchet_backtest.py's exact
+  engine, born -10%/arm ladder) off real ticks from each entry forward.
+  Result on the 5 usable trades (TSLA excluded, see below): pullback entry
+  beat immediate entry on 4, tied on 1, lost on 1 by $2 — net **pullback
+  +$89** across the 5. Mechanism, not luck: a cheaper basis arms the
+  breakeven lock off a SMALLER absolute bounce, so several of today's calls
+  round-tripped through +10% and locked flat instead of riding the born
+  floor down — AMD Mike#2 is the clean example (immediate: straight to -10%
+  floor, -$56; pullback: armed, locked BE, round-tripped to exactly $0).
+  **TSLA 372.5C 9/11 EXCLUDED — their posted price doesn't check out.**
+  @Owner Alerts posted "$1.50"; our own fill 8 seconds later, same stock
+  price (362.14 -> 361.99, basically flat), was $3.25 — parser.js read the
+  raw text correctly ("Price: $1.50" is verbatim in the alert), so this
+  isn't a parsing bug, the room's own number looks wrong (typo or stale on
+  their end). Flagged to G, no code change — nothing to fix when the input
+  itself was bad and our fill/stop both behaved correctly off the real
+  price.
+Previously — Last updated: 2026-09-08 — RATCHET SPACING SWEEP: BORN -10/ARM +10 IS COSTING
+MONEY, -7.5%/+4% WINS ON REAL FILLS. G: "figure out what ratchet spacing is
+most convenient.. what stop to start with and when to jump to break even."
+  Built `ratchet_sweep.py`: same shape as the real ratchet (born stop,
+  arm-to-breakeven, then a rung every arm_pct beyond it) but sweeps
+  (born_pct, arm_pct) against real OPRA fills from databento_tape.csv,
+  scored in real dollars. Scoped to the 80 contract-days that were ACTUALLY
+  entered (state closed/filled/stopped — a refused/nofill call was never a
+  position, no stop spacing saves a trade that correctly never opened) and
+  excludes Gian's own hand trades (not room calls, would tune the bot's exit
+  around trades it never followed). Entry/exit read from the bot's own
+  `entries[0]` real fill, not `their_avg` — that field is the CALLER'S
+  posted price from the raw alert text (TTT's own guide says so: "your fill
+  will not always match the alert"), confirmed by comparing a TSLA 8/19 case
+  where entries[0] (2.94) matched my derived entry (2.96) closely while
+  their_avg was off by more.
+  Final grid (born 5/7.5/10/12.5/15%, arm 1/2/3/4/5/6/7.5/10/12.5/15%) —
+  dropped born>15% and arm>=20% after a first coarse pass showed every row
+  out there strictly worse, no exception. Result:
+      current rule (born 10%, arm 10%): -$434.20 total, 28.8% win, rank 30/50
+      BEST FOUND: born 7.5%, arm 4%:    +$251.07 total, 35.0% win, 75/80 resolved
+  Runner-up shape holds too — 7.5% born beat every other born value at
+  nearly every arm width tried, and arm 3-6% beat both tighter (1-2%) and
+  looser (7.5%+) arms almost everywhere. Tighter isn't just-always-better:
+  arm 1-2% locks breakeven off ordinary quote noise before the trade's
+  proven itself, arm >=10% gives back too much before locking anything.
+  **READ THIS BEFORE ACTING ON IT**: 80 trades over ~5 weeks is a small
+  sample — a few-dollar gap between neighboring cells (e.g. arm 4 vs 5 vs 6,
+  all within ~$170 of each other) is well within noise. This is a lean, not
+  a verdict. The sweep also doesn't model the live tick-floor/spread-floor
+  safety rails ratchet_tiers.py enforces — those exist specifically to stop
+  a too-tight arm from getting scratched by a quote flicker, which may be
+  part of why arm 1-2% underperforms here. Changing the live ratchet off
+  this number is G's call, not made here.
+  Also tried: adding 9/8's own trades to the backfill. Blocked — Databento's
+  free-credit tier license doesn't cover OPRA data after 2026-09-08 13:30
+  UTC ("live data license required"), a provider-side cutoff, not a bug.
+Previously — Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE FOUND BY IT.
+  G: "find out now then later and slow" — signed up for Databento ($125 free
+  credit, no card) to price every call in days/*.json for real off OPRA,
+  including the refused/nofill/failed ones option_tape.csv could never have
+  (it only ever saw contracts the bot itself quoted, from 9/2 on). Key lives
+  in settings.json execution.databento.api_key (setup_databento.py writes
+  it — same "never pastes his secret to me" doctrine as tastytrade).
+  `databento_backfill.py` reads days/*.json (109 -> 110 option contract-days
+  once the fix below let a few more parse), pulls OPRA cmbp-1 (bid/ask) per
+  contract for a window around its actual opened/closed time (30 min after
+  the call if it never filled), downsamples to ~1 row/sec to match
+  option_tape's own cadence, writes databento_tape.csv in the exact shape
+  tape.py already reads, and is idempotent — a state file tracks every
+  (occ, day) ATTEMPTED, not just the ones that returned rows, so a contract
+  with genuinely no quotes in its window doesn't get re-fetched (and
+  re-billed) forever. Wired into tape.py's SOURCES. Result: 329,430 rows,
+  80 real contracts, 8/5 through 9/4. Cost: a few dollars off the $125.
+  **FOUND BUILDING IT: a live landmine in occ.py, the ONE place every part
+  of this app builds a contract symbol.** `_ymd()` stripped every `-`/`/`
+  THEN counted digits, always assuming what was left was YYYY-MM-DD.
+  `08/28/2026` collapses to the same 8 digits as `2026-08-28` that way, and
+  the old code always read it in the ISO order — so a zero-padded
+  MM/DD/YYYY date silently became a WELL-FORMED WRONG expiry (`282026` ->
+  YY=28 MM=20 DD=26) with no error anywhere. `11/20/26` broke the same way
+  in the other direction. Five real contracts from days/*.json hit this
+  before Databento's own API refused the resulting garbage symbol
+  outright — a broker that instead silently accepted it would have bought
+  whatever contract that nonsense date happened to resolve to. Fixed by
+  reading the year off WHICH piece is 4-or-2 digits and WHERE it sits,
+  before the separators that carried that information get thrown away.
+  test_architecture.py's occ/tape checks still pass; ARCHITECTURE.md
+  updated with both the fix and the reasoning. This is the second landmine
+  occ.py has caught since it was built 9/7 (side_letter's CALL/PUT flip was
+  the first) — worth remembering that consolidating five copies of
+  something into one doesn't just save code, it's the only way a bug like
+  this is findable at all.
+  **SAME DAY, CAUGHT BY G: the first analysis of this data was wrong.**
+  Showed him "worst case" on the 23 missed calls as the lowest print in each
+  contract's window — down to -94.5% on one. He asked "no contracts
+  should've blown up, are you keeping in mind the ratchet system?" Correct
+  — that number ignored that every entry gets a stop born at -10% (settings
+  strategy.stop_loss_pct) and walks up from there (ratchet_tiers.py's 9/3
+  ladder: arm +10%, first lock breakeven, +10% a rung; anti-clip OFF per
+  9/4). Min/max-in-window was never what the bot would have experienced.
+  Built `ratchet_backtest.py` to do it right: walk the real OPRA quotes
+  tick by tick through the actual `ratchet_locked_pct` rule and report what
+  really would have happened. Corrected picture: **zero of 119 simulated
+  contract-days ever showed worse than the -10% floor** — the ratchet held
+  everywhere in this sample, no gap risk materialized. Of the 23 missed
+  calls, 18 stopped at exactly -10%, a handful hadn't resolved by the end
+  of the (30-min, for a nofill) backfill window, and the one real gain
+  (SPY 765C 8/31, +10%) is tagged "Gian" — his own hand trade, not a room
+  miss. So: nothing the room called and we skipped turned out to be a
+  missed big winner in this sample: the refusals did their job. Lesson for
+  next time, not just this once — ANY backtest number on this project has
+  to run through the actual exit rule, never a naive high/low, or it will
+  overstate risk exactly like this did.
+Previously — Last updated: 2026-09-08 — TWO-BROWSER SPLIT HARDENED + WHOP SELF-CONNECT.
+extension 3.5.59. G set the Whop split up (second profile "Sniper Whop",
+logged in, extension installed) and hit two issues, both fixed:
+  1. WHOP PROFILE WASN'T FEEDING THE BRIDGE. A tab open BEFORE the extension
+     loads never gets a content script (Chrome only injects on nav-after-
+     install) — so whop.js never attached to the 4 pre-open Whop tabs.
+     FIX: ensureReaders() on the 30s alarm injects the right reader
+     (content.js/whop.js) into any matching tab not injected in 5 min.
+     Idempotent, so no double-read. The Whop profile self-connects within a
+     minute of the extension reloading — no manual tab reload needed.
+  2. STRAY WHOP TABS IN THE DISCORD BROWSER (4 left over from before the
+     split) would double-read Whop AND the old lane logic would REOPEN any
+     G closed. FIX: sticky per-profile lane (profile_lane in storage, locks at
+     >=3 tabs of a surface with a majority, never flips) + evictOtherLane()
+     closes wrong-lane room tabs + whopWatchdog now no-ops in the discord lane.
+     Net: the Discord browser never opens, reloads, or keeps a Whop tab; the
+     Whop profile keeps its 4 and self-connects. No double-fire either way.
+  AUTO-APPLY: the extension fingerprints its folder (bridge build_stamp) and
+  reloads itself — but DEFERS while the market is open / a position is in
+  flight. So 3.5.59 goes live at the CLOSE on its own, or immediately if G
+  reloads the extension by hand in BOTH profiles. Bridge already restarted
+  (12:01) so its side is live now.
+  MISSED TODAY because of the above: trademorewiser's ES short (Whop, profile
+  not feeding yet) and Stormzy's 12:00 MES (came in 1 min before the bridge
+  restart, old Topstep sign bug). Both paths are fixed for next time.
+
+Prior: 2026-09-08 — OWLS WIRED (shabs + eli), and a config-plumbing bug
+fixed on the way. G asked if we see Elite/OWLS. Elite (Brando+Shoof) was
+already live in rooms.txt; OWLS was never added — I built the parser support
+on 9/7 and skipped the room lines. Now both shabs (1513300726141419550) and
+eli (1519039282537300209) are in rooms.txt, BORN TESTING (gen 2026-09-08b),
+28 live rooms.
+  THE BUG, worth remembering: spx_entry_channels and default_symbol_channels
+  live in settings.json — but that is the BRIDGE's file. The EXTENSION's parser
+  does the SPX->SPY retarget and the implied-symbol fill, and it reads config
+  from chrome.storage, which never saw settings.json. So editing settings.json
+  enabled SPX on the bridge while the extension still refused it — they never
+  agreed. (That is also why the old lone 1395 entry's history was murky.)
+  FIX: the bridge now serves spx_entry_channels, default_symbol_channels and
+  entry_no_verb_channels on /mode; refreshBridgeChannels() in the extension
+  caches them and cfg() overlays them — settings.json is now the SINGLE source
+  for all three, for both processes. A popup/chrome.storage value still wins if
+  one exists. Proven: shabs "in 7655p 2.9" -> OPEN SPY 766P (SPX/10 retarget),
+  born-testing so it won't fire until G flips it.
+  Also fixed: I first wrote the OWLS keys under settings.execution (wrong
+  level) and nearly orphaned the existing 1395 spx channel. Moved both keys to
+  ROOT and merged 1395 back in. Now: spx_entry_channels = [1395..., shabs, eli].
+  NEEDS the bridge restart to serve the new /mode fields, AND an extension
+  reload to pick them up + open the two new rooms.
+
+Prior: 2026-09-08 — WHOP IN ITS OWN BROWSER (his ask). Whop's 4 tabs are
+the heaviest thing running and were dragging the Discord tabs enough to get
+RWGates/Brando discarded. START HERE now opens Discord rooms in the main Chrome
+profile and the 4 Whop rooms in a SECOND profile (WHOP_PROFILE, default "Sniper
+Whop", override with whop-profile.txt) — a separate renderer set, so Whop's
+memory is off the Discord browser entirely. All still one bat.
+  ONE-TIME SETUP in the Whop profile, done once and it persists: log into Whop,
+  and install the Discord Sniper extension in it (puzzle piece / Load Unpacked
+  on the extension folder) exactly like the main profile. After that the
+  launcher opens both every run.
+  WHY IT DOESN'T DOUBLE-FIRE: both profiles run the same extension and read the
+  same rooms.txt, so openMissingRooms() is now LANE-AWARE — an instance only
+  opens rooms of a surface it already has a tab for. The launcher seeds each
+  profile with its own surface (Discord rooms to main, Whop rooms to WHOP_
+  PROFILE), so each adopts its lane and never opens the other's rooms. Discord
+  and Whop room sets are disjoint (22 vs 4, no shared channel), so there is no
+  overlap to collide on. Both post to the one bridge on 127.0.0.1 — it already
+  sends Access-Control-Allow-Origin:* and does not care which browser posts.
+  The Whop profile has its OWN channel_live flags; Whop rooms aren't in
+  BORN_TESTING so they come up live by the 8/23 default — no extra step.
+  Lane logic proven in isolation; extension 3.5.54.
+
+Prior: 2026-09-08 — MISSING ROOMS HEAL THEMSELVES; launcher stops
+nuking Chrome. G: "dont give me this option, check which are open and open the
+ones that are missing." This reverses the 9/2 "close everything and reopen"
+rule, which was a sledgehammer — it discarded tabs that were reading fine, and
+THIS MORNING it shut the Brando/Shoof tabs, so Brando's 10:44 QQQ 720c call went
+completely unread (the channel ids appear ZERO times in today's bridge log).
+  NEW: background.js openMissingRooms() — the mirror of oneTabPerChannel().
+  The dupe-closer removes extra tabs; this opens any LIVE room from rooms.txt
+  that has no tab at all. Both run on the watch-build alarm, so the set of open
+  room tabs continuously converges on rooms.txt without touching a good tab.
+  LIVE rooms only (never #SLEEP or commented), Discord + Whop, throttled to 3
+  per pass and never re-opening a room within 2 minutes (a still-loading tab
+  has no matchable path yet — without the guard it would open forever).
+  LAUNCHER: the [5/5] block no longer kills Chrome when it is already open. It
+  prints "leaving your tabs exactly as they are" and jumps to :chromedone; the
+  extension opens whatever is missing within a minute. Chrome is only started
+  fresh on a true cold start (no window at all).
+  CMD TRAP RE-HIT AND FIXED: my first draft put "(9/1 and 9/4 exports)" and
+  even a NOTE about parens — inside the `if not errorlevel 1 (` block. A `)`
+  in a rem inside a bracketed block ends the block early. The whole [5/5] body
+  is now free of round brackets except the gate itself; verified 100/100 paren
+  balance and zero brackets in lines 275-293.
+  extension 3.5.53.
+
+Prior: Last updated: 2026-09-08 — THE READER TAPE: reads.log + reads.py.
+  G: "so now they will read and transcribe? i need to see them in order to
+  help you analize." Yes — the listener transcribes whenever it is in a voice
+  room even with voice_entries OFF, and vision reads every image post. They
+  just landed in three different places (popup log, capture, bridge.log). Now
+  ONE chronological, human-readable file: reads.log.
+    time  🎙/📸  room  speaker | what the parser made of it | what was heard/seen [note]
+  VOICE: background.js posts every finalized transcript line to POST /reads
+  with a quick parse of it — fire-and-forget, never awaited, never allowed to
+  slow the ears. VISION: the bridge writes its own reads directly — the call
+  (with confidence), the refusal reason, or the FAILURE reason (which now
+  carries the API's message, see the vision sweep below).
+  VIEW IT:  python3 reads.py            last 60
+            python3 reads.py --voice / --vision / --calls / --today / -n 200
+            python3 reads.py --misses  lines with something ticker-shaped that
+                                       produced NOTHING — the ones to look at
+  The trading path never reads this file. It is for G's eyes, so he can point
+  at a line and say what it should have been. That is how the readers get
+  tuned from here on: not from me guessing, from him reading the stream.
+  TO FILL IT: run the listener during a live session (entries can stay off).
+
+Prior: Last updated: 2026-09-08 — VISION / IMAGE SWEEP. The last unswept path.
+  THE DESIGN IS RIGHT AND IT IS WORTH KNOWING WHY. An image goes to the bridge
+  /readimage; the model TRANSCRIBES what it sees (seen_text) and proposes a
+  call; ai_reader.validate() then demands that the ticker, the strike and the
+  price each LITERALLY appear in the model's own transcription plus the
+  caption — a hallucinated ticker fails that bar. The clean call comes back as
+  text and is re-parsed by the SAME parseSignal, and `sig = sig3` happens
+  BEFORE `sig.live = roomLive` is set, so vision inherits live/testing, BORN
+  TESTING, the ticker allowlist (sendOrder) and the volume floor (bridge).
+  Confidence under 0.6 is held for review, never sent. Same image within 24h
+  gets the cached verdict (the Whop 2K room re-posts one screenshot every ~6
+  minutes). Images are fetched from Discord's CDN by the FULL SIGNED URL the
+  browser already loaded, within milliseconds of the post, so link expiry
+  never bites.
+
+  WHAT IT HAS ACTUALLY DONE, from bridge.log: 137 screenshot reads.
+    125 refused (charts, no call)          — correct
+     12 produced a call                    — EVERY ONE a TRIM or CLOSE
+      0 produced an ENTRY                  — ever
+  With exit_policy=entries_only, a TRIM/CLOSE from a room is refused at the
+  bridge, so VISION HAS NEVER PLACED AN ORDER and structurally cannot unless it
+  one day reads an OPEN. Zero money exposure to date.
+  Of the 12: nine were a bot's "+30%" progress cards read as trims (record
+  noise only), "Out of INTC" was a genuine exit, and two were victory laps
+  ("Those SPX puts we took went to $16.00 from $5.80") read as exits — wrong,
+  harmless under entries_only, left alone.
+
+  THE ONE FIX: 12 of 137 reads had failed as a bare "HTTP 400". The API's own
+  explanation was read and DISCARDED — `return {"_error": "HTTP %s" % e.code}`
+  — so nobody could tell if it was image size, media type, or a bad request.
+  It now carries the message: "HTTP 400: image exceeds 5 MB maximum: 6.2 MB".
+  Proven with a faked API error. Next time it happens the log has the answer.
+
+  NOTED, NOT CHANGED: Discord's img.src is usually the RESIZED preview
+  (?width=550), so the reader sees a thumbnail, not the original. Legible for
+  an alert screenshot, and charts are refused regardless. Stripping the resize
+  params for full resolution is possible but untested against the signed URL —
+  do not touch it without proving the fetch still works.
+
+Prior: Last updated: 2026-09-08 — voice_corpus.json: 2,305 REAL SPOKEN LINES, kept.
+  G asked whether we have voice recordings to practise on. NO AUDIO IS KEPT —
+  Deepgram transcribes the stream live and only the text survives. So we cannot
+  test whether it HEARD correctly; we can only test what the parser does with
+  what it heard. Those are different problems and only the second is testable.
+  What we DO have is 2,305 unique spoken lines that were already being captured
+  alongside typed messages (1,836 from Honeydrip daytrades-scalps, 557 from
+  Live Trading). They are now saved as voice_corpus.json so the voice reader
+  has a permanent regression set instead of lines scattered through exports.
+  MORE ARRIVE FOR FREE: the listener writes transcripts into the same capture
+  as typed messages, so any Ctrl+Shift+X on a room that was listening exports
+  them too.
+
+  A MEASUREMENT TRAP WORTH REMEMBERING: with the room prefix left on
+  ("🎙 (2579) Discord | #room | S0: ...") only 41 lines produced an action and
+  none fired. Stripped to the bare transcript — which is what production
+  actually passes — it became 111 actions and THREE fires. Test the voice
+  reader on the bare text or the result is meaningless.
+
+  OF THE THREE: two were STOPMOVE with no symbol (already refused by
+  entries_only). The third was real and is now fixed:
+      "AMD actually is kinda selling here. Let's see."  ->  CLOSE AMD
+  The STOCK is selling; nobody is selling anything. My first guard vetoed any
+  "is/are selling" and that would have KILLED A REAL EXIT —
+      "XOM OUT Will revisit... Most things are selling"
+  — so the veto now only fires when the price-action phrase is the ONLY exit
+  evidence in the line. Any independent exit verb (out, stc, sold, closed,
+  trim, stopped, cut) and the line is left exactly as it was. test_exits.js
+  holds both sides, including that "selling the rest" IS a full close.
+
+Prior: Last updated: 2026-09-08 — VOICE / DEEPGRAM SWEEP.
+  FIRST, THE REASSURANCE: VOICE FIRES NOTHING TODAY. voice_entries and
+  voice_exits are absent from settings.json AND from cfg()'s defaults, and the
+  code demands `=== true` for each. Everything below is LATENT — it matters the
+  day those switches go on, not now.
+
+  THE REAL FIND: VOICE IGNORED LIVE/TESTING ENTIRELY. The voice path carried a
+  flat `vs.live = true` with the comment "voice rooms are live rooms" (8/29).
+  That predates per-room testing and BORN TESTING, and it meant a room set to
+  TESTING in the popup would still have fired its SPOKEN calls with REAL money
+  — flatly against the house rule that flipping a room live is G's call alone.
+  Now it reads the same three lines as the typed reader: his popup setting
+  wins, an untouched room is live (the 8/23 default), a BORN_TESTING room
+  starts in testing. Set BEFORE the two-stage staging, so a call staged on
+  "loading" and fired later by "I'm in" carries the same flag. Five cases
+  proven.
+
+  WHAT THE TRANSCRIPTS ACTUALLY CONTAIN: 2,393 voice lines in the corpus, 41
+  produce an action, and NOT ONE of them fires — they are almost all
+  symbol-less commentary ("I'm taking trims here", "Loading the meta").
+
+  ONE VOICE-SPECIFIC HAZARD, worth remembering:
+      "I wanna load the same $3.45 puts on Tesla"  ->  TESLA 3.45 PUTS
+  Two errors in one sentence. TESLA is not a ticker (TSLA is), and $3.45 is the
+  PREMIUM — spoken alerts say "the $3.45 puts" where a typed one would say
+  "$345 puts". So a spoken price can arrive in the STRIKE field. Today the
+  ticker gate refuses it because TESLA is not on optionable.txt. If a speaker
+  ever says a name that resolves cleanly AND quotes the premium that way, the
+  strike would be wrong and the broker would reject it — noisy, not silent.
+  If voice is ever switched on, a strike-vs-spot sanity check is the next
+  guard to add.
+
+Prior: Last updated: 2026-09-08 — BORN TESTING WAS NOT WORKING. G caught it: "the new
+rooms show live for me actually". He was right and the gate was useless for
+exactly the rooms it was written for.
+  WHY IT FAILED. The gate applied only when channel_live had NO entry for a
+  room. But channel_live PERSISTS on purpose (his own call: "everytime i push a
+  new update my channels go all back to testing, i need the popup to keep the
+  live on"), and the popup's ALL LIVE button writes true for EVERY room id.
+  Four of the six reopened rooms — cranmer/opt-9, madhatter/opt-1,
+  stormzyy/fut-1, guru/fut-2 — were LIVE rooms before being cut on 8/30, so
+  they still carried a stale `true`. `_lv === undefined` was never true for
+  them, the gate never fired, and they came back LIVE on real money.
+  FIX: BORN_TESTING_GEN, currently "2026-09-08a". applyBornTesting() runs on
+  install and startup and, once per generation, DELETES the channel_live entry
+  for every id in BORN_TESTING so the room genuinely starts with no setting.
+  It logs how many stale LIVE flags it cleared. After G flips one in the popup
+  that is a real entry and it sticks — the migration will not run again for
+  that generation.
+  ADDING A REOPENED ROOM LATER: put its id in BORN_TESTING **and bump the
+  generation string**, or the migration considers itself done and the room
+  stays live. This is the trap that caused the bug; do not repeat it.
+  Proven with a fake storage: 6 stale LIVE flags cleared, all six read TESTING
+  afterwards, an unrelated live room untouched, and a flip-to-live survives the
+  next startup.
+
+Prior: Last updated: 2026-09-08 — TWO NEW GATES: A REAL TICKER LIST, AND A VOLUME FLOOR.
+G pushed back on both, correctly, and both times the data moved the answer.
+
+  1. extension/optionable.txt — THE ONE LIST OF TRADEABLE SYMBOLS.
+     6,337 equity/ETF option roots + 25 futures + 8 cash indexes, pulled from
+     tastytrade /instruments/equities/active (13,226 active equities). A symbol
+     earns its place by the broker publishing OPTION TICK SIZES for it.
+     Rebuild any time: python3 refresh_optionable.py (refuses to write a
+     truncated file — an old list beats a short one).
+     WHY: the reader took any capitalised word in front of a strike as a
+     ticker. Blocking words one at a time is whack-a-mole — blocking VERY just
+     moved the misread to GREEN. An allowlist ends it.
+     I FIRST SEEDED THIS FROM TRADIER AND IT WAS WRONG. G: "your guessing makes
+     no sense.. use the internet and all the api keys we have connected". He
+     was right: the Tradier seed marked VSCO, WATT and SMX as not optionable
+     and all three ARE. tastytrade's full universe is the source of truth.
+     Checked against every symbol our alerts have ever produced: 33 would be
+     blocked and ALL 33 are junk (WITH, GREEN, FVG, TESLA, BREAK, YES, NOTES,
+     BABY, DAY, ONE, REST...) or small caps from Platinum equity, which is cut.
+     ZERO real alerts blocked.
+     NOW ENFORCED IN BOTH PLACES (9/8):
+       * extension — background.js sendOrder() checks before the order ever
+         leaves the browser, and writes a NOT-A-TICKER line to the log rather
+         than dropping it silently, so a genuine ticker missing from the list
+         is VISIBLE instead of a mystery no-trade.
+       * bridge — symbols.py, checked in do_POST beside the NO-DATE gate, so
+         anything reaching the bridge by another path is caught too.
+     BOTH FAIL OPEN: a missing or truncated file (<1000 symbols) turns the
+     check OFF and says so once. A data file that failed to load must never
+     become a silent trading halt.
+     test_optionable.js locks it: 44 real tickers must be present (SPY, NVDA,
+     SNDK, MNQ, SPX, and SMH — which is slang in NOT_TICKERS but a real ETF),
+     and 30 word-symbols that the live parser actually produced must be absent.
+
+  2. liquidity.py — A VOLUME FLOOR, DEFAULT 250 (G's number, 9/8).
+     His instinct: "even if you can buy a contract you still don't want to if
+     there's no open interest.. you wouldn't be able to sell it to no one
+     later." Right, and the measurement moved it one step: OPEN INTEREST IS
+     THE WRONG NUMBER for these names. At strikes within 2% of spot —
+         NVDA OI 3,403 / VOL 29,332      TSLA OI 1,076 / VOL 21,480
+         QQQ  OI   792 / VOL  6,604      SPY  OI 1,206 / VOL  4,205
+         MU   OI    94 / VOL  1,867      SNDK OI    27 / VOL    336
+     These are day-traded contracts: everyone flattens by the close, so OI
+     stays tiny while volume is huge. An OI gate would have blocked MU and
+     SNDK for nothing, and SNDK is a real part of Brando's book.
+     250 passes everything the rooms touch (SNDK's thinnest is 280) and only
+     ever fires on something genuinely dead.
+     READS THE PRIOR COMPLETED SESSION, on purpose: intraday volume starts at
+     zero at 9:30, so a gate on today's number would refuse every 0DTE trade
+     at the open. Served from a warm cache — the fire path pays no latency.
+     FAILS OPEN: unknown contract, no token or a slow broker all ALLOW, with a
+     note. The spread gate still stands behind it.
+     EXITS ARE NEVER GATED — being stuck is the thing this guards against.
+     Live-tested: MU 455C (0 traded) REFUSED, SPY 770C (87,921) ALLOWED.
+     Off switch: settings.json execution.min_contract_volume = 0.
+     Wired into webull_options.buy() beside the spread guard.
+
+Prior: Last updated: 2026-09-08 ~late — SWEEP 2: FALSE POSITIVES. The first sweep
+looked for MISSED signals. This one looked the other way — everything that
+FIRES, checked for things that should not. Method: list every symbol the parser
+has ever produced (135 distinct) and test each against English.
+
+  SIX WERE ENGLISH WORDS. THREE OF THEM FIRED:
+    "...then can go WITH 773c. Theta decay will destroy..."  -> OPEN WITH 773
+       Pure coaching text. A BUY, in a ticker that does not exist, at market
+       (no limit). The single worst thing found in either sweep.
+    "| EXIT ALERT Ticker: NBIS Stopped out"                  -> CLOSE EXIT
+       The real ticker is NBIS. A genuine stop-out was resolving to the word
+       "EXIT", so the actual NBIS position would NOT have been closed. Now
+       correctly CLOSE NBIS.
+    "OUT LAST 3.50 L ON THE VERY LAST OTHERS GREEN"          -> CLOSE VERY
+  Blocking a word just moves the reader to the NEXT word, so this took two
+  passes: VERY -> GREEN, and the month list had only ABBREVIATIONS so
+  "BOOKING SOME PROFITS FROM JUNE" resolved to ticker JUNE. Function words,
+  colours, full month names and day names are all in NOT_TICKERS now.
+  RESULT: 135 distinct symbols -> 129, and ZERO English words remain.
+
+  CHECKED AND CLEAN, worth not re-investigating:
+    * strikes: none absurd (nothing <1 or >10000)
+    * one-letter symbols W and U are REAL (Wayfair, Unity), not misparses
+    * 68 futures entries with no expiry — correct, futures have none
+    * Discord REACTION COUNTS ("...full Tp 48 14 8 3") can create a fake price,
+      but ONLY via fullTextOf/innerText, which feeds the history grabber. The
+      trading path uses textOf() = message body + embeds, so reactions never
+      reach it, and background.js gates history separately. Verified, not a bug.
+
+  THE "161 DATELESS ENTRIES" — RESOLVED, NO CHANGE NEEDED. I flagged these as
+  running on a GUESS. That framing was wrong and is corrected here.
+  G's read of Platinum nitro was 0DTE ("the contract is so cheap"), and the
+  data backs the STYLE completely: nitro never states an expiry (6 date-words
+  in 885 messages, none a contract date), 119 contracts over 115 trading days
+  = 1.1 entries/day, NOTHING ever carried to the next day (the 8 repeated
+  strikes are months apart, not held), premiums $0.72-$2.33, and their own
+  words "today is friday so lot more riskier setups" — Friday is only riskier
+  if you are same-day.
+  BUT literal 0DTE would be unbuyable for most of that room. bridge.py already
+  splits it correctly, and the comment credits the rule to G on 9/7:
+      SPY / QQQ / IWM  -> TODAY. These are the only tickers with a midweek
+                         same-day listing, and it is what those rooms mean.
+      single stocks    -> THIS FRIDAY. "A single stock has FRIDAY WEEKLIES
+                         ONLY: a midweek 0DTE does not exist, so this Friday
+                         is the only listing there is, NOT a guess."
+  The split of the 161: 56 go to 0DTE, 104 go to this Friday — and the 104 are
+  NVDA (38), TSLA (34), AMZN, PLTR, AAPL, GOOG, HOOD, META, AMD, UBER. Every
+  one of those is a single stock with no midweek expiry to buy.
+  execution.assume_weekly_expiry = True, so this is live and nothing is being
+  refused. Setting nitro to a literal "0DTE" would ask the broker for contracts
+  that do not exist on 104 of 161 entries. LEAVE IT.
+
+Prior: Last updated: 2026-09-08 ~late — CROSS-ROOM PARSER AUDIT. G's ask: are we
+slipping or missing alerts, do the rooms disagree with each other. Method: run
+every room's captured messages (18 rooms, 3,769 unique) through the live
+parser, isolate lines that carry a REAL CONTRACT but produce NO ACTION, group
+by room. Two faults fell out, BOTH OLDER THAN THE AUDIT, both cost money:
+
+  1. THE WORD "partial" WAS NOT A TRIM ANYWHERE. RE_PARTIAL's \bpart\b does not
+     match "partial", and nothing else looked for it. So
+       "STC TSLA 8/19 350c @ .36 partial"
+       "STC META 0dte 600c .94 partial make the free"
+     read as FULL EXITS — the caller sells a SLICE and the bot dumps the WHOLE
+     position. NINETEEN corpus lines were doing exactly this, across Option
+     Alerts, TTT Lotto and Elite. Now downgraded to TRIM (fire=false, per the
+     exit doctrine: their trims are noted, never traded). No pct is set — he
+     said partial, not how much.
+
+  2. AN EXPLICIT STC WAS BEING SILENCED BY CHATTER. The chatter veto had a
+     carve-out for BUYS only (_explicitBuy). Explicit SELLS had none, so real
+     exits died on whatever the caller happened to say next:
+       "...partial. Taking some in case we don't hold"   killed by "don't"
+       "...stop hit on the rest, can probably..."        killed by "probably"
+       "...cutting in the green, will be watching"       killed by "watching"
+     The bare line closed fine; one casual sentence and the exit disappeared.
+     A MISSED EXIT IS THE EXPENSIVE MISTAKE — the position stays open on our
+     ratchet alone. An explicit STC with a real contract now skips the chatter
+     veto entirely; unlike a buy there is no "don't" to respect, because the
+     sell verb and contract are already stated.
+  Corpus: 27 lines changed — 19 CLOSE->TRIM (the dump-the-position bug), 6
+  newly-firing exits, 0 lost.
+
+  EVERYTHING ELSE CAME BACK CLEAN. Platinum nitro looked worst on paper (203 of
+  339 contract-lines silent, 60%) and is entirely correct: every one is
+  "$140p on watch" — a WATCHLIST. Same for Aristotle ("Watching AAPL above 313
+  for the 315 C"), Platinum ei-alerts ("WATCHING SPY $763 CALLS") and Aristotle
+  small ("Loading HOOD 130 C" = the PREPARE state). Those rooms are fine.
+  STILL OPEN, small: Honeydrip writes entries as prose ("I'm in @here 768P 1dte
+  at $3.30", "Filled spy puts 775 puts 1dte 3.12") and Vero 3 posts
+  "XOM 9/18 $170 C 2 cons @ 2.02" verbless — both readable, neither urgent, and
+  Vero 3's are swing-alerts anyway.
+
+Prior: Last updated: 2026-09-08 ~late — BOTH TURNED ON, G's call.
+  TTT LOTTO verbless entries are LIVE. settings.json entry_no_verb_channels now
+  contains 880503518878892143. One key added, 22 -> 23, nothing else touched and
+  no secret read back. Its seven previously-invisible entries now fire, and its
+  own daily levels row still does not.
+  NOTE FOR WHOEVER READS THIS NEXT: TTT Lotto is a LIVE room, not born-testing,
+  so this took effect on real money immediately — it was not staged. That was
+  G's instruction ("turn on"), made with the numbers in front of him.
+  NGD ngd-trades STAYS LIVE. G's call ("keep ngd"). It is a machine-generated
+  1-minute futures radar ("NEW POTENTIAL SIGNAL", "a setup has been detected")
+  firing real MGC/MNQ orders with a limit, and no one has yet reviewed what it
+  costs or makes. The journal is the place that will answer it — first NGD fill
+  that lands, check it there.
+
+Prior: Last updated: 2026-09-08 ~late — THE TWO UNKNOWN ROOMS, GRABBED AND READ. G was
+asleep, so the scrollback was pulled by hand instead of Ctrl+Shift+X.
+  TTT LOTTO (#lotto-alerts, TradingTheTrend) IS ALIVE AND WAS HALF-BLIND.
+  127 messages, 8 callers (TradingTheTrend, Lars, Tater Tot, Edtrader,
+  Shakira T, treadwayma, Abblejuice, rks). Clean BTO/STC grammar — but most
+  callers skip the verb, and NINE entries fired while SEVEN were invisible:
+  "MU 8/28 965c @ 1.26", "TSLA 9/4 360P .72", "NBIS 230C @.25",
+  "AMD 0dte 445p @ .76". Now 15 entries.
+  NEW, AND SCOPED PER CHANNEL: settings.json entry_no_verb_channels. A bare
+  contract WITH a price counts as an entry, but ONLY in a room named there.
+  THAT SCOPING IS THE WHOLE SAFETY STORY AND IT WAS MEASURED. Across the
+  7,168-line corpus, 51 currently-silent lines match "contract + price", and
+  the biggest group is TradingTheTrend's OWN daily levels row —
+      "QQQ 726c > 725.00  715p < 716.00  MU 1000c > 980.00 ..."
+  ONE LINE, EIGHT CONTRACTS. Global, this rule buys a watchlist. G's read:
+  "it would be a disaster." The rest were weekly recaps and victory laps.
+  Even inside a named room the vetoes still refuse: comparison operators,
+  recap/weekly/unrealized/runners/banger, on-watch/watching/loading/eyes-on,
+  up-N%/arrow/itm/hit, and anything RE_EXIT or RE_TRIM catches.
+  BONUS BUG, OLDER THAN TONIGHT: the "bullwinkle entry" branch would take
+  "SPY $654p on watch again for a quick scalp" — a WATCHLIST row — and buy it.
+  Nothing was firing in practice only because the nitro room's real posts carry
+  an "@Owner Alerts Comment" prefix that stops them earlier. That is luck, not
+  a guard. On-watch is now refused in that branch too.
+  NGD ngd-trades IS A FUTURES RADAR BOT, and it DOES fire:
+      "MGC SHORT (1m) @ 4428.65 | TP:4416.65 SL:4436.65 | Prob:74.5% | R:R:1.5"
+  parses as OPEN MGC SHORT limit 4428.65 (MNQ LONG likewise). NOT a human's
+  executed trade — the bot's own words are "NEW POTENTIAL SIGNAL" and "a setup
+  has been detected". 1-minute timeframe, leveraged futures, machine-generated.
+  FOR G TO DECIDE: this room is wired and live. Nobody has ever reviewed what
+  it actually costs or makes. Worth a week in testing before it is trusted.
+  Corpus: 7,166/7,168 identical with the flag off, 0 newly firing, 0 lost.
+
+Prior: Last updated: 2026-09-07 ~night — VOICE AUTO-JOIN STAYS AS IT IS. G's call,
+made with the tradeoff in front of him. Do not change it, and do not raise it
+again unless he does.
+  THE FACTS BEHIND THE DECISION. The extension makes ZERO requests to Discord —
+  the only network destination in all of extension/*.js is 127.0.0.1:8787. No
+  user token, no gateway, no messages, no typing. Discord's published detection
+  signals (messages with no typing event, typing across channels in 5-50ms,
+  channels iterated in ID order) are ALL emitted by sending; we send nothing.
+  Reading the DOM is structurally safer than every comparable project, all of
+  which drive the gateway with a selfbot token.
+  THE ONE EXCEPTION is content.js joinLiveVoice(), which clicks the LIVE badge
+  and presses Join. It is the only place the app acts as the user, and it does
+  produce a real server-side voice-state event.
+  G ASKED FOR A 3-4 SECOND DELAY on it. Not done, deliberately: Discord's own
+  policy names delays specifically — "captcha solving, token rotation, delays,
+  and human-like typing do not make a prohibited use compliant". A delay
+  changes nothing about what is sent, it only makes an automated action look
+  less automated, so it buys the appearance of safety and not the safety. He
+  was offered notify-and-tap (same few seconds, removes the account action
+  entirely) and chose to keep instant auto-join knowingly. That is a legitimate
+  choice about his own account and it is recorded here as his, not as an
+  oversight.
+
+Prior: Last updated: 2026-09-07 ~night — SPX IS TRADEABLE, ON TASTYTRADE. Settled by
+API, nothing submitted (Tradier preview=true and tastytrade /orders/dry-run
+both validate and stop):
+  tastytrade  ACCEPTED "SPXW 260908C07760000", dry-run status Received,
+              buying power 250.00 -> 243.28 (change 6.72 on a 1-lot at 0.05).
+              Only warning was "next valid session" — the market was shut.
+              THIS IS THE PATH FOR SPX. Note the bot trades options on WEBULL
+              today; tastytrade is greeks-only. Using it to EXECUTE is a real
+              build, not a config flip.
+  Tradier     ACCEPTED the same contract and reached the buying-power check,
+              so SPX permissions are fine there too — but it is blocked:
+              total_cash 250, uncleared_funds 500, option_buying_power -250.
+              A funding/settlement problem, NOT an instrument problem.
+  Also: that 7760 call quoted bid 2.15 / ask 2.30, which corroborates the
+  "300/con" = $3.00 reading. At ~$220 a contract, $250 of buying power is
+  exactly ONE contract — which is how shabs sizes ("1 con per play").
+
+ANNOUNCEMENT-FOLLOW WORKAROUND: CHECKED, DOES NOT APPLY. The idea (follow a
+Discord Announcement channel into Sniper HQ so it arrives as a webhook post,
+which background.js already unwraps like the ZTRADEZ relay) is sound, but all
+8 servers were scanned 9/7 and ZERO of the 24 wired rooms are Announcement
+channels. Only ZTRADEZ has any at all (3: winning-recap, penny-stocks, otc)
+and none of them is a room we trade. Alert rooms are plain text channels
+because sellers gate them; Announcement type is for broadcast. No tabs saved.
+
+Prior: Last updated: 2026-09-07 ~night — SHABS (OWLS #shabs-sky-alerts,
+1513300726141419550, plus 1519039282537300209). His August recap: 53 SPX
+trades, 42W/6L/5BE, 87.5% win rate ex-BE, +$15,898 net at 1 contract a play —
+the best record in any room scanned. Two things in his grammar were traps:
+  1. PREMIUM QUOTED PER CONTRACT. "7760c at 300/con" is a $3.00 option, not a
+     $300 one — his own recap proves the scale ("8/28 7760c 245 -> 1550" =
+     2.45 -> 15.50). Read literally that is a THREE HUNDRED DOLLAR limit on a
+     three dollar option, which doesn't merely overpay, it DELETES the price
+     protection the limit exists for. Now normalised before anything reads a
+     price. "10 cons" (a quantity) is untouched — the rule only fires when the
+     number is glued to the slash. NOTE he also uses plain dollars in the same
+     channel ("in 7730c 4.3", "AAPL 322.5c at .30"), so both must work.
+  2. THE TICKER HE NEVER TYPES. He trades one underlying and says so ("August
+     Recap, SPX only"), so he writes "in 7655p 2.9" with no symbol and nothing
+     parsed at all. NEW: settings.json default_symbol_channels maps a channel
+     to the symbol it always means — { "1519039282537300209": "SPX" }.
+     PER CHANNEL on purpose: a bare "640c" in a room that trades everything is
+     unknowable, and inventing a symbol there buys the WRONG UNDERLYING. Only
+     applied when the line has no contract of its own, so an explicit ticker in
+     the same message always wins. With the setting absent, those lines stay
+     unreadable — that is the guard, and it is a test case.
+  ALREADY CORRECT, left alone: indexToEtf nulls the limit on SPX->SPY ("index
+  premium != ETF premium; bid the ETF market"), so the ~10x notional gap does
+  NOT leak into a limit price. Good design that was already there.
+  STILL BLOCKED, and it is G's call: SPX ENTRIES ARE OFF. Wiring shabs means
+  adding his channel to spx_entry_channels, which converts 7655p -> SPY 766p.
+  That is a money/strategy decision (SPY is a proxy, not his instrument), so
+  it stays his. Open question raised 9/7: whether Tradier or tastytrade can
+  place a REAL SPX order via API, which would remove the proxy entirely.
+
+Prior: Last updated: 2026-09-07 ~night — THE PLAN IS THE VERB. G pasted six alerts
+from a room that writes calls with NO ENTRY VERB — contract, fill price, then
+the risk plan. All six read as silence. Now 4 of 6 parse, and the two that
+don't are refusals on purpose. Three fixes, each regression-tested on the full
+7,168-line corpus:
+  1. PLAN-AS-VERB. A bare contract alone stays ambiguous — that is a watchlist
+     row and forcing it to fire buys somebody's chart idea. But nobody writes
+     "SL .80 TP 1.60 / 1.95 / 2.6" about a trade they have not taken. A stop or
+     a target ladder WITH a number now counts as the entry verb, and only
+     alongside a real contract and no exit/trim/recap language.
+  2. EXPIRY ON EITHER SIDE OF THE STRIKE. "TSLA 357.5 0 DTE CALLS" was unread
+     because the shape only allowed an expiry BEFORE the strike. "0 DTE" with a
+     space is accepted too. The after-expiry must be preceded by a real space,
+     or "those same 1dte puts" parses as ticker SAME strike 1 — it did, briefly,
+     and that is now a test case. SAME/THOSE/THESE/THAT/THIS added to
+     NOT_TICKERS.
+  3. DATE FIRST. "9/2 TSLA 355 PUTS 1.57" matched the contract but LOST the
+     expiry, so the entry fell back to a guessed one. A short 14-char window
+     before the symbol is now searched, so an unrelated date earlier in the
+     sentence cannot be adopted. Bonus: cranmer's "QCOM $167.50 Sept 18th
+     Calls" — a documented safe-miss — now parses.
+  MEASURED, NOT GUESSED — two broader triggers were tested against the corpus
+  and REJECTED. "lotto" matched 13 lines, every one a "$150p on watch"
+  WATCHLIST row. An @everyone/@here ping matched 140, mostly "loading GOOGL
+  8/21 345C @here" — the PREPARE state, where firing buys before the caller
+  does. Both would have bought things nobody bought. test_plan_entry.js keeps
+  those exact lines as must-not-open cases.
+  STILL REFUSED ON PURPOSE: "SPY 0dte 775 .25 TP .45" names no side at all —
+  call or put is unknowable and must never be guessed. "SPX 7755 0DTE CALLS
+  1.85" carries no plan and no verb (SPX entries are gated off anyway).
+  "kind of a lotto 9/2 META 590 call 1.8 GOING FAST" is a real call whose only
+  tell is prose — that is the AI-fallback case, not a regex case.
+
+Prior: Last updated: 2026-09-07 ~night — PHANTOM EXIT KILLED, and OWLS CAPITAL SCANNED
+AND REJECTED.
+  "OUT" IS ALSO HALF AN IDIOM. stormzyy's recap of a FINISHED trade — "let it
+  play OUT exactly how we wanted" — fired a real CLOSE MNQ off the bare "out"
+  in RE_EXIT. Hunting it found a SECOND live one already in the corpus: "I'm
+  officially checked out for the rest of the week", a sign-off message, was
+  firing CLOSE with the symbol "NOTES". A phantom exit is worse than a missed
+  one: it flattens a live position on somebody's victory lap. "out" no longer
+  counts when it is the tail of a phrasal verb (play/work/pan/ride/figure/
+  watch/check/find/reach/... out). "sold out" is deliberately still an exit.
+  test_exits.js locks 9 idioms out and 6 real exits in. Corpus: the ONLY line
+  that changed from firing to not firing is the "checked out" phantom.
+
+  OWLS CAPITAL (718624848812834903) — all 24 channels read, NOTHING WIRED:
+    jon-and-kian  trades COMMON STOCK ("CHGG commonst at .83", "22% on
+      commons"). Dangerous to wire because "Sold another SPCX at 5.70" names
+      nothing as stock and reads as a plain CLOSE — it would dump an SPCX
+      OPTIONS position. The text cannot tell; only the room can. The shares
+      veto now also covers "commons"/"commonst"/"common stock".
+    ab            real options, but entries are BARE contracts with no verb
+      ("$GOOGL 10/16 400c 1.88") so they never fire, while his closes DO.
+      A room that can close but cannot open can only ever end a ride early —
+      strictly worse than not having it.
+    tt            SPX 0DTE, sample is a spread ("7690/7675p 0dte 1.4").
+    muggzone      parses, but DROPS THE EXPIRY: the date sits BEFORE the
+      ticker ("ENTERED 9/11 MRVL 240 CALLS") and the reader only looks after
+      it. ZERO of our 7,168 corpus lines use that order, so nothing wired is
+      affected — left alone rather than widened on speculation.
+    giul-heatseeker trader is abroad and his bot is broken; members-plays is
+      member chat. Everything else is bot feeds and admin.
+
+Prior: Last updated: 2026-09-07 ~night — ELITE OPTIONS PRO WIRED (G bought it that
+day). Scanned all 28 channels; free tier showed 15, Pro unlocked the two that
+matter. WIRED, born testing: Brando Alerts (1286022517869514874) and Shoof
+Alerts (1368263191632543956). Their grammars:
+  Brando  "@Elite BOUGHT | QQQ SEPT 2 717C $2.99 LOTTO"   month name, $price
+  Shoof   "@Elite ALERT BOUGHT | SPY 9/4 767C at 2.00"    numeric date, "at"
+Verified against 148 of their REAL alerts scraped from scrollback (Brando 100,
+Shoof 48): every one resolved to the right action, symbol and strike.
+Three parser faults this found, all fixed, each with ZERO corpus regression
+(7,168 lines diffed before/after on every change):
+  1. TRAILING PARTIAL — both callers put the size at the END, after the price:
+     "(1/2)" "(1/4)" "(1/8)" "1/4 position" "3/4 position". The partial reader
+     only looked right after the verb ("sold 1/2 UPS"), so ALL of these read as
+     FULL EXITS. A caller trimming a quarter would have closed the whole
+     position and handed back the rest of the move. Only "ALL OUT" fires now —
+     both callers write it literally, so it is a safe discriminator. Dates are
+     the trap (9/4 is not a fraction), so it only counts a fraction in
+     parentheses or followed by "position", and only when num < den.
+  2. SMH — blocked in NOT_TICKERS as "shaking my head", but Shoof trades the
+     ETF. Now rescued ONLY when the word wears a contract (strike + C/P).
+     "smh this market" is still slang. This also exposed that FIVE separate
+     places tested NOT_TICKERS; they now all route through blockedTicker().
+  3. SHARES — Brando posts stock trades in the same alert channel
+     ("SNDK 250 SHARES AT $1550.50"). That read as CLOSE SNDK and would have
+     dumped an SNDK OPTIONS position because he trimmed stock. Any line that
+     talks about shares and names no contract is refused; a line with a
+     contract ("sold shares, still holding the 580c") is untouched.
+NOT WIRED, deliberately: brando/shoof-commentary (level talk — "MU wants 1011,
+1020 next", ~1 tradeable contract a session), levels/flow/x-news/uwhale bots,
+trade-log + chartbook + market-recap + winning-trades (weekly IMAGES, not live
+entries), the two chatrooms, and live-voice-logs (a voice-path candidate).
+ALSO SCANNED 9/7 and rejected: The Options Cartel (no alerts channel at all,
+free tier only) and Low Key Stonks (per-trader alert channels exist but are
+behind the paywall; the visible member-picks is covered calls).
+
+Prior: Last updated: 2026-09-07 ~night — "BUY" WAS NOT AN ENTRY VERB. Chasing why
+cranmer's alerts never fired turned up three faults, one of them dangerous:
+  1. RE_ENTRY listed bought/buying but NOT the bare imperative "buy". cranmer
+     writes every call that way, so the whole room read as silence. "buy" is
+     genuinely risky ("DO NOT BUY IN" is a real Honeydrip line), so it is now
+     accepted only via RE_BUY_CMD, guarded by RE_NO_BUY (negations, questions,
+     "buy the dip", "or buy next week") AND only when the line names a contract.
+  2. TRAILING-DOLLAR STRIKES were unreadable: cranmer writes "104$", "61$",
+     "52$". Normalised away in parseSignalInner before any format reader.
+  3. MONTH NAMES were valid tickers. With 1+2 unfixed, "buy AA sep 18 Calls
+     52$" booked ticker SEP strike 18 — A REAL ORDER IN THE WRONG NAME. All
+     month and weekday abbreviations are now in NOT_TICKERS.
+  REGRESSION: all three ran against the full 7,168-line corpus versus the
+  pre-change parser. 7,165 identical, ZERO stopped firing, ZERO new false
+  positives; the 3 differences are trailing-$ contracts now read correctly on
+  exit lines. test_buy_verb.js locks it, and lists the remaining SAFE MISSES
+  (dash-before-strike, decimal strike, strike-after-side, madhatter's verbless
+  "MCD Puts oct 16th exp, 245s") — deliberately left, because widening the
+  contract reader for those risks bringing the SEP-style misparse back.
+  STILL OPEN: stormzyy's RECAP of a finished trade ("Caught a clean MNQ long...
+  Both targets hit") still fires a phantom CLOSE MNQ.
+
+Prior: Last updated: 2026-09-07 ~evening — NO SPREADS, NO COVERED CALLS, AT THE ROOM
+LEVEL. G 9/7: "Whatever is a spread or covered calls and all that, I want you
+to delete those rooms. I do not want covered calls and spreads." Two of the six
+reopened rooms were cut on that rule, on evidence, not on vibes:
+  evapanda/opt-5 — his own 8/31-9/4 summary: RIVN 25C "This was a covered
+    call", BULL 15C "Covered Call - Collecting Prems", NOK 2028 leap, plus
+    TSLA/AMZN/URA swings. Fails the covered-call rule and the no-swings rule.
+  tlm/opt-4 — verticals in 2 of his last 5 entries: 9/4 "Msft Sep 9 497 put buy
+    490 put sell Total pay 2.20" (the one that fired a naked 497 put) and 8/18
+    "Swing Gld Aug 31 405 call buy 415 call sell" — a spread AND a swing.
+Every other live room was re-scanned for spread/covered-call business: clean.
+FOUR rooms remain reopened and BORN TESTING: cranmer/opt-9, madhatter/opt-1,
+stormzyy/fut-1, guru-futures/fut-2. 27 live rooms.
+NOTE: the parser refusing spreads (below) and cutting the rooms are two
+different defences and BOTH are wanted — the guard protects against a spread
+arriving from any room, the cut removes rooms whose business is spreads.
+
+Prior: Last updated: 2026-09-07 ~evening — NAMED-LEG VERTICALS NOW REFUSED. G asked to
+put the six reopened rooms LIVE. Before that (rooms LIVE stays his action) the
+six traders' REAL messages were run through parser.js, the one that fires. It
+found a money bug: TLM writes spreads WITHOUT the word "spread" —
+"Msft Sep 9 497 put buy 490 put sell  Total pay 2.20" — and that fired as a
+NAKED long MSFT 497 put. Different trade, different risk: his loss is capped at
+the $2.20 debit, a bare 497 put costs multiples of it. The old guard only
+matched the literal words credit/debit spread, which is why kumo's CAKE spread
+was correctly refused and TLM's was not.
+  FIX: structural, not vocabulary — two DIFFERENT strikes, each with its own
+  put/call word, one leg bought and one sold. test_spreads.js locks it: 6
+  multi-leg forms refused, ordinary single-leg entries still fire.
+  KNOWN GAPS, pre-existing and NOT caused by the fix (verified by diffing
+  parser.js with and without the block — identical): these real entries are
+  silently MISSED (money left on the table, never a wrong order) —
+  "buy UPS 104$ calls Sep 18th for 1.75" (cranmer, strike written 104$),
+  "Open ... Aapl sep4 327 call at 1.87" (tlm), "MCD Puts oct 16th exp, 245s"
+  (madhatter), and any entry that also names a sell target.
+  ALSO SEEN: a stormzyy RECAP of a finished trade ("Caught a clean MNQ long...
+  Both targets hit") fires a phantom CLOSE MNQ. Not yet fixed.
+
+Prior: Last updated: 2026-09-07 ~evening — THE MASHUP DOES NOT CARRY EVERYONE, and a
+new rule: BORN TESTING. Verified by reading all 19 cut ZTRADEZ rooms live in
+Discord and diffing their real 9/1-9/4 entries against 9 days of mashup
+capture. The mashup relays 10 of 19; NINE were dark. Eight of those nine had
+been cut on 8/30 for the reason "redundant: flows through the mashup" — which
+was never true. G reopened six (cranmer/opt-9, evapanda/opt-5, madhatter/opt-1,
+tlm/opt-4, stormzyy/fut-1, guru-futures/fut-2) and declined the three swing
+rooms (clutch/swing-1, king-maker/swing-3, kumo/swing-2 — "I don't want any
+swings channels").
+
+  NEW RULE — BORN TESTING (background.js, next to the 8/23 "always live"
+  default). A room with NO channel_live entry normally trades REAL MONEY the
+  moment its tab opens. Reopening six unproven rooms would therefore have put
+  six untested traders on real money without G flipping anything, and
+  flipping a room LIVE is his call alone. Those six ids now start in TESTING.
+  The gate only applies while channel_live has no entry — the instant he sets
+  either value in the popup his choice wins and the list goes inert. Proven
+  with 5 cases run against the real source block.
+
+  ALSO: rooms.txt field 4 is the POPUP GROUP LABEL (popup.js:1072). Never put
+  a trailing "(note)" on a live room line — it invents a new group in the
+  popup. Notes go on a '#' line above. Fixed one pre-existing offender (TTT
+  Lotto), which also explains why that room appeared unexplained earlier.
+
+  The mashup carries TWO streams: ZTRADEZ BOT (forwards, 7 rooms wired) and
+  ZTRADEZ Manager (house feed — Namrood + Bullwinkle/top-flow/scalps). The
+  Manager format is the cleanest alert grammar we receive
+  ("Buy To Open ORCL 147C 09/04 $1.5" with entry/expiry/running P&L) but it
+  wraps the contract in ANSI colour codes — the reader must strip them.
+
+Prior: Last updated: 2026-09-07 ~mid-day — G pasted TradingTheTrend's own format/
+glossary guide to sharpen the reader for that room. Their alert grammar
+("BTO AAPL 120c 11/06 @1.5" / "STC AAPL 120c 11/06 @.90 for -10%") already
+parsed clean — strike-then-expiry, leading-dot prices, BTO/STC verbs were all
+covered before today. What their glossary exposed: it spells out jargon
+(ITM/ATM/OTM, DD, MM, SS, FA, IPO, ETF, GTC, GTD, YOLO, FOMO, AH, ER, PRE) this
+reader had never seen written in caps, and bareSymbol's rule is "any all-caps
+1-5 letter word not on the exclude list IS a ticker" — so "trimming ATM 40%"
+or "out of DD" would have resolved ATM/DD as the traded symbol and could fire
+a phantom trim/close on a real position of that name. Added all fifteen to
+NOT_TICKERS in extension/parser.js (3.5.30 — RELOAD IT); confirmed the exact
+BTO/STC lines still fire and "trimming ATM 40%" / "out of DD" now correctly
+return symbol: null ("couldn't tell which ticker") instead of guessing.
+LEFT OUT ON PURPOSE: MOMO ("Momo" = momentum in their glossary) is also a
+real, actively-traded ticker (Hello Group) — same tradeoff already accepted
+for TA/DD elsewhere in the list, but this one's for G to bless, not assume.
+ALSO FOUND, NOT YET ACTED ON: the welcome message named three TTT channels
+never wired into rooms.txt — option-spread signals (808127664022880297),
+lottery-ticket plays (880503518878892143), and an auto-log of every
+option-alerts fill (800526679046225961, posted by bot 803669969895161876).
+The last one mirrors the option-alerts channel already wired — adding it
+would double-fire every trade from two sources. Spreads are multi-leg; this
+bot has no multi-leg order path. Flagged for G, not added — new rooms go
+LIVE by default and that's his call alone.
+Previously — Last updated: 2026-09-07 ~01:45 — see "9/6-9/7 OVERNIGHT" at the bottom.
+The short version: **telemetry** now records the alert→fill latency chain and
+the entry math on every fill (`telemetry.csv`); `caller_report.py` scores
+callers and found that **nobody has 20 closed trades yet**, so no auto-benching
+until there is a sample; a **shadow option-quote stream** rides the tastytrade
+socket into `quote_shadow.csv`, read by NOTHING; the greeks socket now
+**re-auths in place** instead of dying every 15 minutes; the Webull futures
+position read **backs off** after 3 empty reads (it was 363 of 364 throttles);
+futures + Topstep toggles are **ON** at G's instruction.
+
+Previously — 2026-09-04 LATE EVENING — see "9/4 EVENING" below for the six
+things that changed after the close. The short version, because it is a lot:
+**(1)** the bot now trades the contract the caller ACTUALLY named — the
+1-strike-OTM rewrite is off, it had been paying ~2x the called price;
+**(2)** anti-clip is OFF entirely, plain ladder only, his call;
+**(3)** SHADOW MODE is running — a second ratchet rule scores itself against
+every real fill into `shadow_ratchet.csv` and trades nothing;
+**(4)** `bars_capture.py` + `ratchet_lab.py` — real 1-minute option bars from
+Tradier, and the replay that tunes the ratchet on them;
+**(5)** the browser-lag fix in `content.js` (extension 3.5.24 — RELOAD IT);
+**(6)** `trades.log` no longer carries the boot banner — it was 21% of the file.
+Also: click a caller's name in the popup to jump to their room's tab.
+Read `CLEANUP-PROPOSAL.md` — it has removal decisions waiting for G.
+Prior: 2026-09-04 16:55 — DAILY CLOSE-OUT run (see bottom section
 "9/4 16:55" for the full writeup). Account flat overnight, no open positions.
 Bot day -$34, Gian +$154, combined +$120 broker-verified. One real, unfixed
 gap found: two of Gian's fast SPY scalps (770P, 769P) never reached
@@ -52,6 +1158,30 @@ expire and can be revoked without changing his password. `SETUP TASTYTRADE.bat`
 + `setup_tastytrade.py` rewritten to match; `test_brokers.py` pins BOTH auth
 header shapes. **Claude never types his password or pastes his secrets — he
 does that himself, in his own browser and his own terminal.**
+
+**A CLOSE ALWAYS LEAVES A ROW (9/4 evening — the journal caught my own
+half-fix the same day).** The morning fix moved the closed-trade record out of
+`if not p_live` so real trades would be written down. It was still inside
+`... and price is not None`, so **every exit where the fill price isn't known
+yet recorded NOTHING** — and that is every hand close ("sold, but at a price I
+never saw"), plus any exit the broker hasn't confirmed. Result: the 9/4 day
+book held **0 trades** while the journal counted 11. Now the row is written on
+every close path, with `exit`/`pl` NULL and `pending_price: true` when the
+price isn't known; `_true_up_exit` and the journal fill it in from the broker's
+order list. **Null is honest, zero would have been a lie, missing was worse.**
+Proven for live/paper × price/no-price, and the `_recorded` flag stops any
+path writing the row twice.
+ALSO: `restore_state` pops `hi_pct`/`lo_pct` on restart, so a position held
+across a restart loses its run-up/drawdown history. Not yet fixed — flagged.
+
+**BOTH NEW BROKERS ARE LIVE AND VERIFIED (9/4 18:10).** tastytrade: $250,
+`api`/REALTIME, greeks_tape.csv filling. Tradier: production key, **$500**
+buying power, balances + stock quote (SPY 770.19) + positions all reading
+against the real server. Tradier's stock quote WORKS where tastytrade's REST
+market data 403s. **`execution.broker` is still `webull` — neither is
+executing.** Unproven on Tradier: the option-quote path (needs a live OCC) and
+**OTOCO**, which is the whole point of it — prove that in their sandbox before
+it ever sees real money.
 
 **THE SOURCE-OF-TRUTH RULE (9/4, after getting it wrong twice in one hour).**
 
@@ -1348,3 +2478,260 @@ The born-with-the-order stop now reads the live bid and, if the computed stop si
 ### Also seen, and now explained
 The 12 `OPTION_CAVERED_CALL_STOCK_NO_ENOUGH` errors and the two "ratchet couldn't move the stop to 0.95" warnings at 09:51:56/58 were the ratchet trying to move a stop on a position that had been gone since 09:51:03 — **symptoms of the INTC stop-out, not a separate fault**. Same for "book holds INTC/NVDA, the account doesn't": POSTCHECK caught the book lagging the broker by a few seconds during the burst, and it resolved on its own.
 Still watching: 32 "Too many requests" today (positions/orders endpoints during the 09:48–09:52 burst), and `invalid symbols: [QCOM]` ×4 — a stock_price lookup for QCOM that Webull rejects. Neither cost money today. Suite green; bridge restarted onto the fix.
+
+---
+
+# 9/4 EVENING — what changed after the close
+
+## THE BIG ONE: we trade the contract they actually called
+`_no_otm_translate` is **OFF** (`execution.translate_strikes`, default false).
+It had rewritten a caller's strike **72 times**, always pulling toward the
+money, and it discarded their limit price with it. Measured cost on 8 trades
+where both prices are known: **+$1.31 a contract, about DOUBLE the called
+price** — TSLA called at 2.80, bought at 5.85. It also made every trade
+at-the-money (all 9 trades with a recorded underlying sat within ±1% of the
+strike), which is why the ratchet could never be tuned by moneyness: there
+was no OTM or ITM sample to compare. Expect further-OTM contracts now:
+cheaper, more volatile in percent, more of them clearing the affordability
+check that refused 64 calls.
+
+## ANTI-CLIP IS OFF — plain ladder only
+G: *"I just want the regular ratchet until we gather information about the
+greeks."* `strategy.anticlip`, default false. At +30% the stop now locks
++20% (his ladder) instead of +18% (anti-clipped). The test proves BOTH
+states, so the switch is real and not decoration. Bonus: every trade from
+here runs one rule, so the next weeks are a clean sample.
+
+## SHADOW MODE — a second ratchet, scoring itself, trading nothing
+`positions._shadow()` runs beside the real ratchet on every poll and writes
+`shadow_ratchet.csv` on each close: entry time, hold length, real %, shadow %,
+whether the shadow exited, **legs** (new highs made — trend vs chop), peak %,
+DTE, delta and IV at entry. It sells nothing and places nothing.
+
+WHY it exists rather than just switching: a leg-retrace + 20%-floor rule beat
+his ladder +4.9% to +2.4% a trade over 48 contracts — then dropping its single
+best trade (META, +159%) made the LADDER win, and dropping two made the
+challenger negative. **The whole edge lived in 4 trades out of 48.** So
+nothing was switched; both rules now watch the same real fills and in a few
+weeks the comparison is real.
+
+## OPTION BARS — the data that makes any of this answerable
+* `bars_capture.py` — run after the close. Saves 1-minute bars for every
+  contract traded that day. **Tradier drops intraday history for expired
+  options**, so this is a nightly CAPTURE, not a backfill: 84 of 87 missing
+  contracts were expired. 108 contracts archived so far.
+* `ratchet_lab.py` — replays every saved trade across 80 rule combinations
+  and reports which knob actually matters. **Refuses to name a winner below
+  n=40**, because at n=15 the best rung was 15% and at n=22 it was 5%.
+* The structural finding that IS solid: his ladder locks a fixed % of the
+  ENTRY, so as a share of the CURRENT price it tightens as the trade runs —
+  9.1% room at +10%, 4.0% at +150%. Backwards. On META that meant stopping
+  at +20% on a trade that ran +245%.
+
+## BROWSER LAG — found and fixed (extension 3.5.24, RELOAD)
+`content.js` ran `handle()` over every visible row in every Discord tab every
+1.5s, and the dedupe sat AFTER `textOf()` and `imagesOf()` — so ~80,000 calls
+a minute each did two querySelectorAll walks and a regex before deciding
+nothing had changed. A single native `li.textContent.length` read now decides
+first. Late-embed hydration proven unchanged by test.
+
+## trades.log was 21% boot banner
+**1,735 of 8,210 lines** were startup sentences repeated across ~200 restarts.
+They still print to the console; they no longer enter the permanent record.
+See `_BOOT_NOISE` in bridge.py.
+
+## Smaller, same evening
+* Click a caller's name in the popup -> jumps to that room's tab, opening it
+  if closed. Matching ignores generic words ("trades", "alerts") because
+  those sent `vero-trades` to "Whop Day Trades" — a wrong tab is worse than
+  no tab.
+* `POST /channames` + `rename_rooms.py`: the extension reports each channel's
+  REAL Discord name, so rooms.txt stops saying "Platinum-1". Dry run by
+  default; only the label column is ever touched.
+* START HERE stops opening tabs if Chrome is closed mid-run.
+* Chrome's Above-Normal priority bump RETIRED — it was the lag, and it never
+  read a message. `CHROME_PRIORITY=AboveNormal` puts it back.
+
+## KNOWN AND STILL BROKEN
+* `signals.py` misses 4 no-ticker exits ("Out of 80% of my position").
+* `restore_state` drops `hi_pct`/`lo_pct` on restart — a position held across
+  a restart loses its run-up/drawdown history.
+* Tradier **OTOCO unverified** — the conditional entry, the main reason to
+  want Tradier. Prove it in their sandbox before it sees money.
+* Voice/Deepgram has produced **zero** transcripts in six weeks.
+
+---
+
+## 9/6-9/7 OVERNIGHT — instrumentation, and three live bugs it exposed
+
+Built at G's ask after a research pass over every comparable tool in public.
+The headline from that research: **we are ahead of the open-source field on
+execution, exits and rate limiting, and alone on DOM-reading, voice and
+vision.** The one thing everyone else has that we did not was a per-caller
+scorecard — and nobody anywhere measures alert→fill latency. See UPGRADES.md.
+
+### NEW FILES
+* `telemetry.py` — one row per fill into `telemetry.csv`: the latency chain
+  (`posted_at → seen_at → sent_at → filled_at`, split three ways because a
+  slow read and a slow fill have opposite fixes), what the caller said vs
+  what we paid, the spread we paid it into, and the entry math below.
+  Also `alert_decay.csv`: the contract's mid at +1s/+5s/+30s/+60s after the
+  alert. **Nobody has published that curve.** It is how we settle
+  chase-vs-wait per caller on our own rooms.
+* `greeks_math.py` — delta+gamma second-order conversion. The one that
+  matters is `stop_room()`: how far the STOCK must move to take out a -10%
+  premium stop. **On the two contracts we had greeks for, that was 0.20 SPY
+  points and 0.13 QQQ points.** SPY moves that in seconds. "-10%" is not a
+  level, it is noise, and until now nothing could say so.
+* `caller_report.py` — expectancy, win rate, PF, worst drawdown per caller,
+  with a hard 20-trade floor for ranking and a 100-trade "solid" mark.
+* `quote_shadow.py` — compares the streamed tastytrade quote against the
+  Webull-polled one. Read p99, not p50.
+
+### CORRECTIONS TO WHAT I TOLD HIM (both mine)
+* I said our stops were "8 cents too tight from a linear delta conversion."
+  **We have no delta conversion anywhere.** The ratchet is premium-percent
+  and `_underlying_stop_watch` fires on the caller's stock level. The claim
+  did not apply. What is real is `stop_room` above, which is worse.
+* I called the Budget's `priority=True` lane a feature we have. **No caller
+  passes it.** What actually protects orders is `ORDER_RESERVE = 40.0` — the
+  quote sweep will not drain the last 40 tokens — and orders bypass the
+  budget entirely via `_pace()`. That is coherent, but it is not what I said.
+
+### THREE BUGS THE INSTRUMENTATION EXPOSED
+1. **A fill-path race, which I caused and then found.** Writing the telemetry
+   row between `state=FILLED` and the cost ledger made `test_positions` fail
+   2 runs in 3 — on stop placement and P&L, not on telemetry. Nothing raised;
+   a few ms of file I/O was enough. **There is a real window between "the
+   position says FILLED" and "the position knows what it cost."** Telemetry
+   now writes after the ledger, on a bounded queue drained by one long-lived
+   thread. The window itself is still there and is worth closing separately.
+2. **`watch_decay` was dead code.** Written, tested, never called. It would
+   have collected nothing. Wired into `place()` on accepted OPENs; reads the
+   quote-bus cache only, so it costs zero of the 60/min option budget.
+3. **`futures_positions()` burned 363 of 364 throttles in nine minutes** —
+   ungated, on the same 2-per-2s door the option stops use, asking Webull
+   for futures that live at Topstep. Pre-existing: it was 429ing on Saturday
+   with futures still off. Now backs off after 3 consecutive EMPTY reads
+   (capped 60s). **It backs off on empty, not on an exception, because a 429
+   here never raises** — `_try_calls` swallows it and returns `[]`, which is
+   indistinguishable from "flat". My first breaker watched for an exception
+   and never fired once.
+
+### GREEKS SOCKET — RE-AUTH IN PLACE
+tastytrade tokens last 15 minutes. We rode one until the server said
+"reauthentication is required" and dropped the socket. It healed itself, so
+it looked fine — but there was a hole in the greeks every 15 minutes, and
+greeks feed the entry math. Now re-AUTHs on the same socket at 10 minutes
+(`REAUTH_AFTER`), subscriptions untouched. Verified live: `token refreshed
+in place (1)`.
+
+### SHADOW QUOTE STREAM — READ BY NOTHING
+Webull has **no** option streaming; every bid/ask is a 1/sec poll against a
+60/min door, so with N positions each contract is seen once every N seconds.
+That is the ceiling on stop reaction and why the rungs must be spaced wide.
+DXLink carries `Quote` events on the socket we already hold. Subscribed,
+taping to `quote_shadow.csv`. **Zero call sites in any exit, stop or order
+path — audited.** tastytrade's quote is not Webull's book, and the broker
+filling you is the one whose book should price your order. A week of
+`quote_shadow.py` decides whether it is ever promoted. Off switch:
+`execution.tastytrade.stream_quotes = false`.
+
+### KNOWN AND NOT FIXED
+* `/openapi/assets/positions` 429s ~4/min. **Pre-existing** (614 in the old
+  log) and it is contention: Market Sniper is running on the SAME app key.
+  Orders are unaffected — zero 429s on `order/place`, checked.
+* The Webull streaming SDK cannot rotate its own log (`WinError 32`, file
+  held open) and dumps stack traces into `bridge.log` instead of failing
+  quietly.
+* Market Sniper sends **no server-side bracket** to ProjectX. Its futures
+  stop is the local ratchet only (initial rung −12.5 pts ≈ $25/contract on
+  MNQ) and dies with the PC. Discord Sniper's futures stop lives on Topstep's
+  servers. Same instruction, two different guarantees.
+
+### 9/7 MIDDAY — tastytrade CAPS CONCURRENT SESSIONS. Learn this one.
+
+Trying to prove the shadow quote stream with a standalone probe during
+market hours, I opened a SECOND DXLink session on the same tastytrade
+account. The bridge's own feed answered:
+
+```
+[greeks] dxlink refused RE-AUTH: The number of user sessions has
+         exceeded the configured limit, user=tasty/U48e04e91-...
+```
+
+Three RE-AUTH refusals, three forced reconnects. **The probe disrupted the
+live feed.** It recovered every time — the re-auth fallback raises and the
+outer loop rebuilds the session, exactly as designed — and greeks are
+data-only with no position open, so nothing traded differently. But the
+lesson is permanent:
+
+* **Market Sniper ALSO holds a DXLink session** (`main.py:175`, "DXLink
+  armed"). Two apps, one tastytrade account. That is already at the cap.
+* **NEVER open a third.** No probes, no scratch scripts, no test harness
+  against the live account while both apps are up. The cap is a shared
+  resource like the Webull app key, and it is easier to trip.
+* This is a SECOND cause of the `[greeks] server closed the websocket`
+  drops seen on 9/6, alongside the 15-minute token expiry.
+
+**Consequence for the shadow quote stream:** the subscription is accepted
+and the data is real — the probe returned SPY 260908C770 at 1.75/1.76,
+matching Tradier's chain exactly. What is NOT yet proven is CONTINUOUS
+streaming, because a capped-out second session receives one snapshot and
+then nothing. That proof can only come from the bridge's own session, and
+it arrives free the moment a position opens and `quote_shadow.csv` starts
+filling. **Until then, do not claim the stream ticks.**
+
+Also fixed while chasing this: dxfeed sends PARTIAL Quote frames (only the
+side that changed; the other arrives null or NaN). The first version treated
+a missing side as a bad row and dropped it. It now carries the last known
+side forward, and when that merge produces a transient crossed book it keeps
+the state — so the two sides can re-converge — while refusing to tape or
+serve it. Without that, a contract would freeze at a stale price.
+
+### 9/7 EVENING — subscriptions checked, 5 rooms parked, Chrome kill fixed
+
+**WHY THE ROOM READING WAS FLAWED.** `START HERE` ran `taskkill /F /IM
+chrome.exe`. `/F` is TerminateProcess — Chrome gets no chance to flush. The
+extension's `chrome.storage.local` (every room's LIVE flag AND every
+captured message) is a LevelDB written lazily; killed mid-write, Chrome
+rebuilds it EMPTY on the next launch.
+
+Evidence: the 9/1 and 9/4 exports both read `LIVE rooms: none (all testing)`
+with 0 and 5 captured messages — on days that placed live trades and logged
+326 actions. The reader was fine. The STORAGE was wiped, after the close.
+
+Cost: the audit trail for those days. **Risk if it ever lands BEFORE the
+open: all rooms come up "testing" and the bot trades nothing real all day,
+silently.** Fixed — graceful `taskkill` first, force only if Chrome refuses.
+
+**WHOP SUBSCRIPTIONS (checked on whop.com 9/7).** Five active:
+
+    #1 Live Trading WorldWide   $100/mo   -> the 5 Whop rooms (firststeptrading)
+    Platinum Trading Premium     $99/mo   -> Platinum x5
+    ZTRADEZ Full Access          $65/mo   -> ZT all-trades-mashup
+    VIP discord access           $65/mo   -> TradingTheTrend: Option Alerts,
+                                             Options Watchlist
+    VeroTrade Premium            $49/mo   -> Vero 1/2/3
+
+Three LAPSED (last paid early August, not renewing):
+
+    Boka Trading Premium      Aug 7  -> Boka 1, 2, 3
+    STS / Summit Strategies   Aug 9  -> RWGates
+    The Insiders Pro Plan     Aug 3  -> Options Insider
+
+Those 5 rooms are commented out in `extension/rooms.txt` (26 -> 21 active),
+each line tagged with which subscription lapsed and when. Uncomment to
+restore. **G's call 9/7: not renewing until the bot is proven at 100%** —
+prove it on the rooms he pays for before adding expensive ones back.
+
+**NOTE ON RWGATES.** `parser.js` carries dedicated rules for him:
+`RE_CONTRACT_OSI` for his ThinkorSwim dotted symbols (`.HOOD260702C118`),
+`RE_TOOK_ENTRY_FILL` for four phrasings, and tolerance for his typos
+(`enrty`, `enry`, `etnry`). That work is intact and idle. It costs nothing
+to leave, and it is ready the day the subscription comes back.
+
+**FOUR ROOMS DELIBERATELY LEFT ALONE:** Aristotle, Aristotle small,
+Honeydrip daytrades, Midas (all Honey Drip Network), plus NGD. No matching
+Whop subscription, but no evidence of a lapse either — they may be free or
+paid outside Whop. Not touched without evidence.

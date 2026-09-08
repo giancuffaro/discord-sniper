@@ -1,7 +1,152 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 — ALL ROOMS LIVE (his call) + WHOP PATH VERIFIED HEALTHY.
+Last updated: 2026-09-08 16:36 — DAILY CLOSE-OUT (automated): QQQ 716P PHANTOM-EXIT
+BUG (a real +20.8% win that silently became a -34.9% loss), ONE FIX SHIPPED,
+GIAN'S HAND-TRADE LEDGER GAP RECURS. Broker truth (Webull order history,
+account ENIQGUV4LUTT3JSAA9NKLDDU19): bot +$89 gross / Gian -$12 gross, fees
+-$3.42, net ~+$72.58 matching the account's own day-P&L. Account flat as of
+16:36, nothing resting overnight. Announcer PAUSED (announcer.stop="stop",
+8/31 standing call) — announcer checks skipped per standing instruction.
+
+  **HEADLINE BUG — Vero's QQQ 716P (10:15:46 entry, 1.06): a pullback-target
+  exit that only ever ACCEPTED, never FILLED.** At 10:18:28 the stock hit its
+  716.50 pullback target and the bridge fired a real SELL at 1.28 (+20.8%,
+  a clean win) — but bridge.py's CLOSE handler (`_place_impl`, the branch
+  gated by the EXIT-IGNORED check at do_POST's `order.get("source") in
+  ("pullback","under-stop")`) calls `BOOK._sell_retry(...)` directly and
+  books `positions.CLOSED` the moment an order_id comes back, unlike the
+  watchdog's own stop-out path which waits on `_sell_confirmed` for a real
+  FILLED status. This one never filled. ~2 min later (10:20:37) the reconcile
+  loop found the broker still holding it ("book recorded closed but broker
+  STILL holds it") and tried to finish the exit — by then the market had
+  reversed and a stray resting order on the same contract made every
+  completion attempt 417 (`OPENAPI_ORDER_NOT_SUPPORT_REVERSE_OPTION`),
+  including the watchdog's own follow-up stop-outs at 0.95 and 0.83
+  (BREACHED, unclampable per webull_options.py's own design — "the watchdog
+  should sell", but the watchdog's sell was ALSO blocked). Round-tripped
+  from +20.8% to -34.9% (~$60/contract) before finally clearing at 0.69 at
+  10:25:22. NOT A ROOM-EXIT VIOLATION — verified the entries-only gate is
+  intact (bridge.py do_POST's EXIT-IGNORED check present and correct,
+  execution.exit_policy absent/defaults to entries_only, extension gate
+  unreviewed but 0 EXIT-IGNORED lines fired today because 0 room CLOSEs
+  reached the bridge) — this is a phantom-fill bug in a legitimate,
+  gate-exempt bot-internal exit (pullback stock-target), the same "source"
+  family as underlying hard-stops, so BOTH share this exposure.
+  **NOT FIXED UNATTENDED** — touches the live CLOSE path shared by every
+  pullback and hard-stop exit; recommended fix (for a focused, tested
+  session, ideally at a safe restart window): route that CLOSE handler
+  through `positions.Book._sell_confirmed` (already does the wait-for-FILLED
+  + one reprice, used by the watchdog's own stop path) instead of trusting
+  order acceptance from `_sell_retry` alone.
+  Ledger fallout: days/2026-09-08.json fragmented this ONE trade into THREE
+  rows — the original "vero|QQQ" row phantom-closed at 1.27 (never happened),
+  plus two orphan re-adoptions wrongly attributed to **Gian** (who never
+  touched this contract) after the ADOPT path picked it up mid-crisis.
+  journal-2026-09-08.xlsx and trader-scoreboard.xlsx both correct this to
+  ONE row, Vero, broker truth (-$37). Vero's scoreboard verdict flipped to
+  AVOID on this — flagged as skewed by the bug, not the call, in both files.
+
+  **FIXED TODAY — positions.py, the IWM-shaped postcheck mis-record** (same
+  bug class, lower stakes: bookkeeping only, not a protection gap). Both
+  Vero's SPY 767P (-$1) and ZTRADEZ BOT's IWM 295P (-$6) filled CLEAN on
+  their own born resting stop at Webull, but the watchdog's own redundant
+  sell attempt raced a lagged `order_status` read (same rate-limit/
+  contention family as the pre-existing `/openapi/assets/positions` 429s —
+  Market Sniper shares this app key) and logged FAILED instead of
+  recognizing the fill — a clean stop-out mis-recorded as a failure with no
+  exit price. The existing 9/8 fix for this (checking `pulled_stop.oid`'s
+  order_status before falling back to `_gone_at_broker`) still lost the
+  race on a single read. Gave it the same few-tries-short-pause pattern
+  `_await_cancel` already uses elsewhere (3 tries, 0.5s apart) before
+  believing "not filled" — read-only, changes no order-placement behavior,
+  only which of two true/false paths a report takes. Verified: `python3 -m
+  py_compile positions.py` clean; test_positions.py, test_resolve.js,
+  test_architecture.py, test_brokers.py, test_phantom_exit.py, test_tape.py
+  all pass (test_signals.py does not exist in this repo — the CODE FIXES
+  instruction naming it appears stale; ran every test file that does exist
+  instead). Bridge restarts onto this automatically at the next safe window
+  or the close (nothing was in flight when this was written).
+
+  **STOP-PLACEMENT RELIABILITY, pre-12:01 restart (not a code bug found,
+  logged for the pattern):** every bot bracket trade from 09:36 through
+  10:35 (AMD x3, QQQ x3, TSLA, SPY) showed POSTCHECK "NO resting stop —
+  watchdog only" for some number of seconds after fill, because the born
+  bracket's stop almost always needs a REBASE (fill beats the limit, so the
+  -10%-of-fill stop differs from the -10%-of-limit born stop by more than
+  the 2-cent tolerance) and the replacement `place_stop()` call kept hitting
+  417s (`OPENAPI_STOP_PRICE_MUST_BE_LESS_THAN_MARKET_PRICE`,
+  `OPENAPI_DAY_BUYING_POWER_INSUFFICIENT`) during that window. The ONE trade
+  after the 12:01 restart (IWM, 13:00) filled AT its limit (no rebase
+  needed) and its born stop rested and filled cleanly start to finish.
+  One data point either way — not enough to say the 11:53-12:01 changes
+  (ratchet respacing) fixed or didn't fix the underlying rebase-window
+  exposure. Watch tomorrow's first hour for whether "NO resting stop" still
+  shows up on trades that DO need a rebase.
+
+  **GIAN'S HAND-TRADE LEDGER GAP RECURS** (first flagged 9/4, "root cause
+  unconfirmed"). Of Gian's 6 hand round trips today (multi-lot SPY MARKET
+  scalps via Market Sniper/the Webull app, net -$12 broker truth), only the
+  FIRST (SPY 766P, -$22) reached days/2026-09-08.json. The other five
+  (-$52, +$8, -$20 on the same SPY 766P contract, plus SPY 768C +$70 and
+  SPY 767C +$4, entirely unrecorded) are missing outright — same shape as
+  9/4's two missing SPY scalps, now a second occurrence. Still not
+  root-caused; both times it happened during/around a period of unusually
+  heavy concurrent order activity (today: the QQQ 716P crisis window).
+  Worth a dedicated look, not a today-fix.
+
+  **REPLAY (`replay_check.py`): 18 silent drops, most explained.** Filtered
+  to genuine OPEN/ADD misses (CLOSE/PREPARE/recap lines are expected to be
+  silent under entries-only and were skipped): Elite Shoof's 09:31 NBIS
+  250C and Elite Brando's 10:44 QQQ 720C are the SAME misses already
+  diagnosed and fixed earlier today (extension 3.5.53, "MISSING ROOMS HEAL
+  THEMSELVES" — see below in this file), not new. Four still open, none
+  traded real money, none investigated live in Discord (autopilot, no
+  browser dive without cause beyond a log check):
+    - ZT guru-futures 09:59 "MNQ SHORT Entry: 29500 Stoploss: 29550" — room
+      IS wired (Market Guru, already AVOID-rated in the scoreboard), format
+      may not match the parser's SHORT-verb grammar; needs a corpus check.
+    - ZT all-trades-mashup 11:05 "ABT ... averaging down here at 2.00" — a
+      relayed ADD phrased differently from the "added $X calls" shape the
+      9/2 ADD fix covers; ABT itself is read 92x today elsewhere in
+      bridge.log, so this is a phrasing gap, not a dead room.
+    - TradingTheTrend option-alerts 10:34 "benw ... BTO TSLA 9/9 375c @1.00"
+      — caller "benw" never appears anywhere in bridge.log today; possible
+      tab/attach gap for this specific poster, unconfirmed.
+    - Whop Day Trades 09:47 "Short NQ 29508 Sl 29550" — room has 138
+      signals captured today (per scoreboard.py) but 0 ever sent/traded,
+      all-time; may be a pre-existing quiet/never-parses room, not a new
+      regression — lower priority.
+  scoreboard.py 10: 81 rooms heard from (28 configured, 1 silent
+  configured — Options Insider, expected, see below), SCOREBOARD.html
+  regenerated. Options Insider still dark (lost server access 9/2, kept
+  configured, G's call not to renew). RWGates is AWAKE (subscription
+  lapsed but Discord access verified intact 9/7) — not a deathwatch item.
+
+  **Checked clean:** 0 Chrome DISCARDED/out-of-memory lines today. /stream
+  via Claude-in-Chrome: connected:true, budget_left 285, rate_limited 0,
+  option_bus.watching 0 (account flat) — last_sweep_ms 507 is above the
+  usual ~100-200 baseline but with nothing being watched right now that may
+  just be idle variance, not a fault. announcer-seen.json non-empty (15
+  ids) but irrelevant while paused.
+
+  **Deliverables:** Webull_Orders_2026-09-08_auto.csv (47 order legs),
+  journal-2026-09-08.xlsx (15 trades + By Trader, house format, recalced
+  clean), trader-scoreboard.xlsx (9 new caller rows — Gian's 6 hand trades
+  excluded per house rule —, Scoreboard fully recomputed from all 108
+  trade rows across 27 callers, pre-8/19 caveat and every prior footnote
+  preserved, 6 new footnotes added for today's corrections + the QQQ 716P
+  writeup).
+
+  **NOTE ON CONCURRENCY**: this close-out ran while at least one other
+  session/process was also editing this repo today — the ratchet respacing
+  (born 10%->7.5%, arm 10%->5%) and an "ALL ROOMS LIVE" extension change
+  (3.5.60, pending his reload) both landed in HANDOFF.md between when this
+  run started reading it and when it finished. Neither is this run's work;
+  both are left exactly as their own entries describe below. If HANDOFF.md
+  looks different from what this entry assumed by the time it's read,
+  trust the newer entry.
+Previously — Last updated: 2026-09-08 — ALL ROOMS LIVE (his call) + WHOP PATH VERIFIED HEALTHY.
 "check if every path is good": Discord path IS good — fired all morning
 (AMD 510C, MARA 12C, INTC 110C, SPY 767P, QQQ 720P vero); the liquidity floor
 refused META (67 traded last session) and SNDK (57) exactly as designed; vero's
