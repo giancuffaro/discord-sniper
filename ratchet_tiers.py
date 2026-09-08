@@ -47,8 +47,23 @@ it earns the room for a better one.
 # The two safety FLOORS below still apply and will say so in the log when
 # they move one of his numbers: a rung must clear 4 ticks, and the stop is
 # never placed inside the spread.
+#
+# 9/8 — RESPACED, same shape, off real data. ratchet_sweep.py backtested
+# (born_pct, arm_pct) pairs against 80 real fills (Gian's own trades
+# excluded, refused/nofill calls excluded — see that file's docstring for
+# why). The 10/10 pair above actually LOST money in that sample: -$434
+# total, ranked 30th of 50 spacings tried. Best found: born 7.5%, arm 5%
+# (this file's arm/lock/step — the born stop itself lives in settings.json
+# strategy.stop_loss_pct, moved 10 -> 7.5 the same day) at +$251, and the
+# shape around it wasn't a fluke of one lucky cell — 7.5% born beat every
+# other born value at nearly every arm width, and arm 3-6% beat both
+# tighter (1-2%, scratched by ordinary quote noise before the trade proves
+# itself) and looser (10%+, gives back too much before locking) almost
+# everywhere. HONEST LIMIT, same as the sweep's own: 80 trades over ~5
+# weeks is a small sample and this doesn't model the tick/spread floors
+# below — read it as a lean, not a verdict, and see HANDOFF.md 9/8.
 TIERS = (
-    (None, (10.0, 0.0, 10.0)),       # every premium: arm +10%, lock BE, +10% rungs
+    (None, (5.0, 0.0, 5.0)),         # every premium: arm +5%, lock BE, +5% rungs
 )
 
 MIN_RUNG_TICKS = 4.0                 # floor 1
@@ -94,10 +109,14 @@ def ratchet_locked_pct(gain_pct, fill_price):
     Rung 0 is first_lock. Every further step_pct of gain adds another step_pct
     of locked profit. No ceiling: a runner keeps climbing forever.
 
-        $0.50 fill : +25% -> lock +10 | +40% -> +25 | +55% -> +40 ...
-        $1.50 fill : +15% -> lock  BE | +25% -> +10 | +35% -> +20 ...
-        $3.00 fill : +10% -> lock  +7 | +17% -> +13 | +23% -> +20 ...
-                     (tick floor widened 5% to ~6.7% on a nickel-tick name)
+    One blanket rule since 9/3 (see TIERS above), respaced 9/8:
+
+        any fill : +5% -> lock BE | +10% -> +5 | +15% -> +10 | +20% -> +15 ...
+                   (tick floor widens the 5% rung on cheap/nickel-tick names)
+
+    (These used to read three different premium bands — $0.50 / $1.50 / $3
+    each with its own arm/lock — from the 9/2 price-tiered version. Retired
+    9/3; TIERS is one blanket tuple now, so one example line covers it.)
     """
     if gain_pct is None:
         return None

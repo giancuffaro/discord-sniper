@@ -43,6 +43,7 @@ for _s in (sys.stdout, sys.stderr):
 # out" and "you own it" are two different events, and only this file knows which
 # one has happened. Everything that closes a position asks it first.
 import positions
+import ratchet_tiers as _rt
 import pullback as _pullback
 from urllib.parse import urlparse, parse_qs
 
