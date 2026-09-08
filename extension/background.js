@@ -1601,17 +1601,31 @@ async function openMissingRooms() {
                                            "https://whop.com/*/exp_*"] });
   } catch (e) { return; }
   const openIds = new Set();
+  let haveDiscord = false, haveWhop = false;
   for (const t of tabs) {
-    const m = String(t.url || "").match(/\/channels\/\d+\/(\d+)/)
-           || String(t.url || "").match(/exp_([a-z0-9]+)/i);
+    const u = String(t.url || "");
+    if (/discord\.com\/channels\/\d+\/\d+/.test(u)) haveDiscord = true;
+    if (/whop\.com\/.*exp_/.test(u) || /whop\.com\/joined\//.test(u)) haveWhop = true;
+    const m = u.match(/\/channels\/\d+\/(\d+)/) || u.match(/exp_([a-z0-9]+)/i);
     if (m) openIds.add(m[1]);
-    // whop rooms.txt ids are the exp_ hash; match either form
-    const e2 = String(t.url || "").match(/exp_[a-z0-9]+/i);
+    const e2 = u.match(/exp_[a-z0-9]+/i);
     if (e2) openIds.add(e2[0]);
   }
+  // TWO-BROWSER SPLIT (9/8, G runs Discord in one Chrome and the Whop rooms in
+  // a separate one to keep Whop's weight off everything else). BOTH browsers
+  // run this same extension and read the same rooms.txt, so without a lane
+  // rule each would try to open the OTHER browser's rooms — the Whop window
+  // would open 22 Discord tabs and vice versa. The rule: an instance only ever
+  // opens rooms of a surface it ALREADY has a tab for. The launcher seeds each
+  // browser with its own surface, so each adopts its lane and never crosses.
+  // A browser with neither surface yet (nothing opened) opens nothing here and
+  // waits — the launcher's cold-start does the first open.
   const now = Date.now();
   let opened = 0;
   for (const r of want) {
+    const isWhop = /^whop:/i.test(r.id) || /whop\.com/i.test(r.url);
+    if (isWhop && !haveWhop) continue;        // not this browser's lane
+    if (!isWhop && !haveDiscord) continue;     // not this browser's lane
     const key = r.id.replace(/^whop:/, "");
     const idInUrl = (r.url.match(/\/channels\/\d+\/(\d+)/) || [])[1]
                  || (r.url.match(/exp_[a-z0-9]+/i) || [])[0];
