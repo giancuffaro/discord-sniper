@@ -1,7 +1,44 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE FOUND BY IT.
+Last updated: 2026-09-08 — RATCHET SPACING SWEEP: BORN -10/ARM +10 IS COSTING
+MONEY, -7.5%/+4% WINS ON REAL FILLS. G: "figure out what ratchet spacing is
+most convenient.. what stop to start with and when to jump to break even."
+  Built `ratchet_sweep.py`: same shape as the real ratchet (born stop,
+  arm-to-breakeven, then a rung every arm_pct beyond it) but sweeps
+  (born_pct, arm_pct) against real OPRA fills from databento_tape.csv,
+  scored in real dollars. Scoped to the 80 contract-days that were ACTUALLY
+  entered (state closed/filled/stopped — a refused/nofill call was never a
+  position, no stop spacing saves a trade that correctly never opened) and
+  excludes Gian's own hand trades (not room calls, would tune the bot's exit
+  around trades it never followed). Entry/exit read from the bot's own
+  `entries[0]` real fill, not `their_avg` — that field is the CALLER'S
+  posted price from the raw alert text (TTT's own guide says so: "your fill
+  will not always match the alert"), confirmed by comparing a TSLA 8/19 case
+  where entries[0] (2.94) matched my derived entry (2.96) closely while
+  their_avg was off by more.
+  Final grid (born 5/7.5/10/12.5/15%, arm 1/2/3/4/5/6/7.5/10/12.5/15%) —
+  dropped born>15% and arm>=20% after a first coarse pass showed every row
+  out there strictly worse, no exception. Result:
+      current rule (born 10%, arm 10%): -$434.20 total, 28.8% win, rank 30/50
+      BEST FOUND: born 7.5%, arm 4%:    +$251.07 total, 35.0% win, 75/80 resolved
+  Runner-up shape holds too — 7.5% born beat every other born value at
+  nearly every arm width tried, and arm 3-6% beat both tighter (1-2%) and
+  looser (7.5%+) arms almost everywhere. Tighter isn't just-always-better:
+  arm 1-2% locks breakeven off ordinary quote noise before the trade's
+  proven itself, arm >=10% gives back too much before locking anything.
+  **READ THIS BEFORE ACTING ON IT**: 80 trades over ~5 weeks is a small
+  sample — a few-dollar gap between neighboring cells (e.g. arm 4 vs 5 vs 6,
+  all within ~$170 of each other) is well within noise. This is a lean, not
+  a verdict. The sweep also doesn't model the live tick-floor/spread-floor
+  safety rails ratchet_tiers.py enforces — those exist specifically to stop
+  a too-tight arm from getting scratched by a quote flicker, which may be
+  part of why arm 1-2% underperforms here. Changing the live ratchet off
+  this number is G's call, not made here.
+  Also tried: adding 9/8's own trades to the backfill. Blocked — Databento's
+  free-credit tier license doesn't cover OPRA data after 2026-09-08 13:30
+  UTC ("live data license required"), a provider-side cutoff, not a bug.
+Previously — Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE FOUND BY IT.
   G: "find out now then later and slow" — signed up for Databento ($125 free
   credit, no card) to price every call in days/*.json for real off OPRA,
   including the refused/nofill/failed ones option_tape.csv could never have

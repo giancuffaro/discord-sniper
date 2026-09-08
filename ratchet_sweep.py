@@ -174,8 +174,13 @@ def main():
     trades = load_trades(tape)
     print("simulating %d room-call contract-days (Gian excluded)" % len(trades))
 
-    born_grid = [5.0, 7.5, 10.0, 12.5, 15.0, 17.5, 20.0]
-    arm_grid = [5.0, 7.5, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0]
+    # 9/8, finalized after a first coarse pass (born to 20%, arm to 30%)
+    # showed born>15% and arm>=15% strictly worsening with no exception —
+    # every born-17.5/20 row and every arm-20/25/30 row ranked in the
+    # bottom third, so this final grid drops that dead range and adds the
+    # fine 1-6% arm resolution that first exposed the interior peak.
+    born_grid = [5.0, 7.5, 10.0, 12.5, 15.0]
+    arm_grid = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.5, 10.0, 12.5, 15.0]
 
     rows_out = []
     for born in born_grid:
