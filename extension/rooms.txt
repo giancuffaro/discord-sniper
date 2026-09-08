@@ -30,7 +30,8 @@ whop:day-trades|https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/|Whop D
 whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)
 whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)
 whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)
-whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing Trades|firststeptrading (Whop)
+# CUT 9/7 (Whop Swing Trades) — a SWING room. Swings have been paused since 9/4 and G restated the rule 9/7 ("we shouldnt have any"). Reading a room we will not trade is dead weight.
+#whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing Trades|firststeptrading (Whop)
 
 # THE MASHUP (8/30, G: "one room that alerts everything so we can eliminate
 # six and have only one"). The relay-unwrap in background.js books each call
@@ -110,7 +111,8 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 #SLEEP|Boka Trading Premium lapsed Aug 7 — and Discord agrees: this channel returns "No Access" (verified 9/7)|1395159239164432515|https://discord.com/channels/1156381060108664884/1395159239164432515|Boka 3|Boka Trading
 
 769797179992571914|https://discord.com/channels/769790224921395200/769797179992571914|Option Alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
-769797819770732554|https://discord.com/channels/769790224921395200/769797819770732554|Options Watchlist|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+# CUT 9/7 (Options Watchlist) — 44 unique messages captured, 0 signals, 0 entries — it is a WATCHLIST, and watchlist rows are the exact thing the parser must never fire on ("$150p on watch"). A whole tab of RAM for nothing.
+#769797819770732554|https://discord.com/channels/769790224921395200/769797819770732554|Options Watchlist|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 # TTT Lotto, wired 9/7 (TTT / RWGates / Vero / Insider / Platinum)  (wired 9/7, G: "wire lotto channel up" — same BTO/STC grammar as Option Alerts; label is a placeholder, self-corrects to the real Discord name once the tab attaches and reports via /channames)
 880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 # 9/7: Whop shows STS/Summit as LAPSED, but Discord access is INTACT —
