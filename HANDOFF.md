@@ -1,7 +1,32 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~night — SHABS (OWLS #shabs-sky-alerts,
+Last updated: 2026-09-07 ~night — SPX IS TRADEABLE, ON TASTYTRADE. Settled by
+API, nothing submitted (Tradier preview=true and tastytrade /orders/dry-run
+both validate and stop):
+  tastytrade  ACCEPTED "SPXW 260908C07760000", dry-run status Received,
+              buying power 250.00 -> 243.28 (change 6.72 on a 1-lot at 0.05).
+              Only warning was "next valid session" — the market was shut.
+              THIS IS THE PATH FOR SPX. Note the bot trades options on WEBULL
+              today; tastytrade is greeks-only. Using it to EXECUTE is a real
+              build, not a config flip.
+  Tradier     ACCEPTED the same contract and reached the buying-power check,
+              so SPX permissions are fine there too — but it is blocked:
+              total_cash 250, uncleared_funds 500, option_buying_power -250.
+              A funding/settlement problem, NOT an instrument problem.
+  Also: that 7760 call quoted bid 2.15 / ask 2.30, which corroborates the
+  "300/con" = $3.00 reading. At ~$220 a contract, $250 of buying power is
+  exactly ONE contract — which is how shabs sizes ("1 con per play").
+
+ANNOUNCEMENT-FOLLOW WORKAROUND: CHECKED, DOES NOT APPLY. The idea (follow a
+Discord Announcement channel into Sniper HQ so it arrives as a webhook post,
+which background.js already unwraps like the ZTRADEZ relay) is sound, but all
+8 servers were scanned 9/7 and ZERO of the 24 wired rooms are Announcement
+channels. Only ZTRADEZ has any at all (3: winning-recap, penny-stocks, otc)
+and none of them is a room we trade. Alert rooms are plain text channels
+because sellers gate them; Announcement type is for broadcast. No tabs saved.
+
+Prior: Last updated: 2026-09-07 ~night — SHABS (OWLS #shabs-sky-alerts,
 1513300726141419550, plus 1519039282537300209). His August recap: 53 SPX
 trades, 42W/6L/5BE, 87.5% win rate ex-BE, +$15,898 net at 1 contract a play —
 the best record in any room scanned. Two things in his grammar were traps:
