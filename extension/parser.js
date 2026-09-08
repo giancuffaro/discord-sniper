@@ -838,7 +838,16 @@ function parseSignal(text, cfg) {
       /\bup\s+(?:more\s+than\s+)?\d{1,4}\s*%/.test(low)
       || /\bfilled\s+(?:a\s+)?(?:little\s+|bit\s+)?earlier/.test(low)
       || /\bwill\s+look\s+to\s+close/.test(low)
-      || /\bclos(?:e|ed|ing)\s+the\s+remaining/.test(low))) {
+      || /\bclos(?:e|ed|ing)\s+the\s+remaining/.test(low)
+      // 9/7, eli / OWLS. He narrates a running trade in the same shape he
+      // opens one, so both of these bought a position he was already in:
+      //   "7685c 3->4.5 since I alerted"   the price RAN from 3 to 4.5
+      //   "7625p now itm at 6.25"          it is already working
+      // A price ARROW is the tell for the first — an entry quotes ONE price,
+      // never a journey. "since I alerted" and "now itm" say it outright.
+      || /\d(?:\.\d+)?\s*(?:->|-->|→|=>)\s*\$?\d/.test(low)
+      || /\bsince\s+i\s+alerted\b/.test(low)
+      || /\bnow\s+itm\b|\bitm\s+(?:now|at)\b|\balready\s+itm\b/.test(low))) {
     s.fire = false; s.action = null;
     s.why = "that's a progress update on an EARLIER call (it brags about " +
             "the gain / mentions closing the rest) — not a fresh entry, so " +
