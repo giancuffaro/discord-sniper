@@ -47,6 +47,8 @@ const RE_CONTRACT = new RegExp(
 // The same contract written back to front: "205 calls Friday expiration on
 // NVDA". Requires the word "on" before the ticker — that's what keeps it from
 // reading "10% on SPY" as a contract, and it's how they actually write it.
+const RE_CONTRACT_LEAD = new RegExp(
+  "(?<![\\d/])(" + _EXP + ")\\s+\\$?([A-Za-z]{1,5})\\s+\\$?(\\d{1,5}(?:\\.\\d{1,2})?)\\s*(calls?|puts?|c|p)\\b", "gi");
 const RE_CONTRACT_REV = /(?<![A-Za-z\d.])\$?(\d{1,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b([^.!?]{0,40}?)\b(?:on|for)\s+\$?([A-Za-z]{1,5})\b/gi;
 
 // TradeLikeGates ($STS / RWGates) posts in ThinkorSwim dotted form:
@@ -599,6 +601,26 @@ function findContract(text) {
     return { symbol: sym, strike: parseFloat(m[3]),
              side: k.startsWith("c") ? "CALLS" : "PUTS",
              expiry };
+  }
+
+  // DATE FIRST (9/7). Some rooms lead with the expiry, then the ticker:
+  //   "9/2 TSLA 355 PUTS 1.57"   "kind of a lotto 9/2 META 590 call 1.8"
+  // The main shape wants SYMBOL first, so the date was either dropped (leaving
+  // the entry to guess an expiry) or the whole contract went unread. Tried
+  // after the main shape so a normally-written contract always wins.
+  RE_CONTRACT_LEAD.lastIndex = 0;
+  while ((m = RE_CONTRACT_LEAD.exec(text)) !== null) {
+    const sym = m[2].toUpperCase();
+    if (blockedTicker(sym, text)) continue;
+    let expiry = (m[1] || "").toUpperCase().trim();
+    if (/DTE$/.test(expiry)) expiry = expiry.replace(/\s+/g, "");
+    else if (/^[A-Z]/.test(expiry)) {
+      const md2 = RE_MONTH_DAY.exec(expiry.toLowerCase());
+      if (md2) expiry = MONTHS[md2[1]] + "/" + parseInt(md2[2], 10);
+    }
+    return { symbol: sym, strike: parseFloat(m[3]),
+             side: m[4].toLowerCase().startsWith("c") ? "CALLS" : "PUTS",
+             expiry: expiry || null };
   }
 
   // Written back to front. Tried second so a normally-written contract in the
