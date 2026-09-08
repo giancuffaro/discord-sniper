@@ -1657,8 +1657,13 @@ async function openMissingRooms() {
   let opened = 0;
   for (const r of want) {
     const isWhop = /^whop:/i.test(r.id) || /whop\.com/i.test(r.url);
-    if (isWhop && !haveWhop) continue;        // not this browser's lane
-    if (!isWhop && !haveDiscord) continue;     // not this browser's lane
+    const lane = await stickyLane(haveDiscord, haveWhop);
+    if (lane === "discord" && isWhop) continue;   // Whop is the other browser's job
+    if (lane === "whop" && !isWhop) continue;     // Discord is the other browser's job
+    if (!lane) {                                   // lane not settled yet — old rule
+      if (isWhop && !haveWhop) continue;
+      if (!isWhop && !haveDiscord) continue;
+    }
     const key = r.id.replace(/^whop:/, "");
     const idInUrl = (r.url.match(/\/channels\/\d+\/(\d+)/) || [])[1]
                  || (r.url.match(/exp_[a-z0-9]+/i) || [])[0];
