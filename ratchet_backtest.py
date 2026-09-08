@@ -42,7 +42,8 @@ import ratchet_tiers as rt    # noqa: E402
 TAPE_CSV = os.path.join(HERE, "databento_tape.csv")
 OUT_JSON = os.path.join(HERE, "ratchet_backtest_results.json")
 
-BORN_STOP_PCT = 10.0   # settings.json strategy.stop_loss_pct — the day-one stop
+BORN_STOP_PCT = 7.5    # settings.json strategy.stop_loss_pct — the day-one stop
+                       # (moved 10 -> 7.5 on 9/8, see HANDOFF.md that date)
 
 
 def _nan(x):

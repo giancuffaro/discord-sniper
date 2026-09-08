@@ -210,9 +210,13 @@ def main():
         w.writeheader()
         w.writerows(rows_out)
 
-    current = next(r for r in rows_out if r["born_stop_pct"] == 10.0 and r["arm_to_be_pct"] == 10.0)
+    # 9/8: live default moved to born 7.5% / arm 5% after this exact sweep
+    # found the old born 10%/arm 10% losing money (-$434, rank 30/50) — see
+    # HANDOFF.md that date. Tracking the CURRENT live cell here, not the
+    # retired one, so a future rerun always points at the right row.
+    current = next(r for r in rows_out if r["born_stop_pct"] == 7.5 and r["arm_to_be_pct"] == 5.0)
     print()
-    print("current rule (born 10%%, arm 10%%): total $%.2f, win rate %.1f%%, rank #%d of %d"
+    print("current rule (born 7.5%%, arm 5%%): total $%.2f, win rate %.1f%%, rank #%d of %d"
           % (current["total_pl_dollars"], current["win_rate_pct"],
              rows_out.index(current) + 1, len(rows_out)))
     print()

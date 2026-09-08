@@ -525,18 +525,24 @@ def build_book():
     BOOK.stop_pct = float(_strat.get("stop_loss_pct", 10.0))
     _sync_stop_pct(BOOK.stop_pct)
     if BOOK.ratchet_on:
-        # The step is stop_loss_pct — same number ratchet_locked_pct() actually
-        # uses. It used to be (take_profit_pct - stop_loss_pct) here, which was
-        # right for the old 10/20 rung but printed a FLAT LIE on 8/25's 10/10
-        # config: "+0% steps", i.e. the ratchet is dead, while the real math was
-        # locking breakeven at +10% and another 10% every 10% after. Never let
-        # the banner recompute the rule — read it off the function that owns it.
-        note("STRATEGY forced ON at bridge start: 1 contract, -%.0f%% stop to "
-             "start, then at +%.0f%% the stop goes to BREAKEVEN and every "
-             "further +%.0f%% locks another %.0f%% — "
+        # Arm/first-lock/step come from ratchet_tiers.TIERS, not from
+        # take_profit_pct/stop_loss_pct — this banner used to recompute the
+        # rule from those two and went stale the day the real rule stopped
+        # matching them (the 8/25 "+0% steps" FLAT LIE this comment used to
+        # warn about). It drifted the same way again 9/8, silently, the
+        # whole time arm/step were coincidentally both 10 and equal to
+        # stop_loss_pct — now that 9/8's respacing (5% arm/step vs a 7.5%
+        # born stop) actually made the three numbers diverge, recomputing
+        # from settings would print +10% arm/step here while the bot
+        # actually runs +5%. Read it off the function that owns it — this
+        # time for real, so it can't go stale like that again.
+        _arm, _first, _step = _rt.TIERS[-1][1]
+        _lock_txt = "BREAKEVEN" if abs(_first) < 1e-9 else ("+%.0f%%" % _first)
+        note("STRATEGY forced ON at bridge start: 1 contract, -%.1f%% stop to "
+             "start, then at +%.1f%% the stop goes to %s and every "
+             "further +%.1f%% locks another %.1f%% — "
              "never sells outright, never comes back red once it locks"
-             % (BOOK.stop_pct, BOOK.take_profit_pct,
-                BOOK.stop_pct, BOOK.stop_pct))
+             % (BOOK.stop_pct, _arm, _lock_txt, _step, _step))
     else:
         note("STRATEGY forced ON at bridge start: 1 contract, +%.0f%% take-profit, "
              "-%.0f%% stop" % (BOOK.take_profit_pct, BOOK.stop_pct))
@@ -4069,14 +4075,15 @@ class Handler(BaseHTTPRequestHandler):
                     BOOK.stop_pct = float(st["stop_loss_pct"])
                     _sync_stop_pct(BOOK.stop_pct)
             if BOOK is not None and BOOK.ratchet_on:
-                # Step is stop_loss_pct, not (tp - sl) — see the boot banner.
-                note("STRATEGY ON: 1 contract, -%.0f%% stop to start, then at "
-                     "+%.0f%% the stop goes to BREAKEVEN and every further "
-                     "+%.0f%% locks another %.0f%%"
-                     % (float(st.get("stop_loss_pct", 10)),
-                        float(st.get("take_profit_pct", 20)),
-                        float(st.get("stop_loss_pct", 10)),
-                        float(st.get("stop_loss_pct", 10))))
+                # Arm/lock/step read off ratchet_tiers.TIERS, not
+                # take_profit_pct/stop_loss_pct — see the boot banner above.
+                _arm, _first, _step = _rt.TIERS[-1][1]
+                _lock_txt = "BREAKEVEN" if abs(_first) < 1e-9 else ("+%.0f%%" % _first)
+                note("STRATEGY ON: 1 contract, -%.1f%% stop to start, then at "
+                     "+%.1f%% the stop goes to %s and every further "
+                     "+%.1f%% locks another %.1f%%"
+                     % (float(st.get("stop_loss_pct", 10)), _arm, _lock_txt,
+                        _step, _step))
             else:
                 note("STRATEGY %s: 1 contract, +%.0f%% TP, -%.0f%% SL"
                      % ("ON" if st.get("enabled") else "off",
