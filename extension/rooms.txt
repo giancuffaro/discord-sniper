@@ -131,7 +131,8 @@ whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop
 911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|Platinum futures-alerts|Platinum Trading
 1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum day-trades|Platinum Trading
 1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum ei-alerts|Platinum Trading
-983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity|Platinum Trading
+# CUT 9/7 (Platinum equity) — 203 captured messages, 4 fires, ZERO entries — and the parser is RIGHT to refuse them. It is MrMTrades posting SWING ideas on SHARES: "Swing Trade Idea $TSLA Entry: $344", "$VSAT Entry: $31.70" — common stock, no strike, no expiry — plus "Level 3 hit" progress updates and WATCHLIST rows. Fails the no-swings rule, the options-only rule and the no-watchlist rule at once. (A crude keyword scan earlier called these 99 'entries'; it was matching the words ENTRY IDEA. The parser was correct and the scan was wrong.)
+#983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity|Platinum Trading
 
 # DO NOT ADD 911389321993523210 (Platinum "lottos") — it is Demon Alerts
 # mirroring the ZTRADEZ demon room already listed above. Adding it = the
