@@ -51,7 +51,10 @@ STOP = {"OPEN", "SHORT", "LONG", "REFUSED", "PULLBACK", "SWING", "OFF", "TEST",
         "IN", "ENTRY", "TRADE", "ALERT", "EVERY", "BANG", "TP", "SL", "RN",
         "US", "PC", "ID", "OK", "MOD", "FST", "WEBULL", "TOPSTEP", "PROJECTX",
         "ONLY", "MASTER", "DAY", "EOD", "NFP", "YT", "AI", "READ", "AD",
-        "SAME", "WITH", "VERY", "GTR", "OPENAPI", "REVERSE", "OPTION"}
+        "SAME", "WITH", "VERY", "GTR", "OPENAPI", "REVERSE", "OPTION",
+        "CLOSE", "ADD", "SOLD", "ERROR", "ACCT", "OCO", "PM", "AM", "HALF",
+        "ROLL", "LOTTO", "CALL", "CALLS", "PUT", "PUTS", "OVER", "EVERY",
+        "GOING", "FAST", "SMA", "POS", "OIF"}
 
 _THIN_N = re.compile(r"only (\d+) contracts", re.I)
 _NEVER = re.compile(r"never touched \$?([\d.]+)", re.I)
