@@ -329,7 +329,19 @@ def read_image(images, caption, allowed_symbols, cfg, timeout=15):
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        return {"_error": "HTTP %s" % e.code}
+        # KEEP THE REASON (9/8 vision sweep). 12 of 137 screenshot reads in the
+        # log had failed as a bare "HTTP 400" — the API's own explanation was
+        # read and discarded, so nobody could tell whether it was image size,
+        # a media type, or a bad request. The message is short and it is the
+        # whole diagnosis; carry it.
+        why = ""
+        try:
+            body_ = e.read().decode("utf-8", "replace")
+            j = json.loads(body_)
+            why = str(((j.get("error") or {}).get("message")) or body_)[:160]
+        except Exception:                                   # noqa: BLE001
+            pass
+        return {"_error": "HTTP %s%s" % (e.code, (": " + why) if why else "")}
     except Exception:                                       # noqa: BLE001
         return {"_error": "unreachable"}
     try:
