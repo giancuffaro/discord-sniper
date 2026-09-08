@@ -1766,6 +1766,40 @@ def _err_count_since(ts):
     except Exception:                                   # noqa: BLE001
         return 0
 _IMG_SEEN = {}              # sha1(images+caption) -> (ts, verdict)  (24h)
+
+# THE READER TAPE (9/8, G: "i need to see them in order to help you analize").
+# One chronological, human-readable file of everything the ears heard and the
+# eyes saw, with what the parser made of each. Voice lines arrive from the
+# extension via POST /reads; vision reads are written here directly. It is for
+# G's review — the trading path never reads it — so it must never block or
+# raise. reads.py prints it nicely.
+READS_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reads.log")
+_READS_LOCK = threading.Lock()
+
+
+def tape_read(kind, room, who, heard, action="", symbol="", strike=None,
+              side="", extra=""):
+    """Append one line. kind: 'voice' | 'vision'. Never raises."""
+    try:
+        ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        icon = "🎙" if kind == "voice" else "📸"
+        verdict = ""
+        if action:
+            verdict = "%s %s%s%s" % (action, symbol or "",
+                                     (" " + str(strike)) if strike not in (None, "") else "",
+                                     (" " + str(side)[:1]) if side else "")
+        else:
+            verdict = "-"
+        heard = str(heard or "").replace("\n", " ").strip()
+        line = "%s %s %-22s %-6s | %-24s | %s%s\n" % (
+            ts, icon, str(room or "")[:22], str(who or "")[:6],
+            verdict[:24], heard[:220],
+            ("   [%s]" % str(extra)[:80]) if extra else "")
+        with _READS_LOCK:
+            with open(READS_LOG, "a", encoding="utf-8") as f:
+                f.write(line)
+    except Exception:                                       # noqa: BLE001
+        pass
 WHOP_FEED = []              # whop-api reader queue: [{_i, platform, text...}]
 WHOP_FEED_N = [0]           # monotonic counter for /whopfeed cursors
 WHOP_FEED_OK = [0.0]        # ts of the last SUCCESSFUL room read — "active"
@@ -3789,6 +3823,21 @@ class Handler(BaseHTTPRequestHandler):
                                 "read": cleaned,
                                 "confidence": cleaned.get("confidence", 0)})
 
+    def _tape_reads(self):
+        """THE READER TAPE — the extension posts every finalized voice line
+        here with what the parser made of it. See tape_read()."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:                                   # noqa: BLE001
+            return self._json(400, {"ok": False})
+        tape_read(str(body.get("kind") or "voice"), body.get("room"),
+                  body.get("speaker"), body.get("heard"),
+                  action=body.get("action") or "", symbol=body.get("symbol") or "",
+                  strike=body.get("strike"), side=body.get("side") or "",
+                  extra=("" if body.get("action") else str(body.get("why") or "")[:60]))
+        return self._json(200, {"ok": True})
+
     def _ai_read_image(self):
         """SCREENSHOT reading (his ask, 8/19): some rooms post the call as an
         image. Same brain, same guards as _ai_read — the model reads the picture
@@ -3835,6 +3884,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False, "why": "no read"})
         if read.get("_error"):
             note("IMG READ couldn't read the image (%s)" % read["_error"])
+            tape_read("vision", "screenshot", "", caption or "(image)",
+                      extra="FAILED: " + str(read["_error"])[:70])
             return self._json(200, {"ok": False, "why": read["_error"]})
         # The anti-hallucination check runs against the image's OWN words (what
         # the model transcribed) plus any caption — never an empty string, or a
@@ -3844,6 +3895,8 @@ class Handler(BaseHTTPRequestHandler):
         ok, why, cleaned = ai_reader.validate(read, check_text, allowed)
         if not ok:
             note("IMG READ no call — %s" % (why or "")[:80])
+            tape_read("vision", "screenshot", "", seen or caption or "(image)",
+                      extra=(why or "no call")[:80])
             _out = {"ok": False, "why": why}
             if _h:
                 _IMG_SEEN[_h] = (time.time(), _out)
@@ -3851,6 +3904,11 @@ class Handler(BaseHTTPRequestHandler):
         canon = ai_reader.canonical(cleaned)
         note("IMG READ  [screenshot]  ->  %s   (saw: '%s')"
              % (canon, seen[:60]))
+        tape_read("vision", "screenshot", "", seen or caption or "(image)",
+                  action=str(cleaned.get("action") or ""),
+                  symbol=str(cleaned.get("ticker") or cleaned.get("symbol") or ""),
+                  strike=cleaned.get("strike"), side=str(cleaned.get("side") or ""),
+                  extra="%d%% -> %s" % (round(100 * float(cleaned.get("confidence") or 0)), canon))
         _out = {"ok": True, "canonical": canon,
                 "read": cleaned, "seen_text": seen,
                 "confidence": cleaned.get("confidence", 0)}
@@ -4246,6 +4304,8 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, {"ok": True, "known": len(old), "new": added})
 
     def do_POST(self):
+        if self.path.startswith("/reads"):
+            return self._tape_reads()
         if self.path.startswith("/channames"):
             return self._chan_names()
         if self.path.startswith("/mode"):
