@@ -226,6 +226,57 @@ const SHADOW = new Set([
  * filter skips itself and lets EVERY room through — the opposite of what a
  * missing rooms.txt should do — so a fetch failure logs it and channel_ids
  * stays empty on purpose (nothing trades) rather than defaulting open. */
+/* BORN TESTING — rooms reopened but never yet proven on this build.
+ *
+ * 9/8, G: "the new rooms show live for me actually". They did, and the gate
+ * below was useless for exactly the rooms it was written for. Why:
+ * channel_live PERSISTS on purpose (his call: "everytime i push a new update
+ * my channels go all back to testing, i need the popup to keep the live on"),
+ * and the popup's ALL LIVE button writes true for EVERY room id. Four of these
+ * six were live rooms before being cut on 8/30, so they still carried a stale
+ * `true`. `_lv === undefined` was never true for them and the gate never fired.
+ *
+ * Fix: BORN_TESTING_GEN. On startup the migration deletes channel_live entries
+ * for these ids ONCE per generation, so the room genuinely starts with no
+ * setting. G flips it in the popup, that writes a real entry, and it sticks —
+ * the migration will not run again for this generation.
+ *
+ * Adding a newly reopened room later: put its id here AND bump the generation,
+ * or the migration will consider itself already done and the room stays live.
+ */
+const BORN_TESTING_GEN = "2026-09-08a";
+const BORN_TESTING = new Set([
+  "1332090335005900800",  // cranmer / opt-9
+  "1356793611420958732",  // madhatter / opt-1
+  "1525120298075029554",  // stormzyy / fut-1
+  "1251181965252755517",  // guru-futures / fut-2
+  "1286022517869514874",  // ELITE OPTIONS / Brando Alerts
+  "1368263191632543956"   // ELITE OPTIONS / Shoof Alerts
+]);
+
+async function applyBornTesting() {
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const s = settings || {};
+    if (s.born_testing_gen === BORN_TESTING_GEN) return 0;
+    const cl = s.channel_live || {};
+    let cleared = 0;
+    for (const id of BORN_TESTING) {
+      if (Object.prototype.hasOwnProperty.call(cl, id)) { delete cl[id]; cleared++; }
+    }
+    s.channel_live = cl;
+    s.born_testing_gen = BORN_TESTING_GEN;
+    await chrome.storage.local.set({ settings: s });
+    if (cleared) {
+      await addLog({ kind: "sent", what: "BORN TESTING",
+        why: cleared + " reopened room(s) were still carrying a LIVE setting "
+           + "from before they were cut. Cleared, so they start in TESTING. "
+           + "Flip them in the popup when you want them live and it will stick." });
+    }
+    return cleared;
+  } catch (e) { return 0; }
+}
+
 let _roomsPromise = null;
 
 /* IS THAT A TICKER, OR A WORD FROM THE MESSAGE? (9/8)
@@ -2821,21 +2872,10 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // flips it to testing in the popup (stored false) — the old default was
     // the reverse. Shadow rooms still fire nothing at all.
     const _lv = (c.channel_live || {})[String(msg.channelId || "")];
-    // BORN TESTING (9/7). The six rooms reopened after the mashup audit have
-    // never been read by this build — the "always live" default above would
-    // put six unproven traders on real money the moment their tab opens, and
-    // flipping a room LIVE is G's call alone. So they start in TESTING.
-    // The instant he sets either value in the popup, channel_live has a real
-    // entry, _lv stops being undefined, and his choice wins — this list goes
-    // inert on its own. Remove an id here only to change the born state.
-    const BORN_TESTING = new Set([
-      "1332090335005900800",  // cranmer / opt-9
-      "1356793611420958732",  // madhatter / opt-1
-      "1525120298075029554",  // stormzyy / fut-1
-      "1251181965252755517",  // guru-futures / fut-2
-      "1286022517869514874",  // ELITE OPTIONS / Brando Alerts
-      "1368263191632543956"   // ELITE OPTIONS / Shoof Alerts
-    ]);
+    // BORN TESTING — see BORN_TESTING at module scope. The gate only applies
+    // while channel_live has NO entry for the room; the startup migration
+    // clears any stale entry once so that is actually true. After G flips it
+    // in the popup his choice is a real entry and wins from then on.
     const roomLive = (_lv === undefined
                       && BORN_TESTING.has(String(msg.channelId || "")))
                      ? false
@@ -3186,8 +3226,8 @@ async function allRoomsTesting() {
   return;
 }
 
-chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); startWhopFeed(); });
-chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); badge(); reinject(); startWhopFeed(); });
+chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); badge(); reinject(); startWhopFeed(); });
+chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); badge(); reinject(); startWhopFeed(); });
 
 /* MEMORY SHED (9/1, G: "sometimes I come back and Chrome has run out of
  * memory"). Discord web leaks: a room tab that starts at ~150 MB sits at
