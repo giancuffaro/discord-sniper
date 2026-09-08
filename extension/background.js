@@ -548,6 +548,25 @@ function loadRoomsFile() {
   return _roomsPromise;
 }
 
+// Per-channel lists the bridge owns (settings.json), cached from /mode so the
+// parser's SPX->SPY retarget and implied-symbol fill see the same config the
+// bridge does. Refreshed on the watch-build alarm and at startup.
+let _BRIDGE_CHANNELS = {};
+async function refreshBridgeChannels() {
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const base = bridgeBaseFrom((settings || {}).bridge_url || BRIDGE_DEFAULT);
+    const m = await (await fetch(base + "/mode", { cache: "no-store" })).json();
+    if (m && typeof m === "object") {
+      const next = {};
+      if (Array.isArray(m.spx_entry_channels)) next.spx_entry_channels = m.spx_entry_channels.map(String);
+      if (m.default_symbol_channels && typeof m.default_symbol_channels === "object") next.default_symbol_channels = m.default_symbol_channels;
+      if (Array.isArray(m.entry_no_verb_channels)) next.entry_no_verb_channels = m.entry_no_verb_channels.map(String);
+      _BRIDGE_CHANNELS = next;
+    }
+  } catch (e) { /* bridge down — keep the last good copy, never clear it */ }
+}
+
 async function cfg() {
   const { settings } = await chrome.storage.local.get("settings");
   const bakedRooms = await loadRoomsFile();
@@ -585,6 +604,19 @@ async function cfg() {
   // box is still honoured ON TOP of these, same as before.
   c.channel_ids = Array.from(new Set(
     [].concat((settings || {}).channel_ids || [], bakedRooms).map(String)));
+  // PER-CHANNEL LISTS FROM THE BRIDGE (9/8). spx_entry_channels,
+  // default_symbol_channels and entry_no_verb_channels live in settings.json
+  // (the bridge's file) but drive the extension's parser. The extension never
+  // read settings.json, so the two disagreed — SPX enabled on the bridge,
+  // refused in the reader. The bridge now serves them on /mode and
+  // refreshBridgeChannels() caches them here; settings.json is the one source.
+  // A popup-set value in chrome.storage still wins if present (|| keeps it).
+  if (_BRIDGE_CHANNELS.spx_entry_channels && !(settings || {}).spx_entry_channels)
+    c.spx_entry_channels = _BRIDGE_CHANNELS.spx_entry_channels;
+  if (_BRIDGE_CHANNELS.default_symbol_channels && !(settings || {}).default_symbol_channels)
+    c.default_symbol_channels = _BRIDGE_CHANNELS.default_symbol_channels;
+  if (_BRIDGE_CHANNELS.entry_no_verb_channels && !(settings || {}).entry_no_verb_channels)
+    c.entry_no_verb_channels = _BRIDGE_CHANNELS.entry_no_verb_channels;
   return c;
 }
 

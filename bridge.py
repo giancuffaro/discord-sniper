@@ -3196,6 +3196,20 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             _as = False
         return {"mode": "per-room",
+                # PER-CHANNEL LISTS, SERVED TO THE EXTENSION (9/8). These live
+                # in settings.json (this file), but the extension's parser is
+                # what does the SPX->SPY retarget and the implied-symbol fill,
+                # and it reads its config from chrome.storage — which never saw
+                # settings.json. So the two never agreed: editing settings.json
+                # enabled SPX on the BRIDGE while the extension still refused
+                # it. Now the bridge hands them over here and cfg() merges them,
+                # making settings.json the single source of truth for both.
+                "spx_entry_channels": [str(x) for x in
+                                       (CFG.get("spx_entry_channels") or [])],
+                "default_symbol_channels": {str(k): str(v) for k, v in
+                    (CFG.get("default_symbol_channels") or {}).items()},
+                "entry_no_verb_channels": [str(x) for x in
+                                           (CFG.get("entry_no_verb_channels") or [])],
                 "announcer_alive": (_aa is not None and _aa < 120),
                 "announcer_stopped": _as,       # deliberately off (STOP ANNOUNCER)
                 "announcer_age": (int(_aa) if _aa is not None else None),
