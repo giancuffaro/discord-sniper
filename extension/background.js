@@ -255,24 +255,47 @@ const BORN_TESTING_GEN = "2026-09-08b";
 // an id back here AND bump BORN_TESTING_GEN only if he ever asks for it again.
 const BORN_TESTING = new Set([]);
 
+// ALL-LIVE one-shot (9/8, his call: "clear ALL test flags — make every
+// currently-test room live at once"). Bump this string to sweep again.
+const ALL_LIVE_GEN = "2026-09-08-alllive";
 async function applyBornTesting() {
   try {
     const { settings } = await chrome.storage.local.get("settings");
     const s = settings || {};
-    if (s.born_testing_gen === BORN_TESTING_GEN) return 0;
     const cl = s.channel_live || {};
     let cleared = 0;
-    for (const id of BORN_TESTING) {
-      if (Object.prototype.hasOwnProperty.call(cl, id)) { delete cl[id]; cleared++; }
+    let touched = false;
+
+    // (1) BORN_TESTING generation sweep — clears the listed reopened ids once.
+    if (s.born_testing_gen !== BORN_TESTING_GEN) {
+      for (const id of BORN_TESTING) {
+        if (Object.prototype.hasOwnProperty.call(cl, id)) { delete cl[id]; cleared++; }
+      }
+      s.born_testing_gen = BORN_TESTING_GEN;
+      touched = true;
     }
+
+    // (2) ALL-LIVE sweep — deletes EVERY explicit channel_live=false so every
+    // room falls through to live-by-default (roomLive = _lv !== false). One
+    // shot per generation: after this, a room only goes back to TESTING when he
+    // flips it in the popup, and that fresh false sticks because this sweep is
+    // marked done and won't run again.
+    if (s.all_live_gen !== ALL_LIVE_GEN) {
+      for (const id of Object.keys(cl)) {
+        if (cl[id] === false) { delete cl[id]; cleared++; }
+      }
+      s.all_live_gen = ALL_LIVE_GEN;
+      touched = true;
+    }
+
+    if (!touched) return 0;
     s.channel_live = cl;
-    s.born_testing_gen = BORN_TESTING_GEN;
     await chrome.storage.local.set({ settings: s });
     if (cleared) {
-      await addLog({ kind: "sent", what: "BORN TESTING",
-        why: cleared + " reopened room(s) were still carrying a LIVE setting "
-           + "from before they were cut. Cleared, so they start in TESTING. "
-           + "Flip them in the popup when you want them live and it will stick." });
+      await addLog({ kind: "sent", what: "ALL LIVE",
+        why: cleared + " room(s) were carrying a TEST flag. Cleared — every open "
+           + "tab is now LIVE. Flip a room to TESTING in the popup any time and "
+           + "it will stick." });
     }
     return cleared;
   } catch (e) { return 0; }
