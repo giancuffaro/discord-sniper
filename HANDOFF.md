@@ -1,7 +1,38 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 — RATCHET SPACING SWEEP: BORN -10/ARM +10 IS COSTING
+Last updated: 2026-09-08 — TODAY'S 6 CALLS: PULLBACK BEAT "GOT IN WITH THEM"
+BY $89. G: "what would of been the original entry point if we didnt pull
+back.. what would of their trade got if we would of gotten in with them
+instead."
+  Built `today_entry_compare.py`. First had to establish ground truth: the
+  'opened' field in days/*.json is the pullback TOUCH (order-fire) moment,
+  NOT the alert — bridge.log's "AI READ" line is the real alert time, and
+  the gap between them ranged 8-347 seconds across today's 6 calls. Checked
+  whether our own tape has a real quote AT the alert moment before trusting
+  any number — it doesn't; the pullback hunt watches the STOCK while it
+  waits, nothing polls the OPTION's own bid/ask until the touch, and
+  Databento can't fill the gap (embargoed within 24h). Used their_avg (the
+  caller's own posted price, timestamped at the alert) as the honest stand-
+  in for "entering with them" — not a guess, the actual number they called.
+  Ran BOTH legs through the real live ratchet (ratchet_backtest.py's exact
+  engine, born -10%/arm ladder) off real ticks from each entry forward.
+  Result on the 5 usable trades (TSLA excluded, see below): pullback entry
+  beat immediate entry on 4, tied on 1, lost on 1 by $2 — net **pullback
+  +$89** across the 5. Mechanism, not luck: a cheaper basis arms the
+  breakeven lock off a SMALLER absolute bounce, so several of today's calls
+  round-tripped through +10% and locked flat instead of riding the born
+  floor down — AMD Mike#2 is the clean example (immediate: straight to -10%
+  floor, -$56; pullback: armed, locked BE, round-tripped to exactly $0).
+  **TSLA 372.5C 9/11 EXCLUDED — their posted price doesn't check out.**
+  @Owner Alerts posted "$1.50"; our own fill 8 seconds later, same stock
+  price (362.14 -> 361.99, basically flat), was $3.25 — parser.js read the
+  raw text correctly ("Price: $1.50" is verbatim in the alert), so this
+  isn't a parsing bug, the room's own number looks wrong (typo or stale on
+  their end). Flagged to G, no code change — nothing to fix when the input
+  itself was bad and our fill/stop both behaved correctly off the real
+  price.
+Previously — Last updated: 2026-09-08 — RATCHET SPACING SWEEP: BORN -10/ARM +10 IS COSTING
 MONEY, -7.5%/+4% WINS ON REAL FILLS. G: "figure out what ratchet spacing is
 most convenient.. what stop to start with and when to jump to break even."
   Built `ratchet_sweep.py`: same shape as the real ratchet (born stop,
