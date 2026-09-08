@@ -397,6 +397,14 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "GOING", "DOING", "USING", "WOULD", "COULD", "SHOULD", "MIGHT", "THERE",
   "BEEN", "HAVE", "WILL", "WANT", "NEED", "THEY", "THEM", "YOUR", "WERE",
   "EACH", "BOTH", "OVER", "UNDER", "LAST", "NEXT", "FULL",
+  // Second pass: blocking a word just moves the reader to the NEXT word, so
+  // "OUT LAST 3.50 L ON THE VERY LAST OTHERS GREEN" went VERY -> GREEN and
+  // still fired a CLOSE. And the month list only had ABBREVIATIONS, so
+  // "BOOKING SOME PROFITS FROM JUNE" resolved to ticker JUNE.
+  "GREEN", "RED", "LEFT", "RIGHT", "OTHERS", "RUNNERS", "PROFIT", "PROFITS",
+  "JANUARY", "FEBRUARY", "MARCH", "APRIL", "JUNE", "JULY", "AUGUST",
+  "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER", "TODAY", "TOMORROW",
+  "MONDAY", "FRIDAY", "WEEKLY", "MONTHLY",
   // 9/7: MONTH NAMES were never excluded. "buy AA sep 18 Calls 52$" booked
   // the contract as ticker SEP, strike 18 — a real order in the wrong name.
   // No month abbreviation is a ticker G trades, so all of them are vetoed.
