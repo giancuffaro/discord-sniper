@@ -1,7 +1,46 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 — voice_corpus.json: 2,305 REAL SPOKEN LINES, kept.
+Last updated: 2026-09-08 — VISION / IMAGE SWEEP. The last unswept path.
+  THE DESIGN IS RIGHT AND IT IS WORTH KNOWING WHY. An image goes to the bridge
+  /readimage; the model TRANSCRIBES what it sees (seen_text) and proposes a
+  call; ai_reader.validate() then demands that the ticker, the strike and the
+  price each LITERALLY appear in the model's own transcription plus the
+  caption — a hallucinated ticker fails that bar. The clean call comes back as
+  text and is re-parsed by the SAME parseSignal, and `sig = sig3` happens
+  BEFORE `sig.live = roomLive` is set, so vision inherits live/testing, BORN
+  TESTING, the ticker allowlist (sendOrder) and the volume floor (bridge).
+  Confidence under 0.6 is held for review, never sent. Same image within 24h
+  gets the cached verdict (the Whop 2K room re-posts one screenshot every ~6
+  minutes). Images are fetched from Discord's CDN by the FULL SIGNED URL the
+  browser already loaded, within milliseconds of the post, so link expiry
+  never bites.
+
+  WHAT IT HAS ACTUALLY DONE, from bridge.log: 137 screenshot reads.
+    125 refused (charts, no call)          — correct
+     12 produced a call                    — EVERY ONE a TRIM or CLOSE
+      0 produced an ENTRY                  — ever
+  With exit_policy=entries_only, a TRIM/CLOSE from a room is refused at the
+  bridge, so VISION HAS NEVER PLACED AN ORDER and structurally cannot unless it
+  one day reads an OPEN. Zero money exposure to date.
+  Of the 12: nine were a bot's "+30%" progress cards read as trims (record
+  noise only), "Out of INTC" was a genuine exit, and two were victory laps
+  ("Those SPX puts we took went to $16.00 from $5.80") read as exits — wrong,
+  harmless under entries_only, left alone.
+
+  THE ONE FIX: 12 of 137 reads had failed as a bare "HTTP 400". The API's own
+  explanation was read and DISCARDED — `return {"_error": "HTTP %s" % e.code}`
+  — so nobody could tell if it was image size, media type, or a bad request.
+  It now carries the message: "HTTP 400: image exceeds 5 MB maximum: 6.2 MB".
+  Proven with a faked API error. Next time it happens the log has the answer.
+
+  NOTED, NOT CHANGED: Discord's img.src is usually the RESIZED preview
+  (?width=550), so the reader sees a thumbnail, not the original. Legible for
+  an alert screenshot, and charts are refused regardless. Stripping the resize
+  params for full resolution is possible but untested against the signed URL —
+  do not touch it without proving the fetch still works.
+
+Prior: Last updated: 2026-09-08 — voice_corpus.json: 2,305 REAL SPOKEN LINES, kept.
   G asked whether we have voice recordings to practise on. NO AUDIO IS KEPT —
   Deepgram transcribes the stream live and only the text survives. So we cannot
   test whether it HEARD correctly; we can only test what the parser does with

@@ -157,14 +157,26 @@ def iso(ts):
     return datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc).isoformat()
 
 
-def downsample(df):
-    """~1 row/sec: keep the first quote in each DOWNSAMPLE_SECONDS bucket."""
+def downsample(df, win_start=None, win_end=None):
+    """~1 row/sec: keep the first quote in each DOWNSAMPLE_SECONDS bucket.
+
+    9/8: one row in the first full backfill came back timestamped in the
+    year 2343 — a single corrupted record out of 329,431 real ones, cause
+    unconfirmed (a bad message, a pandas Timestamp artifact, who knows).
+    Whatever produced it, nothing here should ever trust a timestamp outside
+    the window it actually asked for, so anything more than an hour past
+    either edge is dropped rather than silently written into a tape that
+    ratchet/anti-clip math will treat as real."""
     if df is None or len(df) == 0:
         return []
     out = []
     last_bucket = None
     for ts_recv, bid, ask in zip(df.index, df["bid_px_00"], df["ask_px_00"]):
         t = ts_recv.timestamp()
+        if win_start is not None and t < win_start - 3600:
+            continue
+        if win_end is not None and t > win_end + 3600:
+            continue
         bucket = int(t // DOWNSAMPLE_SECONDS)
         if bucket == last_bucket:
             continue
@@ -218,7 +230,7 @@ def main():
                   % (i, len(todo), label, type(e).__name__, str(e)[:160]))
             continue
 
-        rows = downsample(df)
+        rows = downsample(df, win_start=w["start"], win_end=w["end"])
         if not rows:
             empty_n += 1
             state.add((w["occ"], w["day"]))
