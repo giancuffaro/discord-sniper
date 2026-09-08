@@ -381,6 +381,22 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
   // "SL HIT" — the stop got hit; HIT is a verb, not a ticker (8/11).
   "SOME", "HIT", "SAME", "THOSE", "THESE", "THAT", "THIS",
+  // 9/7 CROSS-ROOM SWEEP. Every symbol the parser has ever produced was listed
+  // and checked against English. Six were words, and THREE of them fired:
+  //   "...then can go WITH 773c..."            -> OPEN WITH 773  (coaching text
+  //                                               bought a nonexistent ticker)
+  //   "| EXIT ALERT Ticker: NBIS Stopped out"  -> CLOSE EXIT      (the REAL
+  //                                               ticker is NBIS — the stop-out
+  //                                               would have missed the position)
+  //   "OUT LAST 3.50 L ON THE VERY LAST..."    -> CLOSE VERY
+  // A word in front of a strike is the oldest trap in this file (SEP, SAME).
+  // These are function words, none is a US option ticker.
+  "WITH", "EXIT", "ENTRY", "VERY", "WHAT", "FROM", "ONLY", "JUST", "ALSO",
+  "EVEN", "MORE", "LESS", "THAN", "THEN", "WHEN", "WHERE", "WHICH", "WHILE",
+  "UNTIL", "ABOVE", "BELOW", "INTO", "ONTO", "ABOUT", "AFTER", "BEFORE",
+  "GOING", "DOING", "USING", "WOULD", "COULD", "SHOULD", "MIGHT", "THERE",
+  "BEEN", "HAVE", "WILL", "WANT", "NEED", "THEY", "THEM", "YOUR", "WERE",
+  "EACH", "BOTH", "OVER", "UNDER", "LAST", "NEXT", "FULL",
   // 9/7: MONTH NAMES were never excluded. "buy AA sep 18 Calls 52$" booked
   // the contract as ticker SEP, strike 18 — a real order in the wrong name.
   // No month abbreviation is a ticker G trades, so all of them are vetoed.
