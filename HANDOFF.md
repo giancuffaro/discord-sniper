@@ -1,7 +1,40 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~night — PHANTOM EXIT KILLED, and OWLS CAPITAL SCANNED
+Last updated: 2026-09-07 ~night — THE PLAN IS THE VERB. G pasted six alerts
+from a room that writes calls with NO ENTRY VERB — contract, fill price, then
+the risk plan. All six read as silence. Now 4 of 6 parse, and the two that
+don't are refusals on purpose. Three fixes, each regression-tested on the full
+7,168-line corpus:
+  1. PLAN-AS-VERB. A bare contract alone stays ambiguous — that is a watchlist
+     row and forcing it to fire buys somebody's chart idea. But nobody writes
+     "SL .80 TP 1.60 / 1.95 / 2.6" about a trade they have not taken. A stop or
+     a target ladder WITH a number now counts as the entry verb, and only
+     alongside a real contract and no exit/trim/recap language.
+  2. EXPIRY ON EITHER SIDE OF THE STRIKE. "TSLA 357.5 0 DTE CALLS" was unread
+     because the shape only allowed an expiry BEFORE the strike. "0 DTE" with a
+     space is accepted too. The after-expiry must be preceded by a real space,
+     or "those same 1dte puts" parses as ticker SAME strike 1 — it did, briefly,
+     and that is now a test case. SAME/THOSE/THESE/THAT/THIS added to
+     NOT_TICKERS.
+  3. DATE FIRST. "9/2 TSLA 355 PUTS 1.57" matched the contract but LOST the
+     expiry, so the entry fell back to a guessed one. A short 14-char window
+     before the symbol is now searched, so an unrelated date earlier in the
+     sentence cannot be adopted. Bonus: cranmer's "QCOM $167.50 Sept 18th
+     Calls" — a documented safe-miss — now parses.
+  MEASURED, NOT GUESSED — two broader triggers were tested against the corpus
+  and REJECTED. "lotto" matched 13 lines, every one a "$150p on watch"
+  WATCHLIST row. An @everyone/@here ping matched 140, mostly "loading GOOGL
+  8/21 345C @here" — the PREPARE state, where firing buys before the caller
+  does. Both would have bought things nobody bought. test_plan_entry.js keeps
+  those exact lines as must-not-open cases.
+  STILL REFUSED ON PURPOSE: "SPY 0dte 775 .25 TP .45" names no side at all —
+  call or put is unknowable and must never be guessed. "SPX 7755 0DTE CALLS
+  1.85" carries no plan and no verb (SPX entries are gated off anyway).
+  "kind of a lotto 9/2 META 590 call 1.8 GOING FAST" is a real call whose only
+  tell is prose — that is the AI-fallback case, not a regex case.
+
+Prior: Last updated: 2026-09-07 ~night — PHANTOM EXIT KILLED, and OWLS CAPITAL SCANNED
 AND REJECTED.
   "OUT" IS ALSO HALF AN IDIOM. stormzyy's recap of a FINISHED trade — "let it
   play OUT exactly how we wanted" — fired a real CLOSE MNQ off the bare "out"
