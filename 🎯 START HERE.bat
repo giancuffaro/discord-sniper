@@ -273,43 +273,25 @@ rem  been opened"). Visible windows = his tabs, leave them alone. Background
 rem  only = kill it quietly and cold-start, so the performance flags apply.
 powershell -NoProfile -Command "$w = Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle }; if ($w) { exit 0 } else { exit 1 }"
 if not errorlevel 1 (
-  rem  HIS CALL 9/2 ("have it close Chrome and reopen everything itself")
-  rem  replaces the 8/10 leave-tabs-alone rule: a click means a fresh
-  rem  start, every time. Five-second countdown so a mis-click can be
-  rem  cancelled with Ctrl+C. The bridge and its resting stops are
-  rem  untouched - only the browser restarts (~3 min of room reading).
+  rem  HIS CALL 9/8 ("dont give me this option, check which are open and open
+  rem  the ones that are missing") REVERSES the 9/2 close-everything rule.
+  rem  Closing Chrome to guarantee every room is up was always a sledgehammer:
+  rem  it threw away tabs that were reading fine, and this morning it shut the
+  rem  Brando/Shoof tabs so a 10:44 QQQ call went unread. The extension now
+  rem  owns this: openMissingRooms() opens any LIVE room from rooms.txt that
+  rem  has no tab, and oneTabPerChannel() closes duplicates - together they
+  rem  converge on rooms.txt without touching a tab that is already fine.
+  rem  So when Chrome is already open we LEAVE IT COMPLETELY ALONE. No kill,
+  rem  no countdown, no flush-risk to the extension's LevelDB (killing it
+  rem  mid-write is what emptied the 9/1 and 9/4 exports). The healer opens
+  rem  whatever is missing within a minute.
   echo.
-  echo   [5/5] Chrome is open - closing it and reopening every room
-  echo         fresh in 5 seconds. Ctrl+C now to keep it as it is.
-  timeout /t 5 >nul
-  rem  ASK BEFORE FORCING (9/7). This used to be `taskkill /F` alone, and
-  rem  /F is TerminateProcess - Chrome gets no chance to flush. The
-  rem  extension's storage (every room's LIVE flag AND every captured
-  rem  message) is a LevelDB that Chrome writes lazily; killed mid-write,
-  rem  Chrome's recovery on the next launch REBUILDS IT EMPTY. That is what
-  rem  emptied the 9/1 and 9/4 exports: "LIVE rooms: none (all testing)"
-  rem  and 0/5 captured messages, on days that traded live and fine.
-  rem  Graceful only here. If Chrome ignores it, the block immediately
-  rem  below already checks and forces - reusing the pattern this file
-  rem  has always used at top level, rather than nesting a piped
-  rem  tasklist inside a parenthesised block, which is a fussier bit of
-  rem  cmd parsing than it is worth on the launcher he double-clicks.
-  taskkill /IM chrome.exe >nul 2>&1
-  timeout /t 6 /nobreak >nul
+  echo   [5/5] Chrome is already open - leaving your tabs exactly as they are.
+  echo         The extension opens any missing rooms by itself within a minute
+  echo         and closes any duplicates. Nothing is restarted.
+  goto chromedone
 )
-tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
-if not errorlevel 1 (
-  echo   [5/5] Chrome is still running in the background - closing it
-  echo         so the rooms open fresh...
-  rem  Same rule as above: graceful first so the extension's storage gets
-  rem  flushed, force only if it will not go. (9/7)
-  taskkill /IM chrome.exe >nul 2>&1
-  timeout /t 5 /nobreak >nul
-  tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
-  if not errorlevel 1 taskkill /F /IM chrome.exe >nul 2>&1
-  timeout /t 2 /nobreak >nul
-)
-echo   [5/5] Opening all the rooms fresh...
+echo   [5/5] Chrome isn't running - cold start, opening all the rooms...
 rem  Dedicated Discord profile (8/23): chrome-profile.txt holds the
 rem  profile-directory name (chrome://version -> Profile Path, last part).
 set "SNIPER_PROFILE=Default"
