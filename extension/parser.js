@@ -1518,10 +1518,25 @@ function parseSignalInner(text, cfg) {
   // sizing") must not be vetoed by "watch". Hard "don't/do not" still fire, and
   // the sell-guard downstream still catches a genuine SELL. Mirrors signals.py.
   const _explicitBuy = /\b(?:bto|bought)\b/i.test(low) && !!findContract(t);
+  /* AN EXPLICIT STC IS AN ORDER TOO (9/7). The carve-out above existed only for
+   * BUYS, so Option Alerts' real exits were being silenced by whatever the
+   * caller happened to say next:
+   *   "STC SPY 8/31 770c @ 3.13 partial. Taking some..."   killed by "don't"
+   *   "STC SPY 770c @ 2.50 stop hit on the rest..."        killed by "probably"
+   *   "STC QQQ 720c @ 2.02 cutting in the green..."        killed by "watching"
+   * The bare line closes fine; one casual sentence and the exit disappeared.
+   * A MISSED EXIT IS THE EXPENSIVE MISTAKE — the position stays open with only
+   * our ratchet holding it, and the caller's full exit is supposed to fire.
+   * Unlike a buy, there is no "don't" to respect here: the sell verb and the
+   * contract are already stated, and "I dont feel like swinging this" is the
+   * REASON for the exit, not a negation of it. So an explicit STC with a real
+   * contract skips the chatter veto entirely. */
+  const _explicitSell = /\b(?:stc|sell\s+to\s+close)\b/i.test(low) && !!findContract(t);
   const veto = VETO_WORDS.concat(cfg.extra_veto_words || []);
   for (const w of veto) {
     if (low.includes(String(w).toLowerCase()) && !RE_PAPERCUT.test(low)) {
       const wl = String(w).toLowerCase();
+      if (_explicitSell) continue;
       if (_explicitBuy && wl !== "do not" && wl !== "don't" && wl !== "dont ") continue;
       s.why = 'chatter, not an order (it contains "' + String(w).trim() + '")';
       return s;
