@@ -1,7 +1,50 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
+Last updated: 2026-09-08 — ALL ROOMS LIVE (his call) + WHOP PATH VERIFIED HEALTHY.
+"check if every path is good": Discord path IS good — fired all morning
+(AMD 510C, MARA 12C, INTC 110C, SPY 767P, QQQ 720P vero); the liquidity floor
+refused META (67 traded last session) and SNDK (57) exactly as designed; vero's
+pullback waited and correctly skipped QQQ. Two changes made this session.
+  **(1) ALL ROOMS LIVE — extension 3.5.60, needs his RELOAD to take effect.**
+  Elite (Brando 1286022517869514874 / Shoof 1368263191632543956) and a few
+  others were still landing TEST ("nothing sent, paper execution is off")
+  because they carried an explicit channel_live=false the born-testing
+  migration never cleared (that one only deletes ids in BORN_TESTING, which is
+  empty). applyBornTesting() now has a SECOND one-shot sweep, gen ALL_LIVE_GEN
+  "2026-09-08-alllive": deletes EVERY channel_live===false so every room falls
+  through to live-by-default (roomLive = _lv !== false). Runs ONCE; after it, a
+  popup flip to TESTING writes a fresh false that STICKS. Popup log prints
+  "ALL LIVE — N room(s) ... cleared" on reload so it's provable. node --check
+  clean; manifest 3.5.59 -> 3.5.60.
+  **(2) WHOP PATH — VERIFIED, not broken.** Zero Whop reads today did NOT mean
+  the reader is dead. In G's own logged-in Chrome profile: whop.js IS live on
+  whop.com (its own console line fired — "[sniper] this is NOT a room URL", from
+  chrome-extension://.../whop.js:240) and the FirstStepTrading membership is
+  ACTIVE (full room sidebar loads). The 4 wired exp_ ids in rooms.txt are
+  CURRENT — they match Whop's live sidebar today exactly: day-trades
+  exp_cvgzKYDmcUEDGh, futures exp_26GaLgZVMzB2PL, high-risk exp_hpXJymtw0yMqzB,
+  2k-challenge exp_Yg9HGTPsXPhQ5D. So rooms.txt is NOT stale and access is NOT
+  lost. whop.js ONLY reads at whop.com/<biz>/exp_/app/ URLs and stays idle (that
+  warning) on Townhall / /messenger / dead /joined/ links. The one thing that
+  keeps Whop silent: a room tab not sitting on its /app/ URL. FIX IS G's, in the
+  Sniper Whop window — re-open each room from the sidebar so the URL ends
+  /exp_.../app/ and pin THAT tab. Could not enumerate his pinned tabs from here
+  (outside the automation tab group) and did NOT open a live room myself — a
+  first-attach read of a fresh alert in a live room could fire a real order,
+  which is his alone.
+  **Dead-but-harmless**: bridge.py's server-side _whop_feed_loop (the "tabs
+  optional" API reader) has never fed — it queries Whop with exp_ experience ids
+  at guessed /v1/messages paths, but Whop's real chat API wants chat_feed_ ids +
+  a chat-scoped token (docs.whop.com/developer/guides/chat). WHOP_FEED_OK stays
+  0, no "[whop-api] reader up" in 2 wks of bridge.log. It is ONLY the backup;
+  the real Whop path is the browser tabs above, so it can stay dead without
+  costing a read. Left alone (a proper fix needs the chat_feed_ ids via an
+  authenticated call + a restart — not worth a second guess now).
+  **NOT DONE — NEEDS G**: (a) reload the extension so 3.5.60's ALL LIVE sweep
+  runs (it defers to the close on its own while the market's open); (b) pin the
+  4 Whop room /app/ tabs in the Sniper Whop window.
+Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
   **CODE**: settings.json strategy.stop_loss_pct 10 -> 7.5 (the born stop —
