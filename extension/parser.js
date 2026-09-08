@@ -1945,6 +1945,22 @@ function parseSignalInner(text, cfg) {
   // when nothing negates it AND the line actually names a contract, so advice
   // and warnings ("DO NOT BUY IN", "or buy next week exp") stay chatter.
   const _buyCmd = RE_BUY_CMD.test(low) && !RE_NO_BUY.test(low) && !!findContract(t);
+  // THE PLAN IS THE VERB (9/7). A room G brought over writes calls with NO
+  // entry verb at all — the contract, the fill price, then the risk plan:
+  //   "TSLA 357.5 0 DTE CALLS 1.30 SL .80 TP 1.60 / 1.95 / 2.6 @everyone"
+  //   "9/2 TSLA 355 PUTS 1.57 TP 2.0 /2.45 / 3.0 @here"
+  //   "SNOW 9/4 385 C 2.60 SL 1.9 TP 3.20 / 3.8 / 5.1 (runners)"
+  // Every one read as silence. A bare contract on its own is genuinely
+  // ambiguous — that is a watchlist row, and forcing those to fire is how you
+  // buy someone's chart idea. But a STOP LOSS or a TAKE PROFIT ladder is not
+  // something anyone writes about a trade they haven't taken. The plan IS the
+  // verb, so it counts as one, and only alongside a real contract.
+  // Deliberately NOT triggered by an @everyone ping on its own: recaps and
+  // victory laps ping the room too.
+  const _planEntry = !!findContract(t)
+    && RE_ENTRY_PLAN.test(t)
+    && !RE_EXIT.test(low) && !RE_TRIM.test(low) && !RE_PARTIAL.test(low)
+    && !/\bhit\b|\bfilled\s+at\b|\bup\s+\d{1,4}\s*%|\bran\s+to\b/i.test(low);
   if ((RE_ENTRY.test(low) || _takingEntry || _buyCmd || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
     const c = findContract(t);
     if (!c) {
