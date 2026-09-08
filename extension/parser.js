@@ -598,6 +598,17 @@ function findContract(text) {
       if (md) expiry = MONTHS[md[1]] + "/" + parseInt(md[2], 10);
     }
     if (!expiry) expiry = expiryAnywhere(text.slice(RE_CONTRACT.lastIndex));
+    // DATE FIRST (9/7): some rooms lead with the expiry, then the ticker —
+    // "9/2 TSLA 355 PUTS 1.57", "kind of a lotto 9/2 META 590 call 1.8". The
+    // shape above matches "TSLA 355 PUTS" and returns, so the date was never
+    // seen and the entry fell back to a GUESSED expiry. Only a short window
+    // immediately before the symbol is searched, so an unrelated date earlier
+    // in the sentence can't be adopted by mistake.
+    if (!expiry && m.index > 0) {
+      const before = text.slice(Math.max(0, m.index - 14), m.index);
+      const near = expiryAnywhere(before);
+      if (near) expiry = near;
+    }
     return { symbol: sym, strike: parseFloat(m[3]),
              side: k.startsWith("c") ? "CALLS" : "PUTS",
              expiry };
