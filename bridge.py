@@ -4414,6 +4414,32 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
+        # IS THAT A TICKER, OR A WORD FROM THE MESSAGE? (9/8)
+        # The reader treats a capitalised word in front of a strike as a
+        # ticker. Almost always right; occasionally catastrophic:
+        #   "...then can go with 773c."          -> OPEN WITH 773C, at market
+        #   "| EXIT ALERT Ticker: NBIS Stopped"  -> CLOSE EXIT (real one: NBIS)
+        # Blocking words one at a time never converges — blocking VERY moved
+        # the misread to GREEN, and "PROFITS FROM JUNE" produced ticker JUNE.
+        # So: extension/optionable.txt, 6,337 option roots pulled from the
+        # broker's own universe. If they do not list options on it, we do not
+        # send it. Checked against every symbol our alerts have ever produced:
+        # the 33 it blocks are all words or delisted small caps, zero real
+        # alerts. Fails OPEN and says so if the file is missing or short — a
+        # data file that failed to load must never become a silent trading halt.
+        # Rebuild: python3 refresh_optionable.py
+        try:
+            import symbols as _syms
+            _sok, _swhy = _syms.check(sym)
+            if not _sok:
+                note("NOT-A-TICKER %s — %s (%s said: %s)"
+                     % (sym, _swhy,
+                        str(order.get("trader") or "the room")[:30],
+                        str(order.get("raw") or "")[:90].replace("\n", " ")))
+                return self._reply(400, _swhy)
+        except Exception:
+            pass          # the guard itself must never stop a trade
+
         # NO DATE, NO TRADE (9/7). G's rule: nothing assumed, nothing guessed
         # — every number the machine acts on has to be real, polled or pulled.
         # The weekly-expiry fill-in above is the one place a GUESS reached a
