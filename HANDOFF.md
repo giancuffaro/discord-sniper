@@ -37,6 +37,27 @@ Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE FOUND BY IT.
   the first) — worth remembering that consolidating five copies of
   something into one doesn't just save code, it's the only way a bug like
   this is findable at all.
+  **SAME DAY, CAUGHT BY G: the first analysis of this data was wrong.**
+  Showed him "worst case" on the 23 missed calls as the lowest print in each
+  contract's window — down to -94.5% on one. He asked "no contracts
+  should've blown up, are you keeping in mind the ratchet system?" Correct
+  — that number ignored that every entry gets a stop born at -10% (settings
+  strategy.stop_loss_pct) and walks up from there (ratchet_tiers.py's 9/3
+  ladder: arm +10%, first lock breakeven, +10% a rung; anti-clip OFF per
+  9/4). Min/max-in-window was never what the bot would have experienced.
+  Built `ratchet_backtest.py` to do it right: walk the real OPRA quotes
+  tick by tick through the actual `ratchet_locked_pct` rule and report what
+  really would have happened. Corrected picture: **zero of 119 simulated
+  contract-days ever showed worse than the -10% floor** — the ratchet held
+  everywhere in this sample, no gap risk materialized. Of the 23 missed
+  calls, 18 stopped at exactly -10%, a handful hadn't resolved by the end
+  of the (30-min, for a nofill) backfill window, and the one real gain
+  (SPY 765C 8/31, +10%) is tagged "Gian" — his own hand trade, not a room
+  miss. So: nothing the room called and we skipped turned out to be a
+  missed big winner in this sample: the refusals did their job. Lesson for
+  next time, not just this once — ANY backtest number on this project has
+  to run through the actual exit rule, never a naive high/low, or it will
+  overstate risk exactly like this did.
 Previously — Last updated: 2026-09-08 — THE READER TAPE: reads.log + reads.py.
   G: "so now they will read and transcribe? i need to see them in order to
   help you analize." Yes — the listener transcribes whenever it is in a voice
