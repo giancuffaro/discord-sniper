@@ -2069,7 +2069,24 @@ async function handleOffscreen(msg) {
     // Dress the order BEFORE staging or firing — a staged entry confirmed
     // by "I'm in" must carry the SAME live flag and the SAME round-number
     // pullback as a direct one (8/29 fix: it used to fire naked-paper).
-    vs.live = true;                        // voice rooms are live rooms
+    // LIVE/TESTING, THE SAME WAY THE TYPED PATH DECIDES IT (9/8).
+    // This used to be a flat `vs.live = true` — "voice rooms are live rooms"
+    // (8/29). That predates per-room testing and BORN TESTING, and it meant a
+    // room set to TESTING in the popup still fired its VOICE calls with REAL
+    // money, which contradicts the house rule that flipping a room live is
+    // G's call alone. Latent rather than live so far only because
+    // voice_entries/voice_exits are both off — but the day he turns voice on
+    // it would have gone straight to the account.
+    // Same three lines as the typed reader: his popup setting wins, a room
+    // he has never touched is live (his 8/23 default), and a reopened room in
+    // BORN_TESTING starts in testing until he says otherwise.
+    {
+      const _vid = String(msg.id || "");
+      const _vlv = (c.channel_live || {})[_vid];
+      vs.live = (_vlv === undefined && BORN_TESTING.has(_vid))
+                ? false
+                : (_vlv !== false);
+    }
     vs.entry_mode = (vs.action === "OPEN" && c.rn_pullback_all !== false)
       ? "pullback" : null;
     vs.caller = vs.caller || label;
