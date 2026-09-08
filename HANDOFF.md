@@ -1,6 +1,47 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
+Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
+G, after seeing the sweep: "good on everything else... change this, dont
+break it please." Shipped the ratchet_sweep.py finding from earlier today.
+  **CODE**: settings.json strategy.stop_loss_pct 10 -> 7.5 (the born stop —
+  confirmed this is the only stop_loss_pct that matters; a second one at
+  execution.webull._stop_loss_pct:20 is a vestigial constructor default that
+  bridge.py's _sync_stop_pct() overwrites at boot, so it's inert).
+  ratchet_tiers.py TIERS (10.0,0.0,10.0) -> (5.0,0.0,5.0) — arm/lock/step,
+  confirmed this is the ONE live consumer (positions.auto_ratchet ->
+  tier_locked_pct -> here) by tracing the import; positions.py's OWN
+  ratchet_locked_pct(gain,sl,tp) is same-named but a DIFFERENT, dead
+  function only exercised by its own test — left untouched, on purpose.
+  **FOUND AND FIXED WHILE IN THERE**: two live boot-banner note() calls in
+  bridge.py (~line 526, ~line 4072) printed their arm/lock/step by
+  RECOMPUTING from take_profit_pct/stop_loss_pct instead of reading
+  ratchet_tiers — a comment right next to one of them already flagged this
+  exact failure mode from an 8/25 incident ("never let the banner recompute
+  the rule — read it off the function that owns it") but the code was never
+  actually updated when tier_locked_pct took over. It only ever LOOKED
+  right because arm/step/stop_loss_pct all happened to equal 10. The
+  instant they diverged today (7.5 born vs 5 arm/step) it would have
+  started printing "+10%" for a bot actually running "+5%" — a real-money
+  bot lying about its own stop in its own log. Both banners now import
+  ratchet_tiers and read TIERS directly; can't drift again.
+  **TEST SUITE**: test_positions.py's ratchet block (4 assertions) hardcoded
+  expected stop prices for the OLD 10/0/10 ladder on a $2.00 fill (2.20,
+  2.40, 2.40, 2.20). Recomputed by hand for 5/0/5 on the SAME stimulus bids
+  (never touched the inputs, only the expected outputs + the comments
+  explaining them): 2.30, 2.50, 2.50, 2.30. Anti-clip's own number (2.36)
+  needed NO change — its 60%-of-gain cap is a function of gain alone, and
+  it already sat tighter than either ladder's raw number at +30%, so it was
+  binding before and after. All 6 test files green after the edit
+  (test_positions/test_architecture/test_brokers/test_phantom_exit/
+  test_tape all rerun clean; test_positions' own ratchet summary print()
+  also had a pre-existing %% -> literal-double-percent bug, unrelated to
+  this change but in a line I was already touching — fixed to match the
+  file's own single-% convention for bare prints).
+  **NOT DONE — NEEDS G**: editing the .py files does not touch the running
+  bridge process. The new spacing is live in the files, not yet live in
+  the account, until the bridge restarts (however he normally restarts it —
+  I have no reach into his Windows process from here).
 Last updated: 2026-09-08 — TODAY'S 6 CALLS: PULLBACK BEAT "GOT IN WITH THEM"
 BY $89. G: "what would of been the original entry point if we didnt pull
 back.. what would of their trade got if we would of gotten in with them
