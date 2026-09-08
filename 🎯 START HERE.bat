@@ -471,6 +471,45 @@ if defined CHROME (
   echo         Couldn't find Chrome in the usual folders - opened your
   echo         default browser. The extension only runs in Chrome.
 )
+goto chromedone
+
+rem ==== THE WHOP BROWSER (its own profile) =====================
+rem  Reached on a WARM start - Chrome was already open, so the block above
+rem  left the Discord tabs alone and jumped straight here. Self-contained: it
+rem  sets its own CHROME + WHOP_PROFILE because the warm path skipped where the
+rem  cold path sets them. Opens the 4 Whop rooms into the second profile so
+rem  Whop's weight stays off the Discord browser. ONE-TIME on the very first
+rem  run of this profile: log into Whop and install the Discord Sniper
+rem  extension in it - a script cannot do either. After that it just works.
+:launch_whop
+set "WHOP_PROFILE=Sniper Whop"
+if exist "whop-profile.txt" set /p WHOP_PROFILE=<"whop-profile.txt"
+set "CHROME="
+if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
+if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
+if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
+if not defined CHROME (
+  echo         Couldn't find Chrome - can't open the Whop browser.
+  goto chromedone
+)
+echo         Opening the Whop rooms in the second profile: !WHOP_PROFILE!
+set "WHOP_SEEDED="
+for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+  set "RID=%%A"
+  if /i "!RID:~0,5!"=="whop:" (
+    if not defined WHOP_SEEDED (
+      start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "%%B"
+      set "WHOP_SEEDED=1"
+      timeout /t 6 /nobreak >nul
+    ) else (
+      start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" "%%B"
+      timeout /t 2 /nobreak >nul
+    )
+  )
+)
+if not defined WHOP_SEEDED echo         No live Whop rooms in rooms.txt - nothing to open.
+if defined WHOP_SEEDED echo         Whop browser up. First run only: log into Whop + install the extension in it.
+goto chromedone
 
 :chromedone
 
