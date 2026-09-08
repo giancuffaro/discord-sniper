@@ -42,7 +42,7 @@ break it please." Shipped the ratchet_sweep.py finding from earlier today.
   bridge process. The new spacing is live in the files, not yet live in
   the account, until the bridge restarts (however he normally restarts it —
   I have no reach into his Windows process from here).
-Last updated: 2026-09-08 — TODAY'S 6 CALLS: PULLBACK BEAT "GOT IN WITH THEM"
+Previously — Last updated: 2026-09-08 — TODAY'S 6 CALLS: PULLBACK BEAT "GOT IN WITH THEM"
 BY $89. G: "what would of been the original entry point if we didnt pull
 back.. what would of their trade got if we would of gotten in with them
 instead."
