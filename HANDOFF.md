@@ -189,6 +189,15 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   **NOT DONE — NEEDS G**: (a) reload the extension so 3.5.60's ALL LIVE sweep
   runs (it defers to the close on its own while the market's open); (b) pin the
   4 Whop room /app/ tabs in the Sniper Whop window.
+  **MISSES REPORT (new tool, misses.py)** — G asked "what alerts didn't trigger
+  and why — are we watching this?" We ARE (every refusal/skip is logged in
+  trades.log), but the daily journal is TRADES-ONLY and reads.py --misses is
+  voice/vision only — so there was no single "didn't trade, and why" view. Added
+  misses.py (read-only, parses trades.log): `python3 misses.py` groups the day's
+  misses by reason — THIN/no-OI, PULLBACK-never-hit, BUYING-POWER-too-small,
+  SWINGS-paused, TEST-room, FUTURES-prop-refused, not-optionable. 9/8 = 19
+  distinct misses. NOT yet wired into the 4:45 journal.xlsx (that edits bridge.py
+  + needs a restart — G's call).
 Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
