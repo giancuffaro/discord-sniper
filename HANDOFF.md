@@ -20,8 +20,20 @@ G pushed back on both, correctly, and both times the data moved the answer.
      Checked against every symbol our alerts have ever produced: 33 would be
      blocked and ALL 33 are junk (WITH, GREEN, FVG, TESLA, BREAK, YES, NOTES,
      BABY, DAY, ONE, REST...) or small caps from Platinum equity, which is cut.
-     ZERO real alerts blocked. NOT YET ENFORCED — the file and refresher exist;
-     wiring it into background.js/bridge.py is the next step.
+     ZERO real alerts blocked.
+     NOW ENFORCED IN BOTH PLACES (9/8):
+       * extension — background.js sendOrder() checks before the order ever
+         leaves the browser, and writes a NOT-A-TICKER line to the log rather
+         than dropping it silently, so a genuine ticker missing from the list
+         is VISIBLE instead of a mystery no-trade.
+       * bridge — symbols.py, checked in do_POST beside the NO-DATE gate, so
+         anything reaching the bridge by another path is caught too.
+     BOTH FAIL OPEN: a missing or truncated file (<1000 symbols) turns the
+     check OFF and says so once. A data file that failed to load must never
+     become a silent trading halt.
+     test_optionable.js locks it: 44 real tickers must be present (SPY, NVDA,
+     SNDK, MNQ, SPX, and SMH — which is slang in NOT_TICKERS but a real ETF),
+     and 30 word-symbols that the live parser actually produced must be absent.
 
   2. liquidity.py — A VOLUME FLOOR, DEFAULT 250 (G's number, 9/8).
      His instinct: "even if you can buy a contract you still don't want to if
