@@ -19,6 +19,37 @@ I checked before recommending. We are ahead of the open-source field on six thin
 
 **The selfbot point is the big one.** Every comparable project — including the commercial one — drives the Discord gateway with a user token, which is explicitly bannable under Discord's own policy. We read the DOM of a real logged-in client. That is structurally safer than the entire rest of the field, and it is why no prior art exists to copy from.
 
+**CORRECTION (9/7): "nobody" was too strong — there is exactly one.**
+`vnoctem/discord-web-reader` is our architecture to the letter: a Chrome
+extension that reads Discord Web's DOM and posts to a local HTTP server. It is
+also **0 stars, 1 fork, 4 commits, jQuery, abandoned** — a proof of concept, not
+a project. The claim stands in spirit (no serious prior art) but the word
+"nobody" was wrong and is now corrected.
+
+**WHAT DISCORD ACTUALLY DETECTS (researched 9/7).** Their published detection
+signals are all about what an account *sends*:
+  * messages posted with NO preceding typing event
+  * typing fired across several channels in 5-50ms where a human needs 300-500ms
+  * channels iterated programmatically in ID order — a fingerprint
+  * account-level flags: avatar, creation date, user flags
+Verified against our own code: the extension makes **ZERO** requests to
+Discord. The only network destination anywhere in extension/*.js is
+`http://127.0.0.1:8787`. It sends no messages, fires no typing, uses no user
+token, and never touches the gateway. Every listed signal is emitted by
+sending; we send nothing, so we emit none of them.
+
+**THE ONE EXCEPTION, AND IT IS REAL:** `content.js joinLiveVoice()` clicks the
+LIVE badge and presses "Join" to enter a voice channel. That is the only place
+the extension ACTS AS THE USER rather than reading, and unlike reading it
+produces a genuine server-side event — a voice state update, at machine speed,
+the instant a badge appears. If any part of this system ever draws attention,
+it is that one. The clean fix is not to disguise it but to stop automating it:
+make the LIVE join a notification G taps. Reading, parsing and execution are
+completely unaffected, because none of them talk to Discord at all.
+See also: client modifications (BetterDiscord et al.) are separately banned for
+injecting into Discord's client bundle. We do not do that either — a content
+script observing rendered DOM is not a patched client.
+
 **There is exactly ONE serious open-source competitor:** `AdoNunes/DiscordAlertsTrader` (79 stars, alive, last push 2026-01-17). Everything else is a dead 2022 TD-Ameritrade toy, a forex Telegram copier solving an easier problem, or a closed-source binary with a marketing README.
 
 ⚠️ **The GitHub `trade-copier` topic is star-farmed.** `DelegateStar/Ninja-Trader-2026` has 456 stars on **4 commits and 14 KB of code**. `DaggerConsole/metatrader-4-boost`: 260 stars, **zero forks**. These are malware droppers or affiliate funnels. Do not clone anything from that topic.
