@@ -197,3 +197,12 @@ whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop
 # off-topic, keyz-soccer-bets, futures-trading, support, home, announcements.
 # REVISIT IF: ab starts writing a verb, or jon-and-kian starts trading options.
 
+# OWLS CAPITAL (wired 9/8, G: "wire shabs + eli as SPY proxy"). Both are
+# SPX-ONLY traders who never type the ticker — "in 7655p 2.9", "7760c at
+# 300/con". default_symbol_channels maps each to SPX; spx_entry_channels lets
+# the SPX->SPY retarget fire (7655p -> SPY 766p at 1/10). BORN TESTING until G
+# flips them. shabs is the best record scanned (87.5% ex-BE, +$15,898 at 1
+# con/play in August). eli is commentary-heavy — the "stock is selling" and
+# progress-update guards (9/8) exist because of his room.
+1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital
+1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital

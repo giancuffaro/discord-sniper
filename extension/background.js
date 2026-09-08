@@ -244,14 +244,16 @@ const SHADOW = new Set([
  * Adding a newly reopened room later: put its id here AND bump the generation,
  * or the migration will consider itself already done and the room stays live.
  */
-const BORN_TESTING_GEN = "2026-09-08a";
+const BORN_TESTING_GEN = "2026-09-08b";
 const BORN_TESTING = new Set([
   "1332090335005900800",  // cranmer / opt-9
   "1356793611420958732",  // madhatter / opt-1
   "1525120298075029554",  // stormzyy / fut-1
   "1251181965252755517",  // guru-futures / fut-2
   "1286022517869514874",  // ELITE OPTIONS / Brando Alerts
-  "1368263191632543956"   // ELITE OPTIONS / Shoof Alerts
+  "1368263191632543956",  // ELITE OPTIONS / Shoof Alerts
+  "1513300726141419550",  // OWLS / shabs (SPX proxy)
+  "1519039282537300209"   // OWLS / eli (SPX proxy)
 ]);
 
 async function applyBornTesting() {
