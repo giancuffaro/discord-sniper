@@ -133,13 +133,30 @@ repeated `"CALL" if side.startswith("C") else "PUT"` to stay clear of it.
 `occ.side_letter()` accepts every real spelling and **raises** on anything
 else. A refused build is a missed trade; a silent flip is the opposite trade.
 
-**`tape.py` — one reader for everything recorded.** Three files record the
+**A second landmine found the same way, one day later (9/8).** `_ymd()`
+stripped every `-`/`/` and then just counted digits, always assuming what
+was left was `YYYYMMDD`. `2026-08-14` and zero-padded `08/28/2026` both
+collapse to 8 digits that way, and only the first one is actually in that
+order — `08/28/2026` silently became expiry `282026` (YY=28 MM=20 DD=26), a
+well-formed WRONG date with no error anywhere. `11/20/26` hit the same bug
+the other direction (6 digits, read as-is instead of M/D/YY). Found
+backfilling `days/*.json` through Databento, which refused the resulting
+garbage symbol outright — a broker that accepted it instead would have
+bought whatever contract that nonsense date happened to resolve to. Fixed
+by reading the year from WHICH piece is 4 (or 2) digits and where it sits,
+before the separators that carried that information are thrown away.
+
+**`tape.py` — one reader for everything recorded.** Four files record the
 same contracts at the same moments in three schemas and two symbol formats
-(`option_tape.csv` keys on OCC, the other two on dxfeed). Every tool had to
-know all three and join by hand — `quote_shadow.py` did it with `bisect`.
-`tape.rows()` / `tape.at()` / `tape.contracts()` do it once, in OCC form.
-The READ side only: the writers still own their own files, because Webull
-keeps no historical option prices and those tapes cannot be regenerated.
+(`option_tape.csv` and `databento_tape.csv` key on OCC, the other two on
+dxfeed). Every tool had to know all three original ones and join by hand —
+`quote_shadow.py` did it with `bisect`. `tape.rows()` / `tape.at()` /
+`tape.contracts()` do it once, in OCC form. The READ side only: the writers
+still own their own files, because Webull keeps no historical option prices
+and the live-recorded tapes cannot be regenerated. `databento_tape.csv` is
+the one exception that CAN be regenerated — it's a backfill from OPRA via
+`databento_backfill.py` (9/8), covering calls the live feeds never saw
+(refused, missed, never filled), re-runnable and idempotent.
 
 **Atomic state writes.** `save_state`, the extra-account books and
 `save_day` used `open(path, "w")`, which truncates first. A crash mid-write
