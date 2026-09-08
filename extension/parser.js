@@ -39,10 +39,10 @@ const RE_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2190}-\u{27BF}\u{FE0F}\u{200D}]/gu;
  * side — and the old shape only allowed an expiry BEFORE the strike, so the
  * whole contract went unread. "0 DTE" with a space is also now accepted.
  * Groups: 1 symbol, 2 expiry-before, 3 strike, 4 expiry-after, 5 side. */
-const _EXP = "\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?|\\d*\\s*dte|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s+\\d{4})?";
+const _EXP = "\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?|\\d+\\s*dte|\\d*dte|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s+\\d{4})?";
 const RE_CONTRACT = new RegExp(
   "(?<![A-Za-z])\\$?([A-Za-z]{1,5})\\s+(?:(" + _EXP + ")\\s+)?" +
-  "\\$?(\\d{1,5}(?:\\.\\d{1,2})?)\\s*(?:(" + _EXP + ")\\s*)?(calls?|puts?|c|p)\\b", "gi");
+  "\\$?(\\d{1,5}(?:\\.\\d{1,2})?)\\s*(?:\\s(" + _EXP + ")\\s*)?(calls?|puts?|c|p)\\b", "gi");
 
 // The same contract written back to front: "205 calls Friday expiration on
 // NVDA". Requires the word "on" before the ticker — that's what keeps it from
@@ -378,7 +378,7 @@ const VETO_WORDS = ["do not", "don't", "dont ", "watching", "watch", "eyeing",
 const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // "I got in SOME 400 C" — "some" is a word, not a ticker (8/10).
   // "SL HIT" — the stop got hit; HIT is a verb, not a ticker (8/11).
-  "SOME", "HIT",
+  "SOME", "HIT", "SAME", "THOSE", "THESE", "THAT", "THIS",
   // 9/7: MONTH NAMES were never excluded. "buy AA sep 18 Calls 52$" booked
   // the contract as ticker SEP, strike 18 — a real order in the wrong name.
   // No month abbreviation is a ticker G trades, so all of them are vetoed.
@@ -587,7 +587,10 @@ function findContract(text) {
     const sym = m[1].toUpperCase();
     if (blockedTicker(sym, text)) continue;
     const k = m[5].toLowerCase();
-    let expiry = ((m[2] || m[4]) || "").toUpperCase().replace(/\s+/g, "") || null;
+    let expiry = ((m[2] || m[4]) || "").toUpperCase().trim() || null;
+    // "0 DTE" -> "0DTE", but never touch "AUG 14" — the month-name branch just
+    // below needs that space to normalise it to 8/14.
+    if (expiry && /DTE$/.test(expiry)) expiry = expiry.replace(/\s+/g, "");
     if (expiry && /^[A-Z]/.test(expiry) && !expiry.endsWith("DTE")) {
       const md = RE_MONTH_DAY.exec(expiry.toLowerCase());
       if (md) expiry = MONTHS[md[1]] + "/" + parseInt(md[2], 10);
