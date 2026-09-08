@@ -1785,6 +1785,16 @@ const whopTabSeen = {};    // tabId -> last time a message arrived from it
 const WHOP_PULSE = {};     // tabId -> { t, ok, badSince } from the health pulse
 
 async function whopWatchdog() {
+  // NOT IN THE DISCORD BROWSER (9/8, G: "remove the whop from the autoreload
+  // list" / "stop opening whop websites on the original browser"). Whop lives
+  // in its own profile now. In the profile locked to the Discord lane, this
+  // watchdog must never reload or keep a Whop tab alive — that is what kept
+  // resurrecting the strays. It only runs in the Whop-lane profile (or before
+  // a lane has locked, where evictOtherLane hasn't cleared anything yet).
+  try {
+    const { profile_lane } = await chrome.storage.local.get("profile_lane");
+    if (profile_lane === "discord") return;
+  } catch (e) {}
   let tabs;
   try {
     // ALL whop tabs (8/25): Profile 2's rooms live at
