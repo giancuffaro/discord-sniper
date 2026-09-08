@@ -829,8 +829,9 @@ ok(_soft is not None and abs(float(_soft) - 2.30) < 0.005,
 ok(float(_soft) > float((_fb.info(_FKEY) or {}).get("stop") or 0),
    "the soft stop sits ABOVE the stale resting stop — that gap is exactly "
    "what cost $45 on TSLA 8/26")
-# Price dips back to +21% (still above the +20 rung, below the +30 rung) — the
-# already-locked +20% stop must NOT be loosened back down to +10%.
+# Price dips back to +21% (RKEY already climbed to +30% -> locked +25% two
+# calls ago; +21% only computes to locked +15%, k=(21-5)//5=3) — the
+# already-locked +25% stop must NOT be loosened back down to +15%.
 rb.auto_ratchet(RKEY, 2.42)
 stops_dip = [c for c in RWB.calls if c[0] == "stop"]
 ok(len(stops_dip) == len(stops_30),
@@ -840,6 +841,7 @@ ok(len(stops_dip) == len(stops_30),
 if bad:
     print("\n%d ratchet check(s) failed." % bad)
     raise SystemExit(1)
-print("Ratchet: below +20%% the position is untouched; +20%% walks the stop to "
-      "BREAKEVEN instead of closing; +30%% locks +10%%; a dip that's still "
-      "above the last rung never loosens the stop back down.")
+print("Ratchet (9/8 spacing): below +5%% the position is untouched; +5%% "
+      "walks the stop to BREAKEVEN instead of closing; every further +5%% "
+      "locks another +5%%; a dip that's still above the last-hit rung never "
+      "loosens the stop back down.")
