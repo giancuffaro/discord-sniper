@@ -1614,6 +1614,68 @@ async function oneTabPerChannel() {
  *    loading has no matchable path yet, and without this guard the next pass
  *    would open it again. */
 const ROOM_OPENED_AT = {};        // channelId -> last time we opened it
+
+/* WHICH BROWSER AM I? (9/8). Two profiles run this same extension — one for
+ * Discord, one for the 4 Whop rooms. Each needs to know its lane so it opens
+ * (and keeps) only its own rooms and EVICTS the other's. The signal is what is
+ * already open: the profile the launcher seeded with Discord rooms has ~22
+ * Discord tabs, the Whop profile has 4 Whop tabs. Once a profile has clearly
+ * more of one surface it LOCKS to that lane in storage and never flips — so a
+ * stray tab (e.g. the 4 leftover Whop tabs in the Discord browser from before
+ * the split) can't drag it the wrong way. Locks at >=3 of a surface and a
+ * clear majority; until then returns "" and the caller uses the soft rule. */
+async function stickyLane(haveDiscord, haveWhop) {
+  try {
+    const { profile_lane } = await chrome.storage.local.get("profile_lane");
+    if (profile_lane === "discord" || profile_lane === "whop") return profile_lane;
+    const tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
+      "https://*.discord.com/channels/*", "https://whop.com/joined/*",
+      "https://whop.com/*/exp_*"] });
+    let d = 0, w = 0;
+    for (const t of tabs) {
+      const u = String(t.url || "");
+      if (/discord\.com\/channels\/\d+\/\d+/.test(u)) d++;
+      else if (/whop\.com/.test(u)) w++;
+    }
+    let lane = "";
+    if (d >= 3 && d > w) lane = "discord";
+    else if (w >= 3 && w > d) lane = "whop";
+    if (lane) await chrome.storage.local.set({ profile_lane: lane });
+    return lane;
+  } catch (e) { return ""; }
+}
+
+/* EVICT THE OTHER LANE'S TABS (9/8). Once a profile is locked to a lane, close
+ * any open ROOM tab of the OTHER surface. This is what removes the 4 Whop tabs
+ * that were left in the Discord browser from before the split — and it stops
+ * the far worse problem they cause: the Discord profile's extension READING
+ * those Whop tabs too, so every Whop alert fires from BOTH browsers. Only ever
+ * closes tabs whose URL is a real room of the wrong surface; never a random
+ * tab, never anything if the lane isn't locked. */
+async function evictOtherLane() {
+  try {
+    const { profile_lane } = await chrome.storage.local.get("profile_lane");
+    if (profile_lane !== "discord" && profile_lane !== "whop") return;
+    const wantWhopGone = (profile_lane === "discord");
+    const tabs = await chrome.tabs.query({ url: wantWhopGone
+      ? ["https://whop.com/joined/*", "https://whop.com/*/exp_*"]
+      : ["https://discord.com/channels/*", "https://*.discord.com/channels/*"] });
+    let closed = 0;
+    for (const t of tabs) {
+      const u = String(t.url || "");
+      const isRoom = wantWhopGone
+        ? /whop\.com\/(?:joined\/|[^/]+\/exp_)/.test(u)
+        : /discord\.com\/channels\/\d+\/\d+/.test(u);
+      if (!isRoom) continue;
+      try { await chrome.tabs.remove(t.id); closed++; } catch (e) {}
+    }
+    if (closed) await addLog({ kind: "sent", what: "ROOMS",
+      why: "closed " + closed + " " + (wantWhopGone ? "Whop" : "Discord")
+         + " tab(s) that don't belong in this browser — they live in the other "
+         + "profile now, and reading them here would double-fire." });
+  } catch (e) {}
+}
+
 async function openMissingRooms() {
   let rooms;
   try { rooms = await loadRoomsFile(); } catch (e) { return; }
@@ -1855,7 +1917,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch.export_every_min) armAutoExport();
 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); openMissingRooms(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); evictOtherLane(); openMissingRooms(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
