@@ -18,61 +18,67 @@ import os
 import re
 import sys
 import datetime as _dt
+from collections import OrderedDict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(HERE, "trades.log")
 
-# Each miss category: (label, matcher on the message text). Order matters —
-# the first match wins, so put the specific ones before the catch-alls.
+# Lines that are NOT entry-misses, even if a keyword matches: the futures
+# position-poll heartbeat, exit-sell failures, and book/broker bookkeeping.
+SKIP = re.compile(r"^FUT-POS|no futures position|the stop (tried|failed)|"
+                  r"you're not in|PHANTOM|POSTCHECK|ADOPT|DEADMAN|RESTORED|"
+                  r"STOP-SET|STOP-WARN|WORKING|FILLED|CODE ", re.I)
+
+# First match wins — specific reasons before catch-alls.
 CATS = [
     ("THIN / no open interest", re.compile(r"too thin to trade", re.I)),
-    ("PULLBACK never hit",      re.compile(r"never touched .* skipped", re.I)),
+    ("PULLBACK never hit",      re.compile(r"never touched .*skipped", re.I)),
     ("BUYING POWER too small",  re.compile(r"costs \$.*to spend|buying power is insuffic", re.I)),
     ("SWINGS paused",           re.compile(r"swing trades are PAUSED", re.I)),
     ("TEST room — not sent",    re.compile(r"test room, nothing sent|is a TEST room", re.I)),
-    ("FUTURES prop refused",    re.compile(r"Topstep|ProjectX|PROP-NO", re.I)),
+    ("FUTURES prop refused",    re.compile(r"PROP-NO|ProjectX refused", re.I)),
     ("NOT optionable",          re.compile(r"not optionable|isn.t optionable|not on the optionable", re.I)),
-    ("SPREAD too wide",         re.compile(r"spread .*too wide|too wide to trade", re.I)),
+    ("SPREAD too wide",         re.compile(r"too wide to trade|spread[^.]*too wide", re.I)),
     ("NO buying connection",    re.compile(r"no Webull (paper|live) connection|sandbox unreachable", re.I)),
-    ("OTHER refusal",           re.compile(r"\bREFUSED\b|nothing was sent|Nothing was sent", re.I)),
+    ("OTHER refusal",           re.compile(r"\bREFUSED\b", re.I)),
 ]
 
-# Pull a ticker-ish symbol out of the message so the summary reads cleanly.
-_SYM = re.compile(r"\b(?:OPEN|SHORT|LONG)?\s*([A-Z]{1,6})\s*"
-                  r"(?:\d|entry|:|—|-|call|put|C\d|P\d| is | \(|260|261)")
-_MONEY_NEED = re.compile(r"costs \$([\d,]+).*?\$([\d,]+) to spend", re.I)
+# Uppercase words that are NOT tickers (tags, verbs, chatter).
+STOP = {"OPEN", "SHORT", "LONG", "REFUSED", "PULLBACK", "SWING", "OFF", "TEST",
+        "PROP", "NO", "THE", "AND", "YOU", "BTO", "STC", "DTE", "HTTP", "EXIT",
+        "IN", "ENTRY", "TRADE", "ALERT", "EVERY", "BANG", "TP", "SL", "RN",
+        "US", "PC", "ID", "OK", "MOD", "FST", "WEBULL", "TOPSTEP", "PROJECTX",
+        "ONLY", "MASTER", "DAY", "EOD", "NFP", "YT", "AI", "READ", "AD",
+        "SAME", "WITH", "VERY", "GTR", "OPENAPI", "REVERSE", "OPTION"}
+
 _THIN_N = re.compile(r"only (\d+) contracts", re.I)
 _NEVER = re.compile(r"never touched \$?([\d.]+)", re.I)
+_MONEY_NEED = re.compile(r"costs \$([\d,]+).*?\$([\d,]+) to spend", re.I)
+_PROP_MSG = re.compile(r'errorMessage":"([^"]+)"')
 
 
 def _sym(msg):
-    # strip the leading TAG word(s) so the symbol regex sees the payload
-    m = re.match(r"^[A-Z][A-Z\- ]{2,12}?\s{2,}(.*)$", msg)
-    payload = m.group(1) if m else msg
-    for pat in (re.compile(r"\bOPEN\s+([A-Z]{1,6})\b"),
-                re.compile(r"\b([A-Z]{2,6})\s+(?:entry|\d|—|:|call|put)", re.I),
-                re.compile(r"\b([A-Z]{2,6})\b")):
-        g = pat.search(payload)
-        if g:
-            s = g.group(1).upper()
-            if s not in ("OPEN", "SHORT", "LONG", "THE", "AND", "YOU", "BTO",
-                         "STC", "DTE", "HTTP", "TEST"):
-                return s
+    for tok in re.findall(r"[A-Z]{2,6}", msg):      # case-SENSITIVE: real caps
+        if tok not in STOP:
+            return tok
     return "?"
 
 
 def _detail(label, msg):
-    s = _sym(msg)
     if label.startswith("THIN"):
         n = _THIN_N.search(msg)
-        return "%s (%s traded)" % (s, n.group(1) if n else "?")
+        return "%s (%s traded)" % (_sym(msg), n.group(1) if n else "?")
     if label.startswith("PULLBACK"):
         n = _NEVER.search(msg)
-        return "%s ($%s)" % (s, n.group(1) if n else "?")
+        return "%s ($%s)" % (_sym(msg), n.group(1) if n else "?")
     if label.startswith("BUYING"):
         m = _MONEY_NEED.search(msg)
-        return ("%s (needs $%s, had $%s)" % (s, m.group(1), m.group(2))) if m else s
-    return s
+        return ("%s (needs $%s, had $%s)" % (_sym(msg), m.group(1), m.group(2))) \
+            if m else _sym(msg)
+    if label.startswith("FUTURES"):
+        m = _PROP_MSG.search(msg)
+        return "%s — %s" % (_sym(msg), m.group(1)[:40]) if m else _sym(msg)
+    return _sym(msg)
 
 
 def main(argv):
@@ -94,10 +100,8 @@ def main(argv):
         print("no trades.log yet.")
         return
 
-    # bucket: label -> list of (hhmm, detail)
-    from collections import OrderedDict
     buckets = OrderedDict((c[0], []) for c in CATS)
-    seen = set()   # (label, detail, hhmm) — collapse the double-logs
+    seen = set()                    # (label, detail) — collapse the double-logs
 
     with open(LOG, encoding="utf-8", errors="replace") as f:
         for ln in f:
@@ -109,10 +113,12 @@ def main(argv):
                 continue
             ts, msg = parts
             hhmm = ts[11:16] if len(ts) >= 16 else ts
+            if SKIP.search(msg):
+                continue
             for label, pat in CATS:
                 if pat.search(msg):
                     det = _detail(label, msg)
-                    key = (label, det, hhmm)
+                    key = (label, det)
                     if key in seen:
                         break
                     seen.add(key)
@@ -131,8 +137,8 @@ def main(argv):
         if not rows:
             continue
         dets = ", ".join(d for _, d in rows)
-        print("  %-26s (%d): %s" % (label, len(rows), dets))
-    print("\n  total misses: %d\n" % total)
+        print("  %-24s (%d): %s" % (label, len(rows), dets))
+    print("\n  total distinct misses: %d\n" % total)
 
 
 if __name__ == "__main__":
