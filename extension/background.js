@@ -1261,6 +1261,21 @@ function watchFills(times) {
  */
 let inFlight = 0;          // orders currently being sent; worker-lifetime only
 
+/* THE READER TAPE (9/8). Post one read to the bridge's reads.log. Voice calls
+ * it for every finalized transcript line; the bridge writes its own vision
+ * reads directly. Never awaited by the caller and never allowed to throw —
+ * the tape is for G's eyes, and it must cost the ears and the eyes nothing. */
+async function tapeRead(entry) {
+  try {
+    const c = await cfg();
+    await fetch(bridgeBaseFrom(c.bridge_url) + "/reads", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({ t: Date.now() }, entry || {})),
+      cache: "no-store"
+    });
+  } catch (e) {}
+}
+
 function bridgeBaseFrom(url) {
   return (url || BRIDGE_DEFAULT).replace(/\/order\/?$/, "").replace(/\/$/, "");
 }
@@ -1976,6 +1991,20 @@ async function handleOffscreen(msg) {
     capture(msg.text, "🎙 " + label +
             (msg.speaker != null ? " S" + msg.speaker : ""),
             String(msg.id), Date.now());
+    // THE READER TAPE (9/8, G: "i need to see them in order to help you
+    // analize"). Every finalized line the ears heard, with what the parser
+    // made of it, goes to the bridge's reads.log — one chronological file
+    // for voice AND vision, so he can read the stream and point at the
+    // misreads. Fire-and-forget; a slow bridge must never delay the ears.
+    try {
+      const _quick = parseSignal(msg.text, {}) || {};
+      tapeRead({ kind: "voice", room: label,
+                 speaker: (msg.speaker != null ? "S" + msg.speaker : ""),
+                 heard: msg.text,
+                 action: _quick.action || "", symbol: _quick.symbol || "",
+                 strike: _quick.strike, side: _quick.side || "",
+                 why: _quick.why || "" });
+    } catch (e) {}
     // 2) turn a spoken call into the SAME clean format as a typed one, so it's
     //    easy to read and execute. The AI reader gives one uniform shape; the
     //    regex is the free fast path when it already reads it.
