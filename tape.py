@@ -55,6 +55,10 @@ SOURCES = {
     "webull": ("option_tape.csv", "occ"),
     "tasty_greeks": ("greeks_tape.csv", "dx"),
     "tasty_quote": ("quote_shadow.csv", "dx"),
+    # Real OPRA history (9/8), backfilled by databento_backfill.py for every
+    # call in days/*.json — including refused/nofill ones the other three
+    # feeds never saw, because nothing here ever quoted them live.
+    "databento": ("databento_tape.csv", "occ"),
 }
 
 

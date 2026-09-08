@@ -210,7 +210,8 @@ def main():
     import tape as _t
     check("tape.py exposes one reader for every source",
           hasattr(_t, "rows") and hasattr(_t, "at")
-          and set(_t.SOURCES) == {"webull", "tasty_greeks", "tasty_quote"})
+          and set(_t.SOURCES) == {"webull", "tasty_greeks", "tasty_quote",
+                                  "databento"})
     bsrc = open(os.path.join(HERE, "bridge.py"), encoding="utf-8",
                 errors="replace").read()
     check("state is written atomically (tmp + fsync + os.replace)",
