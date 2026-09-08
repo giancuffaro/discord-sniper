@@ -1242,6 +1242,18 @@ function parseSignalInner(text, cfg) {
   const bw = /^([A-Za-z]{1,5})\s*(\|)?\s*(\$)?(\d{1,5}(?:\.\d+)?)\s*([CcPp])\b([\s\S]*)$/.exec(bwT);
   // 8/25: "AAPL 315 C 2.13" with no pipe and no $ is still his entry shape —
   // accept it when a plain decimal premium follows (a bare % never counts).
+  // ON WATCH IS NOT AN ENTRY (9/7). This branch would take "SPY $654p on watch
+  // again for a quick scalp" — a WATCHLIST row — and buy it. The nitro room's
+  // real posts carry an "@Owner Alerts Comment" prefix that happens to stop
+  // them earlier, so nothing was firing in practice, but that is luck, not a
+  // guard: any room posting the bare shape would have been bought. Found while
+  // testing the per-room verbless-entry rule; it is older than that rule and
+  // independent of it.
+  if (bw && /\bon\s+watch\b|\bwatch(?:ing|list)\b|\beyes\s+on\b/i.test(low)) {
+    s.why = "that's a WATCHLIST line, not a call — it says it is on watch, " +
+            "so nothing was sent";
+    return s;
+  }
   if (bw && (bw[2] || bw[3] || /(?<![\d$.])\d+\.\d{1,2}(?!\s*%)/.test(bw[6] || ""))
       && !NOT_TICKERS.has(bw[1].toUpperCase())) {
     const rest = bw[6];
