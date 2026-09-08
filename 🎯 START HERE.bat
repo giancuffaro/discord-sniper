@@ -298,6 +298,19 @@ rem  profile-directory name (chrome://version -> Profile Path, last part).
 set "SNIPER_PROFILE=Default"
 if exist "chrome-profile.txt" set /p SNIPER_PROFILE=<"chrome-profile.txt"
 echo         (using Chrome profile: !SNIPER_PROFILE!)
+rem  TWO-BROWSER SPLIT (9/8, his ask): the 4 Whop rooms open in a SEPARATE
+rem  Chrome profile so their weight stays off the Discord browser. A separate
+rem  --profile-directory is its own renderer set - Whop's memory no longer
+rem  drags the Discord tabs, which is what was starving RWGates / Brando.
+rem  ONE-TIME SETUP in this profile, done once and it sticks:
+rem    1. it opens as a fresh Chrome profile - log into Whop in it,
+rem    2. install the Discord Sniper extension in it the same way you did the
+rem       main one - puzzle piece, or Load Unpacked on the extension folder.
+rem  After that this launcher opens both every time. whop-profile.txt overrides
+rem  the name if you want a specific one.
+set "WHOP_PROFILE=Sniper Whop"
+if exist "whop-profile.txt" set /p WHOP_PROFILE=<"whop-profile.txt"
+echo         (Whop rooms use a second profile: !WHOP_PROFILE!)
 set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
@@ -369,7 +382,26 @@ if defined CHROME (
     )
     )
   )
-  if not defined ABORTED echo         Discord rooms open - now the Whop rooms...
+  if not defined ABORTED echo         Discord rooms open - now the Whop rooms in the second browser...
+  rem  Seed the Whop profile once with the perf flags so its Chrome starts with
+  rem  background throttling off, same as the Discord one. The rest of the Whop
+  rem  rooms open as tabs in this same profile below and inherit the flags.
+  rem  First-ever run: this is a blank profile - log into Whop and install the
+  rem  extension in it once, then it sticks.
+  set "WHOP_SEEDED="
+  for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+    if not defined ABORTED (
+    if not defined WHOP_SEEDED (
+      set "RID=%%A"
+      if /i "!RID:~0,5!"=="whop:" (
+        start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "%%B"
+        set "WHOP_SEEDED=1"
+        set /a TABN+=1
+        timeout /t 6 /nobreak >nul
+      )
+    )
+    )
+  )
   for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
     if not defined ABORTED (
     tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
@@ -384,7 +416,12 @@ if defined CHROME (
     if not "%%A"=="" (
       set "RID=%%A"
       if /i "!RID:~0,5!"=="whop:" (
-        start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" "%%B"
+        rem  Whop rooms go to the SECOND profile now, not SNIPER_PROFILE. The
+        rem  seed above already opened the first one; the extension's dupe
+        rem  closer tidies the one repeat within 30s, same as the Discord main
+        rem  room. Every Whop tab lives in its own browser - off the Discord
+        rem  one's memory entirely.
+        start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" "%%B"
         set /a TABN+=1
         set /a TABMOD=TABN %% 3
         if !TABMOD! EQU 0 (
