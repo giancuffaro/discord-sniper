@@ -1,7 +1,37 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~night — THE PLAN IS THE VERB. G pasted six alerts
+Last updated: 2026-09-07 ~night — SHABS (OWLS #shabs-sky-alerts,
+1513300726141419550, plus 1519039282537300209). His August recap: 53 SPX
+trades, 42W/6L/5BE, 87.5% win rate ex-BE, +$15,898 net at 1 contract a play —
+the best record in any room scanned. Two things in his grammar were traps:
+  1. PREMIUM QUOTED PER CONTRACT. "7760c at 300/con" is a $3.00 option, not a
+     $300 one — his own recap proves the scale ("8/28 7760c 245 -> 1550" =
+     2.45 -> 15.50). Read literally that is a THREE HUNDRED DOLLAR limit on a
+     three dollar option, which doesn't merely overpay, it DELETES the price
+     protection the limit exists for. Now normalised before anything reads a
+     price. "10 cons" (a quantity) is untouched — the rule only fires when the
+     number is glued to the slash. NOTE he also uses plain dollars in the same
+     channel ("in 7730c 4.3", "AAPL 322.5c at .30"), so both must work.
+  2. THE TICKER HE NEVER TYPES. He trades one underlying and says so ("August
+     Recap, SPX only"), so he writes "in 7655p 2.9" with no symbol and nothing
+     parsed at all. NEW: settings.json default_symbol_channels maps a channel
+     to the symbol it always means — { "1519039282537300209": "SPX" }.
+     PER CHANNEL on purpose: a bare "640c" in a room that trades everything is
+     unknowable, and inventing a symbol there buys the WRONG UNDERLYING. Only
+     applied when the line has no contract of its own, so an explicit ticker in
+     the same message always wins. With the setting absent, those lines stay
+     unreadable — that is the guard, and it is a test case.
+  ALREADY CORRECT, left alone: indexToEtf nulls the limit on SPX->SPY ("index
+  premium != ETF premium; bid the ETF market"), so the ~10x notional gap does
+  NOT leak into a limit price. Good design that was already there.
+  STILL BLOCKED, and it is G's call: SPX ENTRIES ARE OFF. Wiring shabs means
+  adding his channel to spx_entry_channels, which converts 7655p -> SPY 766p.
+  That is a money/strategy decision (SPY is a proxy, not his instrument), so
+  it stays his. Open question raised 9/7: whether Tradier or tastytrade can
+  place a REAL SPX order via API, which would remove the proxy entirely.
+
+Prior: Last updated: 2026-09-07 ~night — THE PLAN IS THE VERB. G pasted six alerts
 from a room that writes calls with NO ENTRY VERB — contract, fill price, then
 the risk plan. All six read as silence. Now 4 of 6 parse, and the two that
 don't are refusals on purpose. Three fixes, each regression-tested on the full
