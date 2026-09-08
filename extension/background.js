@@ -227,6 +227,63 @@ const SHADOW = new Set([
  * missing rooms.txt should do — so a fetch failure logs it and channel_ids
  * stays empty on purpose (nothing trades) rather than defaulting open. */
 let _roomsPromise = null;
+
+/* IS THAT A TICKER, OR A WORD FROM THE MESSAGE? (9/8)
+ *
+ * optionable.txt is THE list of symbols this bot may trade — 6,337 option
+ * roots pulled from the broker's own universe by refresh_optionable.py, plus
+ * futures and cash indexes. Read HERE and by bridge.py: one file, two readers,
+ * no drift. Same rule as rooms.txt.
+ *
+ * The reader treats a capitalised word in front of a strike as a ticker, which
+ * is right almost always and catastrophic occasionally:
+ *     "...then can go with 773c."          -> OPEN WITH 773C, at market
+ *     "| EXIT ALERT Ticker: NBIS Stopped"  -> CLOSE EXIT (the real one: NBIS)
+ * Blocking words one at a time never converges — blocking VERY moved the
+ * misread to GREEN, and "PROFITS FROM JUNE" produced ticker JUNE.
+ *
+ * FAILS OPEN. If the file is missing or short, everything is allowed and the
+ * log says so once. bridge.py checks again anyway, so a browser that failed to
+ * load a text file can never become a silent trading halt.
+ */
+let _symsPromise = null;
+function loadOptionable() {
+  if (_symsPromise) return _symsPromise;
+  _symsPromise = (async () => {
+    try {
+      const r = await fetch(chrome.runtime.getURL("optionable.txt"));
+      const txt = await r.text();
+      const set = new Set();
+      for (const line of txt.split("\n")) {
+        const s = line.trim().toUpperCase();
+        if (s && s[0] !== "#") set.add(s);
+      }
+      // Under a thousand means the file is truncated; an unusable list must
+      // not become a blocklist for everything.
+      if (set.size < 1000) {
+        await addLog({ kind: "failed", what: "OPTIONABLE",
+          why: "optionable.txt has only " + set.size + " symbols — too short to "
+             + "trust, so the ticker check is OFF. Run refresh_optionable.py." });
+        return null;
+      }
+      return set;
+    } catch (e) {
+      try {
+        await addLog({ kind: "failed", what: "OPTIONABLE",
+          why: "couldn't read optionable.txt (" + String(e).slice(0, 90) + ") — "
+             + "the ticker check is OFF until it loads." });
+      } catch (e2) {}
+      return null;
+    }
+  })();
+  return _symsPromise;
+}
+async function tradeableSymbol(sym) {
+  if (!sym) return true;
+  const set = await loadOptionable();
+  if (!set) return true;                       // fail open
+  return set.has(String(sym).trim().toUpperCase());
+}
 /* ACCESS PROBE (9/7) — knock on every sleeping room's door, once a day.
  *
  * His ask: park the rooms he can't read, and have the app notice by itself
@@ -730,6 +787,23 @@ async function badge() {
 // have no such stamp and pass null on purpose: a blank is honest, a
 // Date.now() there would silently record every voice call as instant.
 async function sendOrder(sig, qty, c, author, postedAt) {
+  // THE TICKER CHECK (9/8). Last stop before the bridge: if the broker lists
+  // no options on it, the reader picked up a WORD, not a ticker. This is the
+  // guard that stops "OPEN WITH 773C" (from "...then can go with 773c") and
+  // "CLOSE EXIT" (from "| EXIT ALERT Ticker: NBIS", where the real ticker is
+  // NBIS). Logged loudly rather than dropped, so a genuine ticker missing from
+  // the list shows up as a line in the log instead of a silent no-trade.
+  // bridge.py repeats this check; both fail open if the file won't load.
+  if (sig && sig.symbol && !(await tradeableSymbol(sig.symbol))) {
+    try {
+      await addLog({ kind: "failed", what: "NOT-A-TICKER",
+        why: sig.symbol + " isn't a tradeable symbol — the broker lists no "
+           + "options on it, so that looks like a word from the message rather "
+           + "than a ticker. Nothing was sent. (" + (author || "?") + ": "
+           + String(sig.raw || "").slice(0, 80).replace(/\n/g, " ") + ")" });
+    } catch (e) {}
+    return { ok: false, why: "not a tradeable symbol: " + sig.symbol };
+  }
   const order = {
     action: sig.action, symbol: sig.symbol, side: sig.side, qty,
     strike: sig.strike, expiry: sig.expiry, limit: sig.limit,
