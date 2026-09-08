@@ -1,7 +1,37 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 — VOICE / DEEPGRAM SWEEP.
+Last updated: 2026-09-08 — voice_corpus.json: 2,305 REAL SPOKEN LINES, kept.
+  G asked whether we have voice recordings to practise on. NO AUDIO IS KEPT —
+  Deepgram transcribes the stream live and only the text survives. So we cannot
+  test whether it HEARD correctly; we can only test what the parser does with
+  what it heard. Those are different problems and only the second is testable.
+  What we DO have is 2,305 unique spoken lines that were already being captured
+  alongside typed messages (1,836 from Honeydrip daytrades-scalps, 557 from
+  Live Trading). They are now saved as voice_corpus.json so the voice reader
+  has a permanent regression set instead of lines scattered through exports.
+  MORE ARRIVE FOR FREE: the listener writes transcripts into the same capture
+  as typed messages, so any Ctrl+Shift+X on a room that was listening exports
+  them too.
+
+  A MEASUREMENT TRAP WORTH REMEMBERING: with the room prefix left on
+  ("🎙 (2579) Discord | #room | S0: ...") only 41 lines produced an action and
+  none fired. Stripped to the bare transcript — which is what production
+  actually passes — it became 111 actions and THREE fires. Test the voice
+  reader on the bare text or the result is meaningless.
+
+  OF THE THREE: two were STOPMOVE with no symbol (already refused by
+  entries_only). The third was real and is now fixed:
+      "AMD actually is kinda selling here. Let's see."  ->  CLOSE AMD
+  The STOCK is selling; nobody is selling anything. My first guard vetoed any
+  "is/are selling" and that would have KILLED A REAL EXIT —
+      "XOM OUT Will revisit... Most things are selling"
+  — so the veto now only fires when the price-action phrase is the ONLY exit
+  evidence in the line. Any independent exit verb (out, stc, sold, closed,
+  trim, stopped, cut) and the line is left exactly as it was. test_exits.js
+  holds both sides, including that "selling the rest" IS a full close.
+
+Prior: Last updated: 2026-09-08 — VOICE / DEEPGRAM SWEEP.
   FIRST, THE REASSURANCE: VOICE FIRES NOTHING TODAY. voice_entries and
   voice_exits are absent from settings.json AND from cfg()'s defaults, and the
   code demands `=== true` for each. Everything below is LATENT — it matters the
