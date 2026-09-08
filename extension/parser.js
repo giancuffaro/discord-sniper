@@ -921,6 +921,19 @@ function parseSignalInner(text, cfg) {
   // far worse than a missed one, so the $ is normalised away here, before any
   // format reader runs. Only when a digit precedes it, so "$5.05" is untouched.
   t = t.replace(/(\d)\$(?=\s|,|\)|$)/g, "$1");
+
+  // PRICE QUOTED PER CONTRACT (9/7, shabs / OWLS). He writes the premium in
+  // DOLLARS PER CONTRACT, not per share: "7760c at 300/con" is a $3.00 option,
+  // and his own recap confirms it ("8/28 7760c — 245 → 1550" = 2.45 -> 15.50).
+  // Read literally that is a limit of THREE HUNDRED DOLLARS on a three dollar
+  // option, which does not just overpay — it removes the price protection the
+  // limit exists for. Normalised to real premium here, before anything reads
+  // a price. "10 cons" (a QUANTITY) is untouched: this only fires when the
+  // number is glued to the slash, and quantities never are.
+  t = t.replace(/\b(\d{2,5})(?:\.(\d{1,2}))?\s*\/\s*cons?\b/gi, (all, whole, cents) => {
+    const v = (parseInt(whole, 10) + (cents ? parseFloat("0." + cents) : 0)) / 100;
+    return v.toFixed(2);
+  });
   s.clean = t;
   const low = t.toLowerCase();
 
