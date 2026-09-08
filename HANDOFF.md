@@ -1,7 +1,39 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 — BORN TESTING WAS NOT WORKING. G caught it: "the new
+Last updated: 2026-09-08 — VOICE / DEEPGRAM SWEEP.
+  FIRST, THE REASSURANCE: VOICE FIRES NOTHING TODAY. voice_entries and
+  voice_exits are absent from settings.json AND from cfg()'s defaults, and the
+  code demands `=== true` for each. Everything below is LATENT — it matters the
+  day those switches go on, not now.
+
+  THE REAL FIND: VOICE IGNORED LIVE/TESTING ENTIRELY. The voice path carried a
+  flat `vs.live = true` with the comment "voice rooms are live rooms" (8/29).
+  That predates per-room testing and BORN TESTING, and it meant a room set to
+  TESTING in the popup would still have fired its SPOKEN calls with REAL money
+  — flatly against the house rule that flipping a room live is G's call alone.
+  Now it reads the same three lines as the typed reader: his popup setting
+  wins, an untouched room is live (the 8/23 default), a BORN_TESTING room
+  starts in testing. Set BEFORE the two-stage staging, so a call staged on
+  "loading" and fired later by "I'm in" carries the same flag. Five cases
+  proven.
+
+  WHAT THE TRANSCRIPTS ACTUALLY CONTAIN: 2,393 voice lines in the corpus, 41
+  produce an action, and NOT ONE of them fires — they are almost all
+  symbol-less commentary ("I'm taking trims here", "Loading the meta").
+
+  ONE VOICE-SPECIFIC HAZARD, worth remembering:
+      "I wanna load the same $3.45 puts on Tesla"  ->  TESLA 3.45 PUTS
+  Two errors in one sentence. TESLA is not a ticker (TSLA is), and $3.45 is the
+  PREMIUM — spoken alerts say "the $3.45 puts" where a typed one would say
+  "$345 puts". So a spoken price can arrive in the STRIKE field. Today the
+  ticker gate refuses it because TESLA is not on optionable.txt. If a speaker
+  ever says a name that resolves cleanly AND quotes the premium that way, the
+  strike would be wrong and the broker would reject it — noisy, not silent.
+  If voice is ever switched on, a strike-vs-spot sanity check is the next
+  guard to add.
+
+Prior: Last updated: 2026-09-08 — BORN TESTING WAS NOT WORKING. G caught it: "the new
 rooms show live for me actually". He was right and the gate was useless for
 exactly the rooms it was written for.
   WHY IT FAILED. The gate applied only when channel_live had NO entry for a
