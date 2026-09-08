@@ -1,7 +1,40 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-07 ~night — VOICE AUTO-JOIN STAYS AS IT IS. G's call,
+Last updated: 2026-09-08 ~late — THE TWO UNKNOWN ROOMS, GRABBED AND READ. G was
+asleep, so the scrollback was pulled by hand instead of Ctrl+Shift+X.
+  TTT LOTTO (#lotto-alerts, TradingTheTrend) IS ALIVE AND WAS HALF-BLIND.
+  127 messages, 8 callers (TradingTheTrend, Lars, Tater Tot, Edtrader,
+  Shakira T, treadwayma, Abblejuice, rks). Clean BTO/STC grammar — but most
+  callers skip the verb, and NINE entries fired while SEVEN were invisible:
+  "MU 8/28 965c @ 1.26", "TSLA 9/4 360P .72", "NBIS 230C @.25",
+  "AMD 0dte 445p @ .76". Now 15 entries.
+  NEW, AND SCOPED PER CHANNEL: settings.json entry_no_verb_channels. A bare
+  contract WITH a price counts as an entry, but ONLY in a room named there.
+  THAT SCOPING IS THE WHOLE SAFETY STORY AND IT WAS MEASURED. Across the
+  7,168-line corpus, 51 currently-silent lines match "contract + price", and
+  the biggest group is TradingTheTrend's OWN daily levels row —
+      "QQQ 726c > 725.00  715p < 716.00  MU 1000c > 980.00 ..."
+  ONE LINE, EIGHT CONTRACTS. Global, this rule buys a watchlist. G's read:
+  "it would be a disaster." The rest were weekly recaps and victory laps.
+  Even inside a named room the vetoes still refuse: comparison operators,
+  recap/weekly/unrealized/runners/banger, on-watch/watching/loading/eyes-on,
+  up-N%/arrow/itm/hit, and anything RE_EXIT or RE_TRIM catches.
+  BONUS BUG, OLDER THAN TONIGHT: the "bullwinkle entry" branch would take
+  "SPY $654p on watch again for a quick scalp" — a WATCHLIST row — and buy it.
+  Nothing was firing in practice only because the nitro room's real posts carry
+  an "@Owner Alerts Comment" prefix that stops them earlier. That is luck, not
+  a guard. On-watch is now refused in that branch too.
+  NGD ngd-trades IS A FUTURES RADAR BOT, and it DOES fire:
+      "MGC SHORT (1m) @ 4428.65 | TP:4416.65 SL:4436.65 | Prob:74.5% | R:R:1.5"
+  parses as OPEN MGC SHORT limit 4428.65 (MNQ LONG likewise). NOT a human's
+  executed trade — the bot's own words are "NEW POTENTIAL SIGNAL" and "a setup
+  has been detected". 1-minute timeframe, leveraged futures, machine-generated.
+  FOR G TO DECIDE: this room is wired and live. Nobody has ever reviewed what
+  it actually costs or makes. Worth a week in testing before it is trusted.
+  Corpus: 7,166/7,168 identical with the flag off, 0 newly firing, 0 lost.
+
+Prior: Last updated: 2026-09-07 ~night — VOICE AUTO-JOIN STAYS AS IT IS. G's call,
 made with the tradeoff in front of him. Do not change it, and do not raise it
 again unless he does.
   THE FACTS BEHIND THE DECISION. The extension makes ZERO requests to Discord —
