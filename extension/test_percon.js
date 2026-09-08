@@ -36,5 +36,37 @@ const raw = parseSignal("NVDA 220c at 300/con", {}) || {};
 const rawOk = Math.abs(raw.limit - 3) < 0.005;
 if (!rawOk) bad++;
 console.log(`  ${rawOk ? "PASS" : "FAIL"}  ${"non-index /con".padEnd(22)} limit=${raw.limit} (want 3)`);
-console.log(bad ? `\n${bad} FAILED` : "\nall pass — per-contract premium normalised, quantities untouched");
+
+/* THE TICKER HE NEVER TYPES. shabs trades one underlying and says so in his
+ * own recap ("August Recap, SPX only"), so he writes "in 7655p 2.9" with no
+ * symbol at all. cfg.default_symbol is set PER CHANNEL by background.js from
+ * settings.json default_symbol_channels — never globally, because a bare
+ * "640c" in a room that trades everything is unknowable and inventing a
+ * symbol there buys the wrong underlying. */
+console.log("\nIMPLIED SYMBOL (per channel):");
+const SPXCFG = { default_symbol: "SPX", spx_entries: true };
+const IMPLIED = [
+  ["in 7655p 2.9",       "bored, in 7655p 2.9 @here",                 "SPY", 766, "PUTS"],
+  ["in 7730c 4.3",       "in 7730c 4.3 @here",                        "SPY", 773, "CALLS"],
+  ["7760c at 300/con",   "7760c at 300/con @here",                    "SPY", 776, "CALLS"],
+  ["explicit wins",      "in NVDA 220c 4.3 @here",                    "NVDA", 220, "CALLS"],
+  ["explicit wins 2",    "AAPL 322.5c at .30",                        "AAPL", 322.5, "CALLS"],
+];
+for (const [n, t, sym, k, side] of IMPLIED) {
+  const s2 = parseSignal(t, SPXCFG) || {};
+  const ok = s2.fire && s2.symbol === sym && Number(s2.strike) === k && s2.side === side;
+  if (!ok) bad++;
+  console.log(`  ${ok ? "PASS" : "FAIL"}  ${n.padEnd(20)} ${s2.symbol||"-"} ${s2.strike??"-"} ${s2.side||"-"}${s2.assumed_symbol ? "  [assumed " + s2.assumed_symbol + "]" : ""}`);
+}
+// Without the per-channel setting the SAME lines must stay unreadable — this
+// is the guard against a bare strike ever being given a guessed underlying.
+console.log("\nWITHOUT the setting, the same lines must NOT resolve:");
+for (const [n, t] of [["in 7655p 2.9","bored, in 7655p 2.9 @here"],
+                      ["7760c at 300/con","7760c at 300/con @here"]]) {
+  const s3 = parseSignal(t, {}) || {};
+  const ok = !s3.symbol;
+  if (!ok) bad++;
+  console.log(`  ${ok ? "PASS" : "FAIL"}  ${n.padEnd(20)} ${s3.symbol || "no symbol"}`);
+}
+console.log(bad ? `\n${bad} FAILED` : "\nall pass — per-contract premium, implied symbol scoped to its channel");
 process.exit(bad ? 1 : 0);
