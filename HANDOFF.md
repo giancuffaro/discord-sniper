@@ -1,7 +1,31 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 — TWO NEW GATES: A REAL TICKER LIST, AND A VOLUME FLOOR.
+Last updated: 2026-09-08 — BORN TESTING WAS NOT WORKING. G caught it: "the new
+rooms show live for me actually". He was right and the gate was useless for
+exactly the rooms it was written for.
+  WHY IT FAILED. The gate applied only when channel_live had NO entry for a
+  room. But channel_live PERSISTS on purpose (his own call: "everytime i push a
+  new update my channels go all back to testing, i need the popup to keep the
+  live on"), and the popup's ALL LIVE button writes true for EVERY room id.
+  Four of the six reopened rooms — cranmer/opt-9, madhatter/opt-1,
+  stormzyy/fut-1, guru/fut-2 — were LIVE rooms before being cut on 8/30, so
+  they still carried a stale `true`. `_lv === undefined` was never true for
+  them, the gate never fired, and they came back LIVE on real money.
+  FIX: BORN_TESTING_GEN, currently "2026-09-08a". applyBornTesting() runs on
+  install and startup and, once per generation, DELETES the channel_live entry
+  for every id in BORN_TESTING so the room genuinely starts with no setting.
+  It logs how many stale LIVE flags it cleared. After G flips one in the popup
+  that is a real entry and it sticks — the migration will not run again for
+  that generation.
+  ADDING A REOPENED ROOM LATER: put its id in BORN_TESTING **and bump the
+  generation string**, or the migration considers itself done and the room
+  stays live. This is the trap that caused the bug; do not repeat it.
+  Proven with a fake storage: 6 stale LIVE flags cleared, all six read TESTING
+  afterwards, an unrelated live room untouched, and a flip-to-live survives the
+  next startup.
+
+Prior: Last updated: 2026-09-08 — TWO NEW GATES: A REAL TICKER LIST, AND A VOLUME FLOOR.
 G pushed back on both, correctly, and both times the data moved the answer.
 
   1. extension/optionable.txt — THE ONE LIST OF TRADEABLE SYMBOLS.
