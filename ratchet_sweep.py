@@ -18,6 +18,13 @@ EXCLUDES GIAN (9/8, his ask): his own hand trades aren't room calls, and
 folding them into a "which spacing wins" sweep would tune the bot's exit
 around trades it never would have followed in the first place.
 
+ONLY REAL ENTRIES (9/8, found while sanity-checking this): state must be
+closed/filled/stopped. A refused or never-filled call was never a position
+this ratchet's spacing management — no stop, however spaced, saves a trade
+that correctly never opened. Mixing those in dragged EVERY spacing in the
+grid to a large loss and made the sweep answer a different question than
+the one asked.
+
 HONEST LIMITS — read before trusting a number out of this
 -----------------------------------------------------------
 * ~110 contract-days across five weeks is a SMALL sample. A spacing that
@@ -73,8 +80,27 @@ def load_tape():
     return tape
 
 
+REAL_ENTRY_STATES = {"closed", "filled", "stopped"}   # actually traded, not a
+                                                       # refused/missed call —
+                                                       # this study is about
+                                                       # EXIT spacing, not
+                                                       # whether the entry
+                                                       # should have fired
+
+
 def load_trades(tape):
-    """One entry per contract-day: entry price + every quote from entry on."""
+    """One entry per REAL trade: the bot's own recorded fill (price + time,
+    from entries[0] when present) + every quote from that fill onward.
+
+    9/8: the first version of this used 'opened' + nearest tape quote as the
+    entry, and included every call regardless of state — refused ones too.
+    Both were wrong for this question. 'opened' can predate a pullback fill
+    by minutes (TSLA 8/19: opened price ~3.00, real fill 2.94 a beat later —
+    close, but entries[0] IS the real fill, no approximating needed when
+    it's there). And folding in calls the bot correctly refused drags every
+    spacing negative for a reason that has nothing to do with spacing — of
+    course a stop can't save a trade that should never have been entered.
+    """
     out = []
     for fn in sorted(glob.glob(os.path.join(HERE, "days", "*.json"))):
         day = os.path.basename(fn)[:-5]
@@ -85,27 +111,33 @@ def load_trades(tape):
         for r in d.get("table", []):
             if r.get("kind") != "option":
                 continue
+            if r.get("state") not in REAL_ENTRY_STATES:
+                continue
             who = str(r.get("who") or "").strip().lower()
             if who in EXCLUDE_WHO:
                 continue
             sym, side = r.get("symbol"), r.get("side")
             strike, expiry = r.get("strike"), r.get("expiry")
-            opened = r.get("opened")
-            if not (sym and side and strike and expiry and opened):
+            if not (sym and side and strike and expiry):
                 continue
             try:
                 o = occ.build(sym, expiry, side, strike)
             except ValueError:
                 continue
-            rows = [x for x in tape.get(o, []) if x[0] >= opened - 5]
-            if not rows:
-                continue
-            entry_row = min(rows, key=lambda x: abs(x[0] - opened))
-            entry = entry_row[2]
-            if entry <= 0 or _nan(entry):
-                continue
-            after = [x for x in rows if x[0] >= entry_row[0]]
-            if not after:
+
+            entries = r.get("entries") or []
+            if entries and entries[0].get("price") and entries[0].get("t"):
+                entry = float(entries[0]["price"])
+                entry_t = float(entries[0]["t"])
+            else:
+                entry = r.get("avg")
+                entry_t = r.get("opened")
+                if not (entry and entry_t):
+                    continue
+                entry = float(entry)
+
+            after = [x for x in tape.get(o, []) if x[0] >= entry_t - 2]
+            if not after or entry <= 0 or _nan(entry):
                 continue
             out.append({"day": day, "occ": o, "entry": entry, "quotes": after})
     return out
