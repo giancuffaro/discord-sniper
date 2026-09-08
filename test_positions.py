@@ -716,10 +716,14 @@ rb.entry_sent(dict(ORDER, trader="RatchetGuy"), rtk)
 RKEY = positions.key_of("RatchetGuy", "SPY")
 settle(rb, RKEY)
 ok(rb.state_of(RKEY) == positions.FILLED, "ratchet test entry fills")
-# fill was 2.00 (RWB always fills at its own ask/bid). +20% is 2.40.
+# fill was 2.00 (RWB always fills at its own ask/bid). Ladder is now arm
+# +5%/lock BE/step +5% (9/8 respacing, see ratchet_tiers.py) — so 2.39
+# (+19.5%) is already several rungs past arming, not below it. This call
+# just seeds the position at a locked stop before the checkpoints below.
 rb.auto_ratchet(RKEY, 2.39)
 ok(rb.state_of(RKEY) == positions.FILLED,
-   "below the first rung (+19.5%%), the position is untouched and still open")
+   "a ratchet move never closes the position outright, however many rungs "
+   "it's climbed")
 stops_before = [c for c in RWB.calls if c[0] == "stop"]
 rb.auto_ratchet(RKEY, 2.40)          # exactly +20%
 ok(rb.state_of(RKEY) == positions.FILLED,
@@ -730,12 +734,14 @@ ok(len(stops_after) == len(stops_before) + 1,
    "the ratchet cancels the old resting stop and places exactly one new one")
 new_stop = stops_after[-1][3]
 # G'S LADDER, restored 9/3 in his words: "-10% to start; at +10% the stop
-# becomes 0%, next target 20%; at +20% the stop is +10%, next target +30%;
-# at +30% the stop is +20%, and so on." One ladder for every premium.
-# At +20% that locks +10% on a 2.00 fill -> a 2.20 stop. ANTI-CLIP (60% of
-# the gain = +12%) does not bind here, so his number stands.
-ok(abs(new_stop - 2.20) < 0.005,
-   "at +20%% a $2.00 fill locks +10%% (his ladder) — 2.20, got %s" % new_stop)
+# becomes 0%..." — RESPACED 9/8 off ratchet_sweep.py's backtest (see
+# HANDOFF.md that date): arm +5%/lock BE/step +5%, replacing 9/3's
+# arm +10%/step +10%. On a 2.00 fill, +20% gain is the 4th rung:
+# k=(20-5)//5=3 -> locked +15% -> a 2.30 stop. ANTI-CLIP (60% of the gain =
+# +12%) does not bind here (it's OFF by default anyway, see below), so the
+# plain ladder number stands.
+ok(abs(new_stop - 2.30) < 0.005,
+   "at +20%% a $2.00 fill locks +15%% (9/8 ladder) — 2.30, got %s" % new_stop)
 ok(any(c[0] == "cancel" for c in RWB.calls),
    "the old stop order gets cancelled before the new one goes in")
 # Price keeps climbing to +30% — the stop should walk up again, to +10%.
@@ -743,16 +749,16 @@ rb.auto_ratchet(RKEY, 2.60)
 stops_30 = [c for c in RWB.calls if c[0] == "stop"]
 ok(len(stops_30) == len(stops_after) + 1,
    "a further rung places another new stop")
-# At +30% his ladder locks +20% -> a 2.40 stop.
+# At +30% gain, k=(30-5)//5=5 -> locked +25% -> a 2.50 stop (9/8 spacing).
 #
 # ANTI-CLIP IS OFF by default since 9/4 (G: "I just want the regular ratchet
 # until we gather information about the greeks, and then we'll do the
-# anti-clip"). With it off, his plain ladder stands and this is 2.40. This
+# anti-clip"). With it off, the plain ladder stands and this is 2.50. This
 # used to assert 2.36 — the anti-clipped number — so it is the one check
 # that proves the switch actually changes behaviour rather than just
 # existing in settings.
-ok(abs(stops_30[-1][3] - 2.40) < 0.005,
-   "anti-clip OFF: at +30%% his plain ladder locks +20%% — a 2.40 stop, got %s" % stops_30[-1][3])
+ok(abs(stops_30[-1][3] - 2.50) < 0.005,
+   "anti-clip OFF: at +30%% the plain ladder locks +25%% — a 2.50 stop, got %s" % stops_30[-1][3])
 
 # ...and with it ON, the SAME trade caps at 60% of the gain = +18% -> 2.36.
 # Built the same way as the trade above — a real entry and a real fill —
@@ -773,9 +779,10 @@ ok(ac_stops and abs(ac_stops[-1][3] - 2.36) < 0.005,
    "anti-clip ON: the same +30%% caps at +18%% — a 2.36 stop, got %s"
    % (ac_stops[-1][3] if ac_stops else None))
 
-# 0DTE / 1DTE: HIS LADDER WINS, no anti-clip (9/3, "my rule on 0 and 1dte and
-# anticlip on later expirations"). Same 2.00 fill, same +30% — but the
-# contract expires today, so the stop must be the full +20% = 2.40, not 2.36.
+# 0DTE / 1DTE: THE PLAIN LADDER WINS, no anti-clip (9/3, "my rule on 0 and
+# 1dte and anticlip on later expirations"). Same 2.00 fill, same +30% — but
+# the contract expires today, so the stop must be the full +25% = 2.50 (9/8
+# spacing), not the anti-clipped 2.36.
 import datetime as _dtt
 _ZWB = FakeWB(fills=True, ask=2.00, bid=2.00)
 _zb = book(_ZWB)
@@ -790,12 +797,12 @@ _zorder = dict(ORDER, trader="ZeroDteGuy",
 _zb.entry_sent(_zorder, _ztk)
 _ZKEY = positions.key_of("ZeroDteGuy", "SPY")
 settle(_zb, _ZKEY)
-_zb.auto_ratchet(_ZKEY, 2.40)        # +20% -> lock +10%
-_zb.auto_ratchet(_ZKEY, 2.60)        # +30% -> lock +20% (HIS number, uncapped)
+_zb.auto_ratchet(_ZKEY, 2.40)        # +20% -> lock +15% (9/8: k=(20-5)//5=3)
+_zb.auto_ratchet(_ZKEY, 2.60)        # +30% -> lock +25% (the plain ladder, uncapped)
 _zstops = [c for c in _ZWB.calls if c[0] == "stop"]
-ok(_zstops and abs(_zstops[-1][3] - 2.40) < 0.005,
-   "0DTE at +30%%: his ladder locks the full +20%% (2.40) — anti-clip does NOT "
-   "apply to same-day expiries, got %s" % (_zstops[-1][3] if _zstops else None))
+ok(_zstops and abs(_zstops[-1][3] - 2.50) < 0.005,
+   "0DTE at +30%%: the plain ladder locks the full +25%% (2.50) — anti-clip "
+   "does NOT apply to same-day expiries, got %s" % (_zstops[-1][3] if _zstops else None))
 
 # ---- THE TSLA 8/26 FAILURE (found 9/3 by auditing every filled trade for
 # "went green past +10%% but closed red"). The bracket stop is accepted, then
@@ -814,11 +821,11 @@ _fb.entry_sent(dict(ORDER, trader="RefusedGuy"), _ftk)
 _FKEY = positions.key_of("RefusedGuy", "SPY")
 settle(_fb, _FKEY)
 _FWB.refuse_stop_moves = True                 # broker says no from here on
-_fb.auto_ratchet(_FKEY, 2.40)                 # +20% -> wants the stop at +10%
+_fb.auto_ratchet(_FKEY, 2.40)                 # +20% -> wants the stop at +15% (9/8 spacing)
 _soft = (_fb.info(_FKEY) or {}).get("soft_stop")
-ok(_soft is not None and abs(float(_soft) - 2.20) < 0.005,
+ok(_soft is not None and abs(float(_soft) - 2.30) < 0.005,
    "when the broker REFUSES the ratchet's stop move, the level it wanted is "
-   "still recorded as a soft stop the watchdog enforces (2.20), got %s" % _soft)
+   "still recorded as a soft stop the watchdog enforces (2.30), got %s" % _soft)
 ok(float(_soft) > float((_fb.info(_FKEY) or {}).get("stop") or 0),
    "the soft stop sits ABOVE the stale resting stop — that gap is exactly "
    "what cost $45 on TSLA 8/26")
