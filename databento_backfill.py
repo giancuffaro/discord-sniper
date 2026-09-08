@@ -48,6 +48,12 @@ import occ  # noqa: E402  (project's one place that knows contract symbols)
 
 SETTINGS = os.path.join(HERE, "settings.json")
 OUT_CSV = os.path.join(HERE, "databento_tape.csv")
+# Every (occ, day) ever ATTEMPTED, success or empty — separate from the CSV
+# because a contract with no OPRA quotes in its window (illiquid moment, or
+# the window landed outside real trading hours) writes zero rows, and would
+# otherwise look "not done" forever and get re-fetched — and re-billed —
+# every single run.
+STATE_FILE = os.path.join(HERE, "databento_backfill_state.json")
 
 # How far past a call with no fill we still look, to see what the contract
 # actually did (state: nofill/failed never got a closed timestamp).
@@ -132,6 +138,21 @@ def already_done():
     return done
 
 
+def load_state():
+    """(occ, day) pairs already ATTEMPTED (empty or fetched) - not just the
+    ones that happened to write a row."""
+    if not os.path.exists(STATE_FILE):
+        return set()
+    try:
+        return {tuple(pair) for pair in json.load(open(STATE_FILE, encoding="utf-8"))}
+    except (OSError, ValueError):
+        return set()
+
+
+def save_state(state):
+    json.dump(sorted(state), open(STATE_FILE, "w", encoding="utf-8"))
+
+
 def iso(ts):
     return datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc).isoformat()
 
@@ -161,13 +182,13 @@ def main():
     client = db.Historical(key)
 
     work = worklist()
-    skip = already_done()
-    todo = [w for w in work if (w["occ"], w["day"]) not in skip]
+    state = load_state() | already_done()
+    todo = [w for w in work if (w["occ"], w["day"]) not in state]
 
     print("=" * 62)
     print("  DATABENTO BACKFILL — real OPRA prices for days/*.json calls")
     print("=" * 62)
-    print("%d contract-days found, %d already done, %d to fetch"
+    print("%d contract-days found, %d already attempted, %d to fetch"
           % (len(work), len(work) - len(todo), len(todo)))
     print()
 
@@ -200,6 +221,8 @@ def main():
         rows = downsample(df)
         if not rows:
             empty_n += 1
+            state.add((w["occ"], w["day"]))
+            save_state(state)
             print("[%d/%d] empty  %s (no OPRA quotes in that window)"
                   % (i, len(todo), label))
             continue
@@ -209,6 +232,8 @@ def main():
         fh.flush()
         rows_n += len(rows)
         done_n += 1
+        state.add((w["occ"], w["day"]))
+        save_state(state)
         print("[%d/%d] %-40s %4d rows" % (i, len(todo), label, len(rows)))
 
     fh.close()
