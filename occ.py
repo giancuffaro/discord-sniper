@@ -93,10 +93,46 @@ def build(symbol, expiry, side, strike):
 
 
 def _ymd(expiry):
-    """-> 'YYMMDD'. Accepts a date, 'YYYY-MM-DD', 'YYYYMMDD' or 'YYMMDD'."""
+    """-> 'YYMMDD'. Accepts a date, 'YYYY-MM-DD', 'M/D/YYYY', 'MM/DD/YYYY',
+    'MM/DD/YY', 'YYYYMMDD' or 'YYMMDD'.
+
+    THE LANDMINE THIS REMOVES (9/8, found backfilling real prices for
+    days/*.json): the old version stripped every '-' and '/' FIRST, then
+    just counted digits. 'YYYY-MM-DD' and zero-padded 'MM/DD/YYYY' both
+    collapse to 8 digits that way, and it always read them as YYYY-MM-DD.
+    '2026-08-14' -> '20260814'[2:] = '260814' (right, by luck of the order
+    already matching). '08/28/2026' -> '08282026'[2:] = '282026', read as
+    YY=28 MM=20 DD=26 — a well-formed WRONG expiry with no error anywhere,
+    exactly the class of bug this file exists to kill. Caught here because
+    Databento's API refused it outright ('symbology_invalid_request'); a
+    broker that instead silently accepted a nonsense date would have bought
+    whatever contract that garbage happened to resolve to. Same bug hit
+    'MM/DD/YY' the other way: '11/20/26' -> '112026' (6 digits, no
+    stripping needed to hide it) read as-is, YY=11 MM=20 DD=26.
+
+    Fix: read the YEAR by which piece is 4 (or 2) digits and where it sits,
+    BEFORE the separators are thrown away — position is the only thing
+    that actually tells 'year-month-day' from 'month-day-year' apart."""
     if hasattr(expiry, "strftime"):
         return expiry.strftime("%y%m%d")
-    s = str(expiry or "").strip().replace("-", "").replace("/", "")
+    s = str(expiry or "").strip()
+    for sep in ("-", "/"):
+        if sep not in s:
+            continue
+        parts = s.split(sep)
+        if len(parts) != 3:
+            raise ValueError("cannot read an expiry out of %r" % (expiry,))
+        a, b, c = parts
+        if len(a) == 4 and a.isdigit() and b.isdigit() and c.isdigit():
+            y, mo, d = a, b, c                    # YYYY-MM-DD
+        elif len(c) in (2, 4) and c.isdigit() and a.isdigit() and b.isdigit():
+            mo, d, y = a, b, c                     # M/D/YYYY, MM/DD/YY, ...
+        else:
+            raise ValueError("cannot read an expiry out of %r" % (expiry,))
+        mo, d = int(mo), int(d)
+        if not (1 <= mo <= 12 and 1 <= d <= 31):
+            raise ValueError("cannot read an expiry out of %r" % (expiry,))
+        return "%s%02d%02d" % (y[-2:].zfill(2), mo, d)
     if len(s) == 8 and s.isdigit():
         return s[2:]
     if len(s) == 6 and s.isdigit():
