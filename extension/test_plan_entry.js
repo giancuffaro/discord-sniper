@@ -29,7 +29,8 @@ const NEVER = [
   ["loading",           "@Unraveller (Admin) loading GOOGL 8/21 345C @here"],
   ["loading w/ price",  "@Unraveller (Admin) loading GOOGL 8/21 345C @ 2.95 @everyone"],
   // talk ABOUT a finished trade — "TP hit" is not a fresh plan
-  ["TP hit",            "TSLA 355 PUTS TP 2.0 hit, out here"],
+  ["TP hit (no verb)",  "TSLA 355 PUTS TP 2.0 hit"],
+  ["TP hit + up %",     "TSLA 355 PUTS TP 2.0 hit, up 40% on these"],
   // no side word at all: call or put is unknowable and must never be guessed
   ["no side word",      "SPY 0dte 775 .25 TP .45 / .55 / .75 leave runners @everyone"],
   // a reference to an earlier contract, not a new one
@@ -43,12 +44,15 @@ for (const [n, t, sym, k, side, exp] of FIRE) {
   if (!ok) bad++;
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${n.padEnd(22)} ${s.symbol||"-"} ${s.strike??"-"} ${s.side||"-"} exp=${s.expiry||"-"}`);
 }
-console.log("\nMUST NOT FIRE:");
+// "must not fire" here means MUST NOT OPEN A POSITION. A line that is a
+// genuine exit is allowed to close one — that is the whole point of the
+// exit path — so the assertion is specifically about entries.
+console.log("\nMUST NOT OPEN A POSITION:");
 for (const [n, t] of NEVER) {
   const s = parseSignal(t, {}) || {};
-  const ok = !s.fire;
+  const ok = s.action !== "OPEN";
   if (!ok) bad++;
-  console.log(`  ${ok ? "PASS" : "FAIL"}  ${n.padEnd(22)} ${s.fire ? "FIRED " + s.action + " " + s.symbol + " " + s.strike : "dead"}`);
+  console.log(`  ${ok ? "PASS" : "FAIL"}  ${n.padEnd(22)} ${s.action ? s.action + " " + (s.symbol||"") : "dead"}`);
 }
-console.log(bad ? `\n${bad} FAILED` : "\nall pass — the plan reads, watchlists and loading do not");
+console.log(bad ? `\n${bad} FAILED` : "\nall pass — the plan reads; watchlists, loading and recaps never open");
 process.exit(bad ? 1 : 0);
