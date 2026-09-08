@@ -1,7 +1,21 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 ~late — THE TWO UNKNOWN ROOMS, GRABBED AND READ. G was
+Last updated: 2026-09-08 ~late — BOTH TURNED ON, G's call.
+  TTT LOTTO verbless entries are LIVE. settings.json entry_no_verb_channels now
+  contains 880503518878892143. One key added, 22 -> 23, nothing else touched and
+  no secret read back. Its seven previously-invisible entries now fire, and its
+  own daily levels row still does not.
+  NOTE FOR WHOEVER READS THIS NEXT: TTT Lotto is a LIVE room, not born-testing,
+  so this took effect on real money immediately — it was not staged. That was
+  G's instruction ("turn on"), made with the numbers in front of him.
+  NGD ngd-trades STAYS LIVE. G's call ("keep ngd"). It is a machine-generated
+  1-minute futures radar ("NEW POTENTIAL SIGNAL", "a setup has been detected")
+  firing real MGC/MNQ orders with a limit, and no one has yet reviewed what it
+  costs or makes. The journal is the place that will answer it — first NGD fill
+  that lands, check it there.
+
+Prior: Last updated: 2026-09-08 ~late — THE TWO UNKNOWN ROOMS, GRABBED AND READ. G was
 asleep, so the scrollback was pulled by hand instead of Ctrl+Shift+X.
   TTT LOTTO (#lotto-alerts, TradingTheTrend) IS ALIVE AND WAS HALF-BLIND.
   127 messages, 8 callers (TradingTheTrend, Lars, Tater Tot, Edtrader,
