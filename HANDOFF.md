@@ -1,7 +1,43 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 ~late — CROSS-ROOM PARSER AUDIT. G's ask: are we
+Last updated: 2026-09-08 ~late — SWEEP 2: FALSE POSITIVES. The first sweep
+looked for MISSED signals. This one looked the other way — everything that
+FIRES, checked for things that should not. Method: list every symbol the parser
+has ever produced (135 distinct) and test each against English.
+
+  SIX WERE ENGLISH WORDS. THREE OF THEM FIRED:
+    "...then can go WITH 773c. Theta decay will destroy..."  -> OPEN WITH 773
+       Pure coaching text. A BUY, in a ticker that does not exist, at market
+       (no limit). The single worst thing found in either sweep.
+    "| EXIT ALERT Ticker: NBIS Stopped out"                  -> CLOSE EXIT
+       The real ticker is NBIS. A genuine stop-out was resolving to the word
+       "EXIT", so the actual NBIS position would NOT have been closed. Now
+       correctly CLOSE NBIS.
+    "OUT LAST 3.50 L ON THE VERY LAST OTHERS GREEN"          -> CLOSE VERY
+  Blocking a word just moves the reader to the NEXT word, so this took two
+  passes: VERY -> GREEN, and the month list had only ABBREVIATIONS so
+  "BOOKING SOME PROFITS FROM JUNE" resolved to ticker JUNE. Function words,
+  colours, full month names and day names are all in NOT_TICKERS now.
+  RESULT: 135 distinct symbols -> 129, and ZERO English words remain.
+
+  CHECKED AND CLEAN, worth not re-investigating:
+    * strikes: none absurd (nothing <1 or >10000)
+    * one-letter symbols W and U are REAL (Wayfair, Unity), not misparses
+    * 68 futures entries with no expiry — correct, futures have none
+    * Discord REACTION COUNTS ("...full Tp 48 14 8 3") can create a fake price,
+      but ONLY via fullTextOf/innerText, which feeds the history grabber. The
+      trading path uses textOf() = message body + embeds, so reactions never
+      reach it, and background.js gates history separately. Verified, not a bug.
+
+  STILL OPEN, and it is the "nothing guessed" rule: 161 OPTION entries fire
+  with NO EXPIRY and fall back to a GUESSED one — and that includes ALL of
+  Platinum nitro, whose format is "Contract: NVDA $175c Price: .72" with no
+  date at all. Nitro is the highest-producing room in the system (136 entries).
+  Worth deciding deliberately what its default should be rather than leaving it
+  to the generic fallback.
+
+Prior: Last updated: 2026-09-08 ~late — CROSS-ROOM PARSER AUDIT. G's ask: are we
 slipping or missing alerts, do the rooms disagree with each other. Method: run
 every room's captured messages (18 rooms, 3,769 unique) through the live
 parser, isolate lines that carry a REAL CONTRACT but produce NO ACTION, group
