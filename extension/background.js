@@ -1560,6 +1560,77 @@ async function oneTabPerChannel() {
   }
 }
 
+/* OPEN THE ONES THAT AREN'T THERE (9/8, G: "check which are open and open
+ * the ones that are missing"). oneTabPerChannel() is the CLOSE half — it kills
+ * duplicates. This is the OPEN half — it opens any LIVE room from rooms.txt
+ * that has no tab at all. Together they mean the set of open room tabs always
+ * converges on rooms.txt without ever touching a tab that is already fine.
+ *
+ * This is what makes closing-and-reopening-everything unnecessary: the launcher
+ * no longer has to wipe Chrome to guarantee every room is up. It is why the
+ * Brando/Shoof tabs being shut this morning cost the 10:44 QQQ call — nothing
+ * was watching for a room that simply wasn't open.
+ *
+ * Careful, because opening tabs costs money-adjacent attention and RAM:
+ *  - LIVE rooms only. #SLEEP rooms and commented lines are not opened.
+ *  - Discord AND Whop, by their real URL shapes.
+ *  - Throttled: at most a few per pass, opened in the background, so a cold
+ *    start does not slam 29 tabs at once (the launcher's own 3-at-a-time flood
+ *    still handles the true cold start; this is the steady-state healer).
+ *  - Never opens a room it opened in the last 2 minutes — a tab that is still
+ *    loading has no matchable path yet, and without this guard the next pass
+ *    would open it again. */
+const ROOM_OPENED_AT = {};        // channelId -> last time we opened it
+async function openMissingRooms() {
+  let rooms;
+  try { rooms = await loadRoomsFile(); } catch (e) { return; }
+  // loadRoomsFile populates ROOM_TABS[name] = {url, id} for every LIVE line.
+  const want = [];
+  try {
+    for (const name of Object.keys(ROOM_TABS)) {
+      const r = ROOM_TABS[name];
+      if (r && r.id && r.url) want.push({ id: String(r.id), url: r.url });
+    }
+  } catch (e) { return; }
+  if (!want.length) return;
+  let tabs;
+  try {
+    tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
+                                           "https://*.discord.com/channels/*",
+                                           "https://whop.com/joined/*",
+                                           "https://whop.com/*/exp_*"] });
+  } catch (e) { return; }
+  const openIds = new Set();
+  for (const t of tabs) {
+    const m = String(t.url || "").match(/\/channels\/\d+\/(\d+)/)
+           || String(t.url || "").match(/exp_([a-z0-9]+)/i);
+    if (m) openIds.add(m[1]);
+    // whop rooms.txt ids are the exp_ hash; match either form
+    const e2 = String(t.url || "").match(/exp_[a-z0-9]+/i);
+    if (e2) openIds.add(e2[0]);
+  }
+  const now = Date.now();
+  let opened = 0;
+  for (const r of want) {
+    const key = r.id.replace(/^whop:/, "");
+    const idInUrl = (r.url.match(/\/channels\/\d+\/(\d+)/) || [])[1]
+                 || (r.url.match(/exp_[a-z0-9]+/i) || [])[0];
+    if (idInUrl && (openIds.has(idInUrl) || openIds.has(key))) continue;   // already up
+    if (now - (ROOM_OPENED_AT[r.id] || 0) < 120000) continue;             // opened just now
+    ROOM_OPENED_AT[r.id] = now;
+    try {
+      await chrome.tabs.create({ url: r.url, active: false });
+      opened++;
+    } catch (e) { /* ignore */ }
+    if (opened >= 3) break;     // a few per pass; the alarm comes round again
+  }
+  if (opened) {
+    await addLog({ kind: "sent", what: "ROOMS",
+      why: "opened " + opened + " room tab(s) that weren't running — the "
+         + "missing rooms heal themselves now, no need to reopen everything." });
+  }
+}
+
 /* Does Whop push new messages into an open tab like Discord does, or only
  * show them on refresh? Unknown until Monday proves it — so it's made not
  * to matter. Any Whop tab that hasn't produced a single captured message
@@ -1732,7 +1803,7 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch.export_every_min) armAutoExport();
 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); oneTabPerChannel(); openMissingRooms(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
