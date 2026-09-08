@@ -419,6 +419,10 @@ class WebullOptions:
     option_quote_limit_per_min = 60          # option snapshot endpoint
 
     def __init__(self, cfg):
+        # Kept whole for the guards that need settings this class does not
+        # otherwise read — the 9/8 volume gate wants execution.min_contract_volume
+        # and the Tradier token, neither of which lives under "webull".
+        self._cfg = cfg or {}
         w = (cfg.get("execution", {}) or {}).get("webull", {}) or {}
         self.app_key = w.get("app_key", "")
         self.app_secret = w.get("app_secret", "")
@@ -1973,6 +1977,33 @@ class WebullOptions:
         # against the bid. A market that wide isn't a price, it's a trap:
         # refuse the ENTRY loudly. Exits are never touched by this — getting
         # out is allowed at any spread.
+        # VOLUME GUARD (9/8, G: "even if you can trade it or buy a contract you
+        # still don't want to if there's no open interest.. you wouldn't be
+        # able to sell it to no one later"). His instinct, one step further:
+        # OPEN INTEREST is the WRONG number for these names. Measured on the
+        # strikes his rooms actually call — MU showed OI 94 but 1,867 traded,
+        # SNDK OI 27 but 336 traded. They are day-traded contracts: everyone
+        # flattens by the close so OI stays tiny while volume is huge. An OI
+        # gate would have blocked MU and SNDK for nothing, and SNDK is a real
+        # part of Brando's book.
+        # It reads the PRIOR completed session, because intraday volume starts
+        # at zero at 9:30 and a gate on today's number refuses every 0DTE trade
+        # at the open. Served from a warm cache, so the fire path pays nothing.
+        # Unknown NEVER refuses — see liquidity.py. Entries only; getting out
+        # is never blocked, since being stuck is the thing this guards against.
+        try:
+            import liquidity as _liq
+            _ok, _why = _liq.check(occ, getattr(self, "_cfg", None) or {})
+            if not _ok:
+                raise Refused(
+                    "%s is too thin to trade: %s. Their call may be fine — this "
+                    "contract just has nobody on the other side of it."
+                    % (occ, _why))
+        except Refused:
+            raise
+        except Exception:
+            pass          # never let the liquidity check itself stop a trade
+
         if ask and bid and float(ask) > 0 and float(bid) > 0:
             _a, _b = float(ask), float(bid)
             _mid = (_a + _b) / 2.0
