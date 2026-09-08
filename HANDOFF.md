@@ -167,7 +167,33 @@ Previously — Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE
   next time, not just this once — ANY backtest number on this project has
   to run through the actual exit rule, never a naive high/low, or it will
   overstate risk exactly like this did.
-Previously — Last updated: 2026-09-08 — OWLS WIRED (shabs + eli), and a config-plumbing bug
+Previously — Last updated: 2026-09-08 — TWO-BROWSER SPLIT HARDENED + WHOP SELF-CONNECT.
+extension 3.5.59. G set the Whop split up (second profile "Sniper Whop",
+logged in, extension installed) and hit two issues, both fixed:
+  1. WHOP PROFILE WASN'T FEEDING THE BRIDGE. A tab open BEFORE the extension
+     loads never gets a content script (Chrome only injects on nav-after-
+     install) — so whop.js never attached to the 4 pre-open Whop tabs.
+     FIX: ensureReaders() on the 30s alarm injects the right reader
+     (content.js/whop.js) into any matching tab not injected in 5 min.
+     Idempotent, so no double-read. The Whop profile self-connects within a
+     minute of the extension reloading — no manual tab reload needed.
+  2. STRAY WHOP TABS IN THE DISCORD BROWSER (4 left over from before the
+     split) would double-read Whop AND the old lane logic would REOPEN any
+     G closed. FIX: sticky per-profile lane (profile_lane in storage, locks at
+     >=3 tabs of a surface with a majority, never flips) + evictOtherLane()
+     closes wrong-lane room tabs + whopWatchdog now no-ops in the discord lane.
+     Net: the Discord browser never opens, reloads, or keeps a Whop tab; the
+     Whop profile keeps its 4 and self-connects. No double-fire either way.
+  AUTO-APPLY: the extension fingerprints its folder (bridge build_stamp) and
+  reloads itself — but DEFERS while the market is open / a position is in
+  flight. So 3.5.59 goes live at the CLOSE on its own, or immediately if G
+  reloads the extension by hand in BOTH profiles. Bridge already restarted
+  (12:01) so its side is live now.
+  MISSED TODAY because of the above: trademorewiser's ES short (Whop, profile
+  not feeding yet) and Stormzy's 12:00 MES (came in 1 min before the bridge
+  restart, old Topstep sign bug). Both paths are fixed for next time.
+
+Prior: 2026-09-08 — OWLS WIRED (shabs + eli), and a config-plumbing bug
 fixed on the way. G asked if we see Elite/OWLS. Elite (Brando+Shoof) was
 already live in rooms.txt; OWLS was never added — I built the parser support
 on 9/7 and skipped the room lines. Now both shabs (1513300726141419550) and
