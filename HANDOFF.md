@@ -58,7 +58,31 @@ Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE FOUND BY IT.
   next time, not just this once — ANY backtest number on this project has
   to run through the actual exit rule, never a naive high/low, or it will
   overstate risk exactly like this did.
-Previously — Last updated: 2026-09-08 — THE READER TAPE: reads.log + reads.py.
+Previously — Last updated: 2026-09-08 — MISSING ROOMS HEAL THEMSELVES; launcher stops
+nuking Chrome. G: "dont give me this option, check which are open and open the
+ones that are missing." This reverses the 9/2 "close everything and reopen"
+rule, which was a sledgehammer — it discarded tabs that were reading fine, and
+THIS MORNING it shut the Brando/Shoof tabs, so Brando's 10:44 QQQ 720c call went
+completely unread (the channel ids appear ZERO times in today's bridge log).
+  NEW: background.js openMissingRooms() — the mirror of oneTabPerChannel().
+  The dupe-closer removes extra tabs; this opens any LIVE room from rooms.txt
+  that has no tab at all. Both run on the watch-build alarm, so the set of open
+  room tabs continuously converges on rooms.txt without touching a good tab.
+  LIVE rooms only (never #SLEEP or commented), Discord + Whop, throttled to 3
+  per pass and never re-opening a room within 2 minutes (a still-loading tab
+  has no matchable path yet — without the guard it would open forever).
+  LAUNCHER: the [5/5] block no longer kills Chrome when it is already open. It
+  prints "leaving your tabs exactly as they are" and jumps to :chromedone; the
+  extension opens whatever is missing within a minute. Chrome is only started
+  fresh on a true cold start (no window at all).
+  CMD TRAP RE-HIT AND FIXED: my first draft put "(9/1 and 9/4 exports)" and
+  even a NOTE about parens — inside the `if not errorlevel 1 (` block. A `)`
+  in a rem inside a bracketed block ends the block early. The whole [5/5] body
+  is now free of round brackets except the gate itself; verified 100/100 paren
+  balance and zero brackets in lines 275-293.
+  extension 3.5.53.
+
+Prior: Last updated: 2026-09-08 — THE READER TAPE: reads.log + reads.py.
   G: "so now they will read and transcribe? i need to see them in order to
   help you analize." Yes — the listener transcribes whenever it is in a voice
   room even with voice_entries OFF, and vision reads every image post. They
