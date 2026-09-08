@@ -64,6 +64,30 @@ for (const [n, t, want] of STC) {
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${n.padEnd(18)} ${(s.action||"NONE").padEnd(6)} want=${want}`);
 }
 console.log();
+/* THE STOCK IS SELLING, NOBODY IS SELLING ANYTHING (9/8, voice sweep).
+ * "AMD actually is kinda selling here" read as CLOSE AMD — commentary about
+ * price action, not an order. Found in the spoken corpus where that phrasing
+ * is constant. The veto is NARROW: a first attempt vetoed any "is/are selling"
+ * and would have killed the REAL exit "XOM OUT ... Most things are selling",
+ * so it only fires when the price-action phrase is the ONLY exit evidence. */
+const TAPE = [
+  ["stock selling",     "AMD actually is kinda selling here. Let's see.",                      null],
+  ["selling off",       "SPY is selling off hard right now",                                   null],
+  ["REAL exit + tape",  "XOM OUT Will revisit if energy turns around. Most things are selling","CLOSE"],
+  ["real trim",         "selling half here on SPY 640c",                                       "TRIM"],
+  ["real STC",          "STC QQQ 9/08 720c @ 2.02 selling into strength",                      "CLOSE"],
+  // "selling the rest" IS a full close of what remains — not a trim.
+  ["selling the rest",  "sold half, selling the rest of NVDA 220c",                            "CLOSE"],
+];
+console.log("PRICE ACTION vs AN ORDER:");
+for (const [n, t, want] of TAPE) {
+  const s = parseSignal(t, {}) || {};
+  const got = s.action || null;
+  const ok = got === want;
+  if (!ok) bad++;
+  console.log(`  ${ok ? "PASS" : "FAIL"}  ${n.padEnd(18)} ${(got||"none").padEnd(7)} want=${want || "none"}`);
+}
+console.log();
 console.log("MUST NOT read as an exit:");
 for (const [n, t] of NOT_EXITS) {
   const s = parseSignal(t, {}) || {};

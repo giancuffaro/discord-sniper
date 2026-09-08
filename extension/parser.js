@@ -861,6 +861,35 @@ function parseSignal(text, cfg) {
               " — he said partial, so it's a trim, not the exit; the ratchet keeps running";
     }
   }
+  /* THE STOCK IS SELLING, NOBODY IS SELLING ANYTHING (9/8, voice sweep).
+   * "AMD actually is kinda selling here. Let's see." read as CLOSE AMD — that
+   * is commentary about price action, not an order. Found in the spoken
+   * corpus, where this phrasing is constant.
+   *
+   * The veto is NARROW on purpose. A first attempt vetoed any line containing
+   * "is/are selling" and that would have killed a REAL exit:
+   *     "XOM OUT Will revisit... Most things are selling"
+   * which is a genuine close that merely mentions the tape. So this only
+   * fires when the price-action phrase is the ONLY exit evidence in the line —
+   * if any independent exit verb is present (out, stc, sold, closed, trim,
+   * stopped, cut), the line is left exactly as it was.
+   */
+  if ((s.action === "CLOSE" || s.action === "TRIM") && s.symbol) {
+    const _raw = String(s.clean || "").toLowerCase();
+    const _priceAction =
+      /\b(?:is|are|was|were|been|looks?|seems?|keeps?|started|start)\s+(?:kinda\s+|kind of\s+|really\s+|still\s+|just\s+|now\s+)?selling\b/.test(_raw)
+      || /\bselling\s+off\b/.test(_raw);
+    const _otherExit =
+      /\bout\b|\bstc\b|\bsold\b|\bclos(?:e|ed|ing)\b|\btrim|\bstopped\b|\bcut(?:ting)?\b|\bexit(?:ed|ing)?\b|\ball\s+out\b/.test(_raw);
+    if (_priceAction && !_otherExit) {
+      s.fire = false;
+      s.action = null;
+      s.why = "that's the stock selling off, not him selling anything — price "
+            + "action, not an order, so nothing was sent";
+      return s;
+    }
+  }
+
   if (s.action !== "OPEN" || s.kind === "future") return s;
   const low = (s.clean || "").toLowerCase();
   const isOption = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
