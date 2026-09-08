@@ -235,6 +235,11 @@ const RE_BACKIN = /\bback\s+in\b/i;
 // nothing negates. RE_NO_BUY is checked first at the call site.
 const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b|\bswinging\b(?!\s+(?:trade|idea|setup|watch))/i;
 const RE_BUY_CMD = /\bbuy(?:s)?\b/i;
+/* A STOP or a TARGET is only ever written about a trade being TAKEN (9/7).
+ * "SL .80", "TP 1.60 / 1.95 / 2.6", "targets 2.0/2.45", "SL: 1.9". Requires a
+ * number right after the marker so "TP hit" / "SL was ugly" (both talk ABOUT a
+ * finished trade) don't qualify — those carry no fresh plan. */
+const RE_ENTRY_PLAN = /\b(?:SL|S\/L|stop\s*loss|TP\d?|T\/P|target|targets)\b\s*[:=]?\s*\$?\.?\d/i;
 // Anything that turns a "buy" into advice, a warning, or a hypothetical.
 // "or buy next week exp" (Midas chatter) is caught by the \bor\b arm.
 const RE_NO_BUY = /\b(?:do\s*n[o']?t|don'?t|dont|never|avoid|not|no|stop|quit|why|should|would|could|might|maybe|if|when|before|after|instead\s+of|rather\s+than|or)\s+(?:you\s+|we\s+|i\s+|to\s+)?buy\b|\bbuy\s+(?:the\s+)?(?:dip|rumou?r|side|signal|zone|area|level|back|and\s+hold)\b|\bgood\s+buy\b|\bbuy\b[^.\n]{0,12}\?/i;
@@ -1961,7 +1966,7 @@ function parseSignalInner(text, cfg) {
     && RE_ENTRY_PLAN.test(t)
     && !RE_EXIT.test(low) && !RE_TRIM.test(low) && !RE_PARTIAL.test(low)
     && !/\bhit\b|\bfilled\s+at\b|\bup\s+\d{1,4}\s*%|\bran\s+to\b/i.test(low);
-  if ((RE_ENTRY.test(low) || _takingEntry || _buyCmd || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
+  if ((RE_ENTRY.test(low) || _takingEntry || _buyCmd || _planEntry || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
     const c = findContract(t);
     if (!c) {
       // The two-message entry: "Loading 205 calls Friday expiration on NVDA",
