@@ -273,18 +273,19 @@ rem  been opened"). Visible windows = his tabs, leave them alone. Background
 rem  only = kill it quietly and cold-start, so the performance flags apply.
 powershell -NoProfile -Command "$w = Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle }; if ($w) { exit 0 } else { exit 1 }"
 if not errorlevel 1 (
-  rem  HIS CALL 9/8 ("dont give me this option, check which are open and open
-  rem  the ones that are missing") REVERSES the 9/2 close-everything rule.
-  rem  Closing Chrome to guarantee every room is up was always a sledgehammer:
-  rem  it threw away tabs that were reading fine, and this morning it shut the
-  rem  Brando/Shoof tabs so a 10:44 QQQ call went unread. The extension now
-  rem  owns this: openMissingRooms() opens any LIVE room from rooms.txt that
-  rem  has no tab, and oneTabPerChannel() closes duplicates - together they
-  rem  converge on rooms.txt without touching a tab that is already fine.
-  rem  So when Chrome is already open we LEAVE IT COMPLETELY ALONE. No kill,
-  rem  no countdown, no flush-risk to the extension's LevelDB (killing it
-  rem  mid-write is what emptied the 9/1 and 9/4 exports). The healer opens
-  rem  whatever is missing within a minute.
+  rem  HIS CALL 9/8 - "check which are open and open the ones that are
+  rem  missing" - REVERSES the 9/2 close-everything rule. Closing Chrome to
+  rem  guarantee every room is up was always a sledgehammer: it threw away
+  rem  tabs that were reading fine, and this morning it shut the Brando and
+  rem  Shoof tabs so a 10:44 QQQ call went unread. The extension now owns
+  rem  this - openMissingRooms opens any LIVE room from rooms.txt with no
+  rem  tab, oneTabPerChannel closes duplicates - together they converge on
+  rem  rooms.txt without touching a tab that is already fine. So when Chrome
+  rem  is already open we LEAVE IT ALONE. No kill, no countdown, no flush
+  rem  risk to the extension's LevelDB - killing it mid-write is what
+  rem  emptied the 9/1 and 9/4 exports. The healer opens the rest in a minute.
+  rem  NOTE - keep these rem lines free of round brackets: a close bracket in a
+  rem  rem inside this bracketed block ends the block early in cmd. Known trap.
   echo.
   echo   [5/5] Chrome is already open - leaving your tabs exactly as they are.
   echo         The extension opens any missing rooms by itself within a minute
