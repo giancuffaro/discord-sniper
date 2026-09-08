@@ -1,7 +1,43 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 — VISION / IMAGE SWEEP. The last unswept path.
+Last updated: 2026-09-08 — DATABENTO BACKFILL + AN OCC LANDMINE FOUND BY IT.
+  G: "find out now then later and slow" — signed up for Databento ($125 free
+  credit, no card) to price every call in days/*.json for real off OPRA,
+  including the refused/nofill/failed ones option_tape.csv could never have
+  (it only ever saw contracts the bot itself quoted, from 9/2 on). Key lives
+  in settings.json execution.databento.api_key (setup_databento.py writes
+  it — same "never pastes his secret to me" doctrine as tastytrade).
+  `databento_backfill.py` reads days/*.json (109 -> 110 option contract-days
+  once the fix below let a few more parse), pulls OPRA cmbp-1 (bid/ask) per
+  contract for a window around its actual opened/closed time (30 min after
+  the call if it never filled), downsamples to ~1 row/sec to match
+  option_tape's own cadence, writes databento_tape.csv in the exact shape
+  tape.py already reads, and is idempotent — a state file tracks every
+  (occ, day) ATTEMPTED, not just the ones that returned rows, so a contract
+  with genuinely no quotes in its window doesn't get re-fetched (and
+  re-billed) forever. Wired into tape.py's SOURCES. Result: 329,430 rows,
+  80 real contracts, 8/5 through 9/4. Cost: a few dollars off the $125.
+  **FOUND BUILDING IT: a live landmine in occ.py, the ONE place every part
+  of this app builds a contract symbol.** `_ymd()` stripped every `-`/`/`
+  THEN counted digits, always assuming what was left was YYYY-MM-DD.
+  `08/28/2026` collapses to the same 8 digits as `2026-08-28` that way, and
+  the old code always read it in the ISO order — so a zero-padded
+  MM/DD/YYYY date silently became a WELL-FORMED WRONG expiry (`282026` ->
+  YY=28 MM=20 DD=26) with no error anywhere. `11/20/26` broke the same way
+  in the other direction. Five real contracts from days/*.json hit this
+  before Databento's own API refused the resulting garbage symbol
+  outright — a broker that instead silently accepted it would have bought
+  whatever contract that nonsense date happened to resolve to. Fixed by
+  reading the year off WHICH piece is 4-or-2 digits and WHERE it sits,
+  before the separators that carried that information get thrown away.
+  test_architecture.py's occ/tape checks still pass; ARCHITECTURE.md
+  updated with both the fix and the reasoning. This is the second landmine
+  occ.py has caught since it was built 9/7 (side_letter's CALL/PUT flip was
+  the first) — worth remembering that consolidating five copies of
+  something into one doesn't just save code, it's the only way a bug like
+  this is findable at all.
+Previously — Last updated: 2026-09-08 — VISION / IMAGE SWEEP. The last unswept path.
   THE DESIGN IS RIGHT AND IT IS WORTH KNOWING WHY. An image goes to the bridge
   /readimage; the model TRANSCRIBES what it sees (seen_text) and proposes a
   call; ai_reader.validate() then demands that the ticker, the strike and the
