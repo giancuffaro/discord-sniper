@@ -1,7 +1,41 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-09 — QQQ 716P PHANTOM-EXIT BUG FIXED (bridge.py CLOSE
+Last updated: 2026-09-09 (late) — ONE CENTRAL FILL LEDGER: `master_ledger.csv`.
+G caught me claiming Aristotle had 0 trades when he'd taken AMD 515C from it
+that morning. Root cause was DATA, not a stale read: fills were split across
+three half-ledgers that disagree — `days/*.json "table"` (display rows,
+truncates: on 9/8 it saved 6 of 12 fills, Aristotle among the dropped),
+`days/*.json "wallet.trades"` (richest fields, clears on restart, only today
+survives), `trades.log FILLED` (immutable broker spine, but NO room/caller).
+`journal.csv` is built from "table" only, so it inherits the truncation.
+**FIX — `build_ledger.py` → `master_ledger.csv` (316 rows, 44 cols).** Unions
+table ∪ wallet.trades per day, merges duplicate rows field-by-field (runup /
+drawdown / greeks survive), cross-checks every row against trades.log FILLED
+(`broker_confirmed`), and ADDS broker fills that never got a journal row as
+their own rows (`source=trades.log-only`, room "?") so gaps are VISIBLE — it
+found 39 of them (SPY 9, NVDA 7, INTC 5, MSFT 4; 13 on 8/18 alone). Also
+carries `in_table` / `in_wallet` so you can see which store dropped what.
+Deterministic full rebuild (no append → no double-count on restart), atomic
+`os.replace` swap, ~108 ms. **Wired into `bridge.py save_day()`** right after
+journal.csv, in its own never-raise guard, `bak=False` (no .bak churn per
+event); CLI `python3 build_ledger.py` keeps 5 timestamped .baks + prints a
+per-room summary. Verified: py_compile clean on both, refresh() runs, full
+test_positions.py green. NEEDS A BRIDGE RESTART to run live (same restart as
+everything else tonight).
+**RULE (new): `master_ledger.csv` is THE fill truth. Any per-room / per-caller
+/ "which rooms trade" count reads it — never `table`, never `journal.csv`.**
+`journal.csv` stays as the legacy Excel export (announcer/caller_report still
+read it); it is NOT the source of truth anymore. Honest state of the numbers:
+247 real fills, 128 broker-confirmed; the 119 unconfirmed are 52 manual /
+Market Sniper (his, not the bot's), 29 untagged, 26 futures (NinjaTrader —
+never a Webull line, expected), 8 FIFO-rebuilt, 4 stragglers. 138 real fills
+still carry room "?" (mostly pre-tagging August days + the 39 recovered) —
+so "cut this room, it's dead" is NOT a call to make off these counts yet.
+Room cuts stay G's decision on numbers that hold; my earlier 7-room cut list
+is WITHDRAWN.
+
+Previously — Last updated: 2026-09-09 — QQQ 716P PHANTOM-EXIT BUG FIXED (bridge.py CLOSE
 handler). G approved ("yes plz") fixing the headline bug from the 9/8 16:36
 close-out below. **bridge.py's `_place_impl` CLOSE branch (primary account,
 ~line 2766, and the WB_EXTRA mirror-account loop, ~line 2848) now uses
