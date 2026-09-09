@@ -9,6 +9,32 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 — START HERE FULLY UNATTENDED (v3.5.70). G: "I don't want
+START HERE to have any input from me."** Audit of the script found no
+pause/choice/user set-p — the inputs were things it LAUNCHED: (1) on a warm
+start it said "the extension opens missing rooms by itself", but that healer
+(openMissingRooms in the watch-build alarm) was removed 9/9 so closed tabs
+stick — so with Chrome open, START HERE opened nothing and the 7 re-added
+rooms only appeared if he closed Chrome by hand; (2) every run does `git
+push`, and an expired GitHub credential pops a Git Credential Manager
+sign-in the run sits behind; (3) after a shutdown/OOM/crash Chrome shows
+"Restore pages?" and waits for a click. Fixes: (1) ONE-SHOT REQUEST — the
+bat writes open-rooms.request (token = date-time-random), bridge /build
+serves it as `open_rooms`, background.js checkBuild marks an un-honoured
+token pending, and honourOpenRoomsRequest() (on the watch-build tick) runs
+openMissingRooms (now returns the count; lane-aware, ≤3 per pass) every 30 s
+until a pass opens none, then stores open_rooms_done. Nothing opens rooms
+without a fresh token, so hand-closed tabs still stay closed. Both browsers
+see the same token and each fills its own lane. (2) GIT_TERMINAL_PROMPT=0,
+GCM_INTERACTIVE=never, GIT_ASKPASS=echo at the top — git fails fast and the
+existing failure paths keep local work + skip the mirror. (3)
+--hide-crash-restore-bubble on all 4 Chrome launches. open-rooms.request
+gitignored. Verified: py_compile bridge.py, node --check background.js,
+manifest 3.5.69 → 3.5.70. Needs the bridge restart (his) for /build to
+serve the token; the extension self-updates after hours. Inputs that
+remain, by design: a Discord/Whop login if a profile is logged out; Webull
+keys in the popup.
+
 **2026-09-09 — ROOMS BACK: 19 → 26 (v3.5.69). G: "bring back everyone and
 make sure they are live."** Scope he chose: all except ZTRADEZ (sub lapses
 tomorrow). Re-added 7: Options Watchlist, Vero 1, Vero 3, Platinum equity,

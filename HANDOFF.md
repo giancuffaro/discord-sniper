@@ -2,15 +2,13 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (later still) — cut from 240 KB / 3,034 lines to this;
-rules folded in from tonight: ONE central file per data family (ledger /
-alerts / tapes / holidays / announcer board), ratchet 7.5/5/2 flat, futures
-ratchet decoupled, Whop API path deleted, OWLS all-alerts wired, shabs/eli
-retired, all rooms live. Rooms cut 27→12 on tagged master_ledger.csv numbers,
-then 12→8 dropping all 4 remaining ZTRADEZ rooms (sub lapses in 1 day), then
-G re-added 11 (all 4 Whop, Aristotle small, TTT Lotto, all 3 Platinum shadow,
-Brando, Shoof) to land at 19 — his target was 15-20 tabs total. rooms.txt's
-old per-room essays moved to HANDOFF-LOG.md.
+Last updated: 2026-09-09 — v3.5.70. Tonight: one central file per data family
+(ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2 flat,
+futures ratchet decoupled; Whop API path deleted; the tab-reload storm found
+(662 reloads/day, zombie heartbeat) and fixed; rooms settled at 26 (all non-
+ZTRADEZ back, all live); START HERE fully unattended (one-shot open-rooms
+request, no git/Chrome prompts); REPLACE-DON'T-STACK rule; folder cleanup to
+archive/. Story of each in HANDOFF-LOG.md.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -36,7 +34,7 @@ old per-room essays moved to HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.69) reads 26 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.70) reads 26 rooms —
   22 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile,
   Browser 2 — not part of the Profile 2 tab count), 0 ZTRADEZ (whole server
   cut 9/9, sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild). G
@@ -163,10 +161,21 @@ RESTARTS / SAFETY
   Reaffirmed 9/9. Browser reads only.
 
 ROOMS / TABS / READERS
-- rooms.txt = THE channel list (tabs + trading, one file). Closing a tab
-  STICKS — openMissingRooms was removed from the watch-build alarm (9/9).
-  START HERE = fresh start: closes Chrome, reopens every room (~2.5 min
-  paced flood; count tabs after, not during), launches the announcer.
+- rooms.txt = THE channel list (tabs + trading, one file). START HERE IS
+  FULLY UNATTENDED (G, 9/9: "no input from me"): every run drops a one-shot
+  open-rooms.request; the bridge serves its token on /build; each browser's
+  extension then opens every rooms.txt room it lacks a tab for (its own
+  lane, ≤3 per 30 s tick) until a pass opens none, then marks the token
+  done. So a warm start (Chrome already open) fills in the missing rooms
+  without closing Chrome; a cold start opens them all itself (~2.5 min
+  paced flood; count tabs after, not during) and launches the announcer.
+  Between runs NOTHING opens rooms — a tab he closes by hand stays closed.
+  No prompts: git fails fast instead of asking for a credential
+  (GIT_TERMINAL_PROMPT=0 / GCM_INTERACTIVE=never; a failed push keeps
+  local work and skips the mirror), and every Chrome launch carries
+  --hide-crash-restore-bubble so "Restore pages?" never waits on a click.
+  The only inputs left are the ones no script may do: a Discord/Whop login
+  if a profile is logged out, and Webull keys in the popup.
 - Relay rooms (one bot account relaying many traders): ZT all-trades-mashup
   (1334236429655740457, ZTRADEZ BOT) COVERED ALL 19 ZT direct rooms, but the
   whole ZTRADEZ server was cut 9/9 (subscription lapsing in 1 day) — no
