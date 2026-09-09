@@ -2742,12 +2742,14 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     noteChannelName(msg.channelId, msg.channelName);   // learn the room's real name
     if (sender && sender.tab && String(msg.platform || "") === "whop") {
       whopTabSeen[sender.tab.id] = Date.now();   // this tab is alive
-      // WHOP API MODE (8/30): when the bridge's server-side reader is
-      // active, it is the ONE source of whop messages — tab reads are
-      // dropped here so the same alert can't arrive twice with two
-      // different identities (tab reads carry no mid; the dedupe can't
-      // catch that pair). Tabs stay useful as the health/backup view.
-      if (WHOP_API_ACTIVE) { reply({ ok: true, why: "api mode" }); return; }
+      // The Whop browser TAB is the ONE and ONLY source of Whop reads. The old
+      // server-side API reader was DELETED 9/8 — it queried Whop with the
+      // experience ids at guessed /v1/messages paths (404, never once fed), and
+      // while it falsely reported itself "active" it silently DROPPED every tab
+      // read right here. That is exactly why Whop went dark all day. The gate is
+      // gone; tab reads now flow straight through to the same parser + bridge
+      // path as Discord. Verified against the live Whop DOM (13 posts scraped
+      // from Day Trades) on 9/8.
     }
     // Deactivated (his ask, 8/15): a whole Discord/Whop SERVER can be turned
     // off from the Channels tab in one click, with the option to keep any
@@ -3669,23 +3671,11 @@ async function keepRoomsLoaded() {
   }
 }
 
-/* WHOP API FEED bootstrap (8/30): the offscreen page runs the 2s poll of
- * the bridge's /whopfeed (a service worker can't hold a timer that fast).
- * FEED_ACTIVE pings from offscreen tell the MESSAGE handler whether tab
- * reads should stand down. Dark until settings.json whop.api_key exists. */
-let WHOP_API_ACTIVE = false;
-chrome.runtime.onMessage.addListener((m) => {
-  if (m && m.type === "FEED_ACTIVE") WHOP_API_ACTIVE = !!m.active;
-});
-async function startWhopFeed() {
-  try {
-    await ensureOffscreen();
-    const c = await cfg();
-    chrome.runtime.sendMessage({ target: "offscreen", type: "FEED_START",
-                                 base: bridgeBaseFrom(c.bridge_url) });
-  } catch (e) { /* offscreen races are harmless — voice will ensure it too */ }
-}
-startWhopFeed();
+/* WHOP API FEED — DELETED 9/8. It never worked: it queried Whop with the
+ * experience ids at guessed /v1/messages paths that 404, so it never fed, and
+ * its false "active" ping silently killed the working browser-tab reads in the
+ * MESSAGE handler above. Whop now reads ONLY through the tab (whop.js), exactly
+ * like Discord. The offscreen page is kept for VOICE (Deepgram) only. */
 badge();
 reinject();
 checkBuild();
