@@ -1979,7 +1979,13 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch.export_every_min) armAutoExport();
 });
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === "watch-build") { checkBuild(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); openMissingRooms(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
+  // openMissingRooms() REMOVED from this sweep 9/8 (G: "revert the check the
+  // browser and open missing tabs, because if i close one it wont stop opening
+  // them"). His 8/23 rule stands: an OPEN TAB is the on switch, and CLOSING a
+  // tab is how he turns a room off. The launcher (START HERE) opens the tabs
+  // once at startup; after that nothing reopens a tab he closed. Function left
+  // defined-but-uncalled below in case it's ever wanted back.
+  if (a.name === "watch-build") { checkBuild(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
