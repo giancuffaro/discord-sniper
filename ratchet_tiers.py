@@ -62,8 +62,19 @@ it earns the room for a better one.
 # everywhere. HONEST LIMIT, same as the sweep's own: 80 trades over ~5
 # weeks is a small sample and this doesn't model the tick/spread floors
 # below — read it as a lean, not a verdict, and see HANDOFF.md 9/8.
+# 9/9 — RUNG TIGHTENED 5% -> 2% (G's settle). ratchet_sweep_fine.py decoupled the
+# rung from the arm (the earlier sweep forced them equal) and swept 294 combos on
+# the same 80 fills: the live 7.5/5/5 ranked #13; the whole top of the board uses
+# a +2-3% rung, and 7.5 / arm +5 / step +2 lifts the sample from $152 to $281
+# (best cell 7.5/4/2 = $321, but arm 4-vs-5 is within noise, so the arm stays +5).
+# Small rungs lock a run more smoothly; the stop still trails ~4-6% off price (the
+# ARM sets that gap, not the step), and MIN_RUNG_TICKS=4 below floors the rung so
+# 2% never goes sub-tick. ONE ladder kept — cheap (<$1) loses under EVERY spacing,
+# so no cheap tier (G's call 9/9); the real cheap lever is sizing/filtering, which
+# is tracked separately. Same HONEST LIMIT: 80 fills / ~5 weeks, a lean not a
+# verdict — the rn/ratchet tooling keeps collecting so this can be re-checked.
 TIERS = (
-    (None, (5.0, 0.0, 5.0)),         # every premium: arm +5%, lock BE, +5% rungs
+    (None, (5.0, 0.0, 2.0)),         # every premium: arm +5%, lock BE, +2% rungs
 )
 
 MIN_RUNG_TICKS = 4.0                 # floor 1
