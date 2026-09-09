@@ -1542,6 +1542,14 @@ async function ensureReaders() {
   for (const t of tabs) {
     if (t.discarded || t.status === "loading") continue;
     if (now - (INJECTED_AT[t.id] || 0) < 300000) continue;   // did this one recently
+    // 9/9: a tab whose reader is HEARTBEATING doesn't need a new copy.
+    // Re-injecting healthy tabs every 5 min was what manufactured the
+    // zombie beaters (one per inject). Inject only when nothing is beating.
+    let beating = false;
+    for (const cid in READER_TAB) {
+      if (READER_TAB[cid] === t.id && now - (READER_BEAT[cid] || 0) < 60000) { beating = true; break; }
+    }
+    if (beating) { INJECTED_AT[t.id] = now; continue; }
     const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
     try {
       await chrome.scripting.executeScript({ target: { tabId: t.id },
