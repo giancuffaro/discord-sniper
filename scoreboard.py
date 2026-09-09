@@ -14,7 +14,6 @@ Writes SCOREBOARD.html next to this file. Run:  python scoreboard.py [days]
 """
 import glob
 import html
-import json
 import os
 import re
 import sys
@@ -25,6 +24,7 @@ from datetime import date, datetime, timedelta
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import jsparse  # noqa: E402  (the PRODUCTION parser via node)
+import ledger  # noqa: E402
 DAYS_BACK = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 10
 SINCE = date.today() - timedelta(days=DAYS_BACK)
 
@@ -86,13 +86,9 @@ def load_exports():
 
 def load_trades():
     rows = []
-    for fn in sorted(glob.glob(os.path.join(HERE, "days", "*.json"))):
-        day = os.path.basename(fn)[:-5]
-        try:
-            d = json.load(open(fn, encoding="utf-8"))
-        except Exception:                               # noqa: BLE001
-            continue
-        for r in (d.get("table") or []):
+    # 9/9: reads master_ledger.csv via ledger.py — days/*.json table truncates.
+    for day, day_rows in sorted(ledger.by_day().items()):
+        for r in day_rows:
             if isinstance(r, dict):
                 r = dict(r)
                 r["_day"] = day

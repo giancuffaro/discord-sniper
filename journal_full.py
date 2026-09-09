@@ -15,14 +15,13 @@ Read-only. Reads days/*.json + trades.log; writes an .xlsx. Never trades.
 import os
 import re
 import sys
-import glob
-import json
 import datetime as _dt
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
+import ledger
 import misses as _m
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -58,16 +57,11 @@ def _hhmm(t):
 
 def _taken_rows(date=None, all_days=False):
     rows = []
-    for fn in sorted(glob.glob(os.path.join(DAYS, "*.json"))):
-        base = os.path.basename(fn)
-        try:
-            d = json.load(open(fn, encoding="utf-8"))
-        except Exception:                                   # noqa: BLE001
-            continue
-        dd = d.get("date") or base[:-5]
+    # 9/9: reads master_ledger.csv via ledger.py — days/*.json table truncates.
+    for dd, day_rows in sorted(ledger.by_day().items()):
         if not all_days and dd != date:
             continue
-        for r in (d.get("table") or []):
+        for r in day_rows:
             is_call = str(r.get("side") or "").upper().startswith("C")
             ct = ""
             side_col = ""
