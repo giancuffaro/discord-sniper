@@ -39,7 +39,10 @@ import ledger                 # noqa: E402
 import occ                    # noqa: E402
 import ratchet_tiers as rt    # noqa: E402
 
-TAPE_CSV = os.path.join(HERE, "databento_tape.csv")
+# 9/9: was hard-wired to the RAW tape while ratchet_sweep used the CLEAN one —
+# two backtests, two tapes. tape.path("databento") is the one canonical file.
+import tape as _tape
+TAPE_CSV = _tape.path("databento")
 OUT_JSON = os.path.join(HERE, "ratchet_backtest_results.json")
 
 BORN_STOP_PCT = 7.5    # settings.json strategy.stop_loss_pct — the day-one stop

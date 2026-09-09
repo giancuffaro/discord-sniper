@@ -54,8 +54,10 @@ import occ  # noqa: E402
 
 # Prefer the despiked tape (clean_tape.py) when it exists — junk bid ticks
 # fire phantom stops in every replay. Falls back to the raw backfill.
-_CLEAN = os.path.join(HERE, "databento_tape_clean.csv")
-TAPE_CSV = _CLEAN if os.path.exists(_CLEAN) else os.path.join(HERE, "databento_tape.csv")
+# 9/9: ONE registry decides which tape is canonical — tape.path("databento")
+# is the despiked clean file when it exists. Same answer for every backtest.
+import tape as _tape
+TAPE_CSV = _tape.path("databento")
 OUT_CSV = os.path.join(HERE, "ratchet_sweep_results.csv")
 
 EXCLUDE_WHO = {"gian"}   # his own hand trades — not room calls, not this study

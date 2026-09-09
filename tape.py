@@ -59,7 +59,50 @@ SOURCES = {
     # call in days/*.json — including refused/nofill ones the other three
     # feeds never saw, because nothing here ever quoted them live.
     "databento": ("databento_tape.csv", "occ"),
+    # 9/9: the SAME ticks, despiked by clean_tape.py (7 bad prints in 329k).
+    # This is the CANONICAL historical tape — path("databento") returns it
+    # whenever it exists, so every backtest replays the same prices.
+    "databento_clean": ("databento_tape_clean.csv", "occ"),
+    # 9/9: OPRA history for the MISSED / nofill calls (scoped_missed_pull.py).
+    "missed": ("missed_tape.csv", "occ"),
 }
+
+# Raw and clean are the same observations; never replay both at once.
+_DEFAULT_SOURCES = ("webull", "tasty_greeks", "tasty_quote", "databento_clean",
+                    "missed")
+BARS_DIR = os.path.join(HERE, "bars")      # Tradier minute bars, <OCC>_<date>.json
+
+
+def path(name="databento", root=None):
+    """THE file for a tape source. path("databento") is the despiked clean
+    tape when it exists, else the raw one — so no script hard-codes which.
+    9/9: ratchet_backtest replayed RAW while ratchet_sweep replayed CLEAN;
+    two backtests, two tapes. Now one call, one answer."""
+    root = root or HERE
+    if name == "databento":
+        clean = os.path.join(root, SOURCES["databento_clean"][0])
+        if os.path.exists(clean):
+            return clean
+    return os.path.join(root, SOURCES[name][0])
+
+
+def bars(occ, date=None, root=None):
+    """Tradier minute bars for one contract: list of dicts (t/o/h/l/c/v …),
+    every day we captured unless `date` narrows it. [] when nothing."""
+    import glob as _glob
+    import json as _json
+    root = os.path.join(root or HERE, "bars")
+    pat = "%s_%s.json" % (occ, date or "*")
+    out = []
+    for p in sorted(_glob.glob(os.path.join(root, pat))):
+        try:
+            with open(p, encoding="utf-8") as fh:
+                d = _json.load(fh)
+            if isinstance(d, list):
+                out.extend(d)
+        except (OSError, ValueError):
+            continue
+    return out
 
 
 class Row(object):
@@ -108,13 +151,22 @@ def rows(occ=None, since=None, until=None, sources=None, root=None):
     since/until  unix timestamps
     sources  subset of SOURCES keys
     """
-    want = list(sources or SOURCES)
+    # default = every feed once: clean databento stands in for raw (same
+    # ticks), so a replay never double-counts. Ask for "databento" explicitly
+    # to get the raw file.
+    if sources:
+        want = list(sources)
+    else:
+        want = [n for n in _DEFAULT_SOURCES
+                if n != "databento_clean" or os.path.exists(path("databento_clean"))]
+        if "databento_clean" not in want:
+            want.append("databento")
     out = []
     for name in want:
         fname, keykind = SOURCES[name]
-        path = os.path.join(HERE, fname)
+        fpath = os.path.join(HERE, fname)
         try:
-            fh = open(path, encoding="utf-8", errors="replace")
+            fh = open(fpath, encoding="utf-8", errors="replace")
         except OSError:
             continue
         with fh:
