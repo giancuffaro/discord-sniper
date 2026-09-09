@@ -220,6 +220,8 @@
        first tab now. -->
   <div class="tabbar" id="tabbar">
     <button data-tab="channels" class="tabbtn on">Channels</button>
+    <button data-tab="callers" class="tabbtn">Callers</button>
+    <button data-tab="needs" class="tabbtn" id="needsTab">Needs you</button>
     <button data-tab="strategies" class="tabbtn">Strategies</button>
     <button data-tab="keys" class="tabbtn">Keys</button>
     <button data-tab="logs" class="tabbtn">Logs</button>
@@ -296,12 +298,53 @@
       round number before buying (watched every second, bought at the ask on
       the touch, skipped if it never pulls back within 10 minutes). Applies to
       the big names the watcher knows (SPY, QQQ, AAPL, NVDA, TSLA...); anything
-      else enters instantly as normal. Uses each room's TESTING/LIVE setting.</div>
+      else enters instantly as normal. Level = the next $1, window = the
+      minutes set below (settled on real bars 9/9: $1 and 10 min).</div>
+
+    <!-- ===== SELF-SERVE: STRATEGY NUMBERS (test build 9/9) — delete this block
+         and the numbers code in popup.js to remove ===== -->
+    <label style="margin-top:14px">The numbers (yours to set — two taps to save)</label>
+    <div id="numbers"></div>
+    <div class="row" style="margin-top:6px">
+      <button id="numbersSave" class="grow" style="border-color:#f87171;color:#f87171">Save numbers</button>
+    </div>
+    <div class="note" id="numbersState">Each number shows what the last backtest
+      said beside it. Saving writes settings.json through the bridge and applies
+      on the next trade — a real-money change, so the button asks twice.</div>
 
     <!-- The "Paper-only tactics" panel (bid-under / auto-secure / auto-trim
          ladder / save) lived here until 8/17 — old in-house-simulator knobs,
          deleted on his call: "i dont think we need this do we?" -->
 
+  </div>
+
+  <!-- ===== SELF-SERVE: CALLERS (test build 9/9) — delete this pane, its tab
+       button and the callers code in popup.js to remove ===== -->
+  <div class="tabpane" data-tab="callers">
+    <label>Callers — every trader we've followed, one switch each</label>
+    <div id="callers"></div>
+    <div class="note">Record from master_ledger.csv (broker-reconciled fills)
+      and master_alerts.csv (every call seen). OFF = that trader's entries are
+      refused in every room, logged "switched OFF in the Callers tab"; the room
+      itself keeps reading. Exits are never gated (entries-only rule).</div>
+  </div>
+
+  <!-- ===== SELF-SERVE: NEEDS YOU (test build 9/9) — delete this pane, its tab
+       button and the needs code in popup.js to remove ===== -->
+  <div class="tabpane" data-tab="needs">
+    <label>What's waiting on you</label>
+    <div id="needs"></div>
+    <label style="margin-top:12px">Buttons (each used to be a .bat file or an F5)</label>
+    <div class="row" style="margin-top:6px"><button id="fixReaders" class="grow">🔄 Reload dead readers</button></div>
+    <div class="row" style="margin-top:6px"><button id="fixOpen" class="grow">🗂 Open missing room tabs</button></div>
+    <div class="row" style="margin-top:6px"><button id="fixAnnouncer" class="grow">📣 Announcer …</button></div>
+    <div class="row" style="margin-top:6px"><button id="fixBridge" class="grow">♻️ Restart the bridge (safe window)</button></div>
+    <div class="row" style="margin-top:6px"><button id="fixExt" class="grow">🧩 Reload the extension</button></div>
+    <div class="note" id="fixState">Reload dead readers = F5 on every ON room whose
+      reader stopped beating (one every 6 s). Open missing = open any ON room
+      with no tab in this browser. Restart the bridge = the same thing RESTART
+      BRIDGE.bat does, at the next safe window. Nothing here places or cancels
+      an order.</div>
   </div>
 
   <!-- ===== KEYS ===== -->
