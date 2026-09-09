@@ -13,6 +13,7 @@ back and groups every miss by reason.
     python3 misses.py --all          every day in the log
 
 Read-only. Touches nothing in the trading path — it only reads trades.log.
+collect_misses() is imported by journal_full.py so both agree on what a miss is.
 """
 import os
 import re
@@ -53,8 +54,8 @@ STOP = {"OPEN", "SHORT", "LONG", "REFUSED", "PULLBACK", "SWING", "OFF", "TEST",
         "ONLY", "MASTER", "DAY", "EOD", "NFP", "YT", "AI", "READ", "AD",
         "SAME", "WITH", "VERY", "GTR", "OPENAPI", "REVERSE", "OPTION",
         "CLOSE", "ADD", "SOLD", "ERROR", "ACCT", "OCO", "PM", "AM", "HALF",
-        "ROLL", "LOTTO", "CALL", "CALLS", "PUT", "PUTS", "OVER", "EVERY",
-        "GOING", "FAST", "SMA", "POS", "OIF"}
+        "ROLL", "LOTTO", "CALL", "CALLS", "PUT", "PUTS", "OVER", "GOING",
+        "FAST", "SMA", "POS", "OIF"}
 
 _THIN_N = re.compile(r"only (\d+) contracts", re.I)
 _NEVER = re.compile(r"never touched \$?([\d.]+)", re.I)
@@ -88,6 +89,41 @@ def _detail(label, msg):
     return _sym(msg)
 
 
+def collect_misses(date=None, all_days=False):
+    """Every DISTINCT miss as a dict: date, time, reason, symbol, detail, raw.
+    date=None + all_days=False means today."""
+    if date is None and not all_days:
+        date = _dt.date.today().isoformat()
+    rows = []
+    seen = set()
+    if not os.path.exists(LOG):
+        return rows
+    with open(LOG, encoding="utf-8", errors="replace") as f:
+        for ln in f:
+            ln = ln.rstrip("\n")
+            parts = ln.split("\t", 1)
+            if len(parts) != 2:
+                continue
+            ts, msg = parts
+            d = ts[:10]
+            if not all_days and d != date:
+                continue
+            hhmm = ts[11:16] if len(ts) >= 16 else ts
+            if SKIP.search(msg):
+                continue
+            for label, pat in CATS:
+                if pat.search(msg):
+                    det = _detail(label, msg)
+                    key = (d, label, det)
+                    if key in seen:
+                        break
+                    seen.add(key)
+                    rows.append({"date": d, "time": hhmm, "reason": label,
+                                 "symbol": _sym(msg), "detail": det, "raw": msg})
+                    break
+    return rows
+
+
 def main(argv):
     date = _dt.date.today().isoformat()
     show_all = False
@@ -103,49 +139,24 @@ def main(argv):
             i += 1
         i += 1
 
-    if not os.path.exists(LOG):
-        print("no trades.log yet.")
-        return
-
+    rows = collect_misses(date=None if show_all else date, all_days=show_all)
     buckets = OrderedDict((c[0], []) for c in CATS)
-    seen = set()                    # (label, detail) — collapse the double-logs
+    for r in rows:
+        buckets[r["reason"]].append((r["time"], r["detail"]))
 
-    with open(LOG, encoding="utf-8", errors="replace") as f:
-        for ln in f:
-            ln = ln.rstrip("\n")
-            if not show_all and not ln.startswith(date):
-                continue
-            parts = ln.split("\t", 1)
-            if len(parts) != 2:
-                continue
-            ts, msg = parts
-            hhmm = ts[11:16] if len(ts) >= 16 else ts
-            if SKIP.search(msg):
-                continue
-            for label, pat in CATS:
-                if pat.search(msg):
-                    det = _detail(label, msg)
-                    key = (label, det)
-                    if key in seen:
-                        break
-                    seen.add(key)
-                    buckets[label].append((hhmm, det))
-                    break
-
-    total = sum(len(v) for v in buckets.values())
     scope = "ALL DAYS" if show_all else date
     print("\nMISSES — %s  (alerts the reader saw that did NOT trade, and why)\n"
           % scope)
-    if not total:
+    if not rows:
         print("  none logged — every alert that came in either traded or "
               "wasn't a tradeable call.\n")
         return
-    for label, rows in buckets.items():
-        if not rows:
+    for label, items in buckets.items():
+        if not items:
             continue
-        dets = ", ".join(d for _, d in rows)
-        print("  %-24s (%d): %s" % (label, len(rows), dets))
-    print("\n  total distinct misses: %d\n" % total)
+        dets = ", ".join(d for _, d in items)
+        print("  %-24s (%d): %s" % (label, len(items), dets))
+    print("\n  total distinct misses: %d\n" % len(rows))
 
 
 if __name__ == "__main__":
