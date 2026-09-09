@@ -24,7 +24,11 @@ silently. Fix: render() paints the rooms FIRST, the rest runs in renderRest()
 under try/catch, and showPopupError() writes the exception INTO the Channels
 pane in red ("popup error (…): … Send this line to Claude"). An empty
 rooms.txt says so too. Manifest 3.5.76; the extension self-reloads after
-hours within ~30 s. Also for the Project: project/context/ pruned to the
+hours within ~30 s. OUTCOME 17:40: G — "the channels show up now" after the
+3.5.76 reload; no error line, so the original cause stays unseen (either a
+one-off exception the reload cleared, or the late paint order). The
+rooms-first + visible-error change stays: next time it names itself.
+Also for the Project: project/context/ pruned to the
 exact set the Project should hold (removed the 9/2 plans METHODOLOGY,
 CHROME-TABS, HANDOFF-OPTION-DATA, RATCHET-AND-SPEED-v3.5.0, ANTI-CLIP;
 added FELONY-ZOOM-JOIN.md; refreshed MARKET-SNIPER-HANDOFF.md to 9/7,
