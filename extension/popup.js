@@ -1804,9 +1804,7 @@ async function renderRest(s) {
   }
   renderRoomStats(wallet, day_table);
 
-  // Free anything the removed server switch left muted, then draw the rooms.
-  clearLegacyServerOff();
-  renderRoomToggles(s.channel_live || {}, s.channel_pullback || {}, s.channel_disabled || {});
+  // (the rooms are painted FIRST, in render() — see showPopupError above)
   $("bridge").value = s.bridge_url;
 
   const box = $("log");

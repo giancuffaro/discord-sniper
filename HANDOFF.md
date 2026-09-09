@@ -369,9 +369,16 @@ FILL ANNOUNCER (announcer.py, read-only)
 
 ## Operational truths
 - sniper-autopilot scheduled task: */30 ET — preflight ~9:30, sync watch
-  in market hours, close-out ~16:30. daily-journal-and-fix: weekdays 16:45
-  builds the journal from broker truth, copies HANDOFF-snapshot, and fixes
-  what it exposes. Neither places/cancels orders or touches settings.json.
+  in market hours, close-out ~16:30 (the old daily-journal-and-fix 16:45
+  task is PAUSED, folded into Mode C). It never places/cancels orders or
+  touches settings.json.
+- POPUP (v3.5.76, 9/9 evening): the rooms list paints FIRST in render()
+  and any exception in the rest of the popup is written INTO the Channels
+  pane ("popup error (…): …") — never a blank pane again. If G reports an
+  empty Channels tab, the red line under the rooms is the diagnosis; ask
+  for it. Claude-in-Chrome CANNOT read the popup (another extension's
+  page): the id is chrome-extension://hkpmapikljbhmhkhppdmkjejmgddfhci
+  (sha256 of the folder path) but screenshots/JS/console are refused there.
 - Multi-account: extras mirror LIVE entries 1:1 with own books/stops.
 - START HERE.bat saves+pushes before its reset; RESTART BRIDGE.bat
   pre-flights and warns. Logs: trades.log (the story), bridge.log (raw,
