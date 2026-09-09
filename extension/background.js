@@ -110,6 +110,12 @@ function seenMessage(msg) {
 // shortName (lowercased) -> {url, id}. Filled by loadRoomsFile() so the
 // popup can jump straight to a room's tab. See the FOCUS-ROOM handler.
 const ROOM_TABS = {};
+/* The LIVE room ids from rooms.txt, filled by loadRoomsFile(). rooms.txt is
+ * the one list, so anything that needs "which rooms are actually running"
+ * reads this — NOT Object.keys(ROOM_LABELS), which is a hand-typed name map
+ * carrying every room ever wired, cut ones included (9/9: that mistake was
+ * firing ~40 false "silent 40 min" alarms a day for rooms with no tab). */
+const LIVE_ROOM_IDS = new Set();
 
 // Rooms parked because the subscription lapsed. Filled by loadRoomsFile()
 // from "#SLEEP|" lines. They do not open and do not trade — but they are
@@ -524,6 +530,7 @@ function loadRoomsFile() {
       const text = await r.text();
       const ids = [];
       SLEEPING.length = 0;
+      LIVE_ROOM_IDS.clear();
       for (const line of text.split("\n")) {
         const t = line.trim();
         // SLEEPING ROOMS (9/7, his ask: "put the no access channels kind of
@@ -546,7 +553,7 @@ function loadRoomsFile() {
         }
         if (!t || t.startsWith("#")) continue;
         const id = t.split("|", 1)[0].trim();
-        if (id) ids.push(id);
+        if (id) { ids.push(id); LIVE_ROOM_IDS.add(id); }
         // JUMP TO THE ROOM (9/4, his ask: "I wanna see how the alert was
         // emitted but I can't find the tab because so many of them").
         // rooms.txt is id|url|shortName|group, and a position's `room` IS
@@ -555,6 +562,12 @@ function loadRoomsFile() {
         const parts = t.split("|").map(s => s.trim());
         if (parts.length >= 3 && parts[2]) {
           ROOM_TABS[parts[2].toLowerCase()] = { url: parts[1], id: parts[0] };
+          // rooms.txt wins over the hand-typed ROOM_LABELS map (9/9). That map
+          // was missing 7 rooms that are live right now — Platinum nitro /
+          // futures-alerts / day-trades / ei-alerts, Brando, Shoof, OWLS
+          // all-alerts — so their trades rode to the bridge with sig.room set
+          // to a bare channel id, landing in the ledger as an unnamed room.
+          ROOM_LABELS[parts[0]] = parts[2];
         }
       }
       return ids;
@@ -1946,7 +1959,15 @@ async function roomSilenceCheck() {
   if (!_marketOpenNow()) return;
   const now = Date.now();
   const QUIET = 40 * 60 * 1000;
-  for (const id of Object.keys(ROOM_LABELS)) {
+  // LIVE rooms only (9/9). This used to walk Object.keys(ROOM_LABELS) — the
+  // hand-typed name map, which carries every room ever wired: all the cut ZT
+  // rooms, the asleep Boka ones, Vero 1/3, Options Watchlist, TTT ids that
+  // were never in rooms.txt. None of them have a tab, so every one of them
+  // tripped "silent 40 min" every session — roughly 40 false alarms a day,
+  // which is how a real dead reader gets lost in the noise.
+  try { await loadRoomsFile(); } catch (e) {}
+  const _watch = LIVE_ROOM_IDS.size ? LIVE_ROOM_IDS : Object.keys(ROOM_LABELS);
+  for (const id of _watch) {
     const last = ROOM_MSG_AT[id] || _pulseBoot;
     const quiet = now - last;
     if (quiet < QUIET) continue;
@@ -2095,7 +2116,16 @@ async function autoExportForLearning() {
     let ver = "?"; try { ver = (chrome.runtime.getManifest() || {}).version || "?"; } catch (e) {}
     const fb = (mode && mode.futures_brokers) || {};
     const strat = (mode && mode.strategy) || {};
-    const liveRooms = Object.keys((c.channel_live) || {})
+    // 9/9 FIX — this listed the KEYS of channel_live, which was wrong twice
+    // over: a room flipped to TESTING has a key (value false) and was printed
+    // as LIVE, and after the ALL_LIVE_GEN sweep deleted every key the map is
+    // usually EMPTY, so this export told him "none (all testing)" while all
+    // 19 rooms were spending real money. This is the file he reads remotely
+    // to see what's armed, so it has to say the true thing.
+    try { await loadRoomsFile(); } catch (e) {}
+    const _cl = c.channel_live || {};
+    const liveRooms = Array.from(LIVE_ROOM_IDS)
+      .filter(id => _cl[id] !== false)
       .map(id => roomName(id) || id);
     // OFF rooms in the export (9/2, the RWGates mystery: a LIVE room whose
     // calls were captured all day and never judged — the popup's per-room
