@@ -1,3 +1,6 @@
+/* PAGE MODE (9/9): the same file opened in a tab (popup.html?page=1). */
+const IS_PAGE = new URLSearchParams(location.search).has("page");
+if (IS_PAGE) { document.documentElement.classList.add("page"); document.title = "Discord Sniper"; }
 /* popup.js — the dashboard. Nothing here decides a trade; it only shows you
  * what happened and lets you change the settings the worker reads.
  *
@@ -1487,7 +1490,7 @@ document.addEventListener("click", (ev) => {
   el.style.opacity = "0.5";
   chrome.runtime.sendMessage({ type: "FOCUS_ROOM", room, id }, (res) => {
     el.style.opacity = "";
-    if (res && res.ok) { window.close(); return; }   // popup closes, tab is there
+    if (res && res.ok) { if (!IS_PAGE) window.close(); return; }   // popup closes, tab is there (the page stays)
     el.title = (res && res.why) || "couldn't find that tab";
     el.style.textDecoration = "line-through";
     setTimeout(() => { el.style.textDecoration = ""; }, 2000);
@@ -2251,6 +2254,29 @@ wireDrafts();
 // never flash empty — every render() after this one just reuses it.
 loadRoomsForPopup().then(render);
 setInterval(render, 2000);
+// "⤢ page": open this same file as a full tab (or focus the one already open)
+(function wirePageButton() {
+  const b = $("pageBtn");
+  if (!b) return;
+  b.onclick = async () => {
+    const url = chrome.runtime.getURL("popup.html?page=1");
+    try {
+      // match patterns carry no query string: match the file, then filter
+      const have = (await chrome.tabs.query({ url: chrome.runtime.getURL("popup.html") + "*" }))
+        .filter(t => String(t.url || "").includes("page=1"));
+      if (have.length) {
+        await chrome.tabs.update(have[0].id, { active: true });
+        try { await chrome.windows.update(have[0].windowId, { focused: true }); } catch (e) {}
+      } else {
+        await chrome.tabs.create({ url: url, active: true });
+      }
+    } catch (e) {}
+    if (!IS_PAGE) window.close();
+  };
+  // on the page every pane is visible at once — paint the Keys pane's voice
+  // status too (the popup only does that when its tab is clicked)
+  if (IS_PAGE) { try { refreshVoice(); } catch (e) {} }
+})();
 // self-serve panels (test build 9/9): slow refresh, they read the records
 (async function selfServe() {
   await Promise.all([loadCallers(), loadNeeds(), loadNumbers()]);
