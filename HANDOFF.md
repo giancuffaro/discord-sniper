@@ -2,7 +2,13 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (evening) — v3.5.75; master_broker.csv (daily Webull pulls absorbed + deleted); pullback level settled at $1 on real bars. Earlier today: post-mortem on every exit; one central file per data
+Last updated: 2026-09-09 (close-out) — v3.5.75; build_ledger.py's trip-matcher now
+checks qty, not just price (a stale store snapshot could grab the wrong-size
+export trip — found on today's QQQ 716C, also caught 2 older cases on 9/4;
+zero change to any day's reconciled total); ARM CLIP added as a post-mortem
+verdict (9/9's second clip class, alongside NOISE CLIP). Earlier today:
+master_broker.csv (daily Webull pulls absorbed + deleted); pullback level
+settled at $1 on real bars; post-mortem on every exit; one central file per data
 family (ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2
 flat, futures ratchet decoupled; Whop API path deleted; the tab-reload storm
 found (662 reloads/day, zombie heartbeat) and fixed; rooms settled at 19
@@ -326,7 +332,7 @@ FILL ANNOUNCER (announcer.py, read-only)
 - POST-MORTEMS → master_postmortems.csv + postmortems/<date>_<occ>.md
   (postmortem.py; G 9/9: "analyze every single trade after exiting … be
   attentive to these"). One verdict per exited bot trade — NOISE CLIP /
-  GOOD STOP / LEFT MONEY / GAVE BACK / GOOD EXIT — with the call vs our fill,
+  ARM CLIP / GOOD STOP / LEFT MONEY / GAVE BACK / GOOD EXIT — with the call vs our fill,
   the RN wait, the ride (MAE/MFE), the bid at +30s/+1m/+5m/+10m after the
   exit, the widest born stop that would have survived, and every machine
   fault line in the window. The bridge's POSTCHECK loop schedules it 10.5
@@ -402,10 +408,12 @@ FILL ANNOUNCER (announcer.py, read-only)
   BEFORE PC2 goes live.
 
 ## Pending — G's side (real-money / restart actions only he takes)
-1. RESTART THE BRIDGE to apply tonight: ratchet 7.5/5/2, futures ratchet,
-   RN ledger hook, Whop fix, OWLS all-alerts, shabs/eli retirement, ledger +
-   alerts hooks, phantom-exit CLOSE fix. (The bridge auto-booted 02:55 and
-   already ran the ledger hook once — but the running code must be his.)
+1. OWLS all-alerts (shabs + eli's coverage) has had NO TAB since it was added
+   to rooms.txt at 02:08 — dark all session (confirmed again at today's
+   close-out, still in the "silent configured" list, zero reads in bridge.log
+   ever). Only a START HERE run (or hand-opening the room tab) fixes it — the
+   silence-alarm code fix shipped, but nothing opens a tab for a room added
+   outside START HERE. Costly while dark: shabs alone ran +$15,898 in August.
 2. Restart the announcer when he wants it back (it posts the ledger board).
 3. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung,
    futures decouple).
@@ -414,27 +422,18 @@ FILL ANNOUNCER (announcer.py, read-only)
 5. Chrome: hardware acceleration OFF. Close any old parked Whop tabs.
 
 ## Watch items (open)
-- **7 ROOMS SILENTLY RE-ENABLED at 04:14 (commit 06321d1) — NEEDS G's EYES.**
-  Something uncommented exactly 7 rooms, leaving their "CUT 9/9" reason lines
-  sitting right above them: Options Watchlist, Vero 1, Vero 3, Platinum
-  equity, NGD ngd-trades, shabs, eli. Not reverted — rooms are G's call — but
-  three of these were cut for REASONS, not tab count: Options Watchlist is a
-  WATCHLIST room ("$150p on watch" is the exact shape the parser must never
-  fire on, cut 9/7); Platinum equity is MrMTrades posting SWING ideas on
-  SHARES (fails no-swings + options-only at once, cut 9/7); and shabs + eli
-  are ALREADY carried by OWLS all-alerts, which is also open — the relay
-  unwrap re-books them under their own names, so that call now arrives from
-  two tabs. Vero 1, Vero 3 and NGD were G's own 9/9 cuts. Room count went
-  19 → 26 (22 Discord + 4 Whop) as a result, which also undoes most of the
-  tab-count relief below.
+- **7-ROOM RE-ENABLE (04:14) — RESOLVED, rooms.txt back at 19 by 04:36.**
+  Something briefly uncommented 7 cut rooms (Options Watchlist, Vero 1,
+  Vero 3, Platinum equity, NGD ngd-trades, shabs, eli), taking the file to 26;
+  it (or G) reverted to 19 (15 Discord + 4 Whop) 22 minutes later, confirmed
+  unchanged since (rooms.txt mtime 04:36, still 19 lines at today's
+  close-out). shabs + eli stay retired in favor of OWLS all-alerts — see the
+  Pending item above, since that relay has had no tab all day.
 - Discord logoff under tab load — 9/9: 27 rooms cut to 8 (ledger-dead rooms,
-  then the whole ZTRADEZ server on its sub lapsing), then G re-added 11 to
-  land at 19, then the 04:14 re-enable above took it to 26 (22 Discord + 4
-  Whop; Whop is a separate Chrome profile so it doesn't count toward the
-  Discord logoff risk — effectively 22 Discord tabs vs. 23 before, i.e. the
-  relief is nearly gone). Watch whether logoffs actually stop at this count;
-  if not, the next lever is moving rooms across more Chrome profiles, not
-  further cuts.
+  then the whole ZTRADEZ server on its sub lapsing), G re-added 11 to land at
+  19 (the 04:14 blip above never stuck). Watch whether logoffs stay clear at
+  this count; if not, the next lever is moving rooms across more Chrome
+  profiles, not further cuts.
 - 154 ledger fills with room "?" (pre-tagging August + recovered rows).
 - Telemetry rows lack room/caller → master_alerts taken-side is anonymous.
 - Deepgram key may be one char short (39) — watch for voice auth errors.
