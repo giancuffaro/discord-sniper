@@ -9,6 +9,56 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 (11:15) — POSTCHECK WAS CRYING WOLF ON RESTING STOPS. Fixed.**
+Checked whether the overnight fixes were holding, off live evidence. They are:
+the 09:42 restart came up on 7.5/5/2 and SPY proved the arm in the wild at
+11:03:48 ("up 5%, ratchet moved your stop to 1.58 — locked in +0%"). The
+phantom-exit fix earned out: BOTH of today's bot trades hit the exact shape
+that caused the QQQ 716P round-trip (book goes to sell, broker's resting stop
+already filled) and both booked the honest number instead of a fake close.
+Zero EXIT-RETRY lines. Today: bot −$33 (META −31 Aristotle, SPY −2 Vero 2),
+Gian's hand trades +$165, ledger +$132. Note META came from **Aristotle** —
+the room the withdrawn cut list nearly killed.
+
+**BUG FIXED — bridge.py POSTCHECK read a stale snapshot.** It took
+`BOOK.snapshot()`, slept 6s "to let the fill/cancel settle", then ran the
+held-positions check against the PRE-sleep snapshot. The resting stop
+routinely lands inside those 6 seconds, so it filed "X is held with NO
+resting stop — watchdog only" on positions that were already protected: SPY
+filled 11:03:39, stop confirmed resting at Webull 11:03:42, POSTCHECK called
+it unprotected at 11:03:47. Not cosmetic — false alarms make a REAL naked
+position indistinguishable from noise, and today it fired on both trades.
+Now re-reads the book after the sleep (snapshot() is pure, no cursor move).
+
+**BUG FIXED — caller_report.py's "worst dd" column was structurally empty.**
+`score()` looked up "P&L %", "max drawdown %", "max run-up %"; `load()` never
+emitted them, so the column the docstring calls "the one that tells you if a
+caller's winners are comfortable or terrifying" printed "-" for every caller
+since the report was written. Mapped from the ledger's pl_pct /
+max_drawdown_pct / max_runup_pct. Now populates (bullwinkle −19.1%, Pawn
+−7.4%, Unraveller +3.8%).
+
+**HANDOFF.md contradicted itself** — summary line said "rooms settled at 26",
+machine line said 19, rooms.txt is 19 (15 Discord + 4 Whop). Counted from the
+file and replaced the 26 per REPLACE-DON'T-STACK.
+
+**Watch, not fixed:** 276 TOO_MANY_REQUESTS since the 09:42 restart (~3/min on
+the key shared with Market Sniper). The POSTCHECK fix removes the false alarms
+the throttling was amplifying, but the 429 volume itself is untouched —
+cutting poll rates is a live-path tradeoff (slower stop management) and is G's
+call, not a quiet edit. Also: both bot trades stopped within 20s of entry, and
+SPY's stop was born already triggered ("the bid is 1.53, so a 1.52 stop was
+already triggered at birth — wide spread on the entry"), which a 7.5% born
+stop makes likelier than the old 10%. Two trades is not a sample; re-check
+after a week of fills before touching the spacing.
+
+**Also seen:** another session fixed the META "stop beat the pull" case at
+11:08, changing `_await_cancel` to return (status, avg) instead of a bool.
+Checked it for the truthiness trap — it returns None (falsy) when unconfirmed,
+never (None, None), and the one caller that reads it unpacks safely. Sound.
+test_positions.py flashed 9 failures mid-audit purely because that file was
+being rewritten while the suite read it; clean re-run is green.
+
 **2026-09-09 11:20 — META 655C POST-MORTEM + THE STOP-BEAT-THE-PULL FIX.**
 Aristotle (KingBeeAri) META 655C 0DTE, posted 10:59:08, stock 655.76, his 4.40.
 RN pullback waited for the $655 touch (654.91 at 10:59:41), crossed the ask,
