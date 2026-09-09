@@ -93,20 +93,19 @@ function seenMessage(msg) {
   return false;
 }
 
-/* Rooms that are being RECORDED, never traded. Aristotle's and Midas post the
- * same kind of calls but with messier wording, and the parser hasn't been
- * tuned on their sentences yet — a half-understood call is worse than none.
- * Every message from these channels goes into the capture file (that's the
- * point — Export chat hands over their lexicon for tuning) and absolutely
- * nothing else happens: no parse, no guards, no orders, whatever the settings
- * say. Hard-coded on purpose so a wiped settings box can't accidentally arm
- * them. When a room graduates, its line comes out of this set. */
-/* The Whop rooms that trade now — HIS word: "i want everything running at
- * full speed.. every channel, options and futures, equities and swings."
- * Matched by slug so the URL hash never matters. Felony's rooms post bare
- * percentages as PROGRESS ("65% on NVDA"), not trims — the verb decides —
- * so every whop room parses with bare_pct_trims off. Unknown whop rooms
- * stay capture-only until they're named here. */
+/* RECORD_ONLY = rooms captured to the export file and NEVER traded: no parse,
+ * no guards, no orders, whatever the settings say. Hard-coded so a wiped
+ * settings box can't arm a room by accident. It is EMPTY today — Aristotle's
+ * and Midas were the last two in it, and both graduated once the parser was
+ * tuned on their wording; they trade live like every other Discord room.
+ * Put an id back here only to re-park a room for capture-only. */
+/* The Whop rooms that trade now: Day Trades, Futures, High Risk, 2K Challenge.
+ * Matched by slug AND hash so the URL shape never matters. Swings are paused
+ * since 9/4 and Whop Swing Trades was cut 9/7 — the swing/long-term rows below
+ * stay only so an old URL still resolves to a name. Felony's rooms post bare
+ * percentages as PROGRESS ("65% on NVDA"), not trims — the verb decides — so
+ * every whop room parses with bare_pct_trims off. Unknown whop rooms stay
+ * capture-only until they're named here. */
 // shortName (lowercased) -> {url, id}. Filled by loadRoomsFile() so the
 // popup can jump straight to a room's tab. See the FOCUS-ROOM handler.
 const ROOM_TABS = {};
