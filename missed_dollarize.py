@@ -10,10 +10,9 @@ of the RN ledger (entry_compare.py measured the fills it caught).
 
 Read-only. Uses the clean tape + nofill rows.
 """
-import glob
-import json
 import os
 
+import ledger
 import occ
 import ratchet_sweep as rs
 from ratchet_sweep_fine import sim
@@ -39,12 +38,9 @@ def main():
             v.sort()
             tape[k] = v          # wide window replaces the 90-second one
     rows = []
-    for fn in sorted(glob.glob(os.path.join(HERE, "days", "*.json"))):
-        try:
-            d = json.load(open(fn, encoding="utf-8"))
-        except Exception:                                   # noqa: BLE001
-            continue
-        for r in d.get("table", []):
+    # 9/9: reads master_ledger.csv via ledger.py — days/*.json table truncates.
+    for _date, day_rows in sorted(ledger.by_day().items()):
+        for r in day_rows:
             if r.get("kind") != "option" or r.get("state") != "nofill":
                 continue
             if str(r.get("who") or "").strip().lower() in rs.EXCLUDE_WHO:
