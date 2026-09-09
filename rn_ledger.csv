@@ -7,3 +7,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1788969476.473,armed,AAPL,PUTS,300,9/11,,314.0,,treadwayma,TTT Lotto
 1788970076.634,missed,AAPL,PUTS,300,9/11,,314.0,,treadwayma,TTT Lotto
 1788979426.997,armed,AAPL,CALLS,315,9/14,,313.0,,Eva,OWLS all-alerts
+1788980027.706,missed,AAPL,CALLS,315,9/14,,313.0,,Eva,OWLS all-alerts
