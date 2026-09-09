@@ -164,6 +164,52 @@ def by_day():
     return out
 
 
+# ---------- alerts: master_alerts.csv (every alert and what happened) ----------
+ALERTS = os.path.join(HERE, "master_alerts.csv")
+
+
+def alerts(date=None, since=None, until=None, outcome=None, declined_only=False,
+           filled_only=False, room=None, symbol=None):
+    """Yield alert dicts from master_alerts.csv. outcome is one of
+    'filled' | 'sent-no-fill' | a misses.py reason label. declined_only
+    = everything that never reached the broker."""
+    if not os.path.exists(ALERTS):
+        try:
+            import build_alerts
+            build_alerts.refresh()
+        except Exception:                               # noqa: BLE001
+            pass
+    if not os.path.exists(ALERTS):
+        return
+    room_l = room.lower() if room else None
+    sym_u = symbol.upper() if symbol else None
+    with open(ALERTS, encoding="utf-8", newline="") as fh:
+        for c in csv.DictReader(fh):
+            d = c.get("date") or ""
+            if date and d != date:
+                continue
+            if since and d < since:
+                continue
+            if until and d > until:
+                continue
+            oc = c.get("outcome") or ""
+            if outcome and oc != outcome:
+                continue
+            if declined_only and oc in ("filled", "sent-no-fill"):
+                continue
+            if filled_only and oc != "filled":
+                continue
+            if room_l and (c.get("room") or "").lower() != room_l:
+                continue
+            if sym_u and (c.get("symbol") or "").upper() != sym_u:
+                continue
+            c["in_ledger"] = _b(c.get("in_ledger"))
+            for k in ("their_price", "our_fill", "slip_abs", "slip_pct", "strike",
+                      "read_ms", "decide_ms", "fill_ms", "total_ms"):
+                c[k] = _f(c.get(k))
+            yield c
+
+
 if __name__ == "__main__":
     from collections import Counter
     real = load(real_only=True)
