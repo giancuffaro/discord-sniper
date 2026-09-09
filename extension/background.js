@@ -1316,6 +1316,26 @@ function watchFills(times) {
  * and applies the update the moment you turn the bot OFF.
  */
 let inFlight = 0;          // orders currently being sent; worker-lifetime only
+let OPEN_ROOMS_PENDING = ""; // START HERE's open-rooms token not yet fully honoured
+
+async function honourOpenRoomsRequest() {
+  if (!OPEN_ROOMS_PENDING) return;
+  const tok = OPEN_ROOMS_PENDING;
+  let opened = 0;
+  try { opened = (await openMissingRooms()) || 0; } catch (e) { opened = 0; }
+  if (opened > 0) {
+    await addLog({ kind: "sent", what: "ROOMS",
+                   why: "START HERE asked — opened " + opened + " missing room(s); "
+                        + "checking again in 30s" });
+    return;                                  // keep going next tick
+  }
+  // a pass that opened nothing = every room is up. Done for this token.
+  OPEN_ROOMS_PENDING = "";
+  try { await chrome.storage.local.set({ open_rooms_done: tok }); } catch (e) {}
+  await addLog({ kind: "sent", what: "ROOMS",
+                 why: "START HERE's open-rooms request honoured — every room "
+                      + "in rooms.txt has a tab in this browser" });
+}
 
 /* THE READER TAPE (9/8). Post one read to the bridge's reads.log. Voice calls
  * it for every finalized transcript line; the bridge writes its own vision
@@ -1480,7 +1500,22 @@ async function checkBuild() {
   try {
     const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/build", { cache: "no-store" });
     if (!r.ok) return;
-    stamp = (await r.json()).stamp;
+    const j = await r.json();
+    stamp = j.stamp;
+    // ONE-SHOT ROOM OPEN (9/9, G: "no input from me"). START HERE writes
+    // open-rooms.request; the bridge passes its token here. A token we
+    // have not honoured yet becomes "pending": each 30s tick then opens up
+    // to 3 missing rooms (openMissingRooms, lane-aware) until a pass opens
+    // none, and only THEN is the token marked done. Nothing runs without a
+    // fresh token — the always-on healer that reopened hand-closed tabs
+    // stays gone.
+    try {
+      const tok = String(j.open_rooms || "");
+      if (tok) {
+        const { open_rooms_done } = await chrome.storage.local.get("open_rooms_done");
+        if (tok !== open_rooms_done) OPEN_ROOMS_PENDING = tok;
+      }
+    } catch (e) {}
   } catch (e) {
     return;    // bridge not running. Nothing to say — it'll be there next time.
   }

@@ -3658,7 +3658,19 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/build"):
             # Asked every half minute by the extension. Deliberately does not
             # touch settings or the broker — it's the cheapest call here.
-            return self._json(200, {"stamp": build_stamp()})
+            # 9/9 (G: "START HERE with no input from me"): the launcher drops
+            # open-rooms.request; its token rides along here and the extension
+            # opens every missing room ONCE for that token, then forgets it —
+            # so a tab he closes by hand still stays closed.
+            open_rooms = ""
+            try:
+                _p = os.path.join(HERE, "open-rooms.request")
+                if os.path.exists(_p):
+                    with open(_p, encoding="utf-8", errors="replace") as _f:
+                        open_rooms = _f.read().strip()[:64]
+            except OSError:
+                pass
+            return self._json(200, {"stamp": build_stamp(), "open_rooms": open_rooms})
         self._reply(200, "bridge is up, mode=%s" % MODE)
 
     def _set_mode(self):

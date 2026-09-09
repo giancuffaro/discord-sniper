@@ -771,8 +771,20 @@ async function _saveBracket() {
     btn.className = "tgl " + (bracketOn ? "live" : "safe");
   }
   const hardClose = bracketExit === "hardclose";
-  const strat = { enabled: bracketOn, take_profit_pct: 20,
-                  stop_loss_pct: 10, one_contract: true,
+  // 9/9 BUG FIX — these two were hardcoded 20 and 10. This function POSTs the
+  // whole strategy object to /config, and the bridge does st.update(body) then
+  // writes settings.json — so every click of this toggle (or the exit dropdown,
+  // which calls the same saver) silently pushed the PRE-9/8 numbers back over
+  // the live ratchet, reverting the born stop 7.5% -> 10% at the next restart.
+  // Silent and delayed, which is the worst shape for a real-money regression.
+  // Carry whatever the bridge already has; this saver only owns the SWITCHES.
+  const _cur = (modeStatus && modeStatus.strategy) || {};
+  const _tp = Number(_cur.take_profit_pct);
+  const _sl = Number(_cur.stop_loss_pct);
+  const tpPct = Number.isFinite(_tp) ? _tp : 10;      // live values as of 9/9,
+  const slPct = Number.isFinite(_sl) ? _sl : 7.5;     // used only if /status is mute
+  const strat = { enabled: bracketOn, take_profit_pct: tpPct,
+                  stop_loss_pct: slPct, one_contract: true,
                   ratchet_enabled: !hardClose,
                   take_profit_hard_close: hardClose };
   // Extension settings first — this is what the worker reads to force qty=1.
