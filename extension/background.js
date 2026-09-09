@@ -1693,19 +1693,22 @@ async function oneTabPerChannel() {
 /* OPEN THE ONES THAT AREN'T THERE (9/8, G: "check which are open and open
  * the ones that are missing"). oneTabPerChannel() is the CLOSE half — it kills
  * duplicates. This is the OPEN half — it opens any LIVE room from rooms.txt
- * that has no tab at all. Together they mean the set of open room tabs always
- * converges on rooms.txt without ever touching a tab that is already fine.
+ * that has no tab at all.
  *
- * This is what makes closing-and-reopening-everything unnecessary: the launcher
- * no longer has to wipe Chrome to guarantee every room is up. It is why the
- * Brando/Shoof tabs being shut this morning cost the 10:44 QQQ call — nothing
- * was watching for a room that simply wasn't open.
+ * NOT a background healer any more (9/8): this was pulled out of the watch-build
+ * sweep because it reopened tabs G had deliberately closed, and closing a tab is
+ * how he turns a room off. It now runs ONLY when START HERE asks for it
+ * (honourOpenRoomsRequest), so the tab set converges on rooms.txt on request,
+ * not continuously. Which is why the Brando/Shoof tabs being shut one morning
+ * cost the 10:44 QQQ call — nothing reopens a room he closed.
  *
  * Careful, because opening tabs costs money-adjacent attention and RAM:
  *  - LIVE rooms only. #SLEEP rooms and commented lines are not opened.
  *  - Discord AND Whop, by their real URL shapes.
  *  - Throttled: at most a few per pass, opened in the background, so a cold
- *    start does not slam 29 tabs at once (the launcher's own 3-at-a-time flood
+ *    start does not slam a whole lane at once — rooms.txt is 26 rooms today,
+ *    22 Discord + 4 Whop, and each profile opens only its own (the launcher's
+ *    own 3-at-a-time flood
  *    still handles the true cold start; this is the steady-state healer).
  *  - Never opens a room it opened in the last 2 minutes — a tab that is still
  *    loading has no matchable path yet, and without this guard the next pass
@@ -2616,8 +2619,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
    *   1. rooms.txt shortName -> its exact URL, then find that open tab
    *   2. the channel id inside any open Discord URL
    *   3. a captured channel NAME (CHAN_NAMES) matching what was clicked
-   * It never OPENS a tab — if the room is closed it says so, because
-   * silently opening a 27th tab is the opposite of what he wants. */
+   * It DOES open the tab when the room is closed (9/4, his call — the reader
+   * only reads open tabs, so landing on a dead room is useless). rooms.txt is
+   * 26 rooms today, so at worst this restores one of those, never a stranger. */
   if (msg && msg.type === "FOCUS_ROOM") {
     (async () => {
       try {
