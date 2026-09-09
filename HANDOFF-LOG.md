@@ -9,6 +9,36 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 11:20 — META 655C POST-MORTEM + THE STOP-BEAT-THE-PULL FIX.**
+Aristotle (KingBeeAri) META 655C 0DTE, posted 10:59:08, stock 655.76, his 4.40.
+RN pullback waited for the $655 touch (654.91 at 10:59:41), crossed the ask,
+filled 4.11 (29¢ / 7% better than the caller). Born stop 3.80 (−7.5% of fill).
+Tape (bid): 4.00 at fill · 3.80 at 10:59:55 (stop) · low 3.50 at 11:00:06 ·
+4.30 at 11:00:13 — above the entry 30 s after the exit. −$31. Verdict: noise
+clip; the stock broke THROUGH the round number ($1.11 in 20 s) instead of
+bouncing. Only a ≥15% stop survives that low; the 80-fill sweep says tight
+wins on average — this is its known cost on a 0DTE ATM at midday. Note the
+fill/bid gap: 7.5% measured from the ask-side fill was ~5% of real room
+because the stop triggers on the bid.
+MACHINE FAULT, now fixed (needs the pending bridge restart): (1) the POSTCHECK
+judged a snapshot taken BEFORE its own 6 s settle-sleep — a picture from one
+second before the stop was set — so every fill got a false "held with NO
+resting stop — watchdog only". Two sessions fixed it at once; kept one block
+(fresh BOOK.snapshot after the sleep, positions + table) and a 20 s
+"stop not confirmed yet" grace instead of a red PROBLEM. (2) The watchdog and
+the resting stop fired on the same 3.80 tick; claim() pulled the stop, the
+cancel found it already FILLED, yet claim() still returned True, so a sell
+went into a flat position → "order still on this contract" → cancel + re-send
+→ 4 × TOO_MANY_REQUESTS on the shared key; only the last fallback noticed the
+stop had filled. Now _await_cancel returns the stop's final status and
+claim() treats FILLED as the exit itself (records it, returns False, sends
+nothing). test_positions' fake broker was reporting every order — even one it
+had just cancelled — as filled; it now says "dead" for a cancelled oid like the
+real broker. All four suites green.
+DISCORD LOAD CHECK (G: "double check we aren't bombing discord"): the live
+extension log since 9:00 AM shows ZERO Discord tab reloads of any kind; the
+only reload line all morning is the Whop 30-min backstop at 10:41. Clean.
+
 **2026-09-09 — LOGGED OUT AGAIN; ROOMS BACK TO 19 (v3.5.71). G: "suspend the tabs again."**
 The 7 rooms re-added an hour earlier (Options Watchlist, Vero 1/3, Platinum
 equity, NGD, shabs, eli) are benched again — 26 → 19. Then he reloaded Discord

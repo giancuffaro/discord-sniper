@@ -5284,23 +5284,12 @@ def main():
                     if _fresh and _fresh.get("positions"):
                         snap = dict(snap)
                         snap["positions"] = _fresh["positions"]
+                        # check 5 (recorded exit vs the broker's fill) reads
+                        # the table — give it the fresh one too (META 9/9)
+                        snap["table"] = _fresh.get("table") or snap.get("table")
                 except Exception:                       # noqa: BLE001
                     pass                      # stale is still better than none
                 what = evs[-1]
-                # 9/9 (META 655C): the checks below used to read the snapshot
-                # taken BEFORE that sleep — a picture from the instant of the
-                # fill, one second before the stop was set. So every fill got
-                # a false "held with NO resting stop — watchdog only". Look at
-                # the book as it is NOW. (Events are not re-consumed here: the
-                # next pass still sees anything that happened during the wait.)
-                try:
-                    _fresh = BOOK.snapshot(seen_id[0])
-                    if isinstance(_fresh, dict):
-                        snap = dict(snap)
-                        snap["positions"] = _fresh.get("positions") or {}
-                        snap["table"] = _fresh.get("table") or snap.get("table")
-                except Exception:                       # noqa: BLE001
-                    pass
                 bad = []
                 warn = []
 
