@@ -217,19 +217,29 @@ def ratchet_stop_price(fill_price, locked_pct, bid=None, ask=None,
 # to the 25-point grid, the default bracket is 25 risk / 50 reward, and MES
 # gets its own 10-point stop.
 #
-# So the futures ratchet uses the ONE number that trade already has — its own
-# stop width — as both the arm and the rung:
+# The futures ratchet takes the ONE number that trade already has — its own stop
+# width (the caller's posted stop, theirs first; else the house default) — and
+# derives the ladder from it with the SAME SHAPE as the options ratchet.
 #
-#     arm  = one stop-width of profit  -> lock BREAKEVEN
-#     then = every further stop-width  -> lock another stop-width
+# 9/9 — DECOUPLED to match the options settle. The options ladder is born 7.5% /
+# arm 5% / step 2%, so as fractions of the RISK: arm = 2/3 of the stop, rung =
+# ~27% of the stop. Applied to futures with the stop as the born:
 #
-# MNQ on the standard 25-pt stop: +25 locks BE, +50 locks +25, +75 locks +50.
-# MES on his 10-pt stop:          +10 locks BE, +20 locks +10, +30 locks +20.
+#     arm  = 2/3 of the stop-width in profit  -> lock BREAKEVEN
+#     then = a rung every ~27% of the stop    -> lock another rung
 #
-# It reads the same as the options ratchet and needs no new numbers from him.
+# NQ/MNQ on a 30-pt caller stop: +20 locks BE, +28 locks +8, +36 locks +16, ...
+#   (the 30/20/8 ladder, anchored to QQQ<->NQ = ~41 pts/$ — see HANDOFF.md 9/9).
+# MES on his 10-pt stop:         +6.7 locks BE, +9.3 locks +2.7, ...
+#
+# Still no new numbers from him — it scales off whatever risk the trade carries.
 
 FUT_DEFAULT_STOP_PTS = 25.0
 FUT_STOP_PTS_BY_SYMBOL = {"MES": 10.0, "ES": 10.0}
+# 9/9: arm/step as fractions of the risk, straight from the options ladder
+# (born 7.5 / arm 5 / step 2): arm = 5/7.5 of the stop, rung = 2/7.5 of the stop.
+FUT_ARM_FRACTION = 5.0 / 7.5     # lock BREAKEVEN at 2/3 of the risk in profit
+FUT_STEP_FRACTION = 2.0 / 7.5    # then a rung every ~27% of the risk
 
 
 def futures_stop_points(symbol, their_stop=None, entry=None):
@@ -252,14 +262,18 @@ def futures_stop_points(symbol, their_stop=None, entry=None):
 
 def futures_locked_points(gain_points, stop_pts):
     """Points of profit the stop should be locking, or None before the first
-    rung. Mirrors ratchet_locked_pct, in points instead of percent."""
+    rung. 9/9: DECOUPLED to the options ladder's shape — arm at 2/3 of the risk
+    to BREAKEVEN, then a rung every ~27% of the risk. stop_pts is the risk
+    (caller's own stop, theirs first; else the house default)."""
     if gain_points is None or not stop_pts or stop_pts <= 0:
         return None
     g = float(gain_points)
-    if g < stop_pts - 1e-9:
+    arm = stop_pts * FUT_ARM_FRACTION
+    step = stop_pts * FUT_STEP_FRACTION
+    if step <= 0 or g < arm - 1e-9:
         return None
-    k = int((g - stop_pts + 1e-9) // stop_pts)
-    return stop_pts * k
+    k = int((g - arm + 1e-9) // step)
+    return step * k
 
 
 def futures_stop_price(entry, locked_points, direction=1, current_stop=None,
