@@ -257,7 +257,7 @@ const BORN_TESTING = new Set([]);
 
 // ALL-LIVE one-shot (9/8, his call: "clear ALL test flags — make every
 // currently-test room live at once"). Bump this string to sweep again.
-const ALL_LIVE_GEN = "2026-09-08-alllive";
+const ALL_LIVE_GEN = "2026-09-09-alllive";   // 9/9: 7 rooms re-added — "make sure they are live"
 async function applyBornTesting() {
   try {
     const { settings } = await chrome.storage.local.get("settings");
