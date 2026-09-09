@@ -60,7 +60,8 @@ FAULT_PATS = (
 COLUMNS = ["date", "occ", "symbol", "who", "room", "fill", "exit", "pl", "pl_pct",
            "held_s", "their_price", "fill_vs_theirs_pct", "rn_wait_s",
            "mae_pct", "mfe_pct", "after_30s", "after_1m", "after_5m", "after_10m",
-           "after_low", "after_high", "survive_pct", "faults", "verdict", "lesson", "file"]
+           "after_low", "after_high", "survive_pct", "exit_trigger", "arm_after_s",
+           "faults", "verdict", "lesson", "file"]
 
 
 def _f(v):
@@ -156,6 +157,35 @@ def analyze(r):
     rn_call = next((ts for ts, ln in lines if "PULLBACK" in ln and "CALL:" in ln), None)
     res["rn_wait_s"] = round(opened - rn_call) if (rn_call and opened) else None
 
+    # WHICH stop pulled the trigger? (9/9, SPY 764P: the ratchet armed to
+    # breakeven 9 s after the fill and a one-tick flicker took it out — a
+    # different fault from META's born stop, and the decision depends on
+    # telling them apart.)
+    trig, arm_after = "", None
+    arm_ts = next((ts for ts, ln in lines if "ratchet moved your stop" in ln), None)
+    if arm_ts and opened:
+        arm_after = round(arm_ts - opened)
+    stop_ln = next(((ts, ln) for ts, ln in lines
+                    if re.search(r"STOPPED\s.*at or under your ([\d.]+) stop", ln)), None)
+    stk_ln = next((ts for ts, ln in lines
+                   if "PULLBACK" in ln and "stock hit the" in ln and "stop" in ln), None)
+    hand_ln = next((ts for ts, ln in lines if re.search(r"you closed it yourself|ADOPT|hand close", ln)), None)
+    if stop_ln and fill:
+        lvl = float(re.search(r"at or under your ([\d.]+) stop", stop_ln[1]).group(1))
+        if abs(lvl - fill) <= 0.011:
+            trig = "breakeven stop (ratchet arm)"
+        elif lvl < fill:
+            trig = "born stop"
+        else:
+            trig = "ratchet rung (+%.0f%%)" % ((lvl - fill) / fill * 100.0)
+    elif stk_ln:
+        trig = "stock stop (pullback)"
+    elif hand_ln:
+        trig = "hand close"
+    elif closed:
+        trig = "other/unknown"
+    res["exit_trigger"], res["arm_after_s"] = trig, arm_after
+
     # the ride
     ride = _tape_rows(occ, (opened or 0) - 5, closed or (opened or 0) + 1) if occ else []
     mae = mfe = None
@@ -208,7 +238,15 @@ def _verdict(res, fill, exit_px, pl, after):
     faults = res.get("faults") or ""
     if pl is None or fill is None:
         return "NO VERDICT", "no priced exit in the ledger — check the row"
-    if pl < 0:
+    if pl < 0 or (pl == 0 and (res.get("exit_trigger") or "").startswith("breakeven")):
+        if ah is not None and ah >= fill and (res.get("exit_trigger") or "").startswith("breakeven"):
+            return "ARM CLIP", ("the ratchet armed to breakeven %ss after the fill on a +5%% tick "
+                                "and a flicker took it out; the bid then reached %.2f (%+.0f%%). "
+                                "On a cheap/0DTE contract +5%% is inside the spread's breathing — "
+                                "count these; a dwell (hold +5%% for N s) or a spread-aware arm is "
+                                "the fix if they pile up. Ratchet values stay G's call."
+                                % (res.get("arm_after_s") if res.get("arm_after_s") is not None else "?",
+                                   ah, (ah - fill) / fill * 100.0))
         if ah is not None and ah >= fill:
             back = next((n for s, n in AFTER_MARKS
                          if (res.get("after_" + n.strip("+")) or 0) >= fill), "+10m")
@@ -272,6 +310,9 @@ def _md(res):
         L.append("- no after-exit tape (the linger starts with the next bridge restart)")
     L.append("")
     L.append("## The stop")
+    if res.get("exit_trigger"):
+        L.append("- exit trigger: **%s**%s" % (res["exit_trigger"],
+                 (" · armed %ss after the fill" % res["arm_after_s"]) if res.get("arm_after_s") is not None else ""))
     if res.get("survive_pct") is not None:
         L.append("- widest that would have survived the whole window: **%g%%** born stop"
                  % res["survive_pct"])

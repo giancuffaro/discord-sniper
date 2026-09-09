@@ -9,6 +9,24 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 16:20 — DAILY STATS FROM THE LEDGER + A NEW CLIP CLASS: ARM CLIP.**
+G: "pull up our daily stats — from the master log, right?" Yes. Day: bot 2
+trades −$33 (0/2), no opens, 0 nofills; his hand trades +$64 on 8; 12 alerts
+(7 filled, 2 RN never hit, 2 swings paused, 1 refusal). Broker export not
+written until the 4:30 close-out, so the bot number is the book's until the
+reconciliation line prints MATCH. THE FINDING: SPY 764P (Vero) was not a
+born-stop clip — the RATCHET ARMED to breakeven 9 s after the 1.58 fill on a
++5% tick (8 cents = the spread) and a one-tick flicker to 1.56 took it out;
+the stock then hit the pullback TARGET at 11:09 and the contract ran to 2.80
+(+77%, +$122 on one contract). Different fault from META's born stop.
+postmortem.py now names the exit trigger (born stop / breakeven stop
+(ratchet arm) / ratchet rung / stock stop / hand) + seconds from fill to arm,
+and gives a distinct verdict ARM CLIP so the tally can separate "arm too
+early" from "born stop too tight". Candidate fixes if ARM CLIPs pile up: a
+dwell (the +5% must hold N seconds / N consecutive quotes before the stop
+moves) or a spread-aware arm (arm only when bid ≥ fill + max(5%, 2×spread)).
+NOT changed — ratchet values are G's decision from the tally.
+
 **2026-09-09 13:05 — FELONY TRANSCRIPT ANALYZED: what was worth keeping (v3.5.75).**
 G: "analyze it and see if anything is worth keeping." 230 lines, 10:30-10:47.
 No missed trade: the only order-like speech was his own SPY-put management
