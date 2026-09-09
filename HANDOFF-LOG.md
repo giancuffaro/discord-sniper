@@ -9,6 +9,20 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 18:35 — THE POPUP AS A PAGE (v3.5.80).** G: "would it be too
+much to make the popup an html page? the popup with all this info is super
+small now — keep the popup but poll all that info live into an html." Not
+too much: the popup IS an html page; Chrome just caps a popup at 800×600.
+So the same popup.html now opens as a normal tab (popup.html?page=1) via a
+"⤢ page" button beside the update button (opens, or focuses the one already
+open). In page mode (html.page): body width free up to 1560 px, tab bar
+hidden, every pane shown at once as a titled card on a 3-column grid
+(Channels + Logs span the height; 2 columns under 1100 px), the same
+render()/askBridge polling untouched. No second dashboard, no bridge-served
+copy — one file, two sizes (the REPLACE rule applied to UI). IS_PAGE guards
+the one popup-only behaviour (window.close after a room jump); the Keys
+pane's voice status is painted on load since there is no tab click.
+
 **2026-09-09 18:25 — SELF-SERVE TEST BUILD (v3.5.79): CALLERS, NEEDS-YOU, NUMBERS, ROOM RULES.**
 G: "I really like it, no more chasing tabs and reading problems. What else
 can we apply this methodology to simplify use so I don't have to bother

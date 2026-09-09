@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (evening) — v3.5.79: SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-09 (evening) — v3.5.80: the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -47,7 +47,7 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.79) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.80) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
@@ -435,6 +435,14 @@ FILL ANNOUNCER (announcer.py, read-only)
   in market hours, close-out ~16:30 (the old daily-journal-and-fix 16:45
   task is PAUSED, folded into Mode C). It never places/cancels orders or
   touches settings.json.
+- THE PAGE (v3.5.80, 9/9 evening, G: "make the popup an html page — it's
+  super small now"): the SAME popup.html opened as a normal tab —
+  chrome-extension://iaokjlndnmamhgmgkoldkhjehmdkginj/popup.html?page=1
+  (the "⤢ page" button in the popup opens or focuses it; bookmarkable).
+  No 800×600 cap; every tab becomes a card on a 3-column grid (Channels and
+  Logs span the height); same code, same 1-2 s polling of the same bridge.
+  One file, two sizes — never a second dashboard. IS_PAGE in popup.js
+  guards the popup-only bits (window.close after a room jump).
 - POPUP (v3.5.77, 9/9 evening): the rooms list paints FIRST in render()
   and any exception in the rest of the popup is written INTO the Channels
   pane ("popup error (…): …") — never a blank pane again. It caught its
