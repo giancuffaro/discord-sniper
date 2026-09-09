@@ -25,7 +25,8 @@ def main():
     # merge in the WIDE-window pull for skipped contracts (scoped_missed_pull.py):
     # it has the real alert->end-of-day path the short backfill window lacked.
     import csv
-    mp = os.path.join(HERE, "missed_tape.csv")
+    import tape as _tape
+    mp = _tape.path("missed")        # 9/9: one registry names every tape file
     if os.path.exists(mp):
         add = {}
         for row in csv.DictReader(open(mp, encoding="utf-8")):

@@ -33,7 +33,35 @@ FUT_MULT = {"MNQ": 2.0, "MES": 5.0, "MYM": 0.5, "M2K": 5.0,
             "MGC": 10.0, "MCL": 100.0, "NQ": 20.0, "ES": 50.0}
 
 
+def _score_from_ledger():
+    """9/9: the board is computed from master_ledger.csv — the one fill
+    truth — not from a tally this process happened to witness. (It was off
+    Sep 2-8 and silently missed every close in between; a running tally can
+    only drift.) Real, LIVE-account fills only; per-symbol realized dollars.
+    Returns None if the ledger can't be read, so the caller keeps its cache."""
+    try:
+        from ledger import rows as _rows
+        today = time.strftime("%Y-%m-%d")
+        sc = {"date": today, "today": {}, "all": {}}
+        for d, r in _rows(real_only=True, account="live"):
+            pl = r.get("pl")
+            if pl is None:
+                continue
+            sym = (r.get("symbol") or "?").upper()
+            sc["all"][sym] = round(sc["all"].get(sym, 0) + pl, 2)
+            if d == today:
+                sc["today"][sym] = round(sc["today"].get(sym, 0) + pl, 2)
+        return sc
+    except Exception:                                   # noqa: BLE001
+        return None
+
+
 def _load_score():
+    """Ledger first; the JSON is only a cache for when the ledger is absent."""
+    sc = _score_from_ledger()
+    if sc is not None:
+        _save_score(sc)
+        return sc
     try:
         with open(SCORE_FILE, encoding="utf-8") as f:
             return json.load(f)
@@ -50,10 +78,17 @@ def _save_score(sc):
 
 
 def _score_add(sc, sym, dollars):
+    """Intra-day increment so a close posts instantly; the day rollover
+    re-syncs the whole board from the ledger (see _score_from_ledger)."""
     today = time.strftime("%Y-%m-%d")
     if sc.get("date") != today:
-        sc["date"] = today
-        sc["today"] = {}
+        fresh = _score_from_ledger()
+        if fresh is not None:
+            sc.clear()
+            sc.update(fresh)
+        else:
+            sc["date"] = today
+            sc["today"] = {}
     sc["today"][sym] = round(sc["today"].get(sym, 0) + dollars, 2)
     sc["all"][sym] = round(sc["all"].get(sym, 0) + dollars, 2)
     _save_score(sc)
