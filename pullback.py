@@ -75,6 +75,32 @@ def touched(px, target, side):
     return px <= target + 1e-9 if is_call(side) else px >= target - 1e-9
 
 
+# THE RN LEDGER (9/9, G: "keep backtesting til we get it right"). One row per
+# round-number pullback DECISION — armed / filled / missed / cancelled — with
+# the caller's price, so over a real sample (dozens of trades, not tonight's 11)
+# we can finally answer whether the RN entry beats just taking their price.
+# Append-only and fully wrapped: it can NEVER affect a trade.
+_LEDGER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rn_ledger.csv")
+
+
+def log_ledger(outcome, order, target=None, fill=None):
+    try:
+        new = not os.path.exists(_LEDGER)
+        with open(_LEDGER, "a", newline="", encoding="utf-8") as f:
+            w = _csv.writer(f)
+            if new:
+                w.writerow(["ts", "outcome", "symbol", "side", "strike",
+                            "expiry", "caller_price", "rn_target", "fill_price",
+                            "trader", "room"])
+            w.writerow([round(time.time(), 3), outcome, order.get("symbol"),
+                        order.get("side"), order.get("strike"),
+                        order.get("expiry"), order.get("price"), target, fill,
+                        order.get("trader") or order.get("who"),
+                        order.get("room")])
+    except Exception:                                       # noqa: BLE001
+        pass
+
+
 class Pullback:
     """One watcher per alert. Threads are daemons: the bridge dying kills them,
     and that's correct — a half-armed paper entry is not worth surviving for."""
@@ -200,6 +226,7 @@ class Pullback:
                   "(%.0fs window)" % (sym, "CALL" if is_call(side) else "PUT",
                                       px, "a dip" if is_call(side) else "a bounce",
                                       target, self.timeout))
+        log_ledger("armed", order, target)
         t = threading.Thread(target=self._wait_entry,
                              args=(dict(order), sym, side, target, akey),
                              daemon=True)
@@ -226,6 +253,7 @@ class Pullback:
                         self.note("PULLBACK %s: the trader pulled the call "
                                   "back — hunt cancelled, nothing bought"
                                   % sym)
+                        log_ledger("cancelled", order, target)
                         return
                 try:
                     px = float(self.quote_fn(sym))
@@ -243,11 +271,13 @@ class Pullback:
                               % (sym, target, px))
                     ok, msg = self.enter_fn(order)
                     self.note("PULLBACK %s entry: %s" % (sym, str(msg)[:160]))
+                    log_ledger("filled" if ok else "fill_failed", order, target, px)
                     if ok:
                         self._manage_exit(order, sym, side, px)
                     return
             self.note("PULLBACK %s: never touched $%.0f in %d min — skipped, "
                       "as designed" % (sym, target, int(self.timeout // 60)))
+            log_ledger("missed", order, target)
         finally:
             with self._lock:
                 self._armed.pop(akey, None)
