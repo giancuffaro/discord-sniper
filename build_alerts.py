@@ -160,14 +160,10 @@ def build():
 
 
 def _rotate_bak():
-    if os.path.exists(OUT):
-        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        shutil.copy2(OUT, f"{OUT}.bak-{stamp}")
-    for old in sorted(glob.glob(f"{OUT}.bak-*"))[:-KEEP_BAKS]:
-        try:
-            os.remove(old)
-        except OSError:
-            pass
+    """Dated copy into backups/ (last KEEP_BAKS kept) — same rule as
+    build_ledger, so the folder root never fills with .bak files."""
+    import build_ledger
+    build_ledger._rotate_bak(OUT)
 
 
 def write(rows, bak=True):

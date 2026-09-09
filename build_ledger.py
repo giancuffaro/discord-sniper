@@ -250,64 +250,205 @@ def _parse_occ(occ):
             "cp": cp, "strike": int(strike8) / 1000.0}
 
 
-def load_broker_exports():
-    """Webull_Orders_<date>_auto.csv → FIFO round-trips per contract:
-    [{date, occ, symbol, cp, strike, qty, buy, buy_ts, sell, sell_ts, pl}].
-    The export is the account's own order history — the truest record we
-    hold. Legs are paired chronologically per OCC (BUY opens, SELL closes)."""
-    trips = []
-    for path in sorted(glob.glob(os.path.join(HERE, "Webull_Orders_*_auto.csv"))):
-        legs = []
-        try:
-            with open(path, encoding="utf-8-sig", newline="") as fh:
-                for c in csv.DictReader(fh):
-                    if (c.get("Status") or "").upper() != "FILLED":
-                        continue
-                    occ = (c.get("Name OCC") or "").strip().upper()
-                    info = _parse_occ(occ)
-                    if not info:
-                        continue
-                    ts = c.get("Filled Time") or c.get("Placed Time") or ""
-                    try:
-                        ep = datetime.strptime(ts, "%Y-%m-%d %H:%M:%S").timestamp()
-                    except ValueError:
-                        continue
-                    legs.append({"occ": occ, "side": (c.get("Side") or "").upper(),
-                                 "qty": _f(c.get("Filled")) or 0,
-                                 "px": _r2(c.get("Avg Price")), "ts": ep,
-                                 "date": ts[:10], **info})
-        except OSError:
-            continue
-        legs.sort(key=lambda l: l["ts"])
-        lots = {}                                   # occ -> open BUY lots (FIFO)
-        for l in legs:
-            if l["side"] == "BUY":
-                lots.setdefault(l["occ"], []).append(dict(l))
-                continue
-            q = l["qty"]
-            while q > 0 and lots.get(l["occ"]):
-                lot = lots[l["occ"]][0]
-                take = min(q, lot["qty"])
-                trips.append({
-                    "date": lot["date"], "occ": l["occ"], "symbol": l["symbol"],
-                    "cp": l["cp"], "strike": l["strike"], "expiry": l["expiry"],
-                    "qty": take, "buy": lot["px"], "buy_ts": lot["ts"],
-                    "sell": l["px"], "sell_ts": l["ts"],
-                    "pl": round((l["px"] - lot["px"]) * take * 100.0, 2),
+# master_broker.csv — THE broker-record family's one central file (9/9, G:
+# "pull the real records from the broker to compare and then delete it at
+# the end of the day so the folder is clean"). Every Webull order leg the
+# account ever reported, all days, one row each. The autopilot writes the
+# day's pull as Webull_Orders_<date>_auto.csv; absorb_exports() folds it in
+# here and REMOVES the daily file the moment every leg is provably inside —
+# so the folder holds one broker file, never a pile of dated ones.
+BROKER = os.path.join(HERE, "master_broker.csv")
+BAK_DIR = os.path.join(HERE, "backups")
+EXPORT_GLOB = os.path.join(HERE, "Webull_Orders_*_auto.csv")
+BROKER_COLS = ["date", "placed_time", "filled_time", "occ", "symbol", "side",
+               "status", "filled", "total_qty", "price", "avg_price", "tif",
+               "from_file"]
+# an order in one of these states will never change again; anything else
+# (WORKING, PENDING, PARTIAL…) is a snapshot that a later pull REPLACES.
+FINAL_STATUS = ("FILLED", "CANCELLED", "CANCELED", "REJECTED", "EXPIRED", "FAILED")
+
+
+def _order_key(leg):
+    """Identity of one ORDER (not one snapshot of it): the export carries no
+    order id, so placed-time + contract + side + size + limit is the key."""
+    return (leg.get("placed_time") or "", leg.get("occ") or "",
+            leg.get("side") or "", leg.get("total_qty") or "", leg.get("price") or "")
+
+
+def _snap_key(leg):
+    """What a later pull may change about the same order."""
+    return (leg.get("status") or "", leg.get("filled_time") or "",
+            leg.get("filled") or "", leg.get("avg_price") or "")
+
+
+def _export_legs(path):
+    """One daily Webull_Orders file → rows in master_broker shape.
+    None if the file can't be read (leave it alone, try next time)."""
+    legs = []
+    try:
+        with open(path, encoding="utf-8-sig", newline="") as fh:
+            for c in csv.DictReader(fh):
+                occ = (c.get("Name OCC") or "").strip().upper()
+                if not occ:
+                    continue
+                placed = (c.get("Placed Time") or "").strip()
+                filled = (c.get("Filled Time") or "").strip()
+                legs.append({
+                    "date": (filled or placed)[:10],
+                    "placed_time": placed, "filled_time": filled,
+                    "occ": occ, "symbol": (c.get("Symbol") or "").strip().upper(),
+                    "side": (c.get("Side") or "").strip().upper(),
+                    "status": (c.get("Status") or "").strip().upper(),
+                    "filled": (c.get("Filled") or "").strip(),
+                    "total_qty": (c.get("Total Qty") or "").strip(),
+                    "price": (c.get("Price") or "").strip(),
+                    "avg_price": (c.get("Avg Price") or "").strip(),
+                    "tif": (c.get("Time-in-Force") or "").strip(),
+                    "from_file": os.path.basename(path),
                 })
-                lot["qty"] -= take
-                q -= take
-                if lot["qty"] <= 0:
-                    lots[l["occ"]].pop(0)
-        for occ, open_lots in lots.items():          # bought, never sold that day
-            for lot in open_lots:
-                if lot["qty"] > 0:
-                    trips.append({
-                        "date": lot["date"], "occ": occ, "symbol": lot["symbol"],
-                        "cp": lot["cp"], "strike": lot["strike"], "expiry": lot["expiry"],
-                        "qty": lot["qty"], "buy": lot["px"], "buy_ts": lot["ts"],
-                        "sell": None, "sell_ts": None, "pl": None,
-                    })
+    except (OSError, csv.Error, UnicodeDecodeError):
+        return None
+    return legs
+
+
+def _read_broker():
+    rows = []
+    if not os.path.exists(BROKER):
+        return rows
+    try:
+        with open(BROKER, encoding="utf-8", newline="") as fh:
+            rows = [dict(r) for r in csv.DictReader(fh)]
+    except (OSError, csv.Error, UnicodeDecodeError):
+        pass
+    return rows
+
+
+def _write_broker(rows):
+    """Atomic; one dated .bak in backups/ (last 5 kept) because after the
+    daily files are gone this file IS the only copy we hold."""
+    _rotate_bak(BROKER)
+    rows = sorted(rows, key=lambda r: (r.get("date") or "", r.get("placed_time") or "",
+                                       r.get("filled_time") or "", r.get("occ") or ""))
+    tmp = BROKER + ".tmp"
+    with open(tmp, "w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=BROKER_COLS)
+        w.writeheader()
+        for r in rows:
+            w.writerow({c: r.get(c, "") for c in BROKER_COLS})
+    os.replace(tmp, BROKER)
+
+
+def _merge_leg(by_order, leg):
+    """REPLACE, DON'T STACK: a later snapshot of the same order replaces a
+    non-final one; an identical snapshot is a no-op; a genuinely different
+    fill of an identical-looking order is appended. True if anything changed."""
+    bucket = by_order.setdefault(_order_key(leg), [])
+    sk = _snap_key(leg)
+    for prev in bucket:
+        if _snap_key(prev) == sk:
+            return False
+    for i, prev in enumerate(bucket):
+        if (prev.get("status") or "") not in FINAL_STATUS:
+            bucket[i] = leg
+            return True
+    bucket.append(leg)
+    return True
+
+
+def absorb_exports():
+    """Fold every Webull_Orders_<date>_auto.csv into master_broker.csv, then
+    delete each daily file whose legs are all provably in the master.
+    Returns (legs_added, files_removed). Never raises."""
+    added, removed = 0, 0
+    try:
+        paths = sorted(glob.glob(EXPORT_GLOB))
+        if not paths:
+            return 0, 0
+        by_order = {}
+        for r in _read_broker():
+            by_order.setdefault(_order_key(r), []).append(r)
+        pending = []
+        for path in paths:
+            legs = _export_legs(path)
+            if legs is None:
+                continue
+            for leg in legs:
+                if _merge_leg(by_order, leg):
+                    added += 1
+            pending.append((path, legs))
+        if added:
+            _write_broker([r for b in by_order.values() for r in b])
+        have = set()
+        for r in _read_broker():                   # re-read: trust only the disk
+            have.add(_order_key(r) + _snap_key(r))
+        for path, legs in pending:
+            if all((_order_key(l) + _snap_key(l)) in have for l in legs):
+                try:
+                    os.remove(path)
+                    removed += 1
+                except OSError:
+                    pass                           # still open somewhere: next time
+    except Exception:                               # noqa: BLE001
+        pass
+    return added, removed
+
+
+def load_broker_exports():
+    """master_broker.csv (after absorbing any daily export lying in the
+    folder) → FIFO round-trips per contract:
+    [{date, occ, symbol, cp, strike, qty, buy, buy_ts, sell, sell_ts, pl}].
+    The broker's own order history is the truest record we hold. Legs are
+    paired chronologically per OCC across days (BUY opens, SELL closes), so a
+    swing sold the next morning meets its own lot; trip date = the buy's day."""
+    absorb_exports()
+    legs = []
+    for c in _read_broker():
+        if (c.get("status") or "").upper() != "FILLED":
+            continue
+        occ = (c.get("occ") or "").strip().upper()
+        info = _parse_occ(occ)
+        if not info:
+            continue
+        ts = c.get("filled_time") or c.get("placed_time") or ""
+        try:
+            ep = datetime.strptime(ts, "%Y-%m-%d %H:%M:%S").timestamp()
+        except ValueError:
+            continue
+        legs.append({"occ": occ, "side": (c.get("side") or "").upper(),
+                     "qty": _f(c.get("filled")) or 0,
+                     "px": _r2(c.get("avg_price")), "ts": ep,
+                     "date": ts[:10], **info})
+    legs.sort(key=lambda l: l["ts"])
+    trips = []
+    lots = {}                                       # occ -> open BUY lots (FIFO)
+    for l in legs:
+        if l["side"] == "BUY":
+            lots.setdefault(l["occ"], []).append(dict(l))
+            continue
+        q = l["qty"]
+        while q > 0 and lots.get(l["occ"]):
+            lot = lots[l["occ"]][0]
+            take = min(q, lot["qty"])
+            trips.append({
+                "date": lot["date"], "occ": l["occ"], "symbol": l["symbol"],
+                "cp": l["cp"], "strike": l["strike"], "expiry": l["expiry"],
+                "qty": take, "buy": lot["px"], "buy_ts": lot["ts"],
+                "sell": l["px"], "sell_ts": l["ts"],
+                "pl": round((l["px"] - lot["px"]) * take * 100.0, 2),
+            })
+            lot["qty"] -= take
+            q -= take
+            if lot["qty"] <= 0:
+                lots[l["occ"]].pop(0)
+    for occ, open_lots in lots.items():              # bought, never sold
+        for lot in open_lots:
+            if lot["qty"] > 0:
+                trips.append({
+                    "date": lot["date"], "occ": occ, "symbol": lot["symbol"],
+                    "cp": lot["cp"], "strike": lot["strike"], "expiry": lot["expiry"],
+                    "qty": lot["qty"], "buy": lot["px"], "buy_ts": lot["ts"],
+                    "sell": None, "sell_ts": None, "pl": None,
+                })
     return trips
 
 
@@ -542,23 +683,30 @@ def build():
 
 
 # ---------- write ----------
-def _rotate_bak():
-    if os.path.exists(OUT):
+def _rotate_bak(path=OUT):
+    """Dated copy of `path` into backups/ (last KEEP_BAKS kept) — the folder
+    root stays clean (9/9). Never raises: a backup must not block a write."""
+    try:
+        if not os.path.exists(path):
+            return
+        os.makedirs(BAK_DIR, exist_ok=True)
+        base = os.path.basename(path)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        shutil.copy2(OUT, f"{OUT}.bak-{stamp}")
-    baks = sorted(glob.glob(f"{OUT}.bak-*"))
-    for old in baks[:-KEEP_BAKS]:
-        try:
-            os.remove(old)
-        except OSError:
-            pass
+        shutil.copy2(path, os.path.join(BAK_DIR, f"{base}.bak-{stamp}"))
+        for old in sorted(glob.glob(os.path.join(BAK_DIR, f"{base}.bak-*")))[:-KEEP_BAKS]:
+            try:
+                os.remove(old)
+            except OSError:
+                pass
+    except OSError:
+        pass
 
 
 def write(rows, bak=True):
     """bak=True (CLI) keeps a timestamped copy of the prior ledger.
     bak=False (bridge, on every event) skips it — no .bak churn all day."""
     if bak:
-        _rotate_bak()
+        _rotate_bak(OUT)
     tmp = OUT + ".tmp"
     with open(tmp, "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=COLUMNS)
@@ -591,6 +739,12 @@ def summary(rows, broker):
     # every day we hold an export. If a day drifts, something upstream lied.
     trips = load_broker_exports()
     days_x = sorted({t["date"] for t in trips})
+    legs = _read_broker()
+    print(f"  master_broker.csv: {len(legs)} order legs over "
+          f"{len({l.get('date') for l in legs})} days "
+          f"({sum(1 for l in legs if l.get('status') == 'FILLED')} filled); "
+          f"daily Webull_Orders files left in folder: "
+          f"{len(glob.glob(EXPORT_GLOB))}")
     if days_x:
         print()
         print("  RECONCILIATION vs Webull order export (live, real fills):")
