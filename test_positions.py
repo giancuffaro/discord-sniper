@@ -757,8 +757,8 @@ ok(len(stops_30) == len(stops_after) + 1,
 # used to assert 2.36 — the anti-clipped number — so it is the one check
 # that proves the switch actually changes behaviour rather than just
 # existing in settings.
-ok(abs(stops_30[-1][3] - 2.50) < 0.005,
-   "anti-clip OFF: at +30%% the plain ladder locks +25%% — a 2.50 stop, got %s" % stops_30[-1][3])
+ok(abs(stops_30[-1][3] - 2.48) < 0.005,
+   "anti-clip OFF: at +30%% the plain ladder locks +24%% — a 2.48 stop, got %s" % stops_30[-1][3])
 
 # ...and with it ON, the SAME trade caps at 60% of the gain = +18% -> 2.36.
 # Built the same way as the trade above — a real entry and a real fill —
@@ -800,8 +800,8 @@ settle(_zb, _ZKEY)
 _zb.auto_ratchet(_ZKEY, 2.40)        # +20% -> lock +15% (9/8: k=(20-5)//5=3)
 _zb.auto_ratchet(_ZKEY, 2.60)        # +30% -> lock +25% (the plain ladder, uncapped)
 _zstops = [c for c in _ZWB.calls if c[0] == "stop"]
-ok(_zstops and abs(_zstops[-1][3] - 2.50) < 0.005,
-   "0DTE at +30%%: the plain ladder locks the full +25%% (2.50) — anti-clip "
+ok(_zstops and abs(_zstops[-1][3] - 2.48) < 0.005,
+   "0DTE at +30%%: the plain ladder locks the full +24%% (2.48) — anti-clip "
    "does NOT apply to same-day expiries, got %s" % (_zstops[-1][3] if _zstops else None))
 
 # ---- THE TSLA 8/26 FAILURE (found 9/3 by auditing every filled trade for
@@ -823,9 +823,9 @@ settle(_fb, _FKEY)
 _FWB.refuse_stop_moves = True                 # broker says no from here on
 _fb.auto_ratchet(_FKEY, 2.40)                 # +20% -> wants the stop at +15% (9/8 spacing)
 _soft = (_fb.info(_FKEY) or {}).get("soft_stop")
-ok(_soft is not None and abs(float(_soft) - 2.30) < 0.005,
+ok(_soft is not None and abs(float(_soft) - 2.28) < 0.005,
    "when the broker REFUSES the ratchet's stop move, the level it wanted is "
-   "still recorded as a soft stop the watchdog enforces (2.30), got %s" % _soft)
+   "still recorded as a soft stop the watchdog enforces (2.28), got %s" % _soft)
 ok(float(_soft) > float((_fb.info(_FKEY) or {}).get("stop") or 0),
    "the soft stop sits ABOVE the stale resting stop — that gap is exactly "
    "what cost $45 on TSLA 8/26")
@@ -841,7 +841,7 @@ ok(len(stops_dip) == len(stops_30),
 if bad:
     print("\n%d ratchet check(s) failed." % bad)
     raise SystemExit(1)
-print("Ratchet (9/8 spacing): below +5% the position is untouched; +5% "
-      "walks the stop to BREAKEVEN instead of closing; every further +5% "
-      "locks another +5%; a dip that's still above the last-hit rung never "
+print("Ratchet (9/9 spacing): below +5% the position is untouched; +5% "
+      "walks the stop to BREAKEVEN instead of closing; every further +2% "
+      "locks another +2%; a dip that's still above the last-hit rung never "
       "loosens the stop back down.")
