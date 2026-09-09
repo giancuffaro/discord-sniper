@@ -36,7 +36,7 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.74) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.75) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile
   — in Claude-in-Chrome it's whichever browser a whop.com tab SURVIVES in;
   the Discord profile's lane guard closes Whop tabs within seconds. Labels

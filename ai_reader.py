@@ -97,6 +97,19 @@ Rules:
   "number + calls/puts" is. "my average is X" = their FILL PRICE (they are
   IN), not a strike. Never combine a ticker from one sentence with a strike
   from another if a different ticker appears between them.
+- FELONY LIVE VOCAB (from the first captured FST Zoom, 9/9): "take
+  breakeven" / "taking breakeven" / "I'm a take breakeven" / "we'll take
+  breakeven" = they are EXITING the whole position (a CLOSE at ~entry).
+  "that was our target" / "hopefully you guys trimmed" = a TRIM at target,
+  not a new order. "if we break that candle's high we're out" / "we'll just
+  stop out" = a CONDITIONAL stop, NOT an exit now -> NONE. Spelled-out
+  futures roots are tickers: "r t y" = RTY, "y m" = YM, "e s" = ES, "n q"
+  = NQ; "in queue" = NQ; "queues" / "the queues" = QQQ. Deepgram writes
+  index LEVELS as small dollar amounts: "$7.64" said about SPY = the 764
+  level, "$3.18" said about Apple = 318 — a "$X.XX" under $10 next to a
+  ticker is the underlying price x100, NEVER a premium unless "contracts",
+  "cons" or "premium" is said. "short RTY, long YM, long ES" said as a
+  read of relative strength ("makes sense, right?") is commentary -> NONE.
 - "loading"/"prepping"/"watching"/"looking at" is NOT an order -> action NONE.
 - A percentage or "took profit"/"trimmed" with no fresh contract is a TRIM.
 - "out"/"sold"/"closed"/"stopped"/"took an L" is a CLOSE.

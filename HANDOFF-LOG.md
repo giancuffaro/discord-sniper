@@ -9,6 +9,23 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 13:05 — FELONY TRANSCRIPT ANALYZED: what was worth keeping (v3.5.75).**
+G: "analyze it and see if anything is worth keeping." 230 lines, 10:30-10:47.
+No missed trade: the only order-like speech was his own SPY-put management
+(target hit at the day's low, then "take breakeven" = closed flat) — exits,
+ignored by rule anyway. KEPT: (1) his method, now in the runbook — hourly-
+open break of the previous candle's high/low is the trigger, stop = that
+candle's extreme, target = day's low/high, and he counts down to :00 on
+air, so the ears matter most in the first minutes after the hour; (2) voice
+glossary in ai_reader: "take breakeven" = full exit, "that was our target"
+= trim, conditional stops ("if we break that high we're out") = NONE,
+spelled roots "r t y / y m / e s / n q" = RTY/YM/ES/NQ, "in queue" = NQ,
+"queues" = QQQ, and Deepgram's "$7.64" said about SPY = the 764 level (x100,
+never a premium unless cons/premium is said); (3) speaker default: on the
+FST Zoom, S0 = Felony until a typed alert names him, so voice calls book
+under his real name from the first word. Diarization was clean (S0 host,
+S1/S2 guests); Deepgram's number formatting is the main mishear class.
+
 **2026-09-09 12:50 — WHAT THE EARS GOT FROM FELONY, AND WHY THEY STOPPED (v3.5.74).**
 reads.log: ~250 diarized lines (S0/S1/S2) 10:30:47-10:47:02 — all chatter; the
 reader graded every line ("nothing in it that means buy or sell", questions,

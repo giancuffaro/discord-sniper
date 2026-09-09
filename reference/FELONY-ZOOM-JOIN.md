@@ -66,3 +66,20 @@ be automated.
   page `https://whop.com/firststeptrading/exp_LfnIHe3fltMP2K/app/`; an
   audible YouTube tab is captured the same way.
 - Recurring meeting ID as of 2026-09-09: **89312529658** (us02web).
+
+## How Felony trades (from the 9/9 live — worth knowing before his calls)
+- HOURLY OPEN is his trigger. His words: "New hourly: we open, break the
+  previous candle's high and hold — that's the long. We open, dump, break
+  that candle's low — back into lows." He counts down to the top of the
+  hour on air ("twenty minutes till", "fourteen minutes"). Expect his
+  entries in the first minutes after :00 — that is when the ears matter.
+- STOP = the previous candle's extreme, not a %. "If we break that
+  candle's high, we're out of here." "Use a stop above that same high."
+- TARGET = the day's low/high. "That was our target — 762.50, low of day."
+  He trims there; "take breakeven" means he closed flat.
+- He talks in index LEVELS (764, 762.50) and futures roots (NQ/ES/YM/RTY),
+  and reads relative strength out loud ("NQ rejecting, ES popping") — that
+  is commentary, not an order. A real call names a contract or "I'm in".
+- Guests: S1/S2 are other traders on the call; S0 (host) is Felony — the
+  extension books S0's calls under his name from the first word (v3.5.75).
+
