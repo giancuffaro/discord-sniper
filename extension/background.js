@@ -2164,7 +2164,7 @@ async function autoExportForLearning() {
         (strat.enabled ? " (+" + (strat.take_profit_pct || 20) + "% / -" + (strat.stop_loss_pct || 10) + "%, 1 contract)" : "") + "\n" +
       "  AI reader:      " + onoff(mode && mode.ai_enabled) + "\n" +
       "  voice key:      " + onoff(dg) + "\n" +
-      "  LIVE rooms:     " + (liveRooms.length ? liveRooms.join(", ") : "none (all testing)") + "\n" +
+      "  LIVE rooms:     " + (liveRooms.length ? liveRooms.join(", ") : "none — every room is flipped to TESTING") + "\n" +
       "  OFF rooms:      " + (offRooms.length ? offRooms.join(", ") : "none") + "\n" +
       "  SHADOW rooms:   " + (shadowRooms.length ? shadowRooms.join(", ") : "none") + "\n" +
       "  RN-pullback:    " + (c.rn_pullback_all ? "ON — all channels wait for the round number" : "off (all instant)") + "\n" +
