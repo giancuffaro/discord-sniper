@@ -232,6 +232,7 @@ def build():
             "in_table": r["_in_table"],
             "in_wallet": r["_in_wallet"],
             "day_file": r["_file"],
+            "raw": (r.get("raw") or "").replace("\n", " ").strip(),
             "why": (r.get("why") or "").replace("\n", " ").strip(),
         })
 
