@@ -208,10 +208,20 @@ def main():
     check("no hand-rolled OCC construction outside occ.py", not hand,
           "found in %s" % hand)
     import tape as _t
+    # 9/9: this asserted an EXACT set of four and went stale the day the
+    # despiked clean tape and missed_tape were registered — tape.SOURCES is
+    # now six. The point of the check is "one reader for every source", so
+    # assert that shape instead: the four core sources must still be there
+    # (catches a removal), and EVERY registered source must be reachable
+    # through the same reader interface (catches a half-wired addition).
+    _core = {"webull", "tasty_greeks", "tasty_quote", "databento"}
+    _missing = _core - set(_t.SOURCES)
+    _unreadable = [s for s in _t.SOURCES if not _t.path(s)]
     check("tape.py exposes one reader for every source",
-          hasattr(_t, "rows") and hasattr(_t, "at")
-          and set(_t.SOURCES) == {"webull", "tasty_greeks", "tasty_quote",
-                                  "databento"})
+          hasattr(_t, "rows") and hasattr(_t, "at") and not _missing,
+          "missing %s" % sorted(_missing) if _missing else "")
+    check("every registered tape source resolves to a path",
+          not _unreadable, "no path for %s" % _unreadable)
     bsrc = open(os.path.join(HERE, "bridge.py"), encoding="utf-8",
                 errors="replace").read()
     check("state is written atomically (tmp + fsync + os.replace)",
