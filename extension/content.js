@@ -144,7 +144,7 @@ function handle(li) {
   /* CHEAP GATE (9/4 — the browser-lag fix).
    *
    * liveSweep() calls handle() on EVERY visible row every 1.5s, in every one
-   * of ~21 Discord tabs. That is ~40 sweeps a minute per tab over ~100 rows
+   * of ~22 Discord tabs. That is ~40 sweeps a minute per tab over ~100 rows
    * — and the dedupe below sits AFTER textOf() and imagesOf(), so each of
    * those ~80,000 calls a minute did two querySelectorAll walks and a regex
    * before deciding it had nothing new. That is the lag G has been feeling

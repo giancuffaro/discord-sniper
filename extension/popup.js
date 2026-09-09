@@ -730,8 +730,10 @@ $("paperbtn").onclick = async () => {
 // save — left with the panel, 8/17)
 
 /* ---- one-click bracket strategy (LIVE-safe) -------------------------------
- * 1 contract on every entry, take profit at +15%, hard stop at -15%. It lives
- * in TWO places on purpose: the bridge (so orders actually get the +/-15%
+ * 1 contract on every entry, with the BRIDGE's values, not any number typed
+ * here: settings execution take_profit_pct 10%, born stop_loss_pct 7.5%, and
+ * from there the ratchet (arm +5% -> breakeven, then +2% locks another +2%).
+ * It lives in TWO places on purpose: the bridge (so orders actually get the
  * bracket and the single-contract clamp) and the extension's settings (so the
  * worker sizes every entry to 1 before the order even leaves the browser).
  * Painted from the bridge's reported state so a reload always tells the truth.
@@ -755,13 +757,14 @@ function paintStrat() {
   const exitNote = $("bracketexitstate");
   if (exitNote) {
     exitNote.innerHTML = bracketExit === "hardclose"
-      ? "<b>Close whole position</b>: sells everything the instant it's up " +
-        "+20% and you're flat. The old behaviour, from before 8/15."
-      : "<b>Ratchet</b>: the stop stops sitting at -10% and starts walking UP " +
-        "instead — locked at +10% first, then another +10% for every further " +
-        "+10% of gain (up 20 locks +10, up 30 locks +20, up 40 locks +30…), " +
-        "no ceiling. Never sells outright, never comes back red once it's " +
-        "locked.";
+      ? "<b>Close whole position</b>: sells everything the instant it hits the " +
+        "take-profit (+10% today) and you're flat. The old behaviour, from " +
+        "before 8/15."
+      : "<b>Ratchet</b>: the stop stops sitting at -7.5% and starts walking UP " +
+        "instead — at +5% gain it locks BREAKEVEN, then every further +2% of " +
+        "gain locks another +2% (up 7 locks +2, up 9 locks +4, up 11 locks " +
+        "+6…), no ceiling. Never sells outright, never comes back red once " +
+        "it's locked.";
   }
 }
 async function _saveBracket() {

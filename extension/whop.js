@@ -8,8 +8,8 @@
  * wide-net version captured 943 lines of storefront junk and zero alerts).
  * Real messages live in exactly two structures, and this reads ONLY those:
  *
- * TYPE A — "FEED" rooms (the alert rooms: Day Trades, Futures, Swing
- *   Trades, High Risk):
+ * TYPE A — "FEED" rooms (the four live alert rooms: Day Trades, Futures,
+ *   High Risk, 2K Challenge — Swing Trades was cut 9/7 with swings paused):
  *     post container:  div[id^="post_"] whose id ends "_container"
  *                      (id embeds a globally unique post id — the dedup key)
  *     body text:       descendant div[class*="post-body"]
@@ -94,7 +94,8 @@ function imagesIn(el) {
  * "Jul 23". Stamping Date.now() on everything is how a JULY 23rd VXX post
  * traded as fresh on AUGUST 18th — the reader must report the REAL time and
  * let guardCheck's staleness rule ("too stale to chase") do the refusing,
- * loudly, in the log. No age found = assume fresh; the 20s guard still rules. */
+ * loudly, in the log. No age found = assume fresh; the staleness guard still
+ * rules — 90s for Whop (guards.js is lag-aware here), 20s for Discord. */
 function ageToTs(lines) {
   const RE_REL = /^·?\s*(just now|now|(\d+)\s*([smhd]))$/i;
   const RE_MON = /^·?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})$/i;
