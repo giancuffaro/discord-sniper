@@ -2,8 +2,12 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (evening) — v3.5.77: popup paints the rooms FIRST and
-shows any popup error in the Channels pane — which caught the real bug: esc() undefined in renderTable, blank Channels since 9/7, fixed;
+Last updated: 2026-09-09 (evening) — v3.5.78: ONE SWITCH PER ROOM — rooms.txt
+now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
+one grouped with a single switch (on = tab + read + LIVE; no testing state),
+the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
+popup paints the rooms FIRST and shows any popup error in the Channels pane —
+which caught the real bug: esc() undefined in renderTable, blank Channels since 9/7, fixed;
 build_ledger.py's trip-matcher now checks qty, not just price (a stale store
 snapshot could grab the wrong-size export trip — found on today's QQQ 716C,
 also caught 2 older cases on 9/4; zero change to any day's reconciled total);
@@ -43,7 +47,7 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.75) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.78) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile
   — in Claude-in-Chrome it's whichever browser a whop.com tab SURVIVES in;
   the Discord profile's lane guard closes Whop tabs within seconds. Labels
@@ -52,9 +56,11 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   cut 9/9, sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild). G
   brought every non-ZT room back 9/9 once the reload storm was fixed (the
   "silent" verdicts were measured during the storm, so they re-measure on
-  clean ledger data from here). ALL_LIVE_GEN bumped so every room comes up
-  LIVE on load. (extension/rooms.txt is THE list; editing it changes the
-  build stamp → extension reloads itself — batch edits) —
+  clean ledger data from here). extension/rooms.txt is THE list of EVERY
+  room we have been to (51: 19 on, 28 off, 4 lapsed), one line each with a
+  5th field on|off|lapsed — see ROOMS below. rooms.txt is data, not code:
+  editing it does NOT reload the extension (build stamp skips it); the
+  extension re-reads it within 30 s —
   typed alerts, voice
   (Deepgram, diarized), images (vision) → Python bridge (bridge.py,
   127.0.0.1:8787) places real Webull option orders. Futures: micros via
@@ -89,8 +95,20 @@ ENTRIES
   wait changes nothing vs 10. And the "they bounce off 2.50s and 5s" idea
   is false in this sample: $5 lines held 31%, $2.50 36%, a random x.25 line
   38%. Don't re-open on a feeling — re-run the script when the sample doubles.
-- All rooms LIVE by default (ALL_LIVE_GEN migration 9/8 cleared every test
-  flag). Toggling a room off is G's only bench.
+- ROOMS — ONE SWITCH PER ROOM (9/9 evening, G: "a list of all the rooms
+  we've been to and the option to open the tab or not; if I selected to
+  open it I obviously want it live"). The popup's Channels tab lists every
+  room in extension/rooms.txt grouped as the file groups them, with its
+  state: ON = tab open + read + trades LIVE; OFF = no tab, nothing read,
+  nothing traded (the one-line reason sits above it in the file and shows
+  dim in the popup); LAPSED = off because the sub ran out, probed daily.
+  There is NO testing/paper state any more. The switch writes rooms.txt
+  through the bridge (POST /rooms rewrites that one line in place), the
+  extension re-reads the file and opens/closes the tab; the other Chrome
+  profile sees the change within 30 s (pollRoomsFile) and follows for its
+  own lane's rooms. START HERE opens only `on` rooms. CLOSING A TAB BY
+  HAND IS NOT A BENCH — START HERE and a flip reopen every `on` room; the
+  switch is the only bench. Benched rooms are never deleted from the file.
 - STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung
   (quote-verified). 3-ITM translation for SPY/QQQ/Mag7 0DTE. ADD buys the
   held strike.

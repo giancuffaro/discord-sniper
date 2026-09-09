@@ -9,6 +9,38 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 17:55 — ONE SWITCH PER ROOM (v3.5.78).** G, on seeing "15 of 19
+live": "seems like we have an issue with rooms in our list / if live / if tab
+open — we need to make this a standard thing. Can we make a list of all the
+rooms we've been to and the option to open the tab or not? If selected to
+open I obviously want it live." (The "15 of 19" was a display bug on top:
+the count only tallied explicit `true` flags while absent = live.) Built:
+rooms.txt now carries EVERY room we have been to as a real line —
+id|url|label|group|state, state on|off|lapsed (51 rooms: 19 on, 28 off, 4
+lapsed; the old commented-out lines and #SLEEP lines became off/lapsed
+lines, each keeping its one-line reason as the comment above it). A 4-field
+line still means `on`. bridge.py: read_rooms()/set_room_state(); GET /rooms
+returns all with state (count = on, total); POST /rooms {id,state} rewrites
+that ONE line in place, atomically; build_stamp() skips rooms.txt so a flip
+never reloads the extension. background.js: loadRoomsFile() parses the
+state (ALL_ROOMS for the popup; only `on` rooms trade/open; lapsed → the
+daily access probe, now told "switch it on in the popup"), reloadRooms(),
+pollRoomsFile() on the 30 s alarm (a change in the file → this profile
+opens newly-on rooms of its own lane, closes newly-off ones), setRoomState()
+for the popup's ROOM_SET (bridge write → re-read → open/close the tab →
+clear any old TESTING flag), ROOMS? message. popup.js: Channels tab =
+every room grouped as the file groups them, "N of M on", one red switch
+per room, benched rooms dim with their reason, lapsed tagged; the
+LIVE/testing toggles and the all-testing/all-LIVE buttons are GONE (no
+testing state exists any more); the list re-reads every 2 s so a flip in
+the other browser shows. START HERE.bat: all five rooms.txt loops read
+tokens 1,2,5 and skip off/lapsed. scoreboard.py: only `on` rooms count as
+configured. Verified: node --check ×4, py_compile, test_architecture /
+test_positions / test_resolve green; bridge restarted 17:48 and serves
+count 19 / total 51 / lapsed Boka 1-3 + Options Insider; extension
+reloaded 17:47 and is reading. G: "wow what did you do to channels? it
+looks good and organized now."
+
 **2026-09-09 17:30 — POPUP: EMPTY CHANNELS TAB → ROOMS PAINT FIRST, ERRORS SHOW (v3.5.76).**
 G: "in my channels tab, it shows NO channels at all." Could not see it:
 Claude-in-Chrome refuses screenshots/JS/console on another extension's page

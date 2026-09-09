@@ -43,7 +43,7 @@ down until you delete it.
 | `webull_futures.py`, `props.py`, `eastern.py` | Futures accounts, prop accounts, market clock. |
 | `broker.py` | The broker CONTRACT — 16 methods + capability flags. `get_broker(cfg)` picks one; **defaults to Webull**, so untouched settings behave exactly as before. |
 | `tradier.py` · `tastytrade.py` | Second and third brokers. **Neither has touched a live server yet** — run their `verify()` the day a key exists. |
-| `extension/` | The Chrome extension. `parser.js` is **the** parser — one grammar for all 26 rooms. `rooms.txt` is the one room list. |
+| `extension/` | The Chrome extension. `parser.js` is **the** parser — one grammar for every room. `rooms.txt` is the one room list: EVERY room we've been to, `id\|url\|label\|group\|on/off/lapsed`; the popup's switch rewrites it through the bridge (POST /rooms). |
 
 ## Checking and auditing (read-only, safe any time)
 
