@@ -208,6 +208,14 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   ALL-days snapshot 9/8: 264 taken, 272 missed — and the single biggest miss
   bucket is BUYING POWER (130), i.e. the ~$250 account couldn't afford the
   contract. That's the top lever if funding ever grows.
+  **ERRORS REPORT (new tool, errors.py)** — G: "do we have somewhere with all
+  this info?" Reads trades.log (+bridge.log tracebacks on --all) and groups the
+  day's problems: broker sell-rejects (buying-power / reverse-option / stop-price
+  417s), stop-fails, phantom/orphan, prop rejects, futures-unfunded, rate-limit,
+  plus a guards-that-fired section (not errors) and broker error-code counts.
+  `python3 errors.py` (today) / --date / --all. Read-only. NOTE: it only catches
+  what the system LOGS — a SILENT bug like today's Whop api-mode gate (threw
+  reads away with no error line) won't show here; those still take discovery.
   **REVERTED auto-open-missing-tabs (extension 3.5.61, needs RELOAD)** — G:
   "revert the check the browser and open missing tabs, because if i close one it
   wont stop opening them." openMissingRooms() removed from the watch-build sweep;
