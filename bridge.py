@@ -602,6 +602,8 @@ def load_settings():
 CFG = load_settings()
 EXEC = CFG.get("execution", {})
 MODE = str(EXEC.get("mode", "dryrun")).lower()
+apply_room_rules()          # rooms.txt rules → the per-channel lists (9/9)
+apply_strategy_numbers()    # settings numbers → the live ratchet (9/9)
 # THE MASTER SWITCH IS RETIRED — his word: "remove the main big switch since
 # i want every room to act individually. its either testing or they are
 # live.. just like that." Execution is decided per ORDER now (order["live"],
@@ -2357,6 +2359,7 @@ def pullback_manager():
             # option API actually allows (9/3).
             streamed_fn=_pullback_streamed,
             entry_poll_streamed=float(pcfg.get("entry_poll_streamed", 0.25)))
+        apply_strategy_numbers()   # the popup's pullback window, if set (9/9)
     return _PULLBACK
 
 

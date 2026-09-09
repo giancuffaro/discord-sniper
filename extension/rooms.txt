@@ -117,13 +117,13 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # LAPSED: Boka Trading Premium lapsed Aug 7 — and Discord agrees: this channel returns "No Access" (verified 9/7)
 1499190814482632825|https://discord.com/channels/1156381060108664884/1499190814482632825|Boka 2|Boka Trading|lapsed
 # LAPSED: Boka Trading Premium lapsed Aug 7 — and Discord agrees: this channel returns "No Access" (verified 9/7)
-1395159239164432515|https://discord.com/channels/1156381060108664884/1395159239164432515|Boka 3|Boka Trading|lapsed
+1395159239164432515|https://discord.com/channels/1156381060108664884/1395159239164432515|Boka 3|Boka Trading|lapsed|spx
 
 769797179992571914|https://discord.com/channels/769790224921395200/769797179992571914|Option Alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|on
 # CUT 9/7 (Options Watchlist) — 44 unique messages captured, 0 signals, 0 entries — it is a WATCHLIST, and watchlist rows are the exact thing the parser must never fire on ("$150p on watch"). A whole tab of RAM for nothing.
 769797819770732554|https://discord.com/channels/769790224921395200/769797819770732554|Options Watchlist|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
 # RE-ADDED 9/9 (G's call, wants 15-20 tabs total). Wired 9/7, was 0 rows in master_ledger.csv when cut same day as everything else — not structurally disabled, just quiet so far.
-880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|on
+880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|on|bare
 # 9/7: Whop shows STS/Summit as LAPSED, but Discord access is INTACT —
 # verified by opening it: '#alert-room | Summit Trading Strategies',
 # 2,688 unread, messages from today. A lapsed subscription is NOT the
@@ -184,8 +184,8 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # record scanned) and eli both now flow through the aggregator below via
 # background.js's relay unwrap — nothing lost by keeping only the one tab.
 # RETIRED 9/9 into OWLS all-alerts (G: "remove the rooms covered by all alerts")
-1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital|off
-1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital|off
+1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital|off|spx,sym=SPX
+1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital|off|spx,sym=SPX
 # OWLS all-alerts (wired 9/9) — the sole OWLS tab. Aggregates all 11
 # analysts (including shabs/eli above) into one feed; background.js unwraps
 # the relay to the real analyst. Wired yesterday — 0 rows so far is expected
