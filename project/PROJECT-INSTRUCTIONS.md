@@ -18,6 +18,13 @@ Active voice, short sentences. Own mistakes plainly, then fix them.
 - settings.json is gitignored and holds every key — never commit it, never paste keys back.
 - Compile-check everything you touch (python3 -m py_compile / node --check). Never break the build.
 - Extension changes → bump extension/manifest.json version so a reload is provable.
+- REPLACE, DON'T STACK. When something changes — a rule, a value, a function, a setting, a
+  room line, a doc — the new version takes the old one's place. Never leave the old version
+  beside the new: not commented out, not "superseded", not "legacy/old/deprecated", not a
+  dead branch kept "just in case". One thing, one truth. History lives in git and in
+  HANDOFF-LOG.md, never in the working file. A fallback that must stay is a deliberate
+  design decision, written as one — not leftovers. Applies to code, settings.json,
+  rooms.txt, every .md, and HANDOFF.md itself.
 
 ## First thing every session
 Read HANDOFF.md in C:\Users\Hulk\Desktop\discord-sniper — the living memory. It is the truth

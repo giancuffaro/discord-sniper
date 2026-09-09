@@ -14,8 +14,9 @@ old per-room essays moved to HANDOFF-LOG.md.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
-  If a rule is superseded, REPLACE it — never leave the old one with a
-  "SUPERSEDED" note stacked on top.
+  REPLACE, DON'T STACK: the new rule takes the old one's place — never
+  leave the old one beside it with a "SUPERSEDED" note. (Same rule as for
+  code, under RESTARTS / SAFETY.)
 - Bump the one "Last updated:" line above. One line. Never prepend an essay.
 - Session notes, findings, post-mortems, numbers-of-the-day go to
   HANDOFF-LOG.md under "SESSION NOTES", newest first, dated. That file may
@@ -141,6 +142,14 @@ RESTARTS / SAFETY
   pasted back. Never run git write commands from a sandbox (locks). AUTO
   PUSH sweeps commits every 45 s. After ANY suspicious file loss check
   `git reflog` for a "reset:" line before rebuilding by hand.
+- REPLACE, DON'T STACK (G, 9/9). When something changes — a rule, a value,
+  a function, a setting, a room line, a doc — the new version takes the old
+  one's place. Never leave the old beside the new: not commented out, not
+  "superseded", not "legacy/old/deprecated", not a dead branch kept "just
+  in case". One thing, one truth. History lives in git and HANDOFF-LOG.md,
+  never in the working file. A fallback that must stay is a deliberate
+  design decision, written as one — not leftovers. Applies to code,
+  settings.json, rooms.txt, every .md, and this file.
 - Compile-check everything touched (python3 -m py_compile / node --check).
   Extension changes → bump extension/manifest.json so a reload is provable.
   Never install the streaming SDK family (webullsdkcore) into the bridge's
