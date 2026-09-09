@@ -9,6 +9,32 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 (evening) — BROWSER IDs PINNED. Stop asking which Chrome is which.**
+G, justifiably annoyed: "WHY NOT DO THIS BEFORE???" — I asked him to identify
+the browser three separate times in one session. The answer was always
+available and stable, and I never wrote it down. Now in HANDOFF under the
+machine line:
+  9adbdf77-9822-45d1-81ad-ab0195271160 = DISCORD profile (confirmed by G)
+  17c68ff9-4600-468e-afcb-076e2e6edfa5 = the other profile (presumed Whop,
+    UNCONFIRMED — it disconnected before it could be checked)
+WHY the confusion was real and not just carelessness: Claude-in-Chrome labels
+browsers "Browser 1 / Browser 2" POSITIONALLY, and they renumber as browsers
+connect and drop. The same physical Chrome reported as "Browser 2" at 17:30
+and "Browser 1" at 18:05 the same evening. Never trust the label; select by
+deviceId. Cheap lane test that needs no human: open a whop.com /exp_ room URL
+in the browser — the Discord profile's evictOtherLane() closes it inside one
+30 s watch-build sweep, the Whop profile keeps it. (Verified live: a Whop room
+tab opened in the Discord profile survived ~10 s and was gone by the next call.)
+
+ALSO CORRECTED, same session: I told G that Browser 2 was mis-laned to
+"discord" and that this was the Whop reading bug. WRONG — Browser 2 IS the
+Discord profile, so evicting that tab was correct behavior, not a fault. The
+open question is unchanged and still open: whether the "Sniper Whop" profile
+is running and reading at all. It was unreachable (Claude extension
+disconnected) when this was written, so it could not be checked. Whop rooms
+have produced ~0 signals in 5 weeks, which is consistent with that profile
+being down or its tabs not surviving, but that is not yet proven.
+
 **2026-09-09 17:55 — ONE SWITCH PER ROOM (v3.5.78).** G, on seeing "15 of 19
 live": "seems like we have an issue with rooms in our list / if live / if tab
 open — we need to make this a standard thing. Can we make a list of all the

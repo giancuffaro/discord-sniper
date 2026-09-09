@@ -568,20 +568,22 @@ def needs_you():
         if os.path.exists(_as) and os.path.getsize(_as) > 0:
             items.append({"what": "Fill Announcer is paused (nothing posts to your Discord)",
                           "fix": "announcer_on"})
-        if not (WB is not None and getattr(WB, "connected", True)):
-            items.append({"what": "Webull is not connected — check the keys in the Keys tab",
+        if WB is None:
+            items.append({"what": "Webull is not connected — check the keys in the Keys tab"
+                                  + (" (" + WB_ERROR[:80] + ")" if WB_ERROR else ""),
                           "fix": None})
         try:
-            bp = float(getattr(WB, "buying_power", None) or 0.0)
-            if 0 < bp < 150:
-                items.append({"what": "margin buying power is $%.0f — most calls will be refused as unaffordable" % bp,
+            bp = real_buying_power()
+            bp = float(bp) if bp is not None else None
+            if bp is not None and 0 <= bp < 150:
+                items.append({"what": "margin buying power is $%.0f — most calls will be refused as unaffordable (you fund Mondays)" % bp,
                               "fix": None})
-        except (TypeError, ValueError):
+        except Exception:                               # noqa: BLE001
             pass
-        for r in read_rooms():
-            if r["state"] == "lapsed":
-                items.append({"what": r["label"] + " is off — subscription lapsed (" + (r["why"] or "")[:60] + "). When you resubscribe, switch it on in Channels.",
-                              "fix": None})
+        lapsed = [r["label"] for r in read_rooms() if r["state"] == "lapsed"]
+        if lapsed:
+            items.append({"what": "%d room(s) off because the subscription lapsed: %s — when you resubscribe, switch it on in Channels"
+                                  % (len(lapsed), ", ".join(lapsed)), "fix": None})
         if os.path.exists(os.path.join(HERE, "bridge.restart")):
             items.append({"what": "a bridge restart is queued (bridge.restart file) — it goes at the next safe window",
                           "fix": None})
