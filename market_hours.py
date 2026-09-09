@@ -49,15 +49,36 @@ FUTURES_OPEN = (18, 0)               # Sunday 6:00 PM ET
 FUTURES_CLOSE = (17, 0)              # Friday 5:00 PM ET
 FUTURES_HALT = ((17, 0), (18, 0))    # daily maintenance 5:00-6:00 PM ET
 
-# ---- holidays (UPDATE YEARLY). Equities & options FULLY closed. ----
+# ===========================================================================
+# HOLIDAYS  ***UPDATE THIS EVERY YEAR***  (table currently runs through 2027)
+# ---------------------------------------------------------------------------
+# US market holidays can't be one simple rule: fixed-date ones shift when they
+# land on a weekend, and Good Friday moves with Easter. So they're listed out
+# explicitly and verified against the NYSE calendar. When a new year is needed,
+# regenerate with the dated Python snippet saved in MARKET-HOURS.md and paste
+# the year in below, then bump HOLIDAYS_THROUGH. If the running year is past
+# HOLIDAYS_THROUGH the code treats every weekday as a normal session and
+# status() raises the "holiday_table_stale" flag — so don't let it lapse.
+#   FULL_CLOSE = market fully closed.
+#   HALF_DAY   = 1:00 PM ET close (SPY/QQQ/IWM + index options 1:15 PM).
+# A date is never in both.
+# ===========================================================================
+HOLIDAYS_THROUGH = 2027
 FULL_CLOSE = {
+    2025: {"2025-01-01", "2025-01-20", "2025-02-17", "2025-04-18",
+           "2025-05-26", "2025-06-19", "2025-07-04", "2025-09-01",
+           "2025-11-27", "2025-12-25"},
     2026: {"2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03",
            "2026-05-25", "2026-06-19", "2026-07-03", "2026-09-07",
            "2026-11-26", "2026-12-25"},
+    2027: {"2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26",
+           "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06",
+           "2027-11-25", "2027-12-24"},
 }
-# 1:00 PM ET equity close (index/ETF options 1:15 PM).
 HALF_DAY = {
+    2025: {"2025-07-03", "2025-11-28", "2025-12-24"},
     2026: {"2026-11-27", "2026-12-24"},
+    2027: {"2027-11-26"},
 }
 
 
