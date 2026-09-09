@@ -228,9 +228,12 @@ ROOMS / TABS / READERS
   URLs redirect to a lobby and read nothing). Tabs are the ONLY Whop source
   (API reader deleted 9/9 — its dead "api mode" gate had been dropping every
   tab read since the morning). Felony posts QQQ/SPY contracts when he trades
-  NQ/ES. Felony goes live on ZOOM mornings — join the WEB client
-  (app.zoom.us/wc/…) in a Chrome tab so tabCapture hears it; the desktop app
-  is invisible. Scheduled task opens + captures 9:15-9:20 weekdays.
+  NQ/ES. Felony goes live on ZOOM mornings (~9:15, event on FST's "Zoom
+  Links & Events" page; recurring meeting 89312529658 on us02web) — join the
+  WEB client `us02web.zoom.us/wc/join/<id>` in the WHOP Chrome profile so
+  tabCapture hears it; the desktop app is invisible. Exact recipe:
+  reference/FELONY-ZOOM-JOIN.md. Scheduled task felony-live-whop-check does
+  it at 9:12 weekdays (first proven live 9/9).
 - VOICE: ears transcribe always (Deepgram, diarized S0/S1). Voice ENTRIES
   ON (9/2); voice EXITS irrelevant under entries-only. Two-stage: "loading
   X" = staged (4-min shelf, per speaker); fires on that speaker's "I'm in /

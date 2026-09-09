@@ -1,0 +1,3 @@
+ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,room
+1788965948.922,armed,META,CALLS,655,9/9,,655.0,,👑KingBeeAri🐝,Aristotle
+1788965983.209,filled,META,CALLS,655,9/9,,655.0,654.91,👑KingBeeAri🐝,Aristotle

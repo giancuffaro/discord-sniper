@@ -77,7 +77,8 @@ compact (<50 KB). · `HANDOFF-LOG.md` — the full history behind every rule
 `MAP.html` — how the machine works · `INDEX.md` — this file ·
 `README.md` — original setup notes · `reference/` — the shelf: **OPTIONS-BROKER-REFERENCE.md** (broker facts — read
 before any broker test), **BROKER-TOP4 / BROKER-CHOICE** (which broker and why), ANTI-CLIP
-study, SDK-AUDIT (what we could use and don't) · `project/` — the Claude Project snapshot · `handoffs/` — older
+study, SDK-AUDIT (what we could use and don't), **FELONY-ZOOM-JOIN.md** (how to get
+into Felony's morning Zoom so the ears hear it) · `project/` — the Claude Project snapshot · `handoffs/` — older
 handoffs
 
 ## Never touch
