@@ -54,7 +54,7 @@ BARS_DIR = os.path.join(HERE, "bars", "stock")
 REPORT = os.path.join(HERE, "pullback_levels_report.md")
 ET = ZoneInfo("America/New_York")
 BETA = sorted(s for s in pullback.MANAGED if s not in ("SPY", "QQQ"))
-GRIDS = (0.0, 0.5, 1.0, 2.0, 2.5, 5.0)         # 0.0 = take it at the alert
+GRIDS = (0.0, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0)   # 0.0 = take it at the alert
 WINDOWS = (300, 600, 900)                       # seconds to wait for the touch
 FLATTEN = (15, 55)                              # 0DTE flatten, ET
 CONTROL = 0.25                                  # the "any old line" grid
@@ -454,6 +454,8 @@ def level_reactions(bars, grid, lookahead=300, lookback=120):
             key = (k, "sup" if prev_c > lvl else "res")
             if key in seen:
                 continue
+            if grid == CONTROL and abs(lvl * 2 - round(lvl * 2)) < 1e-6:
+                continue                             # control = x.25 / x.75 lines ONLY
             # must be the first touch after having been >= 0.25 away
             back = [b for b in bars[max(0, i - 200):i] if b[0] >= ts - lookback]
             if prev_c > lvl:                         # coming down onto support
@@ -643,7 +645,7 @@ def main():
     lines.append("")
     lines.append("Every first touch of a line on every symbol-day we hold. "
                  "Bounce = how far price moved back off the line within 5 min; "
-                 "fail = how far it pushed through. Control = any 25-cent line.")
+                 "fail = how far it pushed through. Control = x.25/x.75 lines only (never round).")
     lines.append("")
     lines.append("| grid | touches | avg bounce | avg push-through | held (bounce ≥ 2× push) |")
     lines.append("|---|---|---|---|---|")
