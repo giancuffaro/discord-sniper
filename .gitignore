@@ -84,3 +84,11 @@ settings.json.tmp
 # Health-check trend log (our own measurements, regrows on demand)
 health.csv
 health.csv.*
+
+# 9/9: the central data files are trading RECORDS (derived from days/ +
+# trades.log, both already ignored) — they stay on the PC like journal.csv.
+master_ledger.csv
+master_ledger.csv.*
+master_alerts.csv
+master_alerts.csv.*
+.pytest_cache/
