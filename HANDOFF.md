@@ -34,7 +34,7 @@ archive/. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.71) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.73) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile,
   Browser 2 — not part of the Profile 2 tab count), 0 ZTRADEZ (whole server
   cut 9/9, sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild). G
@@ -207,6 +207,15 @@ ROOMS / TABS / READERS
   a line (they were silent); Whop's no-message backstop 5 → 30 min.
   RULE: a page reload is the LAST resort — re-attach first, and every
   reload path must write a log line, so a storm can never be invisible.
+  DISCORD'S OWN LIMITS FOR A USER ACCOUNT (docs.discord.food, 9/9): ONE
+  gateway session start per 5 s (max_concurrency 1; more = Invalid Session),
+  max 50 ACTIVE sessions — a reloaded tab's old session lingers minutes, so
+  a reload storm stacks ghosts past the cap — and "suspicious sessions may
+  be flagged … account locked, requiring a password reset." There is NO
+  identify-per-day budget for user accounts (that is bots only). So: START
+  HERE opens ONE tab per 6 s, the one-shot opener sleeps 6 s between opens,
+  and an INSTANT logout after a good login means a lock — his email from
+  Discord + password reset clears it, not code.
   MEMORY: memory shed reloads ≤1 room tab per tick, 4 h cadence (never
   active/voice tab, never 9:28-9:40); tabs pinned autoDiscardable=false;
   a room silent 90 s is reloaded with 1/2/4/8/15-min back-off.

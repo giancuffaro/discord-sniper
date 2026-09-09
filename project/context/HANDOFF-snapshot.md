@@ -34,7 +34,7 @@ archive/. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.71) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.73) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile,
   Browser 2 — not part of the Profile 2 tab count), 0 ZTRADEZ (whole server
   cut 9/9, sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild). G
@@ -207,6 +207,15 @@ ROOMS / TABS / READERS
   a line (they were silent); Whop's no-message backstop 5 → 30 min.
   RULE: a page reload is the LAST resort — re-attach first, and every
   reload path must write a log line, so a storm can never be invisible.
+  DISCORD'S OWN LIMITS FOR A USER ACCOUNT (docs.discord.food, 9/9): ONE
+  gateway session start per 5 s (max_concurrency 1; more = Invalid Session),
+  max 50 ACTIVE sessions — a reloaded tab's old session lingers minutes, so
+  a reload storm stacks ghosts past the cap — and "suspicious sessions may
+  be flagged … account locked, requiring a password reset." There is NO
+  identify-per-day budget for user accounts (that is bots only). So: START
+  HERE opens ONE tab per 6 s, the one-shot opener sleeps 6 s between opens,
+  and an INSTANT logout after a good login means a lock — his email from
+  Discord + password reset clears it, not code.
   MEMORY: memory shed reloads ≤1 room tab per tick, 4 h cadence (never
   active/voice tab, never 9:28-9:40); tabs pinned autoDiscardable=false;
   a room silent 90 s is reloaded with 1/2/4/8/15-min back-off.
@@ -318,6 +327,36 @@ FILL ANNOUNCER (announcer.py, read-only)
 - START HERE.bat saves+pushes before its reset; RESTART BRIDGE.bat
   pre-flights and warns. Logs: trades.log (the story), bridge.log (raw,
   20 MB, no rotation yet), webull_api.log, announcer.log, deadman.log.
+
+## SECOND MACHINE (planned 9/9 — G: "another account on a different computer
+## for other subs"). Built default-off; nothing changes until PC2 exists.
+- WHY: Discord's identify budget and Chrome's RAM are per account / per
+  machine. A second Discord account on a second PC doubles both.
+- ARCHITECTURE: ONE bridge, ONE book, ONE rate budget — PC2 runs only Chrome
+  + the extension and sends to THIS PC's bridge over the LAN. Never a second
+  bridge on the same Webull account (two books break every dedupe and
+  coexistence rule).
+- SECURITY (in the code now): settings execution.bridge_listen (default
+  127.0.0.1) + execution.bridge_token (default ""). The bridge refuses to
+  bind off loopback without a token. Off-loopback callers must send
+  X-Sniper-Token (constant-time compare); loopback callers are untouched.
+  Extension: an optional, gitignored extension/bridge.txt —
+  `http://<PC1-LAN-IP>:8787|<secret>` — makes every bridge call carry the
+  token (fetch is wrapped once; the popup's askBridge adds it too).
+- PC2 SETUP, when it exists: (1) this PC: put a long random string in
+  bridge_token, bridge_listen "0.0.0.0", allow TCP 8787 in Windows firewall
+  for the LAN only, restart the bridge; (2) PC2: clone the repo, create
+  extension/bridge.txt with PC1's LAN IP + the same secret, add
+  `"http://<PC1-LAN-IP>/*"` to extension/manifest.json host_permissions,
+  Load Unpacked in a Chrome profile logged into the NEW Discord account;
+  (3) Whop: re-link the moved subs to the new Discord account so the paid
+  roles land there.
+- NOT BUILT YET — LANE TAGS: both PCs read the same rooms.txt, so today they
+  would open and trade the same rooms. Next build: a 5th field per line
+  (`|pc2`) + a lane name per machine; each extension opens/trades only its
+  own lane, START HERE's cold-start loop honours it too. Relay rooms both
+  accounts can see stay protected by the bridge's 20 s echo-lock. Do this
+  BEFORE PC2 goes live.
 
 ## Pending — G's side (real-money / restart actions only he takes)
 1. RESTART THE BRIDGE to apply tonight: ratchet 7.5/5/2, futures ratchet,

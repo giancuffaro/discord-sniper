@@ -11,125 +11,32 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 **2026-09-09 — LOGGED OUT AGAIN; ROOMS BACK TO 19 (v3.5.71). G: "suspend the tabs again."**
 The 7 rooms re-added an hour earlier (Options Watchlist, Vero 1/3, Platinum
-equity, NGD, shabs, eli) are benched again — 26 → 19. Working theory on WHY
-the logout came back even after the reload-storm fix: Discord's gateway has a
-per-account budget of ~1,000 IDENTIFYs per rolling 24 h; every tab (re)load
-is an IDENTIFY, and the storm burned ~662 of them on top of normal traffic.
-Exceeding it invalidates the session — a forced logout that keeps recurring
-until the rolling window clears, EVEN with the loop fixed. Also unverified:
-whether the extension actually picked up 3.5.68+ (it self-updates only when
-the bridge serves /build and the market is closed). NEXT: confirm the popup
-shows ≥3.5.68; count 'detached' lines in tomorrow's DS Logs export; if the
-count is single digits and logouts continue for a day, it's the identify
-budget draining, not a live bug — re-add rooms only after a clean 24 h.
+equity, NGD, shabs, eli) are benched again — 26 → 19. Then he reloaded Discord
+and was logged out INSTANTLY, and asked for a concrete, sourced answer.
+CORRECTION: my first theory ("Discord's 1,000-identify/day budget drained by
+the storm") was WRONG — that limit and its token reset apply to BOT tokens;
+the user-account gateway docs say plainly "User accounts … do not have a
+session start limit." What user accounts DO have (docs.discord.food/topics/
+gateway + /authentication): (1) max_concurrency 1 — ONE session start per 5 s;
+more = Opcode 9 Invalid Session, retried; (2) a cap of 50 ACTIVE gateway
+sessions per account — and a reloaded tab's old session lingers "a few
+minutes" (only a clean close code 1000/1001 kills it), so 19 tabs reloading
+every ~60 s stacked ghost sessions past the cap; (3) "Suspicious sessions
+may be flagged by Discord and lead to the account being LOCKED, requiring the
+user to reset their password"; rate-limit "repeat offenders will have their
+API access revoked." An instant logout AFTER a successful login = the server
+invalidating the fresh session = a lock/flag, not a count. RECOVERY (his):
+check the account's email for Discord's verify/unusual-activity/reset
+message → reset the password → log in with ONE tab and let it hold → then
+START HERE. No email + one tab still bounced = Discord Support ticket.
+OUR SIDE: START HERE now opens ONE tab per 6 s (was 3 per 10 s); the
+extension's one-shot opener sleeps 6 s between opens; the reload storm (the
+actual cause of the ghost-session pile-up) was fixed in v3.5.68. RULE: never
+more than one Discord session start per 5 s, keep live tabs well under 50
+counting ghosts, and every reload path stays logged.
 Also this pass: v3.5.0/ renamed reference/ (5 docs kept: OPTIONS-BROKER-
 REFERENCE, BROKER-TOP4, BROKER-CHOICE, ANTI-CLIP, SDK-AUDIT; 6 stale ones
 archived); every 'v3.5.0/' pointer in code comments and docs repointed.
-
-**2026-09-09 (late) — STALE-COMMENT AUDIT: 4 real bugs found behind the comments.**
-G: "fix all stale comments, verifying everything." Read the code first every
-time instead of trusting a comment. Roughly 45 stale claims corrected across
-14 files — but the comments were the smaller half of what turned up.
-
-**BUGS FIXED (code, not comments):**
-1. `popup.js _saveBracket()` hardcoded `take_profit_pct: 20, stop_loss_pct: 10`
-   and POSTed the whole strategy object to /config, where the bridge does
-   `st.update(body)` and writes settings.json. So ONE click of the bracket
-   toggle — or any change of the exit dropdown, same saver — silently pushed
-   the pre-9/8 numbers over the live ratchet, reverting the born stop
-   7.5% → 10% at the next restart. Silent AND delayed, the worst shape.
-   Now carries whatever the bridge already has; the saver owns only switches.
-2. `positions.py adopt()` line ~1254: `_ref` fell back to `fill`, which isn't
-   assigned until ~90 lines later in the same loop. First phantom with no
-   last_bid and no stop raised UnboundLocalError OUTSIDE the try — killing the
-   whole adoption sweep; on a later pass it read the PREVIOUS row's fill and
-   priced an urgent sell off a different contract. Now uses the phantom's own.
-3. `background.js roomSilenceCheck()` walked `Object.keys(ROOM_LABELS)` — the
-   hand-typed name map, which carries every room ever wired (cut ZT rooms,
-   asleep Boka, Options Watchlist, TTT ids never in rooms.txt). ~40 false
-   "silent 40 min" alarms a day, which is how a REAL dead reader gets lost.
-   Now walks LIVE_ROOM_IDS, filled from rooms.txt.
-4. Same map fed `sig.room` on every order, and was missing 7 rooms that were
-   live — Platinum ×4, Brando, Shoof, OWLS all-alerts — so their trades rode
-   to the bridge with a bare channel id and landed in the ledger unnamed.
-   That is a contributor to the 154 fills carrying room "?". rooms.txt now
-   populates ROOM_LABELS, so both consumers follow the one list.
-   Bonus: the DS Logs export listed `channel_live` KEYS as "LIVE rooms" — a
-   room flipped to TESTING printed as LIVE, and since ALL_LIVE_GEN empties
-   that map it usually printed "none (all testing)" while every room was
-   spending real money. That is the file G reads remotely. Fixed.
-
-**test_architecture.py was itself stale** — it asserted tape.SOURCES equals an
-exact set of four; the despiked clean tape and missed_tape made it six, so the
-project's own stale-docs detector was red. Rewritten to require the four core
-sources (catches a removal) and to check every registered source resolves to a
-path (catches a half-wired addition). Suite green.
-
-**Worst comment offenders** (all corrected): three separate places in
-positions.py stated the retired +10%/+20%/+30% ladder, one of them three lines
-above the live `tier_locked_pct` call and one describing per-price tiers
-(<$1 arm +25% …) that were retired 9/9 — a reader tuning the ratchet would
-have believed a cheap contract arms at +25% when it arms at +5%. The in-file
-`ratchet_locked_pct` is DEAD (only its own test calls it) yet was unmarked and
-name-shadows the live import — now labelled so nobody edits it expecting an
-effect. `_futures_ratchet`'s docstring still described one-full-stop-width
-rungs, ~3x the real distance. And greeks_math, ratchet_sweep, ratchet_backtest,
-scoreboard, journal_full, missed_dollarize, entry_compare and caller_report all
-still named days/*.json or journal.csv as their source after the 9/9 switch to
-the ledger.
-
-**Also found, NOT fixed (needs G):** `caller_report.py`'s "worst dd" column is
-always empty — `load()` never maps the ledger's max_drawdown_pct / max_runup_pct
-/ pl_pct, so `score()` looks up keys that don't exist. Real gap, not a comment.
-And parser.js still treats "swinging" as an entry verb while swings have been
-paused since 9/4 — the code matches its comment, so it may be a stale RULE
-rather than a stale comment. His call.
-
-**2026-09-09 — STALE LAUNCHERS GONE. G: "delete old stale batch files and we're done."**
-Every .bat/.vbs was checked against what calls it. Archived: SEND CHANGES TO
-GITHUB.bat (AUTO PUSH commits every 45 s, START HERE pushes on every run).
-EXTRAS.bat rebuilt 435 → 139 lines with only what works: stop bridge, tail
-log, check keys, and "what did the reader miss today" (replay_check.py —
-the thing the retired tuner's own message told him to run). Removed from
-it: the retired tuner (tune.py), the drill (drill.py gone), send/get
-GitHub, the 9:25 alarm switch (alarm retired 8/10), the sandbox-key entry
-(sandbox retired 8/29). Kept: every launcher something references —
-incl. SETUP TRADIER (he holds a live Tradier token), FIX SDK DEPS (the
-recovery for the parked streaming SDK), MAKE DESKTOP ICON + launch-
-sniper.bat (his desktop shortcut points at it). Stale text replaced in
-place: START HERE's header (no longer closes Chrome on re-run) and its
-"or EXTRAS option 8" pointer; INDEX.md rows for START HERE, EXTRAS,
-ratchet_tiers (old −10/10/10 numbers → 7.5/5/2), the records section (now
-names master_ledger / master_alerts / tape.py as the truth), and rows for
-files that no longer exist (signals.py, guards.py, test_signals.py,
-test_parity.js, dump_parse.py); README's drill.py entry. Verified: every
-remaining .bat/.vbs target resolves.
-
-**2026-09-09 — START HERE FULLY UNATTENDED (v3.5.70). G: "I don't want
-START HERE to have any input from me."** Audit of the script found no
-pause/choice/user set-p — the inputs were things it LAUNCHED: (1) on a warm
-start it said "the extension opens missing rooms by itself", but that healer
-(openMissingRooms in the watch-build alarm) was removed 9/9 so closed tabs
-stick — so with Chrome open, START HERE opened nothing and the 7 re-added
-rooms only appeared if he closed Chrome by hand; (2) every run does `git
-push`, and an expired GitHub credential pops a Git Credential Manager
-sign-in the run sits behind; (3) after a shutdown/OOM/crash Chrome shows
-"Restore pages?" and waits for a click. Fixes: (1) ONE-SHOT REQUEST — the
-bat writes open-rooms.request (token = date-time-random), bridge /build
-serves it as `open_rooms`, background.js checkBuild marks an un-honoured
-token pending, and honourOpenRoomsRequest() (on the watch-build tick) runs
-openMissingRooms (now returns the count; lane-aware, ≤3 per pass) every 30 s
-until a pass opens none, then stores open_rooms_done. Nothing opens rooms
-without a fresh token, so hand-closed tabs still stay closed. Both browsers
-see the same token and each fills its own lane. (2) GIT_TERMINAL_PROMPT=0,
-GCM_INTERACTIVE=never, GIT_ASKPASS=echo at the top — git fails fast and the
-existing failure paths keep local work + skip the mirror. (3)
---hide-crash-restore-bubble on all 4 Chrome launches. open-rooms.request
-gitignored. Verified: py_compile bridge.py, node --check background.js,
-manifest 3.5.69 → 3.5.70. Needs the bridge restart (his) for /build to
-serve the token; the extension self-updates after hours. Inputs that
-remain, by design: a Discord/Whop login if a profile is logged out; Webull
-keys in the popup.
 
 **2026-09-09 — ROOMS BACK: 19 → 26 (v3.5.69). G: "bring back everyone and
 make sure they are live."** Scope he chose: all except ZTRADEZ (sub lapses

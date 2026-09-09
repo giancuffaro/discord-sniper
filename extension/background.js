@@ -1888,6 +1888,9 @@ async function openMissingRooms() {
       opened++;
     } catch (e) { /* ignore */ }
     if (opened >= 3) break;     // a few per pass; the caller comes round again
+    // 9/9: Discord lets a USER account start ONE gateway session per 5 s
+    // (max_concurrency 1) and caps live sessions at 50. Space the opens.
+    await new Promise(res => setTimeout(res, 6000));
   }
   return opened;                // 9/9: the one-shot request needs the count
 }
