@@ -17,18 +17,18 @@
 # CUT ROOMS: commented out with a one-line reason + date, never deleted —
 # that's what makes "why isn't X open" answerable a month later. Full
 # investigation writeups (the ZTRADEZ mashup diff, the OWLS 24-channel scan,
-# etc.) live in HANDOFF.md now, not here — this file stays a room list, not
+# etc.) live in HANDOFF-LOG.md now, not here — this file stays a room list, not
 # an essay. TEST vs LIVE (real money) is a separate switch, not stored in
 # this file — moot right now anyway: ALL_LIVE_GEN (9/8) cleared every test
 # flag, so every room below is already live by default. Toggling one off is
 # G's only bench, and that's a popup action, never done from here.
 #
 # CLEANUP 9/9 — this file had ~5 weeks of accumulated investigation notes
-# folded into the room lines. Moved the long-form ones to HANDOFF.md and cut
-# 15 rooms with zero real activity in master_ledger.csv (the reconciled fill
-# ledger — see HANDOFF for why days/*.json alone isn't trusted for this any
-# more). Reasons are on each cut line below; full detail in HANDOFF's 9/9
-# ROOM CLEANUP entry.
+# folded into the room lines. Moved the long-form ones to HANDOFF-LOG.md and
+# cut 15 rooms with zero real activity in master_ledger.csv (the reconciled
+# fill ledger — HANDOFF.md explains why days/*.json alone isn't trusted for
+# this any more). Reasons are on each cut line below; full narrative in
+# HANDOFF-LOG.md's "ROOM CLEANUP: 27 → 12" session note (9/9, newest entry).
 
 829754942817828884|https://discord.com/channels/525113944239767562/829754942817828884|Honeydrip daytrades|Honeydrip / Aristotle (main)
 987515353670221834|https://discord.com/channels/525113944239767562/987515353670221834|Aristotle|Honeydrip / Aristotle (main)
@@ -60,11 +60,11 @@
 
 # ZTRADEZ. Full mashup investigation (9/7: which of the 19 historically-cut
 # rooms actually flow through the mashup vs. are DARK to it) moved to
-# HANDOFF.md — short version: the mashup carries TWO streams (ZTRADEZ BOT,
-# relayed trader calls; ZTRADEZ Manager, the house/Namrood feed) and does
-# NOT cover every trader the way it was once assumed to. Reopening any
-# room marked DARK below is G's call; check HANDOFF before assuming a room
-# is redundant just because the mashup exists.
+# HANDOFF-LOG.md — short version: the mashup carries TWO streams (ZTRADEZ
+# BOT, relayed trader calls; ZTRADEZ Manager, the house/Namrood feed) and
+# does NOT cover every trader the way it was once assumed to. Reopening any
+# room marked DARK below is G's call; check HANDOFF-LOG.md before assuming
+# a room is redundant just because the mashup exists.
 1334236429655740457|https://discord.com/channels/496871546963492874/1334236429655740457|ZT all-trades-mashup|ZTRADEZ
 # CUT 8/30 (journals 8/19-8/28, every one a net loser, all covered by the
 # mashup above if they ever earn their way back):
@@ -144,9 +144,9 @@
 
 # ELITE OPTIONS. Both callers (Brando, Shoof) were wired 9/7 off 148 real
 # alerts pulled from scrollback — full grammar notes (their pipe-delimited
-# formats, the trailing-partial-exit fix) are in HANDOFF.md if this is ever
-# re-added. CUT 9/9 — live since the 9/8 ALL_LIVE_GEN migration but 0 rows
-# in master_ledger.csv the whole time; costs nothing live to drop for now.
+# formats, the trailing-partial-exit fix) are in HANDOFF-LOG.md if this is
+# ever re-added. CUT 9/9 — live since the 9/8 ALL_LIVE_GEN migration but 0
+# rows in master_ledger.csv the whole time; costs nothing live to drop now.
 #1286022517869514874|https://discord.com/channels/1286017515625119804/1286022517869514874|Brando Alerts|ELITE OPTIONS
 #1368263191632543956|https://discord.com/channels/1286017515625119804/1368263191632543956|Shoof Alerts|ELITE OPTIONS
 # NOT WIRED, on purpose (scanned 9/7, all 28 channels — see HANDOFF for the
@@ -158,7 +158,7 @@
 # later, not the typed one).
 
 # OWLS CAPITAL. Full 24-channel scan (9/7) and the shabs/eli SPX-proxy
-# wiring notes are in HANDOFF.md. Short version: shabs (87.5% ex-BE, best
+# wiring notes are in HANDOFF-LOG.md. Short version: shabs (87.5% ex-BE, best
 # record scanned) and eli both now flow through the aggregator below via
 # background.js's relay unwrap — nothing lost by keeping only the one tab.
 # RETIRED 9/9 into OWLS all-alerts (G: "remove the rooms covered by all alerts")
