@@ -3463,7 +3463,31 @@ class Book:
                 # order in excess of current holding quantity" — which is
                 # exactly what killed the 8/12 META and LYFT stops, one second
                 # after the pull. So wait for the broker to actually let go.
-                self._await_cancel(wb, oid)
+                _final, _favg = self._await_cancel(wb, oid)
+                # THE STOP BEAT THE PULL (9/9, META 655C): the resting stop
+                # triggered on the same bid tick the watchdog saw, and it was
+                # already FILLED by the time the cancel arrived. Before this,
+                # claim() still returned True, the watchdog sent its own sell
+                # into a flat position, Webull refused it ("order still on
+                # this contract"), the retry loop cancelled and re-sent it
+                # (four TOO_MANY_REQUESTS on the shared key), and only the
+                # LAST fallback noticed the stop had filled. If the stop's own
+                # order says FILLED, that fill IS the exit — record it here and
+                # hand back False: there is nothing left to close.
+                if str(_final or "").lower() == "filled":
+                    _fpx = float(_favg) if _favg else None
+                    with self._lock:
+                        p2 = self._pos.get(key)
+                        if p2 is not None:
+                            p2["closing"] = False
+                    self._event(key, "stopped",
+                                "%s — the resting stop had already filled%s "
+                                "before the pull landed; nothing left to sell"
+                                % (sym, (" at %.2f" % _fpx) if _fpx else ""))
+                    self.finish(key, STOPPED,
+                                "the resting stop filled before it could be "
+                                "pulled", price=_fpx)
+                    return False
                 # Remembered so release() can put it BACK if the sell never
                 # goes out (9/2: SPY 766C sat naked five minutes after a
                 # pull-then-refuse).
@@ -3482,19 +3506,23 @@ class Book:
 
     def _await_cancel(self, wb, oid, tries=6, pause=0.5):
         """Block until the broker says that order is really gone (dead/filled),
-        up to ~3s. Returns True if confirmed. Never raises — an unconfirmed
-        cancel still lets the sell try; the retry below is the backstop."""
+        up to ~3s. Returns (final_status, avg_fill) — ("dead"|"filled", avg)
+        when confirmed, (None, None) when not. Truthy exactly when confirmed,
+        so every existing caller that only asks "did it clear?" still works;
+        claim() reads the status to tell a cancelled stop from a FILLED one
+        (9/9). Never raises — an unconfirmed cancel still lets the sell try;
+        the retry below is the backstop."""
         if wb is None or not oid or not hasattr(wb, "order_status"):
-            return False
+            return (None, None)
         for _ in range(int(tries)):
             try:
                 st, _fq, _avg = wb.order_status(oid)
             except Exception:                           # noqa: BLE001
-                return False
+                return (None, None)
             if st in ("dead", "filled"):
-                return True
+                return (st, _avg)
             time.sleep(pause)
-        return False
+        return (None, None)
 
     def cancel_entry(self, key, why="pulled"):
         """Take a resting bid back off the book.
