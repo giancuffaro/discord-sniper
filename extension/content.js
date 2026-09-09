@@ -377,10 +377,28 @@ try {
   });
 } catch (e) { /* orphaned copy after an update; the fresh one registers instead */ }
 
+/* THE 662-RELOAD BUG (found 9/9 from the DS Logs export: 662 "watcher is
+ * detached — reloading that room" lines in ~29h, median gap EXACTLY 60s =
+ * the background's own throttle, i.e. tabs reloaded as fast as allowed).
+ * Cause: a fresh copy of this file stops the old one here — observer nulled,
+ * `timer` cleared — but the old copy's HEARTBEAT interval (below) was never
+ * cleared, so the dead copy kept reporting "listFound: true, observing:
+ * false" every 30s, and the background read that as a detached watcher and
+ * reloaded the whole tab. ensureReaders() re-injects every few minutes, so
+ * every tab grew a zombie beater and reloaded ~once a minute all evening —
+ * and hundreds of full page loads an hour is what made Discord log the
+ * profile out. Fix: the beat interval is named and cleared here, and a
+ * `stopped` flag makes a stopped copy silent no matter who calls it. */
+let beatTimer = null;
+let stopped = false;
 window.__SNIPER_STOP__ = function () {
+  stopped = true;
   grabbing = false;
-  if (observer) observer.disconnect();
+  if (observer) { try { observer.disconnect(); } catch (e) { } }
   if (timer) clearInterval(timer);
+  if (beatTimer) clearInterval(beatTimer);
+  timer = null;
+  beatTimer = null;
   observer = null;
   watching = null;
 };
@@ -515,11 +533,17 @@ function _readerHealth() {
   };
 }
 function _beat() {
+  // A stopped copy (replaced by a newer inject) must never speak again —
+  // its "observing: false" is what reloaded rooms 662 times (see above).
+  if (stopped) return;
+  let alive = false;
+  try { alive = !!(chrome.runtime && chrome.runtime.id); } catch (e) { alive = false; }
+  if (!alive) { window.__SNIPER_STOP__(); return; }
   // "Extension context invalidated" throws synchronously on a reload —
   // never let a beat kill the reader.
   try { chrome.runtime.sendMessage(_readerHealth()).catch(() => {}); } catch (e) { }
 }
-setInterval(_beat, 30000);
+beatTimer = setInterval(_beat, 30000);
 _beat();
 
 /* Chrome FREEZES background tabs. A frozen tab's MutationObserver queues
@@ -527,6 +551,7 @@ _beat();
  * re-attach and force a full re-read — handle() dedupes via SEEN, so
  * re-reading is free and missing a call is not. */
 document.addEventListener("resume", function () {
+  if (stopped) return;          // a replaced copy never re-attaches
   try {
     const list = document.querySelector('[data-list-id="chat-messages"]');
     if (list) {

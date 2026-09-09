@@ -222,9 +222,16 @@ function sweep() {
   } catch (e) {}
 }
 
+let pulseTimer = null;
+let stopped = false;
 window.__SNIPER_WHOP_STOP__ = function () {
+  // 9/9: also stop the health pulse — a replaced copy must go fully silent
+  // (same zombie-interval bug that reloaded Discord rooms 662 times).
+  stopped = true;
   if (timer) clearInterval(timer);
+  if (pulseTimer) clearInterval(pulseTimer);
   timer = null;
+  pulseTimer = null;
 };
 
 // One loud line if this tab isn't on a room URL — the #1 cause of the
@@ -260,9 +267,10 @@ timer = setInterval(function () {
 // actually RENDERED — a black/stuck Whop shell runs scripts but paints no
 // text. The watchdog reloads on "running but blank", never on "quiet room",
 // so an evening with no messages stops looking like a dead tab.
-setInterval(function () {
+pulseTimer = setInterval(function () {
+  if (stopped) return;
   try {
-    if (!(chrome.runtime && chrome.runtime.id)) return;
+    if (!(chrome.runtime && chrome.runtime.id)) { window.__SNIPER_WHOP_STOP__(); return; }
     const txt = (document.body && document.body.innerText) || "";
     chrome.runtime.sendMessage({
       type: "WHOP_PULSE",
