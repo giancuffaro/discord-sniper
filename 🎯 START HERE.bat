@@ -402,11 +402,14 @@ if defined CHROME (
       if /i not "!RID:~0,5!"=="whop:" (
         start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" "%%B"
         set /a TABN+=1
-        set /a TABMOD=TABN %% 3
-        if !TABMOD! EQU 0 (
-          echo         ...!TABN! rooms open, letting them load...
-          timeout /t 10 /nobreak >nul
-        )
+        rem  ONE TAB EVERY 6 SECONDS (9/9). Discord's gateway lets a user
+        rem  account start ONE session per 5 seconds (max_concurrency 1) and
+        rem  caps it at 50 live sessions. Three at once meant two of every
+        rem  three got "Invalid Session" and retried; a reload storm on top
+        rem  stacked ghost sessions past the cap and the account got flagged.
+        rem  Slower is the whole point.
+        echo         ...!TABN! rooms open...
+        timeout /t 6 /nobreak >nul
       )
     )
     )
@@ -452,11 +455,8 @@ if defined CHROME (
         rem  one's memory entirely.
         start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" "%%B"
         set /a TABN+=1
-        set /a TABMOD=TABN %% 3
-        if !TABMOD! EQU 0 (
-          echo         ...!TABN! rooms open, letting them load...
-          timeout /t 10 /nobreak >nul
-        )
+        echo         ...!TABN! rooms open...
+        timeout /t 4 /nobreak >nul
       )
     )
     )
