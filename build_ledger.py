@@ -54,8 +54,9 @@ COLUMNS = [
 ]
 
 FILLED_RE = re.compile(
-    r"^(\d{4}-\d{2}-\d{2})T\S+\tFILLED\s+(\S+)\s+—\s+filled\s+([\d.]+)\s+at\s+([\d.]+)"
+    r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\t]*)\tFILLED\s+(\S+)\s+—\s+filled\s+([\d.]+)\s+at\s+([\d.]+)"
 )
+FUT_RE = re.compile(r"^(MES|MNQ|NQ|ES|MGC|GC|CL|MCL|RTY|M2K|YM|MYM)[FGHJKMNQUVXZ]?\d{0,2}$")
 
 
 # ---------- helpers ----------
@@ -100,6 +101,39 @@ def _merge(a, b):
         if out.get(k) in (None, "", [], {}) and v not in (None, "", [], {}):
             out[k] = v
     return out
+
+
+def _iso_epoch(s):
+    """'2026-09-08T10:25:17-04:00' -> epoch float (None if unparseable)."""
+    try:
+        return datetime.fromisoformat(s).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def _kind(r):
+    """Infer kind when the store didn't record it (wallet rows never do)."""
+    k = r.get("kind")
+    if k:
+        return k
+    sym = str(r.get("symbol") or "").upper()
+    if FUT_RE.match(sym):
+        return "future"
+    if r.get("strike") is not None or r.get("occ"):
+        return "option"
+    return ""
+
+
+def _state(r):
+    """Infer state for the two wallet rows that carry none."""
+    s = r.get("state")
+    if s:
+        return s
+    if r.get("exit") is not None or r.get("all_out"):
+        return "closed"
+    if r.get("fill") is not None or r.get("avg") is not None:
+        return "filled"
+    return ""
 
 
 def _dedupe_key(r, date):
@@ -154,7 +188,7 @@ def load_days():
 
 # ---------- load trades.log FILLED spine ----------
 def load_broker_fills():
-    fills = {}   # (date, SYMBOL, price) -> qty  (first seen)
+    fills = {}   # (date, SYMBOL, price) -> {"qty":, "ts": epoch}  (first seen)
     if not os.path.exists(TRADES_LOG):
         return fills
     with open(TRADES_LOG, encoding="utf-8", errors="replace") as fh:
@@ -162,9 +196,9 @@ def load_broker_fills():
             m = FILLED_RE.match(line)
             if not m:
                 continue
-            date, sym, qty, price = m.group(1), m.group(2).upper(), m.group(3), m.group(4)
-            key = (date, sym, round(float(price), 2))
-            fills.setdefault(key, _f(qty))
+            iso, sym, qty, price = m.group(1), m.group(2).upper(), m.group(3), m.group(4)
+            key = (iso[:10], sym, round(float(price), 2))
+            fills.setdefault(key, {"qty": _f(qty), "ts": _iso_epoch(iso)})
     return fills
 
 
@@ -180,16 +214,55 @@ def build():
         sym = str(r.get("symbol") or "").upper()
         fill = _r2(r.get("fill")) or _r2(r.get("avg"))
         bkey = (date, sym, fill) if fill is not None else None
-        confirmed = bkey in broker if bkey else False
+        bhit = broker.get(bkey) if bkey else None
+        confirmed = bhit is not None
         if confirmed:
             matched_broker.add(bkey)
+
+        # --- normalize the thin wallet rows (they never carry these) ---
+        # entry time: the store's "opened", else the BROKER's FILLED stamp.
+        # NOT wallet "t" — that is the last event (the exit), not the entry.
+        opened_ts = _f(r.get("opened"))
+        opened_from = "store"
+        if opened_ts is None and bhit and bhit.get("ts"):
+            opened_ts = bhit["ts"]
+            opened_from = "trades.log"
+        closed_ts = _f(r.get("closed"))
+        if closed_ts is None and r.get("exit") is not None:
+            closed_ts = _f(r.get("t"))          # wallet: t = exit event
+        qty = r.get("qty")
+        avg = _r2(r.get("avg"))
+        if avg is None:
+            avg = fill                          # fill IS the entry price
+        entries = r.get("entries")
+        derived = False
+        if not entries and fill is not None and qty:
+            entries = [{"t": opened_ts, "qty": qty, "price": fill}]
+            derived = True
         exits = r.get("exits")
+        if not exits and r.get("exit") is not None and qty:
+            exits = [{"t": closed_ts, "qty": qty, "price": _r2(r.get("exit")),
+                      "pl": _r2(r.get("pl"))}]
+            derived = True
+        hi = r.get("hi_pct") if r.get("hi_pct") is not None else r.get("max_runup_pct")
+        lo = r.get("lo_pct") if r.get("lo_pct") is not None else r.get("max_drawdown_pct")
+        runup = r.get("max_runup_pct") if r.get("max_runup_pct") is not None else r.get("hi_pct")
+        ddown = r.get("max_drawdown_pct") if r.get("max_drawdown_pct") is not None else r.get("lo_pct")
+        pl = _r2(r.get("pl"))
+        pl_pct = _r2(r.get("pl_pct"))
+        if pl_pct is None and pl is not None and fill and qty:
+            try:
+                mult = 1.0 if _kind(r) == "future" else 100.0
+                pl_pct = round(pl / (fill * float(qty) * mult) * 100.0, 2)
+            except (TypeError, ValueError, ZeroDivisionError):
+                pl_pct = None
+
         out.append({
             "date": date,
-            "opened": _hms(r.get("opened") or r.get("t")),
-            "closed": _hms(r.get("closed")),
-            "opened_ts": _f(r.get("opened")) or "",
-            "closed_ts": _f(r.get("closed")) or "",
+            "opened": _hms(opened_ts),
+            "closed": _hms(closed_ts),
+            "opened_ts": opened_ts if opened_ts is not None else "",
+            "closed_ts": closed_ts if closed_ts is not None else "",
             "t": _f(r.get("t")) or "",
             "room": (r.get("room") or "?").strip() or "?",
             "caller": (r.get("who") or "").strip(),
