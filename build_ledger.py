@@ -431,7 +431,10 @@ def build():
             "state": _state(r),
             "exit_by": r.get("exit_by") or "",
             "all_out": r.get("all_out") if r.get("all_out") is not None else "",
-            "account": "live" if r.get("live") else "paper",
+            # the export IS the real account: a fill found there is live no
+            # matter what the store thought (9/8: IWM 295P and SPY 767P were
+            # filed as paper by the book, yet sit in Webull's own history)
+            "account": "live" if (r.get("live") or export_confirmed) else "paper",
             "manual": bool(r.get("manual")),
             "swing": bool(r.get("swing")),
             "their_avg": _r2(r.get("their_avg")) if r.get("their_avg") is not None else "",
