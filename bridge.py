@@ -2770,14 +2770,33 @@ def _place_impl(order):
                 exref, _hownote = exit_price(order, key)
                 if exref is None:
                     exref = held_pos.get("fill") or held_pos.get("their_price")
-                # Through the book's retry, not straight at the broker: a
-                # room exit hitting a resting order used to just ERROR and
-                # leave him holding it ("all out of AAPL @ 3.75", 8/12).
+                # CONFIRMED, not just ACCEPTED (9/9, the Vero QQQ 716P
+                # phantom-exit — HANDOFF 9/8 16:36). This used to call
+                # BOOK._sell_retry() and book CLOSED the instant an order_id
+                # came back, same mistake the watchdog's own stop-out path
+                # made until the 9/3 TSLA 350P fix: acceptance is not a fill.
+                # 9/8 10:15: the pullback's target sell was ACCEPTED at 1.28
+                # (+20.8%, a real win) but never actually filled; the book
+                # said CLOSED while the broker kept holding it, a stray
+                # resting order then 417'd every real completion attempt for
+                # ~7 minutes, and the position round-tripped to -34.9% while
+                # nothing was protecting it — the book already believed it
+                # was flat. _sell_confirmed is the SAME wait-for-FILLED +
+                # one-reprice logic the watchdog's stop path already uses;
+                # this just routes the room/pullback CLOSE path through the
+                # same honest mechanism instead of a second, trusting one.
                 try:
-                    res = BOOK._sell_retry(client, key, order["symbol"],
-                                           order.get("side"), order.get("strike"),
-                                           order.get("expiry"), qty,
-                                           ref_price=exref)
+                    from occ import build as _occ_build
+                    _occ = _occ_build(order["symbol"], order.get("expiry"),
+                                      order.get("side"), order.get("strike"))
+                except (ValueError, TypeError):
+                    _occ = None     # _sell_confirmed only uses this for an
+                                     # optional reprice-on-retry; None just
+                                     # skips that, never blocks the sell.
+                try:
+                    _ok, _px = BOOK._sell_confirmed(
+                        client, key, _occ, order["symbol"], order.get("side"),
+                        order.get("strike"), order.get("expiry"), qty, exref)
                 except Exception:                       # noqa: BLE001
                     # TWO sellers can collide on the same second — the room's
                     # close and the pullback's stock-stop did exactly that on
@@ -2800,12 +2819,31 @@ def _place_impl(order):
                         return True, ("already sold — a stop and their close "
                                       "collided and the first one won. You "
                                       "are FLAT on %s." % order["symbol"])
+                    if claimed:
+                        BOOK.release(key)   # never leave it "closing" and unprotected
                     raise
-                msg = res["what"]
-                note("SOLD     %s" % msg)
+                if not _ok:
+                    # Accepted but never FILLED, twice (repriced once) — the
+                    # truth is you are still holding. Do NOT claim CLOSED;
+                    # that lie is exactly what let the QQQ 716P ride
+                    # unprotected. Hand the claim back (re-arms the stop
+                    # _sell_confirmed's own attempts pulled) so the watchdog
+                    # and the reconcile loop keep pursuing the real exit.
+                    if claimed:
+                        BOOK.release(key)
+                    note("EXIT-RETRY %s — the sell was accepted but never "
+                         "confirmed filled (tried twice, repriced once). "
+                         "Still HOLDING, stop re-armed; the watchdog keeps "
+                         "trying." % order["symbol"])
+                    return True, ("that close on %s couldn't be confirmed "
+                                  "filled — still holding, stop is back in "
+                                  "place, and it'll keep retrying."
+                                  % order["symbol"])
+                note("SOLD     %s — closed at %.2f" % (order["symbol"], float(_px)))
                 if claimed:
                     BOOK.finish(key, positions.CLOSED,
-                                "sold on their call at %.2f" % float(res["limit"]))
+                                "sold on their call at %.2f" % float(_px),
+                                price=float(_px))
 
                 # Mirror the exit onto every extra account that actually
                 # holds this trade (8/18). Each one sells through its OWN
