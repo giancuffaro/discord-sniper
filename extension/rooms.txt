@@ -67,7 +67,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # to go dark on their own; this is a subscription-ending cut, not a
 # performance one (fut-1/fut-2 had real volume — 18/19 signals since
 # reopening 9/7 — right up to this cut).
-1334236429655740457|https://discord.com/channels/496871546963492874/1334236429655740457|ZT all-trades-mashup|ZTRADEZ|off
+1334236429655740457|https://discord.com/channels/496871546963492874/1334236429655740457|ZT all-trades-mashup|ZTRADEZ|on
 # CUT 8/30 (journals 8/19-8/28, every one a net loser, all covered by the
 # mashup above if they ever earn their way back):
 #   MR.TOPHAT -156 (0/4) | Market Bishop/opt-7 -87 | Demon -65 |
