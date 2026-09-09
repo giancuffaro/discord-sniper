@@ -98,3 +98,6 @@ open-rooms.request
 
 # 9/9: per-machine bridge address + shared secret (second PC) — never in git
 extension/bridge.txt
+master_postmortems.csv
+master_postmortems.csv.*
+postmortems/

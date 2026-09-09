@@ -5269,6 +5269,19 @@ def main():
                 if not evs:
                     continue
                 time.sleep(6)                 # let the fill/cancel settle
+                # POST-MORTEM ON EVERY EXIT (9/9, G: "analyze every single
+                # trade after exiting"). Each close/stop schedules
+                # postmortem.py for that symbol 10.5 min out — after the
+                # quote bus's after-exit linger has taped what happened next.
+                # Writes postmortems/<date>_<occ>.md + master_postmortems.csv.
+                # Its own thread, never raises, never touches an order.
+                try:
+                    for _e in evs:
+                        if str(_e.get("kind")) in ("closed", "stopped") and _e.get("symbol"):
+                            import postmortem as _pm
+                            _pm.run_for_key_later(str(_e.get("symbol")))
+                except Exception:                       # noqa: BLE001
+                    pass
                 # 9/9 BUG FIX — everything below used to read `snap`, which was
                 # taken BEFORE that 6s sleep, so the check ran on pre-settle
                 # data and defeated the whole point of waiting. The resting
