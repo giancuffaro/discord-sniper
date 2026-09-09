@@ -284,14 +284,11 @@ rem  windows at all, which fooled the old tasklist check into opening
 rem  nothing ("i was opening after turning on the pc, chrome shouldnt of
 rem  been opened"). Visible windows = his tabs, leave them alone. Background
 rem  only = kill it quietly and cold-start, so the performance flags apply.
-rem  NO INPUT FROM HIM (9/9): whichever way this goes - warm or cold - drop a
-rem  one-shot request. The bridge hands the token to the extension on its
-rem  30s /build poll; each browser then opens every room from rooms.txt that
-rem  it does not have a tab for, in its own lane, a few per tick, and marks
-rem  the token done. A tab he closes by hand afterwards STAYS closed - the
-rem  extension only opens rooms when this file asks. Warm start used to rely
-rem  on an always-on healer that was removed; this is its replacement.
-> "open-rooms.request" echo %date%-%time%-%RANDOM%%RANDOM%
+rem  ONE OPENER AT A TIME (9/9). A cold start opens every room itself, one
+rem  per 6 s, below. Only a WARM start (Chrome already open) asks the
+rem  extension to fill in what is missing - see the request in that branch.
+rem  Writing the request on a cold start too made two openers race and tabs
+rem  came in far faster than one per 6 s. Never both.
 powershell -NoProfile -Command "$w = Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle }; if ($w) { exit 0 } else { exit 1 }"
 if not errorlevel 1 (
   rem  HIS CALL 9/8 - "check which are open and open the ones that are
@@ -309,8 +306,13 @@ if not errorlevel 1 (
   rem  rem inside this bracketed block ends the block early in cmd. Known trap.
   echo.
   echo   [5/5] Chrome is already open - leaving your Discord tabs as they are.
-  echo         The extension opens any missing Discord rooms by itself within
-  echo         a minute. Still making sure the Whop browser is up...
+  echo         Asking the extension to open any missing rooms, one every 6s.
+  echo         Still making sure the Whop browser is up...
+  rem  The one-shot request: the bridge hands this token to the extension on
+  rem  its 30s /build poll; each browser opens the rooms.txt rooms it lacks a
+  rem  tab for, in its own lane, ONE per 6 s, and marks the token done. A tab
+  rem  he closes by hand afterwards STAYS closed.
+  > "open-rooms.request" echo %date%-%time%-%RANDOM%%RANDOM%
   rem  WARM START used to `goto chromedone` here and SKIP the Whop launch
   rem  entirely - that is why running this with Chrome already open opened
   rem  nothing for the second browser (9/8). Now it jumps to the Whop launch
