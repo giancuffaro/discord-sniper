@@ -257,6 +257,20 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   that Whop feeds AND trades (rooms are live from the ALL-LIVE change); existing
   messages are history-flagged so a reload won't re-fire them, but the next FRESH
   futures alert WILL fire (futures trade overnight — see MARKET-HOURS.md).
+  **RATCHET RE-EXAMINED BY CONTRACT PRICE (9/9, new tool ratchet_sweep_tiered.py).**
+  G's instinct: "for cheap contracts it must be too tight." Confirmed. The flat
+  sweep (ratchet_sweep.py) only ever tried ONE global (born, arm) on all trades,
+  so it couldn't see price effects. Bucketing the SAME 80 fills by entry price:
+  cheap <$1 (n=15) flat 7.5/5 = -$35, best at a LOOSER +10% arm = -$17 (still
+  loses — ~13% win, the real lever may be trading fewer sub-$1 lottos, not
+  re-spacing); mid $1-2 (n=21) flat = -$21, best at a TIGHTER +3% arm = +$53;
+  expensive >=$2 (n=44) holds ALL the profit (+$209) and flat 7.5/5 is already
+  best there — which is why the flat sweep landed on it (that bucket dominates).
+  Also: the LIVE arm (5%) is rank #2 — the flat #1 is 7.5 born / arm +4% (+$251
+  vs +$152), a ~$99 edge but 4-vs-5 is within noise on 80 trades. G's CALL: KEEP
+  BACKTESTING, HOLD VALUES (stay -7.5% born / +5% arm) until the sample grows —
+  buckets of 15/21/44 over 5 weeks are hints, not verdicts, and per-bucket "best"
+  is in-sample overfit. Re-run both sweeps as fills accumulate.
 Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
