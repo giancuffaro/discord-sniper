@@ -3527,8 +3527,8 @@ async function allRoomsTesting() {
   return;
 }
 
-chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); startWhopFeed(); });
-chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); startWhopFeed(); });
+chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); });
+chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); });
 
 /* MEMORY SHED (9/1, G: "sometimes I come back and Chrome has run out of
  * memory"). Discord web leaks: a room tab that starts at ~150 MB sits at
