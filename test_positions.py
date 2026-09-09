@@ -53,6 +53,11 @@ class FakeWB:
 
     def __init__(self, fills=True, bid=3.00, ask=3.00):
         self.fills = fills
+        # 9/9: a cancelled order reads "dead", like the real broker. The fake
+        # used to report EVERY order as filled — including a stop it had just
+        # cancelled — which is a lie no broker tells, and claim() now trusts
+        # the stop's own status to know whether the stop beat the pull.
+        self.cancelled = set()
         self.bid = bid
         self.ask = ask
         self.calls = []
@@ -65,6 +70,8 @@ class FakeWB:
 
     def order_status(self, oid):
         self.calls.append(("status", oid))
+        if str(oid) in self.cancelled:
+            return "dead", 0, None
         if self.fills:
             # You sat on the bid, so if it fills at all it fills at YOUR price
             # and for the size YOU asked — a 5-lot that came back as 1 would
@@ -75,6 +82,7 @@ class FakeWB:
 
     def cancel(self, oid):
         self.calls.append(("cancel", oid))
+        self.cancelled.add(str(oid))
         return True
 
     # 9/3: set refuse_stop_moves=True to reproduce the TSLA 8/26 failure —
