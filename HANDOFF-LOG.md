@@ -9,6 +9,24 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 11:45 — POST-MORTEM ON EVERY EXIT.** G: "analyze every single
+trade after exiting to see if it went well or what went wrong and what we can
+fix — be attentive to these." Built: (1) quote_bus LINGER — an exited
+contract keeps being taped 10 min (the tape used to stop at the exit; META's
+after-story existed only because the tastytrade shadow feed kept streaming);
+(2) postmortem.py — per trade: the call vs our fill, RN wait, MAE/MFE, bid at
++30s/+1m/+5m/+10m, widest surviving born stop, machine fault lines, verdict +
+lesson → postmortems/<date>_<occ>.md + master_postmortems.csv (idempotent per
+trade; hand trades skipped); (3) bridge POSTCHECK loop schedules it 10.5 min
+after every closed/stopped event (own thread, never raises); (4) the
+sniper-autopilot task now reads new post-mortems every 30 min and acts on
+fault lines, and tallies all of them at the 4:30 close; its stale paths
+(v3.5.0/, test_signals.py, day-JSON as truth) replaced with reference/, the
+real suites, master_ledger. First results, today: META 655C NOISE CLIP −$31
+(after-exit high 5.40 — a 15% stop = +$129; faults: POSTCHECK x2, redundant
+sell x1 — both fixed 11:20), SPY 764P NOISE CLIP −$2, QQQ 718P was Gian's
+(skipped). Verified: compile, all four suites green.
+
 **2026-09-09 (11:15) — POSTCHECK WAS CRYING WOLF ON RESTING STOPS. Fixed.**
 Checked whether the overnight fixes were holding, off live evidence. They are:
 the 09:42 restart came up on 7.5/5/2 and SPY proved the arm in the wild at

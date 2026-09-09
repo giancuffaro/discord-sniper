@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (midday) — v3.5.73. Tonight: one central file per data
+Last updated: 2026-09-09 (midday) — v3.5.73; post-mortem on every exit. Tonight: one central file per data
 family (ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2
 flat, futures ratchet decoupled; Whop API path deleted; the tab-reload storm
 found (662 reloads/day, zombie heartbeat) and fixed; rooms settled at 19
@@ -300,6 +300,18 @@ FILL ANNOUNCER (announcer.py, read-only)
   derives from it. MARKET-HOURS.md is the human copy. Options 9:30-16:00
   (SPY/QQQ/IWM + index to 16:15); futures Sun 18:00 → Fri 17:00 with the
   17:00-18:00 daily halt.
+- POST-MORTEMS → master_postmortems.csv + postmortems/<date>_<occ>.md
+  (postmortem.py; G 9/9: "analyze every single trade after exiting … be
+  attentive to these"). One verdict per exited bot trade — NOISE CLIP /
+  GOOD STOP / LEFT MONEY / GAVE BACK / GOOD EXIT — with the call vs our fill,
+  the RN wait, the ride (MAE/MFE), the bid at +30s/+1m/+5m/+10m after the
+  exit, the widest born stop that would have survived, and every machine
+  fault line in the window. The bridge's POSTCHECK loop schedules it 10.5
+  min after each close/stop; quote_bus keeps taping an exited contract for
+  10 min (LINGER_S) so the after-exit half exists. The autopilot reads new
+  ones every 30 min (faults = bugs to fix same day) and tallies them at the
+  close (the 0DTE stop question is decided from that tally, by G). His own
+  hand trades (Gian / manual) are never graded.
 - RN LEDGER → rn_ledger.csv (pullback.log_ledger, append-only): every
   armed/filled/missed/cancelled round-number hunt — the forward tracker
   for "is my RN rule beating their entry" (so far: RN fill vs caller
