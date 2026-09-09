@@ -9,6 +9,65 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 (late) — STALE-COMMENT AUDIT: 4 real bugs found behind the comments.**
+G: "fix all stale comments, verifying everything." Read the code first every
+time instead of trusting a comment. Roughly 45 stale claims corrected across
+14 files — but the comments were the smaller half of what turned up.
+
+**BUGS FIXED (code, not comments):**
+1. `popup.js _saveBracket()` hardcoded `take_profit_pct: 20, stop_loss_pct: 10`
+   and POSTed the whole strategy object to /config, where the bridge does
+   `st.update(body)` and writes settings.json. So ONE click of the bracket
+   toggle — or any change of the exit dropdown, same saver — silently pushed
+   the pre-9/8 numbers over the live ratchet, reverting the born stop
+   7.5% → 10% at the next restart. Silent AND delayed, the worst shape.
+   Now carries whatever the bridge already has; the saver owns only switches.
+2. `positions.py adopt()` line ~1254: `_ref` fell back to `fill`, which isn't
+   assigned until ~90 lines later in the same loop. First phantom with no
+   last_bid and no stop raised UnboundLocalError OUTSIDE the try — killing the
+   whole adoption sweep; on a later pass it read the PREVIOUS row's fill and
+   priced an urgent sell off a different contract. Now uses the phantom's own.
+3. `background.js roomSilenceCheck()` walked `Object.keys(ROOM_LABELS)` — the
+   hand-typed name map, which carries every room ever wired (cut ZT rooms,
+   asleep Boka, Options Watchlist, TTT ids never in rooms.txt). ~40 false
+   "silent 40 min" alarms a day, which is how a REAL dead reader gets lost.
+   Now walks LIVE_ROOM_IDS, filled from rooms.txt.
+4. Same map fed `sig.room` on every order, and was missing 7 rooms that were
+   live — Platinum ×4, Brando, Shoof, OWLS all-alerts — so their trades rode
+   to the bridge with a bare channel id and landed in the ledger unnamed.
+   That is a contributor to the 154 fills carrying room "?". rooms.txt now
+   populates ROOM_LABELS, so both consumers follow the one list.
+   Bonus: the DS Logs export listed `channel_live` KEYS as "LIVE rooms" — a
+   room flipped to TESTING printed as LIVE, and since ALL_LIVE_GEN empties
+   that map it usually printed "none (all testing)" while every room was
+   spending real money. That is the file G reads remotely. Fixed.
+
+**test_architecture.py was itself stale** — it asserted tape.SOURCES equals an
+exact set of four; the despiked clean tape and missed_tape made it six, so the
+project's own stale-docs detector was red. Rewritten to require the four core
+sources (catches a removal) and to check every registered source resolves to a
+path (catches a half-wired addition). Suite green.
+
+**Worst comment offenders** (all corrected): three separate places in
+positions.py stated the retired +10%/+20%/+30% ladder, one of them three lines
+above the live `tier_locked_pct` call and one describing per-price tiers
+(<$1 arm +25% …) that were retired 9/9 — a reader tuning the ratchet would
+have believed a cheap contract arms at +25% when it arms at +5%. The in-file
+`ratchet_locked_pct` is DEAD (only its own test calls it) yet was unmarked and
+name-shadows the live import — now labelled so nobody edits it expecting an
+effect. `_futures_ratchet`'s docstring still described one-full-stop-width
+rungs, ~3x the real distance. And greeks_math, ratchet_sweep, ratchet_backtest,
+scoreboard, journal_full, missed_dollarize, entry_compare and caller_report all
+still named days/*.json or journal.csv as their source after the 9/9 switch to
+the ledger.
+
+**Also found, NOT fixed (needs G):** `caller_report.py`'s "worst dd" column is
+always empty — `load()` never maps the ledger's max_drawdown_pct / max_runup_pct
+/ pl_pct, so `score()` looks up keys that don't exist. Real gap, not a comment.
+And parser.js still treats "swinging" as an entry verb while swings have been
+paused since 9/4 — the code matches its comment, so it may be a stale RULE
+rather than a stale comment. His call.
+
 **2026-09-09 — STALE LAUNCHERS GONE. G: "delete old stale batch files and we're done."**
 Every .bat/.vbs was checked against what calls it. Archived: SEND CHANGES TO
 GITHUB.bat (AUTO PUSH commits every 45 s, START HERE pushes on every run).

@@ -111,7 +111,9 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   bid/ask. Arm at +5% → stop to BREAKEVEN; then every further +2% locks
   another +2% (ratchet_tiers.py TIERS = (None,(5.0,0.0,2.0))). A rung must
   clear 4 ticks (MIN_RUNG_TICKS). Ratchet tries REPLACE, falls back to
-  cancel+place and says so. Anti-clip (locked ≤60% of gain) only at 2+ DTE.
+  cancel+place and says so. Anti-clip is OFF ENTIRELY (verified 9/9:
+  Book.anticlip=False, no strategy.anticlip key) — turn it on with
+  strategy.anticlip=true and it caps locked ≤60% of gain, at 2+ DTE only.
   WHY 7.5/5/2: 294-combo sweep on 80 real fills (ratchet_sweep_fine.py) —
   the small rung is the lever ($152 → $281 on the sample); cheap (<$1)
   loses under every spacing, so no cheap tier. Lean, not verdict.
@@ -265,8 +267,12 @@ FILL ANNOUNCER (announcer.py, read-only)
   (BUYING POWER / THIN / PULLBACK never hit / SWINGS paused / TEST room /
   FUTURES prop …), filled ones linked to their ledger row. Thin spot:
   telemetry rows carry no room/caller (bridge doesn't populate them).
-- PRICE TAPES → tape.py is the ONE registry (webull option_tape, tasty
-  greeks/quote, databento raw + CLEAN, missed_tape, bars/). tape.path(
+- PRICE TAPES → tape.py is the ONE registry. Six sources, verified 9/9:
+  webull, tasty_greeks, tasty_quote, databento, databento_clean, missed.
+  NOT bars/ — that and bars_capture.py were archived 9/9 and tape.py never
+  registered them. (test_architecture.py asserted an exact set of four and
+  had gone stale; it now requires the four core sources and checks every
+  registered source resolves to a path.) tape.path(
   "databento") = the despiked clean file when it exists — every backtest
   replays the same prices. Webull has NO historical option prices; the
   tapes are our own record. Databento key (settings execution.databento)
@@ -326,11 +332,25 @@ FILL ANNOUNCER (announcer.py, read-only)
 5. Chrome: hardware acceleration OFF. Close any old parked Whop tabs.
 
 ## Watch items (open)
+- **7 ROOMS SILENTLY RE-ENABLED at 04:14 (commit 06321d1) — NEEDS G's EYES.**
+  Something uncommented exactly 7 rooms, leaving their "CUT 9/9" reason lines
+  sitting right above them: Options Watchlist, Vero 1, Vero 3, Platinum
+  equity, NGD ngd-trades, shabs, eli. Not reverted — rooms are G's call — but
+  three of these were cut for REASONS, not tab count: Options Watchlist is a
+  WATCHLIST room ("$150p on watch" is the exact shape the parser must never
+  fire on, cut 9/7); Platinum equity is MrMTrades posting SWING ideas on
+  SHARES (fails no-swings + options-only at once, cut 9/7); and shabs + eli
+  are ALREADY carried by OWLS all-alerts, which is also open — the relay
+  unwrap re-books them under their own names, so that call now arrives from
+  two tabs. Vero 1, Vero 3 and NGD were G's own 9/9 cuts. Room count went
+  19 → 26 (22 Discord + 4 Whop) as a result, which also undoes most of the
+  tab-count relief below.
 - Discord logoff under tab load — 9/9: 27 rooms cut to 8 (ledger-dead rooms,
   then the whole ZTRADEZ server on its sub lapsing), then G re-added 11 to
-  land at 19 (15 Discord + 4 Whop; Whop is a separate Chrome profile so it
-  doesn't count toward the Discord logoff risk — effectively 15 Discord
-  tabs vs. 23 before). Watch whether logoffs actually stop at this count;
+  land at 19, then the 04:14 re-enable above took it to 26 (22 Discord + 4
+  Whop; Whop is a separate Chrome profile so it doesn't count toward the
+  Discord logoff risk — effectively 22 Discord tabs vs. 23 before, i.e. the
+  relief is nearly gone). Watch whether logoffs actually stop at this count;
   if not, the next lever is moving rooms across more Chrome profiles, not
   further cuts.
 - 154 ledger fills with room "?" (pre-tagging August + recovered rows).
