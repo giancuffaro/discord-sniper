@@ -309,10 +309,12 @@ ANTI_CLIP_K = 0.40      # the stop keeps at least this share of the gain as room
 def anti_clip(locked_pct, gain_pct, k=ANTI_CLIP_K):
     """THE ANTI-CLIP RULE (9/2, from the 520-trade / 4,000-resample study):
     the stop may never sit closer than k of the gain already made, i.e.
-    locked <= (1 - k) * gain. Does nothing on a normal trade (with 5% rungs
-    it only binds above +12.5%); past that it keeps the stop a proportional
+    locked <= (1 - k) * gain. With the live +2% rungs (arm +5% -> breakeven)
+    that cap starts biting around +13% gain and holds from there up — much
+    sooner than under the old 5% rungs — keeping the stop a proportional
     distance back so a runner is never strangled. k=0.40 and 0.60 tied in
-    the study; 0.40 gives back less on a reversal. Not a tuned optimum."""
+    the study; 0.40 gives back less on a reversal. Not a tuned optimum.
+    9/9: this is dead code in live — the bridge runs with anticlip False."""
     if locked_pct is None or gain_pct is None:
         return locked_pct
     cap = (1.0 - float(k)) * float(gain_pct)

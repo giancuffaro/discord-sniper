@@ -9,7 +9,8 @@ READ THIS BEFORE USING IT — a correction to what I told him
 -----------------------------------------------------------
 Research said our stops were "8 cents too tight because we use a linear
 delta conversion." I then read our own source: **we have no delta conversion
-at all.** The ratchet works in premium percent (-10%, +10% rungs) and
+at all.** The ratchet works in premium percent (born -7.5%, arm +5% to
+breakeven, then +2% rungs) and
 `_underlying_stop_watch` fires on the caller's stated STOCK level. Neither
 one converts between the two. So the 8-cent claim did not apply to us as
 stated, and I am not going to pretend it did.
@@ -19,11 +20,11 @@ stop and an underlying level are two different units, and we currently have
 no way to say what one is worth in the other. That means we cannot answer
 the question that decides whether a stop is any good:
 
-    "How far does the stock have to move to hit my -10% premium stop?"
+    "How far does the stock have to move to hit my -7.5% premium stop?"
 
 If the answer is 0.15 SPY points, that stop is inside the noise and will be
 taken out by a market maker breathing. If it is 2.00 points, it is a real
-level. Same -10%, completely different trade. Today we cannot tell them
+level. Same -7.5%, completely different trade. Today we cannot tell them
 apart, so this module exists to tell us — as a MEASUREMENT first.
 
 THE MATH
@@ -105,7 +106,7 @@ def underlying_for_premium(spot_now, premium_now, target_premium, delta,
     contract to be worth `target_premium`? Returns the underlying price, or
     None if it can't be solved inside the approximation's range.
 
-    This is what turns "-10% premium stop" into "SPY 638.85", which is the
+    This is what turns "-7.5% premium stop" into "SPY 638.85", which is the
     only form in which a stop can be judged against the chart.
 
     Solves 0.5*g*ds^2 + d*ds + (c0 - target) = 0 for ds, taking the root
