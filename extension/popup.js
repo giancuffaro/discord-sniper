@@ -1036,9 +1036,10 @@ function contractStr(r) {
          .filter(Boolean).join(" ");
 }
 
-/* The rooms and their toggle rows. Every room starts (and stays) TESTING
- * until HE flips it — LIVE is a per-room decision on top of the big REAL
- * switch, never instead of it. */
+/* The rooms and their toggle rows. Since 9/8 every room is LIVE by default and
+ * stays live across restarts; flipping one to TESTING here is the only way to
+ * quiet it. There is no big REAL switch above this any more — it was retired,
+ * so these toggles are the whole arming decision. */
 // The real Discord/Whop names the reader captured on the page (channelId ->
 // name), loaded from storage each time the popup renders. These WIN over the
 // hand-typed ROOM_NAMES below — those are only a fallback for a room that
@@ -1110,10 +1111,6 @@ async function loadRoomsForPopup() {
   }
   _roomsLoaded = true;
 }
-// Any channel that's opened but doesn't fall in a named group above (a room
-// added later, or one of the many "added on request" ids in background.js's
-// channel_ids list) still needs a home so it isn't invisible in the Servers
-// list. Everything not claimed by a group goes in one catch-all row.
 /* serverGroupsFor() and _expandedServer went with the Servers block on
  * 9/7 — both had exactly one reference left in this file: their own
  * definition. SERVER_GROUPS went too — I first wrote that it "stays
@@ -1207,16 +1204,18 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
   const box = $("roomtoggles");
   if (!box) return;
   const cd = channelDisabled || {};
-  // Rooms turned off up in Servers stay VISIBLE here (his ask, 8/17: "i
-  // only want them to toggle off, not disappear") — shown dimmed with an
-  // "off" tag instead of vanishing from the list. Their LIVE/pull controls
-  // are hidden while off, since a room that isn't read can't trade anyway.
+  // DEAD PATH since 9/7: the Servers block is gone and clearLegacyServerOff()
+  // empties channel_disabled on every popup open, so cd is always {} and the
+  // dimmed "off" branch below never renders. Kept because the shape is what
+  // 8/17 asked for ("i only want them to toggle off, not disappear") and it
+  // costs nothing — but do not read it as live behaviour.
   const ids = Object.keys(ROOM_NAMES);
   const liveCount = ids.filter(id => !cd[id] && !!(channelLive || {})[id]).length;
   // Master row (his ask, 8/13): flip every room at once instead of clicking
-  // ~60 toggles. "all testing" is always safe and instant. "all LIVE" arms
-  // REAL money on every room, so it takes two taps — one to arm, one to fire,
-  // the same care as the main live switch.
+  // ~26 toggles (one per rooms.txt room). "all testing" is always safe and
+  // instant. "all LIVE" arms REAL money on every room, so it takes two taps —
+  // one to arm, one to fire. With the master switch retired, these toggles are
+  // the only thing standing between a click and real orders.
   const master =
     '<div class="row" style="margin-bottom:8px;padding-bottom:6px;' +
     'border-bottom:1px solid #2a303c">' +
@@ -1234,8 +1233,9 @@ function renderRoomToggles(channelLive, channelPull, channelDisabled) {
     // explicit false means testing)
     const live = (channelLive || {})[id] !== false;
     const pull = !!(channelPull || {})[id];
-    // Server-switched-off rooms: visible but dimmed with a plain "off" tag
-    // (his ask, 8/17) — no controls to misclick while the room isn't read.
+    // Server-switched-off rooms: dimmed with a plain "off" tag (his ask, 8/17).
+    // Unreachable today — see the cd note above; channel_disabled is cleared on
+    // every open, so this branch is held for a control that no longer exists.
     if (cd[id]) {
       return '<div class="row" style="margin-bottom:4px;opacity:.45">' +
              '<span class="grow gotoroom" data-chan="' + id + '" data-room="' +

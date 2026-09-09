@@ -96,7 +96,8 @@ const RE_BARE = /\b([A-Za-z]{1,5})\b/g;
  * Target 28550". A futures call names no strike and no expiry — the symbol,
  * the direction and the price ARE the contract. The stop and target are his
  * own numbers in index points, and they're captured because the plan is to
- * use HIS levels instead of the flat 20% rule when his room trades. */
+ * use HIS levels instead of our ratchet (born -7.5%, arm +5% -> breakeven,
+ * then +2% rungs) when his room trades. */
 const FUT_SYMS = new Set(["NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K",
                           "CL", "MCL", "GC", "MGC", "SI", "SIL", "NG"]);
 /* A futures token the rooms wrote with a trailing digit -> its ROOT.
@@ -1928,7 +1929,7 @@ function parseSignalInner(text, cfg) {
   // 3c. FUTURES — "Short NQ @ 28660  Stop 29700  Target 28550".
   //     No strike, no expiry: the symbol, the direction and the price are the
   //     whole contract. His stop and target ride along as THEIR levels — the
-  //     plan of record is to run his numbers, not the flat 20%, when this
+  //     plan of record is to run his numbers, not our ratchet, when this
   //     grammar goes live. Which side of the switch that happens on is not
   //     the parser's decision; it reads, the guards and the bridge decide.
   const mf = RE_FUT_ENTRY.exec(t);
@@ -2262,8 +2263,8 @@ function parseSignalInner(text, cfg) {
     const mq = RE_QTY.exec(t) || RE_QTY_PAREN.exec(t);
     if (mq) s.qty = parseInt(mq[1], 10);
     // "Entered AMD 520C 7/20 @ 1.75  Target 524  Stop 505" — HIS levels, on
-    // the underlying. Written down for the day his numbers replace the flat
-    // 20% rule; nothing acts on them yet.
+    // the underlying. Written down for the day his numbers replace our
+    // ratchet; nothing acts on them yet.
     const msO = RE_THEIR_STOP.exec(t);
     if (msO && num(msO[1]) !== s.strike) s.their_stop = num(msO[1]);
     const mtO = RE_THEIR_TARGET.exec(t);
