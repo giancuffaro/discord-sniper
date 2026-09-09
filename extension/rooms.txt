@@ -9,67 +9,55 @@
 # Format, one room per line, pipe-separated:
 #   channel_id|full_url|label|group
 # Lines starting with # are comments. Blank lines are ignored.
-# To remove a room from EVERYWHERE: delete its line. To add one: add a line.
 # Whop rooms use their canonical "whop:xxx" id in the first field — that's
 # what background.js's whopRoomOf() matches on.
 # "group" is just the friendly bucket the popup's Channels/Servers tab
 # shows it under — it doesn't have to match the real Discord server name.
+#
+# CUT ROOMS: commented out with a one-line reason + date, never deleted —
+# that's what makes "why isn't X open" answerable a month later. Full
+# investigation writeups (the ZTRADEZ mashup diff, the OWLS 24-channel scan,
+# etc.) live in HANDOFF.md now, not here — this file stays a room list, not
+# an essay. TEST vs LIVE (real money) is a separate switch in the popup —
+# it is NOT stored in this file and I don't touch it; that flip is G's alone.
+#
+# CLEANUP 9/9 — this file had ~5 weeks of accumulated investigation notes
+# folded into the room lines. Moved the long-form ones to HANDOFF.md and cut
+# 15 rooms with zero real activity in master_ledger.csv (the reconciled fill
+# ledger — see HANDOFF for why days/*.json alone isn't trusted for this any
+# more). Reasons are on each cut line below; full detail in HANDOFF's 9/9
+# ROOM CLEANUP entry.
 
 829754942817828884|https://discord.com/channels/525113944239767562/829754942817828884|Honeydrip daytrades|Honeydrip / Aristotle (main)
 987515353670221834|https://discord.com/channels/525113944239767562/987515353670221834|Aristotle|Honeydrip / Aristotle (main)
-1433933203302776852|https://discord.com/channels/525113944239767562/1433933203302776852|Aristotle small|Honeydrip / Aristotle (main)
+# CUT 9/9 — 0 rows in master_ledger.csv. (Its sibling "Aristotle" looked the
+# same way in the OLD days/*.json count and turned out to be wrong — a real
+# AMD 515C had been dropped by a table-truncation bug — so this is believed,
+# not assumed: master_ledger unions table+wallet.trades+trades.log and still
+# shows zero here.)
+#1433933203302776852|https://discord.com/channels/525113944239767562/1433933203302776852|Aristotle small|Honeydrip / Aristotle (main)
 # Midas RE-ADDED 8/30 (G: "now that we only need entries, since we have the
 # ratchet") — his exits were the old problem; the ratchet owns exits now.
 1144369893760831489|https://discord.com/channels/525113944239767562/1144369893760831489|Midas|Honeydrip / Aristotle (main)
 
-# URLs replaced 8/30 — Whop's redesign killed /joined/ links (they redirect
-# to Townhall, a page with no messages: the reason Whop never produced a
-# single signal). Rooms live at /<biz>/exp_<hash>/app/ now; same hashes, so
-# whopRoomOf() still maps them. Verified live in the browser 8/30.
-whop:day-trades|https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)
-whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)
-whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)
-whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)
+# CUT 9/9, all four Whop rooms (G's call) — 0 signals in master_ledger.csv
+# for Day Trades / Futures / 2K Challenge across the whole 5-week history;
+# High Risk had exactly 1 row ever (a failed parse). Whop plan going forward
+# is API access from the room owners instead of tab-scraping — see HANDOFF.
+#whop:day-trades|https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)
+#whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)
+#whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)
+#whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)
 # CUT 9/7 (Whop Swing Trades) — a SWING room. Swings have been paused since 9/4 and G restated the rule 9/7 ("we shouldnt have any"). Reading a room we will not trade is dead weight.
 #whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing Trades|firststeptrading (Whop)
 
-# THE MASHUP (8/30, G: "one room that alerts everything so we can eliminate
-# six and have only one"). The relay-unwrap in background.js books each call
-# under the REAL trader name, so the per-trader walls and the dedupe ladder
-# still hold.
-#
-# CORRECTED 9/7 — the old note here claimed the mashup "relays EVERY ZT
-# trader's call". THAT IS FALSE and it cost us 9 traders. Verified 9/7 by
-# reading all 19 cut rooms live in Discord and diffing their real 9/1-9/4
-# entries against 9 days of mashup capture (8/28-9/6, dense on 9/1-9/4):
-#
-#   The mashup carries TWO streams, not one:
-#     ZTRADEZ BOT     (793 msgs) forwards from some trader rooms
-#     ZTRADEZ Manager (292 msgs) the house/Namrood feed, best-formatted
-#                     alerts we get: "Buy To Open ORCL 147C 09/04 $1.5"
-#                     with entry, expiry and running P/L (ANSI color codes
-#                     wrapped around the contract - parser must strip them)
-#
-#   RELAYED, 10 of 19 - safe to leave cut:
-#     mr-top-hat, market-bishop/opt-7, jpm-investments/opt-6,
-#     sir-goldman/opt-8, are-swings/opt-2, demon, adex-swings/swing-4,
-#     namrood/fut-6, top-flow, scalps
-#
-#   DARK, 9 of 19 - these alerts reach us NOWHERE. Proof, all absent from
-#   the mashup on days it captured hundreds of lines:
-#     cranmer/opt-9      UPS 104C, AA 52C, NVDA 220C 9/18
-#     evapanda/opt-5     MU 1100C, MRVL 240C, URA 48C
-#     madhatter/opt-1    MCD 245P 10/16
-#     tlm/opt-4          AAPL 327C, MSFT 497/490P spread
-#     stormzyy/fut-1     MNQ
-#     guru-futures/fut-2 MNQ LONG 29525
-#     clutch/swing-1     SPCX
-#     kumo/swing-2       CAKE 120/125 debit spread
-#     king-maker/swing-3 GM 87.5C 9/18
-#
-#   Only evapanda was cut on journal evidence (-55). The other 8 were cut
-#   as "redundant: flows through the mashup" - a reason now disproven.
-#   Reopening any of them is G's call (rooms are his).
+# ZTRADEZ. Full mashup investigation (9/7: which of the 19 historically-cut
+# rooms actually flow through the mashup vs. are DARK to it) moved to
+# HANDOFF.md — short version: the mashup carries TWO streams (ZTRADEZ BOT,
+# relayed trader calls; ZTRADEZ Manager, the house/Namrood feed) and does
+# NOT cover every trader the way it was once assumed to. Reopening any
+# room marked DARK below is G's call; check HANDOFF before assuming a room
+# is redundant just because the mashup exists.
 1334236429655740457|https://discord.com/channels/496871546963492874/1334236429655740457|ZT all-trades-mashup|ZTRADEZ
 # CUT 8/30 (journals 8/19-8/28, every one a net loser, all covered by the
 # mashup above if they ever earn their way back):
@@ -77,30 +65,29 @@ whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop
 #   EvaPanda/opt-5 -55 | are-alerts/opt-2 -42
 #1135947475912495216|https://discord.com/channels/496871546963492874/1135947475912495216|MR.TOPHAT|ZTRADEZ
 #1248264554886991893|https://discord.com/channels/496871546963492874/1248264554886991893|ZT opt-2|ZTRADEZ
-# CUT 9/7 (evapanda/opt-5) — covered calls + leaps + swings. Live read 9/7 of his own 8/31-9/4 summary: RIVN 25C "This was a covered call", BULL 15C "Covered Call - Collecting Prems", NOK 25C 2028 leap, TSLA/AMZN/URA swings. G 9/7: "I do not want covered calls and spreads" — and his no-swings rule hits this room twice
+# CUT 9/7 (evapanda/opt-5) — covered calls + leaps + swings, against G's "no covered calls and spreads" rule (9/7)
 #777750637613416479|https://discord.com/channels/496871546963492874/777750637613416479|ZT opt-5|ZTRADEZ
 #1239624229583061052|https://discord.com/channels/496871546963492874/1239624229583061052|ZT opt-7|ZTRADEZ
 #829352738239414332|https://discord.com/channels/496871546963492874/829352738239414332|ZT top-flow|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #721821717328298066|https://discord.com/channels/496871546963492874/721821717328298066|ZT scalps|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1471700027662405712|https://discord.com/channels/496871546963492874/1471700027662405712|ZT fut-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-# REOPENED 9/7 (madhatter/opt-1) — dark to the mashup; BORN TESTING until G flips it
+# REOPENED 9/7, still BORN TESTING — flip in the popup when ready for real money (G's call, not touched here):
 1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ
-# CUT 9/7 (tlm/opt-4) — verticals, 2 of his last 5 entries. 9/4 "Msft Sep 9 497 put buy 490 put sell Total pay 2.20" (this is the one that fired a NAKED 497 put) and 8/18 "Swing Gld Aug 31 405 call buy 415 call sell" — a spread AND a swing. G 9/7: "I do not want covered calls and spreads"
+# CUT 9/7 (tlm/opt-4) — verticals and a naked spread, against G's "no covered calls and spreads" rule (9/7)
 #694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ
 #1331631786068938813|https://discord.com/channels/496871546963492874/1331631786068938813|ZT opt-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1209181195406024744|https://discord.com/channels/496871546963492874/1209181195406024744|ZT opt-8|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-# REOPENED 9/7 (cranmer/opt-9) — dark to the mashup; BORN TESTING until G flips it
-1332090335005900800|https://discord.com/channels/496871546963492874/1332090335005900800|ZT opt-9|ZTRADEZ
+# CUT 9/9 — reopened 9/7 BORN TESTING, still 0 rows in master_ledger.csv since. Redundant-via-mashup claim already disproven once (HANDOFF, 9/7) so this is cut on its OWN silence, not on that assumption.
+#1332090335005900800|https://discord.com/channels/496871546963492874/1332090335005900800|ZT opt-9|ZTRADEZ
 #874280313038192670|https://discord.com/channels/496871546963492874/874280313038192670|Demon Alerts|ZTRADEZ  (cut 8/30, see mashup note)
 #1389300087829827745|https://discord.com/channels/496871546963492874/1389300087829827745|ZT swing-1|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #862419656382873650|https://discord.com/channels/496871546963492874/862419656382873650|ZT swing-2|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1061980561293443152|https://discord.com/channels/496871546963492874/1061980561293443152|ZT swing-3|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1179200811650252850|https://discord.com/channels/496871546963492874/1179200811650252850|ZT swing-4|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-# REOPENED 9/7 (stormzyy/fut-1) — dark to the mashup; BORN TESTING until G flips it
+# REOPENED 9/7, still BORN TESTING — flip in the popup when ready for real money (G's call, not touched here). 18 real signals since reopening, well past a fair test.
 1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ
-# REOPENED 9/7 (guru-futures/fut-2) — dark to the mashup; BORN TESTING until G flips it
+# REOPENED 9/7, still BORN TESTING — flip in the popup when ready for real money (G's call, not touched here). 19 real signals since reopening, well past a fair test.
 1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ
-
 
 # SUBSCRIPTION LAPSED (checked on whop.com 9/7/26). A room whose
 # subscription has expired shows nothing, so the tab is dead weight:
@@ -113,108 +100,65 @@ whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop
 769797179992571914|https://discord.com/channels/769790224921395200/769797179992571914|Option Alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 # CUT 9/7 (Options Watchlist) — 44 unique messages captured, 0 signals, 0 entries — it is a WATCHLIST, and watchlist rows are the exact thing the parser must never fire on ("$150p on watch"). A whole tab of RAM for nothing.
 #769797819770732554|https://discord.com/channels/769790224921395200/769797819770732554|Options Watchlist|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
-# TTT Lotto, wired 9/7 (TTT / RWGates / Vero / Insider / Platinum)  (wired 9/7, G: "wire lotto channel up" — same BTO/STC grammar as Option Alerts; label is a placeholder, self-corrects to the real Discord name once the tab attaches and reports via /channames)
-880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+# CUT 9/9 — wired 9/7, 0 rows in master_ledger.csv since. Not structurally disabled like the Platinum shadow rooms below, just quiet; reopen if the room turns out to actually post here.
+#880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 # 9/7: Whop shows STS/Summit as LAPSED, but Discord access is INTACT —
 # verified by opening it: '#alert-room | Summit Trading Strategies',
 # 2,688 unread, messages from today. A lapsed subscription is NOT the
 # same as lost access. AWAKE.
 642437862930907158|https://discord.com/channels/588137369409159208/642437862930907158|RWGates|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
-1323708708374450247|https://discord.com/channels/725117609275555851/1323708708374450247|Vero 1|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+# CUT 9/9 (G's call)
+#1323708708374450247|https://discord.com/channels/725117609275555851/1323708708374450247|Vero 1|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 760694103401955378|https://discord.com/channels/725117609275555851/760694103401955378|Vero 2|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
-1095502893559316482|https://discord.com/channels/725117609275555851/1095502893559316482|Vero 3|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+# CUT 9/9 (G's call) — thinnest of the three Vero rooms, 1 trade ever
+#1095502893559316482|https://discord.com/channels/725117609275555851/1095502893559316482|Vero 3|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 #SLEEP|The Insiders Pro Plan lapsed Aug 3 — and Discord agrees: the server bounces to @me, you are not in it (verified 9/7)|1527044644796366888|https://discord.com/channels/719580371997556737/1527044644796366888|Options Insider|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 
-# New server (8/23) — in SHADOW while the parser learns their wording:
-# read + judged in the log, nothing fires until graduated.
+# Platinum nitro is the only one of these four that has ever produced a
+# signal (6 rows, master_ledger.csv). The other three were opened 8/23 in
+# SHADOW mode (parser learns their wording, judged in the log, nothing
+# fires) and never graduated — cutting them costs nothing live either way.
 911389167169191946|https://discord.com/channels/911385966864896081/911389167169191946|Platinum nitro|Platinum Trading
-911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|Platinum futures-alerts|Platinum Trading
-1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum day-trades|Platinum Trading
-1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum ei-alerts|Platinum Trading
-# CUT 9/7 (Platinum equity) — 203 captured messages, 4 fires, ZERO entries — and the parser is RIGHT to refuse them. It is MrMTrades posting SWING ideas on SHARES: "Swing Trade Idea $TSLA Entry: $344", "$VSAT Entry: $31.70" — common stock, no strike, no expiry — plus "Level 3 hit" progress updates and WATCHLIST rows. Fails the no-swings rule, the options-only rule and the no-watchlist rule at once. (A crude keyword scan earlier called these 99 'entries'; it was matching the words ENTRY IDEA. The parser was correct and the scan was wrong.)
+# CUT 9/9 — still in SHADOW mode, never graduated, 0 rows
+#911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|Platinum futures-alerts|Platinum Trading
+# CUT 9/9 — still in SHADOW mode, never graduated, 0 rows
+#1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum day-trades|Platinum Trading
+# CUT 9/9 — still in SHADOW mode, never graduated, 0 rows
+#1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum ei-alerts|Platinum Trading
+# CUT 9/7 (Platinum equity) — 203 captured messages, 4 fires, ZERO entries — MrMTrades posting SWING ideas on SHARES, no strike/expiry. Fails the no-swings, options-only, and no-watchlist rules at once.
 #983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity|Platinum Trading
 
 # DO NOT ADD 911389321993523210 (Platinum "lottos") — it is Demon Alerts
 # mirroring the ZTRADEZ demon room already listed above. Adding it = the
 # same signal twice (8/23).
-1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|NGD ngd-trades (Ninjago Futures Radar)|NGD
 
-# ELITE OPTIONS (wired 9/7 — G bought Pro that day). Two callers, two grammars,
-# both pipe-delimited, verified against 148 of their REAL alerts pulled from
-# Discord scrollback: Brando 100, Shoof 48. Every one parsed to the right
-# action, symbol and strike (test_elite.js locks the shapes).
-#   Brando  "@Elite BOUGHT | QQQ SEPT 2 717C $2.99 LOTTO"   month name, $price
-#   Shoof   "@Elite ALERT BOUGHT | SPY 9/4 767C at 2.00"    numeric date, at
-# EXITS ARE THE DANGEROUS HALF and both put the size at the END, after the
-# price: "(1/2)" "(1/4)" "(1/8)" "1/4 position" "3/4 position". Those read as
-# FULL EXITS until the trailing-partial fix on 9/7 — a caller trimming a
-# quarter would have closed the whole position. "ALL OUT" is the only exit
-# that fires, and both write it literally.
-# Brando also posts SHARE trades in the same channel ("SNDK 500 SHARES AT
-# $1444.50"); those are refused outright, this bot is options-only.
-# BORN TESTING until G flips them in the popup.
-1286022517869514874|https://discord.com/channels/1286017515625119804/1286022517869514874|Brando Alerts|ELITE OPTIONS
-1368263191632543956|https://discord.com/channels/1286017515625119804/1368263191632543956|Shoof Alerts|ELITE OPTIONS
-# NOT WIRED, on purpose (scanned 9/7, all 28 channels):
-#   brando-commentary / shoof-commentary — live but it is LEVEL talk ("MU wants
-#     1011, 1020 next"). About one tradeable contract a session; the rest is
-#     bare numbers that a reader can only get wrong. Revisit with the vision
-#     reader, not the text one.
-#   levels-bot, flow-bot, x-news-bot, uwhale-news-bot, brandos-tweets — bots.
-#   trade-log, chartbook, market-recap, winning-trades, conference-calls —
-#     weekly recaps posted as IMAGES, never live entries.
-#   trading-chatroom, hangout-chatroom — chatter.
-#   live-voice-logs — transcripts of the daily voice call; candidate for the
-#     voice path later, not the typed one.
+# CUT 9/9 — 0 rows in master_ledger.csv, no signal since it was added.
+#1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|NGD ngd-trades (Ninjago Futures Radar)|NGD
 
-# OWLS CAPITAL — SCANNED 9/7, NOTHING WIRED. All 24 channels read. The six
-# per-trader "*" channels are the only alert candidates and not one of them is
-# safely tradeable by an options bot:
-#   jon-and-kian     COMMON STOCK, not options: "1000% lotto CHGG commonst at
-#     .83", "sold some CHGG commons at 15%", "22% on commons". DANGEROUS to
-#     wire: "Sold another SPCX at 5.70" carries no word saying it is stock, so
-#     it reads as a plain CLOSE and would dump an SPCX OPTIONS position. The
-#     parser cannot tell from that text — only the room can — which is exactly
-#     why this room stays out. (The lines that DO name themselves are now
-#     vetoed: "shares", "commons", "commonst", "common stock".)
-#   ab               real options, but entries are BARE contracts with no verb
-#     ("$GOOGL 10/16 400c 1.88") so they do not fire, while his closes
-#     ("$AAPL 10/16 330c 200% (Closed)") DO. A room that can close but cannot
-#     open is worse than no room at all — it can only ever end a ride early.
-#   tt               SPX 0DTE, and the sample is a SPREAD ("7690/7675p 0dte
-#     1.4") plus a lotto. Two alert lines in the whole scrollback.
-#   muggzone-options parses ("ENTERED 9/11 MRVL 240 CALLS @here 1.3" -> OPEN
-#     MRVL 240C @1.3) but DROPS THE EXPIRY, because the date sits BEFORE the
-#     ticker and the reader only looks after it. Zero of our 7,168 corpus
-#     lines use that order, so no wired room is affected and it was left
-#     alone rather than widened on speculation. Fix it if this room is ever
-#     wanted. Volume is 2 alerts in the visible history either way.
-#   giul-heatseeker  the trader is away ("going to korea and japan these next
-#     2 weeks") and his bot is broken ("bot may not be working right now").
-#   members-plays    member TA chat, not calls.
-# The rest: notable-flow / notable-etf-flow / news (bot feeds), admin-analysis,
-# ab-updates, gains-losses, risk-management, trading-floor, entrance-floor,
-# off-topic, keyz-soccer-bets, futures-trading, support, home, announcements.
-# REVISIT IF: ab starts writing a verb, or jon-and-kian starts trading options.
+# ELITE OPTIONS. Both callers (Brando, Shoof) were wired 9/7 off 148 real
+# alerts pulled from scrollback — full grammar notes (their pipe-delimited
+# formats, the trailing-partial-exit fix) are in HANDOFF.md if this is ever
+# re-added. CUT 9/9 — still BORN TESTING, 0 rows in master_ledger.csv since
+# wired; costs nothing live to drop for now.
+#1286022517869514874|https://discord.com/channels/1286017515625119804/1286022517869514874|Brando Alerts|ELITE OPTIONS
+#1368263191632543956|https://discord.com/channels/1286017515625119804/1368263191632543956|Shoof Alerts|ELITE OPTIONS
+# NOT WIRED, on purpose (scanned 9/7, all 28 channels — see HANDOFF for the
+# per-channel reasoning): brando-commentary/shoof-commentary (level talk,
+# not entries), levels-bot/flow-bot/x-news-bot/uwhale-news-bot/brandos-tweets
+# (bot feeds), trade-log/chartbook/market-recap/winning-trades/
+# conference-calls (image recaps, never live), trading-chatroom/
+# hangout-chatroom (chatter), live-voice-logs (candidate for the voice path
+# later, not the typed one).
 
-# OWLS CAPITAL (wired 9/8, G: "wire shabs + eli as SPY proxy"). Both are
-# SPX-ONLY traders who never type the ticker — "in 7655p 2.9", "7760c at
-# 300/con". default_symbol_channels maps each to SPX; spx_entry_channels lets
-# the SPX->SPY retarget fire (7655p -> SPY 766p at 1/10). BORN TESTING until G
-# flips them. shabs is the best record scanned (87.5% ex-BE, +$15,898 at 1
-# con/play in August). eli is commentary-heavy — the "stock is selling" and
-# progress-update guards (9/8) exist because of his room.
-# RETIRED 9/9 into OWLS all-alerts below (G: "remove the rooms covered by all
-# alerts"). shabs & eli now flow through the aggregator; background.js's relay
-# unwrap re-books their calls under "shabs"/"eli" AND re-applies their SPX-only
-# handling (default_symbol=SPX + SPX->SPY retarget) off the "From 🌟｜" tag, so
-# nothing is lost. Reopen a dedicated tab only if the relay ever misses them.
+# OWLS CAPITAL. Full 24-channel scan (9/7) and the shabs/eli SPX-proxy
+# wiring notes are in HANDOFF.md. Short version: shabs (87.5% ex-BE, best
+# record scanned) and eli both now flow through the aggregator below via
+# background.js's relay unwrap — nothing lost by keeping only the one tab.
+# RETIRED 9/9 into OWLS all-alerts (G: "remove the rooms covered by all alerts")
 #1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital
 #1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital
-# OWLS all-alerts (wired 9/9, now the SOLE OWLS tab) — the 🛎️ all-alerts relay
-# aggregates ALL 11 analysts (ab, muggzone, eva, tt, giul, neal, florida-man,
-# common-stock, jon-and-kian, + shabs/eli) into ONE feed via "OWLS Capital
-# Clanker", each an embed tagged "From 🌟｜<analyst>". content.js reads embeds
-# (8/30) and background.js unwraps the relay to the real analyst (9/9). ONE tab
-# replaces the whole OWLS wall.
+# OWLS all-alerts (wired 9/9) — the sole OWLS tab. Aggregates all 11
+# analysts (including shabs/eli above) into one feed; background.js unwraps
+# the relay to the real analyst. Wired yesterday — 0 rows so far is expected
+# at this age, not a reason to cut; carries shabs' proven record through it.
 1449226651064991806|https://discord.com/channels/718624848812834903/1449226651064991806|OWLS all-alerts|OWLS Capital
