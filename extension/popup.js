@@ -1214,6 +1214,7 @@ function renderRoomToggles() {
         'text-decoration-style:dotted;text-underline-offset:3px">' + esc(chanLabel(r.id)) +
         (r.why && !isOn ? ' <span style="color:#7d8697;font-size:10px">— ' + esc(r.why.slice(0, 70)) + '</span>' : "") +
         '</span>' +
+        rulePills(r) +
         '<span style="font-size:11px;letter-spacing:.04em;width:52px;text-align:right;color:' +
         (isOn ? "#f87171" : "#7d8697") + '">' + (busy ? "…" : tag) + '</span>' +
         '<button data-room="' + esc(r.id) + '" data-on="' + (isOn ? "1" : "0") +
@@ -1239,6 +1240,187 @@ function renderRoomToggles() {
       setTimeout(() => { if (note.isConnected) note.remove(); }, 6000);
     };
   });
+  // ROOM RULES pills (self-serve, 9/9): click flips one flag, the bridge
+  // rewrites the room's 6th field, the parser sees it on the next message.
+  box.querySelectorAll("span[data-rule]").forEach(pill => {
+    pill.onclick = async (ev) => {
+      ev.stopPropagation();
+      const id = pill.dataset.room, flag = pill.dataset.rule;
+      const room = (ALL_ROOMS || []).find(x => x.id === id);
+      if (!room) return;
+      const cur = new Set(room.rules || []);
+      if (flag === "sym=SPX") { cur.has("sym=spx") ? cur.delete("sym=spx") : cur.add("sym=spx"); }
+      else { cur.has(flag) ? cur.delete(flag) : cur.add(flag); }
+      _roomBusy[id] = true; renderRoomToggles();
+      let res = null;
+      try { res = await chrome.runtime.sendMessage({ type: "ROOM_RULES", id: id, rules: Array.from(cur).join(",") }); }
+      catch (e) { res = { ok: false, why: String(e).slice(0, 120) }; }
+      delete _roomBusy[id];
+      await loadRoomsForPopup(); renderRoomToggles();
+      const note = document.createElement("div");
+      note.className = "note"; note.style.color = res && res.ok ? "#4ade80" : "#f87171";
+      note.textContent = (res && res.why) || "no answer";
+      box.appendChild(note); setTimeout(() => { if (note.isConnected) note.remove(); }, 6000);
+    };
+  });
+}
+
+/* The three per-room rules as tiny pills: SPY-proxy (index calls trade as
+ * SPY), bare (entries with no verb), SPX (default symbol). Lit = on. */
+function rulePills(r) {
+  const rules = new Set((r.rules || []).map(x => String(x).toLowerCase()));
+  const pill = (flag, label, on, tip) =>
+    '<span data-rule="' + flag + '" data-room="' + esc(r.id) + '" title="' + esc(tip) + '" ' +
+    'style="font-size:9px;letter-spacing:.04em;padding:1px 5px;border-radius:8px;margin-right:4px;cursor:pointer;' +
+    'border:1px solid ' + (on ? "#7dd3fc" : "#2a303c") + ';color:' + (on ? "#7dd3fc" : "#4b5563") + '">' + label + '</span>';
+  return '<span style="white-space:nowrap">' +
+    pill("spx", "SPY-proxy", rules.has("spx"), "index calls in this room trade as SPY (strike/10, premium dropped)") +
+    pill("bare", "bare", rules.has("bare"), "an entry with no verb still counts here (\"SPY 650c 1.20\")") +
+    pill("sym=SPX", "SPX", rules.has("sym=spx"), "assume SPX when a call names no symbol") +
+    '</span>';
+}
+
+/* ===== SELF-SERVE: CALLERS (test build 9/9) ===== */
+let CALLERS = [];
+let _callerBusy = {};
+async function loadCallers() {
+  try { const j = await askBridge("/callers"); if (j && j.ok) CALLERS = j.callers || []; }
+  catch (e) { /* bridge down: keep the last list */ }
+}
+function renderCallers() {
+  const box = $("callers");
+  if (!box) return;
+  if (!CALLERS.length) { box.innerHTML = '<div class="note">No callers on record yet (or the bridge is down).</div>'; return; }
+  const money = n => (n < 0 ? "-$" : "+$") + Math.abs(Math.round(n));
+  const onN = CALLERS.filter(c => c.state === "on").length;
+  box.innerHTML =
+    '<div class="row" style="margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #2a303c">' +
+    '<span class="grow" style="font-size:12px;font-weight:600">Callers <span style="color:#7d8697;font-weight:400">(' +
+    onN + ' of ' + CALLERS.length + ' on)</span></span></div>' +
+    CALLERS.map(c => {
+      const isOn = c.state === "on";
+      const rec = c.trades
+        ? c.trades + " trade" + (c.trades === 1 ? "" : "s") + " · " + c.wins + "-" + c.losses + " · " +
+          '<span class="' + (c.net >= 0 ? "up" : "down") + '">' + money(c.net) + "</span>"
+        : c.alerts + " call" + (c.alerts === 1 ? "" : "s") + " seen, none filled";
+      const busy = !!_callerBusy[c.key];
+      return '<div class="row" style="margin-bottom:4px' + (isOn ? "" : ";opacity:.6") + '">' +
+        '<span class="grow" style="font-size:12px"><b>' + esc(c.name || c.key) + '</b> ' +
+        '<span class="sub" style="font-size:10px">' + rec + (c.last ? " · last " + esc(c.last) : "") +
+        (c.rooms && c.rooms.length ? " · " + esc(c.rooms.slice(0, 2).join(", ")) : "") + '</span></span>' +
+        '<span style="font-size:11px;width:40px;text-align:right;color:' + (isOn ? "#f87171" : "#7d8697") + '">' +
+        (busy ? "…" : (isOn ? "ON" : "off")) + '</span>' +
+        '<button data-caller="' + esc(c.key) + '" data-on="' + (isOn ? "1" : "0") + '" class="tgl money ' +
+        (isOn ? "live" : "safe") + '"' + (busy ? " disabled" : "") + '></button></div>';
+    }).join("");
+  box.querySelectorAll("button[data-caller]").forEach(btn => {
+    btn.onclick = async () => {
+      const key = btn.dataset.caller, turnOn = btn.dataset.on !== "1";
+      _callerBusy[key] = true; renderCallers();
+      let res = null;
+      try { res = await askBridge("/callers", { name: key, state: turnOn ? "on" : "off" }); }
+      catch (e) { res = { ok: false, why: "bridge not reachable" }; }
+      delete _callerBusy[key];
+      if (res && res.callers) CALLERS = res.callers;
+      renderCallers();
+      const note = document.createElement("div");
+      note.className = "note"; note.style.color = res && res.ok ? "#4ade80" : "#f87171";
+      note.textContent = (res && res.why) || "no answer";
+      box.appendChild(note); setTimeout(() => { if (note.isConnected) note.remove(); }, 6000);
+    };
+  });
+}
+
+/* ===== SELF-SERVE: NEEDS YOU (test build 9/9) ===== */
+let NEEDS = [];
+async function loadNeeds() {
+  let a = [], b = [];
+  try { const j = await askBridge("/needs"); if (j && j.ok) a = j.items || []; } catch (e) { a = [{ what: "the bridge isn't reachable — START HERE starts it", fix: null }]; }
+  try { const r = await chrome.runtime.sendMessage({ type: "NEEDS?" }); if (r && r.ok) b = r.items || []; } catch (e) {}
+  NEEDS = a.concat(b);
+  const tab = $("needsTab");
+  if (tab) tab.textContent = NEEDS.length ? "Needs you (" + NEEDS.length + ")" : "Needs you";
+}
+async function doFix(what) {
+  const bridgeFixes = new Set(["announcer_on", "announcer_off", "restart_bridge"]);
+  try {
+    if (bridgeFixes.has(what)) return await askBridge("/fix", { do: what });
+    return await chrome.runtime.sendMessage({ type: "FIX", do: what });
+  } catch (e) { return { ok: false, why: String(e).slice(0, 120) }; }
+}
+function renderNeeds() {
+  const box = $("needs");
+  if (!box) return;
+  const labels = { announcer_on: "announcer on", announcer_off: "pause announcer", restart_bridge: "restart bridge",
+                   open_missing: "open tabs", reload_readers: "reload readers", reload_extension: "reload now" };
+  box.innerHTML = NEEDS.length
+    ? NEEDS.map((it, i) => '<div class="row" style="margin-bottom:5px;align-items:flex-start">' +
+        '<span class="grow" style="font-size:12px">' + esc(it.what) + '</span>' +
+        (it.fix ? '<button data-fix="' + esc(it.fix) + '" style="font-size:10px;padding:1px 8px;border-radius:9px;' +
+                  'cursor:pointer;border:1px solid #7dd3fc;background:transparent;color:#7dd3fc;margin-left:6px">' +
+                  esc(labels[it.fix] || it.fix) + '</button>' : "") + '</div>').join("")
+    : '<div class="note" style="color:#4ade80">Nothing waiting on you.</div>';
+  const ann = $("fixAnnouncer");
+  if (ann && modeStatus) ann.textContent = modeStatus.announcer_stopped ? "📣 Announcer: paused — switch ON" : "📣 Announcer: on — pause it";
+  const wire = (el, what) => { if (el) el.onclick = async () => {
+    el.disabled = true;
+    const res = await doFix(what);
+    el.disabled = false;
+    const st = $("fixState");
+    if (st) { st.textContent = (res && res.why) || "no answer"; st.style.color = res && res.ok ? "#4ade80" : "#f87171"; }
+    await loadNeeds(); renderNeeds();
+  }; };
+  box.querySelectorAll("button[data-fix]").forEach(b => wire(b, b.dataset.fix));
+  wire($("fixReaders"), "reload_readers");
+  wire($("fixOpen"), "open_missing");
+  wire($("fixAnnouncer"), (modeStatus && modeStatus.announcer_stopped) ? "announcer_on" : "announcer_off");
+  wire($("fixBridge"), "restart_bridge");
+  wire($("fixExt"), "reload_extension");
+}
+
+/* ===== SELF-SERVE: STRATEGY NUMBERS (test build 9/9) ===== */
+let NUMBERS = null;
+let _numbersArm = 0;
+async function loadNumbers() {
+  try { const j = await askBridge("/numbers"); if (j && j.ok) NUMBERS = j.numbers || null; } catch (e) {}
+}
+function renderNumbers() {
+  const box = $("numbers");
+  if (!box || !NUMBERS) return;
+  if (box.dataset.drawn === "1" && document.activeElement && box.contains(document.activeElement)) return; // typing
+  box.innerHTML = Object.keys(NUMBERS).map(k => {
+    const n = NUMBERS[k];
+    return '<div class="row" style="margin-bottom:4px;align-items:flex-start">' +
+      '<span class="grow" style="font-size:12px">' + esc(n.label) +
+      '<br><span class="sub" style="font-size:10px;color:#7d8697">' + esc(n.note) + '</span></span>' +
+      '<input data-num="' + esc(k) + '" type="number" min="' + n.min + '" max="' + n.max + '" step="' + n.step +
+      '" value="' + n.value + '" style="width:64px;margin-left:6px"></div>';
+  }).join("");
+  box.dataset.drawn = "1";
+  const btn = $("numbersSave");
+  if (btn && !btn.dataset.wired) {
+    btn.dataset.wired = "1";
+    btn.onclick = async () => {
+      const now = Date.now();
+      if (now - _numbersArm > 5000) {                 // first tap: arm
+        _numbersArm = now; btn.textContent = "tap again to save — real money";
+        setTimeout(() => { if (Date.now() - _numbersArm >= 5000) { _numbersArm = 0; btn.textContent = "Save numbers"; } }, 5100);
+        return;
+      }
+      _numbersArm = 0; btn.textContent = "Save numbers";
+      const body = {};
+      box.querySelectorAll("input[data-num]").forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (Number.isFinite(v) && NUMBERS[inp.dataset.num] && v !== NUMBERS[inp.dataset.num].value) body[inp.dataset.num] = v;
+      });
+      const st = $("numbersState");
+      if (!Object.keys(body).length) { if (st) st.textContent = "nothing changed"; return; }
+      let res = null;
+      try { res = await askBridge("/numbers", body); } catch (e) { res = { ok: false, why: "bridge not reachable" }; }
+      if (res && res.numbers) { NUMBERS = res.numbers; box.dataset.drawn = "0"; renderNumbers(); }
+      if (st) { st.textContent = (res && res.why) || "no answer"; st.style.color = res && res.ok ? "#4ade80" : "#f87171"; }
+    };
+  }
 }
 
 
@@ -2069,6 +2251,13 @@ wireDrafts();
 // never flash empty — every render() after this one just reuses it.
 loadRoomsForPopup().then(render);
 setInterval(render, 2000);
+// self-serve panels (test build 9/9): slow refresh, they read the records
+(async function selfServe() {
+  await Promise.all([loadCallers(), loadNeeds(), loadNumbers()]);
+  renderCallers(); renderNeeds(); renderNumbers();
+  setInterval(async () => { await loadNeeds(); renderNeeds(); }, 15000);
+  setInterval(async () => { await loadCallers(); renderCallers(); await loadNumbers(); renderNumbers(); }, 60000);
+})();
 refreshMode();
 setInterval(refreshMode, 1000);
 loadDays();
