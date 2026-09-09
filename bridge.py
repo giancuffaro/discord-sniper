@@ -207,6 +207,12 @@ def build_stamp():
         for name in sorted(os.listdir(ext)):
             if name.startswith("."):
                 continue
+            # rooms.txt is DATA, not code (9/9): the popup's room switch
+            # rewrites it through POST /rooms and the extension re-reads it
+            # on its own (pollRoomsFile) — a flip must never reload the
+            # extension mid-session.
+            if name == "rooms.txt":
+                continue
             p = os.path.join(ext, name)
             if not os.path.isfile(p):
                 continue
@@ -217,6 +223,74 @@ def build_stamp():
         # anywhere. Say so plainly instead of pretending nothing ever changes.
         return ""
     return "%08x" % (zlib.crc32("|".join(bits).encode("utf-8")) & 0xFFFFFFFF)
+
+
+ROOMS_TXT = os.path.join(HERE, "extension", "rooms.txt")
+ROOM_STATES = ("on", "off", "lapsed")
+
+
+def read_rooms():
+    """extension/rooms.txt → [{id, url, label, group, state, why}], file
+    order, every room (on / off / lapsed). A line with no 5th field is `on`
+    — what every line meant before the state column existed (9/9)."""
+    rooms, last_comment = [], ""
+    with open(ROOMS_TXT, encoding="utf-8") as f:
+        for ln in f:
+            t = ln.strip()
+            if not t:
+                last_comment = ""
+                continue
+            if t.startswith("#"):
+                last_comment = t.lstrip("#").strip()
+                continue
+            p = [x.strip() for x in t.split("|")]
+            if len(p) < 4 or not p[0]:
+                continue
+            state = (p[4] if len(p) > 4 and p[4] else "on").lower()
+            rooms.append({"id": p[0], "url": p[1], "label": p[2], "group": p[3],
+                          "state": state,
+                          "why": "" if state == "on" else last_comment})
+            last_comment = ""
+    return rooms
+
+
+def set_room_state(room_id, state):
+    """Rewrite ONE room's state in rooms.txt, in place — the line keeps its
+    spot, its comment above it, everything; only the 5th field changes.
+    Atomic write. Returns (ok, why)."""
+    state = str(state or "").lower()
+    if state not in ROOM_STATES:
+        return False, "state must be one of %s" % "/".join(ROOM_STATES)
+    room_id = str(room_id or "").strip()
+    if not room_id:
+        return False, "no room id"
+    try:
+        with open(ROOMS_TXT, encoding="utf-8") as f:
+            lines = f.read().split("\n")
+    except OSError as e:
+        return False, "couldn't read rooms.txt: %s" % e
+    hit = False
+    for i, ln in enumerate(lines):
+        t = ln.strip()
+        if not t or t.startswith("#"):
+            continue
+        p = [x.strip() for x in t.split("|")]
+        if len(p) < 4 or p[0] != room_id:
+            continue
+        p = p[:4] + [state]
+        lines[i] = "|".join(p)
+        hit = True
+        break
+    if not hit:
+        return False, "room %s isn't a line in rooms.txt" % room_id
+    tmp = ROOMS_TXT + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lines))
+        os.replace(tmp, ROOMS_TXT)
+    except OSError as e:
+        return False, "couldn't write rooms.txt: %s" % e
+    return True, "saved"
 
 
 def load_settings():
@@ -3481,27 +3555,17 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as _e:                     # noqa: BLE001
                 return self._json(200, {"ok": False, "why": str(_e)[:120]})
         if self.path.startswith("/rooms"):
-            # The one list of channels that trade (extension/rooms.txt),
-            # parsed — so "what is the sniper actually listening to" is a
-            # one-second curl instead of a screen-share (audit ask, 8/30).
-            # Read-only, no secrets: ids/urls/labels only.
-            rooms = []
+            # The one list of every room we have been to (extension/rooms.txt)
+            # with its state — so "what is the sniper actually listening to"
+            # is a one-second curl instead of a screen-share (audit ask,
+            # 8/30). Read-only here; POST /rooms flips a state.
             try:
-                _rp = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   "extension", "rooms.txt")
-                with open(_rp, encoding="utf-8") as _f:
-                    for _ln in _f:
-                        _ln = _ln.strip()
-                        if not _ln or _ln.startswith("#"):
-                            continue
-                        _p = _ln.split("|")
-                        if len(_p) >= 4:
-                            rooms.append({"id": _p[0], "url": _p[1],
-                                          "label": _p[2], "group": _p[3]})
+                rooms = read_rooms()
             except Exception as _e:                     # noqa: BLE001
                 return self._json(200, {"ok": False, "why": str(_e)[:120]})
-            return self._json(200, {"ok": True, "count": len(rooms),
-                                    "rooms": rooms})
+            return self._json(200, {"ok": True,
+                                    "count": sum(1 for r in rooms if r["state"] == "on"),
+                                    "total": len(rooms), "rooms": rooms})
         # /whopfeed endpoint removed 9/8 (dead whop-api reader deleted).
         if self.path.startswith("/exchoices"):
             # Every account behind an extra login's keys, with buying power —
@@ -4380,6 +4444,27 @@ class Handler(BaseHTTPRequestHandler):
         note("PROPS    %s" % msg)
         return self._json(200, dict(self._status(), ok=True, message=msg))
 
+    def _set_room(self):
+        """POST /rooms {"id": ..., "state": "on"|"off"} — THE ONE SWITCH
+        (9/9): the popup flips a room here; rooms.txt is the only list, so
+        the write lands there and every reader (both Chrome profiles, START
+        HERE, the tools) sees the same truth. Never touches a trade."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except (ValueError, TypeError):
+            return self._json(400, {"ok": False, "why": "bad JSON"})
+        ok, why = set_room_state(body.get("id"), body.get("state"))
+        if ok:
+            note("ROOMS    %s -> %s (popup switch)" % (body.get("id"), body.get("state")))
+        try:
+            rooms = read_rooms()
+        except Exception:                               # noqa: BLE001
+            rooms = []
+        return self._json(200 if ok else 400,
+                          {"ok": ok, "why": why, "rooms": rooms,
+                           "count": sum(1 for r in rooms if r["state"] == "on")})
+
     def _chan_names(self):
         """The extension tells us what each channel is REALLY called.
 
@@ -4429,6 +4514,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._tape_reads()
         if self.path.startswith("/channames"):
             return self._chan_names()
+        if self.path.startswith("/rooms"):
+            return self._set_room()
         if self.path.startswith("/mode"):
             return self._set_mode()
         if self.path.startswith("/flatten"):
