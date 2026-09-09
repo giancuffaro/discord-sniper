@@ -10,8 +10,9 @@ Active voice, short sentences. Own mistakes plainly, then fix them.
 - "Fix errors every day after journaling." The journal exposes it → it dies that evening.
 - Real-money actions are HIS ALONE: placing/canceling orders, flipping rooms LIVE,
   unlocking accounts, funding, questionnaires, accepting ToS, passwords. Never do them.
-- Exit doctrine: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT. Callers' trims and
-  stop-moves are noted, never traded. A caller's FULL "all out / stopped out" still fires.
+- Exit doctrine: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT. ENTRIES ONLY (9/3):
+  every room-side exit — trims, stop-moves, AND "all out / stopped out" — is logged
+  "EXIT-IGNORED" and never traded. The ratchet's resting stop is the only exit.
 - Never run git write commands from a sandbox (locks). AUTO PUSH sweeps commits every 45s.
 - Never install the streaming SDK family (webullsdkcore) into the bridge's Python.
 - settings.json is gitignored and holds every key — never commit it, never paste keys back.
