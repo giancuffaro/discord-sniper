@@ -4,8 +4,9 @@ Reads what's already on disk — no network, no broker:
   * DS Logs/signal-room-chat *.txt   — the extension's self-learning exports:
         every message the reader saw ([Server: channel #id]) and every verdict
         (<sent>/<skipped>/<ignored>) with the room on it
-  * days/*.json                      — the bridge's trade table (who, room, P&L,
-        exit_by, hi/lo %)
+  * master_ledger.csv (via ledger.py) — every real fill (who, room, P&L,
+        exit_by, hi/lo %). NOT days/*.json, which truncates its trade table
+        (kept 6 of 12 fills on 9/8) and so undercounts.
   * extension/rooms.txt              — the configured rooms (so a room that never
         said a word still shows up, as SILENT)
 

@@ -6,16 +6,19 @@ ratchet system?")
 -------------------------------------------------------------------------
 The first pass at this analysis reported the min/max price each missed call
 reached in its window and called that "best case / worst case" — which
-ignored that every entry gets a stop born at -10% and walks up from there.
-That made refused calls look like they could have lost 50-90%, when the
-ratchet would have capped every one of them at -10%. Wrong methodology,
-not a data problem — the databento_tape.csv prices were always real.
+ignored that every entry gets a stop born under it (-10% at the time, -7.5%
+since 9/8) and walks up from there. That made refused calls look like they
+could have lost 50-90%, when the ratchet would have capped every one of them
+at its born stop. Wrong methodology, not a data problem — the tape prices
+were always real.
 
-This is the honest version: for every contract in days/*.json, simulate the
-ACTUAL rule (ratchet_tiers.py, his 9/3 restore — one ladder for every
-premium: born -10%, arms at +10% gain, first lock breakeven, then +10% a
-rung, anti-clip OFF per his 9/4 call) tick by tick against real OPRA prices
-from databento_tape.csv, and report what really would have happened.
+This is the honest version: for every contract in master_ledger.csv (via
+ledger.py), simulate the ACTUAL rule (ratchet_tiers.py, the 9/9 settle — one
+ladder for every premium: born -7.5%, arms at +5% gain, first lock breakeven,
+then +2% a rung, anti-clip OFF per his 9/4 call) tick by tick against real
+OPRA prices from the canonical databento tape (tape.path("databento") — the
+despiked clean file when it exists), and report what really would have
+happened.
 
 WHAT "stopped_out": false MEANS
 --------------------------------
@@ -56,7 +59,7 @@ def _nan(x):
 def load_tape():
     tape = {}
     if not os.path.exists(TAPE_CSV):
-        sys.exit("No databento_tape.csv — run databento_backfill.py first.")
+        sys.exit("No databento tape — run databento_backfill.py (then clean_tape.py) first.")
     with open(TAPE_CSV, encoding="utf-8") as f:
         for r in csv.DictReader(f):
             try:

@@ -5,14 +5,14 @@ would have made the most money on real prices.
 WHY (9/8, G: "figure out what ratchet spacing is most convenient.. what
 stop to start with and when to jump to break even")
 ---------------------------------------------------------------------
-ratchet_backtest.py answers "did the CURRENT rule (-10% born, arm +10%,
-lock breakeven, +10% rungs) ever blow past its floor". This answers a
+ratchet_backtest.py answers "did the CURRENT rule (-7.5% born, arm +5%,
+lock breakeven, +2% rungs) ever blow past its floor". This answers a
 different question: holding that same SHAPE (born stop born_pct, arm at
 arm_pct with a breakeven lock there, then a rung every arm_pct beyond it —
 the one thing this file does NOT explore is decoupling rung size from arm
 size, since G only asked about the stop and the breakeven jump), which
 (born_pct, arm_pct) pair actually produces the best real dollars across
-every contract-day in days/*.json.
+every contract-day in master_ledger.csv (via ledger.py).
 
 EXCLUDES GIAN (9/8, his ask): his own hand trades aren't room calls, and
 folding them into a "which spacing wins" sweep would tune the bot's exit
