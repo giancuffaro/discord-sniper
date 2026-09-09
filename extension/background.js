@@ -2465,8 +2465,17 @@ async function handleOffscreen(msg) {
                               symbol: vs.symbol, strike: vs.strike,
                               side: vs.side });
     while (VOICE_RECENT_CALLS.length > 40) VOICE_RECENT_CALLS.shift();
-    const _learned = SPEAKER_NAMES.get(_vkey.split("|").slice(0,2).join("|")) ||
-                     SPEAKER_NAMES.get(_vkey);
+    let _learned = SPEAKER_NAMES.get(_vkey.split("|").slice(0,2).join("|")) ||
+                   SPEAKER_NAMES.get(_vkey);
+    // HOST DEFAULT (9/9, from the first captured FST live): on Felony's own
+    // Zoom ("Live Trading × FST") speaker S0 is the host — Felony — the
+    // whole session; S1/S2 are guests. Until a typed scribe alert names a
+    // speaker, book the host's calls under his real name so the per-trader
+    // walls (claims, dedupe, scoreboard) apply from the first word.
+    if (!_learned && /FST|First ?Step|Live Trading/i.test(String(label || "")) &&
+        String(msg.speaker) === "0") {
+      _learned = "Felony";
+    }
     if (_learned) { vs.caller = _learned; label = _learned + " 🎙"; }
     const _isEntry = vs.action === "OPEN" || vs.action === "ADD";
     if (_isEntry && c.voice_entries !== true) return;
