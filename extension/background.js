@@ -2605,6 +2605,30 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   })();
 });
 
+/* EARS RETRY (9/9). Tabs whose audio Chrome refused to hand over (no
+ * activeTab grant yet). The first time such a tab is brought to the front,
+ * or the Sniper icon is clicked while it is up, try once more. */
+const WANT_EARS = new Map();          // tabId -> label
+
+async function retryEars(tabId, how) {
+  const label = WANT_EARS.get(tabId);
+  if (!label || LISTENING.has(tabId)) return;
+  let tab = null;
+  try { tab = await chrome.tabs.get(tabId); } catch (e) { WANT_EARS.delete(tabId); return; }
+  if (!tab || !tab.audible) return;            // quiet now — the audible event will re-ask
+  const r = await startListening(tabId, label);
+  if (r && r.ok) {
+    WANT_EARS.delete(tabId);
+    const v = LISTENING.get(tabId); if (v) v.auto = true;
+    await saveListening();
+    await addLog({ kind: "update", text: "",
+      why: "🎙 auto-listening to " + label + " — took the audio once the tab was "
+         + how + ". Every spoken call gets written down and read." });
+  }
+}
+chrome.tabs.onActivated.addListener(({ tabId }) => { retryEars(tabId, "in front").catch(() => {}); });
+chrome.action.onClicked.addListener((tab) => { if (tab && tab.id) retryEars(tab.id, "clicked on").catch(() => {}); });
+
 /* The moment a Discord tab starts PLAYING audio (he joined the voice), start
  * transcribing it — and when it goes quiet again, stop. Auto only touches
  * sessions it started itself, so a hand-started listen is never cut off. */
@@ -2631,12 +2655,26 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
         const label = (tab.title || "voice").replace(/ \| Discord.*/i, "").slice(0, 40);
         const r = await startListening(tabId, label);
         if (r && r.ok) {
+          WANT_EARS.delete(tabId);
           const v = LISTENING.get(tabId); if (v) v.auto = true;
           await saveListening();
           await addLog({ kind: "update",
             why: "🎙 auto-listening to " + label + " — the tab started playing "
                + "voice audio. Every spoken call gets written down and read.",
             text: "" });
+        } else {
+          // 9/9: Chrome only lets tabCapture take a tab the user has invoked
+          // the extension on (icon click / front tab with that grant). A Zoom
+          // tab opened by the morning task never has it, and this failure
+          // used to be SILENT — Felony's 10:57 join produced nothing and
+          // nobody knew. Say so, and remember the tab: the first time it is
+          // brought to the front or the icon is clicked on it, try again.
+          WANT_EARS.set(tabId, label);
+          await addLog({ kind: "skipped", author: label, text: "",
+            why: "🎙 " + label + " is playing audio but Chrome won't let the ears "
+               + "take it yet — bring that tab to the FRONT or click the Sniper "
+               + "icon on it once; the ears start by themselves the moment you do."
+               + (r && r.why ? " (" + String(r.why).slice(0, 80) + ")" : "") });
         }
       } else if (info.audible === false) {
         const v = LISTENING.get(tabId);
