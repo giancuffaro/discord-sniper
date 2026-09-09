@@ -1168,6 +1168,18 @@ def save_day():
     except Exception:                                   # noqa: BLE001
         pass    # the journal must never take down the trading path
 
+    # master_ledger.csv — ONE central file (9/9). journal.csv above reads
+    # "table" only, and table truncates: on 9/8 it dropped 6 of 12 fills
+    # (Aristotle's AMD 515C among them). The ledger unions table ∪
+    # wallet.trades, merges duplicates field-by-field, cross-checks every
+    # row against trades.log FILLED, and surfaces broker fills that never got
+    # a journal row. Deterministic full rebuild, atomic swap, ~100 ms.
+    try:
+        import build_ledger as _bl
+        _bl.refresh()
+    except Exception:                                   # noqa: BLE001
+        pass    # the ledger must never take down the trading path
+
 
 def tkey(order):
     """The book's key for the trade this order is about: who called it, plus

@@ -260,8 +260,11 @@ def _rotate_bak():
             pass
 
 
-def write(rows):
-    _rotate_bak()
+def write(rows, bak=True):
+    """bak=True (CLI) keeps a timestamped copy of the prior ledger.
+    bak=False (bridge, on every event) skips it — no .bak churn all day."""
+    if bak:
+        _rotate_bak()
     tmp = OUT + ".tmp"
     with open(tmp, "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=COLUMNS)
@@ -288,6 +291,15 @@ def summary(rows, broker):
     print("  REAL FILLS PER ROOM:")
     for rm, n in Counter(r["room"] for r in real).most_common():
         print(f"   {n:>4}  {rm}")
+
+
+def refresh():
+    """One-call rebuild for the bridge's save_day(). Never raises."""
+    try:
+        rows, _ = build()
+        write(rows, bak=False)
+    except Exception:                                   # noqa: BLE001
+        pass        # the ledger must never take down the trading path
 
 
 if __name__ == "__main__":
