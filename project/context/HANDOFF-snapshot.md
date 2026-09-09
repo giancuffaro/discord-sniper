@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (midday) — v3.5.73; post-mortem on every exit. Tonight: one central file per data
+Last updated: 2026-09-09 (evening) — v3.5.75; master_broker.csv (daily Webull pulls absorbed + deleted); pullback level settled at $1 on real bars. Earlier today: post-mortem on every exit; one central file per data
 family (ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2
 flat, futures ratchet decoupled; Whop API path deleted; the tab-reload storm
 found (662 reloads/day, zombie heartbeat) and fixed; rooms settled at 19
@@ -73,6 +73,15 @@ ENTRIES
   touch. RN (round-number) pullback is global and ON (waits for the next
   round number, 10-min window; a never-touched RN = skipped, logged
   "PULLBACK never hit"). One contract per entry while the bracket is on.
+  THE LEVEL STAYS $1 — SETTLED 9/9 on 106 beta-name alerts (META/AMD/AAPL/
+  NVDA/TSLA/MSFT/AMZN/GOOGL, 8/4–9/8) replayed on real 1-second stock bars
+  (pullback_levels.py → reference/PULLBACK-LEVELS.md): the $1 wait beats
+  taking the alert by +$8/contract (paired, 65 trades, 2.6× its noise);
+  $2 / $2.50 / $5 / $10 add nothing over $1 on the same trades (+0.4, +1.7,
+  +6.1 — all inside noise) while skipping 40–75% of the trades; a 15-min
+  wait changes nothing vs 10. And the "they bounce off 2.50s and 5s" idea
+  is false in this sample: $5 lines held 31%, $2.50 36%, a random x.25 line
+  38%. Don't re-open on a feeling — re-run the script when the sample doubles.
 - All rooms LIVE by default (ALL_LIVE_GEN migration 9/8 cleared every test
   flag). Toggling a room off is G's only bench.
 - STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung
@@ -265,10 +274,21 @@ FILL ANNOUNCER (announcer.py, read-only)
   (77k TOO_MANY_REQUESTS on the shared key) must never come back.
 
 ## DATA — one central file per family (9/9). THE APP READS ONLY THESE.
+- BROKER RECORD → master_broker.csv (one row per Webull order leg, every
+  day). The autopilot pulls the account's order history every Mode B run
+  and writes the day as Webull_Orders_<date>_auto.csv; build_ledger's
+  absorb_exports() (runs inside every ledger refresh) folds it into
+  master_broker.csv and DELETES the daily file once every leg is provably
+  inside — the folder keeps ONE broker file, never dated piles (G, 9/9).
+  Merge is REPLACE-DON'T-STACK per order (placed-time+contract+side+size+
+  limit): a later pull replaces a WORKING snapshot, never duplicates it.
+  Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
+  master_ledger and master_alerts; NO .bak files in the root anymore.
 - FILLS → master_ledger.csv (built by build_ledger.py, read via ledger.py).
-  Sources in trust order: Webull_Orders_<date>_auto.csv exports (the
-  account's own history, FIFO-paired per OCC) > trades.log FILLED > days/
-  wallet.trades > days/table. RULES: the export's exit/P&L/state/account WIN
+  Sources in trust order: master_broker.csv (the account's own history,
+  FIFO-paired per OCC ACROSS days so a swing meets its own lot; trip date =
+  the buy's day) > trades.log FILLED > days/wallet.trades > days/table.
+  RULES: the broker's exit/P&L/state/account WIN
   over the book's belief (store_pl keeps the book's number); a fill the
   broker saw is `filled` even if the book said `failed`; export-confirmed ⇒
   live; entry time = opened, else the broker's FILLED stamp, NEVER wallet
