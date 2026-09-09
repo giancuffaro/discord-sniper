@@ -1850,16 +1850,24 @@ async function whopWatchdog() {
     if (hp && !hp.ok && hp.badSince && now - hp.badSince > 2 * 60 * 1000) {
       WHOP_PULSE[t.id] = { t: now, ok: false, badSince: 0 };  // reset clock
       whopTabSeen[t.id] = now;
+      await addLog({ kind: "skipped", author: "whop", text: "",
+                     why: "⚠ Whop tab painted nothing for 2 min (black shell) — reloading it" });
       try { await chrome.tabs.reload(t.id); } catch (e) { /* tab gone */ }
       continue;
     }
     // NO-MESSAGE reload, MARKET HOURS ONLY (8/25): out of hours a quiet
     // room is just a quiet room — the old any-hour version reloaded every
     // whop tab all evening, which read as "loading and black again".
+    // 9/9: 5 min -> 30 min. Whop DOES push live (verified 8/30 on the new
+    // pages; alerts arrive without a reload), so the 5-min hedge was ~75
+    // silent reloads per tab per day for nothing. Kept as a 30-min
+    // backstop and LOGGED, so it can never be an invisible storm again.
     if (!_marketOpenNow()) continue;
     if (!whopTabSeen[t.id]) { whopTabSeen[t.id] = now; continue; }
-    if (now - whopTabSeen[t.id] > 5 * 60 * 1000) {
+    if (now - whopTabSeen[t.id] > 30 * 60 * 1000) {
       whopTabSeen[t.id] = now;
+      await addLog({ kind: "skipped", author: "whop", text: "",
+                     why: "Whop tab quiet 30 min in market hours — routine backstop reload" });
       try { await chrome.tabs.reload(t.id); } catch (e) { /* tab gone */ }
     }
   }
@@ -3589,6 +3597,11 @@ async function memoryShed() {
     }
     if (!oldest) return;
     RELOADED_AT[oldest.id] = t0;
+    // 9/9: say so. This reload was silent, which is how a reload storm
+    // stayed invisible until the DS Logs export was counted.
+    const lbl = (String(oldest.url || "").match(/\/channels\/\d+\/(\d+)/) || [])[1];
+    await addLog({ kind: "skipped", author: ROOM_LABELS[lbl] || lbl || "room", text: "",
+                   why: "memory shed — routine 4h reload of this room (RAM), not a fault" });
     await chrome.tabs.reload(oldest.id);
   } catch (e) { /* a closed tab mid-query — next tick */ }
 }
@@ -3607,6 +3620,7 @@ const READER_TAB = {};         // channelId -> tabId
 const BEAT_DEAD_MS = 95000;    // 3 missed beats. Reload, don't wonder.
 const REVIVED_AT = {};         // tabId -> last revive, so we don't loop
 const REVIVE_TRIES = {};       // channelId -> reloads in a row with no beat back
+const DETACHED_STRIKE = {};    // tabId -> last "detached" handled (re-inject first, reload on repeat)
 
 chrome.runtime.onMessage.addListener((m, sender) => {
   if (!m || m.type !== "READER_ALIVE") return;
@@ -3616,14 +3630,35 @@ chrome.runtime.onMessage.addListener((m, sender) => {
     if (sender && sender.tab) READER_TAB[m.channelId] = sender.tab.id;
   }
   if (m.listFound && !m.observing) {
+    // 9/9 — THE 662-RELOAD BUG. This used to reload the tab on the first
+    // "detached" beat. The beats were coming from ZOMBIE copies of
+    // content.js (replaced by a re-inject, observer nulled, heartbeat never
+    // cleared), so every room reloaded ~once a minute all evening and
+    // Discord logged the profile out. content.js is fixed to go silent when
+    // replaced; on THIS side a detached watcher now gets the cheap remedy
+    // first — a fresh content.js inject, which re-attaches the observer in
+    // place (idempotent, keeps scroll, nothing on screen is traded). A tab
+    // is reloaded only if the SAME room reports detached AGAIN within 5 min
+    // of that inject. A page reload is the last resort, not the first.
     const tid = READER_TAB[m.channelId];
-    if (tid && Date.now() - (REVIVED_AT[tid] || 0) > 60000) {
-      REVIVED_AT[tid] = Date.now();
-      addLog({ kind: "skipped", author: ROOM_LABELS[m.channelId] || m.channelId,
-               text: "",
-               why: "⚠ reader is running but its message watcher is detached — "
-                    + "reloading that room" });
-      try { chrome.tabs.reload(tid); } catch (e) { }
+    const now = Date.now();
+    if (tid && now - (REVIVED_AT[tid] || 0) > 60000) {
+      REVIVED_AT[tid] = now;
+      const strikes = (DETACHED_STRIKE[tid] && now - DETACHED_STRIKE[tid] < 300000) ? 2 : 1;
+      DETACHED_STRIKE[tid] = now;
+      if (strikes === 1) {
+        addLog({ kind: "skipped", author: ROOM_LABELS[m.channelId] || m.channelId,
+                 text: "",
+                 why: "watcher detached — re-attached the reader in place (no reload)" });
+        chrome.scripting.executeScript({ target: { tabId: tid }, files: ["content.js"] })
+          .catch(() => {});
+      } else {
+        DETACHED_STRIKE[tid] = 0;
+        addLog({ kind: "skipped", author: ROOM_LABELS[m.channelId] || m.channelId,
+                 text: "",
+                 why: "⚠ watcher detached AGAIN after a re-attach — reloading that room" });
+        try { chrome.tabs.reload(tid); } catch (e) { }
+      }
     }
   }
 });
