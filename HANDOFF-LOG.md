@@ -9,6 +9,42 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 — THE TAB-RELOAD STORM, FOUND AND FIXED (v3.5.68).**
+G had flagged "tabs are refreshing" four times; earlier answers blamed
+memory pressure and tab count. He said "it's something in code, I know it."
+He was right. Method: every chrome.tabs.reload / runtime.reload call site in
+the extension was listed (7), then the newest DS Logs export was COUNTED by
+reload reason. Result: 662 × "reader is running but its message watcher is
+detached — reloading that room", 36 × build-stamp extension reloads, 23 ×
+heartbeat reloads, 603 × "tab now shows a different page — record dropped".
+The 662 had a median gap of exactly 60 s = the handler's own REVIVED_AT
+throttle, i.e. reloads as fast as the code allowed — a loop, not detachment.
+Mechanism: content.js's __SNIPER_STOP__ cleared `timer` and nulled the
+observer but never cleared the anonymous `setInterval(_beat, 30000)`; a
+replaced copy therefore kept beating {listFound:true, observing:false} and
+the background's READER_ALIVE handler reloaded the tab on that. Because
+ensureReaders() re-injected every tab it hadn't touched in 5 min (and its
+INJECTED_AT map resets every time the MV3 worker sleeps), every tab grew a
+zombie within minutes of every reload. Storm → hundreds of full page loads
+an hour → Discord bounced the profile to /login → the 603 stale drops. So
+"Discord logs me off with too many tabs" was the reload storm's symptom.
+Fixes: (1) content.js: beat interval named + cleared in __SNIPER_STOP__,
+`stopped` flag guards _beat and the resume listener, _beat self-stops when
+chrome.runtime.id is gone; (2) whop.js: same for its health pulse; (3)
+background: detached → chrome.scripting.executeScript re-inject (idempotent,
+keeps scroll) and a tab reload only on a repeat within 5 min, both logged
+distinctly; (4) ensureReaders injects only into tabs with no heartbeat in
+60 s; (5) memoryShed, Whop black-shell and Whop no-message reloads now log a
+line (all three were silent — that's why the storm was invisible); (6) Whop
+no-message backstop 5 → 30 min (Whop pushes live; verified 8/30). Not
+changed: checkBuild's runtime.reload on a build change (it re-injects, never
+reloads tabs) — but 36 extension reloads today came from editing rooms.txt/
+manifest during sessions; each is a worker restart, so edit in batches.
+Verified: node --check on background/content/whop; manifest 3.5.67 → 3.5.68.
+Proof comes tomorrow: count "detached" lines in the next DS Logs export —
+expect single digits, with "re-attached the reader in place (no reload)" in
+their place.
+
 **2026-09-09 (even later) — RE-ADD PASS: 8 → 19 (target was 15-20).**
 G reviewed the cut list and added 11 back: all 4 Whop rooms, Aristotle
 small, TTT Lotto, all 3 Platinum shadow rooms (futures-alerts, day-trades,

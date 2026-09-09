@@ -166,11 +166,28 @@ ROOMS / TABS / READERS
   shabs + eli direct rooms retired 9/9 (covered by OWLS all-alerts).
 - EMBED RACE: bots post the call in an embed that hydrates after the row
   paints; content.js keys SEEN on id+length so the hydrated read re-emits.
-- MEMORY: Discord logs the profile OFF when too many tabs are open (9/9,
-  both profiles bounced to login). Memory shed reloads ≤1 stale room tab
-  per tick (never active/voice tab, never 9:28-9:40); tabs pinned
-  autoDiscardable=false; a room silent 90 s is reloaded. --process-per-site
-  is OFF (one renderer per tab). Chrome hardware acceleration OFF.
+- TAB RELOADS (root cause FOUND 9/9, v3.5.68 — G: "it's something in
+  code, I know it"): the DS Logs export showed 662 "watcher is detached —
+  reloading that room" reloads in ~29 h at a median gap of EXACTLY 60 s
+  (the handler's own throttle). Cause: a re-injected content.js stopped the
+  old copy's observer but NOT its heartbeat interval, so the dead copy kept
+  reporting "observing:false" every 30 s and the background reloaded the
+  tab; ensureReaders() re-injected every tab every 5 min, so every room
+  grew a zombie and reloaded ~once a minute all evening. THAT reload storm
+  — hundreds of page loads an hour — is what made Discord log the profile
+  out (the 603 "tab now shows a different page" drops), not the tab count.
+  FIXED: content.js/whop.js clear their beat/pulse on __SNIPER_STOP__ and
+  carry a `stopped` flag; background re-INJECTS on a detached report and
+  reloads only on a repeat within 5 min; ensureReaders injects only into a
+  tab that is not heartbeating; memory shed and both Whop reloads now LOG
+  a line (they were silent); Whop's no-message backstop 5 → 30 min.
+  RULE: a page reload is the LAST resort — re-attach first, and every
+  reload path must write a log line, so a storm can never be invisible.
+  MEMORY: memory shed reloads ≤1 room tab per tick, 4 h cadence (never
+  active/voice tab, never 9:28-9:40); tabs pinned autoDiscardable=false;
+  a room silent 90 s is reloaded with 1/2/4/8/15-min back-off.
+  --process-per-site is OFF (one renderer per tab). Chrome hardware
+  acceleration OFF.
   ROOM CUTS: any cut is G's call on TAGGED ledger numbers only — the 9/9
   "7 dead rooms" list was WITHDRAWN (it was built on a broken count;
   Aristotle had a live AMD 515C that day). 154 fills still carry room "?".
