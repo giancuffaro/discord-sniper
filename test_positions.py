@@ -740,8 +740,8 @@ new_stop = stops_after[-1][3]
 # k=(20-5)//5=3 -> locked +15% -> a 2.30 stop. ANTI-CLIP (60% of the gain =
 # +12%) does not bind here (it's OFF by default anyway, see below), so the
 # plain ladder number stands.
-ok(abs(new_stop - 2.30) < 0.005,
-   "at +20%% a $2.00 fill locks +15%% (9/8 ladder) — 2.30, got %s" % new_stop)
+ok(abs(new_stop - 2.28) < 0.005,
+   "at +20%% a $2.00 fill locks +14%% (9/9 step-2 ladder) — 2.28, got %s" % new_stop)
 ok(any(c[0] == "cancel" for c in RWB.calls),
    "the old stop order gets cancelled before the new one goes in")
 # Price keeps climbing to +30% — the stop should walk up again, to +10%.
