@@ -107,6 +107,14 @@ def load(path=None, since_days=None, room=None):
             "caller": r.get("who") or "?",
             "symbol": r.get("symbol") or "",
             "P&L": r.get("pl"),
+            # 9/9 FIX: score() has always looked up these three keys and load()
+            # never emitted them, so "worst dd" printed "-" for every caller
+            # since this report was written — the column the docstring calls
+            # "the one that tells you if a caller's winners are comfortable or
+            # terrifying" was structurally empty. The ledger carries them.
+            "P&L %": r.get("pl_pct"),
+            "max drawdown %": r.get("max_drawdown_pct"),
+            "max run-up %": r.get("max_runup_pct"),
             "signal": r.get("raw") or "",
             "state": r.get("state") or "",
             "account": r.get("account") or "",
