@@ -167,7 +167,7 @@ const ROOM_TABS = {};
 const LIVE_ROOM_IDS = new Set();
 
 // Rooms parked because the subscription lapsed. Filled by loadRoomsFile()
-// from "#SLEEP|" lines. They do not open and do not trade — but they are
+// from lines whose state is `lapsed`. They do not open and do not trade — but they are
 // still known, so accessCheck() can test them and wake them by itself.
 const SLEEPING = [];
 
@@ -508,8 +508,7 @@ async function revokeCheck() {
         why: "🔒 " + label + " now says \"No Access\" — you are still opening " +
              "this room and it is reading NOTHING. If you pay for it, the " +
              "subscription or the seller's Discord role has gone. Check it, " +
-             "then either fix it or park the room with #SLEEP in " +
-             "extension/rooms.txt." });
+             "then either fix it or switch the room OFF in the popup." });
       try {
         chrome.notifications.create({ type: "basic", iconUrl: "icon128.png",
           title: "🔒 " + label + " — access lost",
@@ -545,12 +544,11 @@ async function accessCheck(force) {
       await addLog({ kind: "sent", what: "ACCESS BACK",
         why: "🔓 " + room.name + " is READABLE again — " + v.why + ". It was " +
              "parked because: " + room.why + ". Still asleep and still not " +
-             "trading: take the #SLEEP off its line in extension/rooms.txt " +
-             "to wake it." });
+             "trading: switch it ON in the popup's Channels tab to wake it." });
       try {
         chrome.notifications.create({ type: "basic",
           iconUrl: "icon128.png", title: "🔓 " + room.name + " is back",
-          message: v.why + ". Still parked — wake it in rooms.txt." });
+          message: v.why + ". Still parked — switch it on in the popup." });
       } catch (e) {}
     } else {
       await addLog({ kind: "ignored", what: "ACCESS CHECK",
@@ -638,6 +636,13 @@ async function reloadRooms() {
   _roomsPromise = null;
   return loadRoomsFile();
 }
+/* THE OTHER PROFILE SEES THE FLIP (9/9). Both Chromes read the same
+ * rooms.txt. A switch flipped in one profile's popup is written to the file
+ * by the bridge; this poll (every 30 s, on the watch-build alarm) notices
+ * the file changed and makes THIS profile's tabs follow for the rooms of
+ * its own lane: newly-on rooms open, newly-off rooms close. Only ever on a
+ * CHANGE of the file — never a continuous healer, so nothing reopens on its
+ * own between edits. */
 let _roomsStampSeen = "";
 async function pollRoomsFile() {
   try {
@@ -645,9 +650,29 @@ async function pollRoomsFile() {
     const text = await r.text();
     const stamp = text.length + ":" + [...text].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
     if (_roomsStampSeen && stamp !== _roomsStampSeen) {
+      const before = new Set(LIVE_ROOM_IDS);
       await reloadRooms();
+      let lane = "";
+      try { lane = (await chrome.storage.local.get("profile_lane")).profile_lane || ""; } catch (e) {}
+      let opened = 0, closed = 0;
+      for (const room of ALL_ROOMS) {
+        const isWhop = /^whop:/i.test(room.id) || /whop\.com/i.test(room.url);
+        if (lane && (lane === "whop") !== isWhop) continue;   // the other browser's room
+        const wasOn = before.has(room.id), isOn = room.state === "on";
+        if (wasOn === isOn) continue;
+        const tabs = await roomTabsFor(room);
+        if (isOn && !tabs.length && room.url) {
+          if (Date.now() - (ROOM_OPENED_AT[room.id] || 0) < 120000) continue;
+          ROOM_OPENED_AT[room.id] = Date.now();
+          try { await chrome.tabs.create({ url: room.url, active: false }); opened++; } catch (e) {}
+          await new Promise(res => setTimeout(res, 6000));   // one gateway session per 5 s
+        } else if (!isOn) {
+          for (const t of tabs) { try { await chrome.tabs.remove(t.id); closed++; } catch (e) {} }
+        }
+      }
       await addLog({ kind: "sent", what: "ROOMS",
-        why: "rooms.txt changed — re-read it: " + LIVE_ROOM_IDS.size + " room(s) on" });
+        why: "rooms.txt changed — " + LIVE_ROOM_IDS.size + " room(s) on now" +
+             (opened ? ", opened " + opened : "") + (closed ? ", closed " + closed : "") });
     }
     _roomsStampSeen = stamp;
   } catch (e) {}
@@ -1866,7 +1891,7 @@ async function oneTabPerChannel() {
  * cost the 10:44 QQQ call — nothing reopens a room he closed.
  *
  * Careful, because opening tabs costs money-adjacent attention and RAM:
- *  - LIVE rooms only. #SLEEP rooms and commented lines are not opened.
+ *  - `on` rooms only. off / lapsed rooms are never opened.
  *  - Discord AND Whop, by their real URL shapes.
  *  - Throttled: at most a few per pass, opened in the background, so a cold
  *    start does not slam a whole lane at once — rooms.txt is 26 rooms today,
@@ -2211,7 +2236,7 @@ chrome.alarms.onAlarm.addListener(a => {
   // tab is how he turns a room off. The launcher (START HERE) opens the tabs
   // once at startup; after that nothing reopens a tab he closed. Function left
   // defined-but-uncalled below in case it's ever wanted back.
-  if (a.name === "watch-build") { checkBuild(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); }
+  if (a.name === "watch-build") { checkBuild(); pollRoomsFile(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
@@ -2823,6 +2848,9 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "POPUP_OPENED") { if (msg.tabId) retryEars(msg.tabId, "clicked on").catch(() => {}); reply({ ok: true }); return; }
+  // THE ONE SWITCH (9/9): the popup asks for every room + flips one.
+  if (msg.type === "ROOMS?") { loadRoomsFile().then(() => reply({ ok: true, rooms: ALL_ROOMS.slice() })).catch(() => reply({ ok: false, rooms: [] })); return true; }
+  if (msg.type === "ROOM_SET") { setRoomState(msg.id, !!msg.on).then(reply).catch(e => reply({ ok: false, why: String(e).slice(0, 160) })); return true; }
   if (msg.type === "ATTACHED") { noteChannelName(msg.channelId, msg.channelName); badge(); reply({ ok: true }); return; }
 
   /* FOCUS ROOM (9/4) — click a caller's name in the popup and land on the
