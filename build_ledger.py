@@ -428,7 +428,13 @@ def build():
             "max_drawdown_pct": _r2(ddown) if ddown is not None else "",
             "hi_pct": _r2(hi) if hi is not None else "",
             "lo_pct": _r2(lo) if lo is not None else "",
-            "state": _state(r),
+            # the broker saw it fill → it filled, whatever the book believed.
+            # 9/8: IWM 295P and SPY 767P were filed as "failed" by the book
+            # while Webull's history shows both filled AND closed (-6, -1).
+            "state": ("closed" if (trip and trip.get("sell") is not None)
+                      else "filled" if (export_confirmed or confirmed)
+                      and _state(r) in ("failed", "nofill", "")
+                      else _state(r)),
             "exit_by": r.get("exit_by") or "",
             "all_out": r.get("all_out") if r.get("all_out") is not None else "",
             # the export IS the real account: a fill found there is live no
@@ -563,6 +569,20 @@ def summary(rows, broker):
     print(f"  broker fills with no room row:      {len(gaps)}  (source=trades.log-only)")
     print(f"  hand trades only in the export:     {len(hand)}  (source=webull-export-only)")
     print(f"  real fills untagged room '?':       {untag}")
+    # RECONCILIATION — the ledger must equal the broker's own history on
+    # every day we hold an export. If a day drifts, something upstream lied.
+    trips = load_broker_exports()
+    days_x = sorted({t["date"] for t in trips})
+    if days_x:
+        print()
+        print("  RECONCILIATION vs Webull order export (live, real fills):")
+        for day in days_x:
+            ex = sum(t["pl"] for t in trips if t["date"] == day and t["pl"] is not None)
+            lg = sum(_f(r["pl"]) or 0 for r in real
+                     if r["date"] == day and r["account"] == "live" and r["pl"] != "")
+            ok = abs(ex - lg) < 0.01
+            print(f"   {day}  export {ex:+9.2f}   ledger {lg:+9.2f}   "
+                  f"{'MATCH' if ok else 'DRIFT %+.2f  <-- INVESTIGATE' % (lg - ex)}")
     print()
     print("  REAL FILLS PER ROOM:")
     for rm, n in Counter(r["room"] for r in real).most_common():
