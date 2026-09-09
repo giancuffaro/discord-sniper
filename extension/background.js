@@ -590,8 +590,10 @@ function loadRoomsFile() {
         const name = parts[2] || id;
         const why = state === "on" ? "" : lastComment;
         lastComment = "";
+        // 6th field (9/9): per-room rules — spx / bare / sym=XXX (see bridge read_rooms)
+        const rules = (parts[5] || "").split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
         ALL_ROOMS.push({ id: id, url: parts[1] || "", name: name,
-                         group: parts[3] || "Other rooms", state: state, why: why });
+                         group: parts[3] || "Other rooms", state: state, why: why, rules: rules });
         // rooms.txt wins over the hand-typed ROOM_LABELS map (9/9). That map
         // was missing 7 rooms that are live right now — Platinum nitro /
         // futures-alerts / day-trades / ei-alerts, Brando, Shoof, OWLS
@@ -636,6 +638,100 @@ async function reloadRooms() {
   _roomsPromise = null;
   return loadRoomsFile();
 }
+/* ===== SELF-SERVE (test build 9/9) — room rules, needs-you, fix-it =====
+ * Delete this block and the popup's Callers / Needs-you tabs to remove. */
+async function setRoomRules(id, rules) {
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const base = bridgeBaseFrom((settings || {}).bridge_url || BRIDGE_DEFAULT);
+    const r = await fetch(base + "/rooms", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: String(id), rules: String(rules || "") }) });
+    const j = await r.json();
+    if (!j || j.ok === false) return { ok: false, why: (j && j.why) || "the bridge refused it" };
+  } catch (e) {
+    return { ok: false, why: "the bridge isn't reachable — nothing changed" };
+  }
+  await reloadRooms();
+  await refreshBridgeChannels().catch(() => {});
+  const room = ALL_ROOMS.find(x => x.id === String(id));
+  await addLog({ kind: "sent", what: "ROOM RULES",
+    why: ((room && room.name) || id) + " → " + ((room && room.rules.join(", ")) || "no special rules") });
+  return { ok: true, why: "saved — the parser uses it on the next message" };
+}
+
+/* What is waiting on G, from the extension's side. Cheap, local, honest. */
+async function needsFromExtension() {
+  const items = [];
+  try {
+    await loadRoomsFile();
+    let lane = "";
+    try { lane = (await chrome.storage.local.get("profile_lane")).profile_lane || ""; } catch (e) {}
+    const tabs = await chrome.tabs.query({ url: ["https://discord.com/*", "https://*.discord.com/*",
+                                                 "https://whop.com/*"] });
+    const now = Date.now();
+    const et = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const mins = et.getHours() * 60 + et.getMinutes();
+    const marketOpen = et.getDay() >= 1 && et.getDay() <= 5 && mins >= 9 * 60 + 30 && mins < 16 * 60;
+    for (const room of ALL_ROOMS) {
+      if (room.state !== "on") continue;
+      const isWhop = /^whop:/i.test(room.id) || /whop\.com/i.test(room.url);
+      if (lane && (lane === "whop") !== isWhop) continue;
+      const mine = await roomTabsFor(room);
+      if (!mine.length) {
+        items.push({ what: room.name + " is ON but has no tab in this browser", fix: "open_missing" });
+        continue;
+      }
+      if (mine.some(t => /no access/i.test(String(t.title || "")))) {
+        items.push({ what: room.name + " says \"No Access\" — the subscription or role is gone; switch it off (or to lapsed) in Channels", fix: null });
+        continue;
+      }
+      const beat = READER_BEAT[room.id] || 0;
+      if (marketOpen && now - beat > 3 * 60000) {
+        items.push({ what: room.name + " tab is open but its reader hasn't beaten in " +
+                           (beat ? Math.round((now - beat) / 60000) + " min" : "a while"), fix: "reload_readers" });
+      }
+    }
+    const { build_waiting, build_stamp } = await chrome.storage.local.get(["build_waiting", "build_stamp"]);
+    if (build_waiting && build_waiting !== build_stamp) {
+      items.push({ what: "a new extension build is waiting for a safe window (market open or an order in flight)", fix: "reload_extension" });
+    }
+  } catch (e) {
+    items.push({ what: "needs-you check hit an error: " + String(e).slice(0, 100), fix: null });
+  }
+  return items;
+}
+
+async function fixIt(what) {
+  try {
+    if (what === "open_missing") {
+      const n = await openMissingRooms();
+      return { ok: true, why: "opened " + (n || 0) + " room tab(s)" + (n >= 3 ? " — a few per pass, click again for more" : "") };
+    }
+    if (what === "reload_readers") {
+      await loadRoomsFile();
+      const now = Date.now();
+      let n = 0;
+      for (const room of ALL_ROOMS) {
+        if (room.state !== "on") continue;
+        if (now - (READER_BEAT[room.id] || 0) < 3 * 60000) continue;      // beating: leave it
+        const tabs = await roomTabsFor(room);
+        for (const t of tabs) {
+          try { await chrome.tabs.reload(t.id); n++; RELOADED_AT[t.id] = now; } catch (e) {}
+          await new Promise(res => setTimeout(res, 6000));                 // one gateway session per 5 s
+        }
+      }
+      return { ok: true, why: "reloaded " + n + " dead reader tab(s)" };
+    }
+    if (what === "reload_extension") {
+      await chrome.storage.local.set({ build_waiting: "" });
+      setTimeout(() => chrome.runtime.reload(), 300);
+      return { ok: true, why: "reloading the extension now" };
+    }
+  } catch (e) { return { ok: false, why: String(e).slice(0, 120) }; }
+  return { ok: false, why: "unknown fix " + what };
+}
+
 /* THE OTHER PROFILE SEES THE FLIP (9/9). Both Chromes read the same
  * rooms.txt. A switch flipped in one profile's popup is written to the file
  * by the bridge; this poll (every 30 s, on the watch-build alarm) notices
@@ -716,6 +812,7 @@ async function setRoomState(id, on) {
   // rooms.txt is written; rooms.txt inside the extension folder IS that file,
   // so a fresh read sees the new state straight away.
   await reloadRooms();
+  refreshBridgeChannels().catch(() => {});
   const room = ALL_ROOMS.find(x => x.id === String(id));
   if (!room) return { ok: false, why: "room " + id + " isn't in rooms.txt after the write" };
   // a room that is on is LIVE — clear any old TESTING flag it may carry
@@ -2851,6 +2948,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   // THE ONE SWITCH (9/9): the popup asks for every room + flips one.
   if (msg.type === "ROOMS?") { loadRoomsFile().then(() => reply({ ok: true, rooms: ALL_ROOMS.slice() })).catch(() => reply({ ok: false, rooms: [] })); return true; }
   if (msg.type === "ROOM_SET") { setRoomState(msg.id, !!msg.on).then(reply).catch(e => reply({ ok: false, why: String(e).slice(0, 160) })); return true; }
+  if (msg.type === "ROOM_RULES") { setRoomRules(msg.id, msg.rules).then(reply).catch(e => reply({ ok: false, why: String(e).slice(0, 160) })); return true; }
+  if (msg.type === "NEEDS?") { needsFromExtension().then(items => reply({ ok: true, items })).catch(() => reply({ ok: false, items: [] })); return true; }
+  if (msg.type === "FIX") { fixIt(msg.do).then(reply).catch(e => reply({ ok: false, why: String(e).slice(0, 160) })); return true; }
   if (msg.type === "ATTACHED") { noteChannelName(msg.channelId, msg.channelName); badge(); reply({ ok: true }); return; }
 
   /* FOCUS ROOM (9/4) — click a caller's name in the popup and land on the
