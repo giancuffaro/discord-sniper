@@ -200,9 +200,11 @@ const RECORD_ONLY = new Set([
 ]);
 
 /* Nobody is in shadow — his call: "dont shadow, go ahead and put everyone
- * testing." Every graduated room fires PRETEND trades; not one real dollar
- * moves until he flips the REAL MONEY switch himself. The set stays here
- * for the next new room that needs a proving day. */
+ * testing." SHADOW is EMPTY, so no room is silenced here. And since 9/8 a
+ * graduated room is LIVE by default (roomLive = _lv !== false): real money
+ * moves unless he flips that room to TESTING in the popup. There is no master
+ * REAL-money switch any more — it was retired; the per-room toggle is the only
+ * arm. The set stays here for the next new room that needs a proving day. */
 const SHADOW = new Set([
   // PROBATION: read for real, judged in the log ("would have read this
   // as…"), fires NOTHING. A new server proves itself here first.
@@ -231,23 +233,9 @@ const SHADOW = new Set([
  * filter skips itself and lets EVERY room through — the opposite of what a
  * missing rooms.txt should do — so a fetch failure logs it and channel_ids
  * stays empty on purpose (nothing trades) rather than defaulting open. */
-/* BORN TESTING — rooms reopened but never yet proven on this build.
- *
- * 9/8, G: "the new rooms show live for me actually". They did, and the gate
- * below was useless for exactly the rooms it was written for. Why:
- * channel_live PERSISTS on purpose (his call: "everytime i push a new update
- * my channels go all back to testing, i need the popup to keep the live on"),
- * and the popup's ALL LIVE button writes true for EVERY room id. Four of these
- * six were live rooms before being cut on 8/30, so they still carried a stale
- * `true`. `_lv === undefined` was never true for them and the gate never fired.
- *
- * Fix: BORN_TESTING_GEN. On startup the migration deletes channel_live entries
- * for these ids ONCE per generation, so the room genuinely starts with no
- * setting. G flips it in the popup, that writes a real entry, and it sticks —
- * the migration will not run again for this generation.
- *
- * Adding a newly reopened room later: put its id here AND bump the generation,
- * or the migration will consider itself already done and the room stays live.
+/* BORN TESTING — RETIRED 9/8. The set is empty, so the generation sweep below
+ * is a no-op. Kept (not deleted) so the gate code stays valid; see the note on
+ * BORN_TESTING itself for what would have to happen to use it again.
  */
 const BORN_TESTING_GEN = "2026-09-08b";
 // TURNED OFF 9/8, G: "why were they ever testing? make everything live, let me
@@ -945,7 +933,8 @@ async function sendOrder(sig, qty, c, author, postedAt) {
     // to say "sold at a price I never saw" and the pretend account can't move.
     pct: (sig.pct === 0 || sig.pct) ? sig.pct : null,
     // Futures: what it is, which way, and THEIR levels — the plan of record
-    // is his stop and target run his trades, not the flat 20%. usd is
+    // is his stop and target run his trades, not our ratchet (born -7.5%,
+    // arm +5% -> breakeven, then +2% rungs). usd is
     // "$1,100 a contract" off a trim, the only honest futures exit price a
     // dry run has.
     kind: sig.kind || "", direction: sig.direction || null,
@@ -1130,7 +1119,8 @@ async function bridgeMode(c) {
  *
  * Why it matters more than it sounds: if this stayed wrong, the next trim the
  * room posts would send a sell for contracts that were never bought, and the
- * 20% stop would be guarding a position that doesn't exist.
+ * ratchet stop (born -7.5%, arm +5% -> breakeven, +2% rungs) would be guarding
+ * a position that doesn't exist.
  */
 let fillsBusy = false;   // two pollers, one cursor — see below
 
