@@ -75,27 +75,40 @@ def _f(v):
         return None
 
 
-def load(path=JOURNAL, since_days=None, room=None):
+def load(path=None, since_days=None, room=None):
+    """Rows from master_ledger.csv (via ledger.py), keyed like the old
+    journal.csv columns so the rest of this report is untouched.
+
+    9/9: journal.csv is built from the day table only, and the table
+    truncates (dropped Aristotle's AMD 515C on 9/8). The ledger unions
+    every store, so this scorecard now sees every priced fill."""
     try:
-        fh = open(path, encoding="utf-8-sig", errors="replace")
-    except OSError:
+        from ledger import rows as _ledger_rows
+    except ImportError:
         return []
-    rows = []
     cut = (time.time() - since_days * 86400) if since_days else None
-    for r in csv.DictReader(fh):
-        if room and (r.get("room") or "").strip().lower() != room.strip().lower():
-            continue
+    rows = []
+    for date, r in _ledger_rows(room=room or None):
         if cut:
             try:
-                t = time.mktime(time.strptime((r.get("date") or "")[:10],
-                                              "%Y-%m-%d"))
+                t = time.mktime(time.strptime(date[:10], "%Y-%m-%d"))
                 if t < cut:
                     continue
             except (ValueError, OverflowError):
                 pass
-        if _f(r.get("P&L")) is None:
+        if r.get("pl") is None:
             continue                    # still open, or never priced
-        rows.append(r)
+        rows.append({
+            "date": date,
+            "room": r.get("room") if r.get("room") != "?" else "",
+            "caller": r.get("who") or "?",
+            "symbol": r.get("symbol") or "",
+            "P&L": r.get("pl"),
+            "signal": r.get("raw") or "",
+            "state": r.get("state") or "",
+            "account": r.get("account") or "",
+            "median_total_ms": "",
+        })
     return rows
 
 
