@@ -240,11 +240,13 @@ def _verdict(res, fill, exit_px, pl, after):
         return "NO VERDICT", "no priced exit in the ledger — check the row"
     if pl < 0 or (pl == 0 and (res.get("exit_trigger") or "").startswith("breakeven")):
         if ah is not None and ah >= fill and (res.get("exit_trigger") or "").startswith("breakeven"):
-            return "ARM CLIP", ("the ratchet armed to breakeven %ss after the fill on a +5%% tick "
-                                "and a flicker took it out; the bid then reached %.2f (%+.0f%%). "
-                                "On a cheap/0DTE contract +5%% is inside the spread's breathing — "
-                                "count these; a dwell (hold +5%% for N s) or a spread-aware arm is "
-                                "the fix if they pile up. Ratchet values stay G's call."
+            return "ARM CLIP", ("the ratchet armed to breakeven %ss after the fill on a real +5%% "
+                                "move that reversed; the bid then reached %.2f (%+.0f%%). Counted, "
+                                "not acted on: on 90 contract-days (9/9) the INSTANT arm beat every "
+                                "alternative — a 30 s dwell lost $170 vs today's rule, 5 min lost "
+                                "$640, and a spread-aware arm changed 3 old trades by $25. This is "
+                                "the known cost of a rule that wins on the sample. Ratchet values "
+                                "stay G's call."
                                 % (res.get("arm_after_s") if res.get("arm_after_s") is not None else "?",
                                    ah, (ah - fill) / fill * 100.0))
         if ah is not None and ah >= fill:

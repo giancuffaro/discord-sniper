@@ -9,6 +9,27 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 16:45 — BROKER RECORD PULLED + ARM VARIANTS TESTED: RATCHET STAYS.**
+G: "did you pull a fresh Webull record and compare?" Pulled today's orders via
+the connector, wrote Webull_Orders_2026-09-09_auto.csv (45 legs, 42 filled),
+ledger reconciles +252.00 = +252.00 MATCH. Bot's two trades match the broker
+to the cent and the second; META's stop filled 10:59:55, 2 s before the
+watchdog — the race fixed at 11:20, confirmed from the broker side. G's day:
+19 hand round-trips +$285 gross (the book had adopted only 8 → +$64), bot
+−$33, day +$252. THEN the arm question, answered with data and two
+corrections of my own: (1) SPY 764P's spread was 1-2¢, NOT 8¢ — the +5.7%
+was a real move that reversed in 10 s; my "spread breathing" story was
+wrong for the trade it was built on. (2) Spread-aware arm (2× spread):
++$25 on 90 contract-days, all from 3 trades in the week of 8/10, nothing
+since — NOT built. (3) Time dwell before arming: 10 s +149, 30 s −6, 60 s
+−53, 300 s −477 vs today's +164 — every wait LOSES; today's two trades
+would have gained (+83 at 5 min), which is exactly the tune-to-today trap.
+(4) 0DTE vs 1+DTE born-stop split: 7.5% is right in both buckets. VERDICT:
+ratchet stays 7.5/5/2, instant arm. Post-mortem's ARM CLIP lesson text
+rewritten to say so (it had nudged toward dwell/spread fixes). Autopilot
+Mode B should write the Webull export every run so intraday stats carry
+the broker's number — done in the task prompt.
+
 **2026-09-09 16:20 — DAILY STATS FROM THE LEDGER + A NEW CLIP CLASS: ARM CLIP.**
 G: "pull up our daily stats — from the master log, right?" Yes. Day: bot 2
 trades −$33 (0/2), no opens, 0 nofills; his hand trades +$64 on 8; 12 alerts
