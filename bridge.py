@@ -3246,7 +3246,7 @@ class Handler(BaseHTTPRequestHandler):
         # The browser extension is a different origin, so without this the
         # order never arrives and Chrome tells you nothing useful.
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Sniper-Token")
         self.end_headers()
         self.wfile.write(body)
 
@@ -3255,6 +3255,35 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         self._reply(204, "")
+
+    # SECOND MACHINE (9/9, G: "another account on a different computer for
+    # other subs"). ONE bridge, ONE book: PC2 runs only Chrome + the extension
+    # and sends here over the LAN. That is only allowed behind a shared secret
+    # — an open order endpoint on the home network is not acceptable. Rules:
+    #   * loopback callers (this PC) are untouched — no token needed, ever;
+    #   * any other address must send X-Sniper-Token == execution.bridge_token;
+    #   * the server never binds off loopback without a token (see main).
+    _AUTH_NOTED = set()
+
+    def _authorized(self):
+        try:
+            ip = str(self.client_address[0])
+        except Exception:                               # noqa: BLE001
+            ip = "?"
+        if ip in ("127.0.0.1", "::1", "localhost"):
+            return True
+        want = str(EXEC.get("bridge_token") or "")
+        got = str(self.headers.get("X-Sniper-Token") or "")
+        import hmac as _hmac
+        ok = bool(want) and _hmac.compare_digest(want, got)
+        if not ok and ip not in Handler._AUTH_NOTED:
+            Handler._AUTH_NOTED.add(ip)
+            try:
+                note("REFUSED  a %s from %s — no/bad X-Sniper-Token (second-PC "
+                     "callers need execution.bridge_token)" % (self.command, ip))
+            except Exception:                           # noqa: BLE001
+                pass
+        return ok
 
     def _status(self):
         reload_settings()
