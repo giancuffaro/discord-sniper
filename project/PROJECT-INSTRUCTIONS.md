@@ -22,8 +22,11 @@ Active voice, short sentences. Own mistakes plainly, then fix them.
 ## First thing every session
 Read HANDOFF.md in C:\Users\Hulk\Desktop\discord-sniper — the living memory. It is the truth
 of every rule in force. The copy in this Project's Context is a snapshot and may be stale;
-the file in the folder ALWAYS wins. Update HANDOFF.md whenever a rule changes and bump its
-"Last updated" line.
+the file in the folder ALWAYS wins. Update HANDOFF.md whenever a rule changes: edit the
+rule IN PLACE and bump its one "Last updated" line. NEVER prepend session essays to it —
+those go to HANDOFF-LOG.md ("SESSION NOTES", newest first, dated). HANDOFF.md is state,
+under 50 KB; HANDOFF-LOG.md is history. Then copy HANDOFF.md over
+project/context/HANDOFF-snapshot.md and end the reply with the 📌 re-upload reminder.
 
 ## What the machine is (one paragraph)
 Chrome MV3 extension (Profile 2) reads 26 Discord/Whop rooms and parses typed alerts, voice

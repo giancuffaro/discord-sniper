@@ -78,6 +78,11 @@ ENTRIES
   nevermind") pulls that trader's resting bids and armed pullback hunts.
 - FUTURES: micros only (NQ→MNQ, ES→MES ...). Entry snaps to the 25-pt grid
   in his favour. Their stop/target wins; 25/50 fills the gaps.
+- THE POCKET (hidden from the UI on purpose): a :43-:51 scalp-entry clock
+  gate exists behind settings flag pocket_scalps_only, default OFF. The
+  decision comes from HIS fill data (ledger minute-of-hour), not the QQQ study.
+- Positions record the underlying at fill (und_at_fill); FILLED log lines,
+  announcer posts and the journal all carry it.
 
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
 - ENTRIES ONLY (G, 9/3; verified live 9/8): the bot follows room ENTRIES
@@ -282,6 +287,9 @@ FILL ANNOUNCER (announcer.py, read-only)
   — policy question still open: should a room's NAMED exit reach adopted
   positions? (Under entries-only today: no.)
 - bridge.log has no rotation (20 MB).
+- Multi-account "L": verify no orphan positions after mirror exits.
+- Topstep: not executing futures (see HANDOFF-LOG.md for the findings);
+  Webull futures $0 by choice — futures refusals there are intentional.
 
 ## Subscriptions (audited 8/28)
 Whop (~17.5% tax on top): Insiders Pro $199 | STS/RWGates $189 | Felony $100

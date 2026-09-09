@@ -71,8 +71,10 @@ message the reader saw) · `corpus/` (room language samples)
 
 ## Documentation
 
-`HANDOFF.md` — **the living memory. Read this first.** Every rule in force and
-why. · `MAP.html` — how the machine works · `INDEX.md` — this file ·
+`HANDOFF.md` — **the living memory. Read this first.** Every rule in force,
+compact (<50 KB). · `HANDOFF-LOG.md` — the full history behind every rule
+(every session's notes, newest first; grows forever, HANDOFF.md may not) ·
+`MAP.html` — how the machine works · `INDEX.md` — this file ·
 `README.md` — original setup notes · `v3.5.0/` — broker reference, methodology,
 TOS checksheet, **BROKER-TOP4-2026-09.md** (which broker and why) · `project/` — the Claude Project snapshot · `handoffs/` — older
 handoffs
