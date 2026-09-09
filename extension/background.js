@@ -3179,7 +3179,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // THE MASTER SWITCH IS RETIRED — his word: "remove the main big switch
     // since i want every room to act individually. its either testing or
     // they are live.. just like that." Each room's own toggle decides, per
-    // order. Every room resets to TESTING when Chrome starts.
+    // order. Nothing resets on a Chrome restart — LIVE persists (his 9/8 ask:
+    // "i need the popup to keep the live on"), and a room with no setting at
+    // all is live by default.
     // EXIT POLICY — ENTRIES ONLY (9/3, his word: "we only follow entries
     // and let our ratchet do its thing. Remove anything we have on trims
     // and close"). Every caller-side exit — TRIM, STOPMOVE and the full
@@ -3268,7 +3270,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // ALWAYS LIVE (his call, 8/23: "channels always toggled all live as soon
     // as I open everything"). Every room is REAL MONEY unless he explicitly
     // flips it to testing in the popup (stored false) — the old default was
-    // the reverse. Shadow rooms still fire nothing at all.
+    // the reverse. SHADOW is empty today, so nothing is silenced that way.
     const _lv = (c.channel_live || {})[String(msg.channelId || "")];
     // BORN TESTING — see BORN_TESTING at module scope. The gate only applies
     // while channel_live has NO entry for the room; the startup migration
@@ -3618,8 +3620,9 @@ async function allRoomsTesting() {
   // His call, reversed: LIVE now STAYS live across updates and restarts —
   // "everytime i push a new update my channels go all back to testing, i need
   // the popup to keep the live on." So this no longer wipes channel_live. A
-  // room only leaves LIVE when he flips it himself, or via the STOP file /
-  // master OFF, which still halt everything instantly. Kept as a named function
+  // room only leaves LIVE when he flips it himself, or via the STOP file, which
+  // still halts everything instantly. (The old master OFF switch is retired —
+  // per-room toggles are the only arm.) Kept as a named function
   // so the install/startup hooks don't need touching.
   return;
 }
@@ -3629,15 +3632,15 @@ chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(
 
 /* MEMORY SHED (9/1, G: "sometimes I come back and Chrome has run out of
  * memory"). Discord web leaks: a room tab that starts at ~150 MB sits at
- * 0.5-2 GB after a few hours, and 26 of them is how the browser dies. A
+ * 0.5-2 GB after a few hours, and 22 of them is how the browser dies. A
  * reload resets a tab to fresh — and it is SAFE here: the content script
  * re-attaches, everything already on screen comes back flagged history
  * (never traded), and the stale-entry gate covers the rest. So: every
- * 30s tick, reload at most ONE Discord room tab whose last reload is 2h+
- * old — never the tab you're looking at, never a tab playing voice, and
- * never in the opening window (9:28-9:40). One tab per tick means a full
- * cycle of 26 rooms takes 13 minutes and no two rooms are ever blind at
- * once. Whop tabs have their own watchdog. */
+ * 30s tick, reload at most ONE Discord room tab whose last reload is
+ * SHED_EVERY_MS (4h) old — never the tab you're looking at, never a tab
+ * playing voice, and never in the opening window (9:28-9:40). One tab per
+ * tick means a full cycle of today's 22 Discord rooms takes ~11 minutes and
+ * no two rooms are ever blind at once. Whop tabs have their own watchdog. */
 const RELOADED_AT = {};                  // tabId -> last reload ts
 const SHED_EVERY_MS = 4 * 60 * 60 * 1000;   // 4h (v3.5.0: heartbeat catches
                                             // dead readers in 90s, so the blind
