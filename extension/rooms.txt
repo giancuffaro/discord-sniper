@@ -126,12 +126,17 @@ whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop
 #SLEEP|The Insiders Pro Plan lapsed Aug 3 — and Discord agrees: the server bounces to @me, you are not in it (verified 9/7)|1527044644796366888|https://discord.com/channels/719580371997556737/1527044644796366888|Options Insider|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 
 # Platinum nitro is the only one of these four that has ever produced a
-# signal (6 rows, master_ledger.csv). The other three were opened 8/23 in
-# SHADOW mode (parser learns their wording, judged in the log, nothing
-# fires) and never graduated. RE-ADDED 9/9 (G's call, wants 15-20 tabs
-# total) after being cut earlier the same day — still unproven, still worth
-# checking whether the parser has actually graduated them before expecting
-# real signals.
+# signal (6 rows, master_ledger.csv). RE-ADDED 9/9 (G's call, wants 15-20
+# tabs total) after being cut earlier the same day.
+# NOT IN SHADOW — corrected 9/9. The old note here said all four were still
+# in SHADOW mode from 8/23 ("nothing fires until graduated"); that has been
+# false since 9/2, when background.js's SHADOW set was emptied and these
+# four plus NGD were GRADUATED (106 read-and-graded entries in 10 days that
+# never fired — that was the "40 signals / 0 sent" on the scoreboard, not a
+# parser gap). SHADOW is empty today. They route like every other room, and
+# since roomLive is live-by-default (_lv !== false) and the 9/8 ALL_LIVE_GEN
+# sweep deleted every explicit TEST flag, they are LIVE unless G has flipped
+# one to TESTING in the popup since.
 911389167169191946|https://discord.com/channels/911385966864896081/911389167169191946|Platinum nitro|Platinum Trading
 911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|Platinum futures-alerts|Platinum Trading
 1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum day-trades|Platinum Trading

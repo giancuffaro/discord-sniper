@@ -14,13 +14,23 @@ G reviewed the cut list and added 11 back: all 4 Whop rooms, Aristotle
 small, TTT Lotto, all 3 Platinum shadow rooms (futures-alerts, day-trades,
 ei-alerts), Brando Alerts, Shoof Alerts. None of these are proven live —
 they're back because he wants the coverage and volume back, not because
-new ledger evidence cleared them. Two things worth flagging next time this
-comes up: the 3 Platinum rooms are still in SHADOW mode in the parser
-(judged in the log, nothing fires) regardless of the tab being open, so
-don't expect signals from them without a separate parser change; and the
-19-total is 15 Discord (Profile 2) + 4 Whop (separate "Sniper Whop"
-profile) — the number that actually matters for the Discord-logoff problem
-is 15, down from 23, not 19 down from 27.
+new ledger evidence cleared them. Worth flagging: the 19-total is 15
+Discord (Profile 2) + 4 Whop (separate "Sniper Whop" profile) — the number
+that actually matters for the Discord-logoff problem is 15, down from 23,
+not 19 down from 27.
+
+CORRECTION, same session: I told G the 3 Platinum rooms were "still in
+SHADOW mode, nothing fires." **That was wrong** — I read an 8/23 comment in
+rooms.txt instead of the code. background.js's SHADOW set is EMPTY; those
+four Platinum rooms plus NGD were GRADUATED 9/2 (the note right there in
+the code: 106 read-and-graded entries in 10 days that never fired, which is
+what the "40 signals / 0 sent" scoreboard line actually was). Combined with
+roomLive being live-by-default (`_lv !== false`) and the 9/8 ALL_LIVE_GEN
+sweep deleting every explicit TEST flag, those rooms are LIVE — there was
+nothing to remove and nothing to flip. Stale rooms.txt comment corrected.
+Third stale-doc trap in one night (days/*.json vs the ledger, "BORN
+TESTING", now SHADOW) — the pattern is that this project's comments outlive
+the behavior they describe, so read the code before repeating one.
 
 **2026-09-09 — FOLDER CLEANUP: 20 dead items MOVED to archive/2026-09-09-cleanup/ (nothing deleted).**
 G: "delete useless files, things we won't use anymore." Every file was checked
