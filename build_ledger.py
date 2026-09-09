@@ -49,7 +49,7 @@ COLUMNS = [
     "max_runup_pct", "max_drawdown_pct", "hi_pct", "lo_pct",
     "state", "exit_by", "all_out", "account", "manual", "swing",
     "their_avg", "their_stop", "their_target", "their_units", "stop_at_exit",
-    "greeks_in", "greeks_out", "broker_confirmed", "export_confirmed",
+    "greeks_in", "greeks_out", "broker_confirmed", "export_confirmed", "store_pl",
     "source", "in_table", "in_wallet",
     "opened_from", "exit_from", "derived", "day_file", "raw", "why",
 ]
@@ -345,19 +345,23 @@ def build():
         trip = _find_trip(date, sym, _r2(r.get("strike")), _side_letter(r.get("side")), fill)
         export_confirmed = trip is not None
         exit_from = "store"
+        store_pl = _r2(r.get("pl"))
         if trip:
             if opened_ts is None and trip.get("buy_ts"):
                 opened_ts, opened_from = trip["buy_ts"], "webull-export"
-            if trip.get("sell") is not None and not exits:
+            if trip.get("sell") is not None:
+                # THE BROKER'S OWN RECORD WINS over the book's belief. On 9/8
+                # the store said bot -92 / hand +10; the export said +77 —
+                # and +77 is what Webull's history shows. The store's number
+                # is kept in store_pl so the disagreement stays visible.
                 exits = [{"t": trip["sell_ts"], "qty": trip["qty"],
                           "price": trip["sell"], "pl": trip["pl"]}]
-                closed_ts = closed_ts or trip["sell_ts"]
+                closed_ts = trip["sell_ts"]
                 exit_from = "webull-export"
                 derived = True
-            if trip.get("pl") is not None and r.get("pl") is None:
                 r["pl"] = trip["pl"]
-            if trip.get("sell") is not None and r.get("exit") is None:
                 r["exit"] = trip["sell"]         # lets _state() say "closed"
+                r["pl_pct"] = None               # recomputed below from fill
             if not r.get("occ"):
                 r["occ"] = trip["occ"]
         hi = r.get("hi_pct") if r.get("hi_pct") is not None else r.get("max_runup_pct")
@@ -418,6 +422,7 @@ def build():
             "greeks_out": _json(r.get("greeks_out")),
             "broker_confirmed": confirmed,
             "export_confirmed": export_confirmed,
+            "store_pl": store_pl if store_pl is not None else "",
             "source": r.get("source") or "days-json",
             "in_table": r["_in_table"],
             "in_wallet": r["_in_wallet"],

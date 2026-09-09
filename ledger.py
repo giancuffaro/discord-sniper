@@ -29,7 +29,7 @@ NOFILL_STATES = ("nofill", "failed")
 _FLOAT = ("opened_ts", "closed_ts", "t", "strike", "qty", "avg_in", "fill",
           "exit_avg", "pl", "pl_pct", "max_runup_pct", "max_drawdown_pct",
           "hi_pct", "lo_pct", "their_avg", "their_stop", "their_target",
-          "their_units", "stop_at_exit", "dte", "direction")
+          "their_units", "stop_at_exit", "dte", "direction", "store_pl")
 _JSON = ("entries", "exits", "greeks_in", "greeks_out")
 _BOOL = ("all_out", "manual", "swing", "broker_confirmed", "export_confirmed",
          "in_table", "in_wallet", "derived")
