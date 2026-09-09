@@ -47,8 +47,10 @@ def load_rooms():
                 ln = ln.strip()
                 if not ln or ln.startswith("#"):
                     continue
-                parts = ln.split("|")
-                if len(parts) >= 4:
+                parts = [x.strip() for x in ln.split("|")]
+                # 9/9: id|url|label|group|state — only `on` rooms are
+                # configured; off / lapsed rooms are benched, not silent.
+                if len(parts) >= 4 and (parts[4] if len(parts) > 4 else "on").lower() == "on":
                     rooms[parts[0]] = {"label": parts[2], "group": parts[3], "url": parts[1]}
     except OSError:
         pass

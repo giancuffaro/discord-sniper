@@ -560,8 +560,10 @@ for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do 
       timeout /t 2 /nobreak >nul
     )
   )
+  )
+  set "RSKIP="
 )
-if not defined WHOP_SEEDED echo         No live Whop rooms in rooms.txt - nothing to open.
+if not defined WHOP_SEEDED echo         No ON Whop rooms in rooms.txt - nothing to open.
 if defined WHOP_SEEDED echo         Whop browser up. First run only: log into Whop + install the extension in it.
 goto chromedone
 
