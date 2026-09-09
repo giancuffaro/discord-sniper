@@ -1,3 +1,5 @@
 ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,room
 1788965948.922,armed,META,CALLS,655,9/9,,655.0,,👑KingBeeAri🐝,Aristotle
 1788965983.209,filled,META,CALLS,655,9/9,,655.0,654.91,👑KingBeeAri🐝,Aristotle
+1788966186.353,armed,SPY,PUTS,764,9/9,,763.0,,Vero,Vero 2
+1788966218.53,filled,SPY,PUTS,764,9/9,,763.0,763.06,Vero,Vero 2
