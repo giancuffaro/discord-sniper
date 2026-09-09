@@ -387,7 +387,11 @@ if defined CHROME (
   rem  still alive first and the run stands down the moment it isn't.
   set "ABORTED="
   set /a TABN=0
-  for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+  for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do (
+    set "RSTATE=%%C"
+    if /i "!RSTATE!"=="off" set "RSKIP=1"
+    if /i "!RSTATE!"=="lapsed" set "RSKIP=1"
+    if not defined RSKIP (
     if not defined ABORTED (
     tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
     if errorlevel 1 (
@@ -415,6 +419,8 @@ if defined CHROME (
       )
     )
     )
+    )
+    set "RSKIP="
   )
   if not defined ABORTED echo         Discord rooms open - now the Whop rooms in the second browser...
   rem  Seed the Whop profile once with the perf flags so its Chrome starts with
@@ -423,7 +429,11 @@ if defined CHROME (
   rem  First-ever run: this is a blank profile - log into Whop and install the
   rem  extension in it once, then it sticks.
   set "WHOP_SEEDED="
-  for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+  for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do (
+    set "RSTATE=%%C"
+    if /i "!RSTATE!"=="off" set "RSKIP=1"
+    if /i "!RSTATE!"=="lapsed" set "RSKIP=1"
+    if not defined RSKIP (
     if not defined ABORTED (
     if not defined WHOP_SEEDED (
       set "RID=%%A"
@@ -435,8 +445,14 @@ if defined CHROME (
       )
     )
     )
+    )
+    set "RSKIP="
   )
-  for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+  for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do (
+    set "RSTATE=%%C"
+    if /i "!RSTATE!"=="off" set "RSKIP=1"
+    if /i "!RSTATE!"=="lapsed" set "RSKIP=1"
+    if not defined RSKIP (
     if not defined ABORTED (
     tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
     if errorlevel 1 (
@@ -462,6 +478,8 @@ if defined CHROME (
       )
     )
     )
+    )
+    set "RSKIP="
   )
   if defined ABORTED (
     echo         Rooms were NOT all opened - Chrome was closed part-way.
@@ -491,8 +509,14 @@ if defined CHROME (
   )
 ) else (
   start "" "!DISCORD_URL!"
-  for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+  for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do (
+    set "RSTATE=%%C"
+    if /i "!RSTATE!"=="off" set "RSKIP=1"
+    if /i "!RSTATE!"=="lapsed" set "RSKIP=1"
+    if not defined RSKIP (
     if not "%%A"=="" start "" "%%B"
+    )
+    set "RSKIP="
   )
   echo         Couldn't find Chrome in the usual folders - opened your
   echo         default browser. The extension only runs in Chrome.
@@ -520,7 +544,11 @@ if not defined CHROME (
 )
 echo         Opening the Whop rooms in the second profile: !WHOP_PROFILE!
 set "WHOP_SEEDED="
-for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
+for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do (
+  set "RSTATE=%%C"
+  if /i "!RSTATE!"=="off" set "RSKIP=1"
+  if /i "!RSTATE!"=="lapsed" set "RSKIP=1"
+  if not defined RSKIP (
   set "RID=%%A"
   if /i "!RID:~0,5!"=="whop:" (
     if not defined WHOP_SEEDED (

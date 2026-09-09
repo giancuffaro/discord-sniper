@@ -237,14 +237,16 @@
          below decides LIVE vs testing. Two controls, not three.
          Any room still stuck off from the old switch is cleared on load;
          see clearLegacyServerOff() in popup.js. -->
-    <label>Rooms — each one is its own switch</label>
+    <label>Rooms — every room we've been to, one switch each</label>
     <div id="roomtoggles"></div>
-    <div class="note">One click flips a room between TESTING (pretend money)
-      and LIVE (your Webull account). Applies instantly and STAYS that way
-      across updates and restarts — a room only leaves LIVE when you flip it,
-      or when you hit the master OFF / drop a STOP file. A room turned off
-      above (in Servers) is skipped here — there's nothing to arm on a room
-      that isn't reading.</div>
+    <div class="note">ON = the tab is open, the room is read, and its calls
+      trade LIVE on your Webull account. OFF = no tab, nothing read, nothing
+      traded. One click flips it: the list (extension/rooms.txt) is rewritten,
+      the tab opens or closes, and it stays that way across restarts and
+      START HERE. Closing a tab by hand is not a bench any more — START HERE
+      reopens every ON room; use the switch. A room marked <b>lapsed</b> is
+      off because its subscription ran out; the extension knocks on its door
+      once a day and tells you when it's readable again.</div>
 
     <label style="margin-top:14px">Grab this room's history (for tuning)</label>
     <div class="row" style="margin-top:8px">

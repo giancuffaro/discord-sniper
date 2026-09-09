@@ -1081,45 +1081,45 @@ function chanLabel(id) {
   const k = String(id || "");
   return _channelOnly(CAP_NAMES[k] || ROOM_NAMES[k] || k || "this room");
 }
-/* ROOM_NAMES and SERVER_GROUPS both come from extension/rooms.txt now
- * (8/17) — the SAME file background.js loads its trading list from, and
- * the same file START HERE.bat reads to open tabs. One file, three
- * consumers, so a room removed from it is gone from all three at once
- * instead of needing three separate edits that could drift apart (which is
- * exactly how a channel kept trading after it stopped being opened as a
- * tab). Both start empty and are populated once by loadRoomsForPopup()
- * before the first render — see the call at the bottom of this file. */
+/* THE ROOM LIST (9/9, his ask: "a list of all the rooms we've been to and the
+ * option to open the tab or not — if I selected to open it I obviously want
+ * it live"). ONE switch per room, ON = tab open + read + LIVE, OFF = none of
+ * it. The truth is extension/rooms.txt (id|url|label|group|state); the
+ * background hands it over (ROOMS?) and flips it (ROOM_SET → the bridge
+ * rewrites the line → the tab opens or closes). ROOM_NAMES stays the
+ * id→label map chanLabel() reads for positions and the log. */
 let ROOM_NAMES = {};
+let ALL_ROOMS = [];             // [{id,url,name,group,state,why}] file order
 let _roomsLoaded = false;
 async function loadRoomsForPopup() {
   try {
-    const r = await fetch(chrome.runtime.getURL("rooms.txt"));
-    const text = await r.text();
-    const names = {};
-    const groups = [];              // preserves file order, one entry per group
-    const groupIndex = {};
-    for (const line of text.split("\n")) {
-      const t = line.trim();
-      if (!t || t.startsWith("#")) continue;
-      const parts = t.split("|");
-      const id = (parts[0] || "").trim();
-      const label = (parts[2] || id).trim();
-      const group = (parts[3] || "Other rooms").trim();
-      if (!id) continue;
-      names[id] = label;
-      if (!(group in groupIndex)) {
-        groupIndex[group] = groups.length;
-        groups.push({ name: group, ids: [] });
+    const res = await chrome.runtime.sendMessage({ type: "ROOMS?" });
+    if (res && res.ok && Array.isArray(res.rooms)) {
+      ALL_ROOMS = res.rooms;
+    } else {
+      // background not answering (mid-reload): read the file directly
+      const r = await fetch(chrome.runtime.getURL("rooms.txt"), { cache: "no-store" });
+      const text = await r.text();
+      ALL_ROOMS = [];
+      let lastComment = "";
+      for (const line of text.split("\n")) {
+        const t = line.trim();
+        if (!t) { lastComment = ""; continue; }
+        if (t.startsWith("#")) { lastComment = t.replace(/^#\s*/, ""); continue; }
+        const p = t.split("|").map(x => x.trim());
+        if (!p[0]) continue;
+        const state = (p[4] || "on").toLowerCase();
+        ALL_ROOMS.push({ id: p[0], url: p[1] || "", name: p[2] || p[0],
+                         group: p[3] || "Other rooms", state: state,
+                         why: state === "on" ? "" : lastComment });
+        lastComment = "";
       }
-      groups[groupIndex[group]].ids.push(id);
     }
+    const names = {};
+    for (const r of ALL_ROOMS) names[r.id] = r.name;
     ROOM_NAMES = names;
-    // (SERVER_GROUPS was assigned here until 9/7. Nothing read it
-    //  once the Servers block went — chanLabel() uses ROOM_NAMES.
-    //  The local `groups` build below is left alone: it is cheap
-    //  and it is what would be needed if grouping ever returns.)
   } catch (e) {
-    // Leave both empty rather than guess — an empty Channels tab with a
+    // Leave it empty rather than guess — an empty Channels tab with a
     // clear "couldn't load rooms.txt" is honest; a stale hardcoded list
     // silently trading rooms that were supposedly removed is not.
     if ($("roomtoggles"))
@@ -1127,44 +1127,6 @@ async function loadRoomsForPopup() {
         '<div class="note">Couldn\'t load extension/rooms.txt — nothing shows here until this is fixed.</div>';
   }
   _roomsLoaded = true;
-}
-/* serverGroupsFor() and _expandedServer went with the Servers block on
- * 9/7 — both had exactly one reference left in this file: their own
- * definition. SERVER_GROUPS went too — I first wrote that it "stays
- * because the group name labels a room", then checked: chanLabel()
- * reads ROOM_NAMES, not groups. The comment was wrong, so the code
- * got fixed instead of the comment getting kept. */
-
-/* SERVERS BLOCK REMOVED 9/7 — his call: "i dont think we need this".
- *
- * renderServerToggles() and its whole-server on/off drew a SECOND, coarser
- * switch on top of the per-room one. It also failed the quiet way: a room
- * switched off here was dropped in background.js with nothing anywhere
- * saying so, which is the 9/2 RWGates mystery written down in this file's
- * own export code. Two controls now, not three: rooms.txt decides which
- * rooms exist at all, and the per-room switch decides LIVE vs testing.
- *
- * The no-op stub that first stood here said it was "kept because four call
- * sites still invoke it" — written before I removed the last caller in the
- * same edit. Checked: zero callers. Gone.
- */
-
-/* Nothing may be left muted by a switch that no longer exists. Any room
- * still flagged off by the old server control is cleared once, and said out
- * loud — a silently-dropped room is exactly what this removal is meant to
- * make impossible. */
-async function clearLegacyServerOff() {
-  try {
-    const { settings } = await chrome.storage.local.get("settings");
-    const s = settings || {};
-    const cd = s.channel_disabled || {};
-    const stuck = Object.keys(cd).filter(id => cd[id]);
-    if (!stuck.length) return;
-    s.channel_disabled = {};
-    await chrome.storage.local.set({ settings: s });
-    console.log("[sniper] freed " + stuck.length +
-                " room(s) muted by the removed server switch:", stuck);
-  } catch (e) { /* never block the popup opening */ }
 }
 
 /* The per-room scoreboard he asked for: "trade information, won, lost,
@@ -1216,128 +1178,67 @@ function renderRoomStats(wallet, dayTable) {
     }).join("");
 }
 
-let _allLiveArm = 0;            // two-tap arm for "all LIVE" (real money)
-function renderRoomToggles(channelLive, channelPull, channelDisabled) {
+/* One row per room, grouped the way rooms.txt groups them. The switch is
+ * red when ON because ON is real money — there is no "testing" state any
+ * more. A click flips it at once (the bridge writes rooms.txt), the row
+ * says what happened, and the list repaints from the file. */
+let _roomBusy = {};
+function renderRoomToggles() {
   const box = $("roomtoggles");
   if (!box) return;
-  const cd = channelDisabled || {};
-  // DEAD PATH since 9/7: the Servers block is gone and clearLegacyServerOff()
-  // empties channel_disabled on every popup open, so cd is always {} and the
-  // dimmed "off" branch below never renders. Kept because the shape is what
-  // 8/17 asked for ("i only want them to toggle off, not disappear") and it
-  // costs nothing — but do not read it as live behaviour.
-  const ids = Object.keys(ROOM_NAMES);
-  const liveCount = ids.filter(id => !cd[id] && !!(channelLive || {})[id]).length;
-  // Master row (his ask, 8/13): flip every room at once instead of clicking
-  // ~26 toggles (one per rooms.txt room). "all testing" is always safe and
-  // instant. "all LIVE" arms REAL money on every room, so it takes two taps —
-  // one to arm, one to fire. With the master switch retired, these toggles are
-  // the only thing standing between a click and real orders.
-  const master =
+  const rooms = ALL_ROOMS || [];
+  const on = rooms.filter(r => r.state === "on").length;
+  const groups = [];
+  const gi = {};
+  for (const r of rooms) {
+    if (!(r.group in gi)) { gi[r.group] = groups.length; groups.push({ name: r.group, rooms: [] }); }
+    groups[gi[r.group]].rooms.push(r);
+  }
+  const head =
     '<div class="row" style="margin-bottom:8px;padding-bottom:6px;' +
     'border-bottom:1px solid #2a303c">' +
-    '<span class="grow" style="font-size:12px;font-weight:600">All rooms ' +
-    '<span style="color:#7d8697;font-weight:400">(' + liveCount + '/' + ids.length +
-    ' live)</span></span>' +
-    '<button id="allTesting" style="font-size:10px;margin-right:6px;padding:1px 8px;' +
-    'border-radius:9px;cursor:pointer;border:1px solid #3a4254;background:transparent;' +
-    'color:#7d8697">all testing</button>' +
-    '<button id="allLive" style="font-size:10px;padding:1px 8px;border-radius:9px;' +
-    'cursor:pointer;border:1px solid #f87171;background:transparent;color:#f87171">' +
-    'all LIVE</button></div>';
-  box.innerHTML = master + ids.map(id => {
-    // absent = LIVE now (8/23, his call: rooms come up live; only an
-    // explicit false means testing)
-    const live = (channelLive || {})[id] !== false;
-    const pull = !!(channelPull || {})[id];
-    // Server-switched-off rooms: dimmed with a plain "off" tag (his ask, 8/17).
-    // Unreachable today — see the cd note above; channel_disabled is cleared on
-    // every open, so this branch is held for a control that no longer exists.
-    if (cd[id]) {
-      return '<div class="row" style="margin-bottom:4px;opacity:.45">' +
-             '<span class="grow gotoroom" data-chan="' + id + '" data-room="' +
-             chanLabel(id).replace(/"/g, "&quot;") + '" title="open this room\u2019s tab" ' +
-             'style="font-size:12px;cursor:pointer;text-decoration:underline;' +
-             'text-decoration-style:dotted;text-underline-offset:3px">' +
-             chanLabel(id) +
-             '</span><span style="font-size:10px;color:#7d8697">' +
-             'off — server switch</span></div>';
-    }
-    // ONE button, one click, flips and saves instantly. No dropdown, no
-    // confirm, no Save step — his word. Red is reserved for real money.
-    // (The per-room "instant/RN wait" pill lived here 8/11-8/17. Replaced by
-    // ONE global Round-number toggle in the Strategies tab — his ask.)
-    // CLICK THE NAME, GET THE TAB (9/7, his ask). data-chan carries the
-    // EXACT channel id, so the background never has to guess which room he
-    // meant — the name-scoring path is only for clicks that arrive as text
-    // (a trade row, a caller). The toggle button beside it is untouched:
-    // the name jumps, the button still flips LIVE/testing.
-    return '<div class="row" style="margin-bottom:4px">' +
-           '<span class="grow gotoroom" data-chan="' + id + '" data-room="' +
-           chanLabel(id).replace(/"/g, "&quot;") + '" title="open this room’s tab" ' +
-           'style="font-size:12px;cursor:pointer;text-decoration:underline;' +
-           'text-decoration-style:dotted;text-underline-offset:3px">' +
-           chanLabel(id) +
-           '</span>' +
-           '<span style="font-size:11px;letter-spacing:.04em;width:52px;' +
-           'text-align:right;color:' + (live ? "#f87171" : "#7d8697") + '">' +
-           (live ? "LIVE" : "testing") + '</span>' +
-           '<button data-room="' + id + '" class="tgl money ' +
-           (live ? "live" : "safe") + '"></button></div>';
-  }).join("");
-  // "all testing" — every room back to paper. Always safe, no confirm.
-  const allOff = box.querySelector("#allTesting");
-  if (allOff) allOff.onclick = async () => {
-    _allLiveArm = 0;
-    const { settings } = await chrome.storage.local.get("settings");
-    const s = settings || {};
-    s.channel_live = {};
-    ids.forEach(id => { s.channel_live[id] = false; });
-    await chrome.storage.local.set({ settings: s });
-    renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
-  };
-  // "all LIVE" — real money on every room. Two taps: arm, then fire.
-  const allOn = box.querySelector("#allLive");
-  if (allOn) allOn.onclick = async () => {
-    const now = Date.now();
-    if (now - _allLiveArm > 4000) {         // first tap: arm for 4s
-      _allLiveArm = now;
-      allOn.textContent = "tap again to confirm";
-      allOn.style.background = "#f87171";
-      allOn.style.color = "#0b0d12";
-      setTimeout(() => {                     // disarm + relabel if he waits
-        if (Date.now() - _allLiveArm >= 4000) {
-          _allLiveArm = 0;
-          if (allOn.isConnected) {
-            allOn.textContent = "all LIVE";
-            allOn.style.background = "transparent";
-            allOn.style.color = "#f87171";
-          }
-        }
-      }, 4100);
-      return;
-    }
-    _allLiveArm = 0;                         // second tap: apply
-    const { settings } = await chrome.storage.local.get("settings");
-    const s = settings || {};
-    s.channel_live = s.channel_live || {};
-    ids.forEach(id => { s.channel_live[id] = true; });
-    await chrome.storage.local.set({ settings: s });
-    renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
-  };
+    '<span class="grow" style="font-size:12px;font-weight:600">Rooms ' +
+    '<span style="color:#7d8697;font-weight:400">(' + on + ' of ' + rooms.length +
+    ' on — on = tab open, reading, LIVE)</span></span></div>';
+  box.innerHTML = head + groups.map(g =>
+    '<div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;' +
+    'color:#7d8697;margin:8px 0 3px">' + esc(g.name) + '</div>' +
+    g.rooms.map(r => {
+      const isOn = r.state === "on";
+      const tag = isOn ? "LIVE" : (r.state === "lapsed" ? "lapsed" : "off");
+      const busy = !!_roomBusy[r.id];
+      return '<div class="row" style="margin-bottom:4px' + (isOn ? "" : ";opacity:.7") + '">' +
+        '<span class="grow gotoroom" data-chan="' + esc(r.id) + '" data-room="' +
+        esc(chanLabel(r.id)) + '" title="' + esc(isOn ? "open this room\u2019s tab" : (r.why || "off")) + '" ' +
+        'style="font-size:12px;cursor:pointer;text-decoration:underline;' +
+        'text-decoration-style:dotted;text-underline-offset:3px">' + esc(chanLabel(r.id)) +
+        (r.why && !isOn ? ' <span style="color:#7d8697;font-size:10px">— ' + esc(r.why.slice(0, 70)) + '</span>' : "") +
+        '</span>' +
+        '<span style="font-size:11px;letter-spacing:.04em;width:52px;text-align:right;color:' +
+        (isOn ? "#f87171" : "#7d8697") + '">' + (busy ? "…" : tag) + '</span>' +
+        '<button data-room="' + esc(r.id) + '" data-on="' + (isOn ? "1" : "0") +
+        '" class="tgl money ' + (isOn ? "live" : "safe") + '"' + (busy ? " disabled" : "") + '></button></div>';
+    }).join("")).join("");
   box.querySelectorAll("button[data-room]").forEach(btn => {
     btn.onclick = async () => {
-      const { settings } = await chrome.storage.local.get("settings");
-      const s = settings || {};
-      s.channel_live = s.channel_live || {};
       const id = btn.dataset.room;
-      s.channel_live[id] = (s.channel_live[id] === false);
-      await chrome.storage.local.set({ settings: s });
-      renderRoomToggles(s.channel_live, s.channel_pullback, s.channel_disabled);
+      const turnOn = btn.dataset.on !== "1";
+      _roomBusy[id] = true;
+      renderRoomToggles();
+      let res = null;
+      try { res = await chrome.runtime.sendMessage({ type: "ROOM_SET", id: id, on: turnOn }); }
+      catch (e) { res = { ok: false, why: String(e).slice(0, 120) }; }
+      delete _roomBusy[id];
+      await loadRoomsForPopup();
+      renderRoomToggles();
+      const note = document.createElement("div");
+      note.className = "note";
+      note.style.color = res && res.ok ? "#4ade80" : "#f87171";
+      note.textContent = (res && res.why) || (res && res.ok ? "done" : "no answer from the extension");
+      box.appendChild(note);
+      setTimeout(() => { if (note.isConnected) note.remove(); }, 6000);
     };
   });
-  // (the per-room RN-pill click handler is gone with the pill — the ONE
-  // Round-number toggle lives in Strategies now, 8/17)
 }
 
 
@@ -1480,9 +1381,11 @@ async function render() {
   const s = await getSettings();
   await loadCapNames();     // real room names the reader has seen, freshest first
   try {
-    clearLegacyServerOff();
-    renderRoomToggles(s.channel_live || {}, s.channel_pullback || {}, s.channel_disabled || {});
-    if (!Object.keys(ROOM_NAMES).length && _roomsLoaded)
+    // fresh from the file each pass (a flip in the other browser, a hand
+    // edit) — skipped while one of our own flips is still in flight
+    if (_roomsLoaded && !Object.keys(_roomBusy).length) await loadRoomsForPopup();
+    renderRoomToggles();
+    if (!ALL_ROOMS.length && _roomsLoaded)
       showPopupError("rooms", new Error("rooms.txt loaded but holds no rooms — " +
                                         "check extension/rooms.txt"));
   } catch (e) { showPopupError("rooms", e); }
