@@ -9,6 +9,34 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 18:25 — SELF-SERVE TEST BUILD (v3.5.79): CALLERS, NEEDS-YOU, NUMBERS, ROOM RULES.**
+G: "I really like it, no more chasing tabs and reading problems. What else
+can we apply this methodology to simplify use so I don't have to bother
+you?" Offered four; he took all four "just to test, I might want to remove
+if I don't like". Also: "put the grabber in the logs tab" — done (the
+history-grab block moved from Channels to Logs). Built, each marked
+SELF-SERVE so it strips as a block: (1) CALLERS tab — caller_stats() from
+master_ledger + master_alerts (35 callers; Unraveller 11 trades +$929,
+Bullwinkle 10 +$649 …), caller_key() normalises the emoji/admin-tag names,
+callers_off in settings.json, the order path refuses OPEN/ADD from an
+off caller. (2) NEEDS YOU tab — needs_you() on the bridge + needsFromExtension()
+in background.js, with fix buttons: reload dead readers (F5 on ON rooms whose
+READER_BEAT is > 3 min old, 6 s apart), open missing tabs (openMissingRooms),
+announcer on/off (announcer.stop file — the revive task/ANNOUNCER.bat start
+it), restart bridge (bridge.restart), reload extension. (3) STRATEGY NUMBERS
+in the Strategies tab: five numbers with their backtest notes, validated
+ranges, two-tap save → settings.json → applied live (ratchet_tiers.TIERS
+rebuilt from strategy.ratchet_arm_pct/ratchet_rung_pct; _PULLBACK.timeout).
+(4) ROOM RULES as three pills per Channels row (SPY-proxy / bare / SPX) →
+rooms.txt 6th field → apply_room_rules() derives the three per-channel lists;
+the lists were migrated out of settings.json (Boka 3 spx; TTT Lotto bare;
+shabs/eli spx+sym=SPX) and the doc key there points to rooms.txt.
+Verified live after the 18:17 restart: /callers 35, /numbers 7.5/10/5/2/10,
+/needs 2 items (announcer paused; 4 lapsed rooms), /rooms shows the 4 rule
+sets; write round-trips on harmless targets all returned to their starting
+state (whop:swing rules bare→none, Market Guru off→on, pullback 10→10);
+bad inputs refused with plain reasons. Extension 3.5.79 reloaded 18:15.
+
 **2026-09-09 (evening) — BROWSER IDs PINNED. Stop asking which Chrome is which.**
 G, justifiably annoyed: "WHY NOT DO THIS BEFORE???" — I asked him to identify
 the browser three separate times in one session. The answer was always

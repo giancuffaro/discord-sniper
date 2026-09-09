@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (evening) — v3.5.78: ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-09 (evening) — v3.5.79: SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -47,7 +47,7 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.78) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.79) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
@@ -117,6 +117,42 @@ ENTRIES
   own lane's rooms. START HERE opens only `on` rooms. CLOSING A TAB BY
   HAND IS NOT A BENCH — START HERE and a flip reopen every `on` room; the
   switch is the only bench. Benched rooms are never deleted from the file.
+  6th field = the room's RULES (9/9 evening): comma flags `spx` (index
+  calls trade as SPY, strike/10, premium dropped), `bare` (an entry with
+  no verb counts), `sym=SPX` (symbol to assume when the call names none).
+  The bridge DERIVES spx_entry_channels / entry_no_verb_channels /
+  default_symbol_channels from these (apply_room_rules, at boot and on
+  every write) — settings.json no longer holds those lists. Rules count
+  whatever the room's state (shabs/eli are off but relayed via OWLS).
+  Set from the popup: the three pills on each Channels row.
+- SELF-SERVE PANELS — TEST BUILD (9/9 evening, G: "what else can we apply
+  this methodology to so I don't have to bother you?" — "make them just to
+  test, I might want to remove"). Four panels, each one bridge endpoint
+  pair + one popup block, marked "SELF-SERVE" in bridge.py / popup.js /
+  popup.html / background.js so removal is deleting the marked blocks:
+  · CALLERS tab — every trader ever followed (ledger + alerts; key =
+    lowercase alphanumerics of the name), record inline, one switch. OFF =
+    settings.json callers_off gets the key; the bridge refuses that
+    trader's OPEN/ADD at the door ("switched OFF in the popup's Callers
+    tab"); exits never gated; the room keeps reading. GET/POST /callers.
+  · NEEDS YOU tab — what's waiting on G: bridge side (STOP file, announcer
+    paused, Webull not connected, buying power < $150, lapsed rooms, queued
+    restart) + extension side (ON room with no tab in this lane, "No
+    Access" title, reader silent > 3 min in market hours, extension update
+    waiting). Buttons = the old .bat files / F5: reload dead readers,
+    open missing tabs, announcer on/off (announcer.stop), restart bridge
+    (bridge.restart), reload extension. GET /needs, POST /fix, messages
+    NEEDS? / FIX.
+  · STRATEGY NUMBERS (Strategies tab, bottom) — born stop %, take-profit %
+    (hard-close mode only), ratchet arm %, ratchet rung %, round-number
+    wait minutes; each with its backtest note; ranges enforced (stop 2-30,
+    arm 1-30, rung 0.5-20, wait 1-30); two taps to save; written to
+    settings.json (strategy.ratchet_arm_pct / ratchet_rung_pct are NEW
+    keys, applied to ratchet_tiers.TIERS live; pullback.timeout_seconds
+    applied to the live Pullback). GET/POST /numbers. Changing them is
+    G's call by house rule — the panel is him making it.
+  · ROOM RULES — the pills above.
+  None of these places, cancels or sizes an order by itself.
 - STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung
   (quote-verified). 3-ITM translation for SPY/QQQ/Mag7 0DTE. ADD buys the
   held strike.
