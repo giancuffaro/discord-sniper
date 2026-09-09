@@ -312,9 +312,17 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   $209). So locking in small increments captures the run-then-pullback that a
   +5% rung gives back. chart_contracts.py -> contracts.html draws every fill's
   gain%-from-entry path with entry/born/arm lines, peak/trough, and an ✕ where
-  the live stop sold — for eyeballing why small rungs win. STILL G's call, still
-  HOLDING values (7.5/5/5) per his 9/9 decision to keep backtesting; the step
-  finding is the strongest candidate when he's ready to move.
+  the live stop sold — for eyeballing why small rungs win. SHIPPED 9/9 (G's
+  settle): ratchet_tiers.py TIERS step 5.0 -> 2.0 — the ladder is now BORN -7.5%
+  (settings.json) / ARM +5% -> breakeven / STEP +2% rungs, ONE tier for all
+  premiums (no cheap tier — cheap loses under every spacing, G's call; sizing/
+  filtering is the real cheap lever, tracked separately). test_positions.py
+  ratchet checks recomputed for step-2 (+20%->2.28, +30%->2.48 on a $2 fill) and
+  GREEN. NEEDS A BRIDGE RESTART to go live. MIN_RUNG_TICKS=4 floors the 2% rung
+  so it never goes sub-tick on cheap/nickel names. Futures: separate points-based
+  ratchet (futures_locked_points, arm=step coupled) — the % values don't
+  translate and there's no futures fill data to tune it, so left caller-driven
+  until futures actually trade (fund Webull futures or fix Topstep first).
   **RN-RULE LEDGER + FORWARD TRACKER (9/9). "Is my round-number entry better
   than taking their price?"** Answer from what history allows: FAVORABLE BUT
   THIN. On the fills it caught (entry_compare.py, n=11) the RN entry beat the
