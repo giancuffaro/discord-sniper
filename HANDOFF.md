@@ -282,8 +282,10 @@ FILL ANNOUNCER (announcer.py, read-only)
 5. Chrome: hardware acceleration OFF. Close any old parked Whop tabs.
 
 ## Watch items (open)
-- Discord logoff under tab load — the OWLS move cut only 2 tabs; real
-  relief needs cuts G approves on tagged numbers.
+- Discord logoff under tab load — OWLS cut 2 tabs, then 9/9 cut 15 more on
+  tagged master_ledger.csv numbers (G approved): 27 rooms → 12. Watch
+  whether logoffs actually stop at this count; if not, the next lever is
+  moving rooms across more Chrome profiles, not further cuts.
 - 154 ledger fills with room "?" (pre-tagging August + recovered rows).
 - Telemetry rows lack room/caller → master_alerts taken-side is anonymous.
 - Deepgram key may be one char short (39) — watch for voice auth errors.

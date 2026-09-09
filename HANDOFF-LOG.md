@@ -9,7 +9,56 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
-(none yet since the cut — the pre-cut history follows)
+**2026-09-09 (later) — ROOM CLEANUP: 27 → 12, rooms.txt de-essayed.**
+G's thread: Discord logs the account out under tab load → asked what
+Discord's actual ToS says about this kind of reading (real quotes pulled:
+the scraping clause and the self-bot clause both name it directly, account
+termination is on the table, not just the logoff nuisance) → decided to cut
+tab count now regardless, in parallel with pursuing sanctioned access later.
+
+FIRST PASS WAS WRONG, caught before it shipped: built an "oldest signal per
+room" ranking off `days/*.json`, which is the exact table-truncation bug
+already documented elsewhere in this file — it said Aristotle had 0 trades
+in 5 weeks. Re-ran everything off `master_ledger.csv` instead (the
+reconciled source) and Aristotle showed 1 real row. Pulled it from the cut
+list before anything was touched. Lesson re-confirmed, not new: this file's
+own "any cut is G's call on TAGGED ledger numbers only" rule exists because
+of this exact failure mode, and it caught it a second time tonight.
+
+CUT (G approved each, in batches, across the conversation) — all 0 rows in
+master_ledger.csv for their full history, or (Brando/Shoof/ZT opt-9)
+structurally non-performing since being reopened/wired:
+  Whop Day Trades, Whop Futures, Whop High Risk (1 failed row lifetime),
+    Whop 2K Challenge — dead weight; NOT a fix for the Discord-logoff count,
+    Whop runs in a separate Chrome profile and was never part of it.
+  Platinum futures-alerts, Platinum day-trades, Platinum ei-alerts — never
+    graduated out of shadow-parse mode since 8/23.
+  ZT opt-9 — reopened 9/7, 0 signals since.
+  TTT Lotto — wired 9/7, 0 signals since.
+  Aristotle small — 0 rows even in the corrected ledger (unlike its sibling,
+    which the ledger fix confirmed WAS live — the two aren't the same case).
+  Vero 1, Vero 3 — G's call; Vero 1 had real volume (4 rows), Vero 3 almost
+    none (1 row ever). Vero 2 stays.
+  NGD ngd-trades, Brando Alerts, Shoof Alerts — 0 rows since wired.
+Result: 12 rooms remain, all Discord (extension/manifest.json → 3.5.65).
+
+FOUND MID-EDIT, fixed before finishing: rooms.txt still said ZT opt-1/fut-1/
+fut-2 were "BORN TESTING, flip in the popup" and that the Whop plan was API
+access from room owners. Both stale — this file's own top section (written
+the same night, just earlier) already recorded ALL_LIVE_GEN clearing every
+test flag 9/8, and a Whop API reader that WAS tried 9/9 and deleted the same
+day (a dead "api mode" gate had been dropping every tab read since that
+morning). Corrected in rooms.txt before reporting done. G's "make all live"
+message is what surfaced this — he was pointing at the stale claim, not
+asking for a real-money flip (which nothing here does regardless).
+
+Also trimmed rooms.txt itself: the ZTRADEZ mashup 19-room investigation and
+the OWLS 24-channel scan were multi-paragraph essays sitting inline in a
+file whose whole job is "what's open and why" at a glance. Full text of
+both is preserved above, in the pre-cut archive below this line — nothing
+was deleted, just moved out of the room list.
+
+(pre-cut history follows)
 
 ---
 
