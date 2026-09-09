@@ -229,6 +229,26 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   (CME Globex, ES/NQ/MES/MNQ, metals) Sun 6:00 PM → Fri 5:00 PM ET with a daily
   5–6 PM ET halt. So the 9:25 PM NQ long WAS in-session and tradeable — the only
   reason it was missed is the dead Whop feed, not the hour.
+  **WHOP FEED FIXED — root cause found and the dead path deleted (ext 3.5.62,
+  needs RELOAD).** Checked the Whop feed live in G's Sniper Whop profile: whop.js
+  IS alive and its scraper WORKS on the current Whop DOM (13 posts pulled from
+  Day Trades, e.g. Trademorewiser "Short NQ 29508"), and his room tabs ARE on the
+  right /exp_.../app/ URLs. So reading was never the problem. THE BUG: background.js's
+  MESSAGE handler had a gate — `if (WHOP_API_ACTIVE) { reply('api mode'); return; }`
+  — that DROPPED every Whop tab read whenever the server-side API reader flagged
+  itself "active". That API reader never actually worked (queried Whop with exp_
+  experience ids at guessed /v1/messages paths → 404), but its false "active"
+  ping silenced the working tab path. That's why Whop went dark all day incl. the
+  9:25 PM NQ long. FIX (G: "delete anything not working and wire the fix from
+  scratch"): DELETED the whole dead API reader — bridge.py _whop_feed_loop +
+  /whopfeed + WHOP_FEED* (−111 lines), background.js WHOP_API_ACTIVE/startWhopFeed/
+  FEED_ACTIVE + the gate, offscreen.js feedStart. Whop now reads ONLY through the
+  browser tab (whop.js → background MESSAGE → bridge), exactly like Discord. Kept:
+  offscreen (voice), whopWatchdog/WHOP_PULSE (tab health). node --check + py_compile
+  clean; no dead-API refs remain. TAKES EFFECT ON EXTENSION RELOAD (3.5.62) — after
+  that Whop feeds AND trades (rooms are live from the ALL-LIVE change); existing
+  messages are history-flagged so a reload won't re-fire them, but the next FRESH
+  futures alert WILL fire (futures trade overnight — see MARKET-HOURS.md).
 Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
