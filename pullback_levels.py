@@ -31,7 +31,7 @@ RUN   python3 pullback_levels.py            # full report
       python3 pullback_levels.py --cost     # only price the pull, buy nothing
       python3 pullback_levels.py --no-fetch # replay from cache only
 Read-only over every record. Never trades. Writes only bars/stock/*.csv
-and pullback_levels_report.md.
+and reference/PULLBACK-LEVELS.md.
 """
 import csv
 import glob
@@ -51,7 +51,7 @@ import pullback  # noqa: E402  (the live rule — MANAGED names, exit levels)
 TRADES_LOG = os.path.join(HERE, "trades.log")
 SETTINGS = os.path.join(HERE, "settings.json")
 BARS_DIR = os.path.join(HERE, "bars", "stock")
-REPORT = os.path.join(HERE, "pullback_levels_report.md")
+REPORT = os.path.join(HERE, "reference", "PULLBACK-LEVELS.md")
 ET = ZoneInfo("America/New_York")
 BETA = sorted(s for s in pullback.MANAGED if s not in ("SPY", "QQQ"))
 GRIDS = (0.0, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0)   # 0.0 = take it at the alert

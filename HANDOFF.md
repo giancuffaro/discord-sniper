@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (midday) — v3.5.73; post-mortem on every exit. Tonight: one central file per data
+Last updated: 2026-09-09 (evening) — v3.5.75; master_broker.csv (daily Webull pulls absorbed + deleted); pullback level settled at $1 on real bars. Earlier today: post-mortem on every exit; one central file per data
 family (ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2
 flat, futures ratchet decoupled; Whop API path deleted; the tab-reload storm
 found (662 reloads/day, zombie heartbeat) and fixed; rooms settled at 19
@@ -73,6 +73,15 @@ ENTRIES
   touch. RN (round-number) pullback is global and ON (waits for the next
   round number, 10-min window; a never-touched RN = skipped, logged
   "PULLBACK never hit"). One contract per entry while the bracket is on.
+  THE LEVEL STAYS $1 — SETTLED 9/9 on 106 beta-name alerts (META/AMD/AAPL/
+  NVDA/TSLA/MSFT/AMZN/GOOGL, 8/4–9/8) replayed on real 1-second stock bars
+  (pullback_levels.py → reference/PULLBACK-LEVELS.md): the $1 wait beats
+  taking the alert by +$8/contract (paired, 65 trades, 2.6× its noise);
+  $2 / $2.50 / $5 / $10 add nothing over $1 on the same trades (+0.4, +1.7,
+  +6.1 — all inside noise) while skipping 40–75% of the trades; a 15-min
+  wait changes nothing vs 10. And the "they bounce off 2.50s and 5s" idea
+  is false in this sample: $5 lines held 31%, $2.50 36%, a random x.25 line
+  38%. Don't re-open on a feeling — re-run the script when the sample doubles.
 - All rooms LIVE by default (ALL_LIVE_GEN migration 9/8 cleared every test
   flag). Toggling a room off is G's only bench.
 - STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung

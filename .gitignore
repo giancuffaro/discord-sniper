@@ -104,3 +104,7 @@ extension/bridge.txt
 master_postmortems.csv
 master_postmortems.csv.*
 postmortems/
+
+# 9/9: bought price bars (Databento 1-second stock bars for the pullback
+# backtest) — data, re-buyable for cents, never code
+bars/
