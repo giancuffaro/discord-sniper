@@ -319,10 +319,16 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   filtering is the real cheap lever, tracked separately). test_positions.py
   ratchet checks recomputed for step-2 (+20%->2.28, +30%->2.48 on a $2 fill) and
   GREEN. NEEDS A BRIDGE RESTART to go live. MIN_RUNG_TICKS=4 floors the 2% rung
-  so it never goes sub-tick on cheap/nickel names. Futures: separate points-based
-  ratchet (futures_locked_points, arm=step coupled) — the % values don't
-  translate and there's no futures fill data to tune it, so left caller-driven
-  until futures actually trade (fund Webull futures or fix Topstep first).
+  so it never goes sub-tick on cheap/nickel names. Futures: DECOUPLED 9/9 to
+  match. futures_locked_points now arms at 2/3 of the risk -> BE, then a rung
+  every ~27% of the risk (FUT_ARM_FRACTION 5/7.5, FUT_STEP_FRACTION 2/7.5 — the
+  options 7.5:5:2 ratios). Risk = the caller's own stop (theirs first) so an NQ
+  30-pt stop -> 30/20/8, MES 10 -> 10/6.7/2.7, auto-scaled per instrument.
+  Anchored to QQQ<->NQ = ~41 pts/$ (live 9/9: QQQ 717.42, NQU6 29,579). NO
+  futures backtest (no fills) — a translation, verify when futures actually
+  trade. test_positions/architecture green. NEEDS RESTART. Market Sniper handoff
+  written (it's still on old 10/10): C:\Users\Hulk\Desktop\Market Sniper\
+  HANDOFF-RATCHET-2026-09-09.md — port options 5->2 rung + the futures decouple.
   **RN-RULE LEDGER + FORWARD TRACKER (9/9). "Is my round-number entry better
   than taking their price?"** Answer from what history allows: FAVORABLE BUT
   THIN. On the fills it caught (entry_compare.py, n=11) the RN entry beat the
