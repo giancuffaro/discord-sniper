@@ -1,7 +1,38 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-08 16:36 — DAILY CLOSE-OUT (automated): QQQ 716P PHANTOM-EXIT
+Last updated: 2026-09-09 — QQQ 716P PHANTOM-EXIT BUG FIXED (bridge.py CLOSE
+handler). G approved ("yes plz") fixing the headline bug from the 9/8 16:36
+close-out below. **bridge.py's `_place_impl` CLOSE branch (primary account,
+~line 2766, and the WB_EXTRA mirror-account loop, ~line 2848) now uses
+`BOOK._sell_confirmed(...)` instead of `BOOK._sell_retry(...)`** — the exact
+same wait-for-FILLED + one-reprice pattern the watchdog's own stop-out path
+already used and already trusted. Three outcomes handled honestly: confirmed
+fill -> `BOOK.finish(..., price=confirmed_price)` (real price, not the quoted
+ask); accepted-but-never-filled -> `BOOK.release(key)` + "EXIT-RETRY" log,
+position stays OPEN, nothing marked CLOSED on a lie; broker exception ->
+existing two-seller-collision check, else `BOOK.release(key)` before
+re-raising. This closes the exact gap the 16:36 close-out flagged: an
+ACCEPTED sell is no longer treated as a FILLED sell anywhere in the CLOSE
+path, for pullback exits, hard-stops, or the watchdog.
+Verified: `python3 -m py_compile bridge.py` clean. Full existing suite green
+post-fix: test_positions.py, test_architecture.py, test_brokers.py,
+test_phantom_exit.py, test_tape.py — all pass, no regressions.
+Also fixed while in test_positions.py for the 9/8 ratchet respacing: 4 stale
+hardcoded expected-stop assertions tied to the old 10/0/10 ladder (now
+5/0/5), and one unrelated pre-existing `%%`-escaping cosmetic bug in a bare
+`print()` summary.
+NOT COVERED by a dedicated new regression test — no existing test harness
+exercises `bridge.py`'s `_place_impl` directly (it reads live module globals:
+`client`, `BOOK`, `WB_EXTRA`); building one is a real test-harness project on
+the scale of `test_brokers.py`'s fake-server pattern, not a same-session add.
+Confidence instead rests on: this reuses `_sell_confirmed`, which already has
+production mileage via the watchdog path and is exercised by
+`test_positions.py`'s and `test_phantom_exit.py`'s passing suites.
+**NEEDS A BRIDGE RESTART to take effect** — same as the 9/8 ratchet-spacing
+rollout, the running process won't pick this up from disk alone.
+
+Previously — Last updated: 2026-09-08 16:36 — DAILY CLOSE-OUT (automated): QQQ 716P PHANTOM-EXIT
 BUG (a real +20.8% win that silently became a -34.9% loss), ONE FIX SHIPPED,
 GIAN'S HAND-TRADE LEDGER GAP RECURS. Broker truth (Webull order history,
 account ENIQGUV4LUTT3JSAA9NKLDDU19): bot +$89 gross / Gian -$12 gross, fees
