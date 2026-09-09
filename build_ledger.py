@@ -210,7 +210,10 @@ def load_days():
 
 # ---------- load trades.log FILLED spine ----------
 def load_broker_fills():
-    fills = {}   # (date, SYMBOL, price) -> {"qty":, "ts": epoch}  (first seen)
+    """(date, SYMBOL, price) -> [ {qty, ts, used}, ... ]  — a QUEUE, because
+    the same contract can fill twice at one price in a day and each FILLED
+    line may confirm exactly one ledger row."""
+    fills = {}
     if not os.path.exists(TRADES_LOG):
         return fills
     with open(TRADES_LOG, encoding="utf-8", errors="replace") as fh:
@@ -220,8 +223,18 @@ def load_broker_fills():
                 continue
             iso, sym, qty, price = m.group(1), m.group(2).upper(), m.group(3), m.group(4)
             key = (iso[:10], sym, round(float(price), 2))
-            fills.setdefault(key, {"qty": _f(qty), "ts": _iso_epoch(iso)})
+            fills.setdefault(key, []).append(
+                {"qty": _f(qty), "ts": _iso_epoch(iso), "used": False})
     return fills
+
+
+def _take_fill(broker, key):
+    """First unused FILLED line for this key, marked used. None if spent."""
+    for b in broker.get(key, ()):
+        if not b["used"]:
+            b["used"] = True
+            return b
+    return None
 
 
 # ---------- load Webull order-history exports (broker's OWN record) ----------
@@ -309,7 +322,6 @@ def build():
     broker = load_broker_fills()
     trips = load_broker_exports()
     trip_used = [False] * len(trips)
-    matched_broker = set()
     out = []
 
     def _find_trip(date, sym, strike, cp, fill):
@@ -327,15 +339,19 @@ def build():
             return t
         return None
 
-    for r in day_rows.values():
+    # One FILLED line confirms ONE row. Rows the book already knew filled go
+    # first, so a nofill/failed twin can never steal the real trade's line
+    # and get promoted on someone else's fill.
+    _REAL = ("filled", "closed", "stopped")
+    ordered = sorted(day_rows.values(),
+                     key=lambda r: 0 if (r.get("state") or "") in _REAL else 1)
+    for r in ordered:
         date = r["_day"]
         sym = str(r.get("symbol") or "").upper()
         fill = _r2(r.get("fill")) or _r2(r.get("avg"))
         bkey = (date, sym, fill) if fill is not None else None
-        bhit = broker.get(bkey) if bkey else None
+        bhit = _take_fill(broker, bkey) if bkey else None
         confirmed = bhit is not None
-        if confirmed:
-            matched_broker.add(bkey)
 
         # --- normalize the thin wallet rows (they never carry these) ---
         # entry time: the store's "opened", else the BROKER's FILLED stamp.
@@ -464,9 +480,11 @@ def build():
             "why": (r.get("why") or "").replace("\n", " ").strip(),
         })
 
-    # broker fills with NO day-JSON row → visible gap rows
-    for (date, sym, price), b in broker.items():
-        if (date, sym, price) in matched_broker:
+    # broker fills with NO day-JSON row → visible gap rows (every FILLED line
+    # nothing above consumed)
+    for (date, sym, price), queue in broker.items():
+      for b in queue:
+        if b["used"]:
             continue
         qty, ts = b.get("qty"), b.get("ts")
         out.append({c: "" for c in COLUMNS} | {
