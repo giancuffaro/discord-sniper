@@ -95,3 +95,6 @@ master_alerts.csv.*
 
 # 9/9: START HERE's one-shot open-rooms token — runtime, never code
 open-rooms.request
+
+# 9/9: per-machine bridge address + shared secret (second PC) — never in git
+extension/bridge.txt

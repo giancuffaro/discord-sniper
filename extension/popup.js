@@ -81,7 +81,14 @@ async function askBridge(path, body) {
   const opt = body
     ? { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body) }
-    : { method: "GET" };
+    : { method: "GET", headers: {} };
+  // 9/9: on a second PC the bridge is across the LAN and wants the shared
+  // secret (extension/bridge.txt → settings.bridge_token). Loopback ignores it.
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const tok = (settings && settings.bridge_token) || "";
+    if (tok) opt.headers["X-Sniper-Token"] = tok;
+  } catch (e) {}
   const r = await fetch(bridgeBase() + path, opt);
   return r.json();
 }
