@@ -465,8 +465,20 @@ def build():
     trip_used = [False] * len(trips)
     out = []
 
-    def _find_trip(date, sym, strike, cp, fill):
-        """First unused export round-trip for this contract at this fill."""
+    def _find_trip(date, sym, strike, cp, fill, qty=None):
+        """First unused export round-trip for this contract at this fill.
+
+        BUG FOUND 9/9: with no qty check, a store row carrying a stale/blended
+        qty+avg (e.g. Webull's own WAC across two buys, snapshotted mid-fill)
+        could match a same-priced-within-tolerance trip for a DIFFERENT lot
+        size — QQQ 716C 9/9: a store row (qty 2, avg 0.47) matched the 10-lot
+        0.48->0.62 trip (pl $140) because 0.47 fell inside the 1.1c tolerance
+        of 0.48, leaving a row with entry qty 2 paired against an exit qty 10.
+        The $ total was still right (the trip's pl is real), only the
+        displayed entry qty/avg/opened-time on that one row were wrong. A
+        qty match closes the gap: it's exact for every real case (both sides
+        are real contract counts) and only rejects a mismatch like this one.
+        """
         for i, t in enumerate(trips):
             if trip_used[i] or t["date"] != date or t["symbol"] != sym:
                 continue
@@ -475,6 +487,8 @@ def build():
             if cp and t["cp"] != cp:
                 continue
             if fill is not None and t["buy"] is not None and abs(t["buy"] - fill) > 0.011:
+                continue
+            if qty is not None and t.get("qty") is not None and abs(t["qty"] - float(qty)) > 0.001:
                 continue
             trip_used[i] = True
             return t
@@ -520,7 +534,7 @@ def build():
                       "pl": _r2(r.get("pl"))}]
             derived = True
         # --- the broker's own export: confirm, and fill a missing exit ---
-        trip = _find_trip(date, sym, _r2(r.get("strike")), _side_letter(r.get("side")), fill)
+        trip = _find_trip(date, sym, _r2(r.get("strike")), _side_letter(r.get("side")), fill, qty)
         export_confirmed = trip is not None
         exit_from = "store"
         store_pl = _r2(r.get("pl"))
