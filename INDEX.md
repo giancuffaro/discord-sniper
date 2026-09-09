@@ -61,9 +61,12 @@ down until you delete it.
 
 ## Records (written by the machine)
 
+`master_broker.csv` (**the broker's own record** — every Webull order leg, all days; the
+autopilot's daily `Webull_Orders_<date>_auto.csv` is absorbed into it and deleted) ·
 `master_ledger.csv` (**THE fill truth** — every fill from every source, reconciled to the
 broker; read it via `ledger.py`) · `master_alerts.csv` (every alert and what happened to
-it; `ledger.alerts()`) · `trades.log` (dated, the raw story) · `bridge.log` (console echo)
+it; `ledger.alerts()`) · `backups/` (dated copies of the master files, last 5 each) ·
+`trades.log` (dated, the raw story) · `bridge.log` (console echo)
 · `days/*.json` (per-day book state — not for analysis) · `journal.csv` (legacy export) ·
 `option_tape.csv` / `databento_tape_clean.csv` / `missed_tape.csv` (price tapes — `tape.py`
 is the one reader) · `journal-*.xlsx` (built 4:45pm weekdays) · `DS Logs/` (extension

@@ -91,6 +91,9 @@ master_ledger.csv
 master_ledger.csv.*
 master_alerts.csv
 master_alerts.csv.*
+master_broker.csv
+master_broker.csv.*
+backups/
 .pytest_cache/
 
 # 9/9: START HERE's one-shot open-rooms token — runtime, never code

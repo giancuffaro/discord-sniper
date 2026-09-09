@@ -265,10 +265,21 @@ FILL ANNOUNCER (announcer.py, read-only)
   (77k TOO_MANY_REQUESTS on the shared key) must never come back.
 
 ## DATA — one central file per family (9/9). THE APP READS ONLY THESE.
+- BROKER RECORD → master_broker.csv (one row per Webull order leg, every
+  day). The autopilot pulls the account's order history every Mode B run
+  and writes the day as Webull_Orders_<date>_auto.csv; build_ledger's
+  absorb_exports() (runs inside every ledger refresh) folds it into
+  master_broker.csv and DELETES the daily file once every leg is provably
+  inside — the folder keeps ONE broker file, never dated piles (G, 9/9).
+  Merge is REPLACE-DON'T-STACK per order (placed-time+contract+side+size+
+  limit): a later pull replaces a WORKING snapshot, never duplicates it.
+  Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
+  master_ledger and master_alerts; NO .bak files in the root anymore.
 - FILLS → master_ledger.csv (built by build_ledger.py, read via ledger.py).
-  Sources in trust order: Webull_Orders_<date>_auto.csv exports (the
-  account's own history, FIFO-paired per OCC) > trades.log FILLED > days/
-  wallet.trades > days/table. RULES: the export's exit/P&L/state/account WIN
+  Sources in trust order: master_broker.csv (the account's own history,
+  FIFO-paired per OCC ACROSS days so a swing meets its own lot; trip date =
+  the buy's day) > trades.log FILLED > days/wallet.trades > days/table.
+  RULES: the broker's exit/P&L/state/account WIN
   over the book's belief (store_pl keeps the book's number); a fill the
   broker saw is `filled` even if the book said `failed`; export-confirmed ⇒
   live; entry time = opened, else the broker's FILLED stamp, NEVER wallet
