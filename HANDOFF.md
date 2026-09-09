@@ -365,6 +365,17 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   servers that means his USER token as a self-bot = permanent-ban risk to the
   account + all paid subs — same refusal as before; the browser scan is the safe
   path and already answered it. 3.5.63 is the last extension edit of the session.
+  **OWLS TABS RETIRED into all-alerts (9/9, ext 3.5.64).** Per G "remove the
+  rooms covered by all alerts": shabs & eli dedicated rooms are commented out in
+  rooms.txt; background.js's relay-unwrap now covers the all-alerts channel
+  (1449226651064991806) — it reads "From 🌟｜<analyst>", re-books the call under
+  the real analyst (shabs/eli/ab/muggzone/eva/tt/giul/neal/florida-man/
+  common-stock/jon-and-kian), and for shabs/eli re-applies default_symbol=SPX +
+  spx_entries=true so their bare "7655p" posts still resolve and retarget. So
+  all-alerts is the SOLE OWLS tab with nothing lost. node --check clean. NEEDS
+  the extension reload (comes with the restart). ZTRADEZ was already consolidated
+  8/30 (redundant trader channels cut, mashup kept). This is the tab-count cut
+  that should stop the reload/Discord-logoff churn once G closes the old tabs.
 Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
