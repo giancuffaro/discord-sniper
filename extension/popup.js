@@ -1438,9 +1438,50 @@ async function loadDays() {
   } catch (e) { /* bridge down; the picker just stays at "today" */ }
 }
 
+/* THE ROOMS PAINT FIRST, AND A FAULT SAYS SO (9/9 evening, G: "in my channels
+ * tab, it shows NO channels at all"). renderRoomToggles() used to be the LAST
+ * thing render() did, ~300 lines after the holdings/purse/table blocks — so
+ * any exception in those blocks (a broker row with a missing field, a bridge
+ * answer with a new shape) silently aborted render() before the rooms were
+ * drawn, and the one control that arms real money showed as an empty pane
+ * with no explanation. Now: rooms first, everything else after, and an
+ * exception anywhere paints its message INTO the popup instead of vanishing
+ * into a console nobody opens. */
+function showPopupError(where, e) {
+  try { console.error("[sniper popup] " + where + ":", e); } catch (_) {}
+  const msg = (e && (e.stack || e.message)) ? String(e.stack || e.message) : String(e);
+  const first = msg.split("\n").slice(0, 2).join(" — ");
+  let el = $("popupError");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "popupError";
+    el.className = "note";
+    el.style.cssText = "color:#f87171;border:1px solid #f87171;border-radius:6px;" +
+                       "padding:6px 8px;margin:6px 0;font-size:11px;white-space:pre-wrap";
+    const box = $("roomtoggles");
+    if (box && box.parentNode) box.parentNode.insertBefore(el, box.nextSibling);
+    else document.body.insertBefore(el, document.body.firstChild);
+  }
+  el.textContent = "popup error (" + where + "): " + first +
+                   "\nSend this line to Claude. The rooms above are still correct.";
+}
+
 async function render() {
   const s = await getSettings();
   await loadCapNames();     // real room names the reader has seen, freshest first
+  try {
+    clearLegacyServerOff();
+    renderRoomToggles(s.channel_live || {}, s.channel_pullback || {}, s.channel_disabled || {});
+    if (!Object.keys(ROOM_NAMES).length && _roomsLoaded)
+      showPopupError("rooms", new Error("rooms.txt loaded but holds no rooms — " +
+                                        "check extension/rooms.txt"));
+  } catch (e) { showPopupError("rooms", e); }
+  try {
+    await renderRest(s);
+  } catch (e) { showPopupError("popup", e); }
+}
+
+async function renderRest(s) {
   const { guardState: gs, log, wallet, day_table } =
     await chrome.storage.local.get(["guardState", "log", "wallet",
                                     "day_table"]);
