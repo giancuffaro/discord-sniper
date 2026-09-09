@@ -3,8 +3,9 @@
 For every real option fill we have two entry prices: the caller's stated entry
 (their_avg) and what the bot actually filled (its RN-pullback / "caller's price
 or better" logic). This replays the SAME contract's quote path from each price
-through the same ratchet (7.5/4/2) and compares the dollars, plus the raw
-fill-price distribution.
+through the same ratchet — 7.5/4/2 spacing (the sweep's best cell, a notch
+tighter on the arm than the live 7.5/5/2) — and compares the dollars, plus the
+raw fill-price distribution.
 
 Honest limits: (1) it only sees trades the bot ACTUALLY FILLED — the winners the
 RN rule missed by waiting for a pullback that never came are NOT here (those are
@@ -87,7 +88,7 @@ def main():
           % (better, same, worse))
     print("  average fill vs caller: %+.2f%%  (negative = you got in cheaper)\n"
           % avg)
-    print("SAME contracts, same 7.5/4/2 ratchet, entered at each price:")
+    print("SAME contracts, 7.5/4/2 spacing (the sweep's best cell, a notch tighter on the arm than the live 7.5/5/2), entered at each price:")
     print("  your RN fill .......... $%8.2f   (win %.0f%%)"
           % (bot_tot, 100.0 * bot_win / n))
     print("  the caller's price .... $%8.2f   (win %.0f%%)"

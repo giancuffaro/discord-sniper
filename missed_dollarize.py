@@ -1,11 +1,12 @@
 """missed_dollarize.py — what did waiting for the round-number pullback COST?
 
 The round-number rule skips an entry when the underlying never pulls back to the
-round number. Those skips are recorded as 'nofill' rows in days/*.json (they
-carry the caller's price in their_avg, the contract, and a time window) — and
-their OPRA prices were already backfilled. So we can answer directly: if we had
-just taken the CALLER'S price on every skipped call and run the same 7.5/4/2
-ratchet, what would it have made or lost? That dollar figure is the other half
+round number. Those skips are 'nofill' rows in master_ledger.csv (via ledger.py
+— they carry the caller's price in their_avg, the contract, and a time window)
+and their OPRA prices were already backfilled. So we can answer directly: if we
+had just taken the CALLER'S price on every skipped call and run a 7.5/4/2
+ratchet — the fine sweep's best cell, one notch tighter on the arm than the
+LIVE 7.5/5/2 — what would it have made or lost? That dollar figure is the other half
 of the RN ledger (entry_compare.py measured the fills it caught).
 
 Read-only. Uses the clean tape + nofill rows.
@@ -78,7 +79,7 @@ def main():
         det.append((dollars, r["occ"], r["their"], rp, r["who"]))
 
     det.sort(reverse=True)
-    print("if we'd taken the CALLER'S price on every skipped call (7.5/4/2 ratchet):")
+    print("if we'd taken the CALLER'S price on every skipped call (7.5/4/2 spacing — the sweep's best cell, a notch tighter on the arm than the live 7.5/5/2):")
     print("  total: $%.2f   win %d/%d   avg $%.2f/call\n"
           % (tot, wins, len(covered), tot / len(covered)))
     print("  %-17s in$    result   $P&L   caller" % "contract")

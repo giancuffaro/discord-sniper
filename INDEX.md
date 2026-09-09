@@ -14,11 +14,11 @@ was archived.
 
 | File | What it does |
 |---|---|
-| `🎯 START HERE.bat` | The one button. Pulls latest code, closes Chrome, reopens all 26 rooms, starts the bridge keep-alive, AUTO PUSH, and the announcer. |
+| `🎯 START HERE.bat` | The one button, fully unattended. Pulls latest code, starts the bridge, AUTO PUSH and the announcer; cold start opens all 26 rooms, warm start leaves Chrome alone and has the extension fill in any missing rooms (one-shot request). No prompts. |
 | `RESTART BRIDGE.bat` | Restart onto new code by hand. (The bridge also restarts itself on a safe window, or instantly on a non-empty `bridge.restart` file.) |
 | `ANNOUNCER.bat` / `STOP ANNOUNCER.bat` | Fill announcer on / off. **Currently paused on purpose.** |
 | `WHAT DO I HOLD.bat` | **"What is true RIGHT NOW."** Positions and resting orders straight from Webull, then the bot's book, then the feeds — and it says plainly that when the book and the account disagree, the account wins. Read-only. |
-| `EXTRAS.bat` | Keys, log tail, odd jobs. |
+| `EXTRAS.bat` | Stop the bridge, tail its log, check the keys, list what the reader missed today. |
 | `FIX SDK DEPS.bat` | Repairs the bridge's Python packages if the Webull SDK pins break. |
 | `MAKE DESKTOP ICON.bat` | Desktop / taskbar shortcut for START HERE. |
 | `SETUP TRADIER.bat` | Connects Tradier read-only. Fund the account BEFORE generating the key — Tradier revokes API access on unfunded accounts and you would have to make it twice. |
@@ -34,12 +34,10 @@ down until you delete it.
 | `bridge.py` | The HTTP server on 127.0.0.1:8787 the extension talks to. Orders, endpoints, restarts, POSTCHECK. |
 | `positions.py` | The Book — what filled, stops, watchdog, ratchet, adopt/reconcile with the broker. |
 | `webull_options.py` | Every Webull call: orders, stops, quotes, positions. Rate-limit rules live here. |
-| `ratchet_tiers.py` | The stop ladder. −10% start; +10%→BE, +20%→+10%, +30%→+20%. Anti-clip on 2+ DTE only. |
+| `ratchet_tiers.py` | The stop ladder: born −7.5%, +5% → breakeven, then +2% locked per +2% (flat, no cheap tier). Futures: arm at ⅔ of the stop distance, rung every ~27%. Anti-clip on 2+ DTE only. |
 | `quote_bus.py` | One batched option-quote call per second for every open contract → `option_tape.csv`. |
 | `stream_bus.py` | Live stock/ETF prices pushed over Webull MQTT. |
 | `pullback.py` | The round-number pullback hunter. |
-| `signals.py` | Python mirror of the parser — used by tests and audit tools, not by trading. |
-| `guards.py` | Position resolution: which trade did they mean. |
 | `ai_reader.py` | Hands a messy message to Claude, gets a clean call back. |
 | `announcer.py` | Posts fills / milestones / scoreboard to Discord. |
 | `webull_futures.py`, `props.py`, `eastern.py` | Futures accounts, prop accounts, market clock. |
@@ -58,15 +56,18 @@ down until you delete it.
 | `jsparse.py` + `extension/parse_batch.js` | Let the Python tools call the REAL parser, so an audit can never disagree with the bot. |
 | `test_brokers.py` | Runs the Tradier/tastytrade adapters against a FAKE local server — proves the parsing with no credentials needed. |
 | `test_tape.py` | "Did this trade leave a price record?" Proves a managed contract still gets taped when the batched sweep is completely blind, and that the bus says so out loud. |
-| `test_positions.py`, `test_signals.py`, `test_resolve.js`, `test_parity.js` | The suite. Parity proves the JS and Python parsers agree. |
-| `dump_parse.py` + `samples.txt` | Feeds test_parity. |
+| `test_positions.py`, `test_architecture.py`, `test_brokers.py`, `test_phantom_exit.py`, `test_tape.py`, `test_resolve.js`, `extension/test_*.js` | The suite. |
+| `samples.txt` | Parser samples (fed to `extension/parser.js` by the JS tests). |
 
 ## Records (written by the machine)
 
-`trades.log` (dated, the real record) · `bridge.log` (console echo, no dates) ·
-`days/*.json` (per-day book) · `option_tape.csv` (our only option tick history) ·
-`journal-*.xlsx` (built 4:45pm weekdays) · `DS Logs/` (extension exports — every
-message the reader saw) · `corpus/` (room language samples)
+`master_ledger.csv` (**THE fill truth** — every fill from every source, reconciled to the
+broker; read it via `ledger.py`) · `master_alerts.csv` (every alert and what happened to
+it; `ledger.alerts()`) · `trades.log` (dated, the raw story) · `bridge.log` (console echo)
+· `days/*.json` (per-day book state — not for analysis) · `journal.csv` (legacy export) ·
+`option_tape.csv` / `databento_tape_clean.csv` / `missed_tape.csv` (price tapes — `tape.py`
+is the one reader) · `journal-*.xlsx` (built 4:45pm weekdays) · `DS Logs/` (extension
+exports — every message the reader saw) · `corpus/` (room language samples)
 
 ## Documentation
 

@@ -51,7 +51,9 @@ win rate    reported, but never ranked on. It is the most misleading number
 profit factor  gross wins / gross losses.
 max drawdown %  the worst a trade went against us before it worked. This is
             the column that tells you if a caller's winners are comfortable
-            or terrifying.
+            or terrifying. HONEST NOTE (9/9): this column prints "-" today —
+            load() never maps the ledger's max_drawdown_pct / max_runup_pct /
+            pl_pct fields, so there is nothing behind it until it does.
 """
 import argparse
 import csv
@@ -60,6 +62,7 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# DEAD (9/9): vestigial from the pre-ledger version — nothing references it.
 JOURNAL = os.path.join(HERE, "journal.csv")
 
 MIN_N = 20          # below this, do not rank at all
@@ -306,7 +309,7 @@ def main():
 
     rows = load(since_days=a.since, room=a.room)
     if not rows:
-        print("No closed, priced trades found in journal.csv"
+        print("No closed, priced trades found in master_ledger.csv"
               + (" for that filter." if (a.since or a.room) else "."))
         return 1
     mine, theirs = split_own(rows)

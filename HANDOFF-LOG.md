@@ -9,6 +9,26 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 — STALE LAUNCHERS GONE. G: "delete old stale batch files and we're done."**
+Every .bat/.vbs was checked against what calls it. Archived: SEND CHANGES TO
+GITHUB.bat (AUTO PUSH commits every 45 s, START HERE pushes on every run).
+EXTRAS.bat rebuilt 435 → 139 lines with only what works: stop bridge, tail
+log, check keys, and "what did the reader miss today" (replay_check.py —
+the thing the retired tuner's own message told him to run). Removed from
+it: the retired tuner (tune.py), the drill (drill.py gone), send/get
+GitHub, the 9:25 alarm switch (alarm retired 8/10), the sandbox-key entry
+(sandbox retired 8/29). Kept: every launcher something references —
+incl. SETUP TRADIER (he holds a live Tradier token), FIX SDK DEPS (the
+recovery for the parked streaming SDK), MAKE DESKTOP ICON + launch-
+sniper.bat (his desktop shortcut points at it). Stale text replaced in
+place: START HERE's header (no longer closes Chrome on re-run) and its
+"or EXTRAS option 8" pointer; INDEX.md rows for START HERE, EXTRAS,
+ratchet_tiers (old −10/10/10 numbers → 7.5/5/2), the records section (now
+names master_ledger / master_alerts / tape.py as the truth), and rows for
+files that no longer exist (signals.py, guards.py, test_signals.py,
+test_parity.js, dump_parse.py); README's drill.py entry. Verified: every
+remaining .bat/.vbs target resolves.
+
 **2026-09-09 — START HERE FULLY UNATTENDED (v3.5.70). G: "I don't want
 START HERE to have any input from me."** Audit of the script found no
 pause/choice/user set-p — the inputs were things it LAUNCHED: (1) on a warm
