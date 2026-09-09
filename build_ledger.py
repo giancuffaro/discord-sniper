@@ -42,14 +42,15 @@ OUT = os.path.join(HERE, "master_ledger.csv")
 KEEP_BAKS = 5
 
 COLUMNS = [
-    "date", "opened", "closed", "room", "caller", "key",
+    "date", "opened", "closed", "opened_ts", "closed_ts", "t",
+    "room", "caller", "key",
     "symbol", "side", "direction", "strike", "expiry", "dte", "occ", "kind",
-    "qty", "avg_in", "fill", "exits", "exit_avg", "pl", "pl_pct",
+    "qty", "avg_in", "fill", "entries", "exits", "exit_avg", "pl", "pl_pct",
     "max_runup_pct", "max_drawdown_pct", "hi_pct", "lo_pct",
     "state", "exit_by", "all_out", "account", "manual", "swing",
     "their_avg", "their_stop", "their_target", "their_units", "stop_at_exit",
     "greeks_in", "greeks_out", "broker_confirmed", "source", "in_table", "in_wallet",
-    "day_file", "why",
+    "day_file", "raw", "why",
 ]
 
 FILLED_RE = re.compile(
@@ -187,6 +188,9 @@ def build():
             "date": date,
             "opened": _hms(r.get("opened") or r.get("t")),
             "closed": _hms(r.get("closed")),
+            "opened_ts": _f(r.get("opened")) or "",
+            "closed_ts": _f(r.get("closed")) or "",
+            "t": _f(r.get("t")) or "",
             "room": (r.get("room") or "?").strip() or "?",
             "caller": (r.get("who") or "").strip(),
             "key": r.get("key") or "",
@@ -201,6 +205,7 @@ def build():
             "qty": r.get("qty") if r.get("qty") is not None else "",
             "avg_in": _r2(r.get("avg")) if r.get("avg") is not None else "",
             "fill": fill if fill is not None else "",
+            "entries": _json(r.get("entries")),
             "exits": _json(exits),
             "exit_avg": _exit_avg(exits) if exits else "",
             "pl": _r2(r.get("pl")) if r.get("pl") is not None else "",
