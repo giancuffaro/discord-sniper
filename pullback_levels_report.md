@@ -1,4 +1,4 @@
-# Pullback levels — beta names (2026-09-09 16:50)
+# Pullback levels — beta names (2026-09-09 16:52)
 
 106 alerts, 51 symbol-days with real 1-second prices. The $1 replay agrees with the bridge's own touched/missed log on 73/76 arms.
 
@@ -40,6 +40,17 @@ Per symbol, ratchet exit, 10-minute wait (option $ total, entered/alerts):
 | MSFT | 15 | -157 (15/15) | -143 (12/15) | -121 (11/15) | +50 (8/15) | -102 (6/15) | -35 (1/15) | +0 (0/15) |
 | NVDA | 18 | -138 (18/18) | -95 (13/18) | -102 (9/18) | -82 (7/18) | -141 (7/18) | -63 (4/18) | -63 (4/18) |
 | TSLA | 28 | +3 (28/28) | +180 (26/28) | +266 (23/28) | +159 (14/28) | +69 (13/28) | -23 (8/28) | -3 (4/28) |
+
+Paired, same alert, both grids filled (ratchet exit, 10-min wait). Mean = option $ per contract the other grid made OVER $1; SE = noise band. Ties = the trade ended the same way whichever level bought it.
+
+| compare | pairs | mean diff | SE | better | worse | ties |
+|---|---|---|---|---|---|---|
+| $1 vs take-it | 65 | +8.0 | 3.1 | 23 | 13 | 29 |
+| $0.50 vs $1 | 65 | -3.6 | 1.7 | 5 | 11 | 49 |
+| $2 vs $1 | 46 | +0.4 | 3.0 | 7 | 3 | 36 |
+| $2.50 vs $1 | 39 | +1.7 | 5.0 | 10 | 9 | 20 |
+| $5 vs $1 | 19 | +6.1 | 7.1 | 3 | 3 | 13 |
+| $1 15-min vs 10-min | 65 | +0.0 | 0.0 | 0 | 0 | 65 |
 
 ## B. Under the pullback's own stock rule (stop $1.00 / target $2.50)
 

@@ -576,6 +576,40 @@ def main():
             cells.append("%+.0f (%d/%d)" % (sum(r["r_opt"] for r in ent), len(ent), len(al)))
         lines.append("| %s | %d | %s |" % (sym, len(al), " | ".join(cells)))
     lines.append("")
+    # PAIRED — the only fair grid-vs-grid test: same alert, both grids fill,
+    # what changed? Removes the "deeper grid only fills the easy ones" bias.
+    lines.append("Paired, same alert, both grids filled (ratchet exit, 10-min wait). "
+                 "Mean = option $ per contract the other grid made OVER $1; SE = noise band. "
+                 "Ties = the trade ended the same way whichever level bought it.")
+    lines.append("")
+    lines.append("| compare | pairs | mean diff | SE | better | worse | ties |")
+    lines.append("|---|---|---|---|---|---|---|")
+
+    def _paired(ga, wa, gb, wb):
+        d = []
+        for a in with_con:
+            b = bars[(a["symbol"], a["date"])]
+            ra = replay_ratchet(a, b, ga, wa, cons[id(a)])
+            rb = replay_ratchet(a, b, gb, wb, cons[id(a)])
+            if ra and rb and ra.get("entered") and rb.get("entered") \
+                    and "r_opt" in ra and "r_opt" in rb:
+                d.append(rb["r_opt"] - ra["r_opt"])
+        if not d:
+            return None
+        mean = sum(d) / len(d)
+        sd = (sum((x - mean) ** 2 for x in d) / len(d)) ** 0.5
+        return (len(d), mean, sd / len(d) ** 0.5, sum(1 for x in d if x > 0.5),
+                sum(1 for x in d if x < -0.5), sum(1 for x in d if abs(x) <= 0.5))
+    for label, args in (("$1 vs take-it", (0.0, 300, 1.0, 600)),
+                        ("$0.50 vs $1", (1.0, 600, 0.5, 600)),
+                        ("$2 vs $1", (1.0, 600, 2.0, 600)),
+                        ("$2.50 vs $1", (1.0, 600, 2.5, 600)),
+                        ("$5 vs $1", (1.0, 600, 5.0, 600)),
+                        ("$1 15-min vs 10-min", (1.0, 600, 1.0, 900))):
+        p = _paired(*args)
+        if p:
+            lines.append("| %s | %d | %+.1f | %.1f | %d | %d | %d |" % ((label,) + p))
+    lines.append("")
     lines.append("## B. Under the pullback's own stock rule (stop $1.00 / target $2.50)")
     lines.append("")
     lines.append("Stock $/share; else 15:55 flatten. 'per alert' counts the skipped ones as 0.")
