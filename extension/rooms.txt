@@ -24,11 +24,12 @@
 # G's only bench, and that's a popup action, never done from here.
 #
 # CLEANUP 9/9 — this file had ~5 weeks of accumulated investigation notes
-# folded into the room lines. Moved the long-form ones to HANDOFF-LOG.md and
-# cut 15 rooms with zero real activity in master_ledger.csv (the reconciled
-# fill ledger — HANDOFF.md explains why days/*.json alone isn't trusted for
-# this any more). Reasons are on each cut line below; full narrative in
-# HANDOFF-LOG.md's "ROOM CLEANUP: 27 → 12" session note (9/9, newest entry).
+# folded into the room lines. Moved the long-form ones to HANDOFF-LOG.md.
+# Same night: 27 rooms cut to 8 (15 on zero master_ledger.csv activity, then
+# all 4 ZTRADEZ on the sub lapsing), then G re-added 11 of the cut ones (all
+# 4 Whop, Aristotle small, TTT Lotto, all 3 Platinum shadow rooms, Brando,
+# Shoof) to land at 19 — his target was 15-20 total. Full narrative in
+# HANDOFF-LOG.md's SESSION NOTES (9/9, newest entries).
 
 829754942817828884|https://discord.com/channels/525113944239767562/829754942817828884|Honeydrip daytrades|Honeydrip / Aristotle (main)
 987515353670221834|https://discord.com/channels/525113944239767562/987515353670221834|Aristotle|Honeydrip / Aristotle (main)
@@ -147,11 +148,12 @@ whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop
 
 # ELITE OPTIONS. Both callers (Brando, Shoof) were wired 9/7 off 148 real
 # alerts pulled from scrollback — full grammar notes (their pipe-delimited
-# formats, the trailing-partial-exit fix) are in HANDOFF-LOG.md if this is
-# ever re-added. CUT 9/9 — live since the 9/8 ALL_LIVE_GEN migration but 0
-# rows in master_ledger.csv the whole time; costs nothing live to drop now.
-#1286022517869514874|https://discord.com/channels/1286017515625119804/1286022517869514874|Brando Alerts|ELITE OPTIONS
-#1368263191632543956|https://discord.com/channels/1286017515625119804/1368263191632543956|Shoof Alerts|ELITE OPTIONS
+# formats, the trailing-partial-exit fix) are in HANDOFF-LOG.md. RE-ADDED
+# 9/9 (G's call, wants 15-20 tabs total) after being cut earlier the same
+# day for 0 rows in master_ledger.csv since wired — live since the 9/8
+# ALL_LIVE_GEN migration, just hasn't produced anything yet.
+1286022517869514874|https://discord.com/channels/1286017515625119804/1286022517869514874|Brando Alerts|ELITE OPTIONS
+1368263191632543956|https://discord.com/channels/1286017515625119804/1368263191632543956|Shoof Alerts|ELITE OPTIONS
 # NOT WIRED, on purpose (scanned 9/7, all 28 channels — see HANDOFF for the
 # per-channel reasoning): brando-commentary/shoof-commentary (level talk,
 # not entries), levels-bot/flow-bot/x-news-bot/uwhale-news-bot/brandos-tweets
