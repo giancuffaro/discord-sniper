@@ -9,6 +9,52 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 (11:25) — OWLS all-alerts HAS NO TAB, so shabs + eli have been
+dark since 02:08.** G asked whether the rooms that never trade are even being
+READ. Answer per room, from bridge.log: Platinum nitro is alive (read
+"@Owner Alerts" TSLA 367.5p at 11:08:36 and armed an RN hunt); Brando/Shoof
+read fine but haven't posted since 12:49 yesterday; **OWLS all-alerts has
+never produced a single read — its relay markers ("Clanker", "From 🌟｜",
+"AbTrades", "MuggZone") appear ZERO times in bridge.log, ever.**
+
+ROOT CAUSE, and it is not the parser. The OWLS relay unwrap is correct — it
+matches on channel 1449226651064991806, maps the "From 🌟｜<slug>" footer to
+the real analyst, and hardcodes shabs/eli's `default_symbol = "SPX"` +
+`spx_entries = true`, so the settings.json gap (spx_entry_channels and
+default_symbol_channels still list the RETIRED shabs 1513… / eli 1519… ids,
+not the relay's) is covered in code. The problem is upstream of all of it:
+**the room has no tab.** It was added to rooms.txt at 02:08 today, and the
+ONLY thing that opens a tab for a room that hasn't got one is
+`openMissingRooms()`, which is unreachable except through START HERE's
+one-shot OPEN_ROOMS_PENDING token (it was deliberately pulled off the
+watch-build alarm 9/8: G's rule that closing a tab is how he turns a room
+off). No START HERE since. A room can therefore sit in rooms.txt, marked
+LIVE, reading nothing, forever — silently.
+
+Why nobody noticed: the silence alarm iterated `Object.keys(ROOM_LABELS)`,
+and OWLS all-alerts was one of the 7 live rooms missing from that map. So the
+one mechanism that exists to catch a dead tab was structurally blind to
+exactly the room that had one. Both halves are fixed (silence alarm now walks
+LIVE_ROOM_IDS from rooms.txt; rooms.txt now populates ROOM_LABELS) but the
+extension must RELOAD for it to take effect.
+
+Cost while dark: shabs is the best record scanned in this project (87.5%
+ex-BE, +$15,898 in August at 1 contract/play) and eli alongside him. Their
+dedicated tabs were retired 9/9 INTO this relay, so retiring them without the
+relay having a tab took both offline rather than consolidating them.
+
+FIX (G's, one click, no restart): open
+https://discord.com/channels/718624848812834903/1449226651064991806
+in the Discord profile. START HERE would also do it, but that closes Chrome —
+not worth it mid-session. NOT auto-opened from code on purpose: that would
+break his 9/8 rule.
+
+RULE WORTH KEEPING: adding a line to rooms.txt does NOT open a tab, and
+removing one does NOT close a tab (evictOtherLane only kills wrong-surface
+tabs; oneTabPerChannel only kills duplicates). So a NEW room needs a tab
+opened by hand or by START HERE before it reads anything — and every room
+re-added tonight was fine only because its tab had never been closed.
+
 **2026-09-09 11:45 — POST-MORTEM ON EVERY EXIT.** G: "analyze every single
 trade after exiting to see if it went well or what went wrong and what we can
 fix — be attentive to these." Built: (1) quote_bus LINGER — an exited
