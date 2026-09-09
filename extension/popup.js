@@ -63,6 +63,16 @@ function clock(t) {
     hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(t));
 }
 
+/* Room and caller names come from Discord, so they never go into HTML raw.
+ * ONE copy, module-wide (9/9 evening): it used to live only as a local inside
+ * the holdings block, while renderTable() — a module-level function — called
+ * it too. Every day-table row therefore threw "esc is not defined", render()
+ * died before the rooms were drawn, and the Channels tab sat empty. */
+function esc(v) {
+  return String(v).replace(/[&<>"']/g, ch => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+
 /* ---- the live / dry-run switch -------------------------------------------
  * This one lives on the bridge, not in the browser, because the bridge is the
  * only thing that can actually spend money. The popup just asks it what it is
@@ -1559,9 +1569,7 @@ async function renderRest(s) {
      * alert was this?" without digging through the log. An adopted position
      * has no caller (nobody's alert opened it) and stays blank rather than
      * guessing. */
-    // Room and caller names come from Discord, so they never go into HTML raw.
-    const esc = (v) => String(v).replace(/[&<>"']/g, ch => (
-      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    // (esc() is module-level now — see the top of the file)
     // "MNQU6" and "MNQ" are the same instrument: the alert names the root, the
     // broker reports the dated contract. Without folding them together a
     // futures trade shows no caller at all, which is exactly what he saw.
