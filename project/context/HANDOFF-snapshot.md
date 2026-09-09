@@ -2,11 +2,12 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (close-out) — v3.5.75; build_ledger.py's trip-matcher now
-checks qty, not just price (a stale store snapshot could grab the wrong-size
-export trip — found on today's QQQ 716C, also caught 2 older cases on 9/4;
-zero change to any day's reconciled total); ARM CLIP added as a post-mortem
-verdict (9/9's second clip class, alongside NOISE CLIP). Earlier today:
+Last updated: 2026-09-09 (evening) — v3.5.76: popup paints the rooms FIRST and
+shows any popup error in the Channels pane (G saw an empty tab, cause unseen);
+build_ledger.py's trip-matcher now checks qty, not just price (a stale store
+snapshot could grab the wrong-size export trip — found on today's QQQ 716C,
+also caught 2 older cases on 9/4; zero change to any day's reconciled total);
+ARM CLIP added as a post-mortem verdict (alongside NOISE CLIP). Earlier today:
 master_broker.csv (daily Webull pulls absorbed + deleted); pullback level
 settled at $1 on real bars; post-mortem on every exit; one central file per data
 family (ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2

@@ -9,6 +9,33 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 17:30 — POPUP: EMPTY CHANNELS TAB → ROOMS PAINT FIRST, ERRORS SHOW (v3.5.76).**
+G: "in my channels tab, it shows NO channels at all." Could not see it:
+Claude-in-Chrome refuses screenshots/JS/console on another extension's page
+(the popup's id is chrome-extension://hkpmapikljbhmhkhppdmkjejmgddfhci —
+sha256 of the folder path — and it does load in a tab, but nothing can read
+it). Evidence available: rooms.txt has 19 rooms, popup.js/background.js pass
+node --check, no extension file changed after 13:08, the extension picked up
+3.5.75 at 16:11, bridge up (buying power $944.85, strategy 7.5/BE/2). The
+structural fault: renderRoomToggles() was the LAST call in render(), ~300
+lines after the holdings/purse/table blocks, so any exception there (a broker
+row missing a field, a bridge answer with a new shape) killed the rooms list
+silently. Fix: render() paints the rooms FIRST, the rest runs in renderRest()
+under try/catch, and showPopupError() writes the exception INTO the Channels
+pane in red ("popup error (…): … Send this line to Claude"). An empty
+rooms.txt says so too. Manifest 3.5.76; the extension self-reloads after
+hours within ~30 s. Also for the Project: project/context/ pruned to the
+exact set the Project should hold (removed the 9/2 plans METHODOLOGY,
+CHROME-TABS, HANDOFF-OPTION-DATA, RATCHET-AND-SPEED-v3.5.0, ANTI-CLIP;
+added FELONY-ZOOM-JOIN.md; refreshed MARKET-SNIPER-HANDOFF.md to 9/7,
+rooms-snapshot, HANDOFF-snapshot); PROJECT-INSTRUCTIONS.md rewritten to
+today's truth (19 rooms, flat 7.5/5/2 no anti-clip, autopilot */30 with
+4:30 close-out, the master files, pullback $1); project/README.txt lists
+what to delete from the Project. Note: the 17:15 close-out below ran
+CONCURRENTLY with this session — its trip-matcher qty fix and my
+absorb_exports() both landed in build_ledger.py; verified together
+(compiles, 9/4 +152 / 9/8 +77 / 9/9 +252 all MATCH).
+
 **2026-09-09 17:15 — AUTOPILOT CLOSE-OUT (Mode C).** Ran the full daily
 close-out. Bot day: META 655C (Aristotle) -$31 NOISE CLIP, SPY 764P (Vero 2)
 -$2 ARM CLIP — both already diagnosed by G's own 16:20-16:45 session earlier
