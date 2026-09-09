@@ -229,10 +229,19 @@ ROOMS_TXT = os.path.join(HERE, "extension", "rooms.txt")
 ROOM_STATES = ("on", "off", "lapsed")
 
 
+ROOM_RULE_FLAGS = ("spx", "bare")          # + "sym=XXX"
+
+
 def read_rooms():
-    """extension/rooms.txt → [{id, url, label, group, state, why}], file
-    order, every room (on / off / lapsed). A line with no 5th field is `on`
-    — what every line meant before the state column existed (9/9)."""
+    """extension/rooms.txt → [{id, url, label, group, state, rules, why}],
+    file order, every room (on / off / lapsed). A line with no 5th field is
+    `on` — what every line meant before the state column existed (9/9).
+    6th field (9/9 evening, "room rules on the room line"): comma flags —
+      spx       index calls in this room trade as SPY (strike/10, premium dropped)
+      bare      an entry with no verb still counts ("SPY 650c 1.20")
+      sym=SPX   the symbol to assume when the call names none
+    The bridge derives spx_entry_channels / entry_no_verb_channels /
+    default_symbol_channels from these — settings.json no longer holds them."""
     rooms, last_comment = [], ""
     with open(ROOMS_TXT, encoding="utf-8") as f:
         for ln in f:
@@ -247,20 +256,17 @@ def read_rooms():
             if len(p) < 4 or not p[0]:
                 continue
             state = (p[4] if len(p) > 4 and p[4] else "on").lower()
+            rules = [x.strip().lower() for x in (p[5] if len(p) > 5 else "").split(",") if x.strip()]
             rooms.append({"id": p[0], "url": p[1], "label": p[2], "group": p[3],
-                          "state": state,
+                          "state": state, "rules": rules,
                           "why": "" if state == "on" else last_comment})
             last_comment = ""
     return rooms
 
 
-def set_room_state(room_id, state):
-    """Rewrite ONE room's state in rooms.txt, in place — the line keeps its
-    spot, its comment above it, everything; only the 5th field changes.
-    Atomic write. Returns (ok, why)."""
-    state = str(state or "").lower()
-    if state not in ROOM_STATES:
-        return False, "state must be one of %s" % "/".join(ROOM_STATES)
+def _rewrite_room_line(room_id, edit):
+    """Find ONE room's line in rooms.txt and replace it with edit(fields) —
+    the line keeps its spot and the comment above it. Atomic write."""
     room_id = str(room_id or "").strip()
     if not room_id:
         return False, "no room id"
@@ -277,8 +283,10 @@ def set_room_state(room_id, state):
         p = [x.strip() for x in t.split("|")]
         if len(p) < 4 or p[0] != room_id:
             continue
-        p = p[:4] + [state]
-        lines[i] = "|".join(p)
+        while len(p) < 6:
+            p.append("on" if len(p) == 4 else "")
+        p = edit(p)
+        lines[i] = "|".join(p).rstrip("|") if not p[5] else "|".join(p)
         hit = True
         break
     if not hit:
@@ -291,6 +299,295 @@ def set_room_state(room_id, state):
     except OSError as e:
         return False, "couldn't write rooms.txt: %s" % e
     return True, "saved"
+
+
+def set_room_state(room_id, state):
+    """Rewrite ONE room's state (5th field) in place. Returns (ok, why)."""
+    state = str(state or "").lower()
+    if state not in ROOM_STATES:
+        return False, "state must be one of %s" % "/".join(ROOM_STATES)
+
+    def edit(p):
+        p[4] = state
+        return p
+    return _rewrite_room_line(room_id, edit)
+
+
+def set_room_rules(room_id, rules):
+    """Rewrite ONE room's rules (6th field) in place. rules = list/str of
+    flags: spx, bare, sym=XXX. Unknown flags are refused. Returns (ok, why)."""
+    if isinstance(rules, str):
+        rules = [x for x in rules.split(",")]
+    clean = []
+    for r in rules or []:
+        r = str(r).strip().lower()
+        if not r:
+            continue
+        if r in ROOM_RULE_FLAGS:
+            clean.append(r)
+        elif r.startswith("sym=") and r[4:].isalpha() and 1 <= len(r[4:]) <= 6:
+            clean.append("sym=" + r[4:].upper())
+        else:
+            return False, "unknown rule %r (use spx, bare, sym=XXX)" % r
+    seen, out = set(), []
+    for r in clean:
+        k = r.split("=")[0]
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(r)
+
+    def edit(p):
+        p[5] = ",".join(out)
+        return p
+    ok, why = _rewrite_room_line(room_id, edit)
+    if ok:
+        apply_room_rules()
+    return ok, why
+
+
+def apply_room_rules():
+    """rooms.txt rules → the three per-channel lists the parser reads via
+    /mode. Rules count whatever the room's state: a retired room whose calls
+    are relayed through an aggregator (shabs/eli → OWLS all-alerts) still
+    needs its flags. Called at boot and after every rules write."""
+    try:
+        rooms = read_rooms()
+    except Exception:                                   # noqa: BLE001
+        return
+    spx, bare, sym = [], [], {}
+    for r in rooms:
+        for f in r.get("rules") or []:
+            if f == "spx":
+                spx.append(r["id"])
+            elif f == "bare":
+                bare.append(r["id"])
+            elif f.startswith("sym="):
+                sym[r["id"]] = f[4:].upper()
+    CFG["spx_entry_channels"] = spx
+    CFG["entry_no_verb_channels"] = bare
+    CFG["default_symbol_channels"] = sym
+
+
+# ===== SELF-SERVE (test build, 9/9 evening — G: "what else can we apply this
+# methodology to so I don't have to bother you?") — callers, strategy
+# numbers, needs-you. Each block is one endpoint pair; delete the block and
+# its popup tab to remove it. Nothing here places, cancels or sizes an
+# order by itself; every write goes to settings.json the same way the
+# bracket switch already does. =====
+def caller_key(name):
+    """'👑KingBeeAri🐝', 'kingbeeari', 'KingBeeAri (Admin)' → 'kingbeeari'."""
+    import re as _re
+    s = str(name or "").lower()
+    s = _re.sub(r"\(.*?\)", "", s)                     # drop "(Admin)"
+    s = _re.sub(r"[^a-z0-9]+", "", s)
+    return s
+
+
+def callers_off():
+    return set(str(x) for x in (CFG.get("callers_off") or []))
+
+
+def caller_stats():
+    """Every trader we have ever followed, from the records: trades, wins,
+    net $ (broker-reconciled ledger), alerts seen, rooms, last date."""
+    out = {}
+    try:
+        import ledger as _lg
+        for date, r in _lg.rows(real_only=True):
+            k = caller_key(r.get("who"))
+            if not k or k == "gian":
+                continue
+            c = out.setdefault(k, {"key": k, "name": r.get("who"), "trades": 0, "wins": 0,
+                                   "losses": 0, "net": 0.0, "alerts": 0, "rooms": set(),
+                                   "last": ""})
+            c["trades"] += 1
+            pl = r.get("pl")
+            try:
+                pl = float(pl) if pl not in (None, "") else 0.0
+            except (TypeError, ValueError):
+                pl = 0.0
+            c["net"] += pl
+            if pl > 0:
+                c["wins"] += 1
+            elif pl < 0:
+                c["losses"] += 1
+            if r.get("room") and r.get("room") != "?":
+                c["rooms"].add(str(r["room"]))
+            c["last"] = max(c["last"], str(date or ""))
+        for a in _lg.alerts():
+            k = caller_key(a.get("caller"))
+            if not k or k == "gian":
+                continue
+            c = out.setdefault(k, {"key": k, "name": a.get("caller"), "trades": 0, "wins": 0,
+                                   "losses": 0, "net": 0.0, "alerts": 0, "rooms": set(),
+                                   "last": ""})
+            c["alerts"] += 1
+            if a.get("room"):
+                c["rooms"].add(str(a["room"]))
+            c["last"] = max(c["last"], str(a.get("date") or ""))
+    except Exception as e:                              # noqa: BLE001
+        note("CALLERS  couldn't read the records: %s" % str(e)[:120])
+    off = callers_off()
+    rows = []
+    for c in out.values():
+        c["rooms"] = sorted(c["rooms"])
+        c["net"] = round(c["net"], 2)
+        c["state"] = "off" if c["key"] in off else "on"
+        rows.append(c)
+    rows.sort(key=lambda c: (-c["trades"], -c["alerts"], c["key"]))
+    return rows
+
+
+def set_caller_state(name, state):
+    k = caller_key(name)
+    if not k:
+        return False, "no caller name"
+    if state not in ("on", "off"):
+        return False, "state must be on or off"
+    path = os.path.join(HERE, "settings.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return False, "settings.json unreadable"
+    cur = [str(x) for x in (data.get("callers_off") or [])]
+    if state == "off" and k not in cur:
+        cur.append(k)
+    if state == "on":
+        cur = [x for x in cur if x != k]
+    data["callers_off"] = cur
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.chmod(path, 0o600)
+    except OSError as e:
+        return False, "couldn't write settings.json: %s" % e
+    CFG["callers_off"] = cur
+    note("CALLERS  %s -> %s (popup switch)" % (k, state.upper()))
+    return True, "saved"
+
+
+def strategy_numbers():
+    """The numbers a Strategy panel may show/edit, with what the last
+    backtest said about each (static text, dated — a lean, not a verdict)."""
+    st = CFG.get("strategy") or {}
+    pb = CFG.get("pullback") or {}
+    try:
+        import ratchet_tiers as _rt
+        arm, _lock, rung = _rt.TIERS[0][1]
+    except Exception:                                   # noqa: BLE001
+        arm, rung = 5.0, 2.0
+    return {
+        "stop_loss_pct": {"value": float(st.get("stop_loss_pct", 7.5)), "min": 2, "max": 30, "step": 0.5,
+                          "label": "Born stop %", "note": "7.5% best of 50 spacings on 80 real fills (9/8); right on 0DTE and 1+DTE alike (9/9)"},
+        "take_profit_pct": {"value": float(st.get("take_profit_pct", 10)), "min": 3, "max": 100, "step": 1,
+                            "label": "Take-profit % (hard-close mode only)", "note": "only used when the exit mode is Close whole position; the ratchet ignores it"},
+        "ratchet_arm_pct": {"value": float(arm), "min": 1, "max": 30, "step": 0.5,
+                            "label": "Ratchet arms at +%  (stop → breakeven)", "note": "instant arm at +5% beat every wait: 10 s +149, 30 s −6, 5 min −477 on 90 contract-days (9/9)"},
+        "ratchet_rung_pct": {"value": float(rung), "min": 0.5, "max": 20, "step": 0.5,
+                             "label": "Ratchet rung % (locks another +N each +N)", "note": "+2% rungs, 5/BE/2 was +$251 vs the old 10/10 −$434 (9/8 sweep)"},
+        "pullback_minutes": {"value": round(float(pb.get("timeout_seconds", 600)) / 60.0, 1), "min": 1, "max": 30, "step": 1,
+                             "label": "Round-number wait (minutes)", "note": "10 vs 15 min: identical on 65 beta-name trades; $1 level beats taking the call by +$8/contract (9/9)"},
+    }
+
+
+def set_strategy_numbers(body):
+    """Validate + write the numbers, apply live. Returns (ok, why)."""
+    spec = strategy_numbers()
+    vals = {}
+    for k, v in (body or {}).items():
+        if k not in spec:
+            return False, "unknown number %r" % k
+        try:
+            x = float(v)
+        except (TypeError, ValueError):
+            return False, "%s must be a number" % k
+        if not (spec[k]["min"] <= x <= spec[k]["max"]):
+            return False, "%s must be between %s and %s" % (k, spec[k]["min"], spec[k]["max"])
+        vals[k] = x
+    if not vals:
+        return False, "nothing to set"
+    path = os.path.join(HERE, "settings.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return False, "settings.json unreadable"
+    st = data.setdefault("strategy", {})
+    pb = data.setdefault("pullback", {})
+    if "stop_loss_pct" in vals:
+        st["stop_loss_pct"] = vals["stop_loss_pct"]
+    if "take_profit_pct" in vals:
+        st["take_profit_pct"] = vals["take_profit_pct"]
+    if "ratchet_arm_pct" in vals or "ratchet_rung_pct" in vals:
+        st["ratchet_arm_pct"] = vals.get("ratchet_arm_pct", spec["ratchet_arm_pct"]["value"])
+        st["ratchet_rung_pct"] = vals.get("ratchet_rung_pct", spec["ratchet_rung_pct"]["value"])
+    if "pullback_minutes" in vals:
+        pb["timeout_seconds"] = int(round(vals["pullback_minutes"] * 60))
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.chmod(path, 0o600)
+    except OSError as e:
+        return False, "couldn't write settings.json: %s" % e
+    CFG["strategy"] = st
+    CFG["pullback"] = pb
+    apply_strategy_numbers()
+    note("STRATEGY numbers set from the popup: %s" % ", ".join("%s=%g" % kv for kv in sorted(vals.items())))
+    return True, "saved — live now"
+
+
+def apply_strategy_numbers():
+    """Push the settings numbers into the live objects (boot + every write)."""
+    st = CFG.get("strategy") or {}
+    try:
+        import ratchet_tiers as _rt
+        arm = float(st.get("ratchet_arm_pct", _rt.TIERS[0][1][0]))
+        rung = float(st.get("ratchet_rung_pct", _rt.TIERS[0][1][2]))
+        _rt.TIERS = ((None, (arm, 0.0, rung)),)
+    except Exception:                                   # noqa: BLE001
+        pass
+    try:
+        pb = CFG.get("pullback") or {}
+        if _PULLBACK is not None:
+            _PULLBACK.timeout = float(pb.get("timeout_seconds", _PULLBACK.timeout))
+    except Exception:                                   # noqa: BLE001
+        pass
+
+
+def needs_you():
+    """What is waiting on G, from the bridge's side. The popup adds the
+    extension's own items (silent readers, missing tabs, No Access titles)."""
+    items = []
+    try:
+        if os.path.exists(os.path.join(HERE, "STOP")) or os.path.exists(os.path.join(HERE, "STOP.txt")):
+            items.append({"what": "the STOP file is in the folder — nothing fires until it's deleted",
+                          "fix": None})
+        _as = os.path.join(HERE, "announcer.stop")
+        if os.path.exists(_as) and os.path.getsize(_as) > 0:
+            items.append({"what": "Fill Announcer is paused (nothing posts to your Discord)",
+                          "fix": "announcer_on"})
+        if not (WB is not None and getattr(WB, "connected", True)):
+            items.append({"what": "Webull is not connected — check the keys in the Keys tab",
+                          "fix": None})
+        try:
+            bp = float(getattr(WB, "buying_power", None) or 0.0)
+            if 0 < bp < 150:
+                items.append({"what": "margin buying power is $%.0f — most calls will be refused as unaffordable" % bp,
+                              "fix": None})
+        except (TypeError, ValueError):
+            pass
+        for r in read_rooms():
+            if r["state"] == "lapsed":
+                items.append({"what": r["label"] + " is off — subscription lapsed (" + (r["why"] or "")[:60] + "). When you resubscribe, switch it on in Channels.",
+                              "fix": None})
+        if os.path.exists(os.path.join(HERE, "bridge.restart")):
+            items.append({"what": "a bridge restart is queued (bridge.restart file) — it goes at the next safe window",
+                          "fix": None})
+    except Exception as e:                              # noqa: BLE001
+        items.append({"what": "needs-you check hit an error: %s" % str(e)[:100], "fix": None})
+    return items
 
 
 def load_settings():
@@ -2377,6 +2674,14 @@ def _place_impl(order):
                 return reply
     what = describe(order)
 
+    # CALLER SWITCH (self-serve, 9/9): a trader G switched off in the popup
+    # gets no entry from any room. Exits are never gated (entries-only rule).
+    if action in ("OPEN", "ADD") and caller_key(order.get("trader")) in callers_off():
+        note("REFUSED  %s  ->  %s is switched OFF in the popup's Callers tab. "
+             "Nothing was sent." % (what, order.get("trader")))
+        return False, ("%s is switched off in the Callers tab — nothing sent"
+                       % order.get("trader"))
+
     # Whether THIS order is real money — the room's own toggle, not a global.
     live_order = bool(order.get("live")) and MODE != "webhook"
     # AN EXIT FOLLOWS THE POSITION, NOT THE CALLER (9/2). Every internal
@@ -3558,7 +3863,7 @@ class Handler(BaseHTTPRequestHandler):
             # The one list of every room we have been to (extension/rooms.txt)
             # with its state — so "what is the sniper actually listening to"
             # is a one-second curl instead of a screen-share (audit ask,
-            # 8/30). Read-only here; POST /rooms flips a state.
+            # 8/30). Read-only here; POST /rooms flips a state or its rules.
             try:
                 rooms = read_rooms()
             except Exception as _e:                     # noqa: BLE001
@@ -3566,6 +3871,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": True,
                                     "count": sum(1 for r in rooms if r["state"] == "on"),
                                     "total": len(rooms), "rooms": rooms})
+        # ===== SELF-SERVE reads (test build 9/9) =====
+        if self.path.startswith("/callers"):
+            return self._json(200, {"ok": True, "callers": caller_stats(),
+                                    "off": sorted(callers_off())})
+        if self.path.startswith("/numbers"):
+            return self._json(200, {"ok": True, "numbers": strategy_numbers()})
+        if self.path.startswith("/needs"):
+            return self._json(200, {"ok": True, "items": needs_you()})
         # /whopfeed endpoint removed 9/8 (dead whop-api reader deleted).
         if self.path.startswith("/exchoices"):
             # Every account behind an extra login's keys, with buying power —
@@ -4445,18 +4758,25 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, dict(self._status(), ok=True, message=msg))
 
     def _set_room(self):
-        """POST /rooms {"id": ..., "state": "on"|"off"} — THE ONE SWITCH
-        (9/9): the popup flips a room here; rooms.txt is the only list, so
-        the write lands there and every reader (both Chrome profiles, START
-        HERE, the tools) sees the same truth. Never touches a trade."""
+        """POST /rooms {"id": ..., "state": "on"|"off"} and/or {"id": ...,
+        "rules": "spx,bare,sym=SPX"} — THE ONE SWITCH (9/9): the popup flips
+        a room here; rooms.txt is the only list, so the write lands there
+        and every reader (both Chrome profiles, START HERE, the tools) sees
+        the same truth. Never touches a trade."""
         try:
             n = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(n) or b"{}")
         except (ValueError, TypeError):
             return self._json(400, {"ok": False, "why": "bad JSON"})
-        ok, why = set_room_state(body.get("id"), body.get("state"))
-        if ok:
-            note("ROOMS    %s -> %s (popup switch)" % (body.get("id"), body.get("state")))
+        ok, why = True, "nothing to change"
+        if body.get("state") is not None:
+            ok, why = set_room_state(body.get("id"), body.get("state"))
+            if ok:
+                note("ROOMS    %s -> %s (popup switch)" % (body.get("id"), body.get("state")))
+        if ok and body.get("rules") is not None:
+            ok, why = set_room_rules(body.get("id"), body.get("rules"))
+            if ok:
+                note("ROOMS    %s rules -> %s (popup)" % (body.get("id"), body.get("rules")))
         try:
             rooms = read_rooms()
         except Exception:                               # noqa: BLE001
@@ -4464,6 +4784,67 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200 if ok else 400,
                           {"ok": ok, "why": why, "rooms": rooms,
                            "count": sum(1 for r in rooms if r["state"] == "on")})
+
+    # ===== SELF-SERVE (test build 9/9) =====
+    def _set_caller(self):
+        """POST /callers {"name": ..., "state": "on"|"off"} — bench ONE
+        trader without benching the room. An OPEN/ADD from a switched-off
+        caller is refused at the door with a plain log line."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except (ValueError, TypeError):
+            return self._json(400, {"ok": False, "why": "bad JSON"})
+        ok, why = set_caller_state(body.get("name"), str(body.get("state") or "").lower())
+        return self._json(200 if ok else 400, {"ok": ok, "why": why,
+                                               "callers": caller_stats()})
+
+    def _set_numbers(self):
+        """POST /numbers {"stop_loss_pct": 7.5, ...} — the Strategy panel.
+        Validated against the ranges strategy_numbers() publishes, written
+        to settings.json, applied live. G's decision by house rule; the
+        popup makes him confirm."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except (ValueError, TypeError):
+            return self._json(400, {"ok": False, "why": "bad JSON"})
+        ok, why = set_strategy_numbers(body)
+        return self._json(200 if ok else 400, {"ok": ok, "why": why,
+                                               "numbers": strategy_numbers()})
+
+    def _fix(self):
+        """POST /fix {"do": "announcer_on"|"announcer_off"|"restart_bridge"}
+        — the buttons beside the needs-you list. Each is something G used
+        to do with a .bat file; the button IS him doing it."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except (ValueError, TypeError):
+            return self._json(400, {"ok": False, "why": "bad JSON"})
+        do = str(body.get("do") or "")
+        _as = os.path.join(HERE, "announcer.stop")
+        try:
+            if do == "announcer_on":
+                if os.path.exists(_as):
+                    os.remove(_as)
+                note("ANNOUNCER on (popup) — the revive task starts it within 30 min; "
+                     "ANNOUNCER.bat starts it now")
+                return self._json(200, {"ok": True, "why": "announcer switched on — it comes up "
+                                        "on its own within 30 min (or run ANNOUNCER.bat now)"})
+            if do == "announcer_off":
+                with open(_as, "w", encoding="utf-8") as f:
+                    f.write("paused from the popup %s\n" % time.strftime("%Y-%m-%d %H:%M"))
+                note("ANNOUNCER paused (popup)")
+                return self._json(200, {"ok": True, "why": "announcer paused — it stops at its next loop"})
+            if do == "restart_bridge":
+                with open(os.path.join(HERE, "bridge.restart"), "w", encoding="utf-8") as f:
+                    f.write("popup %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+                note("CODE     restart requested from the popup")
+                return self._json(200, {"ok": True, "why": "restart queued — it goes the moment nothing is in flight"})
+        except OSError as e:
+            return self._json(200, {"ok": False, "why": str(e)[:120]})
+        return self._json(400, {"ok": False, "why": "unknown fix %r" % do})
 
     def _chan_names(self):
         """The extension tells us what each channel is REALLY called.
@@ -4516,6 +4897,13 @@ class Handler(BaseHTTPRequestHandler):
             return self._chan_names()
         if self.path.startswith("/rooms"):
             return self._set_room()
+        # ===== SELF-SERVE writes (test build 9/9) =====
+        if self.path.startswith("/callers"):
+            return self._set_caller()
+        if self.path.startswith("/numbers"):
+            return self._set_numbers()
+        if self.path.startswith("/fix"):
+            return self._fix()
         if self.path.startswith("/mode"):
             return self._set_mode()
         if self.path.startswith("/flatten"):
