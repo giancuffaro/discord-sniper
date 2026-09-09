@@ -9,6 +9,23 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 — LOGGED OUT AGAIN; ROOMS BACK TO 19 (v3.5.71). G: "suspend the tabs again."**
+The 7 rooms re-added an hour earlier (Options Watchlist, Vero 1/3, Platinum
+equity, NGD, shabs, eli) are benched again — 26 → 19. Working theory on WHY
+the logout came back even after the reload-storm fix: Discord's gateway has a
+per-account budget of ~1,000 IDENTIFYs per rolling 24 h; every tab (re)load
+is an IDENTIFY, and the storm burned ~662 of them on top of normal traffic.
+Exceeding it invalidates the session — a forced logout that keeps recurring
+until the rolling window clears, EVEN with the loop fixed. Also unverified:
+whether the extension actually picked up 3.5.68+ (it self-updates only when
+the bridge serves /build and the market is closed). NEXT: confirm the popup
+shows ≥3.5.68; count 'detached' lines in tomorrow's DS Logs export; if the
+count is single digits and logouts continue for a day, it's the identify
+budget draining, not a live bug — re-add rooms only after a clean 24 h.
+Also this pass: v3.5.0/ renamed reference/ (5 docs kept: OPTIONS-BROKER-
+REFERENCE, BROKER-TOP4, BROKER-CHOICE, ANTI-CLIP, SDK-AUDIT; 6 stale ones
+archived); every 'v3.5.0/' pointer in code comments and docs repointed.
+
 **2026-09-09 (late) — STALE-COMMENT AUDIT: 4 real bugs found behind the comments.**
 G: "fix all stale comments, verifying everything." Read the code first every
 time instead of trusting a comment. Roughly 45 stale claims corrected across

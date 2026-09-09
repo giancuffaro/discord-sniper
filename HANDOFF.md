@@ -34,8 +34,8 @@ archive/. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.70) reads 26 rooms —
-  22 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile,
+- The machine: Chrome MV3 extension (Profile 2; v3.5.71) reads 19 rooms —
+  15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile,
   Browser 2 — not part of the Profile 2 tab count), 0 ZTRADEZ (whole server
   cut 9/9, sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild). G
   brought every non-ZT room back 9/9 once the reload storm was fixed (the
