@@ -39,17 +39,17 @@ window (either direction) isn't reflected in the -10% floor check. Read as
 Run: python today_entry_compare.py
 """
 
-import json
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import ledger                 # noqa: E402
 import occ                    # noqa: E402
 import ratchet_tiers as rt    # noqa: E402
 import tape                   # noqa: E402
 
-DAY_JSON = os.path.join(HERE, "days", "2026-09-08.json")
+DAY = "2026-09-08"
 
 # (label, symbol, expiry, side, strike, alert_unix_t, their_avg, who, room)
 # alert_unix_t read off bridge.log's "AI READ" line for each call (the
@@ -98,9 +98,9 @@ def simulate(rows_after_entry, entry):
 
 
 def load_real_fills():
-    d = json.load(open(DAY_JSON, encoding="utf-8"))
+    # 9/9: reads master_ledger.csv via ledger.py — days/*.json table truncates.
     out = {}
-    for r in d.get("table", []):
+    for r in ledger.by_day().get(DAY, []):
         if r.get("kind") != "option":
             continue
         who = str(r.get("who") or "").strip().lower()

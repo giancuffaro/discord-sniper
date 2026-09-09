@@ -10,10 +10,9 @@ missed").
     python3 scoped_missed_pull.py
 """
 import csv
-import glob
-import json
 import os
 
+import ledger
 import occ
 import databento as db
 import databento_backfill as bf
@@ -28,12 +27,9 @@ def main():
     client = db.Historical(key)
 
     targets = {}
-    for fn in sorted(glob.glob(os.path.join(HERE, "days", "*.json"))):
-        try:
-            d = json.load(open(fn, encoding="utf-8"))
-        except Exception:                                   # noqa: BLE001
-            continue
-        for r in d.get("table", []):
+    # 9/9: reads master_ledger.csv via ledger.py — days/*.json table truncates.
+    for _date, day_rows in sorted(ledger.by_day().items()):
+        for r in day_rows:
             if r.get("kind") != "option" or r.get("state") != "nofill":
                 continue
             sym, side = r.get("symbol"), r.get("side")
