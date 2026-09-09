@@ -36,16 +36,28 @@ under 50 KB; HANDOFF-LOG.md is history. Then copy HANDOFF.md over
 project/context/HANDOFF-snapshot.md and end the reply with the 📌 re-upload reminder.
 
 ## What the machine is (one paragraph)
-Chrome MV3 extension (Profile 2) reads 26 Discord/Whop rooms and parses typed alerts, voice
-(Deepgram, diarized), images (vision) → Python bridge on 127.0.0.1:8787 places real Webull
-option orders (limit at caller's price or better; round-number pullback entries; 1-strike-OTM
-rule; combo bracket with a stop born WITH the order; the 7.5/5/2 ratchet + anti-clip (2+ DTE) owns exits;
-swings ride a wide -25% stop re-armed each morning at 9:31). Fill Announcer posts every fill,
-milestone, stop-out and scoreboard to G's Discord (options + futures webhooks). A scheduled task
-builds the journal from broker truth at 4:45 PM weekdays and fixes what it exposes. G's own
-separate tool, Market Sniper (port 8000), trades manual scalps on the SAME Webull account and
-SAME app key — one shared rate budget, one coexistence rule (positions the bot didn't
-originate are his: visible, never stop-managed, never sold).
+Chrome MV3 extension (Discord profile + a "Sniper Whop" profile) reads 19 live rooms (15 Discord
++ 4 Whop; extension/rooms.txt is the one list) and parses typed alerts, voice (Deepgram,
+diarized — Felony's morning Zoom joined as the web client), images (vision) → Python bridge on
+127.0.0.1:8787 places real Webull option orders (limit at caller's price or better; round-number
+pullback entries — next $1, 10-min window, settled on real bars 9/9; 1-strike-OTM rule; combo
+bracket with a stop born WITH the order; the flat 7.5/5/2 ratchet owns exits — born −7.5%, +5%
+arms to breakeven instantly, +2% rungs, anti-clip OFF — settled on 90 real contract-days 9/9;
+swings ride a wide −25% stop re-armed each morning at 9:31). Fill Announcer posts every fill,
+milestone, stop-out and scoreboard to G's Discord (options + futures webhooks; may be paused).
+The sniper-autopilot scheduled task runs every 30 min weekdays: preflight at the bell, sync
+watch + broker pull all session, close-out at 4:30 PM that journals from broker truth, runs every
+post-mortem and fixes what it exposes. G's own separate tool, Market Sniper (port 8000), trades
+manual scalps on the SAME Webull account and SAME app key — one shared rate budget, one
+coexistence rule (positions the bot didn't originate are his: visible, never stop-managed, never sold).
+
+## The records (9/9) — analyze ONLY from these
+master_ledger.csv (every fill, reconciled to the broker; read via ledger.py) · master_alerts.csv
+(every alert and its fate) · master_broker.csv (the Webull order record, all days — the
+autopilot's daily Webull_Orders_<date>_auto.csv is absorbed into it and deleted) ·
+master_postmortems.csv + postmortems/ (one verdict per exited trade, auto-written after every
+exit). Never analyze from days/*.json "table" or journal.csv (both truncate). Price tapes: tape.py
+is the one reader. Backtests: ratchet_sweep.py / ratchet_backtest.py / pullback_levels.py.
 
 ## Facts to respect (from reference/OPTIONS-BROKER-REFERENCE.md — check it before any broker test)
 - Webull limits are PER ENDPOINT, per app key: option snapshot 60/min (20 symbols/call);
