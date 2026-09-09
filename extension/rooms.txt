@@ -204,15 +204,17 @@ whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop
 # flips them. shabs is the best record scanned (87.5% ex-BE, +$15,898 at 1
 # con/play in August). eli is commentary-heavy — the "stock is selling" and
 # progress-update guards (9/8) exist because of his room.
-1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital
-1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital
-# OWLS all-alerts (wired 9/9) — the 🛎️ all-alerts relay channel aggregates ALL 11
-# OWLS analysts (ab, muggzone, eva, tt, giul, neal, florida-man, common-stock,
-# jon-and-kian, + shabs/eli) into ONE feed via the "OWLS Capital Clanker" bot,
-# each as an embed tagged "From 🌟｜<analyst>". content.js already reads embeds
-# (8/30 embed fix), so this ONE tab can replace the wall of per-analyst tabs.
-# NOTE (G's call 9/9): it ALSO relays shabs & eli, who have dedicated SPX-proxy
-# tabs above — running BOTH double-reads them. Either close the shabs/eli tabs
-# (simplest, but loses their implied-SPX default_symbol) OR keep them and add a
-# guard so all-alerts skips shabs/eli relays. Left both wired pending that call.
+# RETIRED 9/9 into OWLS all-alerts below (G: "remove the rooms covered by all
+# alerts"). shabs & eli now flow through the aggregator; background.js's relay
+# unwrap re-books their calls under "shabs"/"eli" AND re-applies their SPX-only
+# handling (default_symbol=SPX + SPX->SPY retarget) off the "From 🌟｜" tag, so
+# nothing is lost. Reopen a dedicated tab only if the relay ever misses them.
+#1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital
+#1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital
+# OWLS all-alerts (wired 9/9, now the SOLE OWLS tab) — the 🛎️ all-alerts relay
+# aggregates ALL 11 analysts (ab, muggzone, eva, tt, giul, neal, florida-man,
+# common-stock, jon-and-kian, + shabs/eli) into ONE feed via "OWLS Capital
+# Clanker", each an embed tagged "From 🌟｜<analyst>". content.js reads embeds
+# (8/30) and background.js unwraps the relay to the real analyst (9/9). ONE tab
+# replaces the whole OWLS wall.
 1449226651064991806|https://discord.com/channels/718624848812834903/1449226651064991806|OWLS all-alerts|OWLS Capital

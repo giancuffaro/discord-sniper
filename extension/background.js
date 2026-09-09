@@ -2884,6 +2884,33 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       }
     }
 
+    // OWLS all-alerts (9/9): the "OWLS Capital Clanker" bot relays every OWLS
+    // analyst into ONE channel, each embed prefixed "From 🌟｜<analyst>". Same
+    // idea as the ZT mashup above — pull the REAL analyst so claims/dedupe/
+    // scoreboard work, and carry shabs & eli's SPX-only handling (they never
+    // type the ticker; their per-channel default_symbol/SPX-retarget can't ride
+    // a mixed feed). This is what lets their dedicated tabs retire into this one.
+    if (String(msg.channelId || "") === "1449226651064991806") {
+      const _om = String(msg.text || "").match(/from\s*[^\w]*([a-z0-9][a-z0-9\-]{1,30})/i);
+      if (_om) {
+        const _slug = _om[1].toLowerCase();
+        const _OWLS = {
+          "shabs-sky-alerts": "shabs", "shabs": "shabs",
+          "eli-alerts": "eli", "eli": "eli",
+          "muggzone-options": "MuggZone", "giul-heatseeker": "Giul",
+          "florida-man": "Florida Man", "common-stock": "Common Stock",
+          "jon-and-kian": "Jon and Kian", "ab": "AbTrades", "tt": "TT",
+          "eva": "Eva", "neal": "Neal",
+        };
+        msg.author = _OWLS[_slug] || _slug;
+        msg.relay_source = _slug;
+        if (msg.author === "shabs" || msg.author === "eli") {
+          c.default_symbol = "SPX";     // their bare "7655p" -> SPX 7655p
+          c.spx_entries = true;         // then the SPX->SPY retarget fires
+        }
+      }
+    }
+
     // VERO posts every call as a reply on his own alert bot, so the reply
     // gate below was killing ALL of them (his 717C entry read as "a reply,
     // nothing sent"). His format is fixed and self-contained — a full
