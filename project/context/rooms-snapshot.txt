@@ -24,37 +24,36 @@
 # G's only bench, and that's a popup action, never done from here.
 #
 # CLEANUP 9/9 — this file had ~5 weeks of accumulated investigation notes
-# folded into the room lines. Moved the long-form ones to HANDOFF-LOG.md and
-# cut 15 rooms with zero real activity in master_ledger.csv (the reconciled
-# fill ledger — HANDOFF.md explains why days/*.json alone isn't trusted for
-# this any more). Reasons are on each cut line below; full narrative in
-# HANDOFF-LOG.md's "ROOM CLEANUP: 27 → 12" session note (9/9, newest entry).
+# folded into the room lines. Moved the long-form ones to HANDOFF-LOG.md.
+# Same night: 27 rooms cut to 8 (15 on zero master_ledger.csv activity, then
+# all 4 ZTRADEZ on the sub lapsing), then G re-added 11 of the cut ones (all
+# 4 Whop, Aristotle small, TTT Lotto, all 3 Platinum shadow rooms, Brando,
+# Shoof) to land at 19 — his target was 15-20 total. Full narrative in
+# HANDOFF-LOG.md's SESSION NOTES (9/9, newest entries).
 
 829754942817828884|https://discord.com/channels/525113944239767562/829754942817828884|Honeydrip daytrades|Honeydrip / Aristotle (main)
 987515353670221834|https://discord.com/channels/525113944239767562/987515353670221834|Aristotle|Honeydrip / Aristotle (main)
-# CUT 9/9 — 0 rows in master_ledger.csv. (Its sibling "Aristotle" looked the
-# same way in the OLD days/*.json count and turned out to be wrong — a real
-# AMD 515C had been dropped by a table-truncation bug — so this is believed,
-# not assumed: master_ledger unions table+wallet.trades+trades.log and still
-# shows zero here.)
-#1433933203302776852|https://discord.com/channels/525113944239767562/1433933203302776852|Aristotle small|Honeydrip / Aristotle (main)
+# RE-ADDED 9/9 (G's call, wants 15-20 tabs total). Was cut same day for 0
+# rows in master_ledger.csv — untested, not proven dead the way some of the
+# other cuts were; worth watching whether it ever actually fires.
+1433933203302776852|https://discord.com/channels/525113944239767562/1433933203302776852|Aristotle small|Honeydrip / Aristotle (main)
 # Midas RE-ADDED 8/30 (G: "now that we only need entries, since we have the
 # ratchet") — his exits were the old problem; the ratchet owns exits now.
 1144369893760831489|https://discord.com/channels/525113944239767562/1144369893760831489|Midas|Honeydrip / Aristotle (main)
 
-# CUT 9/9, all four Whop rooms (G's call) — 0 signals in master_ledger.csv
-# for Day Trades / Futures / 2K Challenge across the whole 5-week history;
-# High Risk had exactly 1 row ever (a failed parse). NOT the tab-count fix
-# for Discord logoffs — Whop runs in the separate "Sniper Whop" Chrome
-# profile, so it was never part of that count. A Whop API reader WAS tried
-# (9/9) but its "api mode" gate was dead and had been silently dropping
-# every tab read since that morning — deleted same day. Whop stays
-# tabs-only for now; these 4 are cut for being dead weight, not for a
-# replacement path.
-#whop:day-trades|https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)
-#whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)
-#whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)
-#whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)
+# RE-ADDED 9/9, all four Whop rooms (G's call, wants 15-20 tabs total). Cut
+# earlier the same day for 0 signals in master_ledger.csv (Day Trades /
+# Futures / 2K Challenge across the whole 5-week history; High Risk had
+# exactly 1 row ever, a failed parse) — untested at real volume, not proven
+# dead. Whop runs in the separate "Sniper Whop" Chrome profile (Browser 2),
+# so these don't add to the Profile 2 / Discord tab count or its logoff
+# risk. A Whop API reader was tried and deleted 9/9 (its "api mode" gate was
+# dead, silently dropping every tab read since that morning) — tabs are the
+# only Whop source again.
+whop:day-trades|https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)
+whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)
+whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)
+whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)
 # CUT 9/7 (Whop Swing Trades) — a SWING room. Swings have been paused since 9/4 and G restated the rule 9/7 ("we shouldnt have any"). Reading a room we will not trade is dead weight.
 #whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing Trades|firststeptrading (Whop)
 
@@ -112,8 +111,8 @@
 769797179992571914|https://discord.com/channels/769790224921395200/769797179992571914|Option Alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 # CUT 9/7 (Options Watchlist) — 44 unique messages captured, 0 signals, 0 entries — it is a WATCHLIST, and watchlist rows are the exact thing the parser must never fire on ("$150p on watch"). A whole tab of RAM for nothing.
 #769797819770732554|https://discord.com/channels/769790224921395200/769797819770732554|Options Watchlist|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
-# CUT 9/9 — wired 9/7, 0 rows in master_ledger.csv since. Not structurally disabled like the Platinum shadow rooms below, just quiet; reopen if the room turns out to actually post here.
-#880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
+# RE-ADDED 9/9 (G's call, wants 15-20 tabs total). Wired 9/7, was 0 rows in master_ledger.csv when cut same day as everything else — not structurally disabled, just quiet so far.
+880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)
 # 9/7: Whop shows STS/Summit as LAPSED, but Discord access is INTACT —
 # verified by opening it: '#alert-room | Summit Trading Strategies',
 # 2,688 unread, messages from today. A lapsed subscription is NOT the
@@ -129,14 +128,14 @@
 # Platinum nitro is the only one of these four that has ever produced a
 # signal (6 rows, master_ledger.csv). The other three were opened 8/23 in
 # SHADOW mode (parser learns their wording, judged in the log, nothing
-# fires) and never graduated — cutting them costs nothing live either way.
+# fires) and never graduated. RE-ADDED 9/9 (G's call, wants 15-20 tabs
+# total) after being cut earlier the same day — still unproven, still worth
+# checking whether the parser has actually graduated them before expecting
+# real signals.
 911389167169191946|https://discord.com/channels/911385966864896081/911389167169191946|Platinum nitro|Platinum Trading
-# CUT 9/9 — still in SHADOW mode, never graduated, 0 rows
-#911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|Platinum futures-alerts|Platinum Trading
-# CUT 9/9 — still in SHADOW mode, never graduated, 0 rows
-#1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum day-trades|Platinum Trading
-# CUT 9/9 — still in SHADOW mode, never graduated, 0 rows
-#1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum ei-alerts|Platinum Trading
+911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|Platinum futures-alerts|Platinum Trading
+1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum day-trades|Platinum Trading
+1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum ei-alerts|Platinum Trading
 # CUT 9/7 (Platinum equity) — 203 captured messages, 4 fires, ZERO entries — MrMTrades posting SWING ideas on SHARES, no strike/expiry. Fails the no-swings, options-only, and no-watchlist rules at once.
 #983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity|Platinum Trading
 
@@ -149,11 +148,12 @@
 
 # ELITE OPTIONS. Both callers (Brando, Shoof) were wired 9/7 off 148 real
 # alerts pulled from scrollback — full grammar notes (their pipe-delimited
-# formats, the trailing-partial-exit fix) are in HANDOFF-LOG.md if this is
-# ever re-added. CUT 9/9 — live since the 9/8 ALL_LIVE_GEN migration but 0
-# rows in master_ledger.csv the whole time; costs nothing live to drop now.
-#1286022517869514874|https://discord.com/channels/1286017515625119804/1286022517869514874|Brando Alerts|ELITE OPTIONS
-#1368263191632543956|https://discord.com/channels/1286017515625119804/1368263191632543956|Shoof Alerts|ELITE OPTIONS
+# formats, the trailing-partial-exit fix) are in HANDOFF-LOG.md. RE-ADDED
+# 9/9 (G's call, wants 15-20 tabs total) after being cut earlier the same
+# day for 0 rows in master_ledger.csv since wired — live since the 9/8
+# ALL_LIVE_GEN migration, just hasn't produced anything yet.
+1286022517869514874|https://discord.com/channels/1286017515625119804/1286022517869514874|Brando Alerts|ELITE OPTIONS
+1368263191632543956|https://discord.com/channels/1286017515625119804/1368263191632543956|Shoof Alerts|ELITE OPTIONS
 # NOT WIRED, on purpose (scanned 9/7, all 28 channels — see HANDOFF for the
 # per-channel reasoning): brando-commentary/shoof-commentary (level talk,
 # not entries), levels-bot/flow-bot/x-news-bot/uwhale-news-bot/brandos-tweets

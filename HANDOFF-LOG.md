@@ -9,6 +9,19 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 (even later) — RE-ADD PASS: 8 → 19 (target was 15-20).**
+G reviewed the cut list and added 11 back: all 4 Whop rooms, Aristotle
+small, TTT Lotto, all 3 Platinum shadow rooms (futures-alerts, day-trades,
+ei-alerts), Brando Alerts, Shoof Alerts. None of these are proven live —
+they're back because he wants the coverage and volume back, not because
+new ledger evidence cleared them. Two things worth flagging next time this
+comes up: the 3 Platinum rooms are still in SHADOW mode in the parser
+(judged in the log, nothing fires) regardless of the tab being open, so
+don't expect signals from them without a separate parser change; and the
+19-total is 15 Discord (Profile 2) + 4 Whop (separate "Sniper Whop"
+profile) — the number that actually matters for the Discord-logoff problem
+is 15, down from 23, not 19 down from 27.
+
 **2026-09-09 — FOLDER CLEANUP: 20 dead items MOVED to archive/2026-09-09-cleanup/ (nothing deleted).**
 G: "delete useless files, things we won't use anymore." Every file was checked
 against what imports/calls/reads it (bridge, extension, every .bat, scheduled
