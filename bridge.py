@@ -3453,6 +3453,8 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, {"ok": True, "message": msg})
 
     def do_GET(self):
+        if not self._authorized():
+            return self._json(403, {"ok": False, "error": "bad or missing X-Sniper-Token"})
         if self.path.startswith("/mode"):
             return self._json(200, self._status())
         if self.path.startswith("/stream"):
@@ -4421,6 +4423,8 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, {"ok": True, "known": len(old), "new": added})
 
     def do_POST(self):
+        if not self._authorized():
+            return self._json(403, {"ok": False, "error": "bad or missing X-Sniper-Token"})
         if self.path.startswith("/reads"):
             return self._tape_reads()
         if self.path.startswith("/channames"):
@@ -5412,8 +5416,20 @@ def main():
 
     print("=" * 62)
     print("Leave this window open. Close it and the extension can't trade.")
+    # SECOND MACHINE (9/9): execution.bridge_listen = "0.0.0.0" (or this PC's
+    # LAN IP) lets PC2's extension reach this bridge. It is honoured ONLY when
+    # execution.bridge_token is set — without a secret the bridge stays on
+    # loopback no matter what the setting says, and says so.
+    _listen = str(EXEC.get("bridge_listen") or "127.0.0.1").strip() or "127.0.0.1"
+    if _listen not in ("127.0.0.1", "localhost") and not str(EXEC.get("bridge_token") or ""):
+        print("bridge_listen=%s IGNORED — set execution.bridge_token first. "
+              "Staying on 127.0.0.1." % _listen)
+        _listen = "127.0.0.1"
+    if _listen != "127.0.0.1":
+        print("Listening on %s:%s for a second PC — token required off loopback."
+              % (_listen, PORT))
     try:
-        ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+        ThreadingHTTPServer((_listen, PORT), Handler).serve_forever()
     except OSError as e:
         print("\nCouldn't start: %s" % e)
         print("Usually that means a bridge is already running in another "
