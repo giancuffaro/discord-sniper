@@ -328,7 +328,8 @@ def run(date=None, occ=None, last=False, quiet=False):
     try:
         cands = [r for _d, r in ledger.rows(real_only=True, since=date, until=date)
                  if r.get("state") in ("closed", "stopped") and r.get("pl") is not None
-                 and not r.get("manual")]
+                 and not r.get("manual")
+                 and str(r.get("who") or "").strip().lower() != "gian"]   # his hand trades: not the bot's to grade
         if occ:
             cands = [r for r in cands if (r.get("occ") or "") == occ]
         if last and cands:
@@ -364,7 +365,8 @@ def run_for_key_later(symbol, delay_s=630):
             for r in [x for _d, x in ledger.rows(real_only=True, since=today, until=today)
                       if (x.get("symbol") or "").upper() == symbol.upper()
                       and x.get("state") in ("closed", "stopped")
-                      and x.get("pl") is not None and not x.get("manual")]:
+                      and x.get("pl") is not None and not x.get("manual")
+                      and str(x.get("who") or "").strip().lower() != "gian"]:
                 try:
                     _write(analyze(r))
                 except Exception:                       # noqa: BLE001
