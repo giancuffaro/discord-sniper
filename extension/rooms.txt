@@ -78,7 +78,7 @@
 #829352738239414332|https://discord.com/channels/496871546963492874/829352738239414332|ZT top-flow|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #721821717328298066|https://discord.com/channels/496871546963492874/721821717328298066|ZT scalps|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1471700027662405712|https://discord.com/channels/496871546963492874/1471700027662405712|ZT fut-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-# REOPENED 9/7, still BORN TESTING — flip in the popup when ready for real money (G's call, not touched here):
+# REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration (cleared every test flag) — only 1 signal since reopening:
 1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ
 # CUT 9/7 (tlm/opt-4) — verticals and a naked spread, against G's "no covered calls and spreads" rule (9/7)
 #694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ
@@ -91,9 +91,9 @@
 #862419656382873650|https://discord.com/channels/496871546963492874/862419656382873650|ZT swing-2|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1061980561293443152|https://discord.com/channels/496871546963492874/1061980561293443152|ZT swing-3|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1179200811650252850|https://discord.com/channels/496871546963492874/1179200811650252850|ZT swing-4|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-# REOPENED 9/7, still BORN TESTING — flip in the popup when ready for real money (G's call, not touched here). 18 real signals since reopening, well past a fair test.
+# REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 18 real signals since reopening.
 1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ
-# REOPENED 9/7, still BORN TESTING — flip in the popup when ready for real money (G's call, not touched here). 19 real signals since reopening, well past a fair test.
+# REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 19 real signals since reopening.
 1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ
 
 # SUBSCRIPTION LAPSED (checked on whop.com 9/7/26). A room whose
@@ -145,8 +145,8 @@
 # ELITE OPTIONS. Both callers (Brando, Shoof) were wired 9/7 off 148 real
 # alerts pulled from scrollback — full grammar notes (their pipe-delimited
 # formats, the trailing-partial-exit fix) are in HANDOFF.md if this is ever
-# re-added. CUT 9/9 — still BORN TESTING, 0 rows in master_ledger.csv since
-# wired; costs nothing live to drop for now.
+# re-added. CUT 9/9 — live since the 9/8 ALL_LIVE_GEN migration but 0 rows
+# in master_ledger.csv the whole time; costs nothing live to drop for now.
 #1286022517869514874|https://discord.com/channels/1286017515625119804/1286022517869514874|Brando Alerts|ELITE OPTIONS
 #1368263191632543956|https://discord.com/channels/1286017515625119804/1368263191632543956|Shoof Alerts|ELITE OPTIONS
 # NOT WIRED, on purpose (scanned 9/7, all 28 channels — see HANDOFF for the

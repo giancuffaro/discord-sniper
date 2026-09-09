@@ -2,10 +2,13 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 — cut from 240 KB / 3,034 lines to this; rules folded
-in from tonight: ONE central file per data family (ledger / alerts / tapes /
-holidays / announcer board), ratchet 7.5/5/2 flat, futures ratchet decoupled,
-Whop API path deleted, OWLS all-alerts wired, shabs/eli retired, all rooms live.
+Last updated: 2026-09-09 (later) — cut from 240 KB / 3,034 lines to this; rules
+folded in from tonight: ONE central file per data family (ledger / alerts /
+tapes / holidays / announcer board), ratchet 7.5/5/2 flat, futures ratchet
+decoupled, Whop API path deleted, OWLS all-alerts wired, shabs/eli retired,
+all rooms live. Rooms cut 27→12 same night on tagged master_ledger.csv
+numbers (G approved room-by-room); rooms.txt's old per-room essays moved to
+HANDOFF-LOG.md.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -30,9 +33,11 @@ Whop API path deleted, OWLS all-alerts wired, shabs/eli retired, all rooms live.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.64) reads 27 rooms —
-  23 Discord + 4 Whop (extension/rooms.txt is THE list; editing it changes
-  the build stamp → extension reloads itself) — typed alerts, voice
+- The machine: Chrome MV3 extension (Profile 2; v3.5.65) reads 12 rooms —
+  all Discord, 0 Whop (Whop is tabs-only in the separate "Sniper Whop"
+  profile, Browser 2 — never in this count) (extension/rooms.txt is THE
+  list; editing it changes the build stamp → extension reloads itself) —
+  typed alerts, voice
   (Deepgram, diarized), images (vision) → Python bridge (bridge.py,
   127.0.0.1:8787) places real Webull option orders. Futures: micros via
   NinjaTrader OIF files (Webull futures account $0 by choice; Topstep not
