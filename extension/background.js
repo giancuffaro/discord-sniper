@@ -559,53 +559,64 @@ async function accessCheck(force) {
   } catch (e) { /* a probe must never break the reader */ }
 }
 
+/* EVERY room rooms.txt knows, in file order, each {id, url, name, group,
+ * state} with state on|off|lapsed. The popup's Channels tab is drawn from
+ * this (one switch per room, 9/9 — G: "a list of all the rooms we've been
+ * to and the option to open the tab or not; if I selected to open it I
+ * obviously want it live"). */
+const ALL_ROOMS = [];
+
 function loadRoomsFile() {
   if (_roomsPromise) return _roomsPromise;
   _roomsPromise = (async () => {
     try {
-      const r = await fetch(chrome.runtime.getURL("rooms.txt"));
+      const r = await fetch(chrome.runtime.getURL("rooms.txt"), { cache: "no-store" });
       const text = await r.text();
       const ids = [];
       SLEEPING.length = 0;
       LIVE_ROOM_IDS.clear();
+      ALL_ROOMS.length = 0;
+      for (const k of Object.keys(ROOM_TABS)) delete ROOM_TABS[k];
+      let lastComment = "";
       for (const line of text.split("\n")) {
         const t = line.trim();
-        // SLEEPING ROOMS (9/7, his ask: "put the no access channels kind of
-        // to sleep... then have the app check if access was revoked or
-        // subscribed to and go ahead and open them").
-        //
-        // "#SLEEP|<why>|<the normal room line>" is PARKED, not deleted:
-        // it does not open a tab and it does not trade, but the room is
-        // still here with its id and url, so the access probe below can
-        // knock on the door once a day and wake it the moment the
-        // subscription is back. Nothing about the PARSER changes — his
-        // RWGates rules and every other caller's stay exactly as they are.
-        if (t.startsWith("#SLEEP|")) {
-          const p = t.slice(7).split("|").map(s => s.trim());
-          if (p.length >= 4 && p[1]) {
-            SLEEPING.push({ why: p[0], id: p[1], url: p[2],
-                            name: p[3] || p[1] });
-          }
+        if (!t) { lastComment = ""; continue; }
+        if (t.startsWith("#")) { lastComment = t.replace(/^#\s*/, ""); continue; }
+        // rooms.txt is id|url|shortName|group|state (9/9). A line with no
+        // 5th field is `on` — that is what every line was before the state
+        // column existed, so an old file keeps meaning what it meant.
+        const parts = t.split("|").map(s => s.trim());
+        const id = parts[0];
+        if (!id) continue;
+        const state = (parts[4] || "on").toLowerCase();
+        const name = parts[2] || id;
+        const why = state === "on" ? "" : lastComment;
+        lastComment = "";
+        ALL_ROOMS.push({ id: id, url: parts[1] || "", name: name,
+                         group: parts[3] || "Other rooms", state: state, why: why });
+        // rooms.txt wins over the hand-typed ROOM_LABELS map (9/9). That map
+        // was missing 7 rooms that are live right now — Platinum nitro /
+        // futures-alerts / day-trades / ei-alerts, Brando, Shoof, OWLS
+        // all-alerts — so their trades rode to the bridge with sig.room set
+        // to a bare channel id, landing in the ledger as an unnamed room.
+        if (parts[2]) ROOM_LABELS[id] = parts[2];
+        if (state === "lapsed") {
+          // LAPSED (was "#SLEEP|" until 9/9): parked because the subscription
+          // ran out. Not opened, not traded — but the access probe knocks on
+          // its door once a day (accessCheck) and says when it is readable
+          // again. Waking it is G's click on the popup switch.
+          SLEEPING.push({ why: why || "subscription lapsed", id: id,
+                          url: parts[1] || "", name: name });
           continue;
         }
-        if (!t || t.startsWith("#")) continue;
-        const id = t.split("|", 1)[0].trim();
-        if (id) { ids.push(id); LIVE_ROOM_IDS.add(id); }
+        if (state !== "on") continue;              // off = benched, nothing
+        ids.push(id); LIVE_ROOM_IDS.add(id);
         // JUMP TO THE ROOM (9/4, his ask: "I wanna see how the alert was
         // emitted but I can't find the tab because so many of them").
-        // rooms.txt is id|url|shortName|group, and a position's `room` IS
-        // that shortName — so keep url+id per name and the popup can send
-        // one click straight to the tab.
-        const parts = t.split("|").map(s => s.trim());
-        if (parts.length >= 3 && parts[2]) {
-          ROOM_TABS[parts[2].toLowerCase()] = { url: parts[1], id: parts[0] };
-          // rooms.txt wins over the hand-typed ROOM_LABELS map (9/9). That map
-          // was missing 7 rooms that are live right now — Platinum nitro /
-          // futures-alerts / day-trades / ei-alerts, Brando, Shoof, OWLS
-          // all-alerts — so their trades rode to the bridge with sig.room set
-          // to a bare channel id, landing in the ledger as an unnamed room.
-          ROOM_LABELS[parts[0]] = parts[2];
-        }
+        // A position's `room` IS the shortName — so keep url+id per name and
+        // the popup can send one click straight to the tab. `on` rooms only:
+        // this map is also what openMissingRooms() opens.
+        if (parts[2]) ROOM_TABS[parts[2].toLowerCase()] = { url: parts[1], id: id };
       }
       return ids;
     } catch (e) {
@@ -618,6 +629,107 @@ function loadRoomsFile() {
     }
   })();
   return _roomsPromise;
+}
+
+/* Re-read rooms.txt NOW (after a popup flip, or on the minute sweep so the
+ * other Chrome profile sees a flip made in this one). Cheap: one local
+ * fetch. Replaces the cached list wholesale — never merges. */
+async function reloadRooms() {
+  _roomsPromise = null;
+  return loadRoomsFile();
+}
+let _roomsStampSeen = "";
+async function pollRoomsFile() {
+  try {
+    const r = await fetch(chrome.runtime.getURL("rooms.txt"), { cache: "no-store" });
+    const text = await r.text();
+    const stamp = text.length + ":" + [...text].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+    if (_roomsStampSeen && stamp !== _roomsStampSeen) {
+      await reloadRooms();
+      await addLog({ kind: "sent", what: "ROOMS",
+        why: "rooms.txt changed — re-read it: " + LIVE_ROOM_IDS.size + " room(s) on" });
+    }
+    _roomsStampSeen = stamp;
+  } catch (e) {}
+}
+
+/* THE ONE SWITCH (9/9). Flip a room on/off: the bridge rewrites its line
+ * in rooms.txt (the one list), this profile re-reads the file, and the tab
+ * follows — ON opens it (in the profile that owns that surface), OFF closes
+ * it and the room stops being read or traded. Returns {ok, why}. */
+async function roomTabsFor(room) {
+  const key = String(room.id || "").replace(/^whop:/, "");
+  const idInUrl = (String(room.url || "").match(/\/channels\/\d+\/(\d+)/) || [])[1]
+               || (String(room.url || "").match(/exp_[a-z0-9]+/i) || [])[0] || key;
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
+                                           "https://*.discord.com/channels/*",
+                                           "https://whop.com/joined/*",
+                                           "https://whop.com/*/exp_*"] });
+  } catch (e) { return []; }
+  return tabs.filter(t => String(t.url || "").includes(idInUrl));
+}
+
+async function setRoomState(id, on) {
+  const state = on ? "on" : "off";
+  let list = null;
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const base = bridgeBaseFrom((settings || {}).bridge_url || BRIDGE_DEFAULT);
+    const r = await fetch(base + "/rooms", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: String(id), state: state }) });
+    list = await r.json();
+    if (!list || list.ok === false) {
+      return { ok: false, why: (list && list.why) || "the bridge refused the change" };
+    }
+  } catch (e) {
+    return { ok: false, why: "the bridge isn't reachable — it writes rooms.txt, " +
+                             "so nothing changed. Start it (START HERE) and flip again." };
+  }
+  // rooms.txt is written; rooms.txt inside the extension folder IS that file,
+  // so a fresh read sees the new state straight away.
+  await reloadRooms();
+  const room = ALL_ROOMS.find(x => x.id === String(id));
+  if (!room) return { ok: false, why: "room " + id + " isn't in rooms.txt after the write" };
+  // a room that is on is LIVE — clear any old TESTING flag it may carry
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const s = settings || {};
+    const cl = s.channel_live || {};
+    if (on && cl[room.id] === false) { delete cl[room.id]; s.channel_live = cl;
+      await chrome.storage.local.set({ settings: s }); }
+  } catch (e) {}
+  const isWhop = /^whop:/i.test(room.id) || /whop\.com/i.test(room.url);
+  let lane = "";
+  try { lane = (await chrome.storage.local.get("profile_lane")).profile_lane || ""; } catch (e) {}
+  const mine = !lane || (lane === "whop") === isWhop;
+  if (!on) {
+    const tabs = await roomTabsFor(room);
+    for (const t of tabs) { try { await chrome.tabs.remove(t.id); } catch (e) {} }
+    await addLog({ kind: "sent", what: "ROOM OFF",
+      why: room.name + " switched OFF — " + (tabs.length ? "closed its tab, " : "") +
+           "not read, not traded, until you switch it back on." });
+    return { ok: true, why: room.name + " is off" + (tabs.length ? " — tab closed" : "") +
+                            (mine ? "" : " (its tab lives in the other browser; it closes there within a minute)") };
+  }
+  if (!mine) {
+    await addLog({ kind: "sent", what: "ROOM ON",
+      why: room.name + " switched ON — its tab belongs to the " + (isWhop ? "Whop" : "Discord") +
+           " browser, which opens it within a minute (or run START HERE)." });
+    return { ok: true, why: room.name + " is on — its tab opens in the " +
+                            (isWhop ? "Whop" : "Discord") + " browser" };
+  }
+  const have = await roomTabsFor(room);
+  if (!have.length && room.url) {
+    ROOM_OPENED_AT[room.id] = Date.now();
+    try { await chrome.tabs.create({ url: room.url, active: false }); } catch (e) {}
+  }
+  await addLog({ kind: "sent", what: "ROOM ON",
+    why: room.name + " switched ON — " + (have.length ? "tab already open, " : "tab opened, ") +
+         "reading and trading LIVE." });
+  return { ok: true, why: room.name + " is on — " + (have.length ? "already open" : "tab opened") };
 }
 
 // Per-channel lists the bridge owns (settings.json), cached from /mode so the
