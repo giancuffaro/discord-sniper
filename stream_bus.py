@@ -2,7 +2,7 @@
 
 Webull pushes STOCK/ETF/futures prices over MQTT (developer.webull.com
 market-data-api/getting-started: DataStreamingClient). Options are NOT
-carried (see v3.5.0/OPTIONS-BROKER-REFERENCE.md) — those stay on the
+carried (see reference/OPTIONS-BROKER-REFERENCE.md) — those stay on the
 batched 1/s quote bus. This module streams the UNDERLYINGS: every symbol
 the round-number pullback is hunting, every swing's stock level, every
 "underlying at fill" — so a $762 touch is caught the tick it prints

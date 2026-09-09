@@ -57,7 +57,7 @@ SAFETY = 0.95
 # orders. Tested at 0.25s the bucket ran dry and an entry waited 0.44s behind
 # quote sweeps — unacceptable when a fill is racing a room. 0.30s + the
 # reserve below keeps order latency under ~50ms.
-# CORRECTED 9/2 from Webull's published limits (v3.5.0/OPTIONS-BROKER-
+# CORRECTED 9/2 from Webull's published limits (reference/OPTIONS-BROKER-
 # REFERENCE.md): limits are PER ENDPOINT, and the option snapshot endpoint
 # is 60 requests / 60 s = ONE call per second, max 20 symbols each. A 0.30s
 # sweep was 200 calls/min against a 60/min door — it would have 429'd

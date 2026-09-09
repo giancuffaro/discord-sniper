@@ -39,7 +39,7 @@ project/context/HANDOFF-snapshot.md and end the reply with the 📌 re-upload re
 Chrome MV3 extension (Profile 2) reads 26 Discord/Whop rooms and parses typed alerts, voice
 (Deepgram, diarized), images (vision) → Python bridge on 127.0.0.1:8787 places real Webull
 option orders (limit at caller's price or better; round-number pullback entries; 1-strike-OTM
-rule; combo bracket with a stop born WITH the order; tiered ratchet + anti-clip owns exits;
+rule; combo bracket with a stop born WITH the order; the 7.5/5/2 ratchet + anti-clip (2+ DTE) owns exits;
 swings ride a wide -25% stop re-armed each morning at 9:31). Fill Announcer posts every fill,
 milestone, stop-out and scoreboard to G's Discord (options + futures webhooks). A scheduled task
 builds the journal from broker truth at 4:45 PM weekdays and fixes what it exposes. G's own
@@ -47,7 +47,7 @@ separate tool, Market Sniper (port 8000), trades manual scalps on the SAME Webul
 SAME app key — one shared rate budget, one coexistence rule (positions the bot didn't
 originate are his: visible, never stop-managed, never sold).
 
-## Facts to respect (from v3.5.0/OPTIONS-BROKER-REFERENCE.md — check it before any broker test)
+## Facts to respect (from reference/OPTIONS-BROKER-REFERENCE.md — check it before any broker test)
 - Webull limits are PER ENDPOINT, per app key: option snapshot 60/min (20 symbols/call);
   Order Detail / Positions / Balance 2 per 2s. A 429 = throttle; a 417 = business rejection.
 - No option streaming on Webull. Fills ARE pushed (gRPC TradeEventsClient).

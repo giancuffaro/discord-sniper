@@ -9,7 +9,7 @@ already the de-facto interface; `BrokerBase` just names it, and `get_broker()`
 picks an implementation from settings. Default is Webull, so a folder with no
 new settings runs exactly as it did yesterday.
 
-WHY (see v3.5.0/BROKER-TOP4-2026-09.md for the research):
+WHY (see reference/BROKER-TOP4-2026-09.md for the research):
   * Webull has NO conditional order that triggers off the UNDERLYING's price,
     and NO option quote streaming at any price. The ratchet therefore runs on
     a 1-per-second batched HTTP poll.

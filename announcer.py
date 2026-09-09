@@ -265,7 +265,7 @@ PUSH = {"wake": None, "on": False}   # set by the gRPC listener
 
 def _start_push(cfg, wb, account_ids):
     """v4 (9/2): Webull PUSHES order events over gRPC (TradeEventsClient in
-    the same SDK — v3.5.0/OPTIONS-BROKER-REFERENCE.md A7). We don't parse
+    the same SDK — reference/OPTIONS-BROKER-REFERENCE.md A7). We don't parse
     the push payload (shapes vary); we use it as a doorbell: any event ->
     poll the order list NOW instead of waiting for the 2s tick. If the
     stream can't start, the poll loop simply keeps its 2s cadence."""

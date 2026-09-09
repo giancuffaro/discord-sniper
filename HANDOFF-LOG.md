@@ -201,7 +201,7 @@ today_entry_compare.py / ratchet_runner_sweep.py / ratchet_sweep_tiered.py
 (+ their two results csv — conclusions kept in this log), journal-full-2026-
 09-08.xlsx (superseded by -ALL), voice_corpus.json, optionable_seed.json,
 extension/rooms.txt.bak, CLEANUP-PROPOSAL.md (executed), FUTURES-BUGS.md
-(all fixed), v3.5.0/TEST_MQTT_OPTIONS.py + the two applied _patch files.
+(all fixed), reference/TEST_MQTT_OPTIONS.py + the two applied _patch files.
 LEFT: webull_data_streaming_sdk.log (locked by a running process; gitignored
 *.log, harmless), settings.json.bak (his key backup, gitignored, untouched),
 every test_*.py, every .bat (all referenced), all docs still in force.
@@ -2230,7 +2230,7 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   FILLED log line carries "· SYM @ price"; the announcer ENTRY post shows
   "(SYM @ price)"; the journal has an "Underlying at fill" column.
 
-- v3.5.0 PACKAGE (9/2, from a parallel session; docs in v3.5.0/):
+- v3.5.0 PACKAGE (9/2, from a parallel session; docs in reference/):
   APPLIED = Block A: _pace 0.15->0.20 (was 33% over Webull's 5/s cap),
   SDK file logger (webull_api.log), and the TAB-DISCARD fix — Chrome's
   Memory Saver discards background tabs that still look healthy to every
@@ -2240,7 +2240,7 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   stopped answering"). Memory-shed cadence 2h->4h. Extension 3.5.0.
   THEN G said "do everything now" (9/2 ~01:20) — ALL APPLIED, bridge
   restarted clean 01:26 with "QUOTE BUS on": Block B tiers (see RATCHET
-  v3) + ANTI-CLIP (locked <= 60% of gain, v3.5.0/ANTI-CLIP.txt: 520-trade
+  v3) + ANTI-CLIP (locked <= 60% of gain, reference/ANTI-CLIP.txt: 520-trade
   study, +$6,433 vs +$2,872, nine of nine names better); B4 replace_stop
   (webull_options.replace_stop via the SDK's replace verb, existing
   client_order_id; ratchet tries REPLACE first, falls back to cancel+
@@ -2267,7 +2267,7 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   0.20s, futures every 5th poll, 20s back-off on 429, poll 2s. tests:
   test_positions + test_resolve pass.
 
-- OPTION TAPE (9/2, v3.5.0/HANDOFF-OPTION-DATA.md): Webull's API has NO
+- OPTION TAPE (9/2, reference/HANDOFF-OPTION-DATA.md): Webull's API has NO
   historical option prices (US_OPTION unsupported) — every ratchet
   backtest so far ran on MODELLED (Black-Scholes) premiums, the weakest
   link in the anti-clip analysis. The quote bus now RECORDS every quote it
@@ -2279,7 +2279,7 @@ No secrets live here — keys and account ids stay in settings.json (gitignored)
   credit / ThetaData one month) ONLY if the model checks out and he'll
   actually re-run the analysis.
 
-- BROKER FACTS (9/2 research, ~150 sources: v3.5.0/OPTIONS-BROKER-
+- BROKER FACTS (9/2 research, ~150 sources: reference/OPTIONS-BROKER-
   REFERENCE.md — READ IT before any broker test). Corrections applied:
   (1) Webull has NO option streaming (MQTT = stocks/ETFs/futures/crypto
   only) — TEST STREAMING is answered, no Python 3.12 needed. (2) Rate
@@ -3065,7 +3065,7 @@ New test reproduces it exactly: FakeWB gains `refuse_stop_moves`, accepts the br
 NFLX 8/20 peaked +10.0% — exactly the arm threshold, so the ratchet had nothing to lock yet. Left alone.
 
 ## 9/3 20:00 — "why not a conditional order at the round number?" (G)
-**Because Webull's API doesn't offer one for options.** Checked against v3.5.0/OPTIONS-BROKER-REFERENCE.md, sourced to developer.webull.com:
+**Because Webull's API doesn't offer one for options.** Checked against reference/OPTIONS-BROKER-REFERENCE.md, sourced to developer.webull.com:
 - Options accept only `LIMIT`, `STOP_LOSS`, `STOP_LOSS_LIMIT`. No MARKET, no trailing.
 - `OTO`, `OCO`, `OTOCO` are **stock-only** — option orders do not support them even on a SINGLE strategy.
 - Nothing in the API triggers an order off a DIFFERENT instrument. There is no "buy SPY 645C when SPY *stock* touches 761."
@@ -3073,7 +3073,7 @@ NFLX 8/20 peaked +10.0% — exactly the arm threshold, so the ratchet had nothin
 So the polling hunt isn't a shortcut around a broker feature; it IS the trigger, and the only thing that matters is how fast it sees the touch.
 **Improvement shipped instead:** the hunt's entry poll was a flat 1.0s from when every price was an HTTP call. Since 9/2 the underlying comes from the MQTT push, so a poll is a dict lookup costing zero rate budget. The hunt now watches at **0.25s while the stream has that symbol fresh** and falls straight back to 1.0s if the stream drops (`Pullback(streamed_fn=..., entry_poll_streamed=0.25)`, `_pullback_streamed` in bridge.py, both tunable in settings under `pullback`). **4x less lag between the touch and the bid going in, for free.**
 
-## 9/3 20:30 — BROKER CHOICE researched: Tradier, not Schwab (v3.5.0/BROKER-CHOICE-2026-09.md)
+## 9/3 20:30 — BROKER CHOICE researched: Tradier, not Schwab (reference/BROKER-CHOICE-2026-09.md)
 G asked to plug in Schwab, and which is better on data rate and pricing. Researched 9/3 against live sources; full table + citations in the doc. Headline:
 - **Cost on his size** (1 contract/entry, ~200 contract-sides/mo): Webull **$0** · Tradier Pro Plus **~$55/mo** · Tradier Pro **~$80/mo** · Schwab **~$130/mo**.
 - **Both Schwab and Tradier have what Webull lacks**: real OTO/OCO/OTOCO conditional orders ON OPTIONS, and **streaming OPTION quotes**.
@@ -3082,7 +3082,7 @@ G asked to plug in Schwab, and which is better on data rate and pricing. Researc
 **Recommendation: don't migrate — build a broker ADAPTER and run Tradier ALONGSIDE Webull.** Same signals, same ratchet, orders routed per room; prove fills + streaming on a small Tradier account for two weeks with real journal numbers, then decide on evidence. Scope is small and contained: the whole codebase only calls **11 broker methods** (cancel 8×, order_status 5×, positions 4×, ask_bid 4×, place_stop 3×, sell 2×, last_sell_fill 2×, replace_stop, open_orders, futures_positions, flatten). `webull_options.py` becomes the first implementation, `tradier.py` the second; nothing above the adapter — parser, guards, ratchet, watchdog, journal — changes at all. **Not started; awaiting his call.**
 
 ## 9/3 21:00 — BROKER ADAPTER BUILT (broker.py + tradier.py) + top-4 research
-### Research: v3.5.0/BROKER-TOP4-2026-09.md (every claim sourced, 9/3)
+### Research: reference/BROKER-TOP4-2026-09.md (every claim sourced, 9/3)
 **1. Tradier** — $0.35/contract Pro ($10/mo) or $0.10 Pro Plus ($35/mo) → **~$55–80/mo at his size**; `oto/oco/otoco` ON OPTIONS; **option streaming included free**; plain bearer token, no weekly re-login. **The recommendation.**
 **2. tastytrade** — $1.00/contract to OPEN, **$0 to close** (~$100/mo); streams **greeks as well as quotes** via dxfeed, which would let the ratchet reason about delta/theta instead of inferring from price; official API + good typed Python SDK. **Conditional-order support on options is NOT confirmed in their docs — verify before committing.**
 **3. IBKR** — $0.15–$0.65 tiered (he'd be at the expensive end); extensive conditional orders; but only 100 concurrent market-data lines by default, OPRA option data is a paid add-on, and TWS/Gateway or Web-API OAuth is the most fragile thing to run unattended. Revisit if volume 5×'s.

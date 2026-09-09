@@ -3,7 +3,7 @@
 The second implementation of broker.BrokerBase. Written against Tradier's
 documented REST API (docs.tradier.com). It exists so the machine can run
 Tradier ALONGSIDE Webull and be compared on real fills — see
-v3.5.0/BROKER-TOP4-2026-09.md for why Tradier and not Schwab.
+reference/BROKER-TOP4-2026-09.md for why Tradier and not Schwab.
 
 >>> STATUS: UNTESTED AGAINST A LIVE ACCOUNT. <<<
 No Tradier key exists yet, so not one line of this has touched a real

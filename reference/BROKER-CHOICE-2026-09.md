@@ -89,4 +89,4 @@ adapter — parser, guards, ratchet, watchdog, journal — changes at all.
 - Tradier pricing ($10 Pro / $35 Pro Plus; $0.35 / $0.10 per index-option contract): https://tradier.com/individuals/pricing
 - Tradier streaming + market data included: https://docs.tradier.com/docs/streaming-data and https://docs.tradier.com/docs/market-data
 - Tradier oto/oco/otoco: https://docs.tradier.com/docs/trading.md
-- Webull option order types / no OTOCO on options / no option streaming: see v3.5.0/OPTIONS-BROKER-REFERENCE.md sections A2–A3
+- Webull option order types / no OTOCO on options / no option streaming: see reference/OPTIONS-BROKER-REFERENCE.md sections A2–A3

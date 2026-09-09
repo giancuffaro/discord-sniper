@@ -296,7 +296,7 @@ FILL ANNOUNCER (announcer.py, read-only)
   misses.py, errors.py, entry_compare.py, missed_dollarize.py,
   ratchet_sweep*.py, ratchet_backtest.py, chart_contracts.py, telemetry.py.
 
-## Broker facts (Webull OpenAPI — v3.5.0/OPTIONS-BROKER-REFERENCE.md first)
+## Broker facts (Webull OpenAPI — reference/OPTIONS-BROKER-REFERENCE.md first)
 - Limits PER ENDPOINT per app key: option snapshot 60/min (20 symbols/
   call); Order Detail / Positions / Balance 2 per 2 s. 429 = throttle;
   417 = business rejection (DAY_BUYING_POWER_INSUFFICIENT,
@@ -376,7 +376,7 @@ Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
 
 ## Where everything lives
 HANDOFF-LOG.md (all history) · INDEX.md (folder map) · ARCHITECTURE.md ·
-MARKET-HOURS.md · v3.5.0/ (broker reference, anti-clip study, ratchet
+MARKET-HOURS.md · reference/ (broker reference, anti-clip study, ratchet
 notes) · extension/rooms.txt · settings.json (keys, gitignored) ·
 master_ledger.csv / master_alerts.csv (truth) · days/ (per-day state) ·
 handoffs/ (bridge's daily photos) · project/ (Claude Project files).

@@ -211,7 +211,7 @@ def stop_below(reference, pct, symbol=None):
     return px
 
 
-# TICK CLASSES (9/2, v3.5.0/OPTIONS-BROKER-REFERENCE.md, Cboe notice 57916 +
+# TICK CLASSES (9/2, reference/OPTIONS-BROKER-REFERENCE.md, Cboe notice 57916 +
 # SEC 34-104157): SPY/QQQ/IWM quote in $0.01 at EVERY price. Penny Interval
 # Program names quote $0.01 under $3.00 and $0.05 at/above. Everything else
 # is $0.05 under $3.00 / $0.10 at/above. Rounding a penny name to nickels is
