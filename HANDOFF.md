@@ -285,10 +285,11 @@ FILL ANNOUNCER (announcer.py, read-only)
 5. Chrome: hardware acceleration OFF. Close any old parked Whop tabs.
 
 ## Watch items (open)
-- Discord logoff under tab load — OWLS cut 2 tabs, then 9/9 cut 15 more on
-  tagged master_ledger.csv numbers (G approved): 27 rooms → 12. Watch
-  whether logoffs actually stop at this count; if not, the next lever is
-  moving rooms across more Chrome profiles, not further cuts.
+- Discord logoff under tab load — OWLS cut 2 tabs, 9/9 cut 15 more on
+  tagged master_ledger.csv numbers, then all 4 remaining ZTRADEZ rooms
+  (sub lapsing): 27 rooms → 8. Watch whether logoffs actually stop at this
+  count; if not, the next lever is moving rooms across more Chrome
+  profiles, not further cuts.
 - 154 ledger fills with room "?" (pre-tagging August + recovered rows).
 - Telemetry rows lack room/caller → master_alerts taken-side is anonymous.
 - Deepgram key may be one char short (39) — watch for voice auth errors.
@@ -304,7 +305,8 @@ FILL ANNOUNCER (announcer.py, read-only)
 ## Subscriptions (audited 8/28)
 Whop (~17.5% tax on top): Insiders Pro $199 | STS/RWGates $189 | Felony $100
 | Boka $99.99 | Platinum $99 | "VIP discord access" $65 (unidentified) |
-ZTRADEZ $65 | Vero $49. Stripe: Honeydrip/Aristotle $125. Free: Rafita.
+ZTRADEZ $65 (LAPSING ~9/10 — G's call to let it go; all 4 remaining ZT rooms
+cut 9/9 ahead of it) | Vero $49. Stripe: Honeydrip/Aristotle $125. Free: Rafita.
 ≈ $1,140/mo rooms + ~$52 infra (ProjectX $29, NT data $12, Deepgram ~$5,
 Webull data ~$5.50) + ~$30 exchange fees ≈ $1,220/mo before AI usage.
 Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.

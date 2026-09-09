@@ -65,7 +65,12 @@
 # does NOT cover every trader the way it was once assumed to. Reopening any
 # room marked DARK below is G's call; check HANDOFF-LOG.md before assuming
 # a room is redundant just because the mashup exists.
-1334236429655740457|https://discord.com/channels/496871546963492874/1334236429655740457|ZT all-trades-mashup|ZTRADEZ
+# WHOLE SERVER CUT 9/9 — G: the ZTRADEZ subscription lapses in 1 day.
+# Cutting all 4 still-open ZT rooms below now rather than waiting for them
+# to go dark on their own; this is a subscription-ending cut, not a
+# performance one (fut-1/fut-2 had real volume — 18/19 signals since
+# reopening 9/7 — right up to this cut).
+#1334236429655740457|https://discord.com/channels/496871546963492874/1334236429655740457|ZT all-trades-mashup|ZTRADEZ
 # CUT 8/30 (journals 8/19-8/28, every one a net loser, all covered by the
 # mashup above if they ever earn their way back):
 #   MR.TOPHAT -156 (0/4) | Market Bishop/opt-7 -87 | Demon -65 |
@@ -78,8 +83,8 @@
 #829352738239414332|https://discord.com/channels/496871546963492874/829352738239414332|ZT top-flow|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #721821717328298066|https://discord.com/channels/496871546963492874/721821717328298066|ZT scalps|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
 #1471700027662405712|https://discord.com/channels/496871546963492874/1471700027662405712|ZT fut-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-# REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration (cleared every test flag) — only 1 signal since reopening:
-1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ
+# REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration (cleared every test flag) — only 1 signal since reopening. CUT 9/9 — ZTRADEZ sub lapsing in 1 day.
+#1356793611420958732|https://discord.com/channels/496871546963492874/1356793611420958732|ZT opt-1|ZTRADEZ
 # CUT 9/7 (tlm/opt-4) — verticals and a naked spread, against G's "no covered calls and spreads" rule (9/7)
 #694197721430491266|https://discord.com/channels/496871546963492874/694197721430491266|ZT opt-4|ZTRADEZ
 #1331631786068938813|https://discord.com/channels/496871546963492874/1331631786068938813|ZT opt-6|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
@@ -91,10 +96,10 @@
 #862419656382873650|https://discord.com/channels/496871546963492874/862419656382873650|ZT swing-2|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1061980561293443152|https://discord.com/channels/496871546963492874/1061980561293443152|ZT swing-3|ZTRADEZ  (DARK — verified 9/7 NOT in the mashup; reopening is G's call)
 #1179200811650252850|https://discord.com/channels/496871546963492874/1179200811650252850|ZT swing-4|ZTRADEZ  (cut 8/30 — redundant: this trader flows through the mashup)
-# REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 18 real signals since reopening.
-1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ
-# REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 19 real signals since reopening.
-1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ
+# REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 18 real signals since reopening. CUT 9/9 — ZTRADEZ sub lapsing in 1 day, not a performance cut.
+#1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ
+# REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 19 real signals since reopening. CUT 9/9 — ZTRADEZ sub lapsing in 1 day, not a performance cut.
+#1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ
 
 # SUBSCRIPTION LAPSED (checked on whop.com 9/7/26). A room whose
 # subscription has expired shows nothing, so the tab is dead weight:

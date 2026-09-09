@@ -2,13 +2,14 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (later) — cut from 240 KB / 3,034 lines to this; rules
-folded in from tonight: ONE central file per data family (ledger / alerts /
-tapes / holidays / announcer board), ratchet 7.5/5/2 flat, futures ratchet
-decoupled, Whop API path deleted, OWLS all-alerts wired, shabs/eli retired,
-all rooms live. Rooms cut 27→12 same night on tagged master_ledger.csv
-numbers (G approved room-by-room); rooms.txt's old per-room essays moved to
-HANDOFF-LOG.md.
+Last updated: 2026-09-09 (later still) — cut from 240 KB / 3,034 lines to this;
+rules folded in from tonight: ONE central file per data family (ledger /
+alerts / tapes / holidays / announcer board), ratchet 7.5/5/2 flat, futures
+ratchet decoupled, Whop API path deleted, OWLS all-alerts wired, shabs/eli
+retired, all rooms live. Rooms cut 27→12 on tagged master_ledger.csv numbers
+(G approved room-by-room), then 12→8 dropping all 4 remaining ZTRADEZ rooms
+(G: sub lapses in 1 day — a subscription cut, not a performance one).
+rooms.txt's old per-room essays moved to HANDOFF-LOG.md.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -33,11 +34,11 @@ HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.65) reads 12 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.66) reads 8 rooms —
   all Discord, 0 Whop (Whop is tabs-only in the separate "Sniper Whop"
-  profile, Browser 2 — never in this count) (extension/rooms.txt is THE
-  list; editing it changes the build stamp → extension reloads itself) —
-  typed alerts, voice
+  profile, Browser 2 — never in this count), 0 ZTRADEZ (whole server cut
+  9/9, sub lapsing) (extension/rooms.txt is THE list; editing it changes
+  the build stamp → extension reloads itself) — typed alerts, voice
   (Deepgram, diarized), images (vision) → Python bridge (bridge.py,
   127.0.0.1:8787) places real Webull option orders. Futures: micros via
   NinjaTrader OIF files (Webull futures account $0 by choice; Topstep not
@@ -152,13 +153,15 @@ ROOMS / TABS / READERS
   START HERE = fresh start: closes Chrome, reopens every room (~2.5 min
   paced flood; count tabs after, not during), launches the announcer.
 - Relay rooms (one bot account relaying many traders): ZT all-trades-mashup
-  (1334236429655740457, ZTRADEZ BOT — replaces all 19 ZT direct rooms) and
-  OWLS all-alerts (1449226651064991806, "OWLS Capital Clanker", 9/9 — slug
-  map shabs-sky-alerts→shabs, eli-alerts→eli, muggzone-options→MuggZone,
-  giul-heatseeker→Giul, florida-man, common-stock, jon-and-kian, ab→AbTrades,
-  tt, eva, neal). RELAY UNWRAP in background.js re-books under the real
-  trader (footer "#slug" / possessive), so per-trader claims, dedupe and
-  scoreboard hold. shabs + eli direct rooms retired 9/9 (covered).
+  (1334236429655740457, ZTRADEZ BOT) COVERED ALL 19 ZT direct rooms, but the
+  whole ZTRADEZ server was cut 9/9 (subscription lapsing in 1 day) — no
+  active ZT room remains. OWLS all-alerts (1449226651064991806, "OWLS
+  Capital Clanker", 9/9 — slug map shabs-sky-alerts→shabs, eli-alerts→eli,
+  muggzone-options→MuggZone, giul-heatseeker→Giul, florida-man,
+  common-stock, jon-and-kian, ab→AbTrades, tt, eva, neal) is still active.
+  RELAY UNWRAP in background.js re-books under the real trader (footer
+  "#slug" / possessive), so per-trader claims, dedupe and scoreboard hold.
+  shabs + eli direct rooms retired 9/9 (covered by OWLS all-alerts).
 - EMBED RACE: bots post the call in an embed that hydrates after the row
   paints; content.js keys SEEN on id+length so the hydrated read re-emits.
 - MEMORY: Discord logs the profile OFF when too many tabs are open (9/9,
@@ -282,10 +285,11 @@ FILL ANNOUNCER (announcer.py, read-only)
 5. Chrome: hardware acceleration OFF. Close any old parked Whop tabs.
 
 ## Watch items (open)
-- Discord logoff under tab load — OWLS cut 2 tabs, then 9/9 cut 15 more on
-  tagged master_ledger.csv numbers (G approved): 27 rooms → 12. Watch
-  whether logoffs actually stop at this count; if not, the next lever is
-  moving rooms across more Chrome profiles, not further cuts.
+- Discord logoff under tab load — OWLS cut 2 tabs, 9/9 cut 15 more on
+  tagged master_ledger.csv numbers, then all 4 remaining ZTRADEZ rooms
+  (sub lapsing): 27 rooms → 8. Watch whether logoffs actually stop at this
+  count; if not, the next lever is moving rooms across more Chrome
+  profiles, not further cuts.
 - 154 ledger fills with room "?" (pre-tagging August + recovered rows).
 - Telemetry rows lack room/caller → master_alerts taken-side is anonymous.
 - Deepgram key may be one char short (39) — watch for voice auth errors.
@@ -301,7 +305,8 @@ FILL ANNOUNCER (announcer.py, read-only)
 ## Subscriptions (audited 8/28)
 Whop (~17.5% tax on top): Insiders Pro $199 | STS/RWGates $189 | Felony $100
 | Boka $99.99 | Platinum $99 | "VIP discord access" $65 (unidentified) |
-ZTRADEZ $65 | Vero $49. Stripe: Honeydrip/Aristotle $125. Free: Rafita.
+ZTRADEZ $65 (LAPSING ~9/10 — G's call to let it go; all 4 remaining ZT rooms
+cut 9/9 ahead of it) | Vero $49. Stripe: Honeydrip/Aristotle $125. Free: Rafita.
 ≈ $1,140/mo rooms + ~$52 infra (ProjectX $29, NT data $12, Deepgram ~$5,
 Webull data ~$5.50) + ~$30 exchange fees ≈ $1,220/mo before AI usage.
 Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.

@@ -9,6 +9,24 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 (later still) — ZTRADEZ SERVER CUT: 12 → 8.**
+G: the ZTRADEZ subscription lapses in 1 day. Cut all 4 remaining ZT rooms
+(ZT all-trades-mashup, ZT opt-1, ZT fut-1, ZT fut-2) ahead of it rather than
+waiting for them to go dark on their own — a subscription-ending cut, not a
+performance one. Note for the record: fut-1 and fut-2 were NOT dead weight
+(18 and 19 real signals since reopening 9/7, right up to this cut) — cutting
+them is purely "the room stops existing tomorrow," unlike the 15 rooms cut
+earlier tonight for actually being silent. If ZTRADEZ is ever resubscribed,
+these 4 (plus the DARK-but-real ones noted in the mashup investigation
+below) are the ones worth re-opening first.
+Also answered "what's silent right now" for what's left open (8 rooms, all
+Discord), off master_ledger.csv's last-activity date: Honeydrip daytrades
+and Aristotle both fired yesterday (9/8); Platinum nitro same. Midas last
+fired 9/2 (7 days quiet). Option Alerts last 8/24 (16 days). RWGates last
+8/20 (20 days). Vero 2 last 8/19 (21 days). OWLS all-alerts has 0 rows —
+expected, it was wired yesterday (9/9) and carries shabs' proven record
+through the relay, not a room to judge on row count yet.
+
 **2026-09-09 (later) — ROOM CLEANUP: 27 → 12, rooms.txt de-essayed.**
 G's thread: Discord logs the account out under tab load → asked what
 Discord's actual ToS says about this kind of reading (real quotes pulled:
