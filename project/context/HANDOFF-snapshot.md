@@ -36,7 +36,7 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.73) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.74) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile
   — in Claude-in-Chrome it's whichever browser a whop.com tab SURVIVES in;
   the Discord profile's lane guard closes Whop tabs within seconds. Labels
@@ -238,7 +238,10 @@ ROOMS / TABS / READERS
   WEB client `us02web.zoom.us/wc/join/<id>` in the WHOP Chrome profile so
   tabCapture hears it; the desktop app is invisible. Exact recipe:
   reference/FELONY-ZOOM-JOIN.md. Scheduled task felony-live-whop-check does
-  it at 9:12 weekdays (first proven live 9/9).
+  it at 9:12 weekdays (first proven live 9/9). EARS RULE: tab audio needs
+  ONE Sniper-icon click on that tab (Chrome's tabCapture grant); a scripted
+  join logs the refusal and retries on front/click (v3.5.74). Never join a
+  second time if reads.log already shows 🎙 lines — it bumps the first.
 - VOICE: ears transcribe always (Deepgram, diarized S0/S1). Voice ENTRIES
   ON (9/2); voice EXITS irrelevant under entries-only. Two-stage: "loading
   X" = staged (4-min shelf, per speaker); fires on that speaker's "I'm in /

@@ -9,6 +9,25 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 12:50 — WHAT THE EARS GOT FROM FELONY, AND WHY THEY STOPPED (v3.5.74).**
+reads.log: ~250 diarized lines (S0/S1/S2) 10:30:47-10:47:02 — all chatter; the
+reader graded every line ("nothing in it that means buy or sell", questions,
+three TRIMs on a SPY put we were never in). No contract called, nothing fired
+— correct. The listener log: G had the Zoom open HIMSELF at 10:26 (ears
+started; his icon-click at 10:23 to save the Deepgram key had granted
+activeTab on that tab), quiet-stopped 10:27, restarted 10:30 and 10:45. My
+10:57 join from a second tab as "g" produced nothing and likely bumped his
+session. ROOT CAUSE: chrome.tabCapture.getMediaStreamId only works on a tab
+the user has invoked the extension on (Chrome docs) — a script-opened tab has
+no grant, and the failure was SILENT. Fixed: the audible handler now logs
+the refusal plainly, remembers the tab (WANT_EARS), and retries on
+tabs.onActivated and when the popup opens on it (POPUP_OPENED — action.
+onClicked never fires with a popup). The morning task now checks reads.log
+first (never joins over a working capture), and after joining verifies 🎙
+lines within a minute, else asks G for the one click. Also seen: a Whop tab
+(FST × 2K Challenge) started a Deepgram session at 10:35 — a Whop page that
+plays sound; watch item, not a trade risk.
+
 **2026-09-09 (11:25) — OWLS all-alerts HAS NO TAB, so shabs + eli have been
 dark since 02:08.** G asked whether the rooms that never trade are even being
 READ. Answer per room, from bridge.log: Platinum nitro is alive (read

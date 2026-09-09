@@ -36,6 +36,24 @@ path — and if the ID has changed, write the new one here and in the task.
    `https://us02web.zoom.us/wc/join/<MEETING_ID>` instead — the web client.
 4. Name "g" → **Join**. Passcode, if ever asked, is on the event page.
 
+## FIRST — is a Zoom tab already up with working ears?
+Check `reads.log` for "🎙 Live Trading × FST" lines in the last 3 minutes. If
+yes, DON'T join again. Learned 9/9: a second join as the same name bumps the
+first session — G's own tab had the ears working from 10:30, the second join
+at 10:57 killed it, and the second tab never captured anything.
+
+## The ears need ONE grant per tab (Chrome's rule, not ours)
+Tab-audio capture (tabCapture) only works on a tab the user has invoked the
+extension on — clicked the Sniper icon with that tab in front, or the tab is
+in front with that grant. G's 10:26 tab worked because he'd clicked the icon
+on it (saving the Deepgram key) three minutes earlier. A tab opened by a
+script has no grant: since v3.5.74 the extension LOGS "Chrome won't let the
+ears take it yet — bring that tab to the FRONT or click the Sniper icon on it
+once" and retries the moment either happens. So after joining: confirm
+reads.log is filling within a minute; if not, ONE click on the Sniper icon
+with the Zoom tab in front starts it. That click is the only thing that can't
+be automated.
+
 ## Once in
 - Audio is connected automatically (bottom bar shows only "audio setting").
   If you ever see a **Join Audio** button, click it.
