@@ -4,3 +4,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1788966186.353,armed,SPY,PUTS,764,9/9,,763.0,,Vero,Vero 2
 1788966218.53,filled,SPY,PUTS,764,9/9,,763.0,763.06,Vero,Vero 2
 1788966516.912,armed,TSLA,PUTS,367.5,2026-09-11,,370.0,,@Owner Alerts,Platinum nitro
+1788969476.473,armed,AAPL,PUTS,300,9/11,,314.0,,treadwayma,TTT Lotto
