@@ -31,7 +31,8 @@ _FLOAT = ("opened_ts", "closed_ts", "t", "strike", "qty", "avg_in", "fill",
           "hi_pct", "lo_pct", "their_avg", "their_stop", "their_target",
           "their_units", "stop_at_exit", "dte", "direction")
 _JSON = ("entries", "exits", "greeks_in", "greeks_out")
-_BOOL = ("all_out", "manual", "swing", "broker_confirmed", "in_table", "in_wallet")
+_BOOL = ("all_out", "manual", "swing", "broker_confirmed", "in_table", "in_wallet",
+         "derived")
 
 
 def _f(v):
@@ -90,14 +91,19 @@ def _to_row(c):
     r["day_file"] = c.get("day_file") or ""
     r["account"] = c.get("account") or ""
     r["live"] = r["account"] == "live"
+    r["opened_from"] = c.get("opened_from") or ""
     r["avg"] = r["avg_in"]
-    # epoch, like the table rows; wallet rows carry only "t", so fall back
-    r["opened"] = r["opened_ts"] if r["opened_ts"] is not None else r["t"]
+    # epoch, like the table rows. build_ledger already filled opened_ts from
+    # the broker's FILLED stamp when the store lacked it — never from wallet
+    # "t", which is the EXIT event. So no fallback here: None means unknown.
+    r["opened"] = r["opened_ts"]
     r["closed"] = r["closed_ts"]
     r["opened_hms"] = c.get("opened") or ""
     r["closed_hms"] = c.get("closed") or ""
     if r["qty"] is not None and float(r["qty"]).is_integer():
         r["qty"] = int(r["qty"])
+    if r["strike"] is not None and float(r["strike"]).is_integer():
+        r["strike"] = int(r["strike"])       # "315C", not "315.0C"
     if r["direction"] is not None:
         r["direction"] = int(r["direction"])
     return r

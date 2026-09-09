@@ -50,7 +50,7 @@ COLUMNS = [
     "state", "exit_by", "all_out", "account", "manual", "swing",
     "their_avg", "their_stop", "their_target", "their_units", "stop_at_exit",
     "greeks_in", "greeks_out", "broker_confirmed", "source", "in_table", "in_wallet",
-    "day_file", "raw", "why",
+    "opened_from", "derived", "day_file", "raw", "why",
 ]
 
 FILLED_RE = re.compile(
@@ -274,20 +274,20 @@ def build():
             "expiry": r.get("expiry") or "",
             "dte": r.get("dte") if r.get("dte") is not None else "",
             "occ": r.get("occ") or "",
-            "kind": r.get("kind") or "",
-            "qty": r.get("qty") if r.get("qty") is not None else "",
-            "avg_in": _r2(r.get("avg")) if r.get("avg") is not None else "",
+            "kind": _kind(r),
+            "qty": qty if qty is not None else "",
+            "avg_in": avg if avg is not None else "",
             "fill": fill if fill is not None else "",
-            "entries": _json(r.get("entries")),
+            "entries": _json(entries),
             "exits": _json(exits),
             "exit_avg": _exit_avg(exits) if exits else "",
-            "pl": _r2(r.get("pl")) if r.get("pl") is not None else "",
-            "pl_pct": _r2(r.get("pl_pct")) if r.get("pl_pct") is not None else "",
-            "max_runup_pct": _r2(r.get("max_runup_pct")) if r.get("max_runup_pct") is not None else "",
-            "max_drawdown_pct": _r2(r.get("max_drawdown_pct")) if r.get("max_drawdown_pct") is not None else "",
-            "hi_pct": _r2(r.get("hi_pct")) if r.get("hi_pct") is not None else "",
-            "lo_pct": _r2(r.get("lo_pct")) if r.get("lo_pct") is not None else "",
-            "state": r.get("state") or "",
+            "pl": pl if pl is not None else "",
+            "pl_pct": pl_pct if pl_pct is not None else "",
+            "max_runup_pct": _r2(runup) if runup is not None else "",
+            "max_drawdown_pct": _r2(ddown) if ddown is not None else "",
+            "hi_pct": _r2(hi) if hi is not None else "",
+            "lo_pct": _r2(lo) if lo is not None else "",
+            "state": _state(r),
             "exit_by": r.get("exit_by") or "",
             "all_out": r.get("all_out") if r.get("all_out") is not None else "",
             "account": "live" if r.get("live") else "paper",
@@ -304,21 +304,31 @@ def build():
             "source": r.get("source") or "days-json",
             "in_table": r["_in_table"],
             "in_wallet": r["_in_wallet"],
+            "opened_from": opened_from,
+            "derived": derived,
             "day_file": r["_file"],
             "raw": (r.get("raw") or "").replace("\n", " ").strip(),
             "why": (r.get("why") or "").replace("\n", " ").strip(),
         })
 
     # broker fills with NO day-JSON row → visible gap rows
-    for (date, sym, price), qty in broker.items():
+    for (date, sym, price), b in broker.items():
         if (date, sym, price) in matched_broker:
             continue
+        qty, ts = b.get("qty"), b.get("ts")
         out.append({c: "" for c in COLUMNS} | {
             "date": date, "room": "?", "symbol": sym, "fill": price,
-            "qty": qty if qty is not None else "", "state": "filled",
-            "account": "", "manual": "", "swing": "",
+            "avg_in": price, "qty": qty if qty is not None else "",
+            "opened": _hms(ts), "opened_ts": ts if ts is not None else "",
+            "kind": "future" if FUT_RE.match(sym) else "option",
+            "entries": _json([{"t": ts, "qty": qty, "price": price}]) if qty else "",
+            "state": "filled",
+            # the FILLED line does not say which book — do NOT let a
+            # consumer's "" -> paper fallback mislabel a broker fill
+            "account": "unknown", "manual": "", "swing": "",
             "broker_confirmed": True, "source": "trades.log-only",
             "in_table": False, "in_wallet": False,
+            "opened_from": "trades.log", "derived": True,
             "why": "broker FILLED with no day-JSON row (room unknown)",
         })
 
