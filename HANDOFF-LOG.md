@@ -9,6 +9,76 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 17:15 — AUTOPILOT CLOSE-OUT (Mode C).** Ran the full daily
+close-out. Bot day: META 655C (Aristotle) -$31 NOISE CLIP, SPY 764P (Vero 2)
+-$2 ARM CLIP — both already diagnosed by G's own 16:20-16:45 session earlier
+today; nothing new on either. Pulled a fresh broker record (45 legs), wrote
+Webull_Orders_2026-09-09_auto.csv, ran build_ledger.py — RECONCILIATION
++252.00 = +252.00 MATCH (bot -$33, Gian's 20 hand round-trips +$285 gross).
+Built journal-2026-09-09.xlsx (22 trades + By Trader, house format, added a
+Post-mortem verdict column now that postmortem.py exists) and appended the 2
+bot trades to trader-scoreboard.xlsx's "Every trade" sheet, then fully
+recomputed the Scoreboard from all 109 rows (Gian's hand trades stay excluded
+per house rule): 👑KingBeeAri🐝 now 5 trades net -$68.12 AVOID, Vero now 4
+trades net -$72 AVOID (new room Vero 2 added to its Rooms list). Both xlsx
+files hit a stale `.~lock` file in the repo folder that hung LibreOffice's
+headless recalc indefinitely (the mount won't let this session delete the
+lock) — worked around by recalculating a `/tmp` copy and copying it back;
+worth remembering for any future xlsx edit here.
+
+**BUG FOUND + FIXED — build_ledger.py's trip-matcher had no qty check.**
+The journal exposed it: QQQ 716C 9/9's $140 leg showed entry qty 2/avg 0.47
+opened 15:08:11 against an exit of qty 10/pl $140 closed 15:07:50 (closed
+before it opened). Cause: `_find_trip()` matched a store row to an export
+round-trip on price alone (within 1.1c); a stale store snapshot (Webull's own
+blended cost across two buys, qty 2 @ 0.47, sampled mid-fill) fell just
+inside that tolerance of the unrelated 10-lot 0.48 buy and grabbed its exit.
+Fix: `_find_trip()` now takes `qty` and rejects any trip whose qty doesn't
+match. Rebuilding not only fixed today's row but caught the SAME bug on
+2026-09-04 (SPY 768C, QQQ 719P) — 3 rows total, corrected to clean FIFO rows
+with internally-consistent times. Zero change to any day's reconciled total
+(9/4, 9/8, 9/9 all still MATCH broker to the cent) — the $ was always right,
+only the per-row entry attribution was wrong. Verified: compiles clean,
+test_positions.py / test_phantom_exit.py / test_architecture.py /
+test_tape.py / node test_resolve.js all green. Journal and scoreboard notes
+updated to say FIXED, not just flagged.
+
+POST-MORTEMS: only 2 exist ever (the feature is one day old) — today's two,
+tallied above, both already fully written up by G's own session. REPLAY:
+replay_check.py found 0 silent drops, 0 possible missed entries today.
+build_alerts.py: 302 alerts all-time, today's 12 already covered in the
+16:20 session's numbers. scoreboard.py 10: 40 rooms heard from, 19
+configured, **5 silent configured — Whop 2K Challenge, Brando Alerts, OWLS
+all-alerts, Shoof Alerts, TTT Lotto.** OWLS all-alerts is the one that
+matters: still zero reads in bridge.log, ever, since being added to
+rooms.txt at 02:08 — confirmed still true at this close-out, moved to
+Pending #1 in HANDOFF.md (it's a G-only fix: START HERE or a hand-opened
+tab, nothing left to fix in code). Brando/Shoof/TTT Lotto/Whop 2K are quiet
+rooms, not dead tabs — not urgent.
+
+STANDING RULE check: 0 EXIT-IGNORED lines today, but that's because the
+only room-side exit-shaped message all day (Aristotle's 11:18 "40% META
+trim") arrived 19 minutes after that META position was already stopped out
+— nothing held to ignore. No room-driven bot exit found; entries-only intact.
+
+Also confirmed stale, corrected in HANDOFF.md: the "7 rooms silently
+re-enabled → 26" watch item from 04:14 — rooms.txt has been back at 19 lines
+since 04:36 (mtime unchanged since), so that one is resolved, not open.
+Pending item #1 (restart the bridge) was also stale — trades.log shows the
+bridge self-restarted onto new code four times today (11:19, 13:09, 16:18,
+16:29) via the existing safe-window mechanism, so every fix listed there is
+already live; replaced with the OWLS tab gap, which is the real open item.
+
+Checked clean: 0 reload-storm lines and 0 DISCARDED/OOM lines in today's DS
+Logs export or trades.log. /stream via Claude-in-Chrome: connected:true,
+ok:true, option_bus.watching 0 (book flat, confirmed via get_account_positions),
+budget_left 285, rate_limited 0 — last_sweep_ms 512 is above the ~100-200
+baseline but matches the same "idle variance when nothing's being watched"
+seen on 9/8, not a fault. Announcer still paused (G, since 9/2) — skipped
+those checks per standing note. Options Insider isn't in rooms.txt at all
+right now (no line for it) — nothing to check there. Flat book, no overnight
+positions to guard.
+
 **2026-09-09 17:05 — ONE BROKER FILE + THE PULLBACK LEVEL SETTLED AT $1.**
 G: "pull the real records from the broker to compare and then delete it at
 the end of the day so the folder is clean." Built master_broker.csv — the
