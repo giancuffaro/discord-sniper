@@ -215,6 +215,20 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   = off, launcher opens once at startup, nothing reopens a closed tab.
   keepRoomsLoaded()/oneTabPerChannel()/evictOtherLane() untouched (they only keep
   or close existing tabs, never reopen a closed one).
+  **WHOP STILL NOT FEEDING (confirmed 9/8 22:25)** — G pasted a Felony
+  (FirstStepTrading) alert "Long NQ @ 29580, stop 29550, target 29645" from ~1h
+  earlier (~21:25). The bridge never read it: ZERO Whop-sourced reads landed all
+  day. whop.js is alive and correct (proved earlier via its own console line),
+  the API reader is dead (wrong ids), so the ONLY path is the Sniper Whop
+  profile's browser tabs — and they are not reaching the bridge. Most likely the
+  room tabs aren't sitting on their /exp_.../app/ URL (whop.js goes idle on
+  Townhall/messenger). Unresolved; needs eyes on that profile's tabs + popup.
+  **MARKET HOURS recorded → MARKET-HOURS.md** (G's ask: "read market hours for
+  options and futures and write it down"). Options (equity/ETF) 9:30–4:00 ET,
+  SPY/QQQ/IWM + index (SPX/NDX/RUT/VIX) to 4:15; NO overnight options. Futures
+  (CME Globex, ES/NQ/MES/MNQ, metals) Sun 6:00 PM → Fri 5:00 PM ET with a daily
+  5–6 PM ET halt. So the 9:25 PM NQ long WAS in-session and tradeable — the only
+  reason it was missed is the dead Whop feed, not the hour.
 Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
