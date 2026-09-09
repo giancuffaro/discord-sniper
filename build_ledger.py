@@ -138,9 +138,13 @@ def _state(r):
 
 
 def _dedupe_key(r, date):
+    """Same trade in two stores = same date, caller, contract, fill price.
+    NO time in the key: wallet rows carry only "t" (the EXIT event), so a
+    time bucket split every table/wallet twin (9/8: TSLA 372.5C and QQQ 717P
+    each counted twice, -$40 against the broker). Two genuinely separate
+    trades that collide here are told apart in load_days() by their entry
+    times (both present, >2 min apart)."""
     price = _r2(r.get("fill")) or _r2(r.get("avg"))
-    opened = r.get("opened") or r.get("t")
-    opened_min = int(float(opened) // 60) if opened else None   # minute bucket
     return (
         date,
         str(r.get("who") or "").strip().lower(),
@@ -148,8 +152,15 @@ def _dedupe_key(r, date):
         _r2(r.get("strike")),
         str(r.get("side") or "").upper(),
         price,
-        opened_min,
     )
+
+
+def _same_trade(a, b):
+    """Twins unless BOTH know their entry time and those disagree by >2 min."""
+    ta, tb = _f(a.get("opened")), _f(b.get("opened"))
+    if ta is None or tb is None:
+        return True
+    return abs(ta - tb) <= 120
 
 
 # ---------- load day-JSON (table ∪ wallet.trades) ----------
@@ -176,15 +187,25 @@ def load_days():
                 r["_in_wallet"] = src_name == "wallet"
                 r["_day"] = date
                 r["_file"] = os.path.basename(path)
-                if k in merged:
-                    prev = merged[k]
-                    m = _merge(prev, r)
-                    m["_in_table"] = prev["_in_table"] or r["_in_table"]
-                    m["_in_wallet"] = prev["_in_wallet"] or r["_in_wallet"]
-                    merged[k] = m
+                bucket = merged.setdefault(k, [])
+                for i, prev in enumerate(bucket):
+                    if _same_trade(prev, r):
+                        m = _merge(prev, r)
+                        # the table zeroes qty after a close; wallet keeps it
+                        if not _f(prev.get("qty")) and _f(r.get("qty")):
+                            m["qty"] = r["qty"]
+                        m["_in_table"] = prev["_in_table"] or r["_in_table"]
+                        m["_in_wallet"] = prev["_in_wallet"] or r["_in_wallet"]
+                        bucket[i] = m
+                        break
                 else:
-                    merged[k] = r
-    return merged
+                    bucket.append(r)
+    # flatten: one dict per real trade, stable order
+    flat = {}
+    for k, bucket in merged.items():
+        for i, r in enumerate(bucket):
+            flat[k + (i,)] = r
+    return flat
 
 
 # ---------- load trades.log FILLED spine ----------
