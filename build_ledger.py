@@ -49,8 +49,9 @@ COLUMNS = [
     "max_runup_pct", "max_drawdown_pct", "hi_pct", "lo_pct",
     "state", "exit_by", "all_out", "account", "manual", "swing",
     "their_avg", "their_stop", "their_target", "their_units", "stop_at_exit",
-    "greeks_in", "greeks_out", "broker_confirmed", "source", "in_table", "in_wallet",
-    "opened_from", "derived", "day_file", "raw", "why",
+    "greeks_in", "greeks_out", "broker_confirmed", "export_confirmed",
+    "source", "in_table", "in_wallet",
+    "opened_from", "exit_from", "derived", "day_file", "raw", "why",
 ]
 
 FILLED_RE = re.compile(
@@ -443,10 +444,44 @@ def build():
             # the FILLED line does not say which book — do NOT let a
             # consumer's "" -> paper fallback mislabel a broker fill
             "account": "unknown", "manual": "", "swing": "",
-            "broker_confirmed": True, "source": "trades.log-only",
+            "broker_confirmed": True, "export_confirmed": False,
+            "source": "trades.log-only",
             "in_table": False, "in_wallet": False,
-            "opened_from": "trades.log", "derived": True,
+            "opened_from": "trades.log", "exit_from": "", "derived": True,
             "why": "broker FILLED with no day-JSON row (room unknown)",
+        })
+
+    # export round-trips no store ever saw → the account's own record wins.
+    # These are almost all G's hand scalps (Market Sniper) — visible, his,
+    # never the bot's. account=live is a fact here: the export IS the account.
+    for i, t in enumerate(trips):
+        if trip_used[i]:
+            continue
+        exits = ([{"t": t["sell_ts"], "qty": t["qty"], "price": t["sell"], "pl": t["pl"]}]
+                 if t.get("sell") is not None else [])
+        out.append({c: "" for c in COLUMNS} | {
+            "date": t["date"], "room": "?", "caller": "",
+            "symbol": t["symbol"], "side": "CALLS" if t["cp"] == "C" else "PUTS",
+            "strike": t["strike"], "expiry": t["expiry"], "occ": t["occ"],
+            "kind": "option", "qty": t["qty"],
+            "avg_in": t["buy"], "fill": t["buy"],
+            "opened": _hms(t["buy_ts"]), "opened_ts": t["buy_ts"],
+            "closed": _hms(t["sell_ts"]) if t.get("sell_ts") else "",
+            "closed_ts": t["sell_ts"] if t.get("sell_ts") else "",
+            "entries": _json([{"t": t["buy_ts"], "qty": t["qty"], "price": t["buy"]}]),
+            "exits": _json(exits), "exit_avg": t["sell"] if t.get("sell") is not None else "",
+            "pl": t["pl"] if t.get("pl") is not None else "",
+            "pl_pct": (round(t["pl"] / (t["buy"] * t["qty"] * 100.0) * 100.0, 2)
+                       if t.get("pl") is not None and t["buy"] else ""),
+            "state": "closed" if t.get("sell") is not None else "filled",
+            "all_out": t.get("sell") is not None,
+            "account": "live", "manual": True, "swing": "",
+            "broker_confirmed": False, "export_confirmed": True,
+            "source": "webull-export-only",
+            "in_table": False, "in_wallet": False,
+            "opened_from": "webull-export", "exit_from": "webull-export",
+            "derived": True,
+            "why": "in the Webull order export, in no store — a hand trade",
         })
 
     out.sort(key=lambda x: (x["date"], x["opened"] or "99:99:99", x["symbol"]))
@@ -485,13 +520,19 @@ def summary(rows, broker):
     real = [r for r in rows if r["state"] in ("filled", "closed", "stopped")]
     nofill = [r for r in rows if r["state"] in ("nofill", "failed")]
     gaps = [r for r in rows if r["source"] == "trades.log-only"]
+    hand = [r for r in rows if r["source"] == "webull-export-only"]
     conf = sum(1 for r in real if r["broker_confirmed"])
+    xconf = sum(1 for r in real if r.get("export_confirmed"))
+    xexit = sum(1 for r in real if r.get("exit_from") == "webull-export")
     untag = sum(1 for r in real if r["room"] == "?")
     print(f"master_ledger.csv  →  {len(rows)} rows")
     print(f"  real fills (filled/closed/stopped): {len(real)}")
     print(f"  no-fill / failed attempts:          {len(nofill)}")
-    print(f"  broker-confirmed fills:             {conf}/{len(real)}")
+    print(f"  trades.log-confirmed fills:         {conf}/{len(real)}")
+    print(f"  Webull-export-confirmed fills:      {xconf}/{len(real)}")
+    print(f"  exits filled in FROM the export:    {xexit}")
     print(f"  broker fills with no room row:      {len(gaps)}  (source=trades.log-only)")
+    print(f"  hand trades only in the export:     {len(hand)}  (source=webull-export-only)")
     print(f"  real fills untagged room '?':       {untag}")
     print()
     print("  REAL FILLS PER ROOM:")

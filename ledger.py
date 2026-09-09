@@ -31,8 +31,8 @@ _FLOAT = ("opened_ts", "closed_ts", "t", "strike", "qty", "avg_in", "fill",
           "hi_pct", "lo_pct", "their_avg", "their_stop", "their_target",
           "their_units", "stop_at_exit", "dte", "direction")
 _JSON = ("entries", "exits", "greeks_in", "greeks_out")
-_BOOL = ("all_out", "manual", "swing", "broker_confirmed", "in_table", "in_wallet",
-         "derived")
+_BOOL = ("all_out", "manual", "swing", "broker_confirmed", "export_confirmed",
+         "in_table", "in_wallet", "derived")
 
 
 def _f(v):
@@ -92,6 +92,7 @@ def _to_row(c):
     r["account"] = c.get("account") or ""
     r["live"] = r["account"] == "live"
     r["opened_from"] = c.get("opened_from") or ""
+    r["exit_from"] = c.get("exit_from") or ""
     r["avg"] = r["avg_in"]
     # epoch, like the table rows. build_ledger already filled opened_ts from
     # the broker's FILLED stamp when the store lacked it — never from wallet
