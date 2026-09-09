@@ -2847,22 +2847,32 @@ def _place_impl(order):
 
                 # Mirror the exit onto every extra account that actually
                 # holds this trade (8/18). Each one sells through its OWN
-                # book's retry, so its own resting stop is pulled first; if
-                # its stop already sold it, that's recorded, not an error.
+                # book's CONFIRMED sell (9/9, same fix as the primary
+                # account above — an accepted-not-filled mirror leg used to
+                # book CLOSED here too), so its own resting stop is pulled
+                # first; if its stop already sold it, that's recorded, not
+                # an error.
                 if live_order:
                     for _x in WB_EXTRA:
                         _xb, _xc = _x["book"], _x["client"]
                         try:
                             if _xb.qty_of(key) <= 0:
                                 continue    # this account never got in
-                            _r2 = _xb._sell_retry(
-                                _xc, key, order["symbol"], order.get("side"),
+                            _ok2, _px2 = _xb._sell_confirmed(
+                                _xc, key, _occ, order["symbol"], order.get("side"),
                                 order.get("strike"), order.get("expiry"), qty,
-                                ref_price=exref)
-                            note("SOLD     [%s] %s" % (_x["name"], _r2["what"]))
+                                exref)
+                            if not _ok2:
+                                _xb.release(key)
+                                note("ACCT %s exit not confirmed filled on %s "
+                                     "— still holding, stop re-armed, will "
+                                     "keep retrying" % (_x["name"], order["symbol"]))
+                                continue
+                            note("SOLD     [%s] %s — closed at %.2f"
+                                 % (_x["name"], order["symbol"], float(_px2)))
                             _xb.finish(key, positions.CLOSED,
-                                       "sold on their call at %.2f"
-                                       % float(_r2["limit"]))
+                                       "sold on their call at %.2f" % float(_px2),
+                                       price=float(_px2))
                         except Exception as _e:         # noqa: BLE001
                             try:
                                 if _xb._gone_at_broker(
