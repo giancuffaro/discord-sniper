@@ -53,6 +53,8 @@ down until you delete it.
 | `replay_check.py` | "What did we miss TODAY?" Replays the day's real messages, flags silent drops and possible missed entries. |
 | `audit_history.py` | "What have we missed EVER, and why was a room quiet?" → `ALERT-AUDIT.html` |
 | `scoreboard.py` | Per-room signal/trade scoreboard → `SCOREBOARD.html` |
+| `pullback_levels.py` | "Should the beta names wait for $1, $2, $2.50 or $5?" Replays every logged alert on real 1-second stock bars (Databento, cents; cached in `bars/stock/`) → `reference/PULLBACK-LEVELS.md`. Verdict 9/9: $1 stays. |
+| `postmortem.py` | One verdict per exited trade (call → ride → after we left → the stop → the machine) → `postmortems/*.md` + `master_postmortems.csv`. Auto-runs after every exit. |
 | `jsparse.py` + `extension/parse_batch.js` | Let the Python tools call the REAL parser, so an audit can never disagree with the bot. |
 | `test_brokers.py` | Runs the Tradier/tastytrade adapters against a FAKE local server — proves the parsing with no credentials needed. |
 | `test_tape.py` | "Did this trade leave a price record?" Proves a managed contract still gets taped when the batched sweep is completely blind, and that the bus says so out loud. |

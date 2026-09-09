@@ -9,6 +9,48 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 17:05 — ONE BROKER FILE + THE PULLBACK LEVEL SETTLED AT $1.**
+G: "pull the real records from the broker to compare and then delete it at
+the end of the day so the folder is clean." Built master_broker.csv — the
+broker-record family's one central file (one row per Webull order leg, all
+days). build_ledger.absorb_exports() runs inside every ledger refresh: folds
+any Webull_Orders_<date>_auto.csv into the master (REPLACE per order —
+placed-time+contract+side+size+limit is the key; a later pull replaces a
+WORKING snapshot, identical rows are no-ops) and deletes the daily file the
+moment every leg is provably inside (re-read from disk first). The three
+old daily files are gone; 119 legs / 93 filled sit in the master; 9/4 +152,
+9/8 +77, 9/9 +252 still MATCH. FIFO pairing now runs ACROSS days so a swing
+sold next morning meets its own lot (trip date = buy day). All .bak files
+moved to backups/ (last 5 per master file) — no more .bak clutter in the
+root. .gitignore: master_broker.csv, backups/, bars/.
+THEN G's second question: "beta names like META/AMD/AAPL — would a better
+pullback help? $2 instead of nearest dollar? prices ending in 5 or 2.50?
+every $4 or $5 — those are prices they like to bounce and reject from."
+Built pullback_levels.py (reference/PULLBACK-LEVELS.md is its report):
+106 alerts on the 8 managed beta names 8/4–9/8 (every PULLBACK arm line
+carries the stock price the second the room called it; pre-8/18 refused
+calls priced off the tape), 51 symbol-days of REAL 1-second stock bars
+bought from Databento XNAS.ITCH for $0.47 total (cached in bars/stock/,
+9/9 itself is embargoed — needs a live licence). Sanity: the $1 replay
+reproduces the bridge's own touched/missed outcome on 73/76 arms.
+FINDINGS (the exit that really fires is the option ratchet — the pullback's
+$1-stock-stop/$2.50-target arrives after the ratchet already sold on 43/43
+logged exits — so grids were compared under a ratchet proxy in stock $,
+premium from the caller's line, delta from Black-Scholes):
+  paired, same alert, both grids filled: $1 vs take-it +$8.0/contract (65
+  pairs, SE 3.1 — the pullback earns its keep); $0.50 vs $1 −3.6 (SE 1.7);
+  $2 vs $1 +0.4 (SE 3.0, 36/46 ties); $2.50 vs $1 +1.7 (SE 5.0); $5 vs $1
+  +6.1 (SE 7.1, 19 pairs); 15-min vs 10-min wait: 65/65 identical.
+  Fill rates at 10 min: $0.50 86%, $1 71%, $2 51%, $2.50 47%, $5 21%, $10 13%.
+  Level test, alert-free, every first touch on every symbol-day: $5 lines
+  held 31% (75 touches), $2.50 36% (171), $2 36%, $1 34%, a random x.25/x.75
+  line 38% (806) — round levels bounce NO more than any other line on these
+  names in this sample. VERDICT: level stays $1, window stays 10 min. Rule
+  written into HANDOFF (ENTRIES). Side finding, worth a caller/symbol look
+  later: under the proxy TSLA is the only beta name in the green at any
+  grid (+$12/contract mean at $1, 23 trades); MSFT/NVDA/META/AMD lose at
+  every grid — the level isn't the problem there, the calls are.
+
 **2026-09-09 16:45 — BROKER RECORD PULLED + ARM VARIANTS TESTED: RATCHET STAYS.**
 G: "did you pull a fresh Webull record and compare?" Pulled today's orders via
 the connector, wrote Webull_Orders_2026-09-09_auto.csv (45 legs, 42 filled),
