@@ -168,6 +168,7 @@ class QuoteBus:
         self._log = log or (lambda *_a, **_k: None)
         self._quotes = {}                  # occ -> (ask, bid, row, ts)
         self._watch = set()
+        self._linger = {}                  # occ -> keep taping until (epoch)
         self._lock = threading.Lock()
         self._sweep_every = SWEEP_TARGET
         self._backoff_until = 0.0
@@ -230,11 +231,36 @@ class QuoteBus:
             return
         with self._lock:
             self._watch.add(str(occ))
+            self._linger.pop(str(occ), None)   # back in the trade: no longer just lingering
 
-    def unwatch(self, occ):
+    # AFTER-EXIT LINGER (9/9, G: "analyze every single trade after exiting").
+    # The tape used to stop the second a position closed, so the one question
+    # a post-mortem must answer — was that stop a clip or a save? — had no
+    # data: META 655C's 4.30 bounce 30 s after its 3.80 stop-out was on tape
+    # by luck alone. Now an exited contract keeps being quoted for LINGER_S
+    # more seconds. Same sweep, same one call per second — a lingering
+    # contract only costs a slot in the 20-symbol batch.
+    LINGER_S = 600.0
+
+    def unwatch(self, occ, linger=None):
+        occ = str(occ)
+        keep = self.LINGER_S if linger is None else float(linger or 0)
         with self._lock:
-            self._watch.discard(str(occ))
-            self._quotes.pop(str(occ), None)
+            if keep > 0 and occ in self._watch:
+                self._linger[occ] = time.time() + keep
+                return
+            self._linger.pop(occ, None)
+            self._watch.discard(occ)
+            self._quotes.pop(occ, None)
+
+    def _expire_lingers(self):
+        """Drop contracts whose after-exit window is over. Lock held by caller."""
+        now = time.time()
+        for o, until in list(self._linger.items()):
+            if now >= until:
+                self._linger.pop(o, None)
+                self._watch.discard(o)
+                self._quotes.pop(o, None)
 
     def watching(self):
         with self._lock:
@@ -297,6 +323,7 @@ class QuoteBus:
 
     def _sweep_once(self):
         with self._lock:
+            self._expire_lingers()
             occs = sorted(self._watch)
         if not occs:
             # Nothing open. Idle cheaply and give the whole budget back.
