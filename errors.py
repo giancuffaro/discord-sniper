@@ -41,8 +41,8 @@ CATS = [
         re.compile(r"^FUT-POS|no futures position", re.I)),
     ("RATE-LIMIT throttle (429)",
         re.compile(r"\b429\b|TOO_MANY_REQUESTS|throttle", re.I)),
-    ("BRIDGE unreachable / thread died",
-        re.compile(r"BRIDGE UNREACHABLE|a thread that dies|deadman", re.I)),
+    ("BRIDGE unreachable",
+        re.compile(r"BRIDGE UNREACHABLE", re.I)),
     ("OTHER broker error (417)",
         re.compile(r"HTTP Status: 417|OPENAPI_", re.I)),
 ]
@@ -108,11 +108,13 @@ def _scan(date=None, all_days=False):
             if pat.search(msg):
                 guard[label] += 1
                 break
-    # tracebacks from bridge.log (today only, cheap heuristic)
+    # tracebacks from bridge.log — only for --all (bridge.log lines carry no
+    # date, so a per-day count would be wrong). Skipped in the daily view.
     tb = 0
-    for d, hhmm, msg in _rows(BLOG, date, all_days):
-        if msg.strip().startswith("Traceback (most recent call last)"):
-            tb += 1
+    if all_days:
+        for _d, _h, msg in _rows(BLOG, None, True):
+            if msg.strip().startswith("Traceback (most recent call last)"):
+                tb += 1
     return err, guard, codes, adopts, tb
 
 
