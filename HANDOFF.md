@@ -1,7 +1,83 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first. It is the living memory of the project: what the machine is,
 every rule it trades by, and how G works. Update it whenever a rule changes.
-Last updated: 2026-09-09 (late) — ONE CENTRAL FILL LEDGER: `master_ledger.csv`.
+Last updated: 2026-09-09 (latest) — ONE CENTRAL FILE PER DATA FAMILY, and the
+app now reads ONLY those. G: "make sure the app fully uses this from now on
+and not the previous. do this for other similar types of data or files."
+Done, in five families:
+
+**1. FILLS → `master_ledger.csv` (325 rows, 52 cols) — THE fill truth.**
+Built by `build_ledger.py` from FOUR sources, in trust order: (a) the Webull
+order-history exports `Webull_Orders_<date>_auto.csv` (the account's OWN
+record — FIFO leg-pairing per OCC into round-trips), (b) `trades.log FILLED`
+(immutable, exact fill stamp, no room), (c) `days/*.json wallet.trades`, (d)
+`days/*.json table`. RULES baked in, each learned from 9/8: the export's exit /
+P&L / state / account WIN over the book's belief (`store_pl` keeps the book's
+number so the disagreement stays visible); a fill the broker saw is `filled`
+even if the book filed it `failed` (IWM 295P, SPY 767P); export-confirmed ⇒
+`account=live`; entry time comes from `opened`, else the broker's FILLED
+stamp, NEVER wallet `t` (that's the exit); one FILLED line confirms exactly
+one row (queue, real rows first, so a nofill can't steal a fill); table/wallet
+twins dedupe on date+caller+contract+fill with NO time bucket (wallet rows
+have no `opened`; the old minute bucket double-counted TSLA 372.5C and QQQ
+717P). Thin wallet rows are normalized (kind / avg / entries / exits / hi-lo
+derived, `derived=True`). Gaps are rows, not silence: 41 `trades.log-only`
+fills no store ever journaled, 13 `webull-export-only` hand scalps.
+**RECONCILIATION is built in and printed every run:** on every day we hold an
+export, ledger(live,real) must equal the export to the cent — 9/4 +152.00 =
++152.00, 9/8 +77.00 = +77.00 (the book had 9/8 at −$82). A DRIFT line means
+something upstream lied; investigate, don't average.
+Reader: **`ledger.py`** — `rows()/load()/by_day()/days()` yield rows keyed
+exactly like the old day-JSON table rows, so every consumer was a drop-in.
+Wired into `bridge.py save_day()` (never-raise guard, `bak=False`, ~110 ms);
+the bridge already ran it live on its 02:55 boot. CLI `python3 build_ledger.py`
+keeps 5 .baks and prints the summary + reconciliation.
+**SWITCHED to the ledger (parity-verified byte-identical on every old row,
+then MORE rows):** caller_report.py, scoreboard.py, journal_full.py (264 →
+329 taken), entry_compare.py (11 → 34 option trades), missed_dollarize.py,
+scoped_missed_pull.py, today_entry_compare.py, ratchet_backtest.py,
+ratchet_sweep.py, databento_backfill.py, announcer.py (below). `journal.csv`
+is now a LEGACY export the bridge still writes; nothing reads it for truth.
+
+**2. ALERTS → `master_alerts.csv` (295 rows) — every alert and its fate.**
+`build_alerts.py`: taken side from `telemetry.csv` (posted/seen/sent/filled
+stamps, slip, greeks), declined side from `trades.log` via `misses.collect_
+misses()` (reason labels), filled ones linked to their ledger row
+(`ledger_key`, `in_ledger`). This is the answer to G's original "what alerts
+didn't trigger and why" in one file. Reader `ledger.alerts(date=, outcome=,
+declined_only=, …)`. Wired into `save_day()` next to the ledger. Known thin
+spot: telemetry rows carry no room/caller (bridge doesn't populate them) —
+a bridge telemetry fix, not a ledger one.
+
+**3. PRICE TAPES → `tape.py` is the ONE registry.** Registered the three it
+didn't know (`databento_clean`, `missed`, plus a `bars(occ)` reader for
+bars/). **`tape.path("databento")` returns the despiked clean tape when it
+exists** — ratchet_backtest replayed RAW while ratchet_sweep replayed CLEAN
+(two backtests, two tapes); both now call `tape.path()`. Default `rows()`
+never replays raw+clean together (same ticks).
+
+**4. HOLIDAYS → `market_hours.py` owns the table.** `webull_options.HOLIDAYS`
+now derives from `market_hours.FULL_CLOSE` (name kept — bridge.py:1450's
+import is untouched; literal set only as import-failure fallback). 30 dates
+2025-27. Update ONE place each year.
+
+**5. ANNOUNCER SCOREBOARD → computed from the ledger.** `announcer.py` was a
+running tally that only counted closes it witnessed; it was OFF Sep 2-8 and
+posted a stale board (−$1,680 as of 9/1). `_score_from_ledger()` rebuilds
+`all`/`today` from `ledger.rows(real_only, account=live)` at boot and at
+each day rollover; `announcer-scoreboard.json` is now a cache. Live ledger
+board: 54 symbols. **Needs the announcer restarted (announcer.restart touch
+or the 30-min revive task) — G's call; not done from here.**
+
+Verified: py_compile clean on all 18 touched files; every switched consumer
+runs; test_positions.py 0 failures; reconciliation MATCH on both export
+days. Nothing on the order path changed except the two never-raise hooks at
+the END of save_day(). NEEDS THE BRIDGE RESTART already pending tonight.
+STILL TRUE: 154 real fills carry room "?" (pre-tagging August + recovered
+rows) — room-cut decisions wait for tagged numbers; the 7-room cut list
+stays withdrawn.
+
+Previously — Last updated: 2026-09-09 (late) — ONE CENTRAL FILL LEDGER: `master_ledger.csv`.
 G caught me claiming Aristotle had 0 trades when he'd taken AMD 515C from it
 that morning. Root cause was DATA, not a stale read: fills were split across
 three half-ledgers that disagree — `days/*.json "table"` (display rows,
