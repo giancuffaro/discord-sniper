@@ -16,7 +16,8 @@ in:
 
 Everything downstream depends on getting that right. If the browser thinks
 you're holding SPY and you aren't, the next trim they post sends a sell for
-contracts that don't exist, and the 20% stop is guarding an empty chair.
+contracts that don't exist, and the born stop (-7.5%) is guarding an empty
+chair.
 
 THE BOOK IS KEYED BY TRADER, NOT BY TICKER. This is new and it matters: Brett
 and Unraveler can both be in SPY at the same time, on different contracts, and
@@ -99,7 +100,7 @@ def _tick_round(px, sym=None):
 WORKING = "working"     # bid is resting. You do NOT own it yet.
 FILLED = "filled"       # you own it.
 NOFILL = "nofill"       # never filled, order pulled. You do NOT own it.
-STOPPED = "stopped"     # the 20% stop sold it.
+STOPPED = "stopped"     # the born stop (-7.5%) or a ratcheted one sold it.
 CLOSED = "closed"       # their trim sold it, or you did.
 FAILED = "failed"       # something broke. Assume nothing; go look at Webull.
 
@@ -848,8 +849,8 @@ class Book:
                 "direction": -1 if str(order.get("direction") or ""
                                        ).upper() == "SHORT" else 1,
                 # THEIR levels, when they posted them. The plan of record for
-                # Felony's room: his stop and target run the trade, not the
-                # flat 20%.
+                # Felony's room: his stop and target run the trade, not our
+                # ratchet (born -7.5%, arm +5% -> BE, +2% rungs).
                 "their_stop": (prev.get("their_stop") if adding
                                else order.get("their_stop")),
                 "their_target": (prev.get("their_target") if adding
@@ -2205,7 +2206,7 @@ class Book:
         0DTE with watchdog-only cover after the 8/18 collision. If the
         position survived the failure, the broker-side stop goes straight
         back in, at the SAME level it was guarding — a ratcheted stop must
-        never fall back to -10%-from-fill."""
+        never fall back to -7.5%-from-fill (self.stop_pct)."""
         with self._lock:
             p = self._pos.get(key)
             if (not p or p.get("state") != FILLED or p.get("closing")
@@ -2991,10 +2992,14 @@ class Book:
 
     def _futures_ratchet(self, key, price):
         """Points-based ratchet for futures (v3.5.0) — percent is meaningless
-        when MNQ trades at 24,000. Uses the trade's own stop width: one
-        stop-width of profit locks breakeven, every further one locks
-        another. Needs a futures quote feed to fire; without one `price`
-        never arrives and this is simply never called."""
+        when MNQ trades at 24,000. Uses the trade's own stop width, in the
+        options ladder's shape (DECOUPLED 9/9 — it used to be one full
+        stop-width to breakeven, then another per rung, which was ~3x too far):
+        2/3 of the stop width in profit locks BREAKEVEN, then a rung every ~27%
+        of it (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). On a 30-pt
+        stop: +20 locks BE, +28 locks +8, +36 locks +16. Needs a futures quote
+        feed to fire; without one `price` never arrives and this is simply
+        never called."""
         from ratchet_tiers import (futures_stop_points, futures_locked_points,
                                    futures_stop_price)
         if price is None:

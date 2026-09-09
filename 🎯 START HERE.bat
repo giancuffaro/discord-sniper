@@ -72,6 +72,18 @@ set "PLATINUM_SERVER=911385966864896081"
 set INTERACTIVE=1
 if /i "%~1"=="morning" set INTERACTIVE=0
 
+rem  NO PROMPTS, EVER (9/9, G: "no input from me"). If the saved GitHub
+rem  credential has expired, git would pop a sign-in window and this whole
+rem  run would sit behind it. With these set, git fails fast instead - and
+rem  every git step below already handles failure by keeping local work and
+rem  skipping the mirror. Same for the Chrome "Restore pages?" bubble
+rem  (--hide-crash-restore-bubble on every launch) and the rooms: the
+rem  extension opens whatever is missing on a one-shot request from this
+rem  file, so a warm start never needs Chrome closed by hand.
+set "GIT_TERMINAL_PROMPT=0"
+set "GCM_INTERACTIVE=never"
+set "GIT_ASKPASS=echo"
+
 echo.
 echo   ============================================================
 echo                    D I S C O R D   S N I P E R
@@ -509,7 +521,7 @@ for /f "usebackq eol=# tokens=1,2 delims=|" %%A in ("extension\rooms.txt") do (
   set "RID=%%A"
   if /i "!RID:~0,5!"=="whop:" (
     if not defined WHOP_SEEDED (
-      start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "%%B"
+      start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "%%B"
       set "WHOP_SEEDED=1"
       timeout /t 6 /nobreak >nul
     ) else (
