@@ -35,8 +35,11 @@ archive/. Story of each in HANDOFF-LOG.md.
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
 - The machine: Chrome MV3 extension (Profile 2; v3.5.73) reads 19 rooms —
-  15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile,
-  Browser 2 — not part of the Profile 2 tab count), 0 ZTRADEZ (whole server
+  15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile
+  — in Claude-in-Chrome it's whichever browser a whop.com tab SURVIVES in;
+  the Discord profile's lane guard closes Whop tabs within seconds. Labels
+  flip between sessions: 9/9 it was "Browser 1". Not part of the Profile 2
+  tab count), 0 ZTRADEZ (whole server
   cut 9/9, sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild). G
   brought every non-ZT room back 9/9 once the reload storm was fixed (the
   "silent" verdicts were measured during the storm, so they re-measure on
@@ -48,8 +51,8 @@ archive/. Story of each in HANDOFF-LOG.md.
   127.0.0.1:8787) places real Webull option orders. Futures: micros via
   NinjaTrader OIF files (Webull futures account $0 by choice; Topstep not
   executing; Tradovate removed 9/x). Whop reads happen in the "Sniper Whop"
-  Chrome profile (Browser 2); the Whop API path is DELETED (walled + it was
-  dropping tab reads).
+  Chrome profile; the Whop API path is DELETED (walled + it was dropping tab
+  reads).
 - Accounts (Webull, one app key): MARGIN ENIQGUV4 (~$706), CASH MOI680
   ($0.55), FUTURES R8IEC ($0.55). Rate budget is SHARED with Market Sniper.
 - SEPARATE tool: Market Sniper (his own build, 127.0.0.1:8000) trades HIS
