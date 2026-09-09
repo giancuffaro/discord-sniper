@@ -23,6 +23,21 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 def main():
     tape = rs.load_tape()
+    # merge in the WIDE-window pull for skipped contracts (scoped_missed_pull.py):
+    # it has the real alert->end-of-day path the short backfill window lacked.
+    import csv
+    mp = os.path.join(HERE, "missed_tape.csv")
+    if os.path.exists(mp):
+        add = {}
+        for row in csv.DictReader(open(mp, encoding="utf-8")):
+            try:
+                add.setdefault(row["occ"], []).append(
+                    (float(row["ts"]), float(row["bid"]), float(row["ask"])))
+            except (TypeError, ValueError, KeyError):
+                continue
+        for k, v in add.items():
+            v.sort()
+            tape[k] = v          # wide window replaces the 90-second one
     rows = []
     for fn in sorted(glob.glob(os.path.join(HERE, "days", "*.json"))):
         try:
