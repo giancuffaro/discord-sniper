@@ -206,3 +206,13 @@ whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop
 # progress-update guards (9/8) exist because of his room.
 1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital
 1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital
+# OWLS all-alerts (wired 9/9) — the 🛎️ all-alerts relay channel aggregates ALL 11
+# OWLS analysts (ab, muggzone, eva, tt, giul, neal, florida-man, common-stock,
+# jon-and-kian, + shabs/eli) into ONE feed via the "OWLS Capital Clanker" bot,
+# each as an embed tagged "From 🌟｜<analyst>". content.js already reads embeds
+# (8/30 embed fix), so this ONE tab can replace the wall of per-analyst tabs.
+# NOTE (G's call 9/9): it ALSO relays shabs & eli, who have dedicated SPX-proxy
+# tabs above — running BOTH double-reads them. Either close the shabs/eli tabs
+# (simplest, but loses their implied-SPX default_symbol) OR keep them and add a
+# guard so all-alerts skips shabs/eli relays. Left both wired pending that call.
+1449226651064991806|https://discord.com/channels/718624848812834903/1449226651064991806|OWLS all-alerts|OWLS Capital
