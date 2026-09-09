@@ -1180,6 +1180,15 @@ def save_day():
     except Exception:                                   # noqa: BLE001
         pass    # the ledger must never take down the trading path
 
+    # master_alerts.csv — every alert and what happened to it (9/9): the
+    # taken side from telemetry.csv, the declined side from trades.log via
+    # misses.py, filled ones linked to their ledger row. Same guarantees.
+    try:
+        import build_alerts as _ba
+        _ba.refresh()
+    except Exception:                                   # noqa: BLE001
+        pass    # the alerts file must never take down the trading path
+
 
 def tkey(order):
     """The book's key for the trade this order is about: who called it, plus
