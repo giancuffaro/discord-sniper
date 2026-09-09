@@ -315,6 +315,26 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   the live stop sold — for eyeballing why small rungs win. STILL G's call, still
   HOLDING values (7.5/5/5) per his 9/9 decision to keep backtesting; the step
   finding is the strongest candidate when he's ready to move.
+  **RN-RULE LEDGER + FORWARD TRACKER (9/9). "Is my round-number entry better
+  than taking their price?"** Answer from what history allows: FAVORABLE BUT
+  THIN. On the fills it caught (entry_compare.py, n=11) the RN entry beat the
+  caller's price by +$123; on the skips that booked (missed_dollarize.py, n=2)
+  waiting SAVED ~$38 (both would've lost). Both sides favor the rule, but n=11/2
+  is anecdote, not proof — most of the log's "45 misses" never became book rows.
+  Tooling built tonight (all read-only): entry_compare.py (RN fill vs caller
+  price on filled trades), missed_dollarize.py (skips at caller price, reads the
+  wide pull), scoped_missed_pull.py (pulls wide OPRA windows for skipped
+  contracts -> missed_tape.csv; sandbox CAN reach Databento with the key),
+  clean_tape.py (despikes databento_tape.csv -> databento_tape_clean.csv; only 7
+  junk ticks in 329k, so conclusions were never corrupted; ratchet_sweep now
+  auto-uses the clean file). THE REAL ANSWER-MAKER, now LIVE-ON-RESTART:
+  pullback.py writes rn_ledger.csv — one append-only row per pullback decision
+  (armed / filled / missed / cancelled) with the caller's price, contract,
+  trader, room. Fully wrapped (log_ledger try/except) — can never affect a trade;
+  test_architecture + test_positions still green. Over a few weeks this builds a
+  real n; then entry_compare/missed_dollarize give a verdict instead of a lean.
+  NEEDS A BRIDGE RESTART to start logging. Also noted: sandbox has databento +
+  webull MCP reach, handy for future backtests.
 Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
