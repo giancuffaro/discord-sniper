@@ -198,6 +198,23 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   SWINGS-paused, TEST-room, FUTURES-prop-refused, not-optionable. 9/8 = 19
   distinct misses. NOT yet wired into the 4:45 journal.xlsx (that edits bridge.py
   + needs a restart — G's call).
+  **UNIFIED JOURNAL (new tool, journal_full.py)** — G: "make one journal for all
+  trades missed/refused and taken so we can use that data to modify the app."
+  Merges taken trades (days/*.json) + misses (misses.collect_misses, from
+  trades.log) into ONE xlsx: `python3 journal_full.py --all` -> journal-full-ALL.xlsx
+  (or --date / --today). Sheet "All trades" is one filterable, colour-coded row
+  per event (green TAKEN / red MISSED) with outcome+reason columns; sheet
+  "Summary" totals misses by reason/symbol and taken by caller. Read-only.
+  ALL-days snapshot 9/8: 264 taken, 272 missed — and the single biggest miss
+  bucket is BUYING POWER (130), i.e. the ~$250 account couldn't afford the
+  contract. That's the top lever if funding ever grows.
+  **REVERTED auto-open-missing-tabs (extension 3.5.61, needs RELOAD)** — G:
+  "revert the check the browser and open missing tabs, because if i close one it
+  wont stop opening them." openMissingRooms() removed from the watch-build sweep;
+  left defined-but-uncalled. His 8/23 rule restored: OPEN TAB = on, CLOSING a tab
+  = off, launcher opens once at startup, nothing reopens a closed tab.
+  keepRoomsLoaded()/oneTabPerChannel()/evictOtherLane() untouched (they only keep
+  or close existing tabs, never reopen a closed one).
 Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
