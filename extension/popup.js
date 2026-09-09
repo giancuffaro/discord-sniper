@@ -1901,6 +1901,13 @@ tickExportTimer();
 /* The auto-save interval box: shows the remembered value, saves on change.
  * The background worker re-arms its alarm the moment this is stored. */
 (async () => {
+  // 9/9: opening this popup is the user gesture that grants activeTab on the
+  // tab in front — exactly what tabCapture needs. Tell the worker, so a
+  // Zoom tab whose audio Chrome refused earlier gets its ears now.
+  try {
+    const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (t && t.id) chrome.runtime.sendMessage({ type: "POPUP_OPENED", tabId: t.id }).catch(() => {});
+  } catch (e) {}
   const inp = $("exportEvery");
   if (!inp) return;
   try {

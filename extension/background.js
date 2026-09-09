@@ -2627,7 +2627,7 @@ async function retryEars(tabId, how) {
   }
 }
 chrome.tabs.onActivated.addListener(({ tabId }) => { retryEars(tabId, "in front").catch(() => {}); });
-chrome.action.onClicked.addListener((tab) => { if (tab && tab.id) retryEars(tab.id, "clicked on").catch(() => {}); });
+// (the icon has a popup, so action.onClicked never fires — the popup sends POPUP_OPENED instead)
 
 /* The moment a Discord tab starts PLAYING audio (he joined the voice), start
  * transcribing it — and when it goes quiet again, stop. Auto only touches
@@ -2701,6 +2701,7 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (msg.type === "POPUP_OPENED") { if (msg.tabId) retryEars(msg.tabId, "clicked on").catch(() => {}); reply({ ok: true }); return; }
   if (msg.type === "ATTACHED") { noteChannelName(msg.channelId, msg.channelName); badge(); reply({ ok: true }); return; }
 
   /* FOCUS ROOM (9/4) — click a caller's name in the popup and land on the
