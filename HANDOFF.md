@@ -271,6 +271,19 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   BACKTESTING, HOLD VALUES (stay -7.5% born / +5% arm) until the sample grows —
   buckets of 15/21/44 over 5 weeks are hints, not verdicts, and per-bucket "best"
   is in-sample overfit. Re-run both sweeps as fills accumulate.
+  **DECOUPLED-STEP SWEEP + CONTRACT CHARTS (9/9, ratchet_sweep_fine.py +
+  chart_contracts.py).** G: "do more percentages... I wanted option contract
+  charts to see the movement of every contract." The original sweep FORCED
+  step==arm; decoupling the rung is the biggest lever found yet. On the same 80
+  fills the LIVE 7.5/5/5 ranks #13 of 294; the whole top of the board uses a
+  SMALL +2-3% rung: global best 7.5 born / +4% arm / +2% step = $321 (vs $152
+  live), and the dominant expensive bucket (44 trades) 7.5/+4/+2 = $353 (vs
+  $209). So locking in small increments captures the run-then-pullback that a
+  +5% rung gives back. chart_contracts.py -> contracts.html draws every fill's
+  gain%-from-entry path with entry/born/arm lines, peak/trough, and an ✕ where
+  the live stop sold — for eyeballing why small rungs win. STILL G's call, still
+  HOLDING values (7.5/5/5) per his 9/9 decision to keep backtesting; the step
+  finding is the strongest candidate when he's ready to move.
 Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
