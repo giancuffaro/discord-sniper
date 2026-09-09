@@ -28,6 +28,18 @@ hours within ~30 s. OUTCOME 17:40: G — "the channels show up now" after the
 3.5.76 reload; no error line, so the original cause stays unseen (either a
 one-off exception the reload cleared, or the late paint order). The
 rooms-first + visible-error change stays: next time it names itself.
+17:45 — IT NAMED ITSELF ON THE NEXT OPEN: "popup error (popup): ReferenceError:
+esc is not defined at popup.js:1372". renderTable() (module scope, the
+9/4 click-the-caller rows) called esc(), which existed only as a local
+const inside the holdings block of render() — so every day-table row threw,
+render() died before the rooms, and the Channels tab had been blank since
+the 9/7 popup slimming (the module-level copy went with it). Fix v3.5.77:
+ONE module-level esc(), the local copy removed. A used-but-never-defined
+scan over popup.js finds nothing else; background/content/whop/parser
+clean too (guards.js supplies the rest via importScripts). Bonus fact from
+the error line: the extension id is iaokjlndnmamhgmgkoldkhjehmdkginj —
+sha256 of the folder path as UTF-16LE, not UTF-8 (my hkpm… guess was the
+UTF-8 hash and never really loaded).
 Also for the Project: project/context/ pruned to the
 exact set the Project should hold (removed the 9/2 plans METHODOLOGY,
 CHROME-TABS, HANDOFF-OPTION-DATA, RATCHET-AND-SPEED-v3.5.0, ANTI-CLIP;

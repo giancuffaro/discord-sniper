@@ -2,8 +2,8 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (evening) — v3.5.76: popup paints the rooms FIRST and
-shows any popup error in the Channels pane (G saw an empty tab, cause unseen);
+Last updated: 2026-09-09 (evening) — v3.5.77: popup paints the rooms FIRST and
+shows any popup error in the Channels pane — which caught the real bug: esc() undefined in renderTable, blank Channels since 9/7, fixed;
 build_ledger.py's trip-matcher now checks qty, not just price (a stale store
 snapshot could grab the wrong-size export trip — found on today's QQQ 716C,
 also caught 2 older cases on 9/4; zero change to any day's reconciled total);
@@ -373,13 +373,18 @@ FILL ANNOUNCER (announcer.py, read-only)
   in market hours, close-out ~16:30 (the old daily-journal-and-fix 16:45
   task is PAUSED, folded into Mode C). It never places/cancels orders or
   touches settings.json.
-- POPUP (v3.5.76, 9/9 evening): the rooms list paints FIRST in render()
+- POPUP (v3.5.77, 9/9 evening): the rooms list paints FIRST in render()
   and any exception in the rest of the popup is written INTO the Channels
-  pane ("popup error (…): …") — never a blank pane again. If G reports an
-  empty Channels tab, the red line under the rooms is the diagnosis; ask
-  for it. Claude-in-Chrome CANNOT read the popup (another extension's
-  page): the id is chrome-extension://hkpmapikljbhmhkhppdmkjejmgddfhci
-  (sha256 of the folder path) but screenshots/JS/console are refused there.
+  pane ("popup error (…): …") — never a blank pane again. It caught its
+  first one the same evening: `esc is not defined` at renderTable — the
+  HTML-escaper lived only as a local inside the holdings block while the
+  module-level renderTable() called it, so ANY day-table row killed render()
+  before the rooms drew (blank Channels tab since the 9/7 slimming). esc()
+  is module-level now, one copy. If G reports a broken popup again, the red
+  line under the rooms is the diagnosis; ask for it. Claude-in-Chrome CANNOT
+  read the popup (another extension's page; screenshots/JS/console all
+  refused). Extension id: chrome-extension://iaokjlndnmamhgmgkoldkhjehmdkginj
+  (Chrome hashes the folder path as UTF-16LE; same id in both profiles).
 - Multi-account: extras mirror LIVE entries 1:1 with own books/stops.
 - START HERE.bat saves+pushes before its reset; RESTART BRIDGE.bat
   pre-flights and warns. Logs: trades.log (the story), bridge.log (raw,
