@@ -23,7 +23,6 @@ was archived.
 | `MAKE DESKTOP ICON.bat` | Desktop / taskbar shortcut for START HERE. |
 | `SETUP TRADIER.bat` | Connects Tradier read-only. Fund the account BEFORE generating the key — Tradier revokes API access on unfunded accounts and you would have to make it twice. |
 | `SETUP TASTYTRADE.bat` | Connects tastytrade read-only. OAuth: you make a client secret + refresh token in your browser, paste them here. Your password is never asked for. Places no orders, does not switch the bot off Webull. |
-| `SEND CHANGES TO GITHUB.bat` | Manual push. (AUTO PUSH already sweeps every 45s.) |
 
 Emergency brake: create a file named `STOP` (or `STOP.txt`). The bridge stays
 down until you delete it.

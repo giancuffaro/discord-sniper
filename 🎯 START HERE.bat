@@ -20,7 +20,8 @@ rem  a number on a menu lives in "EXTRAS.bat", for the rare day
 rem  something needs poking.
 rem
 rem  The 9:25 alarm is GONE (his call, 8/10) - mornings are his.
-rem  Re-running this file CLOSES Chrome and reopens every room (his call 9/2).
+rem  Re-running with Chrome open leaves it alone and fills in any missing
+rem  rooms through the extension (9/9). Nothing to press, ever.
 rem ===========================================================
 
 set "SERVER_ID=525113944239767562"
@@ -208,7 +209,7 @@ if not errorlevel 1 (
   if errorlevel 1 (
     echo   [3/5] The old 9:25 alarm is still set and Windows wouldn't
     echo         drop it without permission. Right-click this file,
-    echo         "Run as administrator", once - or EXTRAS option 8.
+    echo         "Run as administrator", once.
   ) else (
     echo   [3/5] Removed the old 9:25 alarm. Mornings are yours now.
   )

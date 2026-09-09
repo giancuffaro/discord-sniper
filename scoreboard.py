@@ -220,7 +220,7 @@ def main():
     for key, tr in T.items():
         if key in R or key in rooms:
             continue
-        rows.append({"room": key, "cid": "", "configured": False, "group": "(trade table only)",
+        rows.append({"room": key, "cid": "", "configured": False, "group": "(master_ledger.csv only)",
                      "msgs": 0, "signals": 0, "entries": 0, "exits": 0, "days": 0, "last": "",
                      "last_text": "", "top": ", ".join("%s (%d)" % kv for kv in sorted(tr["who"].items(), key=lambda x: -x[1])[:3]),
                      "sent": 0, "skipped": 0, "ignored": 0,
@@ -229,7 +229,7 @@ def main():
 
     rows.sort(key=lambda x: (-x["signals"], -x["msgs"], x["room"]))
 
-    # ---- trader board (from the trade table) --------------------------------
+    # ---- trader board (from master_ledger.csv) --------------------------------
     W = defaultdict(lambda: {"trades": 0, "wins": 0, "losses": 0, "pl": 0.0, "rooms": set(), "last": ""})
     for r in trades:
         if (r.get("_day") or "") < SINCE.isoformat() or not r.get("entries"):
@@ -307,7 +307,7 @@ def main():
                        html.escape(", ".join(sorted(w["rooms"]))), w["last"]))
     body.append("</tbody></table>")
     body.append("<div class=foot>Signals = messages naming a contract (ticker + strike + C/P). Entries/Exits = signals with buy / sell words. "
-                "Sent/Skipped/Ignored = the bot's own verdicts for that room. Trades/P&amp;L = the bridge's trade table (filled only). "
+                "Sent/Skipped/Ignored = the bot's own verdicts for that room. Trades/P&amp;L = master_ledger.csv (rows that recorded an entry). "
                 "Re-run: <code>python scoreboard.py 10</code>.</div>")
 
     page = """<!DOCTYPE html><html lang=en><head><meta charset=utf-8><title>Room scoreboard</title><style>

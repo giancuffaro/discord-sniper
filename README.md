@@ -747,10 +747,6 @@ loses money:
 - `setup_keys.py` — puts your API keys in without you ever opening a JSON file
   and getting a comma wrong at 9:29. The popup's key boxes use the same file.
 - `check_keys.py` — the preflight. EXTRAS.bat option 3.
-- `drill.py` — practice the reader on a whole chat export: every line gets a
-  verdict from the same reader that trades. EXTRAS.bat option 10.
-  (`settings_quick.py` is gone — every number it tuned was a filter, and the
-  filters are deleted, not defaulted.)
 - `eastern.py` — New York time, with the rule written out by hand so Windows
   not shipping a timezone database can't stop the bridge.
 - `signals.py` / `guards.py` — the Python twins of `parser.js` / `guards.js`.

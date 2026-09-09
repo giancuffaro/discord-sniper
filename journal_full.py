@@ -1,7 +1,8 @@
 """journal_full.py — ONE journal: every trade TAKEN and every alert MISSED.
 
-The daily journal.xlsx is trades-only. This merges the taken trades (days/*.json,
-the same source journal.csv flattens) with the misses (misses.py, from trades.log)
+The daily journal.xlsx is trades-only. This merges the taken trades (master_ledger.csv
+via ledger.py — the truth source since 9/9, not the truncating day table) with
+the misses (misses.py, from trades.log)
 into a SINGLE sheet you can filter and mine to tune the app: which callers, which
 reasons, which contracts got skipped and why — right next to what actually filled
 and how it did.
@@ -10,7 +11,7 @@ and how it did.
     python3 journal_full.py --today      today only -> journal-full-<date>.xlsx
     python3 journal_full.py --date 2026-09-08
 
-Read-only. Reads days/*.json + trades.log; writes an .xlsx. Never trades.
+Read-only. Reads master_ledger.csv + trades.log; writes an .xlsx. Never trades.
 """
 import os
 import re
