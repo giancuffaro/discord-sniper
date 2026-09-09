@@ -202,12 +202,108 @@ def load_broker_fills():
     return fills
 
 
+# ---------- load Webull order-history exports (broker's OWN record) ----------
+OCC_RE = re.compile(r"^([A-Z]{1,6})(\d{6})([CP])(\d{8})$")
+
+
+def _parse_occ(occ):
+    m = OCC_RE.match(occ or "")
+    if not m:
+        return None
+    sym, ymd, cp, strike8 = m.groups()
+    return {"symbol": sym, "expiry": "20%s-%s-%s" % (ymd[:2], ymd[2:4], ymd[4:6]),
+            "cp": cp, "strike": int(strike8) / 1000.0}
+
+
+def load_broker_exports():
+    """Webull_Orders_<date>_auto.csv → FIFO round-trips per contract:
+    [{date, occ, symbol, cp, strike, qty, buy, buy_ts, sell, sell_ts, pl}].
+    The export is the account's own order history — the truest record we
+    hold. Legs are paired chronologically per OCC (BUY opens, SELL closes)."""
+    trips = []
+    for path in sorted(glob.glob(os.path.join(HERE, "Webull_Orders_*_auto.csv"))):
+        legs = []
+        try:
+            with open(path, encoding="utf-8-sig", newline="") as fh:
+                for c in csv.DictReader(fh):
+                    if (c.get("Status") or "").upper() != "FILLED":
+                        continue
+                    occ = (c.get("Name OCC") or "").strip().upper()
+                    info = _parse_occ(occ)
+                    if not info:
+                        continue
+                    ts = c.get("Filled Time") or c.get("Placed Time") or ""
+                    try:
+                        ep = datetime.strptime(ts, "%Y-%m-%d %H:%M:%S").timestamp()
+                    except ValueError:
+                        continue
+                    legs.append({"occ": occ, "side": (c.get("Side") or "").upper(),
+                                 "qty": _f(c.get("Filled")) or 0,
+                                 "px": _r2(c.get("Avg Price")), "ts": ep,
+                                 "date": ts[:10], **info})
+        except OSError:
+            continue
+        legs.sort(key=lambda l: l["ts"])
+        lots = {}                                   # occ -> open BUY lots (FIFO)
+        for l in legs:
+            if l["side"] == "BUY":
+                lots.setdefault(l["occ"], []).append(dict(l))
+                continue
+            q = l["qty"]
+            while q > 0 and lots.get(l["occ"]):
+                lot = lots[l["occ"]][0]
+                take = min(q, lot["qty"])
+                trips.append({
+                    "date": lot["date"], "occ": l["occ"], "symbol": l["symbol"],
+                    "cp": l["cp"], "strike": l["strike"], "expiry": l["expiry"],
+                    "qty": take, "buy": lot["px"], "buy_ts": lot["ts"],
+                    "sell": l["px"], "sell_ts": l["ts"],
+                    "pl": round((l["px"] - lot["px"]) * take * 100.0, 2),
+                })
+                lot["qty"] -= take
+                q -= take
+                if lot["qty"] <= 0:
+                    lots[l["occ"]].pop(0)
+        for occ, open_lots in lots.items():          # bought, never sold that day
+            for lot in open_lots:
+                if lot["qty"] > 0:
+                    trips.append({
+                        "date": lot["date"], "occ": occ, "symbol": lot["symbol"],
+                        "cp": lot["cp"], "strike": lot["strike"], "expiry": lot["expiry"],
+                        "qty": lot["qty"], "buy": lot["px"], "buy_ts": lot["ts"],
+                        "sell": None, "sell_ts": None, "pl": None,
+                    })
+    return trips
+
+
+def _side_letter(side):
+    s = str(side or "").upper()
+    return "C" if s.startswith("C") else ("P" if s.startswith("P") else "")
+
+
 # ---------- build rows ----------
 def build():
     day_rows = load_days()
     broker = load_broker_fills()
+    trips = load_broker_exports()
+    trip_used = [False] * len(trips)
     matched_broker = set()
     out = []
+
+    def _find_trip(date, sym, strike, cp, fill):
+        """First unused export round-trip for this contract at this fill."""
+        for i, t in enumerate(trips):
+            if trip_used[i] or t["date"] != date or t["symbol"] != sym:
+                continue
+            if strike is not None and abs(t["strike"] - strike) > 0.001:
+                continue
+            if cp and t["cp"] != cp:
+                continue
+            if fill is not None and t["buy"] is not None and abs(t["buy"] - fill) > 0.011:
+                continue
+            trip_used[i] = True
+            return t
+        return None
 
     for r in day_rows.values():
         date = r["_day"]
@@ -244,6 +340,25 @@ def build():
             exits = [{"t": closed_ts, "qty": qty, "price": _r2(r.get("exit")),
                       "pl": _r2(r.get("pl"))}]
             derived = True
+        # --- the broker's own export: confirm, and fill a missing exit ---
+        trip = _find_trip(date, sym, _r2(r.get("strike")), _side_letter(r.get("side")), fill)
+        export_confirmed = trip is not None
+        exit_from = "store"
+        if trip:
+            if opened_ts is None and trip.get("buy_ts"):
+                opened_ts, opened_from = trip["buy_ts"], "webull-export"
+            if trip.get("sell") is not None and not exits:
+                exits = [{"t": trip["sell_ts"], "qty": trip["qty"],
+                          "price": trip["sell"], "pl": trip["pl"]}]
+                closed_ts = closed_ts or trip["sell_ts"]
+                exit_from = "webull-export"
+                derived = True
+            if trip.get("pl") is not None and r.get("pl") is None:
+                r["pl"] = trip["pl"]
+            if trip.get("sell") is not None and r.get("exit") is None:
+                r["exit"] = trip["sell"]         # lets _state() say "closed"
+            if not r.get("occ"):
+                r["occ"] = trip["occ"]
         hi = r.get("hi_pct") if r.get("hi_pct") is not None else r.get("max_runup_pct")
         lo = r.get("lo_pct") if r.get("lo_pct") is not None else r.get("max_drawdown_pct")
         runup = r.get("max_runup_pct") if r.get("max_runup_pct") is not None else r.get("hi_pct")
@@ -301,10 +416,12 @@ def build():
             "greeks_in": _json(r.get("greeks_in")),
             "greeks_out": _json(r.get("greeks_out")),
             "broker_confirmed": confirmed,
+            "export_confirmed": export_confirmed,
             "source": r.get("source") or "days-json",
             "in_table": r["_in_table"],
             "in_wallet": r["_in_wallet"],
             "opened_from": opened_from,
+            "exit_from": exit_from,
             "derived": derived,
             "day_file": r["_file"],
             "raw": (r.get("raw") or "").replace("\n", " ").strip(),
