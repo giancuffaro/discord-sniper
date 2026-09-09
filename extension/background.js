@@ -10,6 +10,56 @@
 importScripts("parser.js", "guards.js");
 
 const BRIDGE_DEFAULT = "http://127.0.0.1:8787/order";
+
+/* SECOND MACHINE (9/9, G: "another account on a different computer for other
+ * subs"). ONE bridge, ONE book: a second PC runs only Chrome + this extension
+ * and talks to PC1's bridge over the LAN. Per-machine wiring lives in ONE
+ * optional file next to rooms.txt — extension/bridge.txt, gitignored:
+ *     http://192.168.1.10:8787|the-shared-secret
+ * No file = today's behaviour (loopback, no token). With it, every call to the
+ * bridge carries X-Sniper-Token; the bridge refuses off-loopback callers that
+ * don't. Wrapping fetch here covers all eleven call sites at once. */
+let BRIDGE_TOKEN = "";
+let BRIDGE_ORIGIN = "";
+const _rawFetch = self.fetch.bind(self);
+self.fetch = function (input, init) {
+  try {
+    const u = typeof input === "string" ? input : String((input && input.url) || "");
+    if (BRIDGE_TOKEN && BRIDGE_ORIGIN && u.startsWith(BRIDGE_ORIGIN)) {
+      init = Object.assign({}, init || {});
+      if (init.headers && typeof init.headers.append === "function") {
+        init.headers = new Headers(init.headers);
+        init.headers.set("X-Sniper-Token", BRIDGE_TOKEN);
+      } else {
+        init.headers = Object.assign({}, init.headers || {}, { "X-Sniper-Token": BRIDGE_TOKEN });
+      }
+    }
+  } catch (e) {}
+  return _rawFetch(input, init);
+};
+
+async function loadBridgeFile() {
+  let txt = "";
+  try { txt = await (await _rawFetch(chrome.runtime.getURL("bridge.txt"))).text(); }
+  catch (e) { return; }                       // no file = this PC, loopback
+  const line = (txt.split("\n").map(s => s.trim()).find(s => s && !s.startsWith("#")) || "");
+  if (!line) return;
+  const [url, token] = line.split("|").map(s => (s || "").trim());
+  if (!/^https?:\/\//.test(url)) return;
+  BRIDGE_TOKEN = token || "";
+  try { BRIDGE_ORIGIN = new URL(url).origin; } catch (e) { BRIDGE_ORIGIN = ""; }
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const s = settings || {};
+    const want = url.replace(/\/$/, "") + "/order";
+    if (s.bridge_url !== want || s.bridge_token !== BRIDGE_TOKEN) {
+      s.bridge_url = want;
+      s.bridge_token = BRIDGE_TOKEN;
+      await chrome.storage.local.set({ settings: s });
+    }
+  } catch (e) {}
+}
+loadBridgeFile();
 // 400 was NOT a full day (9/2: the day's export started at 10:51 — every
 // morning verdict was gone, so a 9:38 entry that never fired couldn't be
 // audited). Today ran ~450 verdicts by the close; 2500 covers a loud day
@@ -747,7 +797,8 @@ async function pushChannelNames() {
     if (Date.now() - _namesSentAt < 10 * 60 * 1000) return;   // 10 min
     if (!Object.keys(CHAN_NAMES).length) return;
     _namesSentAt = Date.now();
-    await fetch("http://127.0.0.1:8787/channames", {
+    const c = await cfg();     // 9/9: was hard-wired to loopback — a second PC's names never arrived
+    await fetch(bridgeBaseFrom(c.bridge_url) + "/channames", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ names: CHAN_NAMES })
