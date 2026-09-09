@@ -247,23 +247,6 @@
       reopens every ON room; use the switch. A room marked <b>lapsed</b> is
       off because its subscription ran out; the extension knocks on its door
       once a day and tells you when it's readable again.</div>
-
-    <label style="margin-top:14px">Grab this room's history (for tuning)</label>
-    <div class="row" style="margin-top:8px">
-      <button id="grabHistory" class="grow">⏳ Grab this room's history</button>
-    </div>
-    <div class="row" style="margin-top:6px">
-      <button id="grabStop" class="grow">⏹️ Stop &amp; save what's caught</button>
-    </div>
-    <div class="note" id="grabState">Open a room's tab and hit Grab (or press
-      <b>Ctrl+Shift+X</b> on the room) to add it to the queue. Do that on as many
-      rooms as you want. The extension works the line <b>one at a time</b>:
-      brings each room to the front, scrolls its history (1 year back), saves the
-      file to your Downloads, closes that tab, then moves to the next — hands off.
-      Hit <b>Stop</b> to end the run early and save whatever's been caught so far;
-      closing a grabbing tab yourself does the same. Watch the Logs tab for
-      progress. Only reads what's on your screen — never trades it — no API, safe
-      for your account.</div>
   </div>
 
   <!-- ===== STRATEGIES ===== -->
@@ -494,6 +477,22 @@
       you want a fresh save right now; otherwise it saves itself on the timer
       above. Skips itself Friday 5pm–Sunday 7pm ET and market holidays —
       nothing happens those hours, so there's nothing worth saving.</div>
+
+    <label style="margin-top:14px">Grab this room's history (for tuning)</label>
+    <div class="row" style="margin-top:8px">
+      <button id="grabHistory" class="grow">⏳ Grab this room's history</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button id="grabStop" class="grow">⏹️ Stop &amp; save what's caught</button>
+    </div>
+    <div class="note" id="grabState">Open a room's tab and hit Grab (or press
+      <b>Ctrl+Shift+X</b> on the room) to add it to the queue. Do that on as many
+      rooms as you want. The extension works the line <b>one at a time</b>:
+      brings each room to the front, scrolls its history (1 year back), saves the
+      file to your Downloads, closes that tab, then moves to the next — hands off.
+      Hit <b>Stop</b> to end the run early and save whatever's been caught so far;
+      closing a grabbing tab yourself does the same. Progress shows in the log below. Only reads what's on your screen — never trades it — no API, safe
+      for your account.</div>
 
     <div id="log"></div>
   </div>
