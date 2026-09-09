@@ -29,13 +29,13 @@ Run: python ratchet_backtest.py
 """
 
 import csv
-import glob
 import json
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import ledger                 # noqa: E402
 import occ                    # noqa: E402
 import ratchet_tiers as rt    # noqa: E402
 
@@ -89,13 +89,9 @@ def simulate(rows_after_entry, entry):
 def main():
     tape = load_tape()
     out = []
-    for fn in sorted(glob.glob(os.path.join(HERE, "days", "*.json"))):
-        day = os.path.basename(fn)[:-5]
-        try:
-            d = json.load(open(fn, encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        for r in d.get("table", []):
+    # 9/9: reads master_ledger.csv via ledger.py — days/*.json table truncates.
+    for day, day_rows in sorted(ledger.by_day().items()):
+        for r in day_rows:
             if r.get("kind") != "option":
                 continue
             sym, side = r.get("symbol"), r.get("side")

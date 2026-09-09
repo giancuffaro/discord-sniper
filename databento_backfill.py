@@ -36,7 +36,6 @@ Then run:
 
 import csv
 import datetime
-import glob
 import json
 import os
 import sys
@@ -44,6 +43,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import ledger  # noqa: E402
 import occ  # noqa: E402  (project's one place that knows contract symbols)
 
 SETTINGS = os.path.join(HERE, "settings.json")
@@ -84,13 +84,9 @@ def worklist():
     """One entry per (contract, day), windows merged if it appears more than
     once that day (an add, or a partial fill logged twice)."""
     work = {}
-    for fn in sorted(glob.glob(os.path.join(HERE, "days", "*.json"))):
-        day = os.path.basename(fn)[:-5]
-        try:
-            d = json.load(open(fn, encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        for r in d.get("table", []):
+    # 9/9: reads master_ledger.csv via ledger.py — days/*.json table truncates.
+    for day, day_rows in sorted(ledger.by_day().items()):
+        for r in day_rows:
             if r.get("kind") != "option":
                 continue
             sym, side, strike, expiry = (r.get("symbol"), r.get("side"),
