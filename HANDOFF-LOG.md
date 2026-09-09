@@ -55,8 +55,103 @@ asking for a real-money flip (which nothing here does regardless).
 Also trimmed rooms.txt itself: the ZTRADEZ mashup 19-room investigation and
 the OWLS 24-channel scan were multi-paragraph essays sitting inline in a
 file whose whole job is "what's open and why" at a glance. Full text of
-both is preserved above, in the pre-cut archive below this line — nothing
+both, verbatim from rooms.txt before this edit, immediately below — nothing
 was deleted, just moved out of the room list.
+
+--- ZTRADEZ MASHUP INVESTIGATION (verbatim from rooms.txt, written 8/30, corrected 9/7) ---
+
+THE MASHUP (8/30, G: "one room that alerts everything so we can eliminate
+six and have only one"). The relay-unwrap in background.js books each call
+under the REAL trader name, so the per-trader walls and the dedupe ladder
+still hold.
+
+CORRECTED 9/7 — the old note here claimed the mashup "relays EVERY ZT
+trader's call". THAT IS FALSE and it cost us 9 traders. Verified 9/7 by
+reading all 19 cut rooms live in Discord and diffing their real 9/1-9/4
+entries against 9 days of mashup capture (8/28-9/6, dense on 9/1-9/4):
+
+  The mashup carries TWO streams, not one:
+    ZTRADEZ BOT     (793 msgs) forwards from some trader rooms
+    ZTRADEZ Manager (292 msgs) the house/Namrood feed, best-formatted
+                    alerts we get: "Buy To Open ORCL 147C 09/04 $1.5"
+                    with entry, expiry and running P/L (ANSI color codes
+                    wrapped around the contract - parser must strip them)
+
+  RELAYED, 10 of 19 - safe to leave cut:
+    mr-top-hat, market-bishop/opt-7, jpm-investments/opt-6,
+    sir-goldman/opt-8, are-swings/opt-2, demon, adex-swings/swing-4,
+    namrood/fut-6, top-flow, scalps
+
+  DARK, 9 of 19 - these alerts reach us NOWHERE. Proof, all absent from
+  the mashup on days it captured hundreds of lines:
+    cranmer/opt-9      UPS 104C, AA 52C, NVDA 220C 9/18
+    evapanda/opt-5     MU 1100C, MRVL 240C, URA 48C
+    madhatter/opt-1    MCD 245P 10/16
+    tlm/opt-4          AAPL 327C, MSFT 497/490P spread
+    stormzyy/fut-1     MNQ
+    guru-futures/fut-2 MNQ LONG 29525
+    clutch/swing-1     SPCX
+    kumo/swing-2       CAKE 120/125 debit spread
+    king-maker/swing-3 GM 87.5C 9/18
+
+  Only evapanda was cut on journal evidence (-55). The other 8 were cut
+  as "redundant: flows through the mashup" - a reason now disproven.
+  Reopening any of them is G's call (rooms are his).
+
+Of the 9 DARK rooms, four were reopened 9/7 on that finding (madhatter/opt-1
+→ ZT opt-1, cranmer/opt-9 → ZT opt-9, stormzyy/fut-1 → ZT fut-1,
+guru-futures/fut-2 → ZT fut-2). ZT opt-9 was re-cut 9/9 (0 signals since
+reopening); opt-1/fut-1/fut-2 are still open. The other 5 DARK rooms
+(evapanda/opt-5, tlm/opt-4, clutch/swing-1, kumo/swing-2, king-maker/swing-3)
+remain cut on their own separate merits (see their individual lines in
+rooms.txt) — reopening any of them is still G's call.
+
+--- OWLS CAPITAL 24-CHANNEL SCAN (verbatim from rooms.txt, written 9/7) ---
+
+OWLS CAPITAL — SCANNED 9/7, NOTHING WIRED (at the time). All 24 channels
+read. The six per-trader "*" channels were the only alert candidates and
+not one was safely tradeable by an options bot as found that day:
+  jon-and-kian     COMMON STOCK, not options: "1000% lotto CHGG commonst at
+    .83", "sold some CHGG commons at 15%", "22% on commons". DANGEROUS to
+    wire: "Sold another SPCX at 5.70" carries no word saying it is stock, so
+    it reads as a plain CLOSE and would dump an SPCX OPTIONS position. The
+    parser cannot tell from that text — only the room can — which is exactly
+    why this room stayed out. (Lines that DO name themselves are vetoed:
+    "shares", "commons", "commonst", "common stock".)
+  ab               real options, but entries are BARE contracts with no verb
+    ("$GOOGL 10/16 400c 1.88") so they do not fire, while his closes
+    ("$AAPL 10/16 330c 200% (Closed)") DO. A room that can close but cannot
+    open is worse than no room at all — it can only ever end a ride early.
+  tt               SPX 0DTE, and the sample is a SPREAD ("7690/7675p 0dte
+    1.4") plus a lotto. Two alert lines in the whole scrollback.
+  muggzone-options parses ("ENTERED 9/11 MRVL 240 CALLS @here 1.3" -> OPEN
+    MRVL 240C @1.3) but DROPS THE EXPIRY, because the date sits BEFORE the
+    ticker and the reader only looks after it. Zero of the corpus lines at
+    the time used that order, so no wired room was affected and it was left
+    alone rather than widened on speculation.
+  giul-heatseeker  the trader is away ("going to korea and japan these next
+    2 weeks") and his bot is broken ("bot may not be working right now").
+  members-plays    member TA chat, not calls.
+The rest (bot feeds, recaps, chatter, admin channels): notable-flow /
+notable-etf-flow / news, admin-analysis, ab-updates, gains-losses,
+risk-management, trading-floor, entrance-floor, off-topic,
+keyz-soccer-bets, futures-trading, support, home, announcements.
+
+OWLS CAPITAL (wired 9/8, G: "wire shabs + eli as SPY proxy"). Both are
+SPX-ONLY traders who never type the ticker — "in 7655p 2.9", "7760c at
+300/con". default_symbol_channels maps each to SPX; spx_entry_channels lets
+the SPX->SPY retarget fire (7655p -> SPY 766p at 1/10). shabs was the best
+record scanned (87.5% ex-BE, +$15,898 at 1 con/play in August). eli is
+commentary-heavy — the "stock is selling" and progress-update guards (9/8)
+exist because of his room.
+
+RETIRED 9/9 into OWLS all-alerts (G: "remove the rooms covered by all
+alerts"). shabs & eli now flow through the aggregator; background.js's relay
+unwrap re-books their calls under "shabs"/"eli" AND re-applies their SPX-only
+handling (default_symbol=SPX + SPX->SPY retarget) off the "From 🌟｜" tag, so
+nothing is lost. The 9/9 all-alerts room aggregates all 11 analysts (ab,
+muggzone, eva, tt, giul, neal, florida-man, common-stock, jon-and-kian, plus
+shabs/eli) via "OWLS Capital Clanker" embeds tagged "From 🌟｜<analyst>".
 
 (pre-cut history follows)
 
