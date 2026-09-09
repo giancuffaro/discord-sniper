@@ -717,10 +717,11 @@ RKEY = positions.key_of("RatchetGuy", "SPY")
 settle(rb, RKEY)
 ok(rb.state_of(RKEY) == positions.FILLED, "ratchet test entry fills")
 # fill was 2.00 (RWB always fills at its own ask/bid). Ladder is now arm
-# +5%/lock BE/step +5% (9/8 respacing, see ratchet_tiers.py) — so 2.39
-# (+19.5%) is already several rungs past arming, not below it. This call
-# just seeds the position at a locked stop before the checkpoints below.
-rb.auto_ratchet(RKEY, 2.39)
+# +5%/lock BE/step +2% (9/9 respacing, see ratchet_tiers.py) — so 2.30
+# (+15%) is already several rungs past arming, and sits a rung BELOW where
+# +20% lands (2.28) so the next call crosses a FRESH rung. This call just
+# seeds the position at a locked stop before the checkpoints below.
+rb.auto_ratchet(RKEY, 2.30)
 ok(rb.state_of(RKEY) == positions.FILLED,
    "a ratchet move never closes the position outright, however many rungs "
    "it's climbed")
