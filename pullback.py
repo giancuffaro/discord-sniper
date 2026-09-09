@@ -25,7 +25,9 @@
 #     close_fn(order, why) -> (ok, msg)  flatten the option position
 #     note(text)                         one line into the bridge log
 
+import csv as _csv
 import math
+import os
 import threading
 import time
 
