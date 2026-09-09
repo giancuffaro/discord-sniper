@@ -48,11 +48,19 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
 - The machine: Chrome MV3 extension (Profile 2; v3.5.78) reads 19 rooms —
-  15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile
-  — in Claude-in-Chrome it's whichever browser a whop.com tab SURVIVES in;
-  the Discord profile's lane guard closes Whop tabs within seconds. Labels
-  flip between sessions: 9/9 it was "Browser 1". Not part of the Profile 2
-  tab count), 0 ZTRADEZ (whole server
+  15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
+  NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
+  Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
+  (the same physical Chrome was "Browser 2" at 17:30 on 9/9 and "Browser 1"
+  at 18:05). The deviceId is stable; use it, and select_browser by ID:
+      9adbdf77-9822-45d1-81ad-ab0195271160  = DISCORD profile (Profile 2)
+      17c68ff9-4600-468e-afcb-076e2e6edfa5  = the OTHER profile (presumed
+        "Sniper Whop"; unconfirmed — it disconnected 9/9 evening before it
+        could be checked, so verify once it is back and correct this line)
+  Confirm a lane the cheap way rather than by asking: open a whop.com room
+  URL in it — the Discord profile's evictOtherLane() kills any whop.com
+  /exp_ tab within one 30 s watch-build sweep, the Whop profile keeps it.
+  Not part of the Profile 2 tab count), 0 ZTRADEZ (whole server
   cut 9/9, sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild). G
   brought every non-ZT room back 9/9 once the reload storm was fixed (the
   "silent" verdicts were measured during the storm, so they re-measure on
