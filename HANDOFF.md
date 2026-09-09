@@ -349,6 +349,22 @@ pullback waited and correctly skipped QQQ. Two changes made this session.
   real n; then entry_compare/missed_dollarize give a verdict instead of a lean.
   NEEDS A BRIDGE RESTART to start logging. Also noted: sandbox has databento +
   webull MCP reach, handy for future backtests.
+  **AGGREGATOR CHANNELS to cut the tab wall (9/9).** Too many tabs = Chrome
+  discards/reloads them AND logs Discord out (confirmed: both profiles bounced to
+  the login page). Fix = fewer tabs via server "all-alerts"-style relay channels.
+  WIRED: OWLS 🛎️ all-alerts [1449226651064991806] (rooms.txt, ext 3.5.63) — one
+  feed relays all 11 OWLS analysts as embeds via "OWLS Capital Clanker", tagged
+  "From 🌟｜<analyst>". content.js ALREADY reads embeds (8/30 fix) so no parser
+  change needed. CAVEAT: it also relays shabs & eli (who have dedicated SPX-proxy
+  tabs) — running both DOUBLE-READS them; G to decide: drop shabs/eli tabs (lose
+  implied-SPX) or add a guard so all-alerts skips them. SURVEY (browser, safe):
+  only the two community servers have aggregators — OWLS all-alerts (wired) and
+  ZTRADEZ all-trades-mashup (already wired). Honeydrip/TTT/Platinum/Vero split
+  alerts by TYPE (no single feed). So tab-reduction win = open all-alerts, close
+  ~9 OWLS analyst tabs. DECLINED the Discord-API route (G asked): for third-party
+  servers that means his USER token as a self-bot = permanent-ban risk to the
+  account + all paid subs — same refusal as before; the browser scan is the safe
+  path and already answered it. 3.5.63 is the last extension edit of the session.
 Previously — Last updated: 2026-09-08 — RATCHET RESPACED LIVE: BORN 10%->7.5%, ARM 10%->5%.
 G, after seeing the sweep: "good on everything else... change this, dont
 break it please." Shipped the ratchet_sweep.py finding from earlier today.
