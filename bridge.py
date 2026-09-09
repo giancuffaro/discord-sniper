@@ -5269,7 +5269,38 @@ def main():
                 if not evs:
                     continue
                 time.sleep(6)                 # let the fill/cancel settle
+                # 9/9 BUG FIX — everything below used to read `snap`, which was
+                # taken BEFORE that 6s sleep, so the check ran on pre-settle
+                # data and defeated the whole point of waiting. The resting
+                # stop routinely lands inside those 6 seconds, so POSTCHECK
+                # cried "held with NO resting stop — watchdog only" on
+                # positions that were already protected: SPY 9/9 filled
+                # 11:03:39, stop confirmed resting at Webull 11:03:42,
+                # POSTCHECK still called it unprotected at 11:03:47. False
+                # alarms are not harmless here — they make a REAL naked
+                # position indistinguishable from noise. Re-read the book now.
+                try:
+                    _fresh = BOOK.snapshot(0)
+                    if _fresh and _fresh.get("positions"):
+                        snap = dict(snap)
+                        snap["positions"] = _fresh["positions"]
+                except Exception:                       # noqa: BLE001
+                    pass                      # stale is still better than none
                 what = evs[-1]
+                # 9/9 (META 655C): the checks below used to read the snapshot
+                # taken BEFORE that sleep — a picture from the instant of the
+                # fill, one second before the stop was set. So every fill got
+                # a false "held with NO resting stop — watchdog only". Look at
+                # the book as it is NOW. (Events are not re-consumed here: the
+                # next pass still sees anything that happened during the wait.)
+                try:
+                    _fresh = BOOK.snapshot(seen_id[0])
+                    if isinstance(_fresh, dict):
+                        snap = dict(snap)
+                        snap["positions"] = _fresh.get("positions") or {}
+                        snap["table"] = _fresh.get("table") or snap.get("table")
+                except Exception:                       # noqa: BLE001
+                    pass
                 bad = []
                 warn = []
 
@@ -5305,8 +5336,19 @@ def main():
                             continue          # futures ride their own; his own trades are hands-off
                         sid = p.get("stop_order_id")
                         if not sid:
-                            bad.append("%s is held with NO resting stop — "
-                                       "watchdog only" % p.get("symbol"))
+                            # A stop is placed WITH the order and rebased a
+                            # beat after the fill (cancel + place). A position
+                            # seconds old with no id yet is a stop in flight,
+                            # not a naked hold — say "unconfirmed" and let the
+                            # next pass (or the next event) look again.
+                            _age = time.time() - float(p.get("opened") or 0)
+                            if 0 <= _age < 20:
+                                warn.append("%s's stop not confirmed yet (%.0fs "
+                                            "old) — re-checking next pass"
+                                            % (p.get("symbol"), _age))
+                            else:
+                                bad.append("%s is held with NO resting stop — "
+                                           "watchdog only" % p.get("symbol"))
                             continue
                         try:
                             _stt, _q, _a = WB.order_status(sid)

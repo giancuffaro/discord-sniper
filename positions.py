@@ -3463,7 +3463,8 @@ class Book:
                 # order in excess of current holding quantity" — which is
                 # exactly what killed the 8/12 META and LYFT stops, one second
                 # after the pull. So wait for the broker to actually let go.
-                _final, _favg = self._await_cancel(wb, oid)
+                _r = self._await_cancel(wb, oid)
+                _final, _favg = _r if _r else (None, None)
                 # THE STOP BEAT THE PULL (9/9, META 655C): the resting stop
                 # triggered on the same bid tick the watchdog saw, and it was
                 # already FILLED by the time the cancel arrived. Before this,
@@ -3506,23 +3507,22 @@ class Book:
 
     def _await_cancel(self, wb, oid, tries=6, pause=0.5):
         """Block until the broker says that order is really gone (dead/filled),
-        up to ~3s. Returns (final_status, avg_fill) — ("dead"|"filled", avg)
-        when confirmed, (None, None) when not. Truthy exactly when confirmed,
-        so every existing caller that only asks "did it clear?" still works;
-        claim() reads the status to tell a cancelled stop from a FILLED one
+        up to ~3s. Returns ("dead"|"filled", avg_fill) when confirmed, None
+        when not — truthy exactly when confirmed. Every existing caller ignores
+        the value; claim() reads it to tell a cancelled stop from a FILLED one
         (9/9). Never raises — an unconfirmed cancel still lets the sell try;
         the retry below is the backstop."""
         if wb is None or not oid or not hasattr(wb, "order_status"):
-            return (None, None)
+            return None
         for _ in range(int(tries)):
             try:
                 st, _fq, _avg = wb.order_status(oid)
             except Exception:                           # noqa: BLE001
-                return (None, None)
+                return None
             if st in ("dead", "filled"):
                 return (st, _avg)
             time.sleep(pause)
-        return (None, None)
+        return None
 
     def cancel_entry(self, key, why="pulled"):
         """Take a resting bid back off the book.

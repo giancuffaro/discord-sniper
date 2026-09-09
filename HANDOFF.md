@@ -2,13 +2,15 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 — v3.5.70. Tonight: one central file per data family
-(ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2 flat,
-futures ratchet decoupled; Whop API path deleted; the tab-reload storm found
-(662 reloads/day, zombie heartbeat) and fixed; rooms settled at 26 (all non-
-ZTRADEZ back, all live); START HERE fully unattended (one-shot open-rooms
-request, no git/Chrome prompts); REPLACE-DON'T-STACK rule; folder cleanup to
-archive/. Story of each in HANDOFF-LOG.md.
+Last updated: 2026-09-09 (midday) — v3.5.73. Tonight: one central file per data
+family (ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2
+flat, futures ratchet decoupled; Whop API path deleted; the tab-reload storm
+found (662 reloads/day, zombie heartbeat) and fixed; rooms settled at 19
+(15 Discord + 4 Whop, all live, 0 ZTRADEZ — counted from rooms.txt 9/9 11:20,
+replacing an earlier "26" that no longer matched the file); START HERE fully
+unattended (one-shot open-rooms request, no git/Chrome prompts);
+REPLACE-DON'T-STACK rule; folder cleanup to archive/; POSTCHECK stale-snapshot
+false alarm fixed. Story of each in HANDOFF-LOG.md.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
