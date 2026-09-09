@@ -84,5 +84,7 @@ handoffs
 - `settings.json` — every API key and webhook. Gitignored. Never commit it,
   never paste its contents anywhere.
 - `archive/` — 9/3 cleanup: 187MB of rotated logs, old broker exports, old
-  journals and one-off docs. Nothing here is used. **Safe to delete whenever
-  you want the disk back.**
+  journals and one-off docs. `archive/2026-09-09-cleanup/` — 9/9: dead
+  scripts, superseded tools and executed docs (see its MANIFEST.txt for each
+  item and why). Nothing in archive/ is used. **Safe to delete whenever you
+  want the disk back.**

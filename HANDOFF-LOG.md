@@ -9,6 +9,30 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 — FOLDER CLEANUP: 20 dead items MOVED to archive/2026-09-09-cleanup/ (nothing deleted).**
+G: "delete useless files, things we won't use anymore." Every file was checked
+against what imports/calls/reads it (bridge, extension, every .bat, scheduled
+tasks, INDEX/HANDOFF) before moving; MANIFEST.txt in the archive folder lists
+each item with the reason, reverse = move back. Moved: guards.py (dead Python
+mirror of the LIVE extension/guards.js — never imported), loadtest.py,
+ratchet_lab.py + bars_capture.py + bars/ (Tradier-bars era, superseded by the
+Databento tape 9/8), thetadata_probe.py (never bought), tonight's one-offs
+today_entry_compare.py / ratchet_runner_sweep.py / ratchet_sweep_tiered.py
+(+ their two results csv — conclusions kept in this log), journal-full-2026-
+09-08.xlsx (superseded by -ALL), voice_corpus.json, optionable_seed.json,
+extension/rooms.txt.bak, CLEANUP-PROPOSAL.md (executed), FUTURES-BUGS.md
+(all fixed), v3.5.0/TEST_MQTT_OPTIONS.py + the two applied _patch files.
+LEFT: webull_data_streaming_sdk.log (locked by a running process; gitignored
+*.log, harmless), settings.json.bak (his key backup, gitignored, untouched),
+every test_*.py, every .bat (all referenced), all docs still in force.
+Also: .gitignore now excludes master_ledger.csv / master_alerts.csv (+ .baks)
+and .pytest_cache/ — trading RECORDS stay on the PC like journal.csv. The two
+master files were already committed by auto-push tonight; only G can untrack
+them (`git rm --cached master_ledger.csv master_alerts.csv`) — no git writes
+from a sandbox. Verified after the move: every .py compiles, every live/tool
+module imports, every .bat target resolves, ledger reconciles (+152/+77),
+test_positions 0 failures.
+
 **2026-09-09 (later still) — ZTRADEZ SERVER CUT: 12 → 8.**
 G: the ZTRADEZ subscription lapses in 1 day. Cut all 4 remaining ZT rooms
 (ZT all-trades-mashup, ZT opt-1, ZT fut-1, ZT fut-2) ahead of it rather than
