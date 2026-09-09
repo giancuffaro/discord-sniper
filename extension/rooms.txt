@@ -18,8 +18,10 @@
 # that's what makes "why isn't X open" answerable a month later. Full
 # investigation writeups (the ZTRADEZ mashup diff, the OWLS 24-channel scan,
 # etc.) live in HANDOFF.md now, not here — this file stays a room list, not
-# an essay. TEST vs LIVE (real money) is a separate switch in the popup —
-# it is NOT stored in this file and I don't touch it; that flip is G's alone.
+# an essay. TEST vs LIVE (real money) is a separate switch, not stored in
+# this file — moot right now anyway: ALL_LIVE_GEN (9/8) cleared every test
+# flag, so every room below is already live by default. Toggling one off is
+# G's only bench, and that's a popup action, never done from here.
 #
 # CLEANUP 9/9 — this file had ~5 weeks of accumulated investigation notes
 # folded into the room lines. Moved the long-form ones to HANDOFF.md and cut
@@ -42,8 +44,13 @@
 
 # CUT 9/9, all four Whop rooms (G's call) — 0 signals in master_ledger.csv
 # for Day Trades / Futures / 2K Challenge across the whole 5-week history;
-# High Risk had exactly 1 row ever (a failed parse). Whop plan going forward
-# is API access from the room owners instead of tab-scraping — see HANDOFF.
+# High Risk had exactly 1 row ever (a failed parse). NOT the tab-count fix
+# for Discord logoffs — Whop runs in the separate "Sniper Whop" Chrome
+# profile, so it was never part of that count. A Whop API reader WAS tried
+# (9/9) but its "api mode" gate was dead and had been silently dropping
+# every tab read since that morning — deleted same day. Whop stays
+# tabs-only for now; these 4 are cut for being dead weight, not for a
+# replacement path.
 #whop:day-trades|https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)
 #whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)
 #whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)
