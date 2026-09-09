@@ -36,11 +36,15 @@ old per-room essays moved to HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.67) reads 19 rooms —
-  15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile,
-  Browser 2 — not part of the Profile 2 / Discord-logoff tab count), 0
-  ZTRADEZ (whole server cut 9/9, sub lapsing) (extension/rooms.txt is THE
-  list; editing it changes the build stamp → extension reloads itself) —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.69) reads 26 rooms —
+  22 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile,
+  Browser 2 — not part of the Profile 2 tab count), 0 ZTRADEZ (whole server
+  cut 9/9, sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild). G
+  brought every non-ZT room back 9/9 once the reload storm was fixed (the
+  "silent" verdicts were measured during the storm, so they re-measure on
+  clean ledger data from here). ALL_LIVE_GEN bumped so every room comes up
+  LIVE on load. (extension/rooms.txt is THE list; editing it changes the
+  build stamp → extension reloads itself — batch edits) —
   typed alerts, voice
   (Deepgram, diarized), images (vision) → Python bridge (bridge.py,
   127.0.0.1:8787) places real Webull option orders. Futures: micros via

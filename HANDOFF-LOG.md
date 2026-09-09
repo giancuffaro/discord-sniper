@@ -9,6 +9,22 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 — ROOMS BACK: 19 → 26 (v3.5.69). G: "bring back everyone and
+make sure they are live."** Scope he chose: all except ZTRADEZ (sub lapses
+tomorrow). Re-added 7: Options Watchlist, Vero 1, Vero 3, Platinum equity,
+NGD, shabs, eli. Kept out: 19 ZT rooms + Demon Alerts + MR.TOPHAT (same ZT
+guild, die with the sub). Why it's sound to re-add the "silent" ones: their
+silence was measured DURING the reload storm (tabs reloading every minute,
+profile bounced to /login), so the verdict was contaminated — the ledger
+re-measures them on clean data from here. shabs/eli direct ids are already
+in spx_entry_channels, so their SPX calls fire as SPY; the OWLS relay copy
+of the same call is caught by the dedupe ladder (echo-lock 20 s + per-trader
+claim). "Make sure they are live": rooms are live-by-default
+(channel_live !== false); ALL_LIVE_GEN bumped to 2026-09-09 so the sweep
+runs once more on load and clears any explicit TEST flag on anything.
+node --check clean; rooms.txt parses; manifest 3.5.68 → 3.5.69. The
+extension picks this up after hours; the 7 tabs open on the next START HERE.
+
 **2026-09-09 — THE TAB-RELOAD STORM, FOUND AND FIXED (v3.5.68).**
 G had flagged "tabs are refreshing" four times; earlier answers blamed
 memory pressure and tab count. He said "it's something in code, I know it."
