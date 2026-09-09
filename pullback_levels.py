@@ -238,6 +238,143 @@ def _px_at(bars, ts):
     return None
 
 
+# ---------- the exit that actually binds: the option ratchet, in stock $ ----------
+# The bridge's real exit on these trades is the RATCHET on the OPTION
+# (born -7.5%, arm to breakeven at +5%, +2% rungs) — it fires long before
+# the pullback's own $1 stock stop does. To compare grids under the exit
+# that really decides P&L, each alert's ratchet is translated into stock
+# dollars through its premium P and delta Δ:  a $m stock move ≈ Δ·m on the
+# option, so -7.5% of P is a stock move of 0.075·P/Δ.  P = the caller's
+# premium from the log; Δ from Black-Scholes with a per-name IV guess.
+# It is a proxy (no gamma, no spread) — good enough to RANK grids, not to
+# quote dollars to the cent.
+BORN_PCT, ARM_PCT, RUNG_PCT = 7.5, 5.0, 2.0
+IV_GUESS = {"TSLA": 0.60, "NVDA": 0.50, "AMD": 0.55, "META": 0.40, "AMZN": 0.38,
+            "GOOGL": 0.35, "GOOG": 0.35, "AAPL": 0.32, "MSFT": 0.26}
+PREM_RE = re.compile(r"\$?(\d{2,4}(?:\.\d+)?)\s*([CP])\b[^@\n]{0,60}@\s*\$?(\d+(?:\.\d+)?)")
+EXP_RE = re.compile(r"\b(\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}(?:/\d{2,4})?|([0-9])DTE)\b")
+_LOG_BY_SYM = None
+
+
+def _log_index():
+    """symbol -> [(ts, line)] once, for premium look-ups."""
+    global _LOG_BY_SYM
+    if _LOG_BY_SYM is not None:
+        return _LOG_BY_SYM
+    idx = defaultdict(list)
+    if os.path.exists(TRADES_LOG):
+        with open(TRADES_LOG, encoding="utf-8", errors="replace") as fh:
+            for ln in fh:
+                ts = _ep(ln.split("\t", 1)[0])
+                if ts is None:
+                    continue
+                for sym in BETA:
+                    if re.search(r"\b%s\b" % sym, ln):
+                        idx[sym].append((ts, ln))
+    _LOG_BY_SYM = idx
+    return idx
+
+
+def _norm_cdf(x):
+    return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+
+
+def _bs(S, K, T, iv, call):
+    """(price, delta) — r = 0, good enough for a 0-3 DTE proxy."""
+    T = max(T, 0.3 / 252.0)
+    d1 = (math.log(S / K) + 0.5 * iv * iv * T) / (iv * math.sqrt(T))
+    d2 = d1 - iv * math.sqrt(T)
+    if call:
+        return (S * _norm_cdf(d1) - K * _norm_cdf(d2), _norm_cdf(d1))
+    return (K * _norm_cdf(-d2) - S * _norm_cdf(-d1), -_norm_cdf(-d1))
+
+
+def contract_for(alert):
+    """(premium, delta, strike, dte) for the alert's contract — premium from
+    the caller's own line in the log when it's there, else Black-Scholes."""
+    sym, ts0, px0, side = alert["symbol"], alert["ts"], alert["px0"], alert["side"]
+    call = pullback.is_call(side)
+    strike = prem = None
+    dte = 1.0
+    for ts, ln in _log_index().get(sym, ()):
+        if abs(ts - ts0) > 180:
+            continue
+        m = PREM_RE.search(ln)
+        if not m or (m.group(2) == "C") != call:
+            continue
+        strike, prem = float(m.group(1)), float(m.group(3))
+        e = EXP_RE.search(ln[m.end(2):])
+        if e:
+            if e.group(2):
+                dte = float(e.group(2))
+            else:
+                try:
+                    txt = e.group(1)
+                    if "-" in txt:
+                        exp = datetime.strptime(txt, "%Y-%m-%d")
+                    else:
+                        parts = txt.split("/")
+                        yr = int(parts[2]) if len(parts) == 3 else datetime.fromtimestamp(ts0).year
+                        yr = yr + 2000 if yr < 100 else yr
+                        exp = datetime(yr, int(parts[0]), int(parts[1]))
+                    dte = max(0.0, (exp - datetime.fromtimestamp(ts0)).total_seconds() / 86400.0)
+                except (ValueError, IndexError):
+                    pass
+        break
+    if strike is None or px0 is None:
+        return None
+    iv = IV_GUESS.get(sym, 0.40)
+    bs_px, delta = _bs(px0, strike, (dte + 0.5) / 365.0, iv, call)
+    delta = min(0.75, max(0.15, abs(delta)))
+    if prem is None or prem <= 0:
+        prem = max(0.05, bs_px)
+    return {"premium": prem, "delta": delta, "strike": strike, "dte": dte}
+
+
+def replay_ratchet(alert, bars, grid, window, con):
+    """Same entry as replay(); exit = the option ratchet expressed in stock $.
+    Returns option-$ per contract (Δ-scaled), % of premium, armed flag."""
+    base = replay(alert, bars, grid, window)
+    if not base or not base["entered"] or not con:
+        return base
+    call = pullback.is_call(alert["side"])
+    e, entry_ts = base["entry"], base["entry_ts"]
+    unit = con["premium"] / con["delta"] / 100.0       # stock $ per 1% of premium
+    born, arm, rung = BORN_PCT * unit, ARM_PCT * unit, RUNG_PCT * unit
+    stop = e - born if call else e + born
+    armed, mfe = False, 0.0
+    day = datetime.fromtimestamp(entry_ts, ET)
+    flat_ts = day.replace(hour=FLATTEN[0], minute=FLATTEN[1], second=0).timestamp()
+    exit_px, why, last = None, "", e
+    for b in bars:
+        if b[0] <= entry_ts:
+            continue
+        if b[0] >= flat_ts:
+            break
+        hi, lo = b[2], b[3]
+        # stop checked with LAST bar's level — a spike-and-drop inside one
+        # second earns no arm
+        if (call and lo <= stop) or (not call and hi >= stop):
+            exit_px, why = stop, ("ratchet" if armed else "born stop")
+            break
+        fav = (hi - e) if call else (e - lo)
+        if fav > mfe:
+            mfe = fav
+            if mfe >= arm:
+                armed = True
+                k = math.floor((mfe - arm) / rung)
+                stop = (e + k * rung) if call else (e - k * rung)
+        last = b[4]
+    if exit_px is None:
+        exit_px, why = last, "flatten"
+    m = (exit_px - e) if call else (e - exit_px)
+    pct = con["delta"] * m / con["premium"] * 100.0
+    base.update({"r_pnl": round(m, 2), "r_why": why, "r_armed": armed,
+                 "r_pct": round(pct, 1), "r_opt": round(con["delta"] * m * 100.0, 2),
+                 "r_born_$": round(born, 2), "r_arm_$": round(arm, 2)})
+    return base
+
+
 def replay(alert, bars, grid, window):
     """One alert, one grid, one window → dict(entered, entry_ts, entry,
     exit, exit_why, pnl, mfe, mae) in stock $/share, or None w/o data."""
@@ -383,9 +520,63 @@ def main():
                  "The $1 replay agrees with the bridge's own touched/missed log on %d/%d arms."
                  % (len(usable), len(have), agree, total))
     lines.append("")
-    lines.append("Stock $/share; exit = the pullback's own rule for these names "
-                 "(stop $1.00 against, target $2.50 for, else 15:55 flatten). "
-                 "'per alert' counts the skipped ones as 0.")
+    # ---- A. under the exit that really fires: the option ratchet ----
+    cons = {id(a): contract_for(a) for a in usable}
+    with_con = [a for a in usable if cons[id(a)]]
+    lines.append("## A. Under the real exit — the 7.5/5/2 option ratchet (proxy in stock $)")
+    lines.append("")
+    lines.append("%d of %d alerts carry a premium in the log (the rest are priced by "
+                 "Black-Scholes). Option $ = per ONE contract, Δ-scaled. 'per alert' counts "
+                 "skipped alerts as 0. Born stop on these names works out to about $%.2f of "
+                 "stock, arm at $%.2f (medians)."
+                 % (len([a for a in with_con if True]), len(usable),
+                    sorted(BORN_PCT * cons[id(a)]["premium"] / cons[id(a)]["delta"] / 100.0
+                           for a in with_con)[len(with_con) // 2] if with_con else 0,
+                    sorted(ARM_PCT * cons[id(a)]["premium"] / cons[id(a)]["delta"] / 100.0
+                           for a in with_con)[len(with_con) // 2] if with_con else 0))
+    lines.append("")
+    lines.append("| grid | wait | entered | of %d | better entry | armed (reached +5%%) | born-stopped | "
+                 "option $ total | per alert | avg %% of premium |" % len(with_con))
+    lines.append("|---|---|---|---|---|---|---|---|---|---|")
+    best_r = {}
+    for grid in GRIDS:
+        for window in (WINDOWS if grid else (WINDOWS[0],)):
+            res = [replay_ratchet(a, bars[(a["symbol"], a["date"])], grid, window, cons[id(a)])
+                   for a in with_con]
+            ent = [r for r in res if r and r["entered"] and "r_opt" in r]
+            if not ent:
+                continue
+            tot = sum(r["r_opt"] for r in ent)
+            armed = sum(1 for r in ent if r["r_armed"])
+            born = sum(1 for r in ent if r["r_why"] == "born stop")
+            lines.append("| %s | %s | %d | %d%% | $%.2f | %d%% | %d%% | %+.0f | %+.2f | %+.1f%% |"
+                         % ("take it" if not grid else "$%g" % grid,
+                            "—" if not grid else "%d min" % (window // 60),
+                            len(ent), round(100.0 * len(ent) / len(with_con)),
+                            sum(r["improve"] for r in ent) / len(ent),
+                            round(100.0 * armed / len(ent)), round(100.0 * born / len(ent)),
+                            tot, tot / len(with_con),
+                            sum(r["r_pct"] for r in ent) / len(ent)))
+            best_r[(grid, window)] = (tot, len(ent))
+    lines.append("")
+    lines.append("Per symbol, ratchet exit, 10-minute wait (option $ total, entered/alerts):")
+    lines.append("")
+    lines.append("| symbol | alerts | " + " | ".join("take it" if not g else "$%g" % g for g in GRIDS) + " |")
+    lines.append("|---|---|" + "---|" * len(GRIDS))
+    for sym in BETA:
+        al = [a for a in with_con if a["symbol"] == sym]
+        if not al:
+            continue
+        cells = []
+        for grid in GRIDS:
+            res = [replay_ratchet(a, bars[(a["symbol"], a["date"])], grid, 600, cons[id(a)]) for a in al]
+            ent = [r for r in res if r and r["entered"] and "r_opt" in r]
+            cells.append("%+.0f (%d/%d)" % (sum(r["r_opt"] for r in ent), len(ent), len(al)))
+        lines.append("| %s | %d | %s |" % (sym, len(al), " | ".join(cells)))
+    lines.append("")
+    lines.append("## B. Under the pullback's own stock rule (stop $1.00 / target $2.50)")
+    lines.append("")
+    lines.append("Stock $/share; else 15:55 flatten. 'per alert' counts the skipped ones as 0.")
     lines.append("")
     lines.append("| grid | wait | entered | of %d | avg better entry | wins | losses | flat | "
                  "total $/sh | per alert | avg MFE | avg MAE |" % len(usable))
