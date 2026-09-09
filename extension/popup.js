@@ -800,8 +800,10 @@ async function _saveBracket() {
     if ($("bracketstate"))
       $("bracketstate").textContent = bracketOn
         ? (hardClose
-           ? "ON — every entry is 1 contract, +20% take-profit, −10% stop. Live and paper."
-           : "ON — every entry is 1 contract, −10% stop to start, ratcheting up past +20%. Live and paper.")
+           ? "ON — every entry is 1 contract, +" + tpPct + "% take-profit, −"
+             + slPct + "% stop. Live and paper."
+           : "ON — every entry is 1 contract, −" + slPct + "% stop to start, "
+             + "then the ratchet walks it up. Live and paper.")
         : "Off — sizing and exits go back to the room's calls.";
   } catch (e) {
     if ($("bracketstate"))

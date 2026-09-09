@@ -1831,13 +1831,9 @@ async function openMissingRooms() {
       await chrome.tabs.create({ url: r.url, active: false });
       opened++;
     } catch (e) { /* ignore */ }
-    if (opened >= 3) break;     // a few per pass; the alarm comes round again
+    if (opened >= 3) break;     // a few per pass; the caller comes round again
   }
-  if (opened) {
-    await addLog({ kind: "sent", what: "ROOMS",
-      why: "opened " + opened + " room tab(s) that weren't running — the "
-         + "missing rooms heal themselves now, no need to reopen everything." });
-  }
+  return opened;                // 9/9: the one-shot request needs the count
 }
 
 /* Does Whop push new messages into an open tab like Discord does, or only
@@ -2036,7 +2032,7 @@ chrome.alarms.onAlarm.addListener(a => {
   // tab is how he turns a room off. The launcher (START HERE) opens the tabs
   // once at startup; after that nothing reopens a tab he closed. Function left
   // defined-but-uncalled below in case it's ever wanted back.
-  if (a.name === "watch-build") { checkBuild(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); }
+  if (a.name === "watch-build") { checkBuild(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }

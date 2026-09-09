@@ -117,7 +117,17 @@ def key_of(trader, symbol):
 
 
 def ratchet_locked_pct(gain_pct, stop_loss_pct, take_profit_pct):
-    """His rule (8/15): the trade runs the normal -stop_loss_pct/+take_profit_pct
+    """DEAD CODE — KEPT ONLY FOR ITS OWN TEST (flagged 9/9). Nothing live calls
+    this. The LIVE ratchet is ratchet_tiers.ratchet_locked_pct, imported at the
+    top of this file as `tier_locked_pct` and called from auto_ratchet(). The
+    only caller of THIS function is test_positions.py. Editing it changes
+    nothing the bot does — change ratchet_tiers.TIERS instead. It also has a
+    different signature (the live one takes (gain, fill)) and describes the
+    RETIRED 8/15-9/7 rule; the live rule is arm +5% -> BE, then +2% rungs.
+
+    Historical description of the retired rule follows.
+
+    His rule (8/15): the trade runs the normal -stop_loss_pct/+take_profit_pct
     bracket to start, but once it reaches +take_profit_pct the stop WALKS UP
     instead of closing the position — locked at +stop_loss_pct profit first,
     then another +stop_loss_pct locked in for every further step of gain, where
@@ -1250,8 +1260,16 @@ class Book:
                 wb = self._wbfor(phantom)
                 if wb is not None:
                     _occ = phantom.get("occ") or self._occ_for(b)
-                    _ref = phantom.get("last_bid") or phantom.get("stop") \
-                        or fill
+                    # 9/9 BUG FIX: this fell back to `fill`, which is not
+                    # assigned until ~90 lines below, inside this same loop.
+                    # First pass through here with a phantom carrying neither
+                    # last_bid nor stop raised UnboundLocalError — and this
+                    # line sits OUTSIDE the try below, so it killed the whole
+                    # adopt() sweep. On any later pass it silently read the
+                    # PREVIOUS row's fill and priced an urgent sell for this
+                    # contract off a different one. Use the phantom's own fill.
+                    _ref = (phantom.get("last_bid") or phantom.get("stop")
+                            or phantom.get("fill") or b.get("fill"))
                     if note:
                         note("PHANTOM  %s — the book recorded '%s' but the "
                              "broker STILL holds it; that exit never filled. "
@@ -3004,12 +3022,15 @@ class Book:
                     % (sym, gain_pts, new_stop, locked, rung))
 
     def auto_ratchet(self, key, bid):
-        """His replacement for the hard take-profit close (8/15): once a
-        position reaches +take_profit_pct it no longer gets sold outright —
-        instead the STOP walks up to lock in +stop_loss_pct, and every further
-        step of gain (another take_profit_pct - stop_loss_pct) walks the stop
-        up another notch, so a winner can run forever and can never come back
-        red once it's locked. Uses the same resting-stop-at-Webull +
+        """His replacement for the hard take-profit close (8/15): a winner is
+        never sold outright — the STOP walks up instead, so it can run forever
+        and can never come back red once it's locked. The arm/lock/step numbers
+        come from ratchet_tiers.TIERS (9/9: arm +5% -> BREAKEVEN, then every
+        further +2% locks another +2%), NOT from take_profit_pct /
+        stop_loss_pct — those two settings no longer describe this rule, and an
+        earlier version of this docstring deriving the ladder from them is
+        exactly the drift bridge.py warns about at its boot banner. Uses the
+        same resting-stop-at-Webull +
         watchdog-checks-the-bid pair every other stop uses — this only ever
         decides a new price for that same mechanism, never a new one. Runs
         AFTER auto_take_profit in the watchdog and only if that left the
@@ -3027,16 +3048,15 @@ class Book:
             if not fill:
                 return
             gain = (float(bid) - fill) * dirn / fill * 100.0
-            # CHEAP-CONTRACT arm (his call, 8/25): a sub-$1.00 premium
-            # breathes +/-10-15% on pure noise, so its ratchet arms at +15%
-            # instead of +10% — otherwise the first wiggle scratches every
-            # 0DTE lotto at breakeven and the runners leave without him.
-            # Rungs after arming are unchanged.
-            # TIERED (v3.5.0, 9/2): the rung plan comes from what he PAID,
-            # not one global pair. <$1: arm +25%, lock +10%, 15% rungs (a
-            # $0.40 contract moves 2.5% a tick — 5% rungs get scratched by
-            # the quote). $1-2: arm +15%, BE, 10% rungs. $2+: arm +10%,
-            # lock +5%, 5% rungs. See ratchet_tiers.py.
+            # ONE LADDER FOR EVERY PREMIUM (9/9 settle): arm +5% -> lock
+            # BREAKEVEN, then every further +2% locks another +2%.
+            # ratchet_tiers.TIERS is a single ((None,(5.0,0.0,2.0)),) row —
+            # there are NO price tiers any more. The 8/25 cheap-contract arm
+            # and the 9/2 tiered plan that used to be described here are both
+            # RETIRED: the 294-combo sweep found cheap (<$1) loses under every
+            # spacing, so the cheap lever is sizing/filtering, not the ratchet.
+            # MIN_RUNG_TICKS=4 floors the 2% rung so it never goes sub-tick on
+            # a nickel-tick name. See ratchet_tiers.py.
             locked = tier_locked_pct(gain, fill)
             if locked is None:
                 return           # hasn't reached the first rung yet
@@ -3044,8 +3064,8 @@ class Book:
             # want the regular ratchet until we gather information about the
             # greeks, and then we'll do the anti-clip."
             #
-            # So: his plain ladder and nothing else — +10% to breakeven,
-            # +20% locks +10%, +30% locks +20%, uncapped. One rule, at every
+            # So: his plain ladder and nothing else — +5% to breakeven, then
+            # every further +2% locks another +2%, uncapped. One rule, at every
             # expiry, which also makes the next few weeks of recorded trades
             # a CLEAN sample: every trade ran the same rule, so the ratchet
             # lab is comparing rules instead of comparing two half-samples.
@@ -3056,8 +3076,8 @@ class Book:
             # ANTI-CLIP, BUT NOT ON 0/1DTE (9/3, his rule in one line:
             # "my rule on 0 and 1dte and anticlip on later expirations").
             # A 0DTE has no tomorrow — theta eats whatever it doesn't lock,
-            # so his ladder takes the gain: +10% -> BE, +20% -> +10%,
-            # +30% -> +20%. From 2 days out the trade has room to breathe
+            # so his ladder takes the gain: +5% -> BE, +7% -> +2%,
+            # +9% -> +4%, and on up. From 2 days out the trade has room to breathe
             # and anti-clip's 60%-of-gain cap keeps a runner from being
             # strangled by a rung (the 9/2 study).
             _dte = None
