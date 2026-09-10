@@ -9,6 +9,42 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**WHERE THE ROOM LABEL WAS GOING (9/10, G: "trace where the room label gets
+lost").** master_alerts.csv had a room on 18 of 323 rows. Two independent
+defects, both upstream of build_alerts, neither of them in the trading path.
+1. THE CALLER KEY NEVER MATCHED. telemetry.record_fill reads p.get("trader").
+   positions.py and the ledger call that field **who**. So `trader` was empty
+   on 0 of 2,176 telemetry rows — every one. That is also why the per-caller
+   telemetry scorecard has always looked empty. FIXED in telemetry.py: read
+   `trader` OR `who`, prefer whichever is filled. telemetry.py is a passive
+   CSV writer, so this cannot touch order placement — deliberate, the market
+   was open when it was found.
+2. THE ROOM IS NEVER IN THE LOG LINE. Every roomless row came from
+   source=trades.log. The line the miss-parser reads —
+   "REFUSED OPEN NFLX (EvaPanda Alerts's call) 75C ..." — names the CALLER
+   and never the room, so there was nothing to parse. The room is NOT lost
+   though: master_ledger carries it on 26 of 26 rows on a normal day. It was
+   simply never joined. FIXED in build_alerts.py: _room_index() builds
+   (date, SYMBOL) -> room and caller -> room from the ledger and backfills;
+   a caller seen in more than one room is left blank rather than guessed.
+   Retroactive — it repaired the whole history, not just new rows.
+3. AND THE RAW IDS. Rooms were landing as "1334236429655740457" /
+   "911389167169191946" because the bridge's hand-typed ROOM_LABELS map is
+   missing them. build_alerts now reads the labels from extension/rooms.txt,
+   which is THE list and already has every one — rather than maintaining a
+   second copy, which is the exact mistake rooms.txt's own header warns
+   about. 28 ids resolved.
+RESULT: rooms named went 18/323 (6%) -> 156/324 (48%), zero raw ids left.
+The remaining 168 are 39 junk rows (below) plus refusals on contracts that
+never became a ledger row, so there is nothing to join them to. Fixing those
+properly means putting the room in the trades.log line itself — a bridge.py
+change, queued for after the close.
+STILL OPEN: 39 of 324 rows are JUNK — symbol "?" with raw text that is not an
+alert at all. 30 of them are one DOCSTRING sentence ("test account: unlimited.
+Nothing is refused for money...") that misses.py matches as a refusal, plus 4
+Topstep PROP-NO status lines. One real refusal (V 400C) is also symbol-less
+because the symbol regex wants 2+ characters and V is one. Not fixed today.
+
 **HALF THE CORPUS WAS BEING DESTROYED EVERY DAY (9/10, found while answering
 G: "check all rooms, last message, make sure it's correct").** Both Chrome
 profiles run the same background.js and both wrote the export to ONE filename,
