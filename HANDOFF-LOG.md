@@ -9,6 +9,33 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-10 02:30 — THE BROKER PULL WAS SILENTLY TRUNCATED. FIXED; THE REAL
+NUMBER IS −$4,228.** G, on the 13 rows the broker seemed never to have heard
+of: "those tickers were just recently cancelled, they were allowed before."
+Right — and it exposed the real fault: **get_order_history caps at 100
+orders per call and drops the rest with no error and no flag.** Every wide
+window I pulled looked complete and wasn't; August was missing roughly a
+third of its orders, which is why IBM, BAC and ZETA appeared to be trades
+the broker had no record of. A single narrow 8/11-8/12 pull showed all
+three immediately.
+FIX: page with last_client_order_id until a page returns <100. August took
+FOUR pages (100 + 100 + 72, and 100 + 100 + 100 + 27 for the two windows).
+Broker legs 1,242 → 1,593; ledger 763 → 950 rows; broker-settled coverage
+75% → 80%; rows needing a computed-from-prices P&L fell 26 → 20 because the
+broker now answers for six of them directly.
+THE NUMBER MOVED THE WAY G KEPT SAYING IT WOULD. 510 round-trips −$802
+became **705 round-trips −$4,228** (32% win rate, avg win +$79, avg loss
+−$47). The 195 recovered round-trips were net −$3,426 — the missing losing
+trades, exactly as he suspected three times tonight. Month: June −70, July
+−335, Aug −4,544, Sep +721. Worst days 8/24 −$1,325, 8/17 −$1,048.
+THE SPLIT STILL MATTERS: G's own hand trading is −$4,332 over 665 closed
+trades; THE BOT is +$301 over 143. August's damage is his manual scalping,
+not the rooms.
+STILL OPEN: 112 book-priced rows (−$975) and 62 with no exit on record.
+LESSON: a paginated API that silently truncates is worse than one that
+errors. Any future puller must assert "page < limit" before trusting a
+window, and the same suspicion applies to every other bulk read.
+
 **2026-09-10 01:45 — "SKHY ACTUALLY MADE ME LIKE 300" — HE WAS RIGHT AGAIN.**
 I had used SKHY as the headline example of the proceeds-as-profit bug
 ("sold 5.90, booked +590, really −$11"). G knew that trade made money.

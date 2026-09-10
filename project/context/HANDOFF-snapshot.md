@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (01:15) — P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (510 round-trips, −$802 all in; the bot's own closed trades +$273); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-10 (01:15) — P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -404,11 +404,22 @@ FILL ANNOUNCER (announcer.py, read-only)
   the broker's export still outranks both), and the whole broker history
   6/12→9/09 was pulled from Webull (1,186 orders, MCP get_order_history in
   ≤100-order windows → Webull_Orders_2026-history_auto.csv → absorbed).
-  THE REAL NUMBERS, from the broker: 510 completed round-trips, −$802 all
-  in; 35% win rate, avg win +$85, avg loss −$48. Split: G's OWN hand
-  trading is 482 trades, −$920 (June −70, July −335 — the bot did not exist
-  until 8/06 — Aug −1,200, Sep +685); the bot's own closed trades come to
-  +$273. Do not quote a bot P&L from anything but broker-priced rows.
+  THE PULL MUST BE PAGED OR IT LIES QUIETLY (9/10). get_order_history caps
+  at 100 orders per call and returns the newest first — a wide window drops
+  the REST WITHOUT SAYING SO. The first sweep looked complete and was
+  missing a third of August; that is why IBM/BAC/ZETA looked like trades
+  the broker had never heard of (G: "those tickers were allowed before" —
+  he was right, they were real). RULE: after every window, if it returned
+  exactly 100 orders there IS another page — re-request with
+  last_client_order_id = the last combo's client_order_id and keep going
+  until a page returns fewer than 100. August took 4 pages.
+  THE REAL NUMBERS, from the properly paged broker record: 705 completed
+  round-trips, −$4,228 all in; 32% win rate, avg win +$79, avg loss −$47.
+  Split: G's OWN hand trading −$4,332 over 665 closed trades; THE BOT is
+  +$301 over 143. By month: June −70, July −335 (both 100% G, the bot did
+  not exist until 8/06), Aug −4,544, Sep +721. Worst days 8/24 −1,325 and
+  8/17 −1,048. Do not quote a P&L from anything but broker-priced rows.
+  COVERAGE TODAY: 728 of 905 real fills (80%) are broker-settled.
   TWO MORE BUGS THE SAME NIGHT, both found by G spot-checking one trade
   ("SKHY actually made me like 300"): (a) THE BROKER DATES A TRADE BY ITS
   ENTRY, THE BOOK BY ITS EXIT — SKHY was bought 8/11 and sold 8/12, so an
