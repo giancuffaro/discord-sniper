@@ -9,6 +9,50 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**THE ENTRY GATE: ROUND NUMBER x QUARTER-HOUR (9/10, G: "can only execute if
+20 cents from a round number and 2 minutes from every quarter — that's when
+volume explodes").** Bought the missing stock bars ($0.38, 61 symbol-days) so
+all 119 trades have a real underlying at entry, then tested both gates alone
+and together with a two-sample bootstrap AND a permutation test.
+  * THE TIME HALF IS DEAD. Within 2 min of :00/:15/:30/:45 -> p=0.923. Within
+    5 min -> p=0.954. Those are about as close to "no effect at all" as a
+    test returns. Drop the single best trade from the 2-min group and it goes
+    from +$2.39 to -$7.03 a trade.
+  * HIS EXACT RULE WOULD HAVE LOST MONEY. <=2min AND <=20c takes 16 trades at
+    -$7.11 each (-$114 total) and SKIPS 103 trades worth +$314. It is the
+    worst of the seven gate combinations tried.
+  * THE ROUND-NUMBER HALF IS THE STRONGEST ENTRY SIGNAL FOUND ALL DAY AND
+    STILL DOES NOT CLEAR THE BAR. Within 35c of a whole dollar: +$5.46/trade
+    vs -$7.02 outside it, a +$12.47 gap. Bootstrap band +$2.01..+$25.35
+    (excludes zero) but permutation p=0.137, and without its single best
+    trade the edge falls to +$1.13. When the two tests disagree the
+    permutation is the one to believe. NOT ACTED ON. It does agree in
+    direction with the $1 pullback rule already live, which has its own
+    independent support (9/9, 106 alerts, 2.6x noise).
+  * Both dimensions are NON-MONOTONIC — within 10c is worse than within 20c;
+    within 2 min is worse than within 1 or 3. There is no mechanism where
+    being 5c from a round number is bad and 15c is good. That shape is the
+    signature of noise, not of an edge.
+
+**WHY EVERY STUDY TODAY CAME BACK "INSIDE THE NOISE" — THE ARITHMETIC.**
+Per-trade P&L on the 115: mean +$4.38, standard deviation **$47.68**. The
+spread is eleven times the average. At 80% power and p<0.05, splitting the
+sample in half, the minimum detectable edge is:
+      n=  119   ->  $24.47 a trade
+      n=  250   ->  $16.89
+      n=  500   ->  $11.94
+      n= 1000   ->  $ 8.44
+      n= 2000   ->  $ 5.97
+Nothing realistic about stop placement or entry timing is worth $24 a trade.
+So at n=119 these questions are NOT ANSWERABLE, however the test is dressed
+up — and a backtest that says otherwise is fitting noise. The only finding
+today that survived was the one replicated across eight independent filters
+(widening the ratchet is worse in all of them), which is why it counted.
+At ~2.5 room calls a day: n=250 is ~10 trading weeks away, n=500 is ~30.
+THE RULE THIS BUYS: stop tuning on this sample. Collect trades. Re-run when
+the count doubles. Anything tested between now and then needs to clear
+roughly $17-24 a trade or it is not real.
+
 **FOUR THINGS TESTED ON THE TAPE, FOUR NEGATIVE RESULTS (9/10).** Recorded so
 nobody re-runs them on a hunch. All on the same 115 trades, live ladder 5/3/5,
 each judged by a paired bootstrap and not by the headline dollar.
