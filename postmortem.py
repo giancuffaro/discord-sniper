@@ -341,17 +341,32 @@ def _md(res):
 
 def _write(res):
     os.makedirs(OUT_DIR, exist_ok=True)
-    fn = "%s_%s.md" % (res["date"], res["occ"] or res["symbol"])
+    base = "%s_%s" % (res["date"], res["occ"] or res["symbol"])
+    # SAME CONTRACT, SAME DAY, TWO ROUND TRIPS (9/10 — SPY 758C traded twice
+    # in one morning, ~90s apart): (date, occ) used to be this trade's whole
+    # identity, both for the .md filename and the master_postmortems.csv
+    # replace-key. The second trade silently overwrote the first one's file
+    # AND its csv row — no error, nothing to grep, the first trade's whole
+    # record just vanished. fill+exit (to the cent) tell two real trades
+    # apart; a re-run of the SAME trade still has the same fill+exit and
+    # correctly replaces its own prior write instead of piling up.
+    existing = [x for x in _read_postmortems_csv()
+                if x.get("date") == res["date"] and x.get("occ") == res["occ"]]
+    same_trade = any(_f(x.get("fill")) == res.get("fill")
+                     and _f(x.get("exit")) == res.get("exit") for x in existing)
+    other_trades = len(existing) - (1 if same_trade else 0)
+    fn = "%s.md" % base if (same_trade or not existing) else \
+         "%s-%d.md" % (base, other_trades + 2)
     path = os.path.join(OUT_DIR, fn)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(_md(res))
     res["file"] = "postmortems/" + fn
-    # central csv: replace this (date, occ) row if present
-    rows = []
-    if os.path.exists(OUT_CSV):
-        with open(OUT_CSV, encoding="utf-8", newline="") as fh:
-            rows = [x for x in csv.DictReader(fh)
-                    if not (x.get("date") == res["date"] and x.get("occ") == res["occ"])]
+    # central csv: replace THIS trade's row (date, occ, fill, exit) if
+    # present; a different trade on the same (date, occ) is kept, not lost.
+    rows = [x for x in _read_postmortems_csv()
+            if not (x.get("date") == res["date"] and x.get("occ") == res["occ"]
+                    and _f(x.get("fill")) == res.get("fill")
+                    and _f(x.get("exit")) == res.get("exit"))]
     rows.append({c: ("" if res.get(c) is None else res.get(c)) for c in COLUMNS})
     rows.sort(key=lambda x: (x.get("date") or "", x.get("occ") or ""))
     tmp = OUT_CSV + ".tmp"
@@ -362,6 +377,13 @@ def _write(res):
             w.writerow({c: x.get(c, "") for c in COLUMNS})
     os.replace(tmp, OUT_CSV)
     return path
+
+
+def _read_postmortems_csv():
+    if not os.path.exists(OUT_CSV):
+        return []
+    with open(OUT_CSV, encoding="utf-8", newline="") as fh:
+        return list(csv.DictReader(fh))
 
 
 # ---------- entry points ----------
