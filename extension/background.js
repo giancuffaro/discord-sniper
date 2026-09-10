@@ -2548,6 +2548,22 @@ async function whopSelfHeal() {
     if (profile_lane !== "whop") return;
   } catch (e) { return; }
   try { await openMissingRooms(); } catch (e) {}
+  // THE HEARTBEAT (9/10, same day as the self-heal above). _whop_loop.bat
+  // used to guess whether this profile's Chrome was alive by matching
+  // --profile-directory in the process list — found spamming a relaunch
+  // every ~60-70s the same afternoon (Chrome's shared-process behavior
+  // made that match unreliable). This is the honest signal instead: every
+  // tick this actually runs in the whop lane, ping the bridge so the
+  // watchdog can check "how long since the whop lane last checked in"
+  // instead of guessing from outside the process. Fire-and-forget, like
+  // tapeRead() — never allowed to block or throw.
+  try {
+    const c = await cfg();
+    await fetch(bridgeBaseFrom(c.bridge_url) + "/whopalive", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: "{}", cache: "no-store"
+    });
+  } catch (e) {}
 }
 
 chrome.alarms.onAlarm.addListener(a => {
