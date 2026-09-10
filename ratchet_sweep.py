@@ -250,6 +250,24 @@ def main():
             d["best"] += bst
             if cur > 0:
                 d["win"] += 1
+        # IS THE WINNER REAL? 115 trades is small. Paired difference per
+        # trade (best minus current on the SAME trade), bootstrapped 2000x.
+        # If the 95% band straddles zero, the ranking is this sample's noise
+        # and the live numbers should not move on it.
+        import random
+        diffs = [simulate_one(t, best["born_stop_pct"], best["arm_to_be_pct"])[0] / 100.0
+                 * t["entry"] * CONTRACT_MULT
+                 - simulate_one(t, 7.5, 5.0)[0] / 100.0 * t["entry"] * CONTRACT_MULT
+                 for t in trades]
+        rnd = random.Random(7)
+        means = sorted(sum(rnd.choice(diffs) for _ in diffs) / len(diffs)
+                       for _ in range(2000))
+        lo, hi = means[50], means[1949]
+        print()
+        print("IS IT REAL? best-minus-current per trade: $%+.2f  95%% band $%+.2f..$%+.2f  -> %s"
+              % (sum(diffs) / len(diffs), lo, hi,
+                 "REAL" if lo > 0 or hi < 0 else "INSIDE THE NOISE"))
+
         print()
         print("BY CALLER — current rule (7.5/5) vs grid best (%.1f/%.1f)"
               % (best["born_stop_pct"], best["arm_to_be_pct"]))
