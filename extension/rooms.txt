@@ -263,6 +263,23 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # Mostly 30-70 DTE — these are SWINGS, so the wide -25% swing stop runs them,
 # re-armed at 9:31 each morning, not the intraday ratchet.
 1235366372385493074|https://discord.com/channels/718624848812834903/1235366372385493074|AbTrades Alert Bot|AbTrades|on|bare
+# OWLS #jon-and-kian — ADDED 9/10, READ LIVE off G's link (30 messages, 9/1-9/10).
+# Channel topic: "Mainly Swing trades based on unusual options activity" — so
+# these ride the wide swing stop, not the intraday ratchet.
+# Two callers, one alert bot ("OWLS Capital Clanker"), every post labelled:
+#   OPEN:   "RKLB 70C 10/16 Exp. at 3.60"                     (Jon)
+#   OPEN:   "bit of a chase here but FRVO 25C 3/19exp 4.05 premium"  (Kian)
+#   OPEN:   "PURR 15C 1/15exp 2.15 premium"    <- a JANUARY leap, not a weekly
+#   plain:  "T 29C 01/15/2027 Exp. At 0.50 @everyone"         (Jon, no label)
+#   CLOSE:/Update: are exits and running P&L — EXIT-IGNORED, never traded.
+# NO RULES NEEDED. But reading it found three real defects, all fixed 9/10 and
+# held by test_owls_jonkian.js: the date GLUED to "exp" was being dropped
+# (would have bought PURR's January contract as this Friday); a price with no
+# "@" in front of it was ignored, so every entry here bid the market; and the
+# label CLOSE was being read as the ticker.
+# They also trade COMMONS ("CHGG commons at .83") — correctly ignored, this
+# machine trades options and futures.
+728711121128652851|https://discord.com/channels/718624848812834903/728711121128652851|OWLS jon-and-kian|OWLS Capital|on
 
 # ============================================================
 # FULL-DEPTH SCAN, 9/10/26 (G: "go channel by channel, don't skip any; the
