@@ -312,3 +312,5 @@ date,time,room,caller,symbol,side,strike,expiry,dte,their_price,qty,outcome,reas
 2026-09-10,09:54,,,TSLA,,,,,,,PULLBACK never hit,PULLBACK never hit,TSLA ($364),,,,,,,,,,,,,,,,,,,,False,trades.log,"PULLBACK TSLA: never touched $364 in 10 min — skipped, as designed"
 2026-09-10,10:05:34,OWLS all-alerts,,META,CALLS,675,9/11,,1.12,1,filled,,,1.0,-0.12,-10.71,1789049116.366,1789049119.639,1789049132.3152313,1789049134.1314182,3273.0,12676.2,1816.2,17765.4,1.05,1.09,3.74,,,1,cmtvlnjivppus4q,2026-09-10|META|1.00,True,telemetry,
 2026-09-10,10:12,,,SPY,,,,,,,PULLBACK never hit,PULLBACK never hit,SPY ($758),,,,,,,,,,,,,,,,,,,,False,trades.log,"PULLBACK SPY: never touched $758 in 10 min — skipped, as designed"
+2026-09-10,10:19,,,DAL,,,,,,,SWINGS paused,SWINGS paused,DAL,,,,,,,,,,,,,,,,,,,,False,trades.log,SWING-OFF DAL refused — swing trades are PAUSED (11/20 is 71 days out (14+ days is a swing here)). Nothing was sent.
+2026-09-10,10:21,,,META,,,,,,,PULLBACK never hit,PULLBACK never hit,META ($647),,,,,,,,,,,,,,,,,,,,False,trades.log,"PULLBACK META: never touched $647 in 10 min — skipped, as designed"
