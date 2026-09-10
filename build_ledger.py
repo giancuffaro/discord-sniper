@@ -463,7 +463,8 @@ def load_broker_exports():
             lot = lots[l["occ"]][0]
             take = min(q, lot["qty"])
             trips.append({
-                "date": lot["date"], "occ": l["occ"], "symbol": l["symbol"],
+                "date": lot["date"], "sell_date": l["date"],
+                "occ": l["occ"], "symbol": l["symbol"],
                 "cp": l["cp"], "strike": l["strike"], "expiry": l["expiry"],
                 "qty": take, "buy": lot["px"], "buy_ts": lot["ts"],
                 "sell": l["px"], "sell_ts": l["ts"],
@@ -481,6 +482,7 @@ def load_broker_exports():
                     "cp": lot["cp"], "strike": lot["strike"], "expiry": lot["expiry"],
                     "qty": lot["qty"], "buy": lot["px"], "buy_ts": lot["ts"],
                     "sell": None, "sell_ts": None, "pl": None,
+                    "sell_date": lot["date"],
                 })
     return trips
 
@@ -513,7 +515,17 @@ def build():
         are real contract counts) and only rejects a mismatch like this one.
         """
         for i, t in enumerate(trips):
-            if trip_used[i] or t["date"] != date or t["symbol"] != sym:
+            # THE BROKER DATES A TRADE BY ITS ENTRY, THE BOOK BY ITS EXIT
+            # (9/10, found from G's "SKHY actually made me like 300"). SKHY
+            # was bought 8/11 and sold 8/12: the broker's round-trip sits on
+            # 8/11, the book's row on 8/12, so an entry-date-only match found
+            # nothing — the book row kept its own WRONG exit (5.90 vs the
+            # broker's real 8.50: -$11 booked instead of +$249) and the
+            # broker's trip was ALSO emitted as its own row, so the trade
+            # appeared twice. Match either end of the round-trip.
+            if trip_used[i] or t["symbol"] != sym:
+                continue
+            if date not in (t["date"], t.get("sell_date")):
                 continue
             if strike is not None and abs(t["strike"] - strike) > 0.001:
                 continue
