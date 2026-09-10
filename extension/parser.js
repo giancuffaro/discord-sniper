@@ -999,6 +999,22 @@ function tokenContract(text, cfg) {
    *     "$mrvl 10.16 250c 11.5 ... gapper fill"  64
    *     "AAPL 9/14. $330 CALL .87 SL .5 TP 1.24" 38 */
   if (t.length > 120) return null;
+  /* RAIL 8, AND THE HONEST ONE: `bare` ROOMS ONLY, for now.
+   * Three gate runs in, the pattern was clear. This reader is right on short,
+   * well-formed calls and wrong on the ZTRADEZ relay blobs, where one message
+   * is a whole conversation and the strike belongs to a sentence three lines
+   * up. Each rail I added to separate those cut real alerts along with the
+   * bad ones — which is the point at which you stop tuning heuristics and
+   * admit what the evidence supports.
+   * The corpus cannot settle it either way: the only rooms that exercise this
+   * path are the relay blobs, and ZTRADEZ is dead (sub cut 9/9). So it runs
+   * where it was asked for and where its behaviour is known — the `bare`
+   * rooms — and the moment a live room needs it elsewhere, that room's own
+   * messages become the evidence for widening it.
+   * NOTE the date work is NOT scoped: expiryAnywhere now knows month+year and
+   * month+monthly for EVERY room, which corrected 16 real orders that were
+   * firing with no expiry at all. That was the bigger safety win. */
+  if (!(cfg && cfg.entry_no_verb)) return null;
 
   // --- strike + side: exactly one, or refuse -------------------------------
   RE_TOK_STRIKESIDE.lastIndex = 0;
