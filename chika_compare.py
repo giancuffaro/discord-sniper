@@ -62,6 +62,19 @@ SESSIONS = {
     ("17:00", "SHORT", 230, 245, "18:00"),   # "got a short 230, stop 245"
     ("18:53", "SHORT", 195, None, "19:54"),  # "short 195 pivot" -> "+65 trim"
   ],
+  # 9/02 and 9/03 — 15-MINUTE bars only, so a trade that lasted five minutes
+  # cannot be scored at all: the exit price would be up to fifteen minutes
+  # wrong on a move that took two. ONLY trades lasting >= 2x the bar are
+  # listed, which is most of her sessions thrown away — 3 of ~17. Listing the
+  # rest would be inventing precision the data does not have, which is the
+  # mistake the Tradytics run made this morning.
+  "2026-09-02": [
+    ("17:14", "SHORT", 153, 165,  "17:44"),  # "am short nascock, 153 pivot" -> "flat" (30 min)
+    ("19:01", "SHORT", 153, 181,  "19:44"),  # "taking a flip here pivot short 153" -> "stopped" (43 min)
+  ],
+  "2026-09-03": [
+    ("18:51", "SHORT", 538, None, "19:52"),  # "one more attempt same bet" -> "all out +60" (61 min)
+  ],
   # 9/4 — 5-MINUTE bars. Her exit times are therefore good to about five
   # minutes, which on a trade that lasts two is real slop. Reported, not hidden.
   "2026-09-04": [
@@ -242,7 +255,7 @@ def _summary(her_tot, our_tot, skipped, unknown, taken, n):
     print("  Difference : %+.0f points in favour of %s"
           % (abs(her_tot - our_tot), "HER" if her_tot > our_tot else "OURS"))
     print()
-    print("  n=%d entries over 2 sessions. That is a story, not evidence — it says" % n)
+    print("  n=%d entries over 4 sessions. That is a story, not evidence — it says" % n)
     print("  which way to look, not what to do. read-only keeps collecting.")
 
 
