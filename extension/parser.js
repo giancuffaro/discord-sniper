@@ -665,6 +665,16 @@ function extraStrikes(text, first) {
     if (m[2][0].toUpperCase() !== want) continue;
     if (k === first.strike || seen(k, first.expiry)) continue;
     if (Math.abs(k - first.strike) > 0.4 * first.strike) continue;
+    // WHOSE STRIKE IS IT? A bare "370c" inherits the first contract's ticker,
+    // so if a DIFFERENT ticker is written just in front of it, it is not a
+    // sibling — it is somebody else's contract on the same line:
+    //   "$AMZN 11/20 300c 4.8  $GOOGL 11/20 370c 8.3"
+    // Two tickers in one message is the shape of a levels row and a
+    // watchlist. Take the first and leave the rest alone.
+    const lead = /(?:^|[^A-Za-z])\$?([A-Za-z]{2,5})\s*(?:\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d*\s*dte)?\s*$/i
+      .exec(text.slice(Math.max(0, m.index - 18), m.index));
+    if (lead && lead[1].toUpperCase() !== String(first.symbol || "").toUpperCase()
+        && !/^(AND|THE|AT|IN|OR|TO|FOR|ON|A)$/i.test(lead[1])) continue;
     out.push({ strike: k, side: first.side, expiry: first.expiry || null,
                limit: null });
   }
@@ -685,7 +695,11 @@ function extraStrikes(text, first) {
     if (!m[5] || m[5].toLowerCase()[0] !== want.toLowerCase()) continue;
     let e = ((m[2] || m[4]) || "").toUpperCase().trim() || null;
     if (e && /DTE$/.test(e)) e = e.replace(/\s+/g, "");
-    if (k === first.strike && (e || null) === (first.expiry || null)) continue;
+    // The FIRST contract matches this pattern too. Skip it — and skip it even
+    // when this pass read no date off it (findContract often picks the expiry
+    // up from elsewhere in the line), because "same strike, no date of its
+    // own" is the first contract being seen twice, not a second position.
+    if (k === first.strike && (!e || e === (first.expiry || null))) continue;
     if (seen(k, e)) continue;
     // its own price, if one trails it: "30c .9" / "30c @ 2.75"
     const after = text.slice(RE_CONTRACT.lastIndex, RE_CONTRACT.lastIndex + 12);
