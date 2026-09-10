@@ -3452,8 +3452,12 @@ _MONTHS = {"JANUARY": 1, "JAN": 1, "FEBRUARY": 2, "FEB": 2, "MARCH": 3,
            "SEPT": 9, "SEP": 9, "OCTOBER": 10, "OCT": 10, "NOVEMBER": 11,
            "NOV": 11, "DECEMBER": 12, "DEC": 12}
 
-# "next week" the way people actually type it, typos and all.
-_RE_NEXT_WEEK = _re_o.compile(r"\bnext\s*(?:w[ek]{1,3}k?|week)\b", _re_o.I)
+# "next week" the way people actually type it, typos and all — plus "NEXT FRI"
+# / "NEXT FRIDAY" (9/10, TheArchitech: "$NVDA $225C/ and $230C NEXT FRI").
+# Both land on the same date: next week's Friday. Weeklies expire Friday, so
+# "next Friday" and "next week" name the same contract.
+_RE_NEXT_WEEK = _re_o.compile(
+    r"\bnext\s*(?:w[ek]{1,3}k?|week|fri(?:day)?)\b", _re_o.I)
 # A month name standing on its own near a contract. NOT anchored loosely on
 # purpose: "may" is also an ordinary English word ("this may run"), so the
 # lowercase form is only accepted when it is clearly a date token.
@@ -5133,12 +5137,21 @@ class Handler(BaseHTTPRequestHandler):
         # blanket Friday WAS picking a duration out of the air on exactly
         # the tickers where 0DTE vs Friday is a completely different trade.
         # His call: those default to 0DTE, which is how those rooms trade.
+        #
+        # 9/10, G restated it flatly: "if it doesn't have a date, it defaults
+        # to zero DTE." That is what happens here for every root that HAS a
+        # same-day listing — the list is DAILY_EXPIRY_ROOTS, no longer three
+        # hard-coded ETFs, so SPX/XSP/NDX/RUT obey the rule the day an
+        # index-capable broker is connected. On a single stock there is no
+        # such contract to buy: Friday is not a softer default, it is the only
+        # listing that exists that week, and 29 of the 35 dateless alerts in
+        # the journal were single stocks.
         if (order.get("action") in ("OPEN", "ADD") and order.get("strike")
                 and not order.get("expiry")
                 and EXEC.get("assume_weekly_expiry", True)):
             try:
-                from webull_options import weekly_expiry
-                if sym in ("SPY", "QQQ", "IWM"):
+                from webull_options import weekly_expiry, DAILY_EXPIRY_ROOTS
+                if sym in DAILY_EXPIRY_ROOTS:
                     order["expiry"] = _date_o.date.today().isoformat()
                     note("no date and no clue on %s — using TODAY (%s). "
                          "These are the only tickers where a midweek 0DTE "

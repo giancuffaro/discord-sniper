@@ -68,6 +68,15 @@ class _ComboUnsupported(Exception):
 
 # --- turning the room's shorthand into a real contract -----------------------
 
+# The only roots with a MONDAY-TO-FRIDAY listing. "No date means 0DTE" (G,
+# 9/10) can only be obeyed where a same-day contract actually exists; on a
+# single stock the nearest listing is that Friday and there is nothing else to
+# buy. Index roots are listed here so the rule is already right the day an
+# index-capable broker is connected — SPX orders do not go to Webull.
+DAILY_EXPIRY_ROOTS = ("SPY", "QQQ", "IWM",
+                      "SPX", "SPXW", "XSP", "NDX", "NDXP", "RUT", "RUTW")
+
+
 def _is_trading_day(d):
     """Mon-Fri and not a market holiday. HOLIDAYS is the same list the rest of
     this file walks off; if it ever goes stale the worst case is naming a
