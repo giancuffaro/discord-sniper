@@ -2687,7 +2687,15 @@ async function autoExportForLearning() {
   // and kept minting "(1)(2)(3)" duplicates instead of overwriting — the
   // bridge writes the real file properly, same name all day. Chrome
   // download stays as the fallback for a bridge-down moment.
-  const fname = "signal-room-chat " + fileDay + ".txt";
+  // ONE FILE PER DAY **PER LANE** (9/10). Both Chrome profiles run this same
+  // code and both wrote "signal-room-chat <day>.txt", so whichever exported
+  // LAST wiped the other's whole day. Measured across three days: 9/8 kept
+  // 103 Whop lines and ZERO Discord, 9/9 kept 373 Discord and 22 Whop, 9/10
+  // kept 16 Whop and ZERO Discord. Half the corpus was being destroyed daily
+  // — and the corpus is the entire point of the export. The lane goes in the
+  // NAME so the two can never collide again.
+  const lane = (await chrome.storage.local.get("profile_lane")).profile_lane || "discord";
+  const fname = "signal-room-chat " + fileDay + " (" + lane + ").txt";
   try {
     const c2 = await cfg();
     const r = await fetch(bridgeBaseFrom(c2.bridge_url) + "/exportlog", {

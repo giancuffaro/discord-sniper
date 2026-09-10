@@ -40,7 +40,7 @@ SKIP = ("Sniper HQ", "this room")
 
 
 def day_of(path):
-    m = re.search(r"signal-room-chat (\w+-\d+-\d+)\.txt$", os.path.basename(path))
+    m = re.search(r"signal-room-chat (\w+-\d+-\d+)(?: \([a-z]+\))?\.txt$", os.path.basename(path))
     if not m:
         return None
     try:

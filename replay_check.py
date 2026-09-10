@@ -33,6 +33,10 @@ SKIP_ROOMS = ("Sniper HQ", "this room")           # our own output / voice
 
 
 def newest_export():
+    """9/10: exports are now "<day> (discord).txt" / "<day> (whop).txt" — both
+    profiles used to write ONE name and clobber each other's whole day. The
+    glob already matches both; taking the newest mtime is still right for
+    "what just happened", and export_for_day below reads EVERY lane for a day."""
     fs = sorted(glob.glob(os.path.join(HERE, "DS Logs", "signal-room-chat*.txt")),
                 key=os.path.getmtime)
     return fs[-1] if fs else None
@@ -50,7 +54,7 @@ def export_for_day(day):
     """
     fs = sorted(glob.glob(os.path.join(HERE, "DS Logs", "signal-room-chat*.txt")))
     for f in fs:
-        m = re.search(r"signal-room-chat (\w+-\d+-\d+)\.txt$", os.path.basename(f))
+        m = re.search(r"signal-room-chat (\w+-\d+-\d+)(?: \([a-z]+\))?\.txt$", os.path.basename(f))
         if not m:
             continue
         try:
