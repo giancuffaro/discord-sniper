@@ -601,6 +601,38 @@ function blockedTicker(sym, text) {
   return !(rescue && rescue.test(String(text || "")));
 }
 
+/* THE TICKER AFTER THE CONTRACT (9/10, G on TheArchitech: "it doesn't matter
+ * the order of the expiration or the price or the ticker, it could be in any
+ * order").
+ *
+ * RE_CONTRACT has the symbol as group 1, so it can only ever match
+ * SYMBOL...STRIKE C/P. Three of his four formats put the ticker LAST and all
+ * three died as "nothing in it that means buy or sell":
+ *      "8/24 $255P $AMZN"          "2DTE $765C SPY CALLS"     "9/12 765C SPY"
+ * while the same content the other way round parsed perfectly. It is a pure
+ * word-order gap, and it is not one room's quirk — any room that writes the
+ * date or the strike first hits it.
+ *
+ * SAFETY: this only runs when the normal pattern found NOTHING, so it can
+ * never change a parse that already works — it can only add one where there
+ * was none. The ticker must also be within ~24 characters of the contract, so
+ * a stray word later in the sentence cannot be adopted, and blockedTicker
+ * still applies. */
+const RE_STRIKE_FIRST = /(?<![A-Za-z0-9$.])\$?(\d{2,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b/i;
+function contractSymbolAfter(text) {
+  const m = RE_STRIKE_FIRST.exec(text);
+  if (!m) return null;
+  const after = text.slice(m.index + m[0].length, m.index + m[0].length + 24);
+  const t = /(?:^|[^A-Za-z])\$?([A-Za-z]{1,5})\b/.exec(after);
+  if (!t) return null;
+  const sym = t[1].toUpperCase();
+  if (/^(CALLS?|PUTS?|C|P|DTE|EXP|AND|THE|SMALL|STARTERS?|SWING|LOTTO|RUNNERS?)$/.test(sym)) return null;
+  if (blockedTicker(sym, text)) return null;
+  return { symbol: sym, strike: parseFloat(m[1]),
+           side: m[2].toLowerCase()[0] === "c" ? "CALLS" : "PUTS",
+           expiry: expiryAnywhere(text) || null };
+}
+
 function findContract(text) {
   const osi = RE_CONTRACT_OSI.exec(text);
   if (osi && !blockedTicker(osi[1], text)) {
