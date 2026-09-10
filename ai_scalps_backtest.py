@@ -111,8 +111,26 @@ def daily(symbol, start, end, token):
     return day
 
 
-def walk(rows, entry, target, stop, is_long):
-    """Which came first. -> (outcome, exit_price, minutes_taken)."""
+def walk(rows, entry, target, stop, is_long, coarse=False):
+    """Which came first. -> (outcome, exit_price, bars_taken).
+
+    BOTH LEVELS INSIDE ONE BAR is the whole difficulty, and it has to be
+    handled DIFFERENTLY depending on how coarse the bar is:
+
+      * MINUTE bars -> score it a STOP. Within sixty seconds either could have
+        come first, and a backtest that resolves its own ambiguity in the
+        strategy's favour is worthless.
+
+      * DAILY bars -> score it UNKNOWN and throw the row away.
+        THIS IS THE CORRECTION THAT MATTERS (9/10). Scored the pessimistic way,
+        the daily rows produced "-0.607 R, clear of its error bar, this feed
+        loses money" — a confident, WRONG answer. These are 30-minute and
+        1-hour scalps whose stops sit a MEDIAN 0.89% from entry, and one day's
+        range swallowed BOTH levels on 31 of 41 rows (76%). The measurement
+        was not finding losers, it was manufacturing them. A day bar cannot
+        answer a question asked at minute resolution; the honest output is
+        "I don't know", not a number.
+    """
     for i, b in enumerate(rows):
         hi, lo = float(b.get("high", 0)), float(b.get("low", 0))
         if is_long:
@@ -121,6 +139,8 @@ def walk(rows, entry, target, stop, is_long):
             hit_t, hit_s = lo <= target, hi >= stop
         # BOTH IN ONE BAR -> the loss. We cannot see the order within a
         # minute, and assuming the good one is how a backtest lies.
+        if hit_t and hit_s:
+            return (("UNKNOWN", None, i) if coarse else ("STOP", stop, i))
         if hit_s:
             return ("STOP", stop, i)
         if hit_t:
@@ -170,11 +190,12 @@ def main():
             d = [b for b in d if b.get("date", "") >= t0.strftime("%Y-%m-%d")]
             rows = d[:a.days + 1]
             res = "d"
-        outcome, px, mins = walk(rows, entry, target, stop, is_long)
+        outcome, px, mins = walk(rows, entry, target, stop, is_long,
+                                 coarse=(res == "d"))
         if res == "d":
             mins = 0
-        if outcome == "NO DATA":
-            out.append((when, sym, pos, "NO DATA", 0.0, 0.0, 0, "-"))
+        if outcome in ("NO DATA", "UNKNOWN"):
+            out.append((when, sym, pos, outcome, 0.0, 0.0, 0, res))
             continue
         pnl = (px - entry) if is_long else (entry - px)
         out.append((when, sym, pos, outcome, pnl, pnl / risk, mins, res))
@@ -206,6 +227,10 @@ def main():
     print("  broken rows  : %d  (target on the wrong side of the entry)"
           % len([r for r in out if r[3] == "BROKEN"]))
     print("  no data      : %d" % len([r for r in out if r[3] == "NO DATA"]))
+    print("  UNSCOREABLE  : %d  <- only daily bars exist that far back and the"
+          % len([r for r in out if r[3] == "UNKNOWN"]))
+    print("                     day covered the target AND the stop. Dropped,")
+    print("                     not guessed. See walk().")
     print("  hit rate     : %.0f%%   <- NOT the answer, see below"
           % (100.0 * len(wins) / len(real)))
     print()

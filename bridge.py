@@ -3625,7 +3625,19 @@ def broker_positions():
                     else:
                         _fb["fails"] += 1
                         if _fb["fails"] >= 3:
-                            _wait = min(60.0, 10.0 * (2 ** (_fb["fails"] - 3)))
+                            # CAP (9/10): 60 s while the bot may itself hold
+                            # Webull futures; 300 s when futures_brokers.webull
+                            # is off — then the only futures there could be
+                            # his own, which the bot never manages, and the
+                            # 60 s cap alone burned 187 of the day's 256
+                            # throttles (9:55-14:20) on an account that was
+                            # flat all day. bridge.log, 9/10.
+                            _cap = 60.0 if (CFG.get("futures_brokers") or {}).get("webull") \
+                                else 300.0
+                            # exponent clamped: 2 ** (fails - 3) overflowed
+                            # float() after ~1030 empty reads (a long flat
+                            # run) and would have thrown out of the refresh.
+                            _wait = min(_cap, 10.0 * (2 ** min(_fb["fails"] - 3, 10)))
                             _fb["until"] = time.time() + _wait
                             if _fb["fails"] == 3:
                                 note("FUT-POS  Webull has returned no futures "
