@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (00:50) — the bot's own record isolated (134 entries, NET −$301 priced by the broker — it loses ~$4/trade); contracts and expiries recovered so bot rows can be checked against the broker at all; P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-10 (00:50) — the bot's own record isolated (107 broker-priced trades, NET −$545, −$5/trade; pullback entries break even, instant ones do not); contracts and expiries recovered so bot rows can be checked against the broker at all; P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -437,9 +437,29 @@ FILL ANNOUNCER (announcer.py, read-only)
   doing its job. The gap is hit rate and winner size: WHICH CALLERS get
   followed and WHERE it takes profit. Best: SKHY +249 (The Pawn), NVDA
   +120 (Bullwinkle), GOOGL +119 (Unraveller). Worst: TSLA −112 and META
-  −106 (both Unraveller), MP −96 (EvaPanda). Still unpriced: 60 entries
-  (49 with no contract — futures and rows with no ORDER IN line — and 11
-  with no matching round-trip).
+  −106 (both Unraveller), MP −96 (EvaPanda). THEN THE LAST CONTRACTS WERE RECOVERED
+  (the gap rows had strike/side/expiry read back but the symbol was never
+  assembled — the build ran in the day-row loop while those rows are made
+  later; one-line ordering fix). 124 of 134 bot rows now carry a contract;
+  the last 10 are futures, which have none by nature. Broker-matched bot
+  trades 74 -> 107: NET -$545, -$5.1 a trade, 34% win rate.
+  DID THEY FOLLOW THE ROUND NUMBER? Each entry tagged by whether a
+  "PULLBACK ...: touched $N - buying now" line sits within 4 min of it:
+      big name, WAITED for the round number   37 trades   +$25   +0.7/trade  39% win
+      big name, entered INSTANTLY             30 trades  -$301  -10.0/trade  37% win
+      everything else (no pullback available) 40 trades  -$269   -6.7/trade  26% win
+  Like-for-like (same symbol class, only the wait differs) waiting is
+  +$10.7 a trade better - but that is 1.1x its own noise on 37 vs 30
+  trades: SUGGESTIVE, NOT PROVEN. It agrees in direction with the 9/9
+  one-second-bar study (+$8/contract), which is a reason to KEEP the $1
+  rule, not to widen it. The louder, cleaner line: the 40 trades in names
+  too small to qualify for a pullback (INTC, SPCX, WMT, RIOT, ZETA, SKHY,
+  LYFT, SMCI) lose -$6.7 a trade at a 26% hit rate - a FILTER question,
+  and where the bot's money actually goes.
+  RATCHET SCENARIOS ARE STILL BLOCKED: replaying a different stop needs the
+  per-second price path while each trade was open, which order records do
+  not contain. Databento quoted $7.23 for the OPRA tape covering these
+  contracts - the one purchase that unlocks it. G's call.
   8/07's seven "missing" trades were ADOPTED at 08:12:13 pre-open — G's own
   positions from before, never bot trades, and no broker BUY exists that
   day because they were bought earlier.
