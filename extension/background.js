@@ -1546,6 +1546,36 @@ async function sendOrder(sig, qty, c, author, postedAt) {
   const ms = Math.round(performance.now() - t0);
   const body = (await r.text()).slice(0, 200);
   if (!r.ok) return { ok: false, msg: "the bridge refused it: HTTP " + r.status + " " + body };
+
+  /* TWO STRIKES IN ONE CALL (9/10). G: "when you have multistrikes, just buy
+   * both of them. Buy two contracts, one of each." The parser puts the extra
+   * strikes on sig.also_strikes (same ticker, same side, same expiry — see
+   * extraStrikes in parser.js); each one goes out as its own separate order.
+   *
+   * SEPARATE, NOT A SPREAD. Two independent positions, each with its own born
+   * stop and its own ratchet, which is the only shape this machine has: a
+   * combo would need both legs to exit together and that is not what he asked
+   * for.
+   *
+   * ALWAYS ONE CONTRACT EACH, whatever qty the first leg got — his words. And
+   * only after the first order was ACCEPTED: if the bridge refused leg one,
+   * firing leg two would be doubling down on a refusal.
+   * The recursion is safe because also_strikes is stripped from the clone. */
+  if (Array.isArray(sig.also_strikes) && sig.also_strikes.length) {
+    for (const k of sig.also_strikes) {
+      const leg = Object.assign({}, sig, { strike: k, also_strikes: null });
+      try {
+        await sendOrder(leg, 1, c, author, postedAt);
+      } catch (e) {
+        try {
+          await addLog({ kind: "failed", what: "MULTI-STRIKE LEG",
+            why: "the second strike (" + sig.symbol + " " + k + ") did not go "
+               + "out: " + (e && e.message ? e.message : e) + ". The first one "
+               + "did — check the popup before adding it by hand." });
+        } catch (e2) {}
+      }
+    }
+  }
   return { ok: true, msg: "sent in " + ms + " ms — " + (body || "accepted") };
 }
 

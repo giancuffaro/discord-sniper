@@ -2366,6 +2366,16 @@ function parseSignalInner(text, cfg) {
   //     sizing filler leaves NOTHING — "NVDA 205C looks juicy" leaves "looks
   //     juicy" and stays chatter.
   //
+  //     THE ORDER-INDEPENDENT STRIP IS SCOPED TO `bare` ROOMS (9/10), and
+  //     that scoping is not caution for its own sake — it was measured, twice.
+  //     Built from the contract, unscoped, it fired "TSLA 9/4 360P .72" in
+  //     EVERY room, because the three tokens come out separately and leave
+  //     nothing behind. That line is a real entry in TheArchitech-style rooms
+  //     and a chart caption everywhere else, and test_bare_entry.js exists to
+  //     hold exactly that line silent when the room isn't named. So: rooms
+  //     flagged `bare` get the any-order strip; everywhere else 5b keeps the
+  //     adjacency it has always had. Same rule, same scope, as _bareEntry.
+  //
   //     THE STRIP IS BUILT FROM THE CONTRACT WE FOUND (9/10). It used to be a
   //     regex that could only cut a SYMBOL-FIRST contract, so TheArchitech's
   //     three other word orders survived the strip, left a fat leftover, and
@@ -2384,19 +2394,24 @@ function parseSignalInner(text, cfg) {
     if (c5) {
       const esc = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const kNum = esc(String(c5.strike).replace(/\.0+$/, ""));
-      const sibs = extraStrikes(t, c5);
+      const anyOrder = !!(cfg && cfg.entry_no_verb);
+      const sibs = anyOrder ? extraStrikes(t, c5) : [];
       let stripped = t;
       // the sibling strikes ("... and $230C") come out first, so a two-strike
       // call is still judged on whether anything ELSE is left over
       for (const k of sibs)
         stripped = stripped.replace(
           new RegExp("\\$?" + esc(String(k).replace(/\.0+$/, "")) + "(?:\\.\\d{1,2})?\\s*(?:calls?|puts?|c|p)\\b", "i"), " ");
-      const leftover = stripped
-        // strike + side, with the optional "0 day" that can sit between them
-        .replace(new RegExp("\\$?" + kNum + "(?:\\.\\d{1,2})?\\s*(?:\\d{1,2}\\s*days?\\s*)?(?:calls?|puts?|c|p)\\b", "i"), " ")
-        // the ticker, wherever it is. (When the room supplies a default symbol
-        // the word isn't in the text at all and this simply does nothing.)
-        .replace(new RegExp("(^|[^A-Za-z])\\$?" + esc(c5.symbol) + "\\b", "i"), "$1 ")
+      const leftover = (anyOrder
+        ? stripped
+          // strike + side, with the optional "0 day" that can sit between them
+          .replace(new RegExp("\\$?" + kNum + "(?:\\.\\d{1,2})?\\s*(?:\\d{1,2}\\s*days?\\s*)?(?:calls?|puts?|c|p)\\b", "i"), " ")
+          // the ticker, wherever it is. (When the room supplies a default
+          // symbol the word isn't in the text at all and this does nothing.)
+          .replace(new RegExp("(^|[^A-Za-z])\\$?" + esc(c5.symbol) + "\\b", "i"), "$1 ")
+        // Every other room: the contract must be written as one adjacent
+        // phrase, which is the adjacency 5b has always required.
+        : stripped.replace(/(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?\s*(?:\d{1,2}\s*days?\s*)?(?:calls?|puts?|c|p)\b/i, " "))
         .replace(/\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b|\b\d*\s*dte\b|\b\d{1,2}\s*days?\b|\bnext\s+(?:fri(?:day)?|week|wk)\b|\bweeklie?s?\b|\bexp(?:iry|iration)?\b/gi, " ")
         // a side word left standing on its own: "2DTE $765C SPY CALLS" spends
         // its C inside the contract token and leaves the word CALLS behind.
