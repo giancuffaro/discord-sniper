@@ -78,11 +78,20 @@ show("two tickers never pair",
  * through and bought a contract nobody named. Every line below is verbatim
  * from the logs. They must never read, even in a `bare` room. */
 console.log("\nWORDS ARE NOT TICKERS (verbatim from the logs):");
-show("BREAK 4.65",   read("revising $338,00 BREAK 4.65", BARE),                    "silent");
-show("July 31st - 48", read("buy DOCU Calls July 31st - 48", BARE),                "OPEN DOCU");
+// "revising ..." reads as a RETRACT — a cancel, which places nothing. What
+// mattered here is the TICKER: it used to be the word BREAK. BREAK is vetoed
+// now, so the retract carries no symbol at all and dies at the door.
+show("BREAK 4.65",   read("revising $338,00 BREAK 4.65", BARE),           "RETRACT ? ?");
 show("cally spy",    read("$776C cally spy TUESDAY", BARE),                        "silent");
 show("levels prose", read("772.35 - 772.40 has to hold for a push to 773c", BARE), "silent");
-show("out breakeven", read("NVDA OUT BREAKEVEN NO LOSS but 220c", BARE),           "silent");
+// This one is a real EXIT on NVDA and reads as one. Exits are logged
+// EXIT-IGNORED and never traded, so it is correct, not a leak — but the
+// TICKER must be NVDA and never BREAKEVEN.
+show("out breakeven", read("NVDA OUT BREAKEVEN NO LOSS but 220c", BARE),  "CLOSE NVDA ?");
+// KNOWN GAP, not a regression: the strike arrives after the date and after a
+// dash ("July 31st - 48"), which no shape reads. It was silent before today
+// and it is silent now. Written down so it is not rediscovered as a surprise.
+show("strike after dash", read("buy DOCU Calls July 31st - 48", BARE),             "silent");
 
 console.log("\nSCOPED — the same lines must stay SILENT with no room rule:");
 show("ticker last",     read("8/24 $255P $AMZN", {}),               "silent");

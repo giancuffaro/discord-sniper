@@ -418,6 +418,10 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   // it, but a wrong symbol still poisons the room's attribution and the log.
   // With the label vetoed the reader walks on and finds the real ticker.
   "CLOSE", "CLOSED", "OPEN", "OPENED", "UPDATE", "SOLD", "TRIM", "TRIMMED",
+  // 9/10, from the 11,187-message replay: chart words that sat where a ticker
+  // sits. "revising $338,00 BREAK 4.65" resolved to ticker BREAK.
+  "BREAK", "BREAKOUT", "BREAKDOWN", "BREAKEVEN", "THETA", "DELTA", "GAMMA",
+  "VEGA", "LOSS", "WIN", "REVISING", "HOLD", "PUSH", "CALLY",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
   "DO", "NOT", "BUY", "SELL", "IE", "ADMIN", "HERE", "EOD", "CPI", "FOMC",
   "PT", "SL", "TP", "AVG", "GO", "UP", "WE", "US", "NO",
