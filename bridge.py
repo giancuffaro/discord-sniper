@@ -5917,7 +5917,8 @@ def main():
                                     for p in (snap.get("positions") or {}).values()
                                     if p.get("state") == "filled"
                                     and int(p.get("qty") or 0) > 0
-                                    and p.get("kind") != "future")
+                                    and p.get("kind") != "future"
+                                    and not p.get("closing"))
                         ghost = ksyms - bsyms
                         if ghost:
                             bad.append("book holds %s, the account doesn't"
