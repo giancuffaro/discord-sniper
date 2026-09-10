@@ -711,7 +711,10 @@ function findContract(text) {
              side: md[4].toLowerCase().startsWith("c") ? "CALLS" : "PUTS",
              expiry: parseInt(md[3], 10) + "DTE" };
   }
-  return null;
+  // LAST RESORT: the ticker written AFTER the contract (see the note above
+  // contractSymbolAfter). Only reached when every pattern above found
+  // nothing, so it cannot change an existing parse.
+  return contractSymbolAfter(text);
 }
 
 /* Lowercase ("30% on spy") only counts when there's an allowed-symbols list to
