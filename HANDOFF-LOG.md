@@ -78,6 +78,33 @@ hours (it did at 16:34 on the other session's edits; will again on mine).
 
 ## 2026-09-10 (evening) — THE READER SESSION
 
+### Chika measured — her way vs ours, 2 sessions on real NQ bars (9/10 late)
+chika_compare.py, both sides priced off the tape (Webull MCP bars, FREE — not
+Databento). 15 entries across 9/04 and 9/10:
+    HER WAY    +160 pts = +$3,200 on one NQ
+    OUR RATCHET  -10 pts =   -$200   (7 of 15 taken, 8 skipped)
+Per trade she is +10.7 pts, but +/- 14.8 at 2 SE — the interval SPANS ZERO.
+So: profitable in this sample, NOT distinguishable from zero at n=15. 8 wins,
+7 losses, best +58, worst -38.
+THE DOMINANT EFFECT IS OUR OWN PULLBACK RULE. The round-number wait skipped 7
+of her 15 trades and those 7 were worth +223 pts — MORE THAN HER WHOLE
+SESSION P&L. Waiting for a better fill on a scalper who is already moving
+means simply not getting in. Our 25-pt stop then took out 4 of the 7 we did
+take. Neither finding is about her calls; both are about our rules applied to
+a timeframe they were never fitted to.
+Also found BY the sim: the round number can land exactly ON her stop (her
+15:20 long "220s, stop 200" rounds down to 29,200 = her stop). A bracket whose
+entry is its stop is not a trade. Refused in the sim; webull_futures needs the
+same guard before any of this goes live.
+NOT ARMED. Futures execution is off anyway (webull false, ninjatrader false,
+topstep enabled but not executing), n=15 is two sessions, and copying "her
+rules" means copying her EXITS, which breaks ENTRIES ONLY. Read-only keeps
+collecting; re-run the script in a week.
+SIZE NOTE if it ever arms: her worst trade was -38 pts. On NQ that is -$760.
+On MNQ it is -$76, which is the only sane size against a $211 futures account.
+
+
+
 ### Chika / the PIVOT rooms — read-only (9/10 evening)
 She trades ONLY the NASDAQ and writes the last digits of the level:
 "short 195 pivot" = NQ 29,195 short. The bridge expands the digits against a
