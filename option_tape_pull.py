@@ -149,54 +149,63 @@ def main():
         print("DATABENTO QUOTE: $%.2f" % total)
         return
 
-    print("downloading %d day-windows — this takes a few minutes" % len(byday), flush=True)
+    # ONE PULL PER CONTRACT-WINDOW, not per day. A day-wide union window over
+    # every contract that day is the whole session for each of them — millions
+    # of OPRA book rows, minutes per day, and a run that gets killed before it
+    # writes anything. Each contract only needs its own hold window.
+    budget = 0.0
+    for i, a in enumerate(sys.argv):
+        if a == "--minutes" and i + 1 < len(sys.argv):
+            budget = float(sys.argv[i + 1]) * 60
+    started = datetime.now(timezone.utc).timestamp()
+
+    print("downloading %d contract-windows across %d days%s"
+          % (len(win), len(byday), "  (stop after %g min)" % (budget / 60) if budget else ""),
+          flush=True)
     new = not os.path.exists(OUT_CSV)
     fh = open(OUT_CSV, "a", newline="", encoding="utf-8")
     w = csv.writer(fh)
     if new:
         w.writerow(["ts", "occ", "bid", "ask"])
-    wrote = 0
-    for day in sorted(byday):
-        syms = [x[0] for x in byday[day]]
-        raw2occ = {x[0]: x[1] for x in byday[day]}
-        lo = min(x[2] for x in byday[day]).astimezone(timezone.utc)
-        hi = max(x[3] for x in byday[day]).astimezone(timezone.utc)
+    wrote = done_n = 0
+    order = sorted(win.items(), key=lambda kv: (kv[0][2], kv[0][0]))
+    for (raw, occ_s, day), (a, b) in order:
+        if budget and datetime.now(timezone.utc).timestamp() - started > budget:
+            print("  time budget spent — %d of %d done, re-run to continue"
+                  % (done_n, len(win)), flush=True)
+            break
         try:
-            data = client.timeseries.get_range(
-                dataset="OPRA.PILLAR", symbols=syms, schema="cmbp-1",
-                stype_in="raw_symbol", start=lo, end=hi)
-            df = data.to_df()
+            df = client.timeseries.get_range(
+                dataset="OPRA.PILLAR", symbols=[raw], schema="cmbp-1",
+                stype_in="raw_symbol",
+                start=a.astimezone(timezone.utc),
+                end=b.astimezone(timezone.utc)).to_df()
         except Exception as e:                              # noqa: BLE001
-            print("  %s pull failed: %s" % (day, str(e)[:140]))
+            print("  %s %s failed: %s" % (day, occ_s, str(e)[:120]), flush=True)
             continue
-        last = {}
-        buf = []                # a day is written ALL-OR-NOTHING: a run killed
-                                # mid-day must not leave a half day that the
-                                # next run then skips as "already taped"
+        last = None
+        buf = []                # a window is written ALL-OR-NOTHING: a run
+                                # killed mid-window must not leave a half
+                                # window the next run then skips as taped
         for ts, row in df.iterrows():
-            raw = str(row.get("symbol") or "")
-            o = raw2occ.get(raw)
-            if not o:
-                continue
             sec = int(ts.timestamp())
-            if last.get(o) == sec:              # ~1 row a second, like option_tape
+            if last == sec:                     # ~1 row a second, like option_tape
                 continue
-            last[o] = sec
-            bid = row.get("bid_px_00")
-            ask = row.get("ask_px_00")
+            last = sec
             try:
-                bid = float(bid); ask = float(ask)
+                bid = float(row.get("bid_px_00")); ask = float(row.get("ask_px_00"))
             except (TypeError, ValueError):
                 continue
             if bid <= 0 and ask <= 0:
                 continue
-            buf.append([sec, o, round(bid, 4), round(ask, 4)])
-        n = len(buf)
+            buf.append([sec, occ_s, round(bid, 4), round(ask, 4)])
         w.writerows(buf)
-        wrote += n
         fh.flush()
         os.fsync(fh.fileno())
-        print("  %s  %2d contracts  %6d rows" % (day, len(syms), n), flush=True)
+        wrote += len(buf)
+        done_n += 1
+        print("  %s %-22s %6d rows   (%d/%d)"
+              % (day, occ_s, len(buf), done_n, len(win)), flush=True)
     fh.close()
     print("wrote %d tape rows to %s" % (wrote, os.path.basename(OUT_CSV)))
 
