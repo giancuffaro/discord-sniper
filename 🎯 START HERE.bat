@@ -271,6 +271,30 @@ if "!ANN_OFF!"=="1" (
   )
 )
 
+rem ---- [4.7/5] the Sniper Whop watchdog, hidden (9/10) ----------
+rem  Whop rooms caught exactly 1 alert in the month since 8/13 -
+rem  Day Trades went dark because nothing noticed the "Sniper Whop"
+rem  Chrome profile itself wasn't running, and openMissingRooms()
+rem  only fills in tabs on this file's one-shot token. This loop
+rem  (mirrors the bridge's own _run_hidden.vbs / _bridge_loop.bat)
+rem  relaunches that browser if its window ever isn't there, at
+rem  logon and every 30 min if the watchdog process itself dies -
+rem  same durability model as the Fill Announcer. Same STOP file as
+rem  everything else is the off switch.
+set "SU_WHOP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\sniper-whop-watchdog.vbs"
+> "%SU_WHOP%" echo WScript.Sleep 60000
+>> "%SU_WHOP%" echo If CreateObject("Scripting.FileSystemObject").FileExists("%~dp0_whop_hidden.vbs") Then CreateObject("WScript.Shell").Run "wscript.exe ""%~dp0_whop_hidden.vbs""", 0, False
+schtasks /query /tn "Sniper Whop watchdog revive" >nul 2>&1
+if errorlevel 1 (
+  schtasks /create /tn "Sniper Whop watchdog revive" /sc minute /mo 30 /tr "wscript.exe \"%~dp0_whop_hidden.vbs\"" /f >nul 2>&1
+)
+if exist "_whop_hidden.vbs" (
+  wscript.exe "%~dp0_whop_hidden.vbs"
+  echo         Sniper Whop watchdog running in the background.
+) else (
+  echo         _whop_hidden.vbs is missing - Whop watchdog not started.
+)
+
 rem ---- [5/5] Chrome, all the rooms ----------------------------
 rem  His call (8/10): NEVER touch tabs that are already open. This
 rem  used to close ALL of Chrome and reopen every room on every run
