@@ -211,16 +211,33 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 1449226651064991806|https://discord.com/channels/718624848812834903/1449226651064991806|OWLS all-alerts|OWLS Capital|on
 # TheArchitech / "VIX Insights from Alice Capitals" — ADDED 9/10 on G's paste.
 # Never captured before: 0 messages in the whole corpus, so this is a genuinely
-# new room, not one we were reading badly. His grammar is the SIMPLEST of the
-# SPX rooms — a bare contract and nothing else:  "7730C 0DTE".
-# No price at all, which does not matter: the spx rule retargets to SPY and
-# drops the caller's premium anyway (an SPX premium is not a SPY premium), so
-# the bot bids the SPY market. VERIFIED against the live parser 9/10 —
-# "7730C 0DTE" -> SPY 773 CALLS with these three rules on, and DEAD without
-# them ("nothing in it that means buy or sell"). Do not turn this on without
-# the rules or it is another silent room.
+# new room, not one we were reading badly.
+# GRAMMAR (from his own posts, G walked me through each one 9/10). The tokens
+# are ticker / strike+side / expiry, and they arrive in ANY ORDER — G: "it
+# doesn't matter the order of the expiration or the price or the ticker."
+#   "7730C 0DTE"                          -> SPX 7730 CALLS today (sym=SPX)
+#   "2DTE $765C SPY CALLS"                -> SPY 765 CALLS, 2 days out
+#   "8/24 $255P $AMZN"                    -> AMZN 255 PUTS 8/24
+#   "$AAOI 9/25 $130C SWING small"        -> AAOI 130 CALLS 9/25
+#   "$NVDA $225C/ and $230C NEXT FRI"     -> TWO orders, 1 contract each
+# No price in any of them, so the bot bids the market.
+# SPX ORDERS DO NOT GO OUT. The SPX->SPY substitution was DELETED 9/10 on G's
+# instruction; an SPX call is held with a plain reason until
+# execution.index_broker is set (tastytrade/tradier, a separate account). The
+# non-SPX calls above trade normally.
 # OFF until G has watched it for a day.
 1519715923752128572|https://discord.com/channels/718624848812834903/1519715923752128572|TheArchitech VIX Insights|OWLS Capital|off|sym=SPX,bare
+# Mugzone Options / Dallas Capital — ADDED 9/10 on G's paste. Same guild as the
+# OWLS rooms above. The CLEANEST grammar of any room we read: ticker, expiry,
+# strike, side, price, in that order, every time.
+#   "MU 1020 9/11 CALLS @ 2.2 SL 1.45 TP 2.6 / 3.3 / 4.4 @everyone"
+#   "1. SPCX 9/11 155 calls 1.95 SL 1.45 tp 2.45 / 2.85 / 3.5 @everyone"
+# Needs NO rules — verified against the live parser 9/10, both lines above give
+# the right contract, expiry and limit with a bare config, numbered-list prefix
+# and all. His SL / TP ladder is READ AND RECORDED (their_stop / their_target)
+# but NOT traded: G, 9/10 — "we can ignore that since we have the ratchet."
+# That is the ENTRIES ONLY doctrine, unchanged.
+1503509270526951575|https://discord.com/channels/718624848812834903/1503509270526951575|Mugzone Options|Dallas Capital|on
 
 # ============================================================
 # FULL-DEPTH SCAN, 9/10/26 (G: "go channel by channel, don't skip any; the
