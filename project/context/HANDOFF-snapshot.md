@@ -110,6 +110,14 @@ ENTRIES
   own lane's rooms. START HERE opens only `on` rooms. CLOSING A TAB BY
   HAND IS NOT A BENCH — START HERE and a flip reopen every `on` room; the
   switch is the only bench. Benched rooms are never deleted from the file.
+  WHOSE TABS THE REAPER MAY CLOSE (9/10). ONLY tabs the extension itself
+  opened (`_OURS`). A tab a HUMAN opened is never closed, whatever URL it is
+  on. Written the other way round first — "close any discord.com tab that is
+  not an `on` room" — and within the hour it had eaten the Discord Settings
+  tab G asked Claude to work in, twice, mid-edit. Sparing the ACTIVE tab is
+  not enough: the moment he clicks away, or a tool drives another window, his
+  tab stops being active. If you ever widen this again, that is the failure
+  you are re-inviting.
   WHO MAY OPEN A TAB (9/10, G: "get rid of auto opening tabs UNLESS it's
   the start sniper"). Exactly three things, and nothing else:
     1. START HERE.bat, through its one-shot open-rooms request

@@ -912,7 +912,7 @@ async function pollRoomsFile() {
         if (isOn && roomWantsTab(room) && !tabs.length && room.url) {
           if (Date.now() - (ROOM_OPENED_AT[room.id] || 0) < 120000) continue;
           ROOM_OPENED_AT[room.id] = Date.now();
-          try { await chrome.tabs.create({ url: room.url, active: false }); opened++; } catch (e) {}
+          try { _rememberOurTab(await chrome.tabs.create({ url: room.url, active: false })); opened++; } catch (e) {}
           await new Promise(res => setTimeout(res, 6000));   // one gateway session per 5 s
         } else if (!isOn) {
           for (const t of tabs) { await _keepWindowAlive(t); try { await chrome.tabs.remove(t.id); closed++; } catch (e) {} }
@@ -1033,7 +1033,7 @@ async function setRoomState(id, on) {
   }
   if (!have.length && room.url) {
     ROOM_OPENED_AT[room.id] = Date.now();
-    try { await chrome.tabs.create({ url: room.url, active: false }); } catch (e) {}
+    try { _rememberOurTab(await chrome.tabs.create({ url: room.url, active: false })); } catch (e) {}
   }
   await addLog({ kind: "sent", what: "ROOM ON",
     why: room.name + " switched ON — " + (have.length ? "tab already open, " : "tab opened, ") +
@@ -2344,6 +2344,18 @@ async function evictOtherLane() {
  * This does NOT fight the 9/8 "a closed tab stays closed" rule: that rule is
  * about not REOPENING what he closed. This only closes, never opens. */
 const _NOT_A_ROOM_STRIKES = {};      // tabId -> consecutive bad sweeps
+/* TABS THIS EXTENSION OPENED. The reaper may only ever close one of these.
+ * 9/10: written the other way round first — "close any discord.com tab that
+ * is not an `on` room" — and within the hour it had closed the Settings tab
+ * G asked me to work in, twice, mid-edit. Sparing the ACTIVE tab is not
+ * enough: the moment he clicks elsewhere, or a tool drives another window,
+ * his tab stops being active and gets eaten. A tab a HUMAN opened is not
+ * ours to close, full stop, whatever URL it happens to be on. */
+const _OURS = new Set();
+function _rememberOurTab(t) { try { if (t && t.id) _OURS.add(t.id); } catch (e) {} }
+try {
+  chrome.tabs.onRemoved.addListener((id) => { _OURS.delete(id); delete _NOT_A_ROOM_STRIKES[id]; });
+} catch (e) {}
 
 async function closeNonRoomTabs() {
   let rooms;
@@ -2372,6 +2384,7 @@ async function closeNonRoomTabs() {
     if (t.status === "loading" || t.discarded) { _NOT_A_ROOM_STRIKES[t.id] = 0; continue; }
     if (t.active) { _NOT_A_ROOM_STRIKES[t.id] = 0; continue; }   // guard 4
     if (t.pinned) { _NOT_A_ROOM_STRIKES[t.id] = 0; continue; }
+    if (!_OURS.has(t.id)) continue;          // a human opened it — not ours to close
     const u = String(t.url || "");
     let ok = false;
     const dm = u.match(/discord\.com\/channels\/\d+\/(\d+)/);
@@ -2469,7 +2482,7 @@ async function openMissingRooms() {
     if (now - (ROOM_OPENED_AT[r.id] || 0) < 120000) continue;             // opened just now
     ROOM_OPENED_AT[r.id] = now;
     try {
-      await chrome.tabs.create({ url: r.url, active: false });
+      _rememberOurTab(await chrome.tabs.create({ url: r.url, active: false }));
       opened++;
     } catch (e) { /* ignore */ }
     if (opened >= 3) break;     // a few per pass; the caller comes round again
