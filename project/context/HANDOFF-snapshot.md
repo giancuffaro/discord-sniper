@@ -2,27 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (02:30) — THE OPRA TAPE IS BOUGHT: 537 contract-days, 1.02M per-second quotes, so the ratchet scenarios finally ran on real price paths (115 room-call trades; current 7.5/5 = +$87, best −5.0/+4.0 = +$384, +$2.58 a trade with a 95% band of +$0.45..+$4.31 — REAL, and G's call to flip); FULL-DEPTH DISCORD SCAN of all 25 servers / 289 channels — two live options feeds found in TradingTheTrend (member-alerts, trade-log; both added `off`), five more alert rooms that fail a standing rule added `off`, everything else read and rejected in one block, and Sniper HQ marked DO NOT ADD because it is our own announcer's output; the bot's own record isolated (107 broker-priced trades, NET −$545, −$5/trade; pullback entries break even, instant ones do not); contracts and expiries recovered so bot rows can be checked against the broker at all; P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
-now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
-one grouped with a single switch (on = tab + read + LIVE; no testing state),
-the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
-popup paints the rooms FIRST and shows any popup error in the Channels pane —
-which caught the real bug: esc() undefined in renderTable, blank Channels since 9/7, fixed;
-build_ledger.py's trip-matcher now checks qty, not just price (a stale store
-snapshot could grab the wrong-size export trip — found on today's QQQ 716C,
-also caught 2 older cases on 9/4; zero change to any day's reconciled total);
-ARM CLIP added as a post-mortem verdict (alongside NOISE CLIP). Earlier today:
-master_broker.csv (daily Webull pulls absorbed + deleted); pullback level
-settled at $1 on real bars; post-mortem on every exit; one central file per data
-family (ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2
-flat, futures ratchet decoupled; Whop API path deleted; the tab-reload storm
-found (662 reloads/day, zombie heartbeat) and fixed; rooms settled at 20 on
-of 57 listed (16 Discord + 4 Whop, all live, 0 ZTRADEZ — counted from
-rooms.txt 9/10 02:22, after the full-depth scan of all 25 servers added
-7 more `off` lines and one rejected-rooms block); START HERE fully
-unattended (one-shot open-rooms request, no git/Chrome prompts);
-REPLACE-DON'T-STACK rule; folder cleanup to archive/; POSTCHECK stale-snapshot
-false alarm fixed. Story of each in HANDOFF-LOG.md.
+Last updated: 2026-09-10 (02:45) — THE RATCHET MOVED, 7.5/5/2 -> 5/3/5 on G's call: the OPRA tape was bought (537 contract-days, 1.02M per-second quotes) so ratchet_sweep_fine.py re-swept 294 combos on real price paths and on 115 real room calls (707 rows with caller "?" — hand trades and adopted positions — had been scored as room calls; fixed). Old $158 rank #82, new $504 rank #1, +$3.01 a trade with a 95% band of +$0.72..+$4.91 — the first spacing here to clear its own error bar. Every backtest and report now READS the live spacing from ratchet_tiers.live_spacing() instead of typing it. FULL-DEPTH DISCORD SCAN of all 25 servers / 289 channels: two live options feeds found (TradingTheTrend member-alerts + trade-log, both `off`), five more alert rooms that fail a standing rule added `off`, the rest read and rejected in one block, Sniper HQ marked DO NOT ADD (our own announcer's output). Everything before today is in HANDOFF-LOG.md.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -48,8 +28,8 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.85) reads 19 rooms —
-  15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
+- The machine: Chrome MV3 extension (Profile 2; v3.5.85) reads 20 rooms —
+  16 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
   (the same physical Chrome was "Browser 2" at 17:30 on 9/9 and "Browser 1"
@@ -61,12 +41,16 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   Confirm a lane the cheap way rather than by asking: open a whop.com room
   URL in it — the Discord profile's evictOtherLane() kills any whop.com
   /exp_ tab within one 30 s watch-build sweep, the Whop profile keeps it.
-  Not part of the Profile 2 tab count), 0 ZTRADEZ (whole server
-  cut 9/9, sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild). G
+  Not part of the Profile 2 tab count). ZTRADEZ: the whole server was cut
+  9/9 (sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild) but the
+  ZT all-trades-mashup line is STILL `on` in rooms.txt, counted 9/10 02:22.
+  Either the cut missed it or it was left deliberately; flipping a room is
+  G's click, so it stays on until he says. The sub was "1 day" from 9/9, so
+  it is dead or dying either way. G
   brought every non-ZT room back 9/9 once the reload storm was fixed (the
   "silent" verdicts were measured during the storm, so they re-measure on
   clean ledger data from here). extension/rooms.txt is THE list of EVERY
-  room we have been to (51: 19 on, 28 off, 4 lapsed), one line each with a
+  room we have been to (57: 20 on, 33 off, 4 lapsed), one line each with a
   5th field on|off|lapsed — see ROOMS below. rooms.txt is data, not code:
   editing it does NOT reload the extension (build stamp skips it); the
   extension re-reads it within 30 s —
@@ -233,23 +217,33 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
 - THE RATCHET (settled 9/9, flat, no cheap tier): born stop −7.5%
   (strategy.stop_loss_pct) placed WITH the order as a combo bracket, rebased
   to the FILL if filled better, never at/above the fill, never inside the
-  bid/ask. Arm at +5% → stop to BREAKEVEN; then every further +2% locks
-  another +2% (ratchet_tiers.py TIERS = (None,(5.0,0.0,2.0))). A rung must
+  bid/ask. Arm at +3% → stop to BREAKEVEN; then every further +5% locks
+  another +5% (ratchet_tiers.py TIERS = (None,(3.0,0.0,5.0))). A rung must
   clear 4 ticks (MIN_RUNG_TICKS). Ratchet tries REPLACE, falls back to
   cancel+place and says so. Anti-clip is OFF ENTIRELY (verified 9/9:
   Book.anticlip=False, no strategy.anticlip key) — turn it on with
   strategy.anticlip=true and it caps locked ≤60% of gain, at 2+ DTE only.
-  WHY 7.5/5/2: 294-combo sweep on 80 real fills (ratchet_sweep_fine.py) —
-  the small rung is the lever ($152 → $281 on the sample); cheap (<$1)
-  loses under every spacing, so no cheap tier. Lean, not verdict.
-  OPEN DECISION (9/10, G's call — it is money): the OPRA tape now covers
-  537 contract-days, so ratchet_sweep.py ran on 115 real room-call trades
-  instead of 80. Current 7.5/5 = +$87 (rank 10 of 50). Best = born −5.0%,
-  arm +4.0% = +$384. Paired bootstrap on the same trades: +$2.58 a trade,
-  95% band +$0.45..+$4.31 — outside zero, so REAL, not this sample's noise
-  (`python3 ratchet_sweep.py --by-caller` prints both). Nothing was
-  changed; flipping it means strategy.stop_loss_pct 7.5 → 5 and
-  ratchet_tiers TIERS arm 5.0 → 4.0.
+  WHY 5/3/5 — CHANGED 9/10 ON G'S CALL, and it is the first ratchet number
+  here that clears its own error bar. The OPRA tape was bought (537
+  contract-days, 1.02M per-second quotes), so ratchet_sweep_fine.py re-swept
+  its 294 combos on REAL price paths, on 115 trades not 80 — the sweep was
+  also scoring 707 rows whose caller was "?" (G's hand trades and adopted
+  positions) as room calls; EXCLUDE_WHO now drops "" and "?" with "gian".
+      old 7.5/5/2   $158   rank #82 of 294
+      NEW 5.0/3/5   $504   rank #1
+  Paired bootstrap, same trades, 2000 resamples: +$3.01 a trade, 95% band
+  +$0.72..+$4.91 — outside zero, so an edge, not the luckiest of 294 cells.
+  Win rate FALLS 35% → 25% while dollars rise: more small scratches, far
+  fewer big losers. The 9/9 "small rungs win" finding was an artifact of
+  backfilled minute data that never showed the intraday retraces a 2% rung
+  keeps stopping into. Cheap (<$1) still loses under every spacing, so no
+  cheap tier. Re-run `python3 ratchet_sweep_fine.py` as trades accumulate.
+  ONE READER FOR "WHAT IS LIVE" (9/10): ratchet_tiers.live_spacing()
+  returns (born, arm, step) read from settings.json + TIERS. Every backtest
+  and report now calls it — ratchet_sweep_fine, chart_contracts,
+  entry_compare, missed_dollarize, pullback_levels. They used to TYPE the
+  live numbers into their own headers and had been comparing against
+  7.5/5/5, a rule nobody was running, for two days.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →

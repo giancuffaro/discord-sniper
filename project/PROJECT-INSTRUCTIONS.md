@@ -41,8 +41,9 @@ Chrome MV3 extension (Discord profile + a "Sniper Whop" profile) reads 19 live r
 diarized — Felony's morning Zoom joined as the web client), images (vision) → Python bridge on
 127.0.0.1:8787 places real Webull option orders (limit at caller's price or better; round-number
 pullback entries — next $1, 10-min window, settled on real bars 9/9; 1-strike-OTM rule; combo
-bracket with a stop born WITH the order; the flat 7.5/5/2 ratchet owns exits — born −7.5%, +5%
-arms to breakeven instantly, +2% rungs, anti-clip OFF — settled on 90 real contract-days 9/9;
+bracket with a stop born WITH the order; the flat 5/3/5 ratchet owns exits — born −5%, +3%
+arms to breakeven, +5% rungs, anti-clip OFF — settled 9/10 on 115 real trades against the
+bought OPRA tape, the first spacing to clear its own error bar;
 swings ride a wide −25% stop re-armed each morning at 9:31). Fill Announcer posts every fill,
 milestone, stop-out and scoreboard to G's Discord (options + futures webhooks; may be paused).
 The sniper-autopilot scheduled task runs every 30 min weekdays: preflight at the bell, sync
