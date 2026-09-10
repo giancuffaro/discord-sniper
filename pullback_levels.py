@@ -47,6 +47,7 @@ from zoneinfo import ZoneInfo
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import pullback  # noqa: E402  (the live rule — MANAGED names, exit levels)
+import ratchet_tiers as _rt  # noqa: E402  (the LIVE spacing, read not typed)
 
 TRADES_LOG = os.path.join(HERE, "trades.log")
 SETTINGS = os.path.join(HERE, "settings.json")
