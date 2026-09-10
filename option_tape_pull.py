@@ -16,9 +16,13 @@ WHAT IT DOES
      per contract-day: first buy -> last sell + 10 minutes.
   2. Prices the whole pull with metadata.get_cost and PRINTS IT before
      spending anything. --cost stops there.
-  3. Downloads cmbp-1 (top of book) from OPRA.PILLAR, downsamples to ~1 row
-     a second, and appends to databento_tape.csv in the exact shape tape.py
-     already reads (ts, occ, bid, ask).
+  3. Downloads cbbo-1s (consolidated best bid/offer, already sampled once a
+     second) from OPRA.PILLAR and appends to databento_tape.csv in the exact
+     shape tape.py already reads (ts, occ, bid, ask). The full book feed
+     (cmbp-1) is every quote update — millions of rows a day per contract,
+     minutes per window, all of it thrown away by the 1-second downsample.
+  3b. One pull PER CONTRACT-WINDOW, four in flight. --minutes N stops the run
+     cleanly after N minutes; re-run to continue where it stopped.
   4. Skips (occ, day) pairs already in the tape, so a re-run costs nothing.
 
 SYMBOLS: Databento wants the OSI form with the root padded to 6 ("SPY   260909P00764000"),
