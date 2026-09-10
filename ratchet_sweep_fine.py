@@ -12,6 +12,7 @@ Writes ratchet_fine_results.csv (full grid).
 """
 import csv
 import os
+import sys
 
 from ratchet_sweep import load_tape, load_trades, CONTRACT_MULT
 from ratchet_tiers import live_spacing
@@ -37,14 +38,33 @@ def locked_pct(gain, arm, step):
     return 0.0 + step * k
 
 
-def sim(trade, born, arm, step):
+def sim(trade, born, arm, step, pause_sec=0.0, pause_cents=0.0):
+    """Replay one trade's real tape under a stop rule.
+
+    THE TWO PAUSES (9/10, G: "waiting 10 seconds before it could start the
+    rung, or wait for it to move 25 or 50 cents in favour — some sort of
+    pause to give the trade time to run"). Both gate ONLY the ratchet, never
+    the born stop: the protective stop is live from the first tick either
+    way, so a pause can never make a trade lose more than born allows. What
+    it delays is the stop being RAISED — the thing that scratches a trade
+    at breakeven before it has moved.
+      pause_sec   — the ratchet stays asleep for N seconds after entry.
+      pause_cents — the ratchet stays asleep until the bid is at least this
+                    many dollars above entry. NOTE this is deliberately NOT
+                    a percentage: it is flat money, so it bites hard on a
+                    $0.34 contract (25c = +73%) and barely at all on a $5
+                    one (25c = +5%). That asymmetry is the whole question.
+    """
     entry = trade["entry"]
     stop = entry * (1.0 - born / 100.0)
+    t0 = trade["quotes"][0][0]
     for _ts, bid, _ask in trade["quotes"]:
-        gain = (bid - entry) / entry * 100.0
-        lk = locked_pct(gain, arm, step)
-        if lk is not None:
-            stop = max(stop, entry * (1.0 + lk / 100.0))
+        awake = (_ts - t0 >= pause_sec) and (bid - entry >= pause_cents)
+        if awake:
+            gain = (bid - entry) / entry * 100.0
+            lk = locked_pct(gain, arm, step)
+            if lk is not None:
+                stop = max(stop, entry * (1.0 + lk / 100.0))
         if bid <= stop:
             return (stop - entry) / entry * 100.0, True
     last = trade["quotes"][-1][1]
@@ -76,9 +96,69 @@ def sweep(trades):
     return out
 
 
+def pause_study(trades):
+    """Does giving the trade room before the ratchet wakes up pay? (9/10)"""
+    import statistics
+    lb, la, ls = live_spacing()
+
+    def score(pause_sec, pause_cents, spacing=None):
+        b, a, st = spacing or (lb, la, ls)
+        tot = 0.0
+        wins = 0
+        for t in trades:
+            rp, _ = sim(t, b, a, st, pause_sec, pause_cents)
+            tot += (rp / 100.0) * t["entry"] * CONTRACT_MULT
+            if rp > 0:
+                wins += 1
+        return tot, 100.0 * wins / len(trades)
+
+    base, base_wr = score(0, 0)
+    print("PAUSE STUDY — live spacing %g/%g/%g, %d trades" % (lb, la, ls, len(trades)))
+    print("baseline, no pause: $%+.2f  (win %.0f%%)\n" % (base, base_wr))
+
+    print("A. TIME PAUSE — ratchet asleep for N seconds after entry")
+    print("   %8s %10s %8s %10s" % ("seconds", "total $", "win%", "vs base"))
+    for s in [0, 5, 10, 20, 30, 60, 120, 300, 600]:
+        tot, wr = score(s, 0)
+        print("   %8d %10.2f %7.0f%% %+10.2f" % (s, tot, wr, tot - base))
+
+    print("\nB. MONEY PAUSE — ratchet asleep until the bid is +$X over entry")
+    print("   %8s %10s %8s %10s" % ("dollars", "total $", "win%", "vs base"))
+    for c in [0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.35, 0.50, 0.75, 1.00]:
+        tot, wr = score(0, c)
+        print("   %8.2f %10.2f %7.0f%% %+10.2f" % (c, tot, wr, tot - base))
+
+    print("\nC. BOTH — best time pause x best money pause")
+    best = None
+    for s in [0, 10, 30, 60, 120, 300]:
+        row = []
+        for c in [0.0, 0.10, 0.25, 0.50]:
+            tot, _wr = score(s, c)
+            row.append(tot)
+            if best is None or tot > best[0]:
+                best = (tot, s, c)
+        print("   %4ds  " % s + "  ".join("%9.2f" % v for v in row))
+    print("   (columns: +$0.00, +$0.10, +$0.25, +$0.50)")
+    print("\n   BEST COMBO: %ds pause + $%.2f pause -> $%+.2f  (vs base $%+.2f, %+.2f)"
+          % (best[1], best[2], best[0], base, best[0] - base))
+
+    # IS IT REAL? paired bootstrap, same trades, against no pause.
+    import random
+    diffs = [(sim(t, lb, la, ls, best[1], best[2])[0] - sim(t, lb, la, ls)[0])
+             / 100.0 * t["entry"] * CONTRACT_MULT for t in trades]
+    rnd = random.Random(7)
+    means = sorted(sum(rnd.choice(diffs) for _ in diffs) / len(diffs) for _ in range(2000))
+    print("   per trade $%+.2f, 95%% band $%+.2f..$%+.2f -> %s"
+          % (statistics.mean(diffs), means[50], means[1949],
+             "REAL" if means[50] > 0 or means[1949] < 0 else "INSIDE THE NOISE"))
+
+
 def main():
     tape = load_tape()
     trades = load_trades(tape)
+    if "--pause" in sys.argv:
+        pause_study(trades)
+        return
     print("%d fills · grid %d combos (born %d × arm %d × step %d)\n"
           % (len(trades), len(BORN) * len(ARM) * len(STEP),
              len(BORN), len(ARM), len(STEP)))
