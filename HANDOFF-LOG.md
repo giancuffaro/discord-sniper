@@ -11,6 +11,43 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## 2026-09-10 (evening) — THE READER SESSION
 
+### Chika / the PIVOT rooms — read-only (9/10 evening)
+She trades ONLY the NASDAQ and writes the last digits of the level:
+"short 195 pivot" = NQ 29,195 short. The bridge expands the digits against a
+live quote; the browser never guesses a price. The wait-for-the-next-25 rule G
+described (195->200, 230->250, 203->225) turned out to ALREADY EXIST —
+webull_futures._round_entry ceils to 25 for a short and floors for a long — so
+no new maths was written.
+Reading her is the easy part. The reason she is READ-ONLY is the count: her
+last 170 messages are 64 entries and 94 EXITS with 5 flips. Her edge is the
+trims — +10 to +25 points, over and over, then flat. ENTRIES ONLY throws every
+one of them away, so taking her entries with our ratchet is not her strategy,
+it is ours started at her price. On 9/2 alone it would have stacked five
+shorts and then flipped long inside two hours. G's call: read-only first,
+collect a record, decide later. New rules: `pivot=NQ` and `readonly`.
+(`readonly` is a real state, not `off`: off reads nothing, and the whole point
+is to collect.)
+
+### The Tradytics feeds — and a wrong answer I published to myself first
+G asked whether the two bot channels' alerts actually made money.
+`option-sweeps` is other people's flow prints — an observation, not a call.
+`ai-scalps` is fully specified (entry/target/stop) so it can be scored, and
+ai_scalps_backtest.py does it.
+FIRST RUN SAID: -0.607 R, clear of its error bar, this feed loses money.
+THAT WAS MY METHOD, NOT THE FEED. Only 13 of 48 are recent enough for minute
+bars; for the rest I fell back to DAILY bars and scored "the day's range
+covered both levels" as a stop-out. Then I measured how often that happened:
+31 of 41 rows, 76%. These are 30-minute scalps with stops a MEDIAN 0.89% from
+entry — a normal day swallows both. The measurement was manufacturing losers.
+Corrected (unscoreable rows dropped, not guessed): 7 targets, 9 stops, 5
+unresolved, 25 unscoreable, expectancy -0.14 R +/- 0.23 — INSIDE THE NOISE at
+n=21. Two of the feed's own rows were unusable anyway (target on the wrong
+side of the entry: SPOT Long 496 -> 494.52, FSLR Long 264.2 -> 262.91).
+RULE: when a data source is too coarse to answer the question, the output is
+"I don't know", not a number.
+
+
+
 Carried over from HANDOFF.md: 2026-09-10 (15:55) — broker pull is ONE overwritten file, Webull_Orders_auto.csv, never deleted (G's call). ratchet 7.5/5/2 -> 5/3/5 (G's call; first spacing to clear its own error bar). TAB RULE: only START HERE, the popup switch and whopSelfHeal may open a tab; a room that says "No Access" auto-lapses and its tab closes. Export filenames now carry the lane — the two Chrome profiles had been wiping each other's day. Room attribution on alerts 6% -> 48% (telemetry read `trader`, everything else calls it `who`). Whop self-heal + watchdog (10:12 pass). Full-depth scan of all 25 Discord servers. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Story of each in HANDOFF-LOG.md. 9/10 pm (ext 3.6.1): the reader takes the three tokens in ANY ORDER in `bare` rooms; multi-strike calls become two orders, one contract each; NDTE rolls BACK off a weekend; no date = 0DTE wherever a same-day listing exists, that Friday where it doesn't; "NEXT FRI" reads. Rooms added: Mugzone Options (on), FloridaManFinance (on, bare), AbTrades Alert Bot (on, bare, swings), TheArchitech (off, SPX), OWLS jon-and-kian (on, read live). All FIVE are in guild 718624848812834903 — the 9/9 scan badly under-read it; RE-SCAN THAT GUILD channel by channel. jon-and-kian also exposed three parser defects, all fixed: a date GLUED to "exp" ("3/19exp") was DROPPED and the order took the default date instead (would have bought a January leap as this Friday); a price with no "@" in front of it was ignored on every OPEN-label entry, so those bid the market; and the label CLOSE read as the ticker. THEN THE REPLAY CAUGHT A NEAR-DISASTER: the new any-order reader, run over 11,187 real logged messages, produced 14 new entries and THIRTEEN were English words turned into tickers (NEX, FOR, CALLY, THETA, BREAK) — and NEX and FOR are REAL LISTED SYMBOLS, so the allowlist downstream would have waved them through and bought a contract nobody named. Three rails added: that branch is `bare`-rooms-only, the ticker must be a $CASHTAG or ALL CAPS, and it must sit within 10 characters. AND optionable.txt is now read by parser.js itself (G: "they have to go through the filter of the tickers you created") — one file, three readers, fails open. Net on the whole historical corpus: +0 real alerts, -6 FAKE ones that were firing before today (tickers HAD and EARLY). ALWAYS REPLAY A READER CHANGE OVER "DS Logs" BEFORE SHIPPING IT. Low Key Stonks (722872384800948227) scanned live: 40 channels, 3 taken (Demon day-trades, Nando Alerts, Brick Alerts+bare), 9 logged off with reasons. WHY THE 9/9 SCAN MISSED ROOMS: DISCORD VIRTUALISES THE CHANNEL SIDEBAR — scraping hrefs once saw 26 of 40 and missed the whole "Stock/Option Alerts" section. Scroll the list end to end before believing a server is scanned. Two rooms left OFF because turning them on would lose money today: maguro writes the expiry with a DOT ("$slv 63c 10.16 2.35" = Oct 16 @ $2.35 — the reader would bid $10.16 and buy this Friday) and kaori writes "jan 2028" (fires with no expiry at all). Both need grammar before they can go on.
 
 ### What changed in the reader (ext 3.5.97 -> 3.6.1)
