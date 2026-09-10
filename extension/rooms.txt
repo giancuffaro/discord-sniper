@@ -305,17 +305,30 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # out again this week", "HOOD re entered this @ 5.10") stays silent.
 1315498906036994129|https://discord.com/channels/722872384800948227/1315498906036994129|Brick Alerts|Low Key Stonks|on|bare
 # ---- LEFT OFF, WITH THE REASON ----
-# maguro-alerts — OFF because turning it on would LOSE MONEY TODAY. He writes
-# the expiry with a DOT: "$slv 63c 10.16 2.35" is Oct 16 at $2.35. With `bare`
-# the reader takes 10.16 as the PRICE and the expiry as MISSING — it would bid
-# $10.16 for a $2.35 contract and buy this Friday instead of October. Needs a
-# dot-date rule before it can ever be `on`. Real alerts, worth doing.
-1315499172425764975|https://discord.com/channels/722872384800948227/1315499172425764975|Maguro Alerts|Low Key Stonks|off|needs dot-date grammar
-# kaori-alerts — same class of danger: "$NOK 20C jan 2028 @1.38" fires with NO
-# expiry, so it would buy this Friday instead of January 2028. Also writes
-# "$RDDT 1dte lotto for ER - 220C @0.96" (strike after a dash). Needs a
-# month-year expiry rule first.
+# maguro-alerts — ON, and the `dotdate` rule was written FOR this room (9/10).
+# He writes the expiry with a DOT, either side of the strike, price last:
+#   "$uber 80c 09.18 1.46"   "$tlt 83c 10.16 1.01"   "$intc 100c 10.16 4"
+#   "$mrvl 10.16 250c 11.5"  "$amzn 270c 11.20 10.2"
+# Without the rule the reader takes 10.16 as the PRICE and the date as missing
+# — it would have bid $10.16 for a $2.35 contract and bought this Friday
+# instead of October. All 8 of his contract alerts now read EXACTLY (ticker,
+# strike, date, price) and his percent updates stay trims. test_dotdate.js.
+# `dotdate` is per-room on purpose: elsewhere "965c 1.26" is a $1.26 price.
+1315499172425764975|https://discord.com/channels/722872384800948227/1315499172425764975|Maguro Alerts|Low Key Stonks|on|bare,dotdate
+# kaori-alerts — STILL OFF, and for a money reason: "$NOK 20C jan 2028 @1.38"
+# fires with NO expiry, so it would buy this Friday instead of January 2028.
+# She also writes "$RDDT 1dte lotto for ER - 220C @0.96" (strike after a dash)
+# and "$WM 9/18 250C on watch", which is a watchlist line and must stay silent.
+# Needs a month-YEAR expiry rule. Low volume — a handful of calls a quarter.
 1315499776741081138|https://discord.com/channels/722872384800948227/1315499776741081138|Kaori Alerts|Low Key Stonks|off|needs month-year grammar
+# phiccduck-alerts — ON with `bare`. Verified 9/10 against his real posts; the
+# month-name expiry he uses already reads:
+#   "$COIN 200C sep 18 @2.6"      -> COIN 200C 9/18 @2.60
+#   "MSTR SEP 18 150 Call @3.3"   -> MSTR 150C 9/18 @3.30
+#   "$RBLX 55C jul 17 @1.45"      "$GRRR 20C jul 17 @1.7"
+# His "40% already", "360%, we made it" updates stay silent. LOW VOLUME: four
+# calls in two months. Free to carry, do not expect much from it.
+1315499512353128498|https://discord.com/channels/722872384800948227/1315499512353128498|PhiccDuck Alerts|Low Key Stonks|on|bare
 # xephyr-alerts — SPX iron condors ("Sell 7680C Buy 7685C Sell 7595P Sell
 # 7590P Credit - 1.90"). Two reasons off: multi-leg spreads are refused by
 # design, and SPX has no broker connected.
