@@ -147,6 +147,7 @@ def main():
     if cost_only:
         return
 
+    print("downloading %d day-windows — this takes a few minutes" % len(byday), flush=True)
     new = not os.path.exists(OUT_CSV)
     fh = open(OUT_CSV, "a", newline="", encoding="utf-8")
     w = csv.writer(fh)
@@ -188,7 +189,9 @@ def main():
             w.writerow([sec, o, round(bid, 4), round(ask, 4)])
             n += 1
         wrote += n
-        print("  %s  %2d contracts  %6d rows" % (day, len(syms), n))
+        fh.flush()                      # per day, so a killed run keeps what it got
+        os.fsync(fh.fileno())
+        print("  %s  %2d contracts  %6d rows" % (day, len(syms), n), flush=True)
     fh.close()
     print("wrote %d tape rows to %s" % (wrote, os.path.basename(OUT_CSV)))
 
