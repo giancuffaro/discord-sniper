@@ -169,11 +169,10 @@ def main():
         w.writerow(["ts", "occ", "bid", "ask"])
     wrote = done_n = 0
     order = sorted(win.items(), key=lambda kv: (kv[0][2], kv[0][0]))
-    for (raw, occ_s, day), (a, b) in order:
-        if budget and datetime.now(timezone.utc).timestamp() - started > budget:
-            print("  time budget spent — %d of %d done, re-run to continue"
-                  % (done_n, len(win)), flush=True)
-            break
+
+    def fetch(item):
+        """Download ONE window and reduce it to tape rows. Runs on a worker."""
+        (raw, occ_s, day), (a, b) = item
         try:
             df = client.timeseries.get_range(
                 dataset="OPRA.PILLAR", symbols=[raw], schema="cmbp-1",
@@ -181,8 +180,7 @@ def main():
                 start=a.astimezone(timezone.utc),
                 end=b.astimezone(timezone.utc)).to_df()
         except Exception as e:                              # noqa: BLE001
-            print("  %s %s failed: %s" % (day, occ_s, str(e)[:120]), flush=True)
-            continue
+            return occ_s, day, None, str(e)[:120]
         last = None
         buf = []                # a window is written ALL-OR-NOTHING: a run
                                 # killed mid-window must not leave a half
@@ -199,13 +197,27 @@ def main():
             if bid <= 0 and ask <= 0:
                 continue
             buf.append([sec, occ_s, round(bid, 4), round(ask, 4)])
-        w.writerows(buf)
-        fh.flush()
-        os.fsync(fh.fileno())
-        wrote += len(buf)
-        done_n += 1
-        print("  %s %-22s %6d rows   (%d/%d)"
-              % (day, occ_s, len(buf), done_n, len(win)), flush=True)
+        return occ_s, day, buf, None
+
+    # The wall clock is the whole cost here — one window is a second of compute
+    # and ten of waiting on Databento. Four in flight, one writer.
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        for occ_s, day, buf, err in pool.map(fetch, order):
+            if err is not None:
+                print("  %s %s failed: %s" % (day, occ_s, err), flush=True)
+                continue
+            w.writerows(buf)
+            fh.flush()
+            os.fsync(fh.fileno())
+            wrote += len(buf)
+            done_n += 1
+            print("  %s %-22s %6d rows   (%d/%d)"
+                  % (day, occ_s, len(buf), done_n, len(win)), flush=True)
+            if budget and datetime.now(timezone.utc).timestamp() - started > budget:
+                print("  time budget spent — %d of %d done, re-run to continue"
+                      % (done_n, len(win)), flush=True)
+                break
     fh.close()
     print("wrote %d tape rows to %s" % (wrote, os.path.basename(OUT_CSV)))
 
