@@ -10,8 +10,12 @@ because a room's self-report is not evidence.
 HER SIDE
 She posts her result in POINTS as she goes ("+30 safety trim", "-22 got me",
 "+60 im out"). Those are used ONLY as the exit TIMES; the P&L is re-derived
-from the tape at that minute. Where she scales out in stages the LAST stated
-exit is used, which is generous to her — it gives her the best of the ride.
+from the tape at that minute, so her own claims are never taken on trust.
+Where she scales out in stages the LAST exit is used, and that is CONSERVATIVE
+for her, not generous: on the 14:46 long she banked a +30 trim and then flatted
+the rest into a -10, and scoring only the final flat books her -10 and throws
+the +30 away. So her real session is BETTER than the number below, which only
+strengthens whichever way the comparison lands.
 
 OUR SIDE
 The doctrine, exactly as the machine would run it:
@@ -154,6 +158,17 @@ def main():
             stop = expand(stop, want)
         else:
             stop = want + FUT_STOP_PTS if is_short else want - FUT_STOP_PTS
+        # THE ROUND NUMBER CAN ROUND THE ENTRY INTO THE STOP (found by this
+        # very run, 9/10). Her 15:20 long was "220s, stop 200"; rounding the
+        # entry DOWN to the next 25 put it at 29,200 — exactly her stop. A
+        # bracket whose entry IS its stop is not a trade, it is an instant
+        # scratch, and the live machine must refuse it rather than send it.
+        if (is_short and stop <= want) or ((not is_short) and stop >= want):
+            skipped += 1
+            print("  %-6s %-5s %-8.0f %-9.0f %+8.0f   %8s  the round number lands ON her stop — REFUSED"
+                  % (tm, side, her_fill, want, her_pts, "-"))
+            her_tot += her_pts
+            continue
         target = want - FUT_TARGET_PTS if is_short else want + FUT_TARGET_PTS
 
         outcome, our_pts = None, None

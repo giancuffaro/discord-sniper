@@ -9,6 +9,73 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-10 (16:35 close-out, autopilot Mode C)
+THE DAY (broker truth, RECONCILIATION 9/10 MATCH −660.00): 66 order legs,
+28 FIFO round-trips. BOT +$46 on 7 one-lot trades (1 win / 6 clips):
+SPY 758C −13 (born stop, 20 s) · SPY 758C −8 (the Midas ADD re-entered as a
+fresh OPEN; Webull 417'd the stop as an uncovered call write because its
+position record lagged the 1 s-old fill — watchdog-only, G closed it by hand)
+· META 645P +80 · META 675C −9 (born stop, 9 s) · SPY 757P −2 (2-tick stop on
+a $0.70 contract) · IWM 290C −1 (first 5/3/5 arm clip) · SPY 761C −1 (a $15
+contract, 1-tick stop). G's own 21 hand round-trips −$706 (SPY/QQQ 0DTE,
+2–21 lots). Account closed at $0.83, flat, nothing overnight. Room exits
+ignored: 0 EXIT-IGNORED lines in trades.log because the extension gate
+stops them first (Midas "Full sold runners", KingBeeAri "Out @here" both
+show "ignored — entries only" in the DS Logs export) — correct by design (b).
+THE META +$80 IS THE LESSON: it was closed by the PULLBACK STOCK TARGET
+(648.62) at 6.23 while the ratchet's stop was 5.65 (+4% locked); the bid
+ran to 8.50 within 10 min. LEFT MONEY, ~$300. The log wrote "sold on their
+call" (mislabel — fixed 16:33 by the other session; the ledger row still
+says exit_by "room call") and then raised "cannot access local variable
+'msg'" AFTER the fill (also fixed 16:33). Whether a stock target should
+close a winner the ratchet is riding is G's call — Watch item added.
+POST-MORTEMS: 7 today — NOISE CLIP ×4 (−$32), ARM CLIP ×2 (−$2), LEFT MONEY
+×1 (+$80). Running (9 graded since 9/9): NOISE CLIP 5 / −$63, ARM CLIP 3 /
+−$4, LEFT MONEY 1 / +$80. Machine faults in them: POSTCHECK "book holds X,
+the account doesn't" ×5 (the 1–4 s fill→position lag, cosmetic), the 417
+covered-call stop refusal (retry fixed 15:47), the false "recorded 1.47 but
+broker filled 1.37" alarm (POSTCHECK compared trade 2 against trade 1's fill
+on the same contract; anchored to the record's own window, fixed today).
+BUGS FOUND AND FIXED AT THE CLOSE (this run): (1) postmortem.py wrote both
+SPY 758C trades to the SAME .md — the 16:39 --date run overwrote trade 1
+with trade 2 even after the morning's fill+exit fix; files are now named by
+the trade's rank on that (date, occ) among graded trades (base.md, -2.md);
+a stray 2026-09-10_SPY260910C00758000-3.md from the 10:16 run and a
+SPY260910P00757000-2.md from my first pass remain (never delete). (2) 256
+Webull 429s today, 187 of them /assets/positions on the FUTURES account
+R8IEC — the _FUT_POS_BACKOFF cap of 60 s on an account that is flat by
+design; capped at 300 s while futures_brokers.webull is false, and the
+2**(fails-3) exponent clamped (it overflows float after ~1030 empty reads).
+The rest: 19 order/detail 429s polling the SPCX no-fill bid, 40 on the
+margin account during G's hand-trading burst (shared key with Market
+Sniper). 70 417s: 27 UNSUPPORTED_CATEGORY + 24 INVALID/UNSUPPORTED_SYMBOL
+on market-data event/crypto snapshots (something probes crypto/event
+snapshots for room tickers — harmless, not chased today), 8 cancel-already-
+filled, 6 PARAM_ERR, 1 covered-call.
+REPLAY: 10 "silent drops", 0 real: AAPL 325C (KingBeeAri) → REFUSED for
+money at 11:19 ($10 BP) and pullback never touched at 11:30–11:40; the
+Aristotle "In/Avg/New avg" lines are the same trade; Midas ADD 9:34:38 →
+traded as the second 758C; AbTrades GOOGL 11/20 370c posted 14:43 — that
+room was added 15:36, so no tab existed; the 3 CLOSEs are entries-only.
+1 POSSIBLE MISSED ENTRY (AAPL "Above 323.1 for calls is my entry") = a
+level, not a fill. DS Logs export: 0 detach/reload lines today (the 147 in
+the file are 9/9 04:00). BUT 66 "ROOM HOURS — opened 1 room tab(s)" 9:33–
+12:13 = the No-Access ZTRADEZ mashup tab being reopened every ~2 min until
+G switched it off 13:31; the "No Access → lapsed" fix landed 13:13, so it
+cannot recur — verify tomorrow. build_ledger still shows old DRIFT lines
+8/26 −168, 8/31 +34, 9/1 +15, 9/2 −22 (the known 15 book-priced disagreements;
+broker totals unaffected). Stream: connected, budget_left 285. Announcer
+PAUSED (announcer.stop). journal-2026-09-10.xlsx + trader-scoreboard.xlsx
+(30 callers; Unraveller 13 trades +303 FOLLOW; new: Eva, Trademorewiser
+(MOD), eli — 1 trade each) written; LibreOffice hung in the sandbox on the
+second recalc, so formulas (14, all SUM/SUMIF/ratio, verified error-free on
+the first pass) compute on open. HANDOFF.md is 56.6 KB — over its 50 KB
+ceiling before this run; next session moves history out.
+Tests: test_positions/phantom_exit/architecture/tape + node test_resolve
+all pass; bridge.py + postmortem.py compile. Bridge restarts itself after
+hours (it did at 16:34 on the other session's edits; will again on mine).
+
+
 ## 2026-09-10 (evening) — THE READER SESSION
 
 ### Chika / the PIVOT rooms — read-only (9/10 evening)
