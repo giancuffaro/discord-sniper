@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (13:15) — ratchet 7.5/5/2 -> 5/3/5 (G's call; first spacing to clear its own error bar). TAB RULE: only START HERE, the popup switch and whopSelfHeal may open a tab; a room that says "No Access" auto-lapses and its tab closes. Export filenames now carry the lane — the two Chrome profiles had been wiping each other's day. Room attribution on alerts 6% -> 48% (telemetry read `trader`, everything else calls it `who`). Whop self-heal + watchdog (10:12 pass). Full-depth scan of all 25 Discord servers. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Story of each in HANDOFF-LOG.md. 9/10 pm (ext 3.5.98): the reader takes the three tokens in ANY ORDER in `bare` rooms; multi-strike calls become two orders, one contract each; NDTE rolls BACK off a weekend; no date = 0DTE wherever a same-day listing exists, that Friday where it doesn't; "NEXT FRI" reads. Rooms added: Mugzone Options (on), FloridaManFinance (on, bare), TheArchitech (off, SPX).
+Last updated: 2026-09-10 (13:15) — ratchet 7.5/5/2 -> 5/3/5 (G's call; first spacing to clear its own error bar). TAB RULE: only START HERE, the popup switch and whopSelfHeal may open a tab; a room that says "No Access" auto-lapses and its tab closes. Export filenames now carry the lane — the two Chrome profiles had been wiping each other's day. Room attribution on alerts 6% -> 48% (telemetry read `trader`, everything else calls it `who`). Whop self-heal + watchdog (10:12 pass). Full-depth scan of all 25 Discord servers. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Story of each in HANDOFF-LOG.md. 9/10 pm (ext 3.5.98): the reader takes the three tokens in ANY ORDER in `bare` rooms; multi-strike calls become two orders, one contract each; NDTE rolls BACK off a weekend; no date = 0DTE wherever a same-day listing exists, that Friday where it doesn't; "NEXT FRI" reads. Rooms added: Mugzone Options (on), FloridaManFinance (on, bare), AbTrades Alert Bot (on, bare, swings), TheArchitech (off, SPX) — all four in guild 718624848812834903, which the 9/9 scan under-read; RE-SCAN THAT GUILD.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -235,11 +235,17 @@ ENTRIES
   SCOPED ON PURPOSE: unscoped it fired "TSLA 9/4 360P .72" in every room,
   which is a real entry in some rooms and a chart caption in others.
   test_word_order.js + test_bare_entry.js hold both sides.
-- TWO STRIKES = TWO ORDERS (9/10, G: "when you have multistrikes, just buy
-  both of them. Buy two contracts, one of each"). Same ticker/side/expiry,
-  ONE contract each, separate positions with their own stop and ratchet —
-  not a spread. Only after leg one is accepted. A call+put pair is a
-  strangle and refuses whole rather than trading one leg.
+- TWO CONTRACTS IN ONE MESSAGE = TWO ORDERS (9/10, G: "when you have
+  multistrikes, just buy both of them. Buy two contracts, one of each").
+  ONE contract each, separate positions with their own born stop and their
+  own ratchet — not a spread. Two shapes:
+    "$NVDA $225C/ and $230C NEXT FRI"            two strikes, one expiry
+    "$APLD 10/16 30c 2.75 ... $APLD 9/18 30c .9" two expiries, own prices
+  The second leg goes only after leg one is ACCEPTED. Guards: same ticker
+  only (two DIFFERENT tickers on a line is a levels row / watchlist — take
+  the first, leave the rest); a bare strike with another ticker written in
+  front of it is that ticker's, not a sibling; call+put is a strangle and
+  the whole line refuses rather than trading one leg; max 3 extras.
 - EXPIRY, in one place (webull_options.expiry_to_date):
   · NDTE is N CALENDAR days out. If N lands on a weekend or holiday it rolls
     BACK to the previous trading day (G, 9/10: "there is no 3DTE if in three
