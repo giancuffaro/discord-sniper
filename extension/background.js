@@ -2150,6 +2150,95 @@ async function evictOtherLane() {
   } catch (e) {}
 }
 
+/* CLOSE THE TABS THAT AREN'T ROOMS (9/10, G: "can you have chrome close the
+ * tabs that are not in our rooms?"). oneTabPerChannel() kills the same room
+ * twice; this kills tabs that are not an `on` room at all — a benched room, a
+ * lapsed one, a bare guild URL (what Discord serves when you've been removed
+ * from a server — that is how RWGates surfaced), /channels/@me, or a channel
+ * nobody has ever put in rooms.txt.
+ *
+ * FOUR GUARDS, each one paid for by a bug already in this file's history:
+ *  1. NEVER touches a non-Discord/Whop tab. It only ever queries those two
+ *     origins, so a Webull tab or anything else he is reading cannot be hit.
+ *  2. A LOADING OR DISCARDED TAB IS NEVER A CANDIDATE. During the morning
+ *     flood, tabs that have not committed yet all report /channels/@me or a
+ *     blank path. oneTabPerChannel closed the lot as duplicates on 8/30 for
+ *     exactly this reason; a reaper that judged them would close every room
+ *     the moment START HERE opened them.
+ *  3. TWO STRIKES. A tab has to look wrong on two consecutive sweeps before
+ *     it dies — same shape as the zombie-heartbeat fix. One bad reading (a
+ *     redirect in flight, a room mid-navigation) is never enough.
+ *  4. THE ACTIVE TAB IS SPARED (G's call 9/10) — the one he is focused on in
+ *     each window survives even if it is not an `on` room, so he can open a
+ *     benched room to read it by hand without the extension yanking it. It
+ *     closes once he clicks away.
+ *
+ * This does NOT fight the 9/8 "a closed tab stays closed" rule: that rule is
+ * about not REOPENING what he closed. This only closes, never opens. */
+const _NOT_A_ROOM_STRIKES = {};      // tabId -> consecutive bad sweeps
+
+async function closeNonRoomTabs() {
+  let rooms;
+  try { rooms = await loadRoomsFile(); } catch (e) { return; }
+  // The set of channel ids allowed a tab RIGHT NOW — `on` AND inside its
+  // hours. Anything else on discord.com/whop.com is a stray.
+  const allow = new Set();
+  try {
+    for (const r of ALL_ROOMS) {
+      if (roomWantsTab(r)) allow.add(String(r.id));
+    }
+  } catch (e) { return; }
+  if (!allow.size) return;           // rooms.txt unreadable/empty — close nothing
+
+  let tabs;
+  try {
+    tabs = await chrome.tabs.query({ url: ["https://discord.com/*",
+                                           "https://*.discord.com/*",
+                                           "https://whop.com/*"] });
+  } catch (e) { return; }
+
+  const seen = new Set();
+  const doomed = [];
+  for (const t of tabs) {
+    seen.add(t.id);
+    if (t.status === "loading" || t.discarded) { _NOT_A_ROOM_STRIKES[t.id] = 0; continue; }
+    if (t.active) { _NOT_A_ROOM_STRIKES[t.id] = 0; continue; }   // guard 4
+    if (t.pinned) { _NOT_A_ROOM_STRIKES[t.id] = 0; continue; }
+    const u = String(t.url || "");
+    let ok = false;
+    const dm = u.match(/discord\.com\/channels\/\d+\/(\d+)/);
+    if (dm) ok = allow.has(dm[1]);
+    else if (/whop\.com\//.test(u)) {
+      // Whop rooms are keyed by their canonical whop:<slug> id in rooms.txt,
+      // and the URL carries exp_<id> — match the room by its own url instead.
+      ok = ALL_ROOMS.some(r => roomWantsTab(r) && r.url &&
+                               u.replace(/\/+$/, "") === String(r.url).replace(/\/+$/, ""));
+    }
+    if (ok) { _NOT_A_ROOM_STRIKES[t.id] = 0; continue; }
+    _NOT_A_ROOM_STRIKES[t.id] = (_NOT_A_ROOM_STRIKES[t.id] || 0) + 1;
+    if (_NOT_A_ROOM_STRIKES[t.id] >= 2) doomed.push(t);           // guard 3
+  }
+  for (const id of Object.keys(_NOT_A_ROOM_STRIKES)) {            // forget dead ids
+    if (!seen.has(Number(id))) delete _NOT_A_ROOM_STRIKES[id];
+  }
+  if (!doomed.length) return;
+
+  let closed = 0;
+  const what = [];
+  for (const t of doomed) {
+    let label = t.url;
+    try { label = new URL(t.url).pathname; } catch (e) {}
+    await _keepWindowAlive(t);        // never let the last tab take the window
+    try { await chrome.tabs.remove(t.id); closed++; what.push(label); } catch (e) {}
+    delete _NOT_A_ROOM_STRIKES[t.id];
+  }
+  if (closed) await addLog({ kind: "sent", what: "ROOMS",
+    why: "closed " + closed + " tab(s) that are not an open room in rooms.txt: "
+       + what.slice(0, 6).join(", ") + (what.length > 6 ? " +" + (what.length - 6) + " more" : "")
+       + ". A benched, lapsed or unknown channel reads nothing and costs memory. "
+       + "The tab you are looking at is never closed." });
+}
+
 async function openMissingRooms() {
   let rooms;
   try { rooms = await loadRoomsFile(); } catch (e) { return; }
@@ -2455,7 +2544,7 @@ chrome.alarms.onAlarm.addListener(a => {
   // once at startup; after that nothing reopens a tab he closed. Function left
   // defined-but-uncalled below in case it's ever wanted back.
   // whopSelfHeal() ADDED BACK 9/10, whop lane only — see its own comment.
-  if (a.name === "watch-build") { checkBuild(); pollRoomsFile(); roomSchedule(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); whopSelfHeal(); }
+  if (a.name === "watch-build") { checkBuild(); pollRoomsFile(); roomSchedule(); syncFills(); ensureReaders(); oneTabPerChannel(); closeNonRoomTabs(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); whopSelfHeal(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
