@@ -385,47 +385,22 @@ if defined CHROME (
   rem  closing it mid-run did nothing - the loop kept reopening it, one room
   rem  at a time, for another two minutes. Now every room checks Chrome is
   rem  still alive first and the run stands down the moment it isn't.
-  set "ABORTED="
-  set /a TABN=0
-  for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do (
-    set "RSTATE=%%C"
-    if /i "!RSTATE!"=="off" set "RSKIP=1"
-    if /i "!RSTATE!"=="lapsed" set "RSKIP=1"
-    if not defined RSKIP (
-    if not defined ABORTED (
-    tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
-    if errorlevel 1 (
-      set "ABORTED=1"
-      echo.
-      echo         Chrome was closed - stopping. !TABN! room^(s^) had opened.
-      echo         Nothing else will be reopened. Run this again when ready.
-      echo.
-    )
-    )
-    if not defined ABORTED (
-    if not "%%A"=="" (
-      set "RID=%%A"
-      if /i not "!RID:~0,5!"=="whop:" (
-        start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" "%%B"
-        set /a TABN+=1
-        rem  ONE TAB EVERY 6 SECONDS (9/9). Discord's gateway lets a user
-        rem  account start ONE session per 5 seconds (max_concurrency 1) and
-        rem  caps it at 50 live sessions. Three at once meant two of every
-        rem  three got "Invalid Session" and retried; a reload storm on top
-        rem  stacked ghost sessions past the cap and the account got flagged.
-        rem  Slower is the whole point.
-        echo         ...!TABN! rooms open...
-        timeout /t 6 /nobreak >nul
-      )
-    )
-    )
-    )
-    set "RSKIP="
-  )
-  if not defined ABORTED echo         Discord rooms open - now the Whop rooms in the second browser...
+  rem  ONE OPENER, ONE SCHEDULE (9/9 evening). This file only SEEDS each
+  rem  browser now: the main Discord room above, the first ON Whop room below.
+  rem  The extension opens everything else on the request token - one room
+  rem  every 6 s, in its own lane, and ONLY the rooms whose hours are open:
+  rem  9:15-4:30 PM ET on weekdays, plus any room marked `always` in
+  rem  rooms.txt at any hour, which is the futures rooms. G, 9/9: "open the
+  rem  rooms at 9:15 and close them at 4:30 so we don't bomb Discord with
+  rem  pings; keep the futures channels always open." A 7 AM start used to
+  rem  open 19 rooms that nothing could follow; now it opens the futures
+  rem  rooms and the rest come up by themselves at 9:15.
+  > "open-rooms.request" echo %date%-%time%-%RANDOM%%RANDOM%
+  echo         Discord seeded. The extension opens the rooms whose hours are open, one every 6s.
+  echo         Now the Whop browser...
   rem  Seed the Whop profile once with the perf flags so its Chrome starts with
   rem  background throttling off, same as the Discord one. The rest of the Whop
-  rem  rooms open as tabs in this same profile below and inherit the flags.
+  rem  rooms open as tabs in this same profile from the extension, same token.
   rem  First-ever run: this is a blank profile - log into Whop and install the
   rem  extension in it once, then it sticks.
   set "WHOP_SEEDED="
@@ -434,57 +409,21 @@ if defined CHROME (
     if /i "!RSTATE!"=="off" set "RSKIP=1"
     if /i "!RSTATE!"=="lapsed" set "RSKIP=1"
     if not defined RSKIP (
-    if not defined ABORTED (
     if not defined WHOP_SEEDED (
       set "RID=%%A"
       if /i "!RID:~0,5!"=="whop:" (
         start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "%%B"
         set "WHOP_SEEDED=1"
-        set /a TABN+=1
         timeout /t 6 /nobreak >nul
       )
     )
     )
-    )
     set "RSKIP="
   )
-  for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do (
-    set "RSTATE=%%C"
-    if /i "!RSTATE!"=="off" set "RSKIP=1"
-    if /i "!RSTATE!"=="lapsed" set "RSKIP=1"
-    if not defined RSKIP (
-    if not defined ABORTED (
-    tasklist /FI "IMAGENAME eq chrome.exe" 2>nul | find /I "chrome.exe" >nul
-    if errorlevel 1 (
-      set "ABORTED=1"
-      echo.
-      echo         Chrome was closed - stopping. !TABN! room^(s^) had opened.
-      echo.
-    )
-    )
-    if not defined ABORTED (
-    if not "%%A"=="" (
-      set "RID=%%A"
-      if /i "!RID:~0,5!"=="whop:" (
-        rem  Whop rooms go to the SECOND profile now, not SNIPER_PROFILE. The
-        rem  seed above already opened the first one; the extension's dupe
-        rem  closer tidies the one repeat within 30s, same as the Discord main
-        rem  room. Every Whop tab lives in its own browser - off the Discord
-        rem  one's memory entirely.
-        start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" "%%B"
-        set /a TABN+=1
-        echo         ...!TABN! rooms open...
-        timeout /t 4 /nobreak >nul
-      )
-    )
-    )
-    )
-    set "RSKIP="
-  )
-  if defined ABORTED (
-    echo         Rooms were NOT all opened - Chrome was closed part-way.
+  if defined WHOP_SEEDED (
+    echo         Both browsers seeded. The extension fills in the rooms from here.
   ) else (
-    echo         All !TABN! rooms opened.
+    echo         No ON Whop room in rooms.txt - only the Discord browser was seeded.
   )
   rem  Above-Normal priority for every Chrome process (8/23) - the Task
   rem  Manager bump that never survives a restart, reapplied each morning.
