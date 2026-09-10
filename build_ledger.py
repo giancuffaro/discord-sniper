@@ -261,6 +261,39 @@ def load_fill_callers():
     return out
 
 
+ORDER_IN_RE = re.compile(
+    r"^(\S+)\tORDER IN (?:\[\w+\] )?BUY\s+(\d+)\s+(\S+)\s+([\d.]+)([CP])\s+(\S+)\s+@\s+([\d.]+)")
+
+
+def load_fill_contracts():
+    """(date, SYMBOL) -> [{ts, strike, cp, expiry, limit}] from trades.log.
+
+    WHY (9/10, G: "let's look for the missing trades"): 84 of the bot's own
+    ledger rows carried NO CONTRACT — 53 had no strike, no side and no
+    expiry at all, just "AMZN, option, filled". A row like that can never be
+    checked against the broker, because there is nothing to check with. The
+    ORDER IN line that started the trade has all of it ("ORDER IN BUY 1 QQQ
+    727C 2026-08-12 @ 0.90"), so it is read back the same way the callers
+    were. Ordered by time; the caller matches on symbol + nearest earlier
+    order, never on price (the fill and the limit differ by design)."""
+    out = {}
+    if not os.path.exists(TRADES_LOG):
+        return out
+    with open(TRADES_LOG, encoding="utf-8", errors="replace") as fh:
+        for ln in fh:
+            m = ORDER_IN_RE.match(ln)
+            if not m:
+                continue
+            iso, _qty, sym, strike, cp, expiry, limit = m.groups()
+            ts = _iso_epoch(iso)
+            out.setdefault((iso[:10], sym.upper()), []).append(
+                {"ts": ts, "strike": _f(strike), "cp": cp, "expiry": expiry,
+                 "limit": _f(limit)})
+    for v in out.values():
+        v.sort(key=lambda x: x["ts"] or 0)
+    return out
+
+
 def _take_fill(broker, key):
     """First unused FILLED line for this key, marked used. None if spent."""
     for b in broker.get(key, ()):
@@ -495,6 +528,7 @@ def _side_letter(side):
 # ---------- build rows ----------
 def build():
     day_rows = load_days()
+    fill_contracts = load_fill_contracts()
     broker = load_broker_fills()
     trips = load_broker_exports()
     trip_used = [False] * len(trips)
@@ -578,6 +612,26 @@ def build():
             exits = [{"t": closed_ts, "qty": qty, "price": _r2(r.get("exit")),
                       "pl": _r2(r.get("pl"))}]
             derived = True
+        # --- put the contract back on rows that lost it (9/10) ---
+        if _kind(r) == "option" and (r.get("strike") is None or not r.get("side")
+                                     or not r.get("expiry")):
+            cands = fill_contracts.get((date, sym), [])
+            pick = None
+            for cnd in cands:
+                if opened_ts and cnd["ts"] and cnd["ts"] > opened_ts + 90:
+                    continue                    # ordered after we were filled
+                pick = cnd                      # keep the latest one before us
+            if pick is None and len(cands) == 1:
+                pick = cands[0]
+            if pick:
+                if r.get("strike") is None:
+                    r["strike"] = pick["strike"]
+                if not r.get("side"):
+                    r["side"] = "CALLS" if pick["cp"] == "C" else "PUTS"
+                if not r.get("expiry"):
+                    r["expiry"] = pick["expiry"]
+                r["_contract_fixed"] = True
+
         # --- the broker's own export: confirm, and fill a missing exit ---
         trip = _find_trip(date, sym, _r2(r.get("strike")), _side_letter(r.get("side")), fill, qty)
         export_confirmed = trip is not None
@@ -704,7 +758,9 @@ def build():
             "derived": derived,
             "day_file": r["_file"],
             "raw": (r.get("raw") or "").replace("\n", " ").strip(),
-            "why": ((r.get("why") or "").replace("\n", " ").strip()
+            "why": (("contract read back from the log's ORDER IN line; "
+                     if r.get("_contract_fixed") else "")
+                    + (r.get("why") or "").replace("\n", " ").strip()
                     or ("P&L recomputed from the fill and exit prices — the book's "
                         "number was wrong (see store_pl)" if r.get("_pl_fixed") else "")),
         })
@@ -934,6 +990,10 @@ def summary(rows, broker):
           f"archive/paper-fills-*.csv)")
     print(f"  (one row per POSITION — a trade held overnight is not counted "
           f"once per day)")
+    _cf = [r for r in rows if "contract read back" in (r.get("why") or "")]
+    if _cf:
+        print(f"  CONTRACT recovered from the log:     {len(_cf)}  "
+              f"(rows that had no strike/side/expiry)")
     _fx = [r for r in rows if "recomputed from the fill and exit" in (r.get("why") or "")]
     if _fx:
         _delta = sum((_f(r["pl"]) or 0) - (_f(r["store_pl"]) or 0) for r in _fx)
