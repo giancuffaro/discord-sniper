@@ -519,7 +519,7 @@ function cleanText(raw) {
   // ordinary date and every pattern downstream sees the room it already knows.
   // Guards even inside the room: month 1-12, day 1-31, and SOMETHING must
   // follow it — a trailing "@ 1.26" at the end of a line is a price, not a date.
-  if (cfg && cfg.dot_date) {
+  if (_ROOM_CFG && _ROOM_CFG.dot_date) {
     t = t.replace(/(?<![\d.@$])(0?[1-9]|1[0-2])\.([0-3]\d)(?=\s+\S)/g,
                   (m0, mo, dd) => (+dd >= 1 && +dd <= 31) ? mo + "/" + dd : m0);
   }
