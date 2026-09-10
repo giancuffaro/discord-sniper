@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (16:10) — ext 3.6.1. Ratchet 5/3/5. Reader: any word order in `bare` rooms, two contracts in one message become two orders, NDTE rolls back off a weekend, no date = 0DTE where a same-day listing exists, optionable.txt now read by parser.js too. 8 rooms added (5 in guild 718624848812834903, 3 in Low Key Stonks). Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Full story of everything above in HANDOFF-LOG.md, 9/10.
+Last updated: 2026-09-10 (17:05) — ext 3.6.2. Ratchet 5/3/5. Reader: any word order in `bare` rooms, two contracts in one message become two orders, NDTE rolls back off a weekend, no date = 0DTE where a same-day listing exists, optionable.txt now read by parser.js too. 10 rooms added (5 in guild 718624848812834903, 5 in Low Key Stonks). New per-room rule `dotdate` for an expiry written with a dot (Maguro: "$slv 63c 10.16 2.35" = Oct 16 @ $2.35). The dead `spx` rule and all its plumbing (spx_entry_channels / spx_entries, bridge + background) is DELETED, not left beside the new one. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Full story of everything above in HANDOFF-LOG.md, 9/10.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -139,9 +139,11 @@ ENTRIES
   the daily probe keeps knocking, so it un-lapses itself if the sub returns.
   6th field = the room's RULES (9/9 evening): comma flags `bare` (an entry
   with no verb counts, AND its tokens may arrive in any word order — see
-  WORD ORDER below), `sym=SPX` (symbol to assume when the call names none).
+  WORD ORDER below), `dotdate` (the expiry is written with a DOT — Maguro's
+  "$slv 63c 10.16 2.35" is Oct 16 at $2.35; per-room because elsewhere that
+  number IS the price), `sym=SPX` (symbol to assume when the call names none).
   The `spx` flag was DELETED 9/10 on G's instruction — see NO SPX->SPY.
-  The bridge DERIVES spx_entry_channels / entry_no_verb_channels /
+  The bridge DERIVES dot_date_channels / entry_no_verb_channels /
   default_symbol_channels from these (apply_room_rules, at boot and on
   every write) — settings.json no longer holds those lists. Rules count
   whatever the room's state (shabs/eli are off but relayed via OWLS).
