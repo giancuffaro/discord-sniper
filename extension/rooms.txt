@@ -199,3 +199,64 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # at this age, not a reason to cut; carries shabs' proven record through it.
 1449226651064991806|https://discord.com/channels/718624848812834903/1449226651064991806|OWLS all-alerts|OWLS Capital|on
 
+# ============================================================
+# FULL-DEPTH SCAN, 9/10/26 (G: "go channel by channel, don't skip any; the
+# ones you find add them off with the corresponding description"). All 25
+# servers, every channel the account can see (289 channels). Everything
+# below was READ — last messages opened, not judged off its name.
+#
+# FOUND — real, live, options alert feeds we were not reading. Both are in
+# TradingTheTrend, whose #option-alerts we already run:
+# TradesTracker APP posts a machine-clean line ("Buy To Open Trade Update
+# Accepted / BTO INTC 09/25/2026 $120.00c @ $x.xx", and the matching STC) —
+# the most parseable grammar found in any of the 25 servers. member-alerts
+# carries member calls in plain form ("BTO NVDA 9/11 230c @ .88") with the
+# same bot echoing each one. OFF until G decides: trade-log almost certainly
+# DUPLICATES the #option-alerts room already on, so turning both on would
+# double every TTT signal. Turn ON member-alerts first, watch a day, then
+# decide on trade-log.
+771902435680845845|https://discord.com/channels/769790224921395200/771902435680845845|TTT member-alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
+800526679046225961|https://discord.com/channels/769790224921395200/800526679046225961|TTT trade-log|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
+# ALERT ROOMS THAT FAIL A STANDING RULE — real calls, but the bot is not
+# allowed to take them. Listed so nobody re-discovers them next scan.
+# Spreads: G's "no covered calls and spreads" rule (9/7). Both post credit
+# spreads ("AAPL pcs 9/25 STO 290p BTO 285p Filled at 0.50").
+808127664022880297|https://discord.com/channels/769790224921395200/808127664022880297|TTT spread-alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
+794096742446530570|https://discord.com/channels/769790224921395200/794096742446530570|TTT option-spreads|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
+# Shares, held long-term ("adding shares of SPOT here for long term @ 434") —
+# not options, and swings are paused.
+769797593316065280|https://discord.com/channels/769790224921395200/769797593316065280|TTT stock-alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
+927356848875642940|https://discord.com/channels/496871546963492874/927356848875642940|ZT dave-trader|ZTRADEZ|off
+#
+# SCANNED AND REJECTED — read, not alert rooms, deliberately NOT added as
+# room lines. Kept as one block so the next scan doesn't re-open them:
+#   OWLS notable-flow / notable-etf-flow / free-flow-ideas — an unusual-flow
+#     BOT ("GXO 50 C 11/20/2026 $1.1M"). Prints what someone else bought;
+#     there is no entry, no stop and nobody to follow.
+#   OWLS members-plays, OWLS futures-trading, TTT futures-forex,
+#     Trading Decoded back-to-the-futures — member chatter.
+#   Honey Drip morning-watchlist, admin-commentary — watchlists and recaps,
+#     the exact thing the parser must never fire on.
+#   Honey Drip how-to-trade-15min-orb / -strat / -leaps / fibonacci /
+#     break-and-retest — G asked for the education channels' grammar. There
+#     is none: every one is a single YouTube link. Vero's day-trade-guide
+#     and Platinum's how-to-navigate are the same (a guide post pointing at
+#     the alert rooms we already have). No server teaches an alert format
+#     we were not already parsing.
+#   Platinum trade-recaps, live-trade-recordings, activate-alerts — recaps,
+#     video, and a react-for-a-role board.
+#   Low Key Stonks sub-stock-alerts (react-for-a-role board), daily-watchlist.
+#   Market Trend Students mtp-signals — gold/silver/FX commentary, no options.
+#   Trading Decoded option-sniper — a competing product's changelog bot.
+#   ZTRADEZ nitro-options (last call April), aceoftrades (last March) — dead,
+#     and the ZTRADEZ subscription lapses anyway.
+#   Alpha Trader Firm, Team Bull Trading, TradeZella, NPZ, Stock Kings, NGD,
+#     IronPoker, GANG gang, Whop, Boka — prop-firm promos, journaling tools,
+#     Spanish-language and social servers. No alert channel in any of them.
+#
+# DO NOT ADD: Sniper HQ 1543132301594988634 (sniper-alerts-options) and
+# 1543139844966977616 (sniper-alerts-futures). That is OUR OWN server — the
+# fill announcer posts there. Reading it would feed the bot its own fills as
+# if they were somebody's calls.
+# ============================================================
+

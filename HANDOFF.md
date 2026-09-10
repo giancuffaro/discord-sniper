@@ -241,6 +241,14 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   WHY 7.5/5/2: 294-combo sweep on 80 real fills (ratchet_sweep_fine.py) —
   the small rung is the lever ($152 → $281 on the sample); cheap (<$1)
   loses under every spacing, so no cheap tier. Lean, not verdict.
+  OPEN DECISION (9/10, G's call — it is money): the OPRA tape now covers
+  537 contract-days, so ratchet_sweep.py ran on 115 real room-call trades
+  instead of 80. Current 7.5/5 = +$87 (rank 10 of 50). Best = born −5.0%,
+  arm +4.0% = +$384. Paired bootstrap on the same trades: +$2.58 a trade,
+  95% band +$0.45..+$4.31 — outside zero, so REAL, not this sample's noise
+  (`python3 ratchet_sweep.py --by-caller` prints both). Nothing was
+  changed; flipping it means strategy.stop_loss_pct 7.5 → 5 and
+  ratchet_tiers TIERS arm 5.0 → 4.0.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
