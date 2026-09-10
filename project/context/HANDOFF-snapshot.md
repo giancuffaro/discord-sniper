@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (13:15) — ratchet 7.5/5/2 -> 5/3/5 (G's call; first spacing to clear its own error bar). TAB RULE: only START HERE, the popup switch and whopSelfHeal may open a tab; a room that says "No Access" auto-lapses and its tab closes. Export filenames now carry the lane — the two Chrome profiles had been wiping each other's day. Room attribution on alerts 6% -> 48% (telemetry read `trader`, everything else calls it `who`). Whop self-heal + watchdog (10:12 pass). Full-depth scan of all 25 Discord servers. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Story of each in HANDOFF-LOG.md.
+Last updated: 2026-09-10 (13:15) — ratchet 7.5/5/2 -> 5/3/5 (G's call; first spacing to clear its own error bar). TAB RULE: only START HERE, the popup switch and whopSelfHeal may open a tab; a room that says "No Access" auto-lapses and its tab closes. Export filenames now carry the lane — the two Chrome profiles had been wiping each other's day. Room attribution on alerts 6% -> 48% (telemetry read `trader`, everything else calls it `who`). Whop self-heal + watchdog (10:12 pass). Full-depth scan of all 25 Discord servers. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Story of each in HANDOFF-LOG.md. 9/10 pm (ext 3.5.98): the reader takes the three tokens in ANY ORDER in `bare` rooms; multi-strike calls become two orders, one contract each; NDTE rolls BACK off a weekend; no date = 0DTE wherever a same-day listing exists, that Friday where it doesn't; "NEXT FRI" reads. Rooms added: Mugzone Options (on), FloridaManFinance (on, bare), TheArchitech (off, SPX).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -137,9 +137,10 @@ ENTRIES
   proved the warning alone was useless — it fired for three weeks while the
   room kept opening a blank tab every morning. `lapsed` not `off` on purpose:
   the daily probe keeps knocking, so it un-lapses itself if the sub returns.
-  6th field = the room's RULES (9/9 evening): comma flags `spx` (index
-  calls trade as SPY, strike/10, premium dropped), `bare` (an entry with
-  no verb counts), `sym=SPX` (symbol to assume when the call names none).
+  6th field = the room's RULES (9/9 evening): comma flags `bare` (an entry
+  with no verb counts, AND its tokens may arrive in any word order — see
+  WORD ORDER below), `sym=SPX` (symbol to assume when the call names none).
+  The `spx` flag was DELETED 9/10 on G's instruction — see NO SPX->SPY.
   The bridge DERIVES spx_entry_channels / entry_no_verb_channels /
   default_symbol_channels from these (apply_room_rules, at boot and on
   every write) — settings.json no longer holds those lists. Rules count
@@ -219,9 +220,35 @@ ENTRIES
   held strike.
 - "ADDED <full contract>" you are not in = an OPEN entry. A bare "added to
   SPY" refuses.
-- SPX→SPY per channel (settings spx_entry_channels): index entries fire as
-  the ETF, strike/10, caller's premium dropped. OWLS relay: shabs/eli calls
-  get default_symbol SPX + spx_entries (9/9).
+- NO SPX→SPY. DELETED 9/10, G: "do not translate any SPX to SPY. Delete any
+  sort of translation between SPX and SPY." SPX/SPXW/XSP/RUT/NDX/VIX entries
+  are HELD with a plain reason until execution.index_broker is set
+  (tastytrade or tradier, a separate funded account). SPY 760c is not SPX
+  7600c — different multiplier, tick and settlement. OWLS relay still gives
+  shabs/eli default_symbol SPX so the CONTRACT is read right; it just does
+  not go to Webull. Exits on an SPX position are unaffected (there are none).
+- WORD ORDER (9/10, G: "it doesn't matter the order of the expiration or the
+  price or the ticker. It's not relevant. It could be in any order"). In a
+  `bare` room the reader strips THIS contract's own three tokens — ticker,
+  strike+side, date — wherever each sits, and fires if nothing is left over:
+  "8/24 $255P $AMZN", "2DTE $765C SPY CALLS", "$255P $AMZN" all read.
+  SCOPED ON PURPOSE: unscoped it fired "TSLA 9/4 360P .72" in every room,
+  which is a real entry in some rooms and a chart caption in others.
+  test_word_order.js + test_bare_entry.js hold both sides.
+- TWO STRIKES = TWO ORDERS (9/10, G: "when you have multistrikes, just buy
+  both of them. Buy two contracts, one of each"). Same ticker/side/expiry,
+  ONE contract each, separate positions with their own stop and ratchet —
+  not a spread. Only after leg one is accepted. A call+put pair is a
+  strangle and refuses whole rather than trading one leg.
+- EXPIRY, in one place (webull_options.expiry_to_date):
+  · NDTE is N CALENDAR days out. If N lands on a weekend or holiday it rolls
+    BACK to the previous trading day (G, 9/10: "there is no 3DTE if in three
+    days is a Saturday — it would just end in 2DTE"). Never past today.
+  · NO DATE = 0DTE (G, 9/10) on every root that HAS a same-day listing —
+    DAILY_EXPIRY_ROOTS (SPY/QQQ/IWM + SPX/SPXW/XSP/NDX/NDXP/RUT/RUTW). On a
+    single stock there is no such contract; that Friday is the only listing
+    there is, and it is used. Clues in the message win first: "NEXT WEEK" and
+    "NEXT FRI" -> next week's Friday, a shouted MONTH -> that monthly.
 - SPREAD GUARD (entries only): refuse if spread > 20% of mid or > max($0.20,
   10% of mid). THIN guard: < 250 contracts last session = refused.
 - STALE-ENTRY GATE: entries older than 3 min never fire. Negations ("NOT
