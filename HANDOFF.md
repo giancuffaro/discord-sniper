@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (late) — v3.5.83: the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-09 (late) — v3.5.84: NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -47,7 +47,7 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.83) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.84) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
@@ -384,6 +384,16 @@ FILL ANNOUNCER (announcer.py, read-only)
   limit): a later pull replaces a WORKING snapshot, never duplicates it.
   Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
   master_ledger and master_alerts; NO .bak files in the root anymore.
+- NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
+  don't want any more confusions"). build_ledger keeps account="paper" rows
+  OUT of master_ledger.csv, so the board, journal, scoreboard, announcer and
+  every backtest are real money only. The 4 rows that existed were archived
+  once to archive/paper-fills-2026-09-09.csv (−$686, all August; the twin
+  HPE pair alone made the Callers board read "are alerts −$732" instead of
+  −$62) and days/*.json still holds them. account="unknown" is NOT paper —
+  41 real broker fills with no room row; they stay. execution.webull
+  .paper_trading is false and the bridge now WARNS at boot if it is ever
+  switched on, because a paper fill would leave no record at all.
 - FILLS → master_ledger.csv (built by build_ledger.py, read via ledger.py).
   Sources in trust order: master_broker.csv (the account's own history,
   FIFO-paired per OCC ACROSS days so a swing meets its own lot; trip date =

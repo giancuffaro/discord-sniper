@@ -9,6 +9,25 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-10 00:05 — PAPER DELETED FROM THE APP (v3.5.84).** G: "delete all
+paper trades data from the app. I don't want any more confusions." Checked
+first: only 4 ledger rows were actually account="paper" (AAPL nofill, the
+HPE twin pair −$335 each, SPY −$16 = −$686). The other 41 non-live rows are
+account="unknown" — REAL broker FILLED lines with no room row — and deleting
+those would have deleted real money, so they stay. Done: build_ledger._drop_paper()
+keeps paper out of master_ledger.csv on every build (source days/*.json
+untouched, so it is a rule, not a one-time edit), _archive_paper() wrote them
+once to archive/paper-fills-2026-09-09.csv. Everything downstream is real
+money by construction — board, journal, scoreboard, announcer, backtests.
+Dead paper code removed rather than left beside it: caller_stats' paper
+branch and counters, the popup's paper display, journal_full's "blank =
+paper" label (a blank account is an unattributed REAL fill — that label was
+itself a confusion), ledger.rows' docstring. Guard added: the bridge WARNS
+at boot if execution.webull.paper_trading is ever switched back on, because
+a paper fill would now trade and leave no record anywhere. Verified: ledger
+346 rows, accounts {live 305, unknown 41}, zero paper; 9/4 +152, 9/8 +77,
+9/9 +252 all still MATCH; test_positions and test_architecture green.
+
 **2026-09-09 23:45 — THE SCOREBOARD WAS LYING; G'S SPOT-CHECK CAUGHT IT (v3.5.83).**
 G: "can we check Stormzy and MR.TOPHAT on options records?" Neither looked
 right, and both were symptoms:

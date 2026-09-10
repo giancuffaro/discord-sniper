@@ -94,7 +94,9 @@ def _taken_rows(date=None, all_days=False):
                 "max drawdown %": ("%+.1f%%" % lo) if lo is not None else "",
                 "opened": _hhmm(r.get("opened")), "closed": _hhmm(r.get("closed")),
                 "status": r.get("state") or "", "exit_by": r.get("exit_by") or "",
-                "account": r.get("account") or ("live" if r.get("live") else "paper"),
+                # 9/9: paper never reaches the ledger, so a blank here is an
+                # unattributed REAL fill, not a paper one — never label it paper.
+                "account": r.get("account") or "unknown",
                 "signal": r.get("raw") or "",
             })
     return rows

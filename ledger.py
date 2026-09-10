@@ -114,7 +114,9 @@ def rows(real_only=False, nofill_only=False, since=None, until=None,
          room=None, who=None, symbol=None, account=None,
          include_broker_only=True):
     """Yield (date, row). Filters are optional and case-insensitive.
-    since/until are 'YYYY-MM-DD' inclusive. account = 'live' | 'paper'."""
+    since/until are 'YYYY-MM-DD' inclusive. account = 'live' | 'unknown'
+    ('unknown' = a real broker fill with no room row). There is no 'paper':
+    paper fills are kept out of master_ledger.csv entirely (9/9, G's call)."""
     _ensure()
     if not os.path.exists(LEDGER):
         return
