@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (01:15) — P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (510 round-trips, −$802 all in; the bot's own share is +$118 over 28 trades); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-10 (01:15) — P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (510 round-trips, −$802 all in; the bot's own closed trades +$273); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -405,11 +405,25 @@ FILL ANNOUNCER (announcer.py, read-only)
   6/12→9/09 was pulled from Webull (1,186 orders, MCP get_order_history in
   ≤100-order windows → Webull_Orders_2026-history_auto.csv → absorbed).
   THE REAL NUMBERS, from the broker: 510 completed round-trips, −$802 all
-  in; 35% win rate, avg win +$85, avg loss −$48. Split: THE BOT is 28
-  broker-confirmed trades, +$118 (Aug +82, Sep +36); the other 482 trades,
-  −$920, are G'S OWN hand trading (June −70, July −335 — the bot did not
-  exist yet — Aug −1,200, Sep +685). Do not quote a bot P&L from anything
-  but broker-confirmed rows.
+  in; 35% win rate, avg win +$85, avg loss −$48. Split: G's OWN hand
+  trading is 482 trades, −$920 (June −70, July −335 — the bot did not exist
+  until 8/06 — Aug −1,200, Sep +685); the bot's own closed trades come to
+  +$273. Do not quote a bot P&L from anything but broker-priced rows.
+  TWO MORE BUGS THE SAME NIGHT, both found by G spot-checking one trade
+  ("SKHY actually made me like 300"): (a) THE BROKER DATES A TRADE BY ITS
+  ENTRY, THE BOOK BY ITS EXIT — SKHY was bought 8/11 and sold 8/12, so an
+  entry-date-only trip match failed and the book's row kept its own WRONG
+  exit (5.90 vs the broker's real 8.50: −$11 booked instead of +$249).
+  _find_trip now matches either end of the round-trip. (b) ONE ROW PER
+  POSITION — days/*.json re-lists an open position every day until it
+  closes, so SKHY existed twice and the wrong copy was the one read last.
+  _collapse_carryover() keys on caller+contract+ENTRY TIME and keeps the
+  most trustworthy copy (broker-confirmed > knows its exit > earliest); it
+  only touches days-json rows, because the export's FIFO round-trips and
+  the log's FILLED lines are already one row per event. 849 → 763 rows.
+  STILL OPEN: 15 days where a book-priced row disagrees with the broker
+  (the book's exit price is wrong and no trip matched). The broker total is
+  unaffected — it is read straight from the export.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
   don't want any more confusions"). build_ledger keeps account="paper" rows
   OUT of master_ledger.csv, so the board, journal, scoreboard, announcer and

@@ -9,6 +9,35 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-10 01:45 — "SKHY ACTUALLY MADE ME LIKE 300" — HE WAS RIGHT AGAIN.**
+I had used SKHY as the headline example of the proceeds-as-profit bug
+("sold 5.90, booked +590, really −$11"). G knew that trade made money.
+The broker's own record: bought 6.01 on 8/11, SOLD 8.50 on 8/12 = **+$249**.
+The book's 5.90 exit was itself wrong. Two further bugs behind it:
+ (a) THE BROKER DATES A TRADE BY ITS ENTRY, THE BOOK BY ITS EXIT. The
+     round-trip sat on 8/11, the book's row on 8/12, and _find_trip only
+     matched on the entry date — so the book row never got the broker's
+     numbers AND the broker's trip was emitted a second time as its own
+     row. Now matches either end (trips carry sell_date).
+ (b) ONE ROW PER POSITION. days/*.json re-lists an open position in every
+     day's table until it closes, so SKHY existed twice — the 8/11 copy
+     right, the 8/12 copy wrong, and the wrong one read last.
+     _collapse_carryover() keys on caller+contract+ENTRY TIME, keeps the
+     most trustworthy copy, and touches ONLY days-json rows: collapsing
+     export rows too (first attempt) merged separate FIFO round-trips that
+     shared a buy timestamp and made June drift −$60 to −$295 a day.
+     849 → 763 rows.
+Corrected: SKHY is one row, +$249, and The Pawn goes from −$310 to +$192,
+the best caller on the board. Board total −$945 over 167 bot fills; the
+bot's closed trades +$273; G's own hand trading −$920 over 482 trades;
+broker total unchanged at −$802 (it is read from the export, not the book).
+STILL OPEN: 15 days where a book-priced row disagrees with the broker
+because the book's exit price is wrong and no trip matched it.
+LESSON WORTH KEEPING: both bugs tonight were caught by G recognising ONE
+trade, not by any check in the code. A reconciliation that only compares
+DAY TOTALS hides per-row errors that cancel out. Per-trade broker matching
+is the only real check.
+
 **2026-09-10 01:15 — G WAS RIGHT: THE WINS WERE FAKE. THREE MONTHS OF BROKER
 TRUTH PULLED.** G, looking at the corrected scoreboard: "looks like the ledger
 is doing some magic huh? but I feel I'm still missing losing trades — no way
