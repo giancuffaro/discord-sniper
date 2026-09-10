@@ -119,7 +119,7 @@ for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("%~dp0extension\rooms.txt"
     if /i "!RID:~0,5!"=="whop:" if /i "!RST!"=="on" set "WHOP_SEED_URL=%%B"
   )
 )
-start "" "%CHROME%" --profile-directory="%WHOP_PROFILE%" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!WHOP_SEED_URL!"
+start "" "%CHROME%" --profile-directory="%WHOP_PROFILE%" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion --disable-gpu "!WHOP_SEED_URL!"
 rem  Give Chrome a moment to actually come up, then ask the extension to
 rem  fill in any rooms missing a tab (belt-and-suspenders - the whop lane
 rem  self-heals on its own every watch-build tick regardless of this token).

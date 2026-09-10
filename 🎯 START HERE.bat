@@ -399,7 +399,7 @@ if defined CHROME (
   rem  --hide-crash-restore-bubble (9/9): after a PC shutdown, an OOM kill or
   rem  a crash, Chrome greets the next launch with "Restore pages?" and sits
   rem  there until someone clicks. That click was his input. Gone.
-  start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!DISCORD_URL!"
+  start "" "!CHROME!" --profile-directory="!SNIPER_PROFILE!" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion --disable-gpu "!DISCORD_URL!"
   rem  Give Chrome itself a moment to be up before the flood.
   timeout /t 6 /nobreak >nul
   rem  THREE AT A TIME (his ask, 8/23): all ~40 rooms at once choked Chrome
@@ -440,7 +440,7 @@ if defined CHROME (
     if not defined WHOP_SEEDED (
       set "RID=%%A"
       if /i "!RID:~0,5!"=="whop:" (
-        start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "%%B"
+        start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion --disable-gpu "%%B"
         set "WHOP_SEEDED=1"
         timeout /t 6 /nobreak >nul
       )
@@ -519,7 +519,7 @@ for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do 
   set "RID=%%A"
   if /i "!RID:~0,5!"=="whop:" (
     if not defined WHOP_SEEDED (
-      start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "%%B"
+      start "" "!CHROME!" --profile-directory="!WHOP_PROFILE!" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion --disable-gpu "%%B"
       set "WHOP_SEEDED=1"
       timeout /t 6 /nobreak >nul
     ) else (

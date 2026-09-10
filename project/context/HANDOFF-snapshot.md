@@ -730,7 +730,14 @@ FILL ANNOUNCER (announcer.py, read-only)
    futures decouple) — G's call whether Claude does it or he does.
 3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50
    MNQ pts), qty 1 — create in NT8, type SNIPER in the popup.
-4. Chrome: hardware acceleration OFF. Close any old parked Whop tabs.
+4. Close any old parked Whop tabs. (Chrome hardware acceleration: DONE 9/10
+   — `--disable-gpu` is now on every flagged Chrome launch in START HERE.bat
+   and _whop_loop.bat, so it applies itself on the next full restart and no
+   longer depends on the Settings checkbox. Reason it matters is CORRECTNESS,
+   not speed: GPU black-tab disease paints a room black, and a black tab
+   reads NOTHING while looking open. Flags only bind on a cold start — if
+   that profile's Chrome is already running, the launch reuses the existing
+   process and ignores them.)
 5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
 (OWLS all-alerts "no tab" — RESOLVED by ROOM HOURS: the extension opens
 every `on` room at 9:15 by itself; verify OWLS reads on 9/10.)
