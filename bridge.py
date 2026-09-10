@@ -357,13 +357,17 @@ def apply_room_rules():
         rooms = read_rooms()
     except Exception:                                   # noqa: BLE001
         return
-    bare, dotdate, sym = [], [], {}
+    bare, dotdate, sym, pivot, ronly = [], [], {}, {}, []
     for r in rooms:
         for f in r.get("rules") or []:
             if f == "bare":
                 bare.append(r["id"])
             elif f == "dotdate":
                 dotdate.append(r["id"])
+            elif f == "readonly":
+                ronly.append(r["id"])
+            elif f.startswith("pivot="):
+                pivot[r["id"]] = f[6:].upper()
             elif f.startswith("sym="):
                 sym[r["id"]] = f[4:].upper()
     CFG["entry_no_verb_channels"] = bare
@@ -376,6 +380,16 @@ def apply_room_rules():
     # 1.26 is also a readable January 26th. A grammar this ambiguous belongs
     # to the room that actually speaks it.
     CFG["dot_date_channels"] = dotdate
+    # PIVOT ROOMS (9/10, Chika). She trades ONE instrument and writes only the
+    # last digits of the level: "short 195 pivot" is NQ at 29,195. The value
+    # here is the root she trades; the reader hands back her digits and the
+    # expansion to a real price happens on this side, where a quote exists.
+    CFG["pivot_channels"] = pivot
+    # READ-ONLY ROOMS (9/10, G's call on Chika: "read-only first — log every
+    # call with what we WOULD have done, trade nothing"). NOT the same as OFF:
+    # off means the room is never read at all, and the point of read-only is to
+    # collect a record worth judging her on. Drop the flag to arm the room.
+    CFG["read_only_channels"] = ronly
     CFG["default_symbol_channels"] = sym
 
 
@@ -3792,6 +3806,10 @@ class Handler(BaseHTTPRequestHandler):
                 # rooms.txt the single source of truth for both.
                 "dot_date_channels": [str(x) for x in
                                       (CFG.get("dot_date_channels") or [])],
+                "pivot_channels": {str(k): str(v) for k, v in
+                                   (CFG.get("pivot_channels") or {}).items()},
+                "read_only_channels": [str(x) for x in
+                                       (CFG.get("read_only_channels") or [])],
                 "default_symbol_channels": {str(k): str(v) for k, v in
                     (CFG.get("default_symbol_channels") or {}).items()},
                 "entry_no_verb_channels": [str(x) for x in

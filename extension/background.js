@@ -1060,6 +1060,8 @@ async function refreshBridgeChannels() {
     if (m && typeof m === "object") {
       const next = {};
       if (Array.isArray(m.dot_date_channels)) next.dot_date_channels = m.dot_date_channels.map(String);
+      if (m.pivot_channels && typeof m.pivot_channels === "object") next.pivot_channels = m.pivot_channels;
+      if (Array.isArray(m.read_only_channels)) next.read_only_channels = m.read_only_channels.map(String);
       if (m.default_symbol_channels && typeof m.default_symbol_channels === "object") next.default_symbol_channels = m.default_symbol_channels;
       if (Array.isArray(m.entry_no_verb_channels)) next.entry_no_verb_channels = m.entry_no_verb_channels.map(String);
       _BRIDGE_CHANNELS = next;
@@ -1113,6 +1115,10 @@ async function cfg() {
   // A popup-set value in chrome.storage still wins if present (|| keeps it).
   if (_BRIDGE_CHANNELS.dot_date_channels && !(settings || {}).dot_date_channels)
     c.dot_date_channels = _BRIDGE_CHANNELS.dot_date_channels;
+  if (_BRIDGE_CHANNELS.pivot_channels && !(settings || {}).pivot_channels)
+    c.pivot_channels = _BRIDGE_CHANNELS.pivot_channels;
+  if (_BRIDGE_CHANNELS.read_only_channels && !(settings || {}).read_only_channels)
+    c.read_only_channels = _BRIDGE_CHANNELS.read_only_channels;
   if (_BRIDGE_CHANNELS.default_symbol_channels && !(settings || {}).default_symbol_channels)
     c.default_symbol_channels = _BRIDGE_CHANNELS.default_symbol_channels;
   if (_BRIDGE_CHANNELS.entry_no_verb_channels && !(settings || {}).entry_no_verb_channels)
@@ -3725,6 +3731,15 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // global: in most rooms a number shaped like that IS the price, and
     // "1.26" reads just as well as January 26th. See parser.js dotDates.
     c.dot_date = ((c.dot_date_channels || [])
+      .map(String).includes(String(msg.channelId || "")));
+
+    // PIVOT ROOMS (9/10, Chika Alerts). One instrument, never named, and only
+    // the last digits of the level: "short 195 pivot" = NQ at 29,195. The root
+    // comes from the room's `pivot=NQ` rule; see parser.js pivotEntry.
+    c.pivot_root = (c.pivot_channels || {})[String(msg.channelId || "")] || null;
+    // READ-ONLY: read her, write it down, send nothing. G's call while there
+    // is no record to judge her on.
+    c.read_only = ((c.read_only_channels || [])
       .map(String).includes(String(msg.channelId || "")));
 
     // THE TICKER HE NEVER TYPES (9/7, shabs / OWLS). A caller who trades ONE
