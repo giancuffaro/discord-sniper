@@ -29,6 +29,22 @@ BUCKETS = [
 ]
 
 
+def live_spacing():
+    """(born, arm, step) as the machine is actually configured RIGHT NOW —
+    born from settings.json strategy.stop_loss_pct, arm/step from
+    ratchet_tiers.TIERS. Read, never typed."""
+    import json
+    import ratchet_tiers
+    born = 7.5
+    try:
+        with open(os.path.join(HERE, "settings.json"), encoding="utf-8") as fh:
+            born = float((json.load(fh).get("strategy") or {}).get("stop_loss_pct", born))
+    except (OSError, ValueError, TypeError):
+        pass
+    arm, _lock, step = ratchet_tiers.TIERS[-1][1]
+    return born, float(arm), float(step)
+
+
 def locked_pct(gain, arm, step):
     if gain < arm - 1e-9:
         return None
@@ -83,12 +99,19 @@ def main():
              len(BORN), len(ARM), len(STEP)))
 
     allrows = sweep(trades)
-    live = next((r for r in allrows if r["born"] == 7.5 and r["arm"] == 5.0
-                 and r["step"] == 5.0), None)
+    # 9/10: LIVE is READ from the live files, never typed here. This line
+    # said 7.5/5/5 for two days while the real rung was 2 — a hardcoded
+    # "current" number drifts the moment the real one moves, and then every
+    # comparison in this report is against a rule nobody is running.
+    lb, la, ls = live_spacing()
+    live = next((r for r in allrows if r["born"] == lb and r["arm"] == la
+                 and r["step"] == ls), None)
     if live:
-        print("LIVE 7.5/5/5:  $%.2f  (win %.0f%%)  — rank #%d of %d\n"
-              % (live["total"], live["win_pct"],
+        print("LIVE %g/%g/%g:  $%.2f  (win %.0f%%)  — rank #%d of %d\n"
+              % (lb, la, ls, live["total"], live["win_pct"],
                  allrows.index(live) + 1, len(allrows)))
+    else:
+        print("LIVE %g/%g/%g is not on this grid.\n" % (lb, la, ls))
     print("GLOBAL TOP 12 (born / arm / step):")
     for r in allrows[:12]:
         print("  -%4.1f%% / +%4.1f%% / +%4.1f%%   ->  $%8.2f   win %2.0f%%"
@@ -99,20 +122,37 @@ def main():
         tb = [t for t in trades if pred(t["entry"])]
         rows = sweep(tb)
         b = rows[0] if rows else None
-        flat = next((r for r in rows if r["born"] == 7.5 and r["arm"] == 5.0
-                     and r["step"] == 5.0), None)
+        flat = next((r for r in rows if r["born"] == lb and r["arm"] == la
+                     and r["step"] == ls), None)
         if b:
             print("  %-10s n=%2d   best -%4.1f/+%4.1f/+%4.1f = $%8.2f (win %2.0f%%)"
-                  "   vs live 7.5/5/5 = $%8.2f"
+                  "   vs live %g/%g/%g = $%8.2f"
                   % (name, b["n"], b["born"], b["arm"], b["step"], b["total"],
-                     b["win_pct"], flat["total"] if flat else 0.0))
+                     b["win_pct"], lb, la, ls, flat["total"] if flat else 0.0))
 
     with open(OUT, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(allrows[0].keys()))
         w.writeheader()
         w.writerows(allrows)
     print("\nfull %d-row grid -> %s" % (len(allrows), os.path.basename(OUT)))
-    print("(same 80-fill / 5-week sample — a lean, not a verdict.)")
+
+    # DOES THE WINNER CLEAR ITS OWN ERROR BAR? Paired difference per trade
+    # (grid best minus live on the SAME trade), bootstrapped 2000x. A grid
+    # this wide will always produce a top row; this is what says whether
+    # the top row is an edge or the luckiest cell in 294 tries.
+    import random
+    top = allrows[0]
+    diffs = [(sim(t, top["born"], top["arm"], top["step"])[0]
+              - sim(t, lb, la, ls)[0]) / 100.0 * t["entry"] * CONTRACT_MULT
+             for t in trades]
+    rnd = random.Random(7)
+    means = sorted(sum(rnd.choice(diffs) for _ in diffs) / len(diffs)
+                   for _ in range(2000))
+    print("best -%g/+%g/+%g minus live: $%+.2f a trade, 95%% band $%+.2f..$%+.2f -> %s"
+          % (top["born"], top["arm"], top["step"], sum(diffs) / len(diffs),
+             means[50], means[1949],
+             "REAL" if means[50] > 0 or means[1949] < 0 else "INSIDE THE NOISE"))
+    print("(%d fills, ~13 weeks of real OPRA tape — a lean, not a verdict.)" % len(trades))
 
 
 if __name__ == "__main__":
