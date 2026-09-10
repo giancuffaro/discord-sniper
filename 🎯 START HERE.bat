@@ -349,6 +349,8 @@ rem  Dedicated Discord profile (8/23): chrome-profile.txt holds the
 rem  profile-directory name (chrome://version -> Profile Path, last part).
 set "SNIPER_PROFILE=Default"
 if exist "chrome-profile.txt" set /p SNIPER_PROFILE=<"chrome-profile.txt"
+call :resolve_profile "!SNIPER_PROFILE!" SNIPER_PROFILE
+
 echo         (using Chrome profile: !SNIPER_PROFILE!)
 rem  TWO-BROWSER SPLIT (9/8, his ask): the 4 Whop rooms open in a SEPARATE
 rem  Chrome profile so their weight stays off the Discord browser. A separate
@@ -362,6 +364,8 @@ rem  After that this launcher opens both every time. whop-profile.txt overrides
 rem  the name if you want a specific one.
 set "WHOP_PROFILE=Sniper Whop"
 if exist "whop-profile.txt" set /p WHOP_PROFILE=<"whop-profile.txt"
+call :resolve_profile "!WHOP_PROFILE!" WHOP_PROFILE
+
 echo         (Whop rooms use a second profile: !WHOP_PROFILE!)
 set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
@@ -564,3 +568,26 @@ if "%INTERACTIVE%"=="0" (
   timeout /t 30 >nul
 )
 exit /b 0
+
+rem  ---- resolve a Chrome profile DISPLAY name to its FOLDER name ----------
+rem  9/10: --profile-directory takes the FOLDER ("Profile 3"), never the name
+rem  you see in Chrome ("Sniper Whop"). Give it a display name and Chrome
+rem  silently falls back to Default — no error, no clue. That is exactly how
+rem  the Whop rooms opened in the wrong profile. Chrome's own Local State
+rem  file maps folder -> display name, so ask it rather than guess. If the
+rem  lookup finds nothing the value is passed through unchanged, so a real
+rem  folder name still works and this can only ever help.
+:resolve_profile
+setlocal enabledelayedexpansion
+set "WANT=%~1"
+set "FOUND="
+for /f "usebackq delims=" %%R in (`powershell -NoProfile -Command ^
+  "$p=Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Local State';" ^
+  "if(Test-Path $p){try{$j=Get-Content $p -Raw ^| ConvertFrom-Json;" ^
+  "$m=$j.profile.info_cache.PSObject.Properties ^| Where-Object { $_.Value.name -eq '%~1' } ^| Select-Object -First 1;" ^
+  "if($m){$m.Name}}catch{}}" 2^>nul`) do set "FOUND=%%R"
+if defined FOUND if not "!FOUND!"=="" (
+  endlocal & set "%~2=%FOUND%" & goto :eof
+)
+endlocal & set "%~2=%~1" & goto :eof
+

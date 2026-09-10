@@ -103,6 +103,8 @@ if not defined CHROME (
 
 set "WHOP_PROFILE=Sniper Whop"
 if exist "whop-profile.txt" set /p WHOP_PROFILE=<"whop-profile.txt"
+call :resolve_profile "!WHOP_PROFILE!" WHOP_PROFILE
+
 
 echo [%date% %time%] whop lane heartbeat is !AGO!s old (or missing) - starting Sniper Whop Chrome, next attempt no sooner than 5 min from now >> "%~dp0whop-loop.log"
 > "%MARKER%" echo %date% %time%
@@ -135,3 +137,26 @@ goto loop
 :done
 echo [%date% %time%] STOP file present - whop loop parked >> "%~dp0whop-loop.log"
 exit /b 0
+
+rem  ---- resolve a Chrome profile DISPLAY name to its FOLDER name ----------
+rem  9/10: --profile-directory takes the FOLDER ("Profile 3"), never the name
+rem  you see in Chrome ("Sniper Whop"). Give it a display name and Chrome
+rem  silently falls back to Default — no error, no clue. That is exactly how
+rem  the Whop rooms opened in the wrong profile. Chrome's own Local State
+rem  file maps folder -> display name, so ask it rather than guess. If the
+rem  lookup finds nothing the value is passed through unchanged, so a real
+rem  folder name still works and this can only ever help.
+:resolve_profile
+setlocal enabledelayedexpansion
+set "WANT=%~1"
+set "FOUND="
+for /f "usebackq delims=" %%R in (`powershell -NoProfile -Command ^
+  "$p=Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Local State';" ^
+  "if(Test-Path $p){try{$j=Get-Content $p -Raw ^| ConvertFrom-Json;" ^
+  "$m=$j.profile.info_cache.PSObject.Properties ^| Where-Object { $_.Value.name -eq '%~1' } ^| Select-Object -First 1;" ^
+  "if($m){$m.Name}}catch{}}" 2^>nul`) do set "FOUND=%%R"
+if defined FOUND if not "!FOUND!"=="" (
+  endlocal & set "%~2=%FOUND%" & goto :eof
+)
+endlocal & set "%~2=%~1" & goto :eof
+
