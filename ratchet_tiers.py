@@ -135,9 +135,9 @@ def ratchet_locked_pct(gain_pct, fill_price):
     Rung 0 is first_lock. Every further step_pct of gain adds another step_pct
     of locked profit. No ceiling: a runner keeps climbing forever.
 
-    One blanket rule since 9/3 (see TIERS above), respaced 9/8:
+    One blanket rule since 9/3 (see TIERS above), respaced 9/10:
 
-        any fill : +5% -> lock BE | +10% -> +5 | +15% -> +10 | +20% -> +15 ...
+        any fill : +3% -> lock BE | +8% -> +5 | +13% -> +10 | +18% -> +15 ...
                    (tick floor widens the 5% rung on cheap/nickel-tick names)
 
     (These used to read three different premium bands — $0.50 / $1.50 / $3
@@ -334,3 +334,26 @@ def anti_clip(locked_pct, gain_pct, k=ANTI_CLIP_K):
         return locked_pct
     cap = (1.0 - float(k)) * float(gain_pct)
     return min(float(locked_pct), round(cap, 2))
+
+
+# ------------------------------------------------- what is LIVE right now
+def live_spacing():
+    """(born, arm, step) as the machine is ACTUALLY configured — born from
+    settings.json strategy.stop_loss_pct, arm/step from TIERS above.
+
+    9/10: every backtest and report used to type the live numbers into its
+    own header. When the ladder moved they all silently compared against a
+    rule nobody was running (ratchet_sweep_fine.py printed "LIVE 7.5/5/5"
+    for two days while the real rung was 2). One reader, no copies.
+    """
+    import json
+    import os as _os
+    born = 7.5
+    try:
+        with open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                                "settings.json"), encoding="utf-8") as fh:
+            born = float((json.load(fh).get("strategy") or {}).get("stop_loss_pct", born))
+    except (OSError, ValueError, TypeError):
+        pass
+    arm, _lock, step = TIERS[-1][1]
+    return born, float(arm), float(step)
