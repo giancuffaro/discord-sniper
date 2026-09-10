@@ -457,6 +457,14 @@ const PROBE_SETTLE_MS = 25000;                   // let the app actually paint
  * Check the strong signals first and only fall back to counting.
  */
 async function probeOne(room) {
+  /* 9/10, G: "get rid of auto opening tabs unless it's start sniper". This
+   * one opens a tab too — the daily knock on a LAPSED room's door to see if
+   * access came back. It is kept, deliberately, because it is the only way
+   * a lapsed room can ever come back by itself and it is the mechanism that
+   * makes the auto-lapse in revokeCheck() safe to be aggressive with. Two
+   * things keep it honest: it only ever runs OFF-HOURS (roomProbeDue), and
+   * the tab it opens is closed again a few seconds later in the finally
+   * below — it never survives the probe. It is a door-knock, not an open. */
   let tab = null;
   try {
     tab = await chrome.tabs.create({ url: room.url, active: false });
@@ -526,8 +534,18 @@ async function revokeCheck() {
       try {
         chrome.notifications.create({ type: "basic", iconUrl: "icon128.png",
           title: "🔒 " + label + " — access lost",
-          message: "That room is open but reading nothing. Check the sub." });
+          message: "That room is open but reading nothing. Switched to lapsed." });
       } catch (e) {}
+      // 9/10, G: "do not open the tab if we don't have access". Warning him
+      // was not enough — RWGates kept opening a blank tab every morning for
+      // three weeks after the account was removed from that server, and the
+      // alarm above fired the whole time with nobody reading it. A room that
+      // says "No Access" is now taken OUT OF SERVICE on the spot: written to
+      // rooms.txt as `lapsed` through the bridge, which closes its tab and
+      // stops it ever being opened again. `lapsed` (not `off`) on purpose —
+      // the daily off-hours probe keeps knocking and tells him the moment
+      // access comes back, so this is reversible by itself.
+      try { await setRoomLapsed(id, label); } catch (e) {}
     }
     if (changed) await chrome.storage.local.set({ revoked_seen: seen });
   } catch (e) { /* never break the reader */ }
@@ -794,8 +812,7 @@ async function roomSchedule() {
     const open = roomWindowOpen();
     const sweep = !open && (_schedState === null || _schedState === true);
     _schedState = open;
-    let opened = 0, closed = 0;
-    const now = Date.now();
+    let closed = 0;
     for (const room of ALL_ROOMS) {
       if (room.state !== "on") continue;
       const isWhop = /^whop:/i.test(room.id) || /whop\.com/i.test(room.url);
@@ -808,26 +825,31 @@ async function roomSchedule() {
       }
       const want = roomWantsTab(room);
       const tabs = await roomTabsFor(room);
-      if (want && !tabs.length && room.url) {
-        if (opened >= 3) continue;                    // a few per pass
-        if (now - (ROOM_OPENED_AT[room.id] || 0) < 120000) continue;
-        ROOM_OPENED_AT[room.id] = now;
-        try { await chrome.tabs.create({ url: room.url, active: false }); opened++; } catch (e) {}
-        await new Promise(res => setTimeout(res, 6000));   // one gateway session per 5 s
-      } else if (!want && tabs.length && sweep) {
+      // 9/10, G: "get rid of auto opening tabs UNLESS it's start sniper".
+      // This used to OPEN every `on` room at 9:15. It no longer opens
+      // anything — START HERE (honourOpenRoomsRequest) and the popup switch
+      // are the only two things allowed to create a room tab. The CLOSING
+      // half stays: 4:30 PM still puts the day's rooms to bed, which is
+      // what stops the overnight ping storm.
+      if (!want && tabs.length && sweep) {
         for (const t of tabs) {
           await _keepWindowAlive(t);
           try { await chrome.tabs.remove(t.id); closed++; } catch (e) {}
         }
       }
     }
-    if (opened) await addLog({ kind: "sent", what: "ROOM HOURS",
-      why: "opened " + opened + " room tab(s) — the window is open (9:15-4:30 ET)" });
     if (closed) await addLog({ kind: "sent", what: "ROOM HOURS",
       why: "closed " + closed + " room tab(s) for the night — back at 9:15 ET; " +
            "rooms marked 24h stay open" });
   } catch (e) {}
 }
+/* NOTHING ABOVE OPENS A TAB ANY MORE. The only three creators of a room tab
+ * are: honourOpenRoomsRequest() (START HERE asked), setRoomState() (he flipped
+ * the switch), and openMissingRooms() called from those two — plus
+ * whopSelfHeal(), which he kept on purpose so the Whop lane can revive its own
+ * 4 tabs, and probeOne(), which opens a lapsed room off-hours and closes it
+ * again seconds later. roomSchedule() closes only; pollRoomsFile() follows a
+ * switch. (9/10) */
 
 /* THE OTHER PROFILE SEES THE FLIP (9/9). Both Chromes read the same
  * rooms.txt. A switch flipped in one profile's popup is written to the file
@@ -887,6 +909,35 @@ async function roomTabsFor(room) {
                                            "https://whop.com/*/exp_*"] });
   } catch (e) { return []; }
   return tabs.filter(t => String(t.url || "").includes(idInUrl));
+}
+
+async function setRoomLapsed(id, label) {
+  /* Mark one room `lapsed` in rooms.txt through the bridge. Same path the
+   * popup switch uses (POST /rooms), so there is exactly one writer of that
+   * file and the other Chrome profile picks the change up on its next poll. */
+  try {
+    const { settings } = await chrome.storage.local.get("settings");
+    const base = bridgeBaseFrom((settings || {}).bridge_url || BRIDGE_DEFAULT);
+    const r = await fetch(base + "/rooms", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: String(id), state: "lapsed" }) });
+    if (!r.ok) return false;
+  } catch (e) { return false; }
+  await reloadRooms();
+  try {
+    const room = ALL_ROOMS.find(x => String(x.id) === String(id));
+    if (room) {
+      for (const t of await roomTabsFor(room)) {
+        await _keepWindowAlive(t);
+        try { await chrome.tabs.remove(t.id); } catch (e) {}
+      }
+    }
+  } catch (e) {}
+  await addLog({ kind: "sent", what: "ACCESS LOST",
+    why: "🔒 " + (label || id) + " switched to LAPSED and its tab closed — it "
+       + "will not be opened again while you have no access. The daily "
+       + "off-hours probe keeps knocking and will tell you if it comes back." });
+  return true;
 }
 
 async function setRoomState(id, on) {
@@ -2267,15 +2318,20 @@ async function openMissingRooms() {
   if (!want.length) return;
   let tabs;
   try {
-    tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
-                                           "https://*.discord.com/channels/*",
-                                           "https://whop.com/joined/*",
-                                           "https://whop.com/*/exp_*"] });
+    // 9/10, G: "make sure it doesn't reopen 4 more". The old query only
+    // matched tabs whose URL was ALREADY the final room shape. A tab still
+    // LOADING reports its destination in pendingUrl and an empty/interim
+    // url, so it matched nothing, counted as absent, and got opened a
+    // second time — that is how a self-heal pass turns 4 Whop tabs into 8.
+    // Query the whole origin and read pendingUrl too.
+    tabs = await chrome.tabs.query({ url: ["https://discord.com/*",
+                                           "https://*.discord.com/*",
+                                           "https://whop.com/*"] });
   } catch (e) { return; }
   const openIds = new Set();
   let haveDiscord = false, haveWhop = false;
   for (const t of tabs) {
-    const u = String(t.url || "");
+    const u = String(t.pendingUrl || t.url || "");
     if (/discord\.com\/channels\/\d+\/\d+/.test(u)) haveDiscord = true;
     if (/whop\.com\/.*exp_/.test(u) || /whop\.com\/joined\//.test(u)) haveWhop = true;
     const m = u.match(/\/channels\/\d+\/(\d+)/) || u.match(/exp_([a-z0-9]+)/i);
