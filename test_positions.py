@@ -849,7 +849,7 @@ ok(len(stops_dip) == len(stops_30),
 if bad:
     print("\n%d ratchet check(s) failed." % bad)
     raise SystemExit(1)
-print("Ratchet (9/9 spacing): below +5% the position is untouched; +5% "
-      "walks the stop to BREAKEVEN instead of closing; every further +2% "
-      "locks another +2%; a dip that's still above the last-hit rung never "
+print("Ratchet (9/10 spacing): below +3% the position is untouched; +3% "
+      "walks the stop to BREAKEVEN instead of closing; every further +5% "
+      "locks another +5%; a dip that's still above the last-hit rung never "
       "loosens the stop back down.")
