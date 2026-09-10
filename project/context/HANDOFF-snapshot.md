@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (evening) — v3.5.80: the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-09 (evening) — v3.5.81: ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -47,7 +47,7 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.80) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.81) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
@@ -124,7 +124,25 @@ ENTRIES
   default_symbol_channels from these (apply_room_rules, at boot and on
   every write) — settings.json no longer holds those lists. Rules count
   whatever the room's state (shabs/eli are off but relayed via OWLS).
-  Set from the popup: the three pills on each Channels row.
+  Set from the popup: the pills on each Channels row (SPY-proxy / bare /
+  SPX / 24h).
+- ROOM HOURS (9/9 evening, G: "open the rooms at 9:15 and close them at
+  4:30 PM — we can't follow any alert then, don't bomb Discord with pings;
+  keep the futures channels always open"). An `on` room has a tab only
+  9:15–4:30 PM ET on weekdays (no market holidays) UNLESS its rules carry
+  `always` (the futures rooms: Platinum futures-alerts, Whop Futures; ZT
+  fut-1/2 and NGD carry it too for when they're on). background.js
+  ROOM_HOURS + roomSchedule() on the 30 s alarm: inside the window it opens
+  any missing `on` room of its lane (3 per pass, 6 s apart); at the 4:30
+  boundary (and once at startup if already outside) it closes the day's
+  room tabs; a room opened by hand at night is left alone until the next
+  4:30. Never closes a window's last tab — the dashboard page takes its
+  place. START HERE now only SEEDS each browser (main Discord room, first
+  ON Whop room) and hands the rest to the extension via the request token,
+  cold or warm — so a 7 AM start opens the futures rooms and the rest come
+  up at 9:15 by themselves. Switching a room ON at night says "its tab
+  opens at 9:15". Each Channels row shows "last msg HH:MM" — the newest
+  message that room POSTED (its own timestamp, survives reloads).
 - SELF-SERVE PANELS — TEST BUILD (9/9 evening, G: "what else can we apply
   this methodology to so I don't have to bother you?" — "make them just to
   test, I might want to remove"). Four panels, each one bridge endpoint

@@ -14,7 +14,7 @@ was archived.
 
 | File | What it does |
 |---|---|
-| `🎯 START HERE.bat` | The one button, fully unattended. Pulls latest code, starts the bridge, AUTO PUSH and the announcer; cold start opens all 26 rooms, warm start leaves Chrome alone and has the extension fill in any missing rooms (one-shot request). No prompts. |
+| `🎯 START HERE.bat` | The one button, fully unattended. Pulls latest code, starts the bridge, AUTO PUSH and the announcer; seeds each Chrome profile with one tab and hands the rooms to the extension (one-shot request) — which opens only the rooms whose hours are open (9:15–4:30 ET; `always` rooms any time). No prompts. |
 | `RESTART BRIDGE.bat` | Restart onto new code by hand. (The bridge also restarts itself on a safe window, or instantly on a non-empty `bridge.restart` file.) |
 | `ANNOUNCER.bat` / `STOP ANNOUNCER.bat` | Fill announcer on / off. **Currently paused on purpose.** |
 | `WHAT DO I HOLD.bat` | **"What is true RIGHT NOW."** Positions and resting orders straight from Webull, then the bot's book, then the feeds — and it says plainly that when the book and the account disagree, the account wins. Read-only. |

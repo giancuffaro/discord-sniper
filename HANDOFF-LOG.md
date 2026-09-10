@@ -9,6 +9,34 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 18:50 — ROOM HOURS + LAST-MESSAGE STAMP (v3.5.81).** G: "to
+the rooms I want to know what time was the last message from each channel.
+Also — wouldn't it be convenient to open the rooms at 9:15 and close them
+4:30 PM since we can't follow any alert then, so we don't bomb Discord
+with pings? Maybe keep the futures channels always open." Built: (1)
+ROOM_POST_AT in background.js — per room, the newest message's OWN
+postedAt (max-merged, persisted as room_post_at), so history re-reads and
+reloads give the true "last posted" time; ROOMS? carries it and each
+Channels row shows "last msg HH:MM" (Mon HH:MM / M/D for older). (2)
+ROOM_HOURS {9:15, 16:30} ET + roomWindowOpen() (weekday, not a
+MARKET_HOLIDAY) + roomWantsTab(room) = on && (always || window) +
+roomSchedule() on the 30 s alarm: opens missing wanted rooms of its lane
+(3/pass, 6 s apart); closes non-wanted `on` room tabs only at the boundary
+(open→closed transition, or the first pass after startup when already
+outside) so a room G opens by hand at night survives; _keepWindowAlive()
+puts the dashboard page (popup.html?page=1) in a window before its last
+tab is closed — a close must never take the profile's Chrome down.
+openMissingRooms (the START HERE token), setRoomState ON, pollRoomsFile
+and the needs-you check all respect roomWantsTab. `always` is a rooms.txt
+rule (6th field) shown as the "24h" pill; set on Whop Futures, Platinum
+futures-alerts, ZT fut-1/2, NGD. (3) START HERE cold start no longer opens
+rooms itself: it seeds the Discord profile (main room) and the Whop
+profile (first ON Whop room, with the perf flags) and writes the request
+token — one opener (the extension), one schedule, no 7 AM open-then-close.
+The old per-room loops, TABN and ABORTED are gone from the cold branch.
+Note for tonight: the first pass after this reload is outside the window,
+so the day's room tabs close now (futures + the page stay).
+
 **2026-09-09 18:35 — THE POPUP AS A PAGE (v3.5.80).** G: "would it be too
 much to make the popup an html page? the popup with all this info is super
 small now — keep the popup but poll all that info live into an html." Not
