@@ -201,12 +201,19 @@ def main():
 
     # The wall clock is the whole cost here — one window is a second of compute
     # and ten of waiting on Databento. Four in flight, one writer.
+    # Submit only a few at a time: pool.map would queue all 400 and the pool
+    # would refuse to shut down until every one of them came back, so the time
+    # budget could never stop it.
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        for occ_s, day, buf, err in pool.map(fetch, order):
-            if err is not None:
-                print("  %s %s failed: %s" % (day, occ_s, err), flush=True)
-                continue
+    pool = ThreadPoolExecutor(max_workers=4)
+    queue, nxt, stop = [], 0, False
+    while (queue or nxt < len(order)) and not stop:
+        while len(queue) < 4 and nxt < len(order) and not stop:
+            queue.append(pool.submit(fetch, order[nxt])); nxt += 1
+        occ_s, day, buf, err = queue.pop(0).result()
+        if err is not None:
+            print("  %s %s failed: %s" % (day, occ_s, err), flush=True)
+        else:
             w.writerows(buf)
             fh.flush()
             os.fsync(fh.fileno())
@@ -214,10 +221,21 @@ def main():
             done_n += 1
             print("  %s %-22s %6d rows   (%d/%d)"
                   % (day, occ_s, len(buf), done_n, len(win)), flush=True)
-            if budget and datetime.now(timezone.utc).timestamp() - started > budget:
-                print("  time budget spent — %d of %d done, re-run to continue"
-                      % (done_n, len(win)), flush=True)
-                break
+        if budget and datetime.now(timezone.utc).timestamp() - started > budget:
+            stop = True
+    for f in queue:                 # drain what is already paid for
+        try:
+            occ_s, day, buf, err = f.result(timeout=45)
+        except Exception:                                   # noqa: BLE001
+            continue
+        if err is None:
+            w.writerows(buf); wrote += len(buf); done_n += 1
+    fh.flush()
+    os.fsync(fh.fileno())
+    pool.shutdown(wait=False)
+    if stop:
+        print("  time budget spent — %d of %d done, re-run to continue"
+              % (done_n, len(win)), flush=True)
     fh.close()
     print("wrote %d tape rows to %s" % (wrote, os.path.basename(OUT_CSV)))
 
