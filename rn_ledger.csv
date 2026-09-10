@@ -14,3 +14,5 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789047871.054,armed,TSLA,CALLS,372.5,2026-09-11,,364.0,,@Owner Alerts,Platinum nitro
 1789047871.268,armed,TSLA,CALLS,375,2026-09-11,,364.0,,@Options Scalps,Platinum ei-alerts
 1789047884.784,filled,META,PUTS,645,9/11,,651.0,651.12,Unraveller,Honeydrip daytrades
+1789048471.236,missed,TSLA,CALLS,372.5,2026-09-11,,364.0,,@Owner Alerts,Platinum nitro
+1789048471.459,missed,TSLA,CALLS,375,2026-09-11,,364.0,,@Options Scalps,Platinum ei-alerts
