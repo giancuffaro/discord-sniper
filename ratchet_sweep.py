@@ -60,7 +60,11 @@ import tape as _tape
 TAPE_CSV = _tape.path("databento")
 OUT_CSV = os.path.join(HERE, "ratchet_sweep_results.csv")
 
-EXCLUDE_WHO = {"gian"}   # his own hand trades — not room calls, not this study
+# 9/10 — "" and "?" join gian. An entry with no caller on it is not a room
+# call: it is a hand trade or a position the bot adopted from the account.
+# They were 707 of 822 rows and -$1,230 of the loss, swamping the 115 real
+# room calls and making every spacing in the grid look hopeless.
+EXCLUDE_WHO = {"gian", "", "?"}   # not room calls, not this study
 CONTRACT_MULT = 100.0    # one option contract = 100 shares
 
 
