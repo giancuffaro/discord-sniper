@@ -144,6 +144,7 @@ def analyze(r):
     room = r.get("room") or "?"
 
     res = {"date": r.get("date"), "occ": occ, "symbol": sym, "who": who, "room": room,
+           "_opened": opened,
            "fill": fill, "exit": exit_px, "pl": pl, "pl_pct": pl_pct,
            "held_s": round(closed - opened) if (opened and closed) else None,
            "their_price": their,
@@ -361,20 +362,15 @@ def _write(res):
     os.makedirs(OUT_DIR, exist_ok=True)
     base = "%s_%s" % (res["date"], res["occ"] or res["symbol"])
     # SAME CONTRACT, SAME DAY, TWO ROUND TRIPS (9/10 — SPY 758C traded twice
-    # in one morning, ~90s apart): (date, occ) used to be this trade's whole
-    # identity, both for the .md filename and the master_postmortems.csv
-    # replace-key. The second trade silently overwrote the first one's file
-    # AND its csv row — no error, nothing to grep, the first trade's whole
-    # record just vanished. fill+exit (to the cent) tell two real trades
-    # apart; a re-run of the SAME trade still has the same fill+exit and
-    # correctly replaces its own prior write instead of piling up.
-    existing = [x for x in _read_postmortems_csv()
-                if x.get("date") == res["date"] and x.get("occ") == res["occ"]]
-    same_trade = any(_f(x.get("fill")) == res.get("fill")
-                     and _f(x.get("exit")) == res.get("exit") for x in existing)
-    other_trades = len(existing) - (1 if same_trade else 0)
-    fn = "%s.md" % base if (same_trade or not existing) else \
-         "%s-%d.md" % (base, other_trades + 2)
+    # in one morning, ~90s apart): the filename is the trade's RANK among
+    # that day's closed trades on the OCC, ordered by entry time — first
+    # trade = base.md, second = base-2.md — so it is stable across re-runs.
+    # (The first fix keyed "is this a re-run" on fill+exit, which named BOTH
+    # trades base.md once both rows existed in the csv, and the 16:39 --date
+    # run overwrote trade 1 with trade 2 again.) The csv row is replaced by
+    # (date, occ, fill, exit), so a re-run of the same trade never piles up.
+    idx = _trade_index(res)
+    fn = "%s.md" % base if idx == 0 else "%s-%d.md" % (base, idx + 1)
     path = os.path.join(OUT_DIR, fn)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(_md(res))
@@ -395,6 +391,23 @@ def _write(res):
             w.writerow({c: x.get(c, "") for c in COLUMNS})
     os.replace(tmp, OUT_CSV)
     return path
+
+
+def _trade_index(res):
+    """0 for the day's first closed trade on this OCC, 1 for the second ..."""
+    try:
+        same = [r for _d, r in ledger.rows(real_only=True, since=res["date"], until=res["date"])
+                if (r.get("occ") or "") == (res.get("occ") or "")
+                and r.get("state") in ("closed", "stopped")
+                and not r.get("manual")
+                and str(r.get("who") or "").strip().lower() != "gian"]   # graded trades only
+        same.sort(key=lambda r: _f(r.get("opened")) or 0)
+        for i, r in enumerate(same):
+            if _f(r.get("opened")) == res.get("_opened"):
+                return i
+    except Exception:                                   # noqa: BLE001
+        pass
+    return 0
 
 
 def _read_postmortems_csv():
