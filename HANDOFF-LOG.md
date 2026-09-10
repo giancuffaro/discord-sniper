@@ -9,6 +9,16 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**THE PULLBACK EXIT CALLED ITSELF A ROOM CALL (9/10 15:10 autopilot).** The
+META 645P 9/11 pullback target sold at 6.23 (+$80) and the book wrote
+"sold on their call", so the ledger read exit_by "room call" — a false
+STANDING RULE alarm (a bot sell on a room exit is a bug; this was the
+bridge's own stock-target exit). Under ENTRIES ONLY the room never sells,
+so bridge.py's CLOSE path now names the seller from the order's source:
+"pullback stock exit at X" / "underlying hard stop at X"; positions._exit_by
+maps those to "pullback stop" / "hard stop". Tests green; bridge restarts
+at the next safe window.
+
 **THE VOICE READER WAS THE LAG (9/10, G: "when I join a voice channel
 everything laggs out").** He was right, and the cause was ours, not
 Discord's. offscreen.js captured tab audio with
