@@ -3298,6 +3298,13 @@ def _place_impl(order):
                     BOOK.finish(key, positions.CLOSED,
                                 "sold on their call at %.2f" % float(_px),
                                 price=float(_px))
+                # msg feeds the two returns below (plain close, and the
+                # reenter "sold + back in" combo) — 9/10: this was never
+                # set on this path, so every plain CLOSE fill raised
+                # "cannot access local variable 'msg'" right after the
+                # sell (the META 645P exit hit it; the fill itself was
+                # fine, only this trailing message construction failed).
+                msg = "closed %s at %.2f" % (order["symbol"], float(_px))
 
                 # Mirror the exit onto every extra account that actually
                 # holds this trade (8/18). Each one sells through its OWN

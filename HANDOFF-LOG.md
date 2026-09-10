@@ -77,6 +77,30 @@ futures showed up as perfect alert channels. They are OUR OWN — the fill
 announcer posts there. Reading them would feed the bot its own fills as if
 they were somebody's calls. Marked DO NOT ADD in rooms.txt.
 
+**RATCHET CHANGED 7.5/5/2 -> 5/3/5 (G: "flip it").** Applied, not proposed:
+settings.json strategy.stop_loss_pct 7.5 -> 5 and ratchet_tiers.TIERS
+(5.0,0.0,2.0) -> (3.0,0.0,5.0). NOTE FOR THE RECORD: the question G answered
+offered born -5.0 / arm +4.0, from ratchet_sweep.py, which ties the rung to
+the arm. ratchet_sweep_fine.py, which decouples the rung, then found the
+real best cell is 5.0/3.0/5.0 at $504 vs 5.0/4.0/4.0 at $384 — same born
+stop he approved, better arm and rung. The tested cell was applied and the
+difference is called out here rather than buried.
+Four ratchet assertions in test_positions.py encoded the old ladder's
+numbers (a $2.00 fill locking 2.28 at +20%, 2.48 at +30%); under 3/5 the
+same fill locks 2.30 and 2.50. Updated, all five suites green.
+AND THE BUG BEHIND THE BUG: ratchet_sweep_fine.py had "LIVE 7.5/5/5"
+hardcoded in its header and had been printing that for two days while the
+real rung was 2 — every comparison in that report was against a rule nobody
+was running. chart_contracts.py, entry_compare.py, missed_dollarize.py and
+pullback_levels.py each carried their own typed copy too. There is now ONE
+reader, ratchet_tiers.live_spacing(), returning (born, arm, step) read from
+settings.json and TIERS; all five call it. A "current" number typed into a
+report is a number that goes stale the day the real one moves.
+ALSO NOTED, NOT CHANGED: ZT all-trades-mashup is still `on` in rooms.txt
+even though the 9/9 note says the whole ZTRADEZ server was cut and the sub
+was a day from lapsing. Flipping a room is G's click, so it was left alone
+and HANDOFF.md now says what is actually true instead of "0 ZTRADEZ".
+
 **2026-09-10 00:55 — THE ANSWER: THE BOT LOSES ~$300 OVER 5 WEEKS.** G:
 "I'm excited to see if my bot loses money or not." Priced the bot's own
 trades STRAIGHT OFF THE BROKER — each bot row matched to a completed
