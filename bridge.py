@@ -357,17 +357,25 @@ def apply_room_rules():
         rooms = read_rooms()
     except Exception:                                   # noqa: BLE001
         return
-    spx, bare, sym = [], [], {}
+    bare, dotdate, sym = [], [], {}
     for r in rooms:
         for f in r.get("rules") or []:
-            if f == "spx":
-                spx.append(r["id"])
-            elif f == "bare":
+            if f == "bare":
                 bare.append(r["id"])
+            elif f == "dotdate":
+                dotdate.append(r["id"])
             elif f.startswith("sym="):
                 sym[r["id"]] = f[4:].upper()
-    CFG["spx_entry_channels"] = spx
     CFG["entry_no_verb_channels"] = bare
+    # ONE ROOM'S CALENDAR, NOT EVERYONE'S (9/10, Maguro in Low Key Stonks).
+    # He writes the expiry with a DOT: "$slv 63c 10.16 2.35" is Oct 16 at
+    # $2.35. Read without this flag the machine takes 10.16 as the PRICE and
+    # the date as missing — it would bid $10.16 for a $2.35 contract and buy
+    # this Friday instead of October. It is NOT folded into `bare` because
+    # "MU 8/28 965c 1.26" is a perfectly ordinary price in other rooms and
+    # 1.26 is also a readable January 26th. A grammar this ambiguous belongs
+    # to the room that actually speaks it.
+    CFG["dot_date_channels"] = dotdate
     CFG["default_symbol_channels"] = sym
 
 
