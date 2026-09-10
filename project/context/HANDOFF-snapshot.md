@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (00:50) — the bot's own record isolated (107 broker-priced trades, NET −$545, −$5/trade; pullback entries break even, instant ones do not); contracts and expiries recovered so bot rows can be checked against the broker at all; P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-10 (02:30) — THE OPRA TAPE IS BOUGHT: 537 contract-days, 1.02M per-second quotes, so the ratchet scenarios finally ran on real price paths (115 room-call trades; current 7.5/5 = +$87, best −5.0/+4.0 = +$384, +$2.58 a trade with a 95% band of +$0.45..+$4.31 — REAL, and G's call to flip); FULL-DEPTH DISCORD SCAN of all 25 servers / 289 channels — two live options feeds found in TradingTheTrend (member-alerts, trade-log; both added `off`), five more alert rooms that fail a standing rule added `off`, everything else read and rejected in one block, and Sniper HQ marked DO NOT ADD because it is our own announcer's output; the bot's own record isolated (107 broker-priced trades, NET −$545, −$5/trade; pullback entries break even, instant ones do not); contracts and expiries recovered so bot rows can be checked against the broker at all; P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -16,9 +16,10 @@ master_broker.csv (daily Webull pulls absorbed + deleted); pullback level
 settled at $1 on real bars; post-mortem on every exit; one central file per data
 family (ledger / alerts / tapes / holidays / announcer board); ratchet 7.5/5/2
 flat, futures ratchet decoupled; Whop API path deleted; the tab-reload storm
-found (662 reloads/day, zombie heartbeat) and fixed; rooms settled at 19
-(15 Discord + 4 Whop, all live, 0 ZTRADEZ — counted from rooms.txt 9/9 11:20,
-replacing an earlier "26" that no longer matched the file); START HERE fully
+found (662 reloads/day, zombie heartbeat) and fixed; rooms settled at 20 on
+of 57 listed (16 Discord + 4 Whop, all live, 0 ZTRADEZ — counted from
+rooms.txt 9/10 02:22, after the full-depth scan of all 25 servers added
+7 more `off` lines and one rejected-rooms block); START HERE fully
 unattended (one-shot open-rooms request, no git/Chrome prompts);
 REPLACE-DON'T-STACK rule; folder cleanup to archive/; POSTCHECK stale-snapshot
 false alarm fixed. Story of each in HANDOFF-LOG.md.
@@ -241,6 +242,14 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   WHY 7.5/5/2: 294-combo sweep on 80 real fills (ratchet_sweep_fine.py) —
   the small rung is the lever ($152 → $281 on the sample); cheap (<$1)
   loses under every spacing, so no cheap tier. Lean, not verdict.
+  OPEN DECISION (9/10, G's call — it is money): the OPRA tape now covers
+  537 contract-days, so ratchet_sweep.py ran on 115 real room-call trades
+  instead of 80. Current 7.5/5 = +$87 (rank 10 of 50). Best = born −5.0%,
+  arm +4.0% = +$384. Paired bootstrap on the same trades: +$2.58 a trade,
+  95% band +$0.45..+$4.31 — outside zero, so REAL, not this sample's noise
+  (`python3 ratchet_sweep.py --by-caller` prints both). Nothing was
+  changed; flipping it means strategy.stop_loss_pct 7.5 → 5 and
+  ratchet_tiers TIERS arm 5.0 → 4.0.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
@@ -456,10 +465,14 @@ FILL ANNOUNCER (announcer.py, read-only)
   too small to qualify for a pullback (INTC, SPCX, WMT, RIOT, ZETA, SKHY,
   LYFT, SMCI) lose -$6.7 a trade at a 26% hit rate - a FILTER question,
   and where the bot's money actually goes.
-  RATCHET SCENARIOS ARE STILL BLOCKED: replaying a different stop needs the
-  per-second price path while each trade was open, which order records do
-  not contain. Databento quoted $7.23 for the OPRA tape covering these
-  contracts - the one purchase that unlocks it. G's call.
+  RATCHET SCENARIOS: UNBLOCKED 9/10. The OPRA tape was bought and now holds
+  537 contract-days / 1.02M per-second quotes (databento_tape.csv, despiked
+  into databento_tape_clean.csv). option_tape_pull.py buys cbbo-1s, one
+  pull per contract-window, four at a time, `--minutes N` to stop and
+  resume; the full-book cmbp-1 schema it used first was ~100x the rows for
+  the same answer. Only 9/9 itself is missing — OPRA history stops at
+  13:30 UTC that day and the rest needs a live licence. Verdict is in THE
+  RATCHET above.
   8/07's seven "missing" trades were ADOPTED at 08:12:13 pre-open — G's own
   positions from before, never bot trades, and no broker BUY exists that
   day because they were bought earlier.

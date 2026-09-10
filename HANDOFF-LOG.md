@@ -9,6 +9,74 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-10 02:30 — THE TAPE, THE RATCHET VERDICT, AND ALL 25 SERVERS.**
+Two jobs while G slept: buy the OPRA tape and finish the Discord sweep.
+
+THE TAPE. The first pull never wrote a byte. Three reasons, all found and
+all fixed. (1) A backgrounded `nohup` dies with the sandbox call, so the
+"it's downloading" of the night before was a process that had already been
+killed — check `ls -l` on the output file, never the fact that you launched
+something. (2) The pull priced every day-window with metadata.get_cost on
+EVERY run, 49 round-trips before a single download; pricing now belongs to
+`--cost` alone. (3) The real cost: it asked for one window per DAY spanning
+min-entry to max-exit across every contract that day — the whole session,
+for each of them — on `cmbp-1`, the full book. Millions of rows to produce
+a 1-second downsample. Now: one pull per CONTRACT-window, four in flight,
+on `cbbo-1s`, which Databento already samples to the second. 8 windows in
+84s became 87 in 120s. `--minutes N` stops cleanly and re-runs resume,
+because a window is written all-or-nothing (a half-written day would be
+skipped forever by `already_taped`). Result: 537 contract-days, 1,022,106
+quotes. Only 9/9 is missing — OPRA history stops at 13:30 UTC that day,
+the rest needs a live licence we do not have.
+
+THE RATCHET VERDICT — AND A TRAP ON THE WAY. First run of ratchet_sweep.py
+on the full tape said 822 trades and EVERY one of 50 spacings losing, best
+−$918. That looked like "the stop is not the lever, the rooms are". It was
+a filter bug of exactly the kind found the night before: 707 of the 822
+rows had caller `?` — hand trades and adopted positions, not room calls —
+worth −$1,230 on their own. EXCLUDE_WHO now drops "" and "?" alongside
+"gian". The honest sample is 115 real room-call trades: current 7.5/5 =
++$87 (rank 10 of 50), best born −5.0% / arm +4.0% = +$384. Because 115 is
+small, `--by-caller` now also bootstraps the PAIRED difference (same trade,
+both rules, 2000 resamples): +$2.58 a trade, 95% band +$0.45..+$4.31.
+Outside zero, so it is a real edge and not this sample's noise — the first
+ratchet number in this project that clears its own error bar. NOT APPLIED:
+it is money, so it is G's call. The by-caller table also shows where the
+money is: the pawn +$323 and mike +$263 carry the whole book, unraveller
+−$204 and evapanda −$160 give it back. ratchet_backtest.py agrees the
+current stop is sound in the other direction — 867 contract-days, 0 that
+went worse than the born stop.
+
+THE DISCORD SWEEP. The tab reloaded overnight and took `window.__CAND` with
+it, so the 70 candidates were gone. Rebuilt with a rule worth keeping: to
+move between channels use `history.pushState` + a synthetic `popstate`.
+Clicking an injected anchor is a REAL navigation — it reloads Discord, tears
+down the eval context, and costs a fresh gateway session (the logout risk).
+pushState keeps the page, the variables and the session. Re-swept all 25
+servers, 289 visible channels, then OPENED every plausible one and read its
+last messages rather than judging by name.
+Found: TradingTheTrend #member-alerts and #trade-log — live options calls
+("BTO NVDA 9/11 230c @ .88") echoed by a TradesTracker bot in the cleanest
+machine format in any of the 25 servers. Added `off`; trade-log probably
+duplicates the #option-alerts room already on, so member-alerts goes first.
+Added `off` with their reason: TTT spread-alerts / option-spreads (credit
+spreads, against the 9/7 rule), TTT stock-alerts and ZT dave-trader
+(shares). Rejected in one block, all read: OWLS notable-flow / etf-flow /
+free-flow-ideas (an unusual-flow bot — prints what someone else bought, no
+entry, no stop, nobody to follow), chatter rooms, watchlists, recaps,
+react-for-a-role boards, a competing product's changelog bot, and two dead
+ZTRADEZ rooms.
+G asked specially about the education channels — "there's a lot of
+education and parser they teach for their specific server". There isn't.
+Honey Drip's five how-to-trade-* channels are each a single YouTube link;
+Vero's day-trade-guide and Platinum's how-to-navigate are signposts to the
+alert rooms we already read. No server teaches a format we were not already
+parsing.
+And a trap avoided: Sniper HQ's #sniper-alerts-options / #sniper-alerts-
+futures showed up as perfect alert channels. They are OUR OWN — the fill
+announcer posts there. Reading them would feed the bot its own fills as if
+they were somebody's calls. Marked DO NOT ADD in rooms.txt.
+
 **2026-09-10 00:55 — THE ANSWER: THE BOT LOSES ~$300 OVER 5 WEEKS.** G:
 "I'm excited to see if my bot loses money or not." Priced the bot's own
 trades STRAIGHT OFF THE BROKER — each bot row matched to a completed
