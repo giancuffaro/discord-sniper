@@ -41,17 +41,13 @@ rem  again within 5 minutes of the last attempt, no matter what the
 rem  alive-check below says. A marker file's own age is the timer -
 rem  cheap, survives this script restarting, needs no math.
 set "MARKER=%~dp0whop-loop-last-launch.marker"
+set "MARKER_AGE="
 if exist "%MARKER%" (
-  forfiles /p "%~dp0" /m "whop-loop-last-launch.marker" /d -0 >nul 2>&1
-  if not errorlevel 1 (
-    rem  forfiles matched a file modified "today" but that's not tight
-    rem  enough - use PowerShell for a real age-in-seconds check.
-    for /f %%A in ('powershell -NoProfile -Command "[int](New-TimeSpan -Start (Get-Item '%MARKER%').LastWriteTime -End (Get-Date)).TotalSeconds"') do set "MARKER_AGE=%%A"
-    if defined MARKER_AGE if !MARKER_AGE! LSS 300 (
-      timeout /t 60 /nobreak >nul
-      goto loop
-    )
-  )
+  for /f %%A in ('powershell -NoProfile -Command "try { [int](New-TimeSpan -Start (Get-Item '%MARKER%').LastWriteTime -End (Get-Date)).TotalSeconds } catch { '' }" 2^>nul') do set "MARKER_AGE=%%A"
+)
+if defined MARKER_AGE if not "!MARKER_AGE!"=="" if !MARKER_AGE! LSS 300 (
+  timeout /t 60 /nobreak >nul
+  goto loop
 )
 
 rem  Ask the bridge how long since the whop lane last checked in. Any
