@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (02:45) — THE RATCHET MOVED, 7.5/5/2 -> 5/3/5 on G's call: the OPRA tape was bought (537 contract-days, 1.02M per-second quotes) so ratchet_sweep_fine.py re-swept 294 combos on real price paths and on 115 real room calls (707 rows with caller "?" — hand trades and adopted positions — had been scored as room calls; fixed). Old $158 rank #82, new $504 rank #1, +$3.01 a trade with a 95% band of +$0.72..+$4.91 — the first spacing here to clear its own error bar. Every backtest and report now READS the live spacing from ratchet_tiers.live_spacing() instead of typing it. FULL-DEPTH DISCORD SCAN of all 25 servers / 289 channels: two live options feeds found (TradingTheTrend member-alerts + trade-log, both `off`), five more alert rooms that fail a standing rule added `off`, the rest read and rejected in one block, Sniper HQ marked DO NOT ADD (our own announcer's output). Everything before today is in HANDOFF-LOG.md.
+Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trademorewiser NQ short (Day Trades) found it never reached trades.log, and the room had caught exactly 1 alert total since 8/13. Cause: nothing ever recreated a Whop tab once it died, and nothing noticed if the whole "Sniper Whop" Chrome profile wasn't running. Fixed — whopSelfHeal() (background.js, whop lane only, Discord's 9/8 "a closed tab stays closed" rule untouched) + _whop_loop.bat/_whop_hidden.vbs watchdog (installed by START HERE.bat, Startup entry + 30-min revive task, same model as the Fill Announcer). Takes effect next time START HERE.bat runs. Story in HANDOFF-LOG.md. Everything before today is in HANDOFF-LOG.md.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -354,7 +354,21 @@ ROOMS / TABS / READERS
 - WHOP: rooms live at whop.com/<business>/exp_<id>/app/ (the old /joined/
   URLs redirect to a lobby and read nothing). Tabs are the ONLY Whop source
   (API reader deleted 9/9 — its dead "api mode" gate had been dropping every
-  tab read since the morning). Felony posts QQQ/SPY contracts when he trades
+  tab read since the morning; the official API stays WALLED for member reads
+  until Felony installs G's Whop app with chat:read — unlocks itself, no code
+  change, if that ever happens). FOUND 9/10: tabs being the only source also
+  meant Day Trades caught exactly 1 alert in the whole month since 8/13 —
+  openMissingRooms() only fills a missing tab on START HERE's one-shot token
+  (9/8, so a DISCORD tab he closes by hand stays closed, his rule), and
+  nothing ever noticed if the whole "Sniper Whop" Chrome profile wasn't even
+  running. FIXED 9/10, two parts, Discord's 9/8 behavior untouched: (1)
+  whopSelfHeal() in background.js calls openMissingRooms() every watch-build
+  tick, but ONLY in the whop lane — he doesn't hand-close Whop tabs, they die
+  from crashes/memory/eviction, so self-healing them doesn't fight his rule.
+  (2) _whop_loop.bat + _whop_hidden.vbs (same pattern as the bridge's own
+  _run_hidden.vbs) watch whether the Sniper Whop Chrome window is running at
+  all and relaunch it if not; installed by START HERE.bat as a Startup entry
+  + 30-min revive task, same durability model as the Fill Announcer. Felony posts QQQ/SPY contracts when he trades
   NQ/ES. Felony goes live on ZOOM mornings (~9:15, event on FST's "Zoom
   Links & Events" page; recurring meeting 89312529658 on us02web) — join the
   WEB client `us02web.zoom.us/wc/join/<id>` in the WHOP Chrome profile so
