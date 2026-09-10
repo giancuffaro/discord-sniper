@@ -28,8 +28,8 @@ Last updated: 2026-09-10 (13:15) — ratchet 7.5/5/2 -> 5/3/5 (G's call; first s
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.90) reads 19 rooms —
-  15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
+- The machine: Chrome MV3 extension (Profile 2; v3.5.95) reads 22 rooms —
+  18 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
   (the same physical Chrome was "Browser 2" at 17:30 on 9/9 and "Browser 1"

@@ -9,6 +9,69 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**THE VOICE READER WAS THE LAG (9/10, G: "when I join a voice channel
+everything laggs out").** He was right, and the cause was ours, not
+Discord's. offscreen.js captured tab audio with
+`ctx.createScriptProcessor(4096, 1, 1)`. A ScriptProcessorNode runs its
+callback ON THE MAIN THREAD — every 4096 samples, ~85 ms, PER SESSION, with
+no cap on concurrent sessions. He had four running. Four main-thread audio
+callbacks fighting the renderer is exactly "everything lags out", and it
+starts the moment a tab goes audible, which is the moment you join voice.
+ScriptProcessorNode has been deprecated for years for precisely this.
+FIXED: new extension/pcm-worklet.js does the downsample and the float->PCM16
+conversion on the AUDIO thread and posts finished buffers across with a
+TRANSFER (not a copy). The main thread's whole remaining job per chunk is one
+ws.send() of an ArrayBuffer it never allocated or touched. If the worklet
+fails to load the old node is still there as a fallback — but it announces
+itself in the log now, because a silent downgrade to the slow path is how
+this would hide again. The naive nearest-sample downsample was kept
+deliberately: changing the maths and the threading at once would make a
+regression impossible to attribute.
+WORTH REMEMBERING: this cost him performance for three weeks and the voice
+path has never produced a single transcript that reached the parser.
+
+**CTRL+SHIFT+X, THE THIRD TIME (9/10).** chrome.commands' `suggested_key` is
+only a SUGGESTION — if another extension already holds the combo at install
+time Chrome leaves the command UNBOUND and never says so. That is invisible
+and permanent. The manifest now names the key per-platform explicitly, AND
+content.js listens for the chord itself in the CAPTURE phase (ahead of
+Discord, which eats a lot of keystrokes) and messages the worker. Both paths
+land on enqueueGrab, which already refuses a tab that is queued or running,
+so a double-fire costs nothing. Belt and braces on a key he has asked for
+twice.
+
+**THE GRAB WENT TO THE WRONG PLACE (9/10, G: "make sure the log gets saved
+somewhere you know where it is, and with the ID of the channel").** It was
+writing to the Downloads folder as "<label>-<date>.txt" — outside the
+project, unknown to every tool here, named by a label that can change. Now it
+goes through the bridge's /exportlog into <folder>\DS Logs, named
+"grab <channel_id> <label> <date>.txt" with a self-describing header block.
+The channel id leads because it is the one thing that never changes. Checked
+that the daily-export readers' filename regex does NOT match it, so grabs
+can never be mistaken for a day's export.
+
+**AND THE GRAB WAS SILENTLY DYING (9/10, G: "I'm pressing the button, it
+doesn't work").** Reloading an extension orphans the content script in every
+already-open tab: the tab looks fine but sendMessage throws "Receiving end
+does not exist". pumpGrabQueue caught that, logged "its tab was gone or not
+ready", and dropped the grab. It re-injects and retries once now, and if it
+still fails it logs the REAL error instead of blaming the tab.
+
+**STALE-CODE SWEEP (9/10, G: "optimize everything, make sure everything runs
+at 100%").** Suites all green, every .py compiles, every extension .js passes
+node --check, health.py clean. Two real finds, both latent rather than live:
+  * jsparse.py had a fallback into `signals.parse()` sitting AFTER a raise —
+    unreachable, and `signals` was not even imported, so it was a NameError
+    waiting for the day node went missing. The Python parser mirror was
+    deleted 9/9; its call site should have gone with it. Removed.
+  * health.py was still printing "signals.py can be deleted" about a file
+    that no longer exists. Corrected.
+NOT ACTED ON, and worth writing down so nobody trusts it later: a scan for
+"settings.json keys nothing reads" flagged channel_ids, one_contract and 8
+others. It is WRONG — it only matches quoted access, and those keys are read
+as attributes (c.channel_ids). Deleting on that evidence would have broken
+the reader. Verified before acting, discarded.
+
 **WHERE THE ROOM LABEL WAS GOING (9/10, G: "trace where the room label gets
 lost").** master_alerts.csv had a room on 18 of 323 rows. Two independent
 defects, both upstream of build_alerts, neither of them in the trading path.

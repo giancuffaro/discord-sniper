@@ -79,14 +79,9 @@ def parse_many(texts):
         "Install Node.js from https://nodejs.org and re-run. Nothing is "
         "wrong with the bot; only these read-only reports need node."
         % len(texts))
-    out = []
-    for t in texts:
-        try:
-            s = signals.parse(t)
-            out.append({"action": s.action, "symbol": s.symbol, "strike": s.strike, "side": s.side,
-                        "expiry": s.expiry, "limit": s.limit, "why": (s.why or "") + " [py-mirror]",
-                        "matched": getattr(s, "matched", ""), "fire": bool(s.fire),
-                        "kind": getattr(s, "kind", ""), "direction": getattr(s, "direction", None)})
-        except Exception as e:                          # noqa: BLE001
-            out.append({"action": None, "why": "ERR %s" % e})
-    return out
+    # (Nothing follows the raise. What used to live here was the fallback
+    # into signals.parse() — dead since the Python mirror was deleted 9/9,
+    # unreachable behind that raise, and `signals` is not even imported, so
+    # it was a NameError waiting for the day node went missing. Removed 9/10
+    # rather than left as a comforting-looking safety net that never was
+    # one. REPLACE, DON'T STACK: the mirror went, so its call site goes.)

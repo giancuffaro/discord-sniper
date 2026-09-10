@@ -335,8 +335,8 @@ def run_once(trials, quiet=False):
         print("-" * 66)
         if have:
             print("Node.js: present — audit tools use the REAL parser.")
-            print("         (signals.py, the 2,350-line Python mirror, is")
-            print("          therefore dead weight and can be deleted.)")
+            print("         (the Python parser mirror was deleted 9/9 —")
+            print("          node IS the parser for every audit tool now.)")
         else:
             print("Node.js: MISSING — scoreboard / replay_check /")
             print("         audit_history are falling back to signals.py,")
