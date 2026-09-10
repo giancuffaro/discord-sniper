@@ -68,6 +68,13 @@ class _ComboUnsupported(Exception):
 
 # --- turning the room's shorthand into a real contract -----------------------
 
+def _is_trading_day(d):
+    """Mon-Fri and not a market holiday. HOLIDAYS is the same list the rest of
+    this file walks off; if it ever goes stale the worst case is naming a
+    contract the broker then refuses by name, which is loud."""
+    return d.weekday() < 5 and d.isoformat() not in HOLIDAYS
+
+
 def weekly_expiry(today=None):
     """This week's Friday, as an ISO date — the room's stated default.
 
@@ -112,10 +119,29 @@ def expiry_to_date(expiry, today=None):
     if e == "weekly":
         return weekly_expiry(today)
 
+    # "0DTE" / "2DTE" / "14DTE" — N CALENDAR days out, which is what the rooms
+    # mean and what build_ledger has always assumed.
+    #
+    # WHEN N LANDS ON A WEEKEND, ROLL BACK (G, 9/10): "there is no 3DTE if in
+    # three days is a Saturday — it would just end in 2DTE, and that's it. It
+    # really depends on when it was posted." So a caller counting days counts
+    # to a contract that EXISTS; the number is his shorthand for the listing at
+    # the end of that count, not an arithmetic claim. Posted Thursday, "2DTE"
+    # is Saturday on the calendar and Friday in the market, and Friday is the
+    # trade. Rolling FORWARD to Monday would be a different week, a different
+    # weekend of theta, and not the contract he called.
+    # Never rolls back past today. If the count starts on a non-trading day
+    # (a weekend post) there is nothing behind it to roll back to, so it walks
+    # forward to the next trading day instead.
     if e.endswith("dte"):
         n = e[:-3].strip()
         days = int(n) if n.isdigit() else 0
-        return (today + dt.timedelta(days=days)).isoformat()
+        d = today + dt.timedelta(days=days)
+        while d > today and not _is_trading_day(d):
+            d -= dt.timedelta(days=1)
+        while not _is_trading_day(d):
+            d += dt.timedelta(days=1)
+        return d.isoformat()
 
     # ISO date, year first: "2026-08-07". The parser hands back a fully
     # resolved date this way for calls like Bullwinkle's "NEXT WEEK", so we
