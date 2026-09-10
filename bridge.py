@@ -5872,6 +5872,15 @@ def main():
                             continue
                         if p.get("kind") == "future" or p.get("adopted"):
                             continue          # futures ride their own; his own trades are hands-off
+                        if p.get("closing"):
+                            # claim() clears stop_order_id THE MOMENT a close
+                            # starts (pull stop, then sell) — that's the design,
+                            # not a naked hold. 9/10 SPY 761C: claim() pulled the
+                            # stop at :25, the sell filled at :30, and this loop's
+                            # 6s-settle read landed at :29, right in that gap —
+                            # false PROBLEM on a position claim() already owns
+                            # and will finish (or release() restores the stop).
+                            continue
                         sid = p.get("stop_order_id")
                         if not sid:
                             # A stop is placed WITH the order and rebased a
