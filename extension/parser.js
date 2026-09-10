@@ -967,13 +967,36 @@ function tokenContract(text, cfg) {
   const t = String(text || "");
   // A levels row or a comparison is never an order, whatever it contains.
   if (/[<>]/.test(t)) return null;
+  /* RAILS 4, 5 AND 6, added after the FIRST gate run on this reader (9/10).
+   * It passed every unit test and the junk check, and still broke two things
+   * that only 11,367 real messages could show:
+   *
+   *   "OUT TSLA bullwinkle000 , TSLA | $350 C 5.25 NEX..."
+   *        The ZTRADEZ rooms concatenate a whole block into one message — an
+   *        EXIT quoting the original entry. With no contract to hand the
+   *        z-format branch had held it as a "fill"; handing it one flipped it
+   *        to a firing ENTRY. An exit that becomes an entry is as bad as this
+   *        gets, so: NO EXIT WORD ANYWHERE, or this reader stays out of it.
+   *        Exits lose no detail — they are ignored by doctrine regardless.
+   *
+   *   "buy AI 12.50 .43 calls for Sept 18"
+   *        The contract is the $12.50 call at $0.43. Scanning loose tokens it
+   *        found the PRICE welded to the side word and booked a 0.43 strike.
+   *        A strike under a dollar effectively does not exist on any name the
+   *        broker lists, so it is refused — and the ticker must sit CLOSE to
+   *        the strike, because in a 300-character blob "near" is the only
+   *        thing left that means "belongs together".
+   */
+  if (RE_EXIT.test(t.toLowerCase()) || RE_TRIM.test(t.toLowerCase())) return null;
 
   // --- strike + side: exactly one, or refuse -------------------------------
   RE_TOK_STRIKESIDE.lastIndex = 0;
   const ks = [];
   let m;
   while ((m = RE_TOK_STRIKESIDE.exec(t)) !== null) {
-    ks.push({ strike: parseFloat(m[1]), side: m[2][0].toLowerCase() === "c" ? "CALLS" : "PUTS",
+    const k = parseFloat(m[1]);
+    if (!(k >= 1)) continue;                    // rail 5: no sub-dollar strikes
+    ks.push({ strike: k, side: m[2][0].toLowerCase() === "c" ? "CALLS" : "PUTS",
               at: m.index });
   }
   if (ks.length !== 1) return null;
@@ -1008,6 +1031,11 @@ function tokenContract(text, cfg) {
   // Two different tickers on one line is a watchlist. Take nothing.
   const uniq = Array.from(new Set(cands.map(c => c.sym)));
   if (uniq.length !== 1) return null;
+  // rail 6: the ticker has to sit NEAR the contract. In a 300-character blob
+  // — which is what a relayed ZTRADEZ block looks like — proximity is the
+  // only remaining evidence that the two belong to the same sentence.
+  const near = cands.some(c => Math.abs(c.at - ks[0].at) <= 40);
+  if (!near && !(cfg && cfg.default_symbol && cands[0].at === ks[0].at)) return null;
 
   // --- date: optional, and the nearest one to the contract wins ------------
   RE_TOK_DATE.lastIndex = 0;
