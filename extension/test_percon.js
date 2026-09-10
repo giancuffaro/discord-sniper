@@ -22,7 +22,13 @@ const CASES = [
 let bad = 0;
 for (const [n, t, want] of CASES) {
   const s = parseSignal(t, { spx_entries: true }) || {};
-  // SPX retargets to SPY and deliberately NULLS the limit (index premium is
+  // 9/10: SPX NO LONGER retargets to SPY — that translation was deleted on
+  // G's instruction (SPY 760c is not SPX 7600c: different multiplier, tick,
+  // settlement and premium). The symbol and strike stay as written and the
+  // caller's /con limit now SURVIVES, because the old retarget was what
+  // nulled it. These expectations were flipped from SPY/766 to SPX/7655 to
+  // match — the test encoded the retired rule, so it moves with the rule.
+  // The limit tolerance below still accepts null for SPX lines from before.
   // ~10x the ETF's), so on those the check is that the PRE-retarget read was
   // right — asserted via the un-retargeted equity cases plus s.why.
   const lim = s.limit;
@@ -46,9 +52,9 @@ console.log(`  ${rawOk ? "PASS" : "FAIL"}  ${"non-index /con".padEnd(22)} limit=
 console.log("\nIMPLIED SYMBOL (per channel):");
 const SPXCFG = { default_symbol: "SPX", spx_entries: true };
 const IMPLIED = [
-  ["in 7655p 2.9",       "bored, in 7655p 2.9 @here",                 "SPY", 766, "PUTS"],
-  ["in 7730c 4.3",       "in 7730c 4.3 @here",                        "SPY", 773, "CALLS"],
-  ["7760c at 300/con",   "7760c at 300/con @here",                    "SPY", 776, "CALLS"],
+  ["in 7655p 2.9",       "bored, in 7655p 2.9 @here",                 "SPX", 7655, "PUTS"],
+  ["in 7730c 4.3",       "in 7730c 4.3 @here",                        "SPX", 7730, "CALLS"],
+  ["7760c at 300/con",   "7760c at 300/con @here",                    "SPX", 7760, "CALLS"],
   ["explicit wins",      "in NVDA 220c 4.3 @here",                    "NVDA", 220, "CALLS"],
   ["explicit wins 2",    "AAPL 322.5c at .30",                        "AAPL", 322.5, "CALLS"],
 ];
