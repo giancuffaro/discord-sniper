@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (18:00) — ext 3.7.0. Ratchet 5/3/5. Reader: any word order in `bare` rooms, two contracts in one message become two orders, NDTE rolls back off a weekend, no date = 0DTE where a same-day listing exists, optionable.txt now read by parser.js too. 11 rooms added (5 in guild 718624848812834903, 6 in Low Key Stonks). New per-room rule `dotdate` for an expiry written with a dot (Maguro: "$slv 63c 10.16 2.35" = Oct 16 @ $2.35). The dead `spx` rule and all its plumbing (spx_entry_channels / spx_entries, bridge + background) is DELETED, not left beside the new one. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Full story of everything above in HANDOFF-LOG.md, 9/10.
+Last updated: 2026-09-10 (18:00; close-out folded in 16:55) — ext 3.7.0. Ratchet 5/3/5. CLOSE-OUT 9/10: bot +$46 (7 one-lots), G −$706, account $0.83; post-mortems 4 NOISE CLIP / 2 ARM CLIP / 1 LEFT MONEY — the META +$80 was closed by the PULLBACK STOCK TARGET, not the ratchet, and ran to 8.50 (Watch items). Fixed at the close: post-mortem filename collision on a same-contract second trade; futures-account positions poll capped at 300 s while futures_brokers.webull is off (187 of the day's 256 throttles). Reader: any word order in `bare` rooms, two contracts in one message become two orders, NDTE rolls back off a weekend, no date = 0DTE where a same-day listing exists, optionable.txt now read by parser.js too. 11 rooms added (5 in guild 718624848812834903, 6 in Low Key Stonks). New per-room rule `dotdate` for an expiry written with a dot (Maguro: "$slv 63c 10.16 2.35" = Oct 16 @ $2.35). The dead `spx` rule and all its plumbing (spx_entry_channels / spx_entries, bridge + background) is DELETED, not left beside the new one. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Full story of everything above in HANDOFF-LOG.md, 9/10.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -61,13 +61,14 @@ Last updated: 2026-09-10 (18:00) — ext 3.7.0. Ratchet 5/3/5. Reader: any word 
   executing; Tradovate removed 9/x). Whop reads happen in the "Sniper Whop"
   Chrome profile; the Whop API path is DELETED (walled + it was dropping tab
   reads).
-- Accounts (Webull, one app key), read live 9/10 11:35: MARGIN ENIQGUV4
-  $9.85 (day P&L -$655 — of which the BOT was +$55; the rest was hand
-  trading, see HANDOFF-LOG 9/10), CASH MOI680 ($0.55), FUTURES R8IEC
+- Accounts (Webull, one app key), read live 9/10 16:45 (close-out): MARGIN
+  ENIQGUV4 $0.83, flat (day P&L −$671 net of fees: the BOT was +$46 on 7
+  one-lot trades, G's 21 hand round-trips −$706 — HANDOFF-LOG 9/10), CASH MOI680 ($0.55), FUTURES R8IEC
   $211.95 funded but flat and `futures_brokers.webull` is still false so
-  the bot will not touch it. At $9.85 of option buying power the bot
-  CANNOT ENTER ANYTHING — the median bot entry costs $167. G said 9/10 he
-  is depositing and leaving the account to the bot alone.
+  the bot will not touch it. At $0.83 of option buying power the bot
+  CANNOT ENTER ANYTHING — the median bot entry costs $167; AAPL/MU/AMD
+  calls were refused for money on 9/10 afternoon. G said 9/10 he is
+  depositing and leaving the account to the bot alone.
   Rate budget is SHARED with Market Sniper.
 - SEPARATE tool: Market Sniper (his own build, 127.0.0.1:8000) trades HIS
   manual scalps on the SAME Webull account. Coexistence rule: positions the
@@ -634,7 +635,10 @@ FILL ANNOUNCER (announcer.py, read-only)
   (SPY/QQQ/IWM + index to 16:15); futures Sun 18:00 → Fri 17:00 with the
   17:00-18:00 daily halt.
 - POST-MORTEMS → master_postmortems.csv + postmortems/<date>_<occ>.md
-  (postmortem.py; G 9/9: "analyze every single trade after exiting … be
+  (postmortem.py; a SECOND round-trip on the same contract the same day is
+  <date>_<occ>-2.md — named by the trade's rank among that day's graded
+  trades on the OCC (9/10, after SPY 758C ×2 overwrote itself twice); the
+  csv row is keyed date+occ+fill+exit; G 9/9: "analyze every single trade after exiting … be
   attentive to these"). One verdict per exited bot trade — NOISE CLIP /
   ARM CLIP / GOOD STOP / LEFT MONEY / GAVE BACK / GOOD EXIT — with the call vs our fill,
   the RN wait, the ride (MAE/MFE), the bid at +30s/+1m/+5m/+10m after the
@@ -670,6 +674,12 @@ FILL ANNOUNCER (announcer.py, read-only)
   else $0.05/$0.10 (tick_round/stop_below are symbol-aware).
 - Quote bus sweeps at 1.05 s, 20 symbols per call, fill poll 1.0 s;
   positions' watchdog reads the bus, direct quote at most every 2 s.
+- FUTURES-ACCOUNT POSITIONS POLL (bridge _FUT_POS_BACKOFF): after 3 empty
+  reads it backs off — capped at 60 s while futures_brokers.webull is on,
+  300 s while it is off (9/10: the 60 s cap alone was 187 of the day's 256
+  429s, all on a flat futures account; the only futures there could be G's
+  own, never managed). Any non-empty read resets it. Exponent clamped
+  (2**(fails-3) overflowed float after ~17 h flat).
 
 ## Operational truths
 - sniper-autopilot scheduled task: */30 ET — preflight ~9:30, sync watch
@@ -754,6 +764,16 @@ every `on` room at 9:15 by itself; verify OWLS reads on 9/10.)
 close-out today.)
 
 ## Watch items (open)
+- PULLBACK STOCK TARGET vs THE RATCHET (9/10, G's call): a pullback entry
+  manages "off the stock" and CLOSES at a fixed stock target ($1 past the
+  round number: META 645P out at 648.62). On 9/10 that took +$80 at 6.23
+  while the ratchet's stop sat at 5.65 (+4% locked) and the contract ran
+  to 8.50 inside 10 min (+$307). Doctrine says the ratchet is the ONLY
+  exit; the stock TARGET is a second, earlier one. (a) delete the target,
+  keep the pullback stock-STOP; (b) keep it. Nothing changes until G says.
+- The 9/10 META row in master_ledger.csv reads exit_by "room call" from
+  the old "sold on their call" wording (fixed 9/10 16:33) — it was the
+  pullback target, NOT a room exit. Not an ENTRIES ONLY breach.
 - **7-ROOM RE-ENABLE (04:14) — RESOLVED, rooms.txt back at 19 by 04:36.**
   Something briefly uncommented 7 cut rooms (Options Watchlist, Vero 1,
   Vero 3, Platinum equity, NGD ngd-trades, shabs, eli), taking the file to 26;
