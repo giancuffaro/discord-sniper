@@ -139,7 +139,8 @@ def load_trades(tape):
             after = [x for x in tape.get(o, []) if x[0] >= entry_t - 2]
             if not after or entry <= 0 or _nan(entry):
                 continue
-            out.append({"day": day, "occ": o, "entry": entry, "quotes": after})
+            out.append({"day": day, "occ": o, "entry": entry, "quotes": after,
+                        "who": who or "?"})
     return out
 
 
@@ -227,6 +228,32 @@ def main():
                  r["win_rate_pct"], r["resolved_of"]))
     print()
     print("full grid -> %s" % os.path.basename(OUT_CSV))
+
+    if "--by-caller" in sys.argv:
+        # 9/10 — the whole grid came back negative on the full tape (822
+        # entries, every one of 50 spacings losing). When no stop wins, the
+        # stop is not the lever; WHO is being followed is. Same simulation,
+        # split by caller, current rule vs the grid's best.
+        best = rows_out[0]
+        per = {}
+        for t in trades:
+            cur = simulate_one(t, 7.5, 5.0)[0] / 100.0 * t["entry"] * CONTRACT_MULT
+            bst = simulate_one(t, best["born_stop_pct"],
+                               best["arm_to_be_pct"])[0] / 100.0 * t["entry"] * CONTRACT_MULT
+            d = per.setdefault(t["who"], {"n": 0, "cur": 0.0, "best": 0.0, "win": 0})
+            d["n"] += 1
+            d["cur"] += cur
+            d["best"] += bst
+            if cur > 0:
+                d["win"] += 1
+        print()
+        print("BY CALLER — current rule (7.5/5) vs grid best (%.1f/%.1f)"
+              % (best["born_stop_pct"], best["arm_to_be_pct"]))
+        print("  %-22s %4s %10s %8s %10s %6s" % ("caller", "n", "current$", "$/trade", "best$", "win%"))
+        for who, d in sorted(per.items(), key=lambda kv: kv[1]["cur"]):
+            print("  %-22s %4d %10.2f %8.2f %10.2f %5.0f%%"
+                  % (who[:22], d["n"], d["cur"], d["cur"] / d["n"],
+                     d["best"], 100.0 * d["win"] / d["n"]))
 
 
 if __name__ == "__main__":
