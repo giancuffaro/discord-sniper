@@ -50,7 +50,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # from the Discord snowflake in each message id, so they are exact to the
 # millisecond rather than the minute Discord renders.
 #   dir, pivot digits, her stop (None = she posted none), her exit time
-ENTRIES = [
+SESSIONS = {
+  # 9/10 — 1-MINUTE bars all day. The clean session.
+  "2026-09-10": [
     ("14:46", "LONG",  230, 200, "15:02"),   # "+30 safety trim" then "flat rest"
     ("15:04", "LONG",  230, None, "15:06"),  # "relonging 230 rebid" -> "+20 trim"
     ("15:12", "LONG",  250, None, "15:15"),  # "adding longs 250s" -> "flat"
@@ -59,8 +61,19 @@ ENTRIES = [
     ("16:07", "SHORT", 203, 215, "16:36"),   # "reshorting, 203" -> rode to +60/+48
     ("17:00", "SHORT", 230, 245, "18:00"),   # "got a short 230, stop 245"
     ("18:53", "SHORT", 195, None, "19:54"),  # "short 195 pivot" -> "+65 trim"
-]
-DAY = "2026-09-10"
+  ],
+  # 9/4 — 5-MINUTE bars. Her exit times are therefore good to about five
+  # minutes, which on a trade that lasts two is real slop. Reported, not hidden.
+  "2026-09-04": [
+    ("15:16", "SHORT", 538, None, "15:28"),  # "flippiin short 538 pivot" -> "flat shorts +40"
+    ("18:10", "LONG",  465, None, "18:22"),  # "trying a long 480s fill 465 pivot" -> "+30 adds +20"
+    ("18:36", "SHORT", 513, None, "18:43"),  # "starter short 513 pivot" -> "stalling, im out -3"
+    ("18:47", "LONG",  523, None, "18:58"),  # "small long, 523pivot" -> "trades up +20 i've trimmed"
+    ("18:59", "SHORT", 538, 555,  "19:25"),  # "starter short 538 stop 555" -> "closing the trade"
+    ("19:27", "LONG",  528, 517,  "19:36"),  # "smollong 528, stop 517" -> "+15 safety trim"
+    ("19:38", "SHORT", 538, 560,  "19:50"),  # "last bet short nq 538-43" -> "got me -22"
+  ],
+}
 FUT_STOP_PTS = 25.0
 FUT_TARGET_PTS = 50.0
 WAIT_MIN = 10           # how long the round number gets to print
@@ -111,20 +124,32 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bars", default=os.path.join(HERE, "bars", "NQ_bars.csv"))
     a = ap.parse_args()
-    bars = [b for b in load(a.bars) if b[0].strftime("%Y-%m-%d") == DAY]
-    if not bars:
-        raise SystemExit("no bars for " + DAY)
-    print("=" * 78)
-    print("CHIKA 9/10 — HER EXITS vs OUR RATCHET, both priced off the same tape")
-    print("%d NQ bars, %s to %s UTC" %
-          (len(bars), bars[0][0].strftime("%H:%M"), bars[-1][0].strftime("%H:%M")))
-    print("=" * 78)
-    print("  %-6s %-5s %-8s %-9s %8s   %8s  %s"
-          % ("time", "side", "her fill", "our fill", "HERS", "OURS", "what happened to ours"))
+    allbars = load(a.bars)
+    her_tot, our_tot, skipped, unknown, taken, n = 0.0, 0.0, 0, 0, 0, 0
+    for DAY in sorted(SESSIONS):
+        bars = [b for b in allbars if b[0].strftime("%Y-%m-%d") == DAY]
+        if not bars:
+            print("no bars for " + DAY + " — skipped")
+            continue
+        gaps = sorted(set(round((bars[i+1][0]-bars[i][0]).total_seconds()/60)
+                          for i in range(min(40, len(bars)-1))))
+        print("=" * 78)
+        print("CHIKA %s — HER EXITS vs OUR RATCHET, both priced off the same tape"
+              % DAY)
+        print("%d NQ bars, %s to %s UTC, %s-minute resolution" %
+              (len(bars), bars[0][0].strftime("%H:%M"), bars[-1][0].strftime("%H:%M"),
+               "/".join(str(g) for g in gaps[:2])))
+        print("=" * 78)
+        print("  %-6s %-5s %-8s %-9s %8s   %8s  %s"
+              % ("time", "side", "her fill", "our fill", "HERS", "OURS", "what happened to ours"))
+        n += len(SESSIONS[DAY])
+        her_tot, our_tot, skipped, unknown, taken = _run(
+            bars, SESSIONS[DAY], DAY, her_tot, our_tot, skipped, unknown, taken)
+    _summary(her_tot, our_tot, skipped, unknown, taken, n)
 
-    her_tot, our_tot, skipped, unknown = 0.0, 0.0, 0, 0
-    taken = 0
-    for tm, side, pivot, hstop, xtm in ENTRIES:
+
+def _run(bars, entries, DAY, her_tot, our_tot, skipped, unknown, taken):
+    for tm, side, pivot, hstop, xtm in entries:
         t0 = dt.datetime.strptime(DAY + " " + tm + "+0000", "%Y-%m-%d %H:%M%z")
         t1 = dt.datetime.strptime(DAY + " " + xtm + "+0000", "%Y-%m-%d %H:%M%z")
         b0 = at(bars, t0)
@@ -203,19 +228,22 @@ def main():
         print("  %-6s %-5s %-8.0f %-9.0f %+8.0f   %+8.0f  %s"
               % (tm, side, her_fill, want, her_pts, our_pts, outcome))
 
-    n = len(ENTRIES)
-    print("-" * 78)
-    print("  HER WAY   : %+.0f points   = %+.0f dollars on one NQ contract"
+    return her_tot, our_tot, skipped, unknown, taken
+
+
+def _summary(her_tot, our_tot, skipped, unknown, taken, n):
+    print("=" * 78)
+    print("  HER WAY    : %+.0f points  = %+.0f dollars on one NQ contract"
           % (her_tot, her_tot * NQ_POINT))
-    print("  OUR RATCHET: %+.0f points  = %+.0f dollars   (%d of %d taken, %d skipped"
+    print("  OUR RATCHET: %+.0f points  = %+.0f dollars   (%d of %d taken, %d skipped,"
           % (our_tot, our_tot * NQ_POINT, taken, n, skipped))
-    print("               by the round-number wait, %d dropped as unreadable)" % unknown)
+    print("                                          %d dropped as unreadable)" % unknown)
     print()
     print("  Difference : %+.0f points in favour of %s"
           % (abs(her_tot - our_tot), "HER" if her_tot > our_tot else "OURS"))
     print()
-    print("  ONE SESSION. n=%d entries is a story, not evidence — it says which" % n)
-    print("  way to look, not what to do. read-only keeps collecting.")
+    print("  n=%d entries over 2 sessions. That is a story, not evidence — it says" % n)
+    print("  which way to look, not what to do. read-only keeps collecting.")
 
 
 if __name__ == "__main__":
