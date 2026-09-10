@@ -874,6 +874,133 @@ function pivotEntry(text) {
            their_stop: st ? parseInt(st[1], 10) : null };
 }
 
+/* THE TOKEN READER — ANY ORDER, ANY ROOM (9/10, G: "combine different ways of
+ * entry calls, mix around the date, ticker and the strike, just in case
+ * anybody else posts it in a different manner, we're still able to read it").
+ *
+ * Every other reader in this file matches a SHAPE: ticker-then-strike,
+ * date-then-ticker, strike-then-ticker. Each new room brought a new shape and
+ * a new regex, and the shapes now number six. That does not converge — the
+ * next room writes the seventh.
+ *
+ * So this one does not look at order at all. It finds the THREE THINGS a
+ * contract is made of, wherever they sit, and refuses unless it finds exactly
+ * one of each:
+ *      TICKER        a $CASHTAG, or an ALL-CAPS word that is a real root
+ *      STRIKE+SIDE   a number welded to a C/P, either "250c" or "250 calls"
+ *      DATE          optional — any of the eight ways the rooms write one
+ *
+ * WHERE THE SAFETY COMES FROM — and this is the whole design. It is NOT word
+ * order, because there is no order left to lean on. It is the CLASSIFIER:
+ *   1. a ticker must be a $cashtag or ALL CAPS. Rooms shout tickers; prose
+ *      does not. That alone kills "cally", "has", "theta".
+ *   2. an ALL-CAPS word must ALSO be on optionable.txt. That kills BREAK and
+ *      the rest of the English language.
+ *   3. EXACTLY ONE of each, or it refuses. Two tickers is a levels row or a
+ *      watchlist, and both must never become an order. Refusing costs a
+ *      missed trade; guessing buys the wrong thing.
+ * The 9/10 gate run is what proved these are the right three rails: without
+ * them the same idea produced NEX, FOR, CALLY and THETA as tickers across the
+ * corpus, and NEX and FOR are REAL LISTED SYMBOLS the allowlist would wave
+ * straight through.
+ *
+ * Tried LAST, after every shaped reader, so it can only add a parse where
+ * there was none — never change one that already works.
+ */
+const RE_TOK_CASHTAG = /\$([A-Za-z]{1,5})\b/g;
+const RE_TOK_CAPS = /(?<![A-Za-z0-9$.])([A-Z]{1,5})(?![A-Za-z0-9])/g;
+const RE_TOK_STRIKESIDE = /(?<![A-Za-z0-9$.])\$?(\d{1,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)(?![A-Za-z])/gi;
+// The eight ways a room writes a date, in one place so the token reader and
+// the shaped readers cannot drift apart.
+const RE_TOK_DATE = new RegExp(
+  "(?<![\\d.])(\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)" +          // 8/24, 01/15/2027
+  "|\\b(\\d{1,2}\\s*dte)\\b" +                                     // 0DTE, 14 DTE
+  "|\\b((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?)\\b" +
+  "|\\b((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\s+20\\d{2})\\b" +  // jan 2028
+  "|\\b((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\s+monthly)\\b" +   // june monthly
+  "|\\b(next\\s+(?:fri(?:day)?|week|wk))\\b" +
+  "|\\b(week(?:ly|lies)?)\\b" +
+  "|\\b(tomorrow|today)\\s+exp\\w*", "gi");
+
+function tokenContract(text, cfg) {
+  const t = String(text || "");
+  // A levels row or a comparison is never an order, whatever it contains.
+  if (/[<>]/.test(t)) return null;
+
+  // --- strike + side: exactly one, or refuse -------------------------------
+  RE_TOK_STRIKESIDE.lastIndex = 0;
+  const ks = [];
+  let m;
+  while ((m = RE_TOK_STRIKESIDE.exec(t)) !== null) {
+    ks.push({ strike: parseFloat(m[1]), side: m[2][0].toLowerCase() === "c" ? "CALLS" : "PUTS",
+              at: m.index });
+  }
+  if (ks.length !== 1) return null;
+
+  // --- ticker: cashtags first, then ALL-CAPS words that are real roots -----
+  const cash = [];
+  RE_TOK_CASHTAG.lastIndex = 0;
+  while ((m = RE_TOK_CASHTAG.exec(t)) !== null) {
+    const s = m[1].toUpperCase();
+    if (!blockedTicker(s, t)) cash.push({ sym: s, at: m.index });
+  }
+  let cands = cash;
+  if (!cands.length) {
+    RE_TOK_CAPS.lastIndex = 0;
+    const caps = [];
+    while ((m = RE_TOK_CAPS.exec(t)) !== null) {
+      const s = m[1].toUpperCase();
+      if (/^(?:CALLS?|PUTS?|C|P|DTE|EXP|BTO|STC|SL|TP|PT|OTM|ITM|ATM)$/.test(s)) continue;
+      // A bare capitalised word is only a ticker if the broker lists options
+      // on it. Without the allowlist loaded this branch is OFF, which is the
+      // fail-safe direction: no list, no guessing from capitals.
+      if (!_OPTIONABLE || !_OPTIONABLE.has(s)) continue;
+      if (blockedTicker(s, t)) continue;
+      caps.push({ sym: s, at: m.index });
+    }
+    cands = caps;
+  }
+  // The room's own default counts as the ticker when the call names none —
+  // that is what `sym=SPX` is for, and it is not a guess, it is the room.
+  if (!cands.length && cfg && cfg.default_symbol)
+    cands = [{ sym: String(cfg.default_symbol).toUpperCase(), at: ks[0].at }];
+  // Two different tickers on one line is a watchlist. Take nothing.
+  const uniq = Array.from(new Set(cands.map(c => c.sym)));
+  if (uniq.length !== 1) return null;
+
+  // --- date: optional, and the nearest one to the contract wins ------------
+  RE_TOK_DATE.lastIndex = 0;
+  let best = null, bd = 1e9;
+  while ((m = RE_TOK_DATE.exec(t)) !== null) {
+    const raw = (m[1] || m[2] || m[3] || m[4] || m[5] || m[6] || m[7] || m[8] || "").trim();
+    if (!raw) continue;
+    const d = Math.abs(m.index - ks[0].at);
+    if (d < bd) { bd = d; best = raw; }
+  }
+  return { symbol: uniq[0], strike: ks[0].strike, side: ks[0].side,
+           expiry: best ? normaliseExpiry(best) : null };
+}
+
+/* Every date the token reader can find, turned into the one shape the rest of
+ * the machine speaks. A MONTH WITH A YEAR or the word MONTHLY means the
+ * MONTHLY contract — the third Friday — which is what "jan 2028" and "june
+ * monthly" mean in kaori's room and everywhere else they appear. */
+function normaliseExpiry(raw) {
+  const s = String(raw).trim().toLowerCase();
+  if (/^\d{1,2}\s*dte$/.test(s)) return s.replace(/\s+/g, "").toUpperCase();
+  if (/^tomorrow/.test(s)) return "1DTE";
+  if (/^today/.test(s)) return "0DTE";
+  if (/^week/.test(s)) return "WEEKLY";
+  if (/^next/.test(s)) return "NEXT WEEK";
+  let mm = /^([a-z]{3,9})\.?\s+(20\d{2})$/.exec(s);
+  if (mm && MONTHS[mm[1].slice(0, 3)]) return MONTHS[mm[1].slice(0, 3)] + "/MONTHLY/" + mm[2];
+  mm = /^([a-z]{3,9})\s+monthly$/.exec(s);
+  if (mm && MONTHS[mm[1].slice(0, 3)]) return MONTHS[mm[1].slice(0, 3)] + "/MONTHLY";
+  mm = /^([a-z]{3,9})\.?\s+(\d{1,2})/.exec(s);
+  if (mm && MONTHS[mm[1].slice(0, 3)]) return MONTHS[mm[1].slice(0, 3)] + "/" + parseInt(mm[2], 10);
+  return raw.trim();
+}
+
 function findContract(text) {
   const osi = RE_CONTRACT_OSI.exec(text);
   if (osi && !blockedTicker(osi[1], text)) {
