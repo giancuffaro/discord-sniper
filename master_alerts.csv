@@ -309,3 +309,4 @@ date,time,room,caller,symbol,side,strike,expiry,dte,their_price,qty,outcome,reas
 2026-09-10,09:35:00,Midas,,SPY,CALLS,758,0DTE,,1.52,1,filled,,,1.45,-0.07,-4.61,1789047278.289,1789047291.134,1789047298.1367106,1789047299.9727836,12845.0,7002.7,1836.1,21683.8,1.47,1.48,0.68,,,1,cmtvkkcn2mzatvf,2026-09-10|SPY|1.45,True,telemetry,
 2026-09-10,09:40:27,,,NVDA,CALLS,235.0,2026-09-04,,2.77,1,filled,,,2.77,0.0,0.0,,,1789047627.6403544,1789047627.840844,,,200.5,,2.77,2.83,2.14,,,1,,2026-09-10|NVDA|2.77,False,telemetry,
 2026-09-10,09:44:46,Honeydrip daytrades,,META,PUTS,645,9/11,,5.15,1,filled,,,5.43,0.28,5.44,1789047785.087,1789047788.741,1789047884.411568,1789047886.1376169,3654.0,95670.6,1726.0,101050.6,5.3,5.4,1.87,,,1,cmtvkv0lhmrmgnj,2026-09-10|META|5.43,True,telemetry,
+2026-09-10,09:54,,,TSLA,,,,,,,PULLBACK never hit,PULLBACK never hit,TSLA ($364),,,,,,,,,,,,,,,,,,,,False,trades.log,"PULLBACK TSLA: never touched $364 in 10 min — skipped, as designed"
