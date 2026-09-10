@@ -153,11 +153,104 @@ def pause_study(trades):
              "REAL" if means[50] > 0 or means[1949] < 0 else "INSIDE THE NOISE"))
 
 
+def sim_runner(trade, born, arm, step, trigger, mode, width):
+    """The ratchet, but it LOOSENS once a trade has proved it is moving.
+
+    9/10, G: "some sort of pause to give the trade time to run". The pause
+    study said no — pausing the ratchet doesn't help a trade run, it just
+    exits it lower. This is the mechanically correct version of the same
+    instinct: don't loosen on every trade from the start, loosen only on the
+    ones already up `trigger` percent.
+      mode "rung"  — above the trigger the rung widens from `step` to `width`
+      mode "trail" — above the trigger the stop stops laddering and simply
+                     trails `width` percent under the HIGHEST bid seen
+    Below the trigger, both behave exactly like the live ladder.
+    """
+    entry = trade["entry"]
+    stop = entry * (1.0 - born / 100.0)
+    peak = entry
+    for _ts, bid, _ask in trade["quotes"]:
+        if bid > peak:
+            peak = bid
+        gain = (bid - entry) / entry * 100.0
+        if gain >= trigger:
+            if mode == "trail":
+                stop = max(stop, peak * (1.0 - width / 100.0))
+            else:
+                lk = locked_pct(gain, arm, width)
+                if lk is not None:
+                    stop = max(stop, entry * (1.0 + lk / 100.0))
+        else:
+            lk = locked_pct(gain, arm, step)
+            if lk is not None:
+                stop = max(stop, entry * (1.0 + lk / 100.0))
+        if bid <= stop:
+            return (stop - entry) / entry * 100.0, True
+    return (trade["quotes"][-1][1] - entry) / entry * 100.0, False
+
+
+def runner_study(trades):
+    """Does letting a PROVEN mover run pay? (9/10, the pause study's sequel)"""
+    import random
+    import statistics
+    lb, la, ls = live_spacing()
+
+    def tot(fn):
+        s = 0.0
+        w = 0
+        for t in trades:
+            rp = fn(t)[0]
+            s += (rp / 100.0) * t["entry"] * CONTRACT_MULT
+            if rp > 0:
+                w += 1
+        return s, 100.0 * w / len(trades)
+
+    base, base_wr = tot(lambda t: sim(t, lb, la, ls))
+    print("RUNNER STUDY — live ladder %g/%g/%g, %d trades" % (lb, la, ls, len(trades)))
+    print("baseline: $%+.2f (win %.0f%%)\n" % (base, base_wr))
+
+    rows = []
+    print("A. WIDER RUNG above the trigger")
+    print("   %8s %8s %10s %8s %9s" % ("trigger", "rung", "total $", "win%", "vs base"))
+    for trig in [10, 15, 20, 30, 50]:
+        for wid in [7.5, 10, 15, 20]:
+            s, wr = tot(lambda t, a=trig, b=wid: sim_runner(t, lb, la, ls, a, "rung", b))
+            rows.append((s, trig, "rung", wid, wr))
+            print("   %8d %8.1f %10.2f %7.0f%% %+9.2f" % (trig, wid, s, wr, s - base))
+
+    print("\nB. TRAIL under the PEAK above the trigger")
+    print("   %8s %8s %10s %8s %9s" % ("trigger", "trail%", "total $", "win%", "vs base"))
+    for trig in [10, 15, 20, 30, 50]:
+        for wid in [5, 8, 10, 15, 20, 25]:
+            s, wr = tot(lambda t, a=trig, b=wid: sim_runner(t, lb, la, ls, a, "trail", b))
+            rows.append((s, trig, "trail", wid, wr))
+            print("   %8d %8.1f %10.2f %7.0f%% %+9.2f" % (trig, wid, s, wr, s - base))
+
+    rows.sort(reverse=True)
+    s, trig, mode, wid, wr = rows[0]
+    print("\nBEST: %s, trigger +%g%%, width %g%% -> $%+.2f (vs $%+.2f, %+.2f)"
+          % (mode, trig, wid, s, base, s - base))
+    diffs = [(sim_runner(t, lb, la, ls, trig, mode, wid)[0] - sim(t, lb, la, ls)[0])
+             / 100.0 * t["entry"] * CONTRACT_MULT for t in trades]
+    rnd = random.Random(7)
+    means = sorted(sum(rnd.choice(diffs) for _ in diffs) / len(diffs) for _ in range(2000))
+    print("  per trade $%+.2f, 95%% band $%+.2f..$%+.2f -> %s"
+          % (statistics.mean(diffs), means[50], means[1949],
+             "REAL" if means[50] > 0 or means[1949] < 0 else "INSIDE THE NOISE"))
+    hit = sum(1 for t in trades
+              if max((b - t["entry"]) / t["entry"] * 100.0 for _, b, _ in t["quotes"]) >= trig)
+    print("  only %d of %d trades ever reach the +%g%% trigger — the rest are unchanged."
+          % (hit, len(trades), trig))
+
+
 def main():
     tape = load_tape()
     trades = load_trades(tape)
     if "--pause" in sys.argv:
         pause_study(trades)
+        return
+    if "--runner" in sys.argv:
+        runner_study(trades)
         return
     print("%d fills · grid %d combos (born %d × arm %d × step %d)\n"
           % (len(trades), len(BORN) * len(ARM) * len(STEP),
