@@ -1150,11 +1150,40 @@ async function downloadRoom(channelId, roomLabel) {
   if (!rows.length) return 0;
   const lines = rows.map(e => new Date(e.t).toISOString().slice(0, 16).replace("T", " ")
     + "  " + (e.author || "?") + ": " + e.text);
+  // WHERE IT LANDS, AND WHAT IT IS CALLED (9/10, G: "make sure the log goes
+  // somewhere you know where it is, and save it with the name or the ID of
+  // the channel"). It used to go to the Downloads folder as "<label>-<date>"
+  // — outside the project, unknown to every analysis tool here, and named
+  // only by a label that can change. Now it goes through the bridge's
+  // /exportlog, the same door the daily export uses, so it lands in
+  // <folder>\DS Logs next to everything else. The CHANNEL ID leads the
+  // name because it is the one thing that never changes; the label rides
+  // along so the file is still readable by a human.
   const safe = String(roomLabel || channelId).replace(/[^a-z0-9]+/gi, "-").slice(0, 40) || "room";
   const stamp = new Date().toISOString().slice(0, 10);
-  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(lines.join("\n"));
+  const fname = "grab " + String(channelId || "unknown") + " " + safe + " " + stamp + ".txt";
+  const head = "Discord Sniper — ROOM HISTORY GRAB\n"
+    + "channel_id: " + channelId + "\nroom: " + (roomLabel || "") + "\n"
+    + "grabbed: " + new Date().toISOString() + "\nmessages: " + rows.length + "\n"
+    + "".padEnd(60, "-") + "\n";
+  const body = head + lines.join("\n");
   try {
-    await chrome.downloads.download({ url, filename: safe + "-" + stamp + ".txt" });
+    const c = await cfg();
+    const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/exportlog", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: fname, text: body }) });
+    if (r.ok) {
+      await addLog({ kind: "update", why: "💾 saved " + rows.length + " message(s) to "
+        + "DS Logs\\" + fname + " — in the project folder, named by channel id." });
+      return rows.length;
+    }
+  } catch (e) { /* bridge down — fall through to the browser download */ }
+  // Fallback only: the bridge is off, so Downloads is better than nothing.
+  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(body);
+  try {
+    await chrome.downloads.download({ url, filename: fname });
+    await addLog({ kind: "update", why: "💾 the bridge was down, so " + fname
+      + " went to your Downloads folder instead of DS Logs." });
   } catch (e) { return 0; }
   return rows.length;
 }
