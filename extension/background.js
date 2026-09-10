@@ -754,12 +754,32 @@ function roomWindowOpen() {
 }
 function roomAlways(room) { return (room.rules || []).includes("always"); }
 function roomWantsTab(room) { return room.state === "on" && (roomAlways(room) || roomWindowOpen()); }
-const ROOM_CLOSED_SAID = {};        // id -> ts we last said "closed for the night"
+/* Closing happens at the BOUNDARY (the moment the window shuts, and once at
+ * startup if it is already shut) — not on every pass. So a room G opens by
+ * hand at night to read stays open; it is only the 4:30 sweep that clears
+ * the day's tabs. Opening happens on every pass inside the window (the
+ * switch is the bench, a tab closed by hand during hours comes back). */
+let _schedState = null;             // last seen window state; null = first pass
+async function _keepWindowAlive(tab) {
+  /* Never let a close take the window's LAST tab — that closes the window,
+   * and with it this Chrome profile (no more extension, no futures rooms).
+   * Put the dashboard page in its place. */
+  try {
+    const all = await chrome.tabs.query({ windowId: tab.windowId });
+    if (all.length <= 1) {
+      await chrome.tabs.create({ windowId: tab.windowId,
+        url: chrome.runtime.getURL("popup.html?page=1"), active: true });
+    }
+  } catch (e) {}
+}
 async function roomSchedule() {
   try {
     await loadRoomsFile();
     let lane = "";
     try { lane = (await chrome.storage.local.get("profile_lane")).profile_lane || ""; } catch (e) {}
+    const open = roomWindowOpen();
+    const sweep = !open && (_schedState === null || _schedState === true);
+    _schedState = open;
     let opened = 0, closed = 0;
     const now = Date.now();
     for (const room of ALL_ROOMS) {
@@ -780,8 +800,11 @@ async function roomSchedule() {
         ROOM_OPENED_AT[room.id] = now;
         try { await chrome.tabs.create({ url: room.url, active: false }); opened++; } catch (e) {}
         await new Promise(res => setTimeout(res, 6000));   // one gateway session per 5 s
-      } else if (!want && tabs.length) {
-        for (const t of tabs) { try { await chrome.tabs.remove(t.id); closed++; } catch (e) {} }
+      } else if (!want && tabs.length && sweep) {
+        for (const t of tabs) {
+          await _keepWindowAlive(t);
+          try { await chrome.tabs.remove(t.id); closed++; } catch (e) {}
+        }
       }
     }
     if (opened) await addLog({ kind: "sent", what: "ROOM HOURS",
@@ -823,7 +846,7 @@ async function pollRoomsFile() {
           try { await chrome.tabs.create({ url: room.url, active: false }); opened++; } catch (e) {}
           await new Promise(res => setTimeout(res, 6000));   // one gateway session per 5 s
         } else if (!isOn) {
-          for (const t of tabs) { try { await chrome.tabs.remove(t.id); closed++; } catch (e) {} }
+          for (const t of tabs) { await _keepWindowAlive(t); try { await chrome.tabs.remove(t.id); closed++; } catch (e) {} }
         }
       }
       await addLog({ kind: "sent", what: "ROOMS",
@@ -889,7 +912,7 @@ async function setRoomState(id, on) {
   const mine = !lane || (lane === "whop") === isWhop;
   if (!on) {
     const tabs = await roomTabsFor(room);
-    for (const t of tabs) { try { await chrome.tabs.remove(t.id); } catch (e) {} }
+    for (const t of tabs) { await _keepWindowAlive(t); try { await chrome.tabs.remove(t.id); } catch (e) {} }
     await addLog({ kind: "sent", what: "ROOM OFF",
       why: room.name + " switched OFF — " + (tabs.length ? "closed its tab, " : "") +
            "not read, not traded, until you switch it back on." });
