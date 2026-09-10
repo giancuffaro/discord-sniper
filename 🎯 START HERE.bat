@@ -284,11 +284,11 @@ rem  windows at all, which fooled the old tasklist check into opening
 rem  nothing ("i was opening after turning on the pc, chrome shouldnt of
 rem  been opened"). Visible windows = his tabs, leave them alone. Background
 rem  only = kill it quietly and cold-start, so the performance flags apply.
-rem  ONE OPENER AT A TIME (9/9). A cold start opens every room itself, one
-rem  per 6 s, below. Only a WARM start (Chrome already open) asks the
-rem  extension to fill in what is missing - see the request in that branch.
-rem  Writing the request on a cold start too made two openers race and tabs
-rem  came in far faster than one per 6 s. Never both.
+rem  ONE OPENER (9/9 evening): the EXTENSION opens rooms, on both a cold and
+rem  a warm start, from the one-shot request token below. This file only
+rem  seeds each browser with one tab so the extension is running to do it.
+rem  It opens one room every 6 s, in its own lane, and only the rooms whose
+rem  hours are open - 9:15-4:30 PM ET, or any hour for rooms marked `always`.
 powershell -NoProfile -Command "$w = Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle }; if ($w) { exit 0 } else { exit 1 }"
 if not errorlevel 1 (
   rem  HIS CALL 9/8 - "check which are open and open the ones that are
@@ -320,7 +320,7 @@ if not errorlevel 1 (
   rem  already running. The Discord side is left untouched.
   goto launch_whop
 )
-echo   [5/5] Chrome isn't running - cold start, opening all the rooms...
+echo   [5/5] Chrome isn't running - cold start, seeding both browsers...
 rem  Dedicated Discord profile (8/23): chrome-profile.txt holds the
 rem  profile-directory name (chrome://version -> Profile Path, last part).
 set "SNIPER_PROFILE=Default"
