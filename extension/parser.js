@@ -2329,12 +2329,32 @@ function parseSignalInner(text, cfg) {
   //     no verb, no price. Only counts when stripping the contract and the
   //     sizing filler leaves NOTHING — "NVDA 205C looks juicy" leaves "looks
   //     juicy" and stays chatter.
+  //
+  //     THE STRIP IS BUILT FROM THE CONTRACT WE FOUND (9/10). It used to be a
+  //     regex that could only cut a SYMBOL-FIRST contract, so TheArchitech's
+  //     three other word orders survived the strip, left a fat leftover, and
+  //     were read as chatter — even though findContract had already resolved
+  //     them perfectly:
+  //         "8/24 $255P $AMZN"   "2DTE $765C SPY CALLS"   "$255P $AMZN"
+  //     G: "it doesn't matter the order of the expiration or the price or the
+  //     ticker. It's not relevant. It could be in any order." So the strip
+  //     removes THIS contract's own three tokens — strike+side, ticker, date —
+  //     wherever each of them happens to sit. Order-independent by
+  //     construction instead of one regex per word order, and no looser: the
+  //     test is still "is there anything left over", which is what stops a
+  //     levels row or "NVDA 205C looks juicy" from becoming an order.
   {
     const c5 = findContract(t);
     if (c5) {
+      const esc = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const kNum = esc(String(c5.strike).replace(/\.0+$/, ""));
       const leftover = t
-        .replace(/(?<![A-Za-z])\$?[A-Za-z]{1,5}\s+\$?\d{1,5}(?:\.\d{1,2})?\s*(?:\d{1,2}\s*days?\s*)?(?:calls?|puts?|c|p)\b/i, " ")
-        .replace(/\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b|\b\d*dte\b|\b\d{1,2}\s*days?\b/gi, " ")
+        // strike + side, with the optional "0 day" that can sit between them
+        .replace(new RegExp("\\$?" + kNum + "(?:\\.\\d{1,2})?\\s*(?:\\d{1,2}\\s*days?\\s*)?(?:calls?|puts?|c|p)\\b", "i"), " ")
+        // the ticker, wherever it is. (When the room supplies a default symbol
+        // the word isn't in the text at all and this simply does nothing.)
+        .replace(new RegExp("(^|[^A-Za-z])\\$?" + esc(c5.symbol) + "\\b", "i"), "$1 ")
+        .replace(/\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b|\b\d*\s*dte\b|\b\d{1,2}\s*days?\b|\bnext\s+(?:fri(?:day)?|week|wk)\b|\bweeklie?s?\b|\bexp(?:iry|iration)?\b/gi, " ")
         .replace(RE_FILLER, " ")
         .replace(/\s+/g, " ").trim();
       const lonePrice = /^\$?(\d{1,2}(?:\.\d{1,2})?)$/.exec(leftover);
