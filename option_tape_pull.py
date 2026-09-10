@@ -142,7 +142,7 @@ def main():
             hi = max(x[3] for x in byday[day]).astimezone(timezone.utc)
             try:
                 total += client.metadata.get_cost(
-                    dataset="OPRA.PILLAR", symbols=syms, schema="cmbp-1",
+                    dataset="OPRA.PILLAR", symbols=syms, schema="cbbo-1s",
                     stype_in="raw_symbol", start=lo, end=hi) or 0.0
             except Exception as e:                          # noqa: BLE001
                 print("  cost check failed %s: %s" % (day, str(e)[:110]))
@@ -175,7 +175,7 @@ def main():
         (raw, occ_s, day), (a, b) = item
         try:
             df = client.timeseries.get_range(
-                dataset="OPRA.PILLAR", symbols=[raw], schema="cmbp-1",
+                dataset="OPRA.PILLAR", symbols=[raw], schema="cbbo-1s",
                 stype_in="raw_symbol",
                 start=a.astimezone(timezone.utc),
                 end=b.astimezone(timezone.utc)).to_df()
