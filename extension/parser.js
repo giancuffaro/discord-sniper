@@ -412,6 +412,12 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "SEPT",
   "OCT", "NOV", "DEC", "MON", "TUE", "TUES", "WED", "THU", "THUR", "THURS",
   "FRI", "SAT", "SUN",
+  // 9/10 (OWLS jon-and-kian): their bot labels every post — "CLOSE: sold
+  // 6/10 RKLB at 4.15" resolved to ticker CLOSE, not RKLB. The exit was
+  // ignored anyway (ENTRIES ONLY) and the optionable list would have refused
+  // it, but a wrong symbol still poisons the room's attribution and the log.
+  // With the label vetoed the reader walks on and finds the real ticker.
+  "CLOSE", "CLOSED", "OPEN", "OPENED", "UPDATE", "SOLD", "TRIM", "TRIMMED",
   "ON", "MY", "IS", "AND", "OF", "TO", "BE", "OK", "DTE", "AM", "PM", "ET",
   "DO", "NOT", "BUY", "SELL", "IE", "ADMIN", "HERE", "EOD", "CPI", "FOMC",
   "PT", "SL", "TP", "AVG", "GO", "UP", "WE", "US", "NO",
