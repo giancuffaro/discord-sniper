@@ -2228,6 +2228,16 @@ _IMG_SEEN = {}              # sha1(images+caption) -> (ts, verdict)  (24h)
 READS_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reads.log")
 _READS_LOCK = threading.Lock()
 
+# WHOP LANE HEARTBEAT (9/10). _whop_loop.bat used to guess whether the
+# "Sniper Whop" Chrome window was alive by matching --profile-directory in
+# the process list — Chrome's single-instance/shared-process behavior made
+# that unreliable (it relaunched every ~60-70s, found live 9/10 13:00 from
+# whop-loop.log spamming). This is the honest signal instead: background.js's
+# whopSelfHeal() pings here every watch-build tick (~30s) ONLY when it's
+# actually running in the whop lane, so "how long since the whop lane last
+# checked in" is a fact, not a guess from outside the process.
+_WHOP_ALIVE_AT = [0.0]
+
 
 def tape_read(kind, room, who, heard, action="", symbol="", strike=None,
               side="", extra=""):
@@ -3920,6 +3930,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, out)
             except Exception as _e:                     # noqa: BLE001
                 return self._json(200, {"ok": False, "why": str(_e)[:120]})
+        if self.path.startswith("/whopalive"):
+            # How long since the whop-lane extension last checked in (9/10).
+            # ago_sec is None until the first ping ever lands. _whop_loop.bat
+            # polls this instead of guessing from the Chrome process list.
+            at = _WHOP_ALIVE_AT[0]
+            return self._json(200, {"ok": True,
+                                    "ago_sec": (time.time() - at) if at else None})
         if self.path.startswith("/rooms"):
             # The one list of every room we have been to (extension/rooms.txt)
             # with its state — so "what is the sniper actually listening to"
@@ -4952,6 +4969,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self._authorized():
             return self._json(403, {"ok": False, "error": "bad or missing X-Sniper-Token"})
+        if self.path.startswith("/whopalive"):
+            # Fire-and-forget ping from whopSelfHeal() (whop lane only, 9/10).
+            _WHOP_ALIVE_AT[0] = time.time()
+            return self._json(200, {"ok": True})
         if self.path.startswith("/reads"):
             return self._tape_reads()
         if self.path.startswith("/channames"):
