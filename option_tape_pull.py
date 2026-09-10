@@ -132,19 +132,21 @@ def main():
     for (raw, occ_s, day), (a, b) in win.items():
         byday[day].append((raw, occ_s, a, b))
 
-    total = 0.0
-    for day in sorted(byday):
-        syms = [x[0] for x in byday[day]]
-        lo = min(x[2] for x in byday[day]).astimezone(timezone.utc)
-        hi = max(x[3] for x in byday[day]).astimezone(timezone.utc)
-        try:
-            total += client.metadata.get_cost(
-                dataset="OPRA.PILLAR", symbols=syms, schema="cmbp-1",
-                stype_in="raw_symbol", start=lo, end=hi) or 0.0
-        except Exception as e:                              # noqa: BLE001
-            print("  cost check failed %s: %s" % (day, str(e)[:110]))
-    print("DATABENTO QUOTE: $%.2f" % total)
     if cost_only:
+        # Pricing costs a round-trip PER DAY-WINDOW and takes minutes on a big
+        # pull, so it belongs to --cost alone. Price first, then buy.
+        total = 0.0
+        for day in sorted(byday):
+            syms = [x[0] for x in byday[day]]
+            lo = min(x[2] for x in byday[day]).astimezone(timezone.utc)
+            hi = max(x[3] for x in byday[day]).astimezone(timezone.utc)
+            try:
+                total += client.metadata.get_cost(
+                    dataset="OPRA.PILLAR", symbols=syms, schema="cmbp-1",
+                    stype_in="raw_symbol", start=lo, end=hi) or 0.0
+            except Exception as e:                          # noqa: BLE001
+                print("  cost check failed %s: %s" % (day, str(e)[:110]))
+        print("DATABENTO QUOTE: $%.2f" % total)
         return
 
     print("downloading %d day-windows — this takes a few minutes" % len(byday), flush=True)
@@ -168,7 +170,9 @@ def main():
             print("  %s pull failed: %s" % (day, str(e)[:140]))
             continue
         last = {}
-        n = 0
+        buf = []                # a day is written ALL-OR-NOTHING: a run killed
+                                # mid-day must not leave a half day that the
+                                # next run then skips as "already taped"
         for ts, row in df.iterrows():
             raw = str(row.get("symbol") or "")
             o = raw2occ.get(raw)
@@ -186,10 +190,11 @@ def main():
                 continue
             if bid <= 0 and ask <= 0:
                 continue
-            w.writerow([sec, o, round(bid, 4), round(ask, 4)])
-            n += 1
+            buf.append([sec, o, round(bid, 4), round(ask, 4)])
+        n = len(buf)
+        w.writerows(buf)
         wrote += n
-        fh.flush()                      # per day, so a killed run keeps what it got
+        fh.flush()
         os.fsync(fh.fileno())
         print("  %s  %2d contracts  %6d rows" % (day, len(syms), n), flush=True)
     fh.close()
