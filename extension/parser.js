@@ -1389,6 +1389,16 @@ function parseSignalInner(text, cfg) {
     s.symbol = c.symbol; s.strike = c.strike; s.side = c.side; s.expiry = c.expiry;
     const mp = /@\s*\$?([0-9]*\.?[0-9]+)/.exec(rest);
     s.limit = mp ? parseFloat(mp[1]) : null;
+    // NOT EVERY ROOM WRITES "@" (9/10, OWLS jon-and-kian). Jon writes
+    // "RKLB 70C 10/16 Exp. at 3.60" and Kian writes "FRVO 25C 3/19exp 4.05
+    // premium" — a real price, in plain sight, and this branch read NONE of
+    // them and bid the market on every entry. loosePremium is the same
+    // fallback the ordinary entry branch has always used: it skips the
+    // strike, skips percentages, and only believes a premium-sized number.
+    if (s.limit === null || isNaN(s.limit)) {
+      const lp = loosePremium(rest, s.strike);
+      if (lp !== null) s.limit = lp;
+    }
     if (label === "open") {
       s.action = "OPEN"; s.matched = "open-label entry"; s.fire = true;
       if (s.limit === null || isNaN(s.limit))
