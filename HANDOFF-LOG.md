@@ -78,6 +78,32 @@ hours (it did at 16:34 on the other session's edits; will again on mine).
 
 ## 2026-09-10 (evening) — THE READER SESSION
 
+### Chika, WIDENED to 4 sessions (9/10 late) — SHE GOT WORSE, NOT BETTER
+G: "scan more of her, and see if it gets better or worse." Answer: WORSE.
+                     n    total     per trade      2-SE range
+    2 sessions      15   +160 pts   +10.7 pts     -4.1 .. +25.5
+    4 sessions      18   +134 pts    +7.4 pts     -6.0 .. +20.9
+Three more tape-scoreable trades (-6, -37, +17) cut her edge by a THIRD on a
+sample only 20% bigger. Win rate 53% -> 50%. Still spans zero. That is the
+signature of a sample too small to mean anything: every increment moves it a
+lot, and the direction of the move is not information.
+Note on why only 3 more: her 9/02 and 9/03 sessions have ~17 more trades but
+only 15-MINUTE bars, and a trade that lasted five minutes cannot be priced on
+a fifteen-minute bar. Only trades lasting >= 2x the bar were scored. Listing
+the rest would be inventing precision — the exact error the Tradytics run made
+earlier today.
+Her SELF-REPORTS were checked against the tape where both exist and they hold
+up (+20 trim vs +18 tape, +65 vs +58, "flat at entry" vs -2, and "-22 got me"
+vs -12 — she reports her losses WORSE than they were). But her big stated
+numbers ("+90 all out", "+60 on shorts") are CAMPAIGN totals across scaled
+adds, not one-lot results, so they cannot be compared to a one-contract
+backtest and were not.
+OUR side over the same 18: +40 pts, but only 8 taken and +5.0 +/- 26.6 per
+trade — also inside the noise. Neither side is proven. Nothing to arm.
+MORE HISTORY WILL NOT SETTLE THIS: the bars get coarser as you go back, so
+scanning further buys noise, not evidence. Only forward collection at
+1-minute resolution helps, which is what read-only is for.
+
 ### Chika measured — her way vs ours, 2 sessions on real NQ bars (9/10 late)
 chika_compare.py, both sides priced off the tape (Webull MCP bars, FREE — not
 Databento). 15 entries across 9/04 and 9/10:
