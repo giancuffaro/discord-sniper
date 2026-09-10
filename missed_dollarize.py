@@ -4,14 +4,16 @@ The round-number rule skips an entry when the underlying never pulls back to the
 round number. Those skips are 'nofill' rows in master_ledger.csv (via ledger.py
 — they carry the caller's price in their_avg, the contract, and a time window)
 and their OPRA prices were already backfilled. So we can answer directly: if we
-had just taken the CALLER'S price on every skipped call and run a 7.5/4/2
-ratchet — the fine sweep's best cell, one notch tighter on the arm than the
-LIVE 7.5/5/2 — what would it have made or lost? That dollar figure is the other half
+had just taken the CALLER'S price on every skipped call and run the LIVE
+ratchet over it (spacing read from ratchet_tiers.live_spacing(), never typed
+here) — what would it have made or lost? That dollar figure is the other half
 of the RN ledger (entry_compare.py measured the fills it caught).
 
 Read-only. Uses the clean tape + nofill rows.
 """
 import os
+
+from ratchet_tiers import live_spacing
 
 import ledger
 import occ
@@ -71,7 +73,7 @@ def main():
     wins = 0
     det = []
     for r in covered:
-        rp, _ = sim({"entry": r["their"], "quotes": r["q"]}, 7.5, 4.0, 2.0)
+        rp, _ = sim({"entry": r["their"], "quotes": r["q"]}, *live_spacing())
         dollars = rp / 100.0 * r["their"] * rs.CONTRACT_MULT
         tot += dollars
         if dollars > 0:
@@ -79,7 +81,8 @@ def main():
         det.append((dollars, r["occ"], r["their"], rp, r["who"]))
 
     det.sort(reverse=True)
-    print("if we'd taken the CALLER'S price on every skipped call (7.5/4/2 spacing — the sweep's best cell, a notch tighter on the arm than the live 7.5/5/2):")
+    print("if we'd taken the CALLER'S price on every skipped call "
+          "(%g/%g/%g — the LIVE ladder, read from ratchet_tiers):" % live_spacing())
     print("  total: $%.2f   win %d/%d   avg $%.2f/call\n"
           % (tot, wins, len(covered), tot / len(covered)))
     print("  %-17s in$    result   $P&L   caller" % "contract")

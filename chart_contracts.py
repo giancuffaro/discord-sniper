@@ -3,8 +3,9 @@
 G: "I wanted option contract charts so we can see the movement of every contract
 to make a wiser choice." This reads the same backfilled quote tape the sweeps
 use and draws one small chart per real fill: gain % from entry over time, with
-the entry line (0%), the born stop (-7.5%), the arm (+5%), the peak (MFE) and
-trough (MAE), and an X where the LIVE 7.5/5/5 ratchet would have sold. Grouped by
+the entry line (0%), the born stop, the arm, the peak (MFE) and
+trough (MAE), and an X where the LIVE ratchet would have sold (spacing read
+from ratchet_tiers.live_spacing(), never typed here). Grouped by
 price bucket so the cheap-vs-expensive behaviour is visible at a glance.
 
 Read-only. Reuses ratchet_sweep's tape + fills. Writes contracts.html.
@@ -18,9 +19,9 @@ from ratchet_sweep import load_tape, load_trades
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "contracts.html")
 
-BORN = 7.5
-ARM = 5.0
-STEP = 5.0
+# 9/10: READ, never typed — one source of truth for what is live.
+from ratchet_tiers import live_spacing        # noqa: E402
+BORN, ARM, STEP = live_spacing()
 
 W, H = 260, 130
 PADL, PADR, PADT, PADB = 34, 8, 20, 16
@@ -151,11 +152,11 @@ def main():
 
     legend = ('<div class="legend">gain %% from entry over time · '
               '<b style="color:#556">— entry</b> · '
-              '<b style="color:#e0507a">-- born −7.5%%</b> · '
-              '<b style="color:#3ad07a">-- arm +5%%</b> · '
+              '<b style="color:#e0507a">-- born −%g%%%%</b> · ' % BORN +
+              '<b style="color:#3ad07a">-- arm +%g%%%%</b> · ' % ARM +
               '<span style="color:#3ad07a">●</span> peak · '
               '<span style="color:#e0507a">●</span> trough · '
-              '<span style="color:#ffd24a">✕</span> where live 7.5/5/5 sold</div>')
+              '<span style="color:#ffd24a">✕</span> where the live ratchet sold</div>')
 
     doc = """<!doctype html><meta charset="utf-8">
 <title>Option contract movement — %d fills</title>

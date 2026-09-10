@@ -3,8 +3,8 @@
 For every real option fill we have two entry prices: the caller's stated entry
 (their_avg) and what the bot actually filled (its RN-pullback / "caller's price
 or better" logic). This replays the SAME contract's quote path from each price
-through the same ratchet — 7.5/4/2 spacing (the sweep's best cell, a notch
-tighter on the arm than the live 7.5/5/2) — and compares the dollars, plus the
+through the same ratchet — the LIVE spacing, read from ratchet_tiers (never
+typed here) — and compares the dollars, plus the
 raw fill-price distribution.
 
 Honest limits: (1) it only sees trades the bot ACTUALLY FILLED — the winners the
@@ -15,6 +15,8 @@ replaying their price over the bot's quote window is an approximation of the
 price effect, not a perfect twin. Read-only.
 """
 import os
+
+from ratchet_tiers import live_spacing
 
 import ledger
 import occ
@@ -73,8 +75,8 @@ def main():
             worse += 1
         else:
             same += 1
-        rb, _ = sim({"entry": t["bot"], "quotes": t["quotes"]}, 7.5, 4.0, 2.0)
-        rt, _ = sim({"entry": t["their"], "quotes": t["quotes"]}, 7.5, 4.0, 2.0)
+        rb, _ = sim({"entry": t["bot"], "quotes": t["quotes"]}, *live_spacing())
+        rt, _ = sim({"entry": t["their"], "quotes": t["quotes"]}, *live_spacing())
         bot_tot += (rb / 100.0) * t["bot"] * rs.CONTRACT_MULT
         their_tot += (rt / 100.0) * t["their"] * rs.CONTRACT_MULT
         if rb > 0:
@@ -88,7 +90,8 @@ def main():
           % (better, same, worse))
     print("  average fill vs caller: %+.2f%%  (negative = you got in cheaper)\n"
           % avg)
-    print("SAME contracts, 7.5/4/2 spacing (the sweep's best cell, a notch tighter on the arm than the live 7.5/5/2), entered at each price:")
+    print("SAME contracts, %g/%g/%g spacing — the LIVE ladder, read from "
+          "ratchet_tiers, entered at each price:" % live_spacing())
     print("  your RN fill .......... $%8.2f   (win %.0f%%)"
           % (bot_tot, 100.0 * bot_win / n))
     print("  the caller's price .... $%8.2f   (win %.0f%%)"

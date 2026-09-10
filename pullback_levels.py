@@ -525,7 +525,8 @@ def main():
     # ---- A. under the exit that really fires: the option ratchet ----
     cons = {id(a): contract_for(a) for a in usable}
     with_con = [a for a in usable if cons[id(a)]]
-    lines.append("## A. Under the real exit — the 7.5/5/2 option ratchet (proxy in stock $)")
+    lines.append("## A. Under the real exit — the %g/%g/%g option ratchet (proxy in stock $)"
+                 % _rt.live_spacing())
     lines.append("")
     lines.append("%d of %d alerts carry a premium in the log (the rest are priced by "
                  "Black-Scholes). Option $ = per ONE contract, Δ-scaled. 'per alert' counts "

@@ -18,3 +18,5 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789048471.459,missed,TSLA,CALLS,375,2026-09-11,,364.0,,@Options Scalps,Platinum ei-alerts
 1789048969.833,armed,SPY,PUTS,758,2026-09-10,,758.0,,Midas (Admin),Midas
 1789049003.001,armed,SPY,PUTS,755,2026-09-10,,758.0,,eli,OWLS all-alerts
+1789049119.642,armed,META,CALLS,675,9/11,,646.0,,Eva,OWLS all-alerts
+1789049132.757,filled,META,CALLS,675,9/11,,646.0,645.07,Eva,OWLS all-alerts

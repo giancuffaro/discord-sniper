@@ -14,6 +14,7 @@ import csv
 import os
 
 from ratchet_sweep import load_tape, load_trades, CONTRACT_MULT
+from ratchet_tiers import live_spacing
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "ratchet_fine_results.csv")
@@ -27,22 +28,6 @@ BUCKETS = [
     ("mid $1-2", lambda p: 1.0 <= p < 2.0),
     ("exp >=$2", lambda p: p >= 2.0),
 ]
-
-
-def live_spacing():
-    """(born, arm, step) as the machine is actually configured RIGHT NOW —
-    born from settings.json strategy.stop_loss_pct, arm/step from
-    ratchet_tiers.TIERS. Read, never typed."""
-    import json
-    import ratchet_tiers
-    born = 7.5
-    try:
-        with open(os.path.join(HERE, "settings.json"), encoding="utf-8") as fh:
-            born = float((json.load(fh).get("strategy") or {}).get("stop_loss_pct", born))
-    except (OSError, ValueError, TypeError):
-        pass
-    arm, _lock, step = ratchet_tiers.TIERS[-1][1]
-    return born, float(arm), float(step)
 
 
 def locked_pct(gain, arm, step):
