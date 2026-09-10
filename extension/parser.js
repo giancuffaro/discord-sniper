@@ -1597,11 +1597,25 @@ function parseSignalInner(text, cfg) {
    * REASON for the exit, not a negation of it. So an explicit STC with a real
    * contract skips the chatter veto entirely. */
   const _explicitSell = /\b(?:stc|sell\s+to\s+close)\b/i.test(low) && !!findContract(t);
+  /* THE JOKE IS NOT A HEDGE (9/10, G explaining shabs' grammar: "every alert
+   * of shabs is the contract, then how much he paid for").
+   * His calls read "7620c at 350 if you believe in 1 IQ" and "7600c at 340/con
+   * if you hate money" — a real entry with a one-liner stapled on. "if you" is
+   * in VETO_WORDS, so every one of them died as chatter. 268 captured messages,
+   * zero alerts, and the room looked dead when it was firing all along.
+   * Same shape as the _explicitSell escape above: when the room is a
+   * no-verb room AND the contract and its price are both actually stated,
+   * the trailing quip is flavour, not a condition. Scoped to rooms G has
+   * marked `bare` — it changes nothing anywhere else. */
+  const _statedEntry = !!(cfg && cfg.entry_no_verb) && !!findContract(t)
+    && /(?:@|at)\s*\$?\d{1,4}(?:\.\d{1,2})?\b|\b\d{3,4}\s*\/\s*con\b/i.test(t)
+    && !/[<>]/.test(t) && !RE_EXIT.test(low) && !RE_TRIM.test(low);
   const veto = VETO_WORDS.concat(cfg.extra_veto_words || []);
   for (const w of veto) {
     if (low.includes(String(w).toLowerCase()) && !RE_PAPERCUT.test(low)) {
       const wl = String(w).toLowerCase();
       if (_explicitSell) continue;
+      if (_statedEntry) continue;
       if (_explicitBuy && wl !== "do not" && wl !== "don't" && wl !== "dont ") continue;
       s.why = 'chatter, not an order (it contains "' + String(w).trim() + '")';
       return s;
@@ -2154,7 +2168,7 @@ function parseSignalInner(text, cfg) {
    * operators, recap words and progress words below still veto it. */
   const _bareEntry = cfg && cfg.entry_no_verb
     && !!findContract(t)
-    && /(?:@\s*)?\$?\d{1,3}(?:\.\d{1,2})?\b/.test(t)
+    && /(?:@\s*)?\$?\d{1,4}(?:\.\d{1,2})?\b/.test(t)
     && !/[<>]/.test(t)                                   // a levels row, not a call
     && !/\brecap\b|\bweekly\b|\bunrealized\b|\brunners?\s+up\b|\bbanger\b/i.test(low)
     && !/\bon\s+watch\b|\bwatch(?:ing|list)\b|\bloading\b|\beyes\s+on\b|\bidea\b/i.test(low)
