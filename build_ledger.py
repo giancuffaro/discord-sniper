@@ -828,10 +828,17 @@ def build():
             _c = _cnd
         _strike = _c["strike"] if _c else ""
         _side = ("CALLS" if _c["cp"] == "C" else "PUTS") if _c else ""
-        _expiry = _c["expiry"] if _c else ""
+        _expiry = _resolve_expiry(_c["expiry"], date) if _c else ""
+        _occ = ""
+        if _c and _expiry and not FUT_RE.match(sym):
+            try:
+                import occ as _occ_mod
+                _occ = _occ_mod.build(sym, _expiry, _side, _strike)
+            except Exception:                               # noqa: BLE001
+                _occ = ""
         out.append({c: "" for c in COLUMNS} | {
             "date": date, "room": _room, "caller": _who, "symbol": sym, "fill": price,
-            "strike": _strike, "side": _side, "expiry": _expiry,
+            "strike": _strike, "side": _side, "expiry": _expiry, "occ": _occ,
             "avg_in": price, "qty": qty if qty is not None else "",
             "opened": _hms(ts), "opened_ts": ts if ts is not None else "",
             "kind": "future" if FUT_RE.match(sym) else "option",
