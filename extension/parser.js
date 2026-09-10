@@ -804,6 +804,76 @@ function extraStrikes(text, first) {
   return out;
 }
 
+/* THE PIVOT ROOMS (9/10, Chika Alerts in Low Key Stonks). She trades ONE
+ * instrument — the NASDAQ — and never writes it, never writes the thousands,
+ * and often never writes a verb the ordinary reader knows:
+ *     "short 195 pivot"          "reshorting 163 pivot, tight"
+ *     "trying a olong 150 pivot"  "565 short tight"
+ *     "starter short 560s"        "450 pivot short, stop 470"
+ *     "am short nascock, 153 pivot null if 160"
+ * "195" is the last three digits of the price: with NQ at 29,000 it means
+ * 29,195. THE EXPANSION IS NOT DONE HERE — the browser has no quote. The
+ * parser hands over the digits she wrote and the BRIDGE, which can price NQ,
+ * turns them into a real level. A reader that guessed the thousands would be
+ * inventing a price, and this file does not invent prices.
+ *
+ * WHICH NUMBER IS THE ENTRY. Her lines carry up to four numbers — the pivot,
+ * her stop, her invalidation, and the trim size:
+ *     "readding short 168 , stop still 175"
+ *     "am short nascock, 153 pivot null if 160"
+ *     "light long, 488 pivot, stop 480 494 fill"
+ * So: the number tagged "pivot" wins outright; otherwise the one nearest the
+ * direction word, and never one introduced by stop / risk / null if / a sign.
+ * Her stop is captured separately (their_stop) and, per the futures bracket,
+ * HERS WINS over our default 25 points.
+ *
+ * SCOPED to rooms carrying `pivot=NQ` in rooms.txt. Nothing about this shape
+ * is safe globally — "short 195" is a sentence fragment in any other room.
+ */
+const RE_PIV_SHORT = /\b(?:re-?)?short(?:s|ing)?\b|\bre-?add(?:ing|in)?\s+short\b/i;
+const RE_PIV_LONG = /\b(?:re-?)?o?long(?:s|ing)?\b|\bre-?add(?:ing|in)?\s+long\b/i;
+const RE_PIV_EXIT = /\btrim\b|\bflat\b|\bi[' ]?m\s+out\b|\bout\b|\bmoving\s+risk\b|\btrailing\s+stops?\b|\brunner|\bsl\s+shift\b|\bstops?\s+moved\b/i;
+const RE_PIV_STOP = /\b(?:hard\s+|trailing\s+)?stops?\s*(?:still\s*|at\s*|t\s+)?(\d{2,4})\b/i;
+// A number that is NOT the entry: her stop, her invalidation, a trim size,
+// a points count. Each of these has cost a misread somewhere.
+const RE_PIV_NOTNUM = /(?:stop|risk|null\s+if|sl|target|tp|\+|-|nhod|lod|hod)\s*\w{0,3}\s*$/i;
+
+function pivotEntry(text) {
+  const t = String(text || "");
+  if (RE_PIV_EXIT.test(t)) return null;         // an exit is not an entry
+  const isShort = RE_PIV_SHORT.test(t);
+  const isLong = RE_PIV_LONG.test(t);
+  if (isShort === isLong) return null;          // neither, or both — refuse
+  const dir = isShort ? "SHORT" : "LONG";
+
+  // 1. the number she tagged "pivot", either side of the word
+  let m = /(\d{2,4})\s*(?:pt)?\s*pivot\b/i.exec(t) || /\bpivot\s*(\d{2,4})\b/i.exec(t);
+  let px = m ? m[1] : null;
+
+  // 2. otherwise the number nearest the direction word, skipping any that a
+  //    stop/risk/invalidation word introduces.
+  if (!px) {
+    const dm = (isShort ? RE_PIV_SHORT : RE_PIV_LONG).exec(t);
+    const at = dm ? dm.index : 0;
+    let best = null, bestD = 1e9;
+    const re = /(\d{2,4})(?:s\b|\b)/g;
+    let n;
+    while ((n = re.exec(t)) !== null) {
+      const before = t.slice(Math.max(0, n.index - 14), n.index);
+      if (RE_PIV_NOTNUM.test(before)) continue;
+      // "30pt stop" / "+25" are size and risk, never a level
+      if (/^\s*(?:pt|point)/i.test(t.slice(n.index + n[1].length))) continue;
+      const d = Math.abs(n.index - at);
+      if (d < bestD) { bestD = d; best = n[1]; }
+    }
+    px = best;
+  }
+  if (!px) return null;                         // "added long" — no level given
+  const st = RE_PIV_STOP.exec(t);
+  return { direction: dir, pivot: parseInt(px, 10),
+           their_stop: st ? parseInt(st[1], 10) : null };
+}
+
 function findContract(text) {
   const osi = RE_CONTRACT_OSI.exec(text);
   if (osi && !blockedTicker(osi[1], text)) {
