@@ -1843,6 +1843,13 @@ function parseSignalInner(text, cfg) {
     const md = /\b(\d{1,2}\/\d{1,2})\b/.exec(rest);
     if (md) s.expiry = md[1];
     else if (bwLeadExp) s.expiry = /dte/i.test(bwLeadExp) ? bwLeadExp.toUpperCase() : bwLeadExp;
+    // This branch only ever knew a LEADING m/d or NdTE, so every other way a
+    // room writes a date fell out of it as NULL and the bridge filled in this
+    // Friday. "ebay 150C january 2027 monthly" is a LEAP; bought as this
+    // Friday it is a completely different trade. expiryAnywhere knows all
+    // eight shapes, and it can only fill a blank here — never overwrite a
+    // date the caller actually put in front.
+    if (!s.expiry) s.expiry = expiryAnywhere(t);
     const mp = /(?<![\d$])(\d+\.\d{1,2})\b/.exec(rest);
     s.limit = mp ? parseFloat(mp[1]) : null;
     s.action = "OPEN"; s.matched = "bullwinkle entry"; s.fire = true;
