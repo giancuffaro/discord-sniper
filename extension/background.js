@@ -677,6 +677,7 @@ async function needsFromExtension() {
       if (room.state !== "on") continue;
       const isWhop = /^whop:/i.test(room.id) || /whop\.com/i.test(room.url);
       if (lane && (lane === "whop") !== isWhop) continue;
+      if (!roomWantsTab(room)) continue;               // closed for the night on purpose
       const mine = await roomTabsFor(room);
       if (!mine.length) {
         items.push({ what: room.name + " is ON but has no tab in this browser", fix: "open_missing" });
@@ -730,6 +731,65 @@ async function fixIt(what) {
     }
   } catch (e) { return { ok: false, why: String(e).slice(0, 120) }; }
   return { ok: false, why: "unknown fix " + what };
+}
+
+/* ROOM HOURS (9/9 evening, G: "open the rooms at 9:15 and close them at
+ * 4:30 PM since we can't follow any alert then — so we don't bomb Discord
+ * with pings. Keep the futures channels always open"). An `on` room gets a
+ * tab only inside the window, unless its rules carry `always` (the futures
+ * rooms). Weekends and market holidays are outside the window. The Discord
+ * gateway sees ~15 fewer sessions for 17 of every 24 hours. */
+const ROOM_HOURS = { open: 9 * 60 + 15, close: 16 * 60 + 30 };     // ET
+function roomWindowOpen() {
+  try {
+    const p = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York",
+      hour12: false, weekday: "short", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit" }).formatToParts(new Date());
+    const g = t => (p.find(x => x.type === t) || {}).value || "";
+    if (["Sat", "Sun"].includes(g("weekday"))) return false;
+    if (MARKET_HOLIDAYS.has(g("year") + "-" + g("month") + "-" + g("day"))) return false;
+    const m = parseInt(g("hour"), 10) * 60 + parseInt(g("minute"), 10);
+    return m >= ROOM_HOURS.open && m < ROOM_HOURS.close;
+  } catch (e) { return true; }        // a clock bug must never close the rooms
+}
+function roomAlways(room) { return (room.rules || []).includes("always"); }
+function roomWantsTab(room) { return room.state === "on" && (roomAlways(room) || roomWindowOpen()); }
+const ROOM_CLOSED_SAID = {};        // id -> ts we last said "closed for the night"
+async function roomSchedule() {
+  try {
+    await loadRoomsFile();
+    let lane = "";
+    try { lane = (await chrome.storage.local.get("profile_lane")).profile_lane || ""; } catch (e) {}
+    let opened = 0, closed = 0;
+    const now = Date.now();
+    for (const room of ALL_ROOMS) {
+      if (room.state !== "on") continue;
+      const isWhop = /^whop:/i.test(room.id) || /whop\.com/i.test(room.url);
+      if (lane && (lane === "whop") !== isWhop) continue;
+      if (!lane) {                                    // lane not settled: the old soft rule
+        const tabs0 = await chrome.tabs.query({ url: isWhop
+          ? ["https://whop.com/joined/*", "https://whop.com/*/exp_*"]
+          : ["https://discord.com/channels/*", "https://*.discord.com/channels/*"] });
+        if (!tabs0.length) continue;                  // this surface isn't ours (yet)
+      }
+      const want = roomWantsTab(room);
+      const tabs = await roomTabsFor(room);
+      if (want && !tabs.length && room.url) {
+        if (opened >= 3) continue;                    // a few per pass
+        if (now - (ROOM_OPENED_AT[room.id] || 0) < 120000) continue;
+        ROOM_OPENED_AT[room.id] = now;
+        try { await chrome.tabs.create({ url: room.url, active: false }); opened++; } catch (e) {}
+        await new Promise(res => setTimeout(res, 6000));   // one gateway session per 5 s
+      } else if (!want && tabs.length) {
+        for (const t of tabs) { try { await chrome.tabs.remove(t.id); closed++; } catch (e) {} }
+      }
+    }
+    if (opened) await addLog({ kind: "sent", what: "ROOM HOURS",
+      why: "opened " + opened + " room tab(s) — the window is open (9:15-4:30 ET)" });
+    if (closed) await addLog({ kind: "sent", what: "ROOM HOURS",
+      why: "closed " + closed + " room tab(s) for the night — back at 9:15 ET; " +
+           "rooms marked 24h stay open" });
+  } catch (e) {}
 }
 
 /* THE OTHER PROFILE SEES THE FLIP (9/9). Both Chromes read the same
@@ -844,6 +904,12 @@ async function setRoomState(id, on) {
                             (isWhop ? "Whop" : "Discord") + " browser" };
   }
   const have = await roomTabsFor(room);
+  if (!roomWantsTab(room)) {
+    await addLog({ kind: "sent", what: "ROOM ON",
+      why: room.name + " switched ON — outside room hours, its tab opens at 9:15 ET " +
+           "(mark it 24h to keep it open round the clock)." });
+    return { ok: true, why: room.name + " is on — its tab opens at 9:15 ET (24h rooms open now)" };
+  }
   if (!have.length && room.url) {
     ROOM_OPENED_AT[room.id] = Date.now();
     try { await chrome.tabs.create({ url: room.url, active: false }); } catch (e) {}
@@ -2064,12 +2130,12 @@ async function evictOtherLane() {
 async function openMissingRooms() {
   let rooms;
   try { rooms = await loadRoomsFile(); } catch (e) { return; }
-  // loadRoomsFile populates ROOM_TABS[name] = {url, id} for every LIVE line.
+  // every `on` room that wants a tab RIGHT NOW (9/9: outside 9:15-4:30 ET
+  // only the rooms marked `always` — the futures ones — get opened)
   const want = [];
   try {
-    for (const name of Object.keys(ROOM_TABS)) {
-      const r = ROOM_TABS[name];
-      if (r && r.id && r.url) want.push({ id: String(r.id), url: r.url });
+    for (const r of ALL_ROOMS) {
+      if (r && r.id && r.url && roomWantsTab(r)) want.push({ id: String(r.id), url: r.url });
     }
   } catch (e) { return; }
   if (!want.length) return;
@@ -2214,13 +2280,25 @@ async function whopWatchdog() {
  * if NO whop tab is open at all. The map persists across service-worker
  * naps so an idle restart can't fake a full board of silence. */
 const OFF_SAID = {};        // "off|<cid>" -> last time we said the room is OFF
-const ROOM_MSG_AT = {};          // channelId -> last message ts
+const ROOM_MSG_AT = {};          // channelId -> last time the reader handed us a row
+// channelId -> the newest message's OWN timestamp (postedAt), max-merged —
+// "when did this room last post", survives reloads and history re-reads
+// (9/9, G: "I want to know what time was the last message from each channel")
+const ROOM_POST_AT = {};
 const ROOM_ALERTED = {};         // channelId -> last-msg ts we alerted on
 let _pulseBoot = Date.now();
 (async () => { try {
-  const st = (await chrome.storage.local.get("room_msg_at")).room_msg_at;
+  const got = await chrome.storage.local.get(["room_msg_at", "room_post_at"]);
+  const st = got.room_msg_at;
   if (st) for (const k of Object.keys(st)) ROOM_MSG_AT[k] = st[k];
+  const pt = got.room_post_at;
+  if (pt) for (const k of Object.keys(pt)) ROOM_POST_AT[k] = Math.max(ROOM_POST_AT[k] || 0, pt[k]);
 } catch (e) {} })();
+function notePost(cid, postedAt) {
+  const t = Number(postedAt) || 0;
+  if (!cid || !t || t > Date.now() + 60000) return;
+  if (t > (ROOM_POST_AT[cid] || 0)) ROOM_POST_AT[cid] = t;
+}
 
 function _marketOpenNow() {
   try {
@@ -2235,7 +2313,7 @@ function _marketOpenNow() {
 }
 
 async function roomSilenceCheck() {
-  try { await chrome.storage.local.set({ room_msg_at: ROOM_MSG_AT }); } catch (e) {}
+  try { await chrome.storage.local.set({ room_msg_at: ROOM_MSG_AT, room_post_at: ROOM_POST_AT }); } catch (e) {}
   if (!_marketOpenNow()) return;
   const now = Date.now();
   const QUIET = 40 * 60 * 1000;
@@ -2333,7 +2411,7 @@ chrome.alarms.onAlarm.addListener(a => {
   // tab is how he turns a room off. The launcher (START HERE) opens the tabs
   // once at startup; after that nothing reopens a tab he closed. Function left
   // defined-but-uncalled below in case it's ever wanted back.
-  if (a.name === "watch-build") { checkBuild(); pollRoomsFile(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); }
+  if (a.name === "watch-build") { checkBuild(); pollRoomsFile(); roomSchedule(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
@@ -2946,7 +3024,13 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "POPUP_OPENED") { if (msg.tabId) retryEars(msg.tabId, "clicked on").catch(() => {}); reply({ ok: true }); return; }
   // THE ONE SWITCH (9/9): the popup asks for every room + flips one.
-  if (msg.type === "ROOMS?") { loadRoomsFile().then(() => reply({ ok: true, rooms: ALL_ROOMS.slice() })).catch(() => reply({ ok: false, rooms: [] })); return true; }
+  if (msg.type === "ROOMS?") {
+    loadRoomsFile().then(() => reply({ ok: true, window_open: roomWindowOpen(), hours: ROOM_HOURS,
+      rooms: ALL_ROOMS.map(r => Object.assign({}, r, { last_post: ROOM_POST_AT[r.id] || 0,
+                                                       last_read: ROOM_MSG_AT[r.id] || 0 })) }))
+      .catch(() => reply({ ok: false, rooms: [] }));
+    return true;
+  }
   if (msg.type === "ROOM_SET") { setRoomState(msg.id, !!msg.on).then(reply).catch(e => reply({ ok: false, why: String(e).slice(0, 160) })); return true; }
   if (msg.type === "ROOM_RULES") { setRoomRules(msg.id, msg.rules).then(reply).catch(e => reply({ ok: false, why: String(e).slice(0, 160) })); return true; }
   if (msg.type === "NEEDS?") { needsFromExtension().then(items => reply({ ok: true, items })).catch(() => reply({ ok: false, items: [] })); return true; }
@@ -3197,6 +3281,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // reads the clean msg.text below.
     if (c.capture) capture(msg.full || msg.text, msg.author, msg.channelId, msg.postedAt);
     ROOM_MSG_AT[String(msg.channelId || "")] = Date.now();
+    notePost(String(msg.channelId || ""), msg.postedAt);
 
     // Drop a message we've already handled. Capture ran first (above), so the
     // grabber's export still sees every row; this only stops the LIVE path —
@@ -3215,7 +3300,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     if (String(msg.platform || "") === "whop") {
       const wroom = whopRoomOf(msg.channelId);
       if (wroom) { msg.channelId = wroom.id;   // canonical id when we know it
-                   ROOM_MSG_AT[String(wroom.id)] = Date.now(); }
+                   ROOM_MSG_AT[String(wroom.id)] = Date.now();
+                   notePost(String(wroom.id), msg.postedAt); }
       c.bare_pct_trims = false;
     }
 
