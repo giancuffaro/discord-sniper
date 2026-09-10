@@ -944,6 +944,22 @@ function directionSanity(s) {
 }
 
 function parseSignal(text, cfg) {
+  // findContract() is called from about twenty places and takes only text.
+  // ONE of its branches — contractSymbolAfter, the ticker written after the
+  // contract — must be scoped to `bare` rooms (see the note above it), so the
+  // room's config is parked here for the length of one parse rather than
+  // threading a second argument through every call site. Set on entry, always
+  // cleared, and read by nothing else.
+  _ROOM_CFG = cfg || {};
+  try {
+    return parseSignalOuter(text, cfg);
+  } finally {
+    _ROOM_CFG = {};
+  }
+}
+let _ROOM_CFG = {};
+
+function parseSignalOuter(text, cfg) {
   const s = parseSignalInner(text, cfg);
   indexGuard(s, cfg);
   directionSanity(s);
