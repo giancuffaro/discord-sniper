@@ -29,3 +29,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789054201.473,armed,AAPL,CALLS,325,9/11,,323.0,,👑KingBeeAri🐝,Aristotle
 1789054801.486,missed,AAPL,CALLS,325,9/11,,323.0,,👑KingBeeAri🐝,Aristotle
 1789057405.902,armed,SPY,CALLS,761,2026-09-10,,758.0,,eli,OWLS all-alerts
+1789057520.932,filled,SPY,CALLS,761,2026-09-10,,758.0,758.0,eli,OWLS all-alerts
