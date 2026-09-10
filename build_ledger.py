@@ -776,6 +776,7 @@ def build():
             "why": "in the Webull order export, in no store — a hand trade",
         })
 
+    out = _collapse_carryover(out)
     out, paper = _drop_paper(out)
     _archive_paper(paper)
     out.sort(key=lambda x: (x["date"], x["opened"] or "99:99:99", x["symbol"]))
@@ -813,6 +814,64 @@ def _rotate_bak(path=OUT):
 # lines with no room row (41 of them, real money) and they stay.
 PAPER_ARCHIVE = os.path.join(HERE, "archive", "paper-fills-%s.csv"
                              % datetime.now().strftime("%Y-%m-%d"))
+
+
+def _collapse_carryover(rows):
+    """ONE ROW PER POSITION (9/10, from G's "SKHY actually made me like 300").
+
+    days/*.json re-lists an OPEN position in EVERY day's table until it
+    closes, so a trade held overnight arrived here as one row per day. SKHY
+    was two rows — the 8/11 one carrying the broker's real +$249, the 8/12
+    one carrying the book's wrong exit (5.90) and -$11. Same trade, counted
+    twice, and the wrong copy is the one a reader sees last.
+
+    Identity is caller + contract + ENTRY TIME (not date — that is the whole
+    bug). Two genuinely separate trades on one contract have different entry
+    times and survive as two rows. The copy kept is the most trustworthy:
+    broker-confirmed first, then one that knows its exit, then the earliest.
+    """
+    def rank(r):
+        return (0 if r.get("export_confirmed") else 1,
+                0 if r.get("exit_avg") not in (None, "") else 1,
+                str(r.get("date") or ""))
+
+    best = {}
+    order = []
+    for r in rows:
+        ts = r.get("opened_ts")
+        # ONLY day-JSON rows carry over between days. The broker's own
+        # round-trips (webull-export-only) and the log's FILLED lines are
+        # already one row per event — collapsing those merged separate FIFO
+        # round-trips that shared a buy timestamp and lost their P&L (June
+        # drifted -$60 to -$295 a day until this line went in).
+        if r.get("source") != "days-json":
+            order.append(("keep", r))
+            continue
+        ident = (str(r.get("caller") or "").strip().lower(),
+                 str(r.get("symbol") or "").upper(), str(r.get("strike") or ""),
+                 str(r.get("side") or ""), str(r.get("expiry") or ""),
+                 round(float(ts), 0) if ts not in (None, "") else None)
+        if ident[5] is None or not ident[1]:
+            order.append(("keep", r))          # no entry time: cannot pair it
+            continue
+        if ident not in best:
+            best[ident] = r
+            order.append(("id", ident))
+        elif rank(r) < rank(best[ident]):
+            best[ident] = r
+    out, dropped = [], 0
+    seen = set()
+    for kind, v in order:
+        if kind == "keep":
+            out.append(v)
+        elif v not in seen:
+            seen.add(v)
+            out.append(best[v])
+    dropped = len(rows) - len(out)
+    if dropped:
+        for r in out:
+            pass
+    return out
 
 
 def _drop_paper(rows):
@@ -873,6 +932,8 @@ def summary(rows, broker):
     print(f"  real fills untagged room '?':       {untag}")
     print(f"  paper fills:                        0  (never written — see "
           f"archive/paper-fills-*.csv)")
+    print(f"  (one row per POSITION — a trade held overnight is not counted "
+          f"once per day)")
     _fx = [r for r in rows if "recomputed from the fill and exit" in (r.get("why") or "")]
     if _fx:
         _delta = sum((_f(r["pl"]) or 0) - (_f(r["store_pl"]) or 0) for r in _fx)
