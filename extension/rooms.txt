@@ -333,10 +333,31 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # 7590P Credit - 1.90"). Two reasons off: multi-leg spreads are refused by
 # design, and SPX has no broker connected.
 1315504529898209310|https://discord.com/channels/722872384800948227/1315504529898209310|Xephyr Alerts|Low Key Stonks|off|spreads + SPX
-# FUTURES SCALPERS — chika, ducci, jon-tran, hog. Real traders, unusable
-# grammar: "long 218", "Short gc 4461", "+65 trim". No contract, no size, and
-# the instrument is only knowable from context. Nothing to trade off.
-1315502322985603082|https://discord.com/channels/722872384800948227/1315502322985603082|Chika Alerts|Low Key Stonks|off|futures scalps, no contract
+# CHIKA — ON, READ-ONLY (9/10, G walked me through her whole grammar).
+# She trades ONLY the NASDAQ and writes the last digits of the level:
+#   "short 195 pivot"  = NQ 29,195 short      "got a short 230"  = 29,230
+#   "reshorting 163 pivot, tight"             "565 short tight"
+#   "trying a olong 150 pivot"                "450 pivot short, stop 470"
+# The bridge expands the digits against a live quote, then waits for the next
+# 25 AGAINST the trade (195->200, 230->250, 203->225) — which is exactly what
+# webull_futures._round_entry already did, so no new maths was needed.
+# Her stop is read and KEPT (hers beats our default 25 points). Her
+# invalidation ("null if 160") and her trim sizes are NOT levels.
+#
+# READ-ONLY, and this is the reason: her last 170 messages are 64 entries and
+# 94 EXITS, with 5 flips. Her edge is the trims — she banks +10 to +25 points
+# over and over and flattens constantly. ENTRIES ONLY throws every one of
+# those away, so taking her entries with our ratchet is not her strategy, it
+# is ours started at her price. On 9/2 alone, entries-only would have stacked
+# five shorts and then flipped long inside two hours.
+# So: read her, write down what we WOULD have done, send nothing. When there
+# is a record worth judging, drop `readonly` from the rules below to arm her.
+# (Futures execution is off anyway: webull false, ninjatrader false, topstep
+# enabled but not executing.)
+1315502322985603082|https://discord.com/channels/722872384800948227/1315502322985603082|Chika Alerts|Low Key Stonks|on|pivot=NQ,readonly,always
+# The other three futures scalpers stay OFF — same unusable grammar, and none
+# of them writes a level the way Chika does: "long 218", "Short gc 4461",
+# "+65 trim". No instrument, no level, nothing to trade off.
 1316182395652669510|https://discord.com/channels/722872384800948227/1316182395652669510|Ducci Alerts|Low Key Stonks|off|futures scalps, no contract
 1478913485579489330|https://discord.com/channels/722872384800948227/1478913485579489330|Jon Tran Alerts|Low Key Stonks|off|futures commentary, no calls
 1535565295350194187|https://discord.com/channels/722872384800948227/1535565295350194187|Hog Alerts|Low Key Stonks|off|futures scalps, no contract
