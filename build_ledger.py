@@ -589,6 +589,33 @@ def build():
                 r["pl_pct"] = None               # recomputed below from fill
             if not r.get("occ"):
                 r["occ"] = trip["occ"]
+        # P&L IS COMPUTED FROM PRICES, NEVER TAKEN ON TRUST (9/10, G: "I feel
+        # I'm still missing losing trades — no way I've won and not lost that
+        # much"). He was right: 26 of 74 closed August option positions had
+        # the SALE PROCEEDS written into `pl` (exit 5.90 x 100 = "+590" on a
+        # trade that lost $11). That one bug alone overstated the record by
+        # +$5,137 and turned 26 losses into the board's biggest wins. The
+        # broker's own export still wins where it exists (set above); below
+        # that, if the row knows what it paid and what it sold for, the
+        # arithmetic decides. The book's claim is kept in store_pl.
+        if not (trip and trip.get("sell") is not None) and entries and exits:
+            try:
+                _qi = sum(_f(e.get("qty")) or 0 for e in entries)
+                _qo = sum(_f(e.get("qty")) or 0 for e in exits)
+                _mult = 1.0 if _kind(r) == "future" else 100.0
+                if _qi > 0 and _qo > 0 and _kind(r) != "future":
+                    _in = sum((_f(e.get("qty")) or 0) * (_f(e.get("price")) or 0)
+                              for e in entries) / _qi
+                    _out = sum((_f(e.get("qty")) or 0) * (_f(e.get("price")) or 0)
+                               for e in exits) / _qo
+                    if _in > 0 and _out > 0:
+                        _true = round((_out - _in) * _qo * _mult, 2)
+                        if abs(_true - (_r2(r.get("pl")) or 0)) > 0.01:
+                            r["pl"] = _true
+                            r["pl_pct"] = None          # recomputed below
+                            r["_pl_fixed"] = True
+            except (TypeError, ValueError, ZeroDivisionError):
+                pass
         hi = r.get("hi_pct") if r.get("hi_pct") is not None else r.get("max_runup_pct")
         lo = r.get("lo_pct") if r.get("lo_pct") is not None else r.get("max_drawdown_pct")
         runup = r.get("max_runup_pct") if r.get("max_runup_pct") is not None else r.get("hi_pct")
@@ -665,7 +692,9 @@ def build():
             "derived": derived,
             "day_file": r["_file"],
             "raw": (r.get("raw") or "").replace("\n", " ").strip(),
-            "why": (r.get("why") or "").replace("\n", " ").strip(),
+            "why": ((r.get("why") or "").replace("\n", " ").strip()
+                    or ("P&L recomputed from the fill and exit prices — the book's "
+                        "number was wrong (see store_pl)" if r.get("_pl_fixed") else "")),
         })
 
     # broker fills with NO day-JSON row → visible gap rows (every FILLED line
@@ -832,6 +861,11 @@ def summary(rows, broker):
     print(f"  real fills untagged room '?':       {untag}")
     print(f"  paper fills:                        0  (never written — see "
           f"archive/paper-fills-*.csv)")
+    _fx = [r for r in rows if "recomputed from the fill and exit" in (r.get("why") or "")]
+    if _fx:
+        _delta = sum((_f(r["pl"]) or 0) - (_f(r["store_pl"]) or 0) for r in _fx)
+        print(f"  P&L CORRECTED from prices:          {len(_fx)}  "
+              f"(the book was off by {_delta:+.0f} on those)")
     # RECONCILIATION — the ledger must equal the broker's own history on
     # every day we hold an export. If a day drifts, something upstream lied.
     trips = load_broker_exports()
