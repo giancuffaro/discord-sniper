@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trademorewiser NQ short (Day Trades) found it never reached trades.log, and the room had caught exactly 1 alert total since 8/13. Cause: nothing ever recreated a Whop tab once it died, and nothing noticed if the whole "Sniper Whop" Chrome profile wasn't running. Fixed — whopSelfHeal() (background.js, whop lane only, Discord's 9/8 "a closed tab stays closed" rule untouched) + _whop_loop.bat/_whop_hidden.vbs watchdog (installed by START HERE.bat, Startup entry + 30-min revive task, same model as the Fill Announcer). Takes effect next time START HERE.bat runs. Story in HANDOFF-LOG.md. Everything before today is in HANDOFF-LOG.md.
+Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trademorewiser NQ short (Day Trades) found it never reached trades.log, and the room had caught exactly 1 alert total since 8/13. Cause: nothing ever recreated a Whop tab once it died, and nothing noticed if the whole "Sniper Whop" Chrome profile wasn't running. Fixed — whopSelfHeal() (background.js, whop lane only, Discord's 9/8 "a closed tab stays closed" rule untouched) + _whop_loop.bat/_whop_hidden.vbs watchdog (installed by START HERE.bat, Startup entry + 30-min revive task, same model as the Fill Announcer). Takes effect next time START HERE.bat runs. Story in HANDOFF-LOG.md. ALSO TODAY: the ratchet moved 7.5/5/2 -> 5/3/5 on G's call (OPRA tape bought, 537 contract-days; 115 real room calls; old $158 rank #82, new $504 rank #1, +$3.01 a trade, 95% band +$0.72..+$4.91 — the first spacing to clear its own error bar) and every backtest/report now READS the spacing from ratchet_tiers.live_spacing(); full-depth scan of all 25 Discord servers / 289 channels (2 live options feeds found in TradingTheTrend, added `off`); RWGates set LAPSED — the account has been REMOVED from that server, not just unsubscribed. Everything before today is in HANDOFF-LOG.md.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -28,8 +28,8 @@ Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trad
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.85) reads 20 rooms —
-  16 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
+- The machine: Chrome MV3 extension (Profile 2; v3.5.85) reads 19 rooms —
+  15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
   (the same physical Chrome was "Browser 2" at 17:30 on 9/9 and "Browser 1"
@@ -50,7 +50,7 @@ Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trad
   brought every non-ZT room back 9/9 once the reload storm was fixed (the
   "silent" verdicts were measured during the storm, so they re-measure on
   clean ledger data from here). extension/rooms.txt is THE list of EVERY
-  room we have been to (57: 20 on, 33 off, 4 lapsed), one line each with a
+  room we have been to (57: 19 on, 33 off, 5 lapsed), one line each with a
   5th field on|off|lapsed — see ROOMS below. rooms.txt is data, not code:
   editing it does NOT reload the extension (build stamp skips it); the
   extension re-reads it within 30 s —
@@ -61,14 +61,22 @@ Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trad
   executing; Tradovate removed 9/x). Whop reads happen in the "Sniper Whop"
   Chrome profile; the Whop API path is DELETED (walled + it was dropping tab
   reads).
-- Accounts (Webull, one app key): MARGIN ENIQGUV4 (~$706), CASH MOI680
-  ($0.55), FUTURES R8IEC ($0.55). Rate budget is SHARED with Market Sniper.
+- Accounts (Webull, one app key), read live 9/10 11:35: MARGIN ENIQGUV4
+  $9.85 (day P&L -$655 — of which the BOT was +$55; the rest was hand
+  trading, see HANDOFF-LOG 9/10), CASH MOI680 ($0.55), FUTURES R8IEC
+  $211.95 funded but flat and `futures_brokers.webull` is still false so
+  the bot will not touch it. At $9.85 of option buying power the bot
+  CANNOT ENTER ANYTHING — the median bot entry costs $167. G said 9/10 he
+  is depositing and leaving the account to the bot alone.
+  Rate budget is SHARED with Market Sniper.
 - SEPARATE tool: Market Sniper (his own build, 127.0.0.1:8000) trades HIS
   manual scalps on the SAME Webull account. Coexistence rule: positions the
   bot didn't originate are HIS — visible, never stop-managed, never sold,
   never blocking a room call in the same symbol (Book.is_hand_trade, every
-  exit door). Market Sniper is on the OLD ratchet (10/10) — port the 9/9
-  handoff: C:\Users\Hulk\Desktop\Market Sniper\HANDOFF-RATCHET-2026-09-09.md.
+  exit door). Market Sniper's ratchet_tiers.py is (5.0, 0.0, 2.0), i.e. the
+  spacing this bot ran until 9/10 — so the two tools now manage stops
+  DIFFERENTLY on the SAME account. Port 5/3/5 across, or switch it off:
+  G's call, still open 9/10.
 - The Claude Project (claude.ai): project/PROJECT-INSTRUCTIONS.md is its
   Instructions; project/context/ holds its uploads (HANDOFF-snapshot.md,
   rooms-snapshot.txt, OPTIONS-BROKER-REFERENCE.md ...).

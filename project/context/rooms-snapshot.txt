@@ -131,11 +131,19 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 769797819770732554|https://discord.com/channels/769790224921395200/769797819770732554|Options Watchlist|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
 # RE-ADDED 9/9 (G's call, wants 15-20 tabs total). Wired 9/7, was 0 rows in master_ledger.csv when cut same day as everything else — not structurally disabled, just quiet so far.
 880503518878892143|https://discord.com/channels/769790224921395200/880503518878892143|TTT Lotto|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|on|bare
-# 9/7: Whop shows STS/Summit as LAPSED, but Discord access is INTACT —
-# verified by opening it: '#alert-room | Summit Trading Strategies',
-# 2,688 unread, messages from today. A lapsed subscription is NOT the
-# same as lost access. AWAKE.
-642437862930907158|https://discord.com/channels/588137369409159208/642437862930907158|RWGates|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|on
+# LAPSED 9/10 — access is now GONE, not just the subscription. G saw the bot
+# opening a bare guild URL with no channel on it, which is what Discord
+# serves when you are not in the server. Confirmed three ways: the 9/10
+# full-server sweep enumerated all 25 guilds this account is in and
+# 588137369409159208 was not among them; the extension had been logging
+# "RWGates has been silent 40 / 120 min during market hours"; and its last
+# signal in master_ledger.csv is 8/20, three weeks before. The 9/7 note here
+# ("Whop says lapsed but Discord access is INTACT — AWAKE") was true when it
+# was written and stopped being true between then and now: sub lapsed first,
+# then they removed the account from the server.
+# `lapsed` not `off` (G's call 9/10) so the extension keeps knocking once a
+# day off-hours and says the moment access comes back.
+642437862930907158|https://discord.com/channels/588137369409159208/642437862930907158|RWGates|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|lapsed
 # CUT 9/9 (G's call)
 1323708708374450247|https://discord.com/channels/725117609275555851/1323708708374450247|Vero 1|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
 760694103401955378|https://discord.com/channels/725117609275555851/760694103401955378|Vero 2|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|on
