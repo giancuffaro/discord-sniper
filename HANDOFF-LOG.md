@@ -9,6 +9,34 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 23:45 — THE SCOREBOARD WAS LYING; G'S SPOT-CHECK CAUGHT IT (v3.5.83).**
+G: "can we check Stormzy and MR.TOPHAT on options records?" Neither looked
+right, and both were symptoms:
+  · STORMZY HAS NO OPTIONS AT ALL — 13 rows, every one FUTURES (MNQ/MES/MGC,
+    room ZT fut-1), and 8 of the 13 were the SAME positions re-listed on each
+    day they stayed open. Real count: 5 futures positions, no P&L recorded
+    (the NinjaTrader path books none). His "$0" was never a result.
+  · MR.TOPHAT — 5 rows: 4 live options (+33 SPY 8/17, −8 CLF, −45 SPCX,
+    −20 WMB 11/20 — a 3-month swing on illiquid names) = −$40 live, plus
+    ONE PAPER SPY trade (−$16) that the board was adding as real money.
+BUG 1, CARRY-OVER DUPLICATES: days/*.json lists an open position in every
+day's table until it closes; caller_stats counted each as a fill. 299 rows
+for 247 real positions — 52 phantom fills, worst on "?" (+29) and Stormzy
+(+8). Fixed: key on caller+contract+entry time, keep the copy that knows its
+exit.
+BUG 2, PAPER COUNTED AS MONEY: −$686 of paper P&L sat in the caller board.
+The headline loser "are alerts −$732" was really −$62 live; the −$670 was one
+PAPER HPE trade counted twice (both halves of the same twin). Fixed: paper
+fills count as calls taken, shown greyed with their own number, never in the
+net. Futures likewise counted but not valued, tagged "N futures".
+CORRECTED BOARD — live losers: are alerts −$62, EvaPanda −$56, MR.TOPHAT
+−$40, Unraveller (Admin) −$28, @Owner −$22, then single digits. Nobody who
+is ON tonight has cost more than $22. Winners unchanged in order (Unraveller
++$929, The Pawn +$705, Bullwinkle +$649).
+G, same breath: "when we get futures working we are going to need to pull
+futures records too" — written into HANDOFF watch items, since every futures
+caller is currently rank-less by design.
+
 **2026-09-09 21:20 — "DO WE HAVE A REAL TRADER SCOREBOARD?" (v3.5.82).** Three
 existed: trader-scoreboard.xlsx (autopilot, daily, corrected caller trades),
 caller_report.py (claimed-vs-ours three-way), and tonight's Callers tab. The

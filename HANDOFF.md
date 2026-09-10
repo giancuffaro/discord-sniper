@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (evening) — v3.5.81: ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-09 (late) — v3.5.83: the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -47,7 +47,7 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.81) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.83) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
@@ -148,7 +148,20 @@ ENTRIES
   test, I might want to remove"). Four panels, each one bridge endpoint
   pair + one popup block, marked "SELF-SERVE" in bridge.py / popup.js /
   popup.html / background.js so removal is deleting the marked blocks:
-  · CALLERS tab — every trader ever followed (ledger + alerts; key =
+  · CALLERS tab — THE TRADER SCOREBOARD. Ranked by LIVE net $. Three rules
+    learned the hard way 9/9 when G asked to check Stormzy and MR.TOPHAT:
+    (a) ONE ROW PER POSITION — days/*.json re-lists an open position every
+    day until it closes, so a 3-day hold read as 3 fills (299 rows for 247
+    positions; Stormzy's 5 futures positions read as 13). Keyed on
+    caller+contract+entry time, richest copy wins. (b) PAPER IS NOT MONEY —
+    counted as a call taken, shown greyed, never in the net ("are alerts"
+    read −$732 when the real number was −$62 live; the rest was one paper
+    HPE trade). (c) FUTURES fills are counted, not valued — the NinjaTrader
+    path records no P&L, so a futures caller shows "$0 · N futures", never
+    a fake zero. WHEN FUTURES EXECUTION WORKS, PULL ITS RECORDS THE SAME WAY
+    THE OPTIONS ONES ARE PULLED (broker export → master_broker.csv →
+    ledger), or the board keeps lying about the futures callers.
+    Every trader ever followed (ledger + alerts; key =
     lowercase alphanumerics of the name), record inline, one switch. OFF =
     settings.json callers_off gets the key; the bridge refuses that
     trader's OPEN/ADD at the door ("switched OFF in the popup's Callers
@@ -537,6 +550,11 @@ close-out today.)
   this count; if not, the next lever is moving rooms across more Chrome
   profiles, not further cuts.
 - 154 ledger fills with room "?" (pre-tagging August + recovered rows).
+- FUTURES RECORDS (G, 9/9): the moment futures execution works, its fills
+  need pulling into the ledger the way options fills are (a broker export
+  into master_broker.csv). Until then every futures caller — Stormzy 5
+  positions, Market Guru 7, Namrood-BOT — sits on the scoreboard with a
+  count and no money, which is honest but useless for ranking them.
 - Telemetry rows lack room/caller → master_alerts taken-side is anonymous.
 - Deepgram key may be one char short (39) — watch for voice auth errors.
 - First live overnight broker stop on a swing: confirm it survives the night.
