@@ -420,8 +420,16 @@ def caller_stats():
             k = caller_key(who)
             if k == "gian":
                 continue
+            # G'S OWN HAND TRADES ARE NOT A CALLER'S RECORD (9/10). 28 rows
+            # here were source="webull-export-only" / manual — his Market
+            # Sniper scalps, in the ledger on purpose, nobody's call. They
+            # were sitting in the board's unattributed bucket adding +$383
+            # to a number that is supposed to answer "is this room worth
+            # paying for".
+            if not k and (r.get("manual") or r.get("source") == "webull-export-only"):
+                continue
             if not k:                      # pre-tagging fills: keep the money visible
-                k, who = "_unattributed", "(caller unknown — pre-tagging fills)"
+                k, who = "_unattributed", "(no caller recorded — Aug 7-20, before caller tagging)"
             c = out.setdefault(k, _blank(k, who))
             # (no paper branch: build_ledger keeps paper fills OUT of
             #  master_ledger.csv entirely — 9/9, G: "delete all paper trades
