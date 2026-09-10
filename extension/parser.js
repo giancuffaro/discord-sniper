@@ -490,6 +490,14 @@ function cleanText(raw) {
   t = t.replace(/^\s*\d{1,3}\.\s+/, "");
   // A1 - normalize smart quotes so a quoted premium ("2.21") parses.
   t = t.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  // "3/19exp" — the date GLUED to the word exp, no space (9/10, KianTrades in
+  // OWLS jon-and-kian: "FRVO 25C 3/19exp 4.05 premium", "PURR 15C 1/15exp").
+  // Every date pattern in this file ends on a word boundary, and "9exp" is not
+  // one, so the expiry was read as NOTHING and the order fell through to the
+  // bridge's default date. That is the worst kind of miss: silent, and it
+  // buys a REAL contract with the WRONG expiry — PURR 1/15exp would have been
+  // bought as this Friday, four months early. One space fixes all of them.
+  t = t.replace(/(\d)\s*(exp(?:iry|iration|s)?)\b/gi, "$1 $2");
   // LABELLED TEMPLATE (9/2, Platinum Blue Collar: "LONG SETUP Ticker: SPY
   // Contract: 764 C Entry Zone: .50 Risk: 20% Stop TP1: 20% TP2: 763.93").
   // Rewrite the labels into the grammar every other room already speaks:
