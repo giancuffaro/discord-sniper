@@ -627,19 +627,33 @@ function blockedTicker(sym, text) {
  * word-order gap, and it is not one room's quirk — any room that writes the
  * date or the strike first hits it.
  *
- * SAFETY: this only runs when the normal pattern found NOTHING, so it can
- * never change a parse that already works — it can only add one where there
- * was none. The ticker must also be within ~24 characters of the contract, so
- * a stray word later in the sentence cannot be adopted, and blockedTicker
- * still applies. */
+ * IT NEARLY CAUSED A DISASTER, AND THESE ARE THE THREE RAILS (9/10).
+ * Replayed against 11,187 real room messages it produced FOURTEEN new entries
+ * and THIRTEEN of them were ordinary English words turned into tickers:
+ *     "revising $338,00 BREAK 4.65"        -> NEX 350 CALLS
+ *     "buy DOCU Calls July 31st - 48"      -> FOR 48 CALLS
+ *     "$776C cally spy TUESDAY"            -> CALLY 776 CALLS
+ *     "772.35 - 772.40 has to hold ..."    -> THETA 773 CALLS
+ * A well-formed wrong symbol looks exactly like a well-formed right one, and
+ * NEX and FOR are REAL LISTED TICKERS — the optionable list would have waved
+ * them through and bought a contract nobody named. So:
+ *   1. `bare` ROOMS ONLY. The twenty rooms that write a verb never reach it.
+ *   2. THE TICKER MUST LOOK LIKE ONE — a $CASHTAG, or ALL CAPS. Rooms shout
+ *      their tickers; prose does not. That alone kills cally / theta / has.
+ *   3. ADJACENT — 10 characters, not 24. A word further down the sentence is
+ *      part of the sentence.
+ * blockedTicker still applies on top. This branch is also last, so it can
+ * only add a parse where there was none, never change one that works. */
 const RE_STRIKE_FIRST = /(?<![A-Za-z0-9$.])\$?(\d{2,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b/i;
 function contractSymbolAfter(text) {
+  if (!_ROOM_CFG || !_ROOM_CFG.entry_no_verb) return null;      // rail 1
   const m = RE_STRIKE_FIRST.exec(text);
   if (!m) return null;
-  const after = text.slice(m.index + m[0].length, m.index + m[0].length + 24);
-  const t = /(?:^|[^A-Za-z])\$?([A-Za-z]{1,5})\b/.exec(after);
+  const after = text.slice(m.index + m[0].length, m.index + m[0].length + 10);
+  // rail 2: $CASHTAG or ALL CAPS, nothing else.
+  const t = /(?:^|[^A-Za-z0-9])(?:\$([A-Za-z]{1,5})|([A-Z]{1,5}))\b/.exec(after);
   if (!t) return null;
-  const sym = t[1].toUpperCase();
+  const sym = (t[1] || t[2]).toUpperCase();
   if (/^(CALLS?|PUTS?|C|P|DTE|EXP|AND|THE|SMALL|STARTERS?|SWING|LOTTO|RUNNERS?)$/.test(sym)) return null;
   if (blockedTicker(sym, text)) return null;
   return { symbol: sym, strike: parseFloat(m[1]),

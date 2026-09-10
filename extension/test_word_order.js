@@ -71,6 +71,19 @@ show("two tickers never pair",
   read("$AMZN 11/20 300c 4.8 $GOOGL 11/20 370c 8.3", BARE),
   "OPEN AMZN 300C 11/20");
 
+/* THE NEAR-DISASTER (9/10). The first cut of the ticker-after-the-contract
+ * reader was replayed against 11,187 real room messages: it produced 14 new
+ * entries and THIRTEEN were ordinary words turned into tickers. NEX and FOR
+ * are REAL LISTED SYMBOLS, so the optionable list would have waved them
+ * through and bought a contract nobody named. Every line below is verbatim
+ * from the logs. They must never read, even in a `bare` room. */
+console.log("\nWORDS ARE NOT TICKERS (verbatim from the logs):");
+show("BREAK 4.65",   read("revising $338,00 BREAK 4.65", BARE),                    "silent");
+show("July 31st - 48", read("buy DOCU Calls July 31st - 48", BARE),                "OPEN DOCU");
+show("cally spy",    read("$776C cally spy TUESDAY", BARE),                        "silent");
+show("levels prose", read("772.35 - 772.40 has to hold for a push to 773c", BARE), "silent");
+show("out breakeven", read("NVDA OUT BREAKEVEN NO LOSS but 220c", BARE),           "silent");
+
 console.log("\nSCOPED — the same lines must stay SILENT with no room rule:");
 show("ticker last",     read("8/24 $255P $AMZN", {}),               "silent");
 show("date between",    read("TSLA 9/4 360P .72", {}),              "silent");
