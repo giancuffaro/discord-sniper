@@ -626,9 +626,50 @@ const RE_DAYS_ANY = /\b(\d{1,2})\s*days?\b/i;
 // "today exp" is 0DTE said out loud.
 const RE_TMRW_EXP = /\btomorrow\s+exp\w*/i;
 const RE_TODAY_EXP = /\btoday\s+exp\w*|\bexpiring\s+today\b/i;
+/* THE THIRD FRIDAY of a month — the MONTHLY contract.
+ *
+ * "jan 2028", "January 2027", "june monthly" (9/10, kaori's room, which is all
+ * leaps and monthlies). These are not vague: a monthly option expires on the
+ * third Friday, always, so this is arithmetic and not a guess — which is the
+ * only reason this file is allowed to compute it. Everything else about a date
+ * is read, never derived.
+ *
+ * Read literally the old way, "$NOK 20C jan 2028 @1.38" carried NO expiry at
+ * all and the bridge filled in THIS FRIDAY — buying a two-week contract when
+ * she called a two-year one. That is the silent-wrong-date class of bug, the
+ * worst this parser has.
+ */
+function thirdFriday(year, month1) {
+  const d = new Date(Date.UTC(year, month1 - 1, 1));
+  // 5 = Friday. Walk to the first one, then add a fortnight.
+  const first = 1 + ((5 - d.getUTCDay()) + 7) % 7;
+  return (month1 + "/" + (first + 14) + "/" + year);
+}
+// "jan 2028" / "January 2027"  and  "june monthly" / "jan monthly"
+const RE_MONTH_YEAR = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+(20\d{2})\b/i;
+const RE_MONTH_MONTHLY = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+monthlies?\b|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+monthly\b/i;
+
 function expiryAnywhere(text) {
   if (RE_TMRW_EXP.test(text)) return "1DTE";
   if (RE_TODAY_EXP.test(text)) return "0DTE";
+  // A month WITH A YEAR is unambiguous, so it is read before the bare
+  // month-and-day shape can grab the year's digits as a day.
+  let my = RE_MONTH_YEAR.exec(text);
+  if (my) {
+    const mo = MONTHS[my[1].toLowerCase().slice(0, 3)];
+    if (mo) return thirdFriday(parseInt(my[2], 10), parseInt(mo, 10));
+  }
+  const mth = RE_MONTH_MONTHLY.exec(text);
+  if (mth) {
+    const mo = MONTHS[String(mth[1] || mth[2]).toLowerCase().slice(0, 3)];
+    if (mo) {
+      // No year given: the next time that month comes round.
+      const now = new Date();
+      let y = now.getUTCFullYear();
+      if (parseInt(mo, 10) < now.getUTCMonth() + 1) y += 1;
+      return thirdFriday(y, parseInt(mo, 10));
+    }
+  }
   let m = RE_MONTH_DAY.exec(text);
   if (m) return MONTHS[m[1].toLowerCase().slice(0, 3)] + "/" + parseInt(m[2], 10);
   m = RE_DTE_ANY.exec(text);
@@ -1082,7 +1123,12 @@ function findContract(text) {
   // LAST RESORT: the ticker written AFTER the contract (see the note above
   // contractSymbolAfter). Only reached when every pattern above found
   // nothing, so it cannot change an existing parse.
-  return contractSymbolAfter(text);
+  const after = contractSymbolAfter(text);
+  if (after) return after;
+  // TRULY LAST: the token reader — no word order at all, three rails instead
+  // (cashtag-or-allowlisted-caps, exactly one of each token, refuse on two
+  // tickers). See tokenContract. Reached only when nothing else matched.
+  return tokenContract(text, _ROOM_CFG);
 }
 
 /* Lowercase ("30% on spy") only counts when there's an allowed-symbols list to
