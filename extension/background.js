@@ -3097,46 +3097,21 @@ async function retryEars(tabId, how) {
 chrome.tabs.onActivated.addListener(({ tabId }) => { retryEars(tabId, "in front").catch(() => {}); });
 // (the icon has a popup, so action.onClicked never fires — the popup sends POPUP_OPENED instead)
 
-/* The moment a Discord tab starts PLAYING audio (he joined the voice), start
- * transcribing it — and when it goes quiet again, stop. Auto only touches
- * sessions it started itself, so a hand-started listen is never cut off. */
-chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
-  if (!info || !("audible" in info)) return;
-  (async () => {
-    try {
-      // Discord voice OR a Zoom web-client meeting (Felony goes live on
-      // Zoom — the /wc/ browser version is a tab like any other, 8/30).
-      if (!tab || !/https:\/\/([^/]*\.)?(discord\.com|zoom\.us)\//.test(tab.url || "")) return;
-      const c = await cfg();
-      if (c.auto_listen_live === false) return;      // on unless he turns it off
-      if (info.audible === true) {
-        // Sound again — cancel any pending "quiet" stop and keep the session.
-        const t = VOICE_QUIET.get(tabId);
-        if (t) { clearTimeout(t); VOICE_QUIET.delete(tabId); }
-        if (LISTENING.has(tabId)) return;   // the grace held; nothing to start
-        if (!(await dgKey())) return;               // no Deepgram key = no ears
-        // WARM-UP: a notification blip is audible for about a second. Only a
-        // tab still making noise 25s later is somebody actually talking.
-        if (VOICE_WARMUP.has(tabId)) return;        // already counting down
-        VOICE_WARMUP.set(tabId, setTimeout(async () => {
-          VOICE_WARMUP.delete(tabId);
-          try {
-            let stillAudible = false;
-            try { stillAudible = !!(await chrome.tabs.get(tabId)).audible; } catch (e) { return; }
-            if (!stillAudible) return;              // it was a ping — spend nothing
-            if (LISTENING.has(tabId)) return;
-            await _startEarsNow(tabId);
-          } catch (e) {}
-        }, VOICE_WARMUP_MS));
-        return;
-      }
-      if (false) {                                  // (unreachable; kept flat below)
-        // Our own server's notification pings are not a trader talking
-        // (9/2: "auto-listening to #sniper-alerts-options" — a Deepgram
-        // session on the announcer channel). Text channels that merely
-        // beep are skipped; only voice/live rooms get ears.
-        if (/sniper-alerts|sniper hq/i.test(tab.title || "")) return;
-        const label = (tab.title || "voice").replace(/ \| Discord.*/i, "").slice(0, 40);
+/* Start the ears on a tab that is STILL making noise after the warm-up.
+ * Split out of the onUpdated listener 9/10 so the warm-up timer and the
+ * listener share one copy of the start logic. */
+async function startEarsIfStillTalking(tabId) {
+  let tab;
+  try { tab = await chrome.tabs.get(tabId); } catch (e) { return; }
+  if (!tab || !tab.audible) return;             // it was a ping — spend nothing
+  if (LISTENING.has(tabId)) return;
+  // Our own server's notification pings are not a trader talking
+  // (9/2: "auto-listening to #sniper-alerts-options" — a Deepgram
+  // session on the announcer channel). Text channels that merely
+  // beep are skipped; only voice/live rooms get ears.
+  if (/sniper-alerts|sniper hq/i.test(tab.title || "")) return;
+  const label = (tab.title || "voice").replace(/ \| Discord.*/i, "").slice(0, 40);
+
         const r = await startListening(tabId, label);
         if (r && r.ok) {
           WANT_EARS.delete(tabId);
@@ -3160,7 +3135,37 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
                + "icon on it once; the ears start by themselves the moment you do."
                + (r && r.why ? " (" + String(r.why).slice(0, 80) + ")" : "") });
         }
+}
+
+/* The moment a Discord tab starts PLAYING audio (he joined the voice), start
+ * transcribing it — and when it goes quiet again, stop. Auto only touches
+ * sessions it started itself, so a hand-started listen is never cut off. */
+chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
+  if (!info || !("audible" in info)) return;
+  (async () => {
+    try {
+      // Discord voice OR a Zoom web-client meeting (Felony goes live on
+      // Zoom — the /wc/ browser version is a tab like any other, 8/30).
+      if (!tab || !/https:\/\/([^/]*\.)?(discord\.com|zoom\.us)\//.test(tab.url || "")) return;
+      const c = await cfg();
+      if (c.auto_listen_live === false) return;      // on unless he turns it off
+      if (info.audible === true) {
+        // Sound again — cancel any pending "quiet" stop and keep the session.
+        const t = VOICE_QUIET.get(tabId);
+        if (t) { clearTimeout(t); VOICE_QUIET.delete(tabId); }
+        if (LISTENING.has(tabId)) return;   // the grace held; nothing to start
+        if (!(await dgKey())) return;               // no Deepgram key = no ears
+        // WARM-UP: a notification blip is audible for about a second. Only a
+        // tab still making noise 25s later is somebody actually talking.
+        if (VOICE_WARMUP.has(tabId)) return;        // already counting down
+        VOICE_WARMUP.set(tabId, setTimeout(() => {
+          VOICE_WARMUP.delete(tabId);
+          startEarsIfStillTalking(tabId);
+        }, VOICE_WARMUP_MS));
       } else if (info.audible === false) {
+        // Went quiet before the warm-up elapsed — it was a ping. Spend nothing.
+        const w = VOICE_WARMUP.get(tabId);
+        if (w) { clearTimeout(w); VOICE_WARMUP.delete(tabId); }
         const v = LISTENING.get(tabId);
         if (!(v && v.auto)) return;         // hand-started sessions are never cut
         if (VOICE_QUIET.has(tabId)) return; // grace already counting down
