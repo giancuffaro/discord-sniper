@@ -519,9 +519,19 @@ function cleanText(raw) {
   // ordinary date and every pattern downstream sees the room it already knows.
   // Guards even inside the room: month 1-12, day 1-31, and SOMETHING must
   // follow it — a trailing "@ 1.26" at the end of a line is a price, not a date.
+  // ONLY THE FIRST ONE. Written with /g it ate the PRICE as a second date:
+  // "$tlt 83c 10.16 1.01 cheap calls" turned 1.01 into 1/01 and the entry went
+  // out at the market. He writes exactly one date per alert and it is the one
+  // beside the contract, so the first match is the only match.
+  // The PRICE RIGHT AFTER IT gets an "@" so the ordinary price reader sees it:
+  // "$intc 100c 10.16 4" is four dollars, and a bare 4 is invisible otherwise.
   if (_ROOM_CFG && _ROOM_CFG.dot_date) {
-    t = t.replace(/(?<![\d.@$])(0?[1-9]|1[0-2])\.([0-3]\d)(?=\s+\S)/g,
-                  (m0, mo, dd) => (+dd >= 1 && +dd <= 31) ? mo + "/" + dd : m0);
+    t = t.replace(
+      /(?<![\d.@$])(0?[1-9]|1[0-2])\.([0-3]\d)(?=\s+\S)(\s+\$?\d{1,3}(?:\.\d{1,2})?\b(?!\s*%))?/,
+      (m0, mo, dd, price) => {
+        if (!(+dd >= 1 && +dd <= 31)) return m0;
+        return mo + "/" + dd + (price ? " @" + price.trim().replace(/^\$/, "") : "");
+      });
   }
   // "3/19exp" — the date GLUED to the word exp, no space (9/10, KianTrades in
   // OWLS jon-and-kian: "FRVO 25C 3/19exp 4.05 premium", "PURR 15C 1/15exp").
