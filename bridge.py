@@ -242,7 +242,7 @@ def read_rooms():
       sym=SPX   the symbol to assume when the call names none
       always    tab stays open 24h (futures rooms); everything else opens
                 9:15 and closes 4:30 PM ET (extension ROOM_HOURS)
-    The bridge derives spx_entry_channels / entry_no_verb_channels /
+    The bridge derives dot_date_channels / entry_no_verb_channels /
     default_symbol_channels from these — settings.json no longer holds them."""
     rooms, last_comment = [], ""
     with open(ROOMS_TXT, encoding="utf-8") as f:
@@ -3772,15 +3772,14 @@ class Handler(BaseHTTPRequestHandler):
             _as = False
         return {"mode": "per-room",
                 # PER-CHANNEL LISTS, SERVED TO THE EXTENSION (9/8). These live
-                # in settings.json (this file), but the extension's parser is
-                # what does the SPX->SPY retarget and the implied-symbol fill,
-                # and it reads its config from chrome.storage — which never saw
-                # settings.json. So the two never agreed: editing settings.json
-                # enabled SPX on the BRIDGE while the extension still refused
-                # it. Now the bridge hands them over here and cfg() merges them,
-                # making settings.json the single source of truth for both.
-                "spx_entry_channels": [str(x) for x in
-                                       (CFG.get("spx_entry_channels") or [])],
+                # in rooms.txt, but the extension's parser is what applies
+                # them, and it reads its config from chrome.storage — which
+                # never saw the bridge's files. So the two never agreed: a rule
+                # was on for the BRIDGE while the reader still ignored it. The
+                # bridge hands them over here and cfg() merges them, making
+                # rooms.txt the single source of truth for both.
+                "dot_date_channels": [str(x) for x in
+                                      (CFG.get("dot_date_channels") or [])],
                 "default_symbol_channels": {str(k): str(v) for k, v in
                     (CFG.get("default_symbol_channels") or {}).items()},
                 "entry_no_verb_channels": [str(x) for x in

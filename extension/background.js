@@ -1059,7 +1059,7 @@ async function refreshBridgeChannels() {
     const m = await (await fetch(base + "/mode", { cache: "no-store" })).json();
     if (m && typeof m === "object") {
       const next = {};
-      if (Array.isArray(m.spx_entry_channels)) next.spx_entry_channels = m.spx_entry_channels.map(String);
+      if (Array.isArray(m.dot_date_channels)) next.dot_date_channels = m.dot_date_channels.map(String);
       if (m.default_symbol_channels && typeof m.default_symbol_channels === "object") next.default_symbol_channels = m.default_symbol_channels;
       if (Array.isArray(m.entry_no_verb_channels)) next.entry_no_verb_channels = m.entry_no_verb_channels.map(String);
       _BRIDGE_CHANNELS = next;
@@ -1104,15 +1104,15 @@ async function cfg() {
   // box is still honoured ON TOP of these, same as before.
   c.channel_ids = Array.from(new Set(
     [].concat((settings || {}).channel_ids || [], bakedRooms).map(String)));
-  // PER-CHANNEL LISTS FROM THE BRIDGE (9/8). spx_entry_channels,
-  // default_symbol_channels and entry_no_verb_channels live in settings.json
+  // PER-CHANNEL LISTS FROM THE BRIDGE (9/8). dot_date_channels,
+  // default_symbol_channels and entry_no_verb_channels come from rooms.txt
   // (the bridge's file) but drive the extension's parser. The extension never
-  // read settings.json, so the two disagreed — SPX enabled on the bridge,
-  // refused in the reader. The bridge now serves them on /mode and
-  // refreshBridgeChannels() caches them here; settings.json is the one source.
+  // read that file, so the two disagreed — a rule on for the bridge, ignored
+  // in the reader. The bridge now serves them on /mode and
+  // refreshBridgeChannels() caches them here; rooms.txt is the one source.
   // A popup-set value in chrome.storage still wins if present (|| keeps it).
-  if (_BRIDGE_CHANNELS.spx_entry_channels && !(settings || {}).spx_entry_channels)
-    c.spx_entry_channels = _BRIDGE_CHANNELS.spx_entry_channels;
+  if (_BRIDGE_CHANNELS.dot_date_channels && !(settings || {}).dot_date_channels)
+    c.dot_date_channels = _BRIDGE_CHANNELS.dot_date_channels;
   if (_BRIDGE_CHANNELS.default_symbol_channels && !(settings || {}).default_symbol_channels)
     c.default_symbol_channels = _BRIDGE_CHANNELS.default_symbol_channels;
   if (_BRIDGE_CHANNELS.entry_no_verb_channels && !(settings || {}).entry_no_verb_channels)
@@ -3720,12 +3720,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       c.bare_pct_trims = false;
     }
 
-    // SPX->SPY entries, per channel (8/30, G: Ryan's alerts trade SPX —
-    // "enter with SPY instead, pretty much the equivalent"). The parser's
-    // index-to-ETF retarget (strike/10, premium dropped, bid the SPY
-    // market) already handles the math; this flag just unlocks ENTRIES
-    // for channels listed in settings.json spx_entry_channels.
-    c.spx_entries = ((c.spx_entry_channels || [])
+    // THE EXPIRY WRITTEN WITH A DOT, per channel (9/10, Maguro in Low Key
+    // Stonks: "$slv 63c 10.16 2.35" = Oct 16 at $2.35). Per-room and never
+    // global: in most rooms a number shaped like that IS the price, and
+    // "1.26" reads just as well as January 26th. See parser.js dotDates.
+    c.dot_date = ((c.dot_date_channels || [])
       .map(String).includes(String(msg.channelId || "")));
 
     // THE TICKER HE NEVER TYPES (9/7, shabs / OWLS). A caller who trades ONE
@@ -3818,8 +3817,10 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         msg.author = _OWLS[_slug] || _slug;
         msg.relay_source = _slug;
         if (msg.author === "shabs" || msg.author === "eli") {
-          c.default_symbol = "SPX";     // their bare "7655p" -> SPX 7655p
-          c.spx_entries = true;         // then the SPX->SPY retarget fires
+          // Their bare "7655p" is SPX. The contract is read correctly; it is
+          // then HELD by indexGuard until execution.index_broker is set,
+          // because the SPX->SPY substitution was deleted 9/10.
+          c.default_symbol = "SPX";
         }
       }
     }

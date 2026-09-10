@@ -500,6 +500,29 @@ function cleanText(raw) {
   t = t.replace(/^\s*\d{1,3}\.\s+/, "");
   // A1 - normalize smart quotes so a quoted premium ("2.21") parses.
   t = t.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  // THE EXPIRY WRITTEN WITH A DOT (9/10, Maguro in Low Key Stonks). His whole
+  // grammar is  $TICKER STRIKEc MM.DD PRICE  — and either order:
+  //     "$uber 80c 09.18 1.46"     "$tlt 83c 10.16 1.01"
+  //     "$mrvl 10.16 250c 11.5"    "$amzn 270c 11.20 10.2"
+  //     "$intc 100c 10.16 4"
+  // Eighteen of his messages, eight with a contract, and the shape never
+  // varies: THE DATE COMES FIRST OF THE TWO NUMBERS, the price second.
+  // (G read "$amzn 270c 11.20 10.2" the other way round — 11.20 as the price.
+  // His own other alerts settle it: 09.18/1.46, 10.16/1.01, 10.16/2.35,
+  // 09.18/0.42 are all date-then-price, and a $10.20 premium on a Nov 20
+  // AMZN 270 call is the sane number. One flip in this comment if he's right.)
+  //
+  // PER ROOM, NEVER GLOBAL. In every other room "MU 8/28 965c 1.26" carries a
+  // $1.26 PRICE, and 1.26 reads just as well as January 26th. There is no
+  // clever way to tell those apart from the text, so the room says which it
+  // speaks: rooms.txt rule `dotdate`. Read here, the number turns into an
+  // ordinary date and every pattern downstream sees the room it already knows.
+  // Guards even inside the room: month 1-12, day 1-31, and SOMETHING must
+  // follow it — a trailing "@ 1.26" at the end of a line is a price, not a date.
+  if (cfg && cfg.dot_date) {
+    t = t.replace(/(?<![\d.@$])(0?[1-9]|1[0-2])\.([0-3]\d)(?=\s+\S)/g,
+                  (m0, mo, dd) => (+dd >= 1 && +dd <= 31) ? mo + "/" + dd : m0);
+  }
   // "3/19exp" — the date GLUED to the word exp, no space (9/10, KianTrades in
   // OWLS jon-and-kian: "FRVO 25C 3/19exp 4.05 premium", "PURR 15C 1/15exp").
   // Every date pattern in this file ends on a word boundary, and "9exp" is not
