@@ -57,7 +57,7 @@
 # only Whop source again.
 whop:day-trades|https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)|on
 whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)|on|always
-whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)|on
+whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)|on|always
 whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)|on
 # CUT 9/7 (Whop Swing Trades) — a SWING room. Swings have been paused since 9/4 and G restated the rule 9/7 ("we shouldnt have any"). Reading a room we will not trade is dead weight.
 whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing Trades|firststeptrading (Whop)|off
@@ -176,7 +176,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # same signal twice (8/23).
 
 # CUT 9/9 — 0 rows in master_ledger.csv, no signal since it was added.
-1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|NGD ngd-trades (Ninjago Futures Radar)|NGD|off|always
+1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|NGD ngd-trades (Ninjago Futures Radar)|NGD|on|always
 
 # ELITE OPTIONS. Both callers (Brando, Shoof) were wired 9/7 off 148 real
 # alerts pulled from scrollback — full grammar notes (their pipe-delimited
@@ -199,8 +199,8 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # record scanned) and eli both now flow through the aggregator below via
 # background.js's relay unwrap — nothing lost by keeping only the one tab.
 # RETIRED 9/9 into OWLS all-alerts (G: "remove the rooms covered by all alerts")
-1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital|off|spx,sym=SPX
-1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital|off|spx,sym=SPX
+1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital|on|spx,sym=SPX
+1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital|on|spx,sym=SPX
 # OWLS all-alerts (wired 9/9) — the sole OWLS tab. Aggregates all 11
 # analysts (including shabs/eli above) into one feed; background.js unwraps
 # the relay to the real analyst. Wired yesterday — 0 rows so far is expected

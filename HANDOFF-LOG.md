@@ -9,6 +9,42 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**HALF THE CORPUS WAS BEING DESTROYED EVERY DAY (9/10, found while answering
+G: "check all rooms, last message, make sure it's correct").** Both Chrome
+profiles run the same background.js and both wrote the export to ONE filename,
+"signal-room-chat <day>.txt". Whichever profile exported LAST overwrote the
+other's entire day. Proof, three consecutive days of same-day line counts in
+the file that survived:
+      9/8   DISCORD 0    WHOP 103     (Whop wrote last)
+      9/9   DISCORD 373  WHOP  22     (Discord wrote last)
+      9/10  DISCORD 0    WHOP  16     (Whop wrote last)
+On 9/8 and 9/10 every Discord message the reader saw was thrown away. This is
+the corpus G wants for exactly the sample-size reason established earlier today
+— the thing being deleted is the thing we are short of.
+FIXED: the filename now carries the lane, "signal-room-chat <day> (discord).txt"
+and "... (whop).txt", so the two can never collide. v3.5.88.
+AND THE READERS THAT PARSE THAT NAME: audit_history.py and replay_check.py both
+matched r"signal-room-chat (\w+-\d+-\d+)\.txt$" — an anchored pattern that
+would have silently skipped every new file and quietly reported an empty
+history. Both widened to accept the optional lane suffix. This is the second
+time today a hardcoded string in a reporting tool would have lied rather than
+errored (the first was ratchet_sweep_fine's typed-in "LIVE 7.5/5/5").
+NOT a trading bug — the bot read and traded Discord alerts normally on all
+three days. It is a pure analysis-data loss.
+
+**WHAT THE ROOMS ARE ACTUALLY PRODUCING (9/10).** From master_alerts.csv, named
+alerts per session over the last five: most `on` rooms produce nothing on most
+days. 9/10 to 12:44 ET: 21 alerts total, of which FOURTEEN carry room "?" and
+only five rooms are named at all (Honeydrip daytrades 1, Aristotle 1, Midas 2,
+OWLS all-alerts 2, Whop Day Trades 1). Two more rooms show as raw channel ids
+(911389167169191946, 1334236429655740457) instead of labels — the ROOM_LABELS
+gap rooms.txt already warns about, still unfixed.
+So "is every room firing" has two separate answers and they must not be
+conflated: BEING READ (message arrives) is unverifiable for Discord today
+because of the clobbering bug above; PRODUCING AN ALERT is measurable and the
+answer is that most rooms produce 0-3 alerts across a whole week. The room
+count is not the constraint people assume — the rooms are simply quiet.
+
 **THE ENTRY GATE: ROUND NUMBER x QUARTER-HOUR (9/10, G: "can only execute if
 20 cents from a round number and 2 minutes from every quarter — that's when
 volume explodes").** Bought the missing stock bars ($0.38, 61 symbol-days) so
