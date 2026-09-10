@@ -3304,9 +3304,19 @@ def _place_impl(order):
                                   "place, and it'll keep retrying."
                                   % order["symbol"])
                 note("SOLD     %s — closed at %.2f" % (order["symbol"], float(_px)))
+                # NAME THE REAL SELLER (9/10). Under ENTRIES ONLY the room
+                # never sells; every CLOSE that reaches here is the bridge's
+                # own pullback stock-stop/target or the underlying hard stop.
+                # "sold on their call" made the ledger read exit_by "room
+                # call" on the META 645P pullback target — a false STANDING
+                # RULE alarm every autopilot run.
+                _src = str(order.get("source") or "")
+                _why_sold = ("pullback stock exit at %.2f" if _src == "pullback"
+                             else "underlying hard stop at %.2f" if _src == "under-stop"
+                             else "sold on their call at %.2f")
                 if claimed:
                     BOOK.finish(key, positions.CLOSED,
-                                "sold on their call at %.2f" % float(_px),
+                                _why_sold % float(_px),
                                 price=float(_px))
                 # msg feeds the two returns below (plain close, and the
                 # reenter "sold + back in" combo) — 9/10: this was never
@@ -3342,7 +3352,7 @@ def _place_impl(order):
                             note("SOLD     [%s] %s — closed at %.2f"
                                  % (_x["name"], order["symbol"], float(_px2)))
                             _xb.finish(key, positions.CLOSED,
-                                       "sold on their call at %.2f" % float(_px2),
+                                       _why_sold % float(_px2),
                                        price=float(_px2))
                         except Exception as _e:         # noqa: BLE001
                             try:

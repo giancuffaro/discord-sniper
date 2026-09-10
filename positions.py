@@ -644,6 +644,10 @@ class Book:
             return "bot stop"
         if st == FAILED:
             return "failed"
+        if "pullback stock exit" in why:
+            return "pullback stop"
+        if "underlying hard stop" in why:
+            return "hard stop"
         return "room call"
 
     def table(self):
