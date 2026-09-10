@@ -362,13 +362,14 @@ def _parse_occ(occ):
 # master_broker.csv — THE broker-record family's one central file (9/9, G:
 # "pull the real records from the broker to compare and then delete it at
 # the end of the day so the folder is clean"). Every Webull order leg the
-# account ever reported, all days, one row each. The autopilot writes the
-# day's pull as Webull_Orders_<date>_auto.csv; absorb_exports() folds it in
-# here and REMOVES the daily file the moment every leg is provably inside —
-# so the folder holds one broker file, never a pile of dated ones.
+# account ever reported, all days, one row each. The autopilot writes each
+# pull to ONE fixed file, Webull_Orders_auto.csv, OVERWRITING it every run
+# (G, 9/10: "have one that overwrites"); absorb_exports() folds it in here
+# and leaves it in place — the folder holds that one scratch file plus the
+# master, never a pile of dated ones and nothing to delete.
 BROKER = os.path.join(HERE, "master_broker.csv")
 BAK_DIR = os.path.join(HERE, "backups")
-EXPORT_GLOB = os.path.join(HERE, "Webull_Orders_*_auto.csv")
+EXPORT_GLOB = os.path.join(HERE, "Webull_Orders*_auto.csv")
 BROKER_COLS = ["date", "placed_time", "filled_time", "occ", "symbol", "side",
                "status", "filled", "total_qty", "price", "avg_price", "tif",
                "from_file"]
@@ -465,10 +466,10 @@ def _merge_leg(by_order, leg):
 
 
 def absorb_exports():
-    """Fold every Webull_Orders_<date>_auto.csv into master_broker.csv, then
-    delete each daily file whose legs are all provably in the master.
-    Returns (legs_added, files_removed). Never raises."""
-    added, removed = 0, 0
+    """Fold Webull_Orders_auto.csv (and any older dated pull) into
+    master_broker.csv. The file stays put — the next pull overwrites it.
+    Returns (legs_added, 0). Never raises."""
+    added = 0
     try:
         paths = sorted(glob.glob(EXPORT_GLOB))
         if not paths:
@@ -476,7 +477,6 @@ def absorb_exports():
         by_order = {}
         for r in _read_broker():
             by_order.setdefault(_order_key(r), []).append(r)
-        pending = []
         for path in paths:
             legs = _export_legs(path)
             if legs is None:
@@ -484,22 +484,11 @@ def absorb_exports():
             for leg in legs:
                 if _merge_leg(by_order, leg):
                     added += 1
-            pending.append((path, legs))
         if added:
             _write_broker([r for b in by_order.values() for r in b])
-        have = set()
-        for r in _read_broker():                   # re-read: trust only the disk
-            have.add(_order_key(r) + _snap_key(r))
-        for path, legs in pending:
-            if all((_order_key(l) + _snap_key(l)) in have for l in legs):
-                try:
-                    os.remove(path)
-                    removed += 1
-                except OSError:
-                    pass                           # still open somewhere: next time
     except Exception:                               # noqa: BLE001
         pass
-    return added, removed
+    return added, 0
 
 
 def load_broker_exports():
@@ -1070,8 +1059,8 @@ def summary(rows, broker):
     print(f"  master_broker.csv: {len(legs)} order legs over "
           f"{len({l.get('date') for l in legs})} days "
           f"({sum(1 for l in legs if l.get('status') == 'FILLED')} filled); "
-          f"daily Webull_Orders files left in folder: "
-          f"{len(glob.glob(EXPORT_GLOB))}")
+          f"broker pull files in folder: {len(glob.glob(EXPORT_GLOB))} "
+          f"(Webull_Orders_auto.csv is overwritten each run, never deleted)")
     if days_x:
         print()
         print("  RECONCILIATION vs Webull order export (live, real fills):")
