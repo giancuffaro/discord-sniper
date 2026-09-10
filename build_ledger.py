@@ -137,6 +137,49 @@ def _state(r):
     return ""
 
 
+def _resolve_expiry(expiry, date):
+    """'8/21' + a trade dated 2026-08-17  ->  '2026-08-21'   (9/10).
+
+    The book stored whatever the caller typed — "8/21", "0DTE", "4DTE",
+    "09/01" — none of which name a year, so occ.build() refused them and 31
+    of the bot's own trades could never be matched to the broker. The trade's
+    own date supplies the missing year; an expiry that lands before the trade
+    rolls forward one year. NDTE is N calendar days out, the bot's own
+    convention. Returns '' when it genuinely cannot tell."""
+    e = str(expiry or "").strip().upper()
+    if not e or not date:
+        return ""
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", e):
+        return e
+    try:
+        base = datetime.strptime(date, "%Y-%m-%d")
+    except (TypeError, ValueError):
+        return ""
+    m = re.match(r"^(\d+)\s*DTE$", e)
+    if m:
+        from datetime import timedelta
+        return (base + timedelta(days=int(m.group(1)))).strftime("%Y-%m-%d")
+    m = re.match(r"^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?$", e)
+    if not m:
+        return ""
+    mo, day, yr = int(m.group(1)), int(m.group(2)), m.group(3)
+    if yr:
+        yr = int(yr)
+        yr += 2000 if yr < 100 else 0
+    else:
+        yr = base.year
+    try:
+        out = datetime(yr, mo, day)
+    except ValueError:
+        return ""
+    if not m.group(3) and out < base:
+        try:
+            out = datetime(yr + 1, mo, day)
+        except ValueError:
+            return ""
+    return out.strftime("%Y-%m-%d")
+
+
 def _dedupe_key(r, date):
     """Same trade in two stores = same date, caller, contract, fill price.
     NO time in the key: wallet rows carry only "t" (the EXIT event), so a
@@ -612,6 +655,20 @@ def build():
             exits = [{"t": closed_ts, "qty": qty, "price": _r2(r.get("exit")),
                       "pl": _r2(r.get("pl"))}]
             derived = True
+        # --- a short expiry ("8/21") is not a contract until it has a year ---
+        if r.get("expiry") and not re.match(r"^\d{4}-\d{2}-\d{2}$", str(r["expiry"])):
+            _iso = _resolve_expiry(r["expiry"], date)
+            if _iso:
+                r["expiry"] = _iso
+                r["_expiry_fixed"] = True
+        if not r.get("occ") and _kind(r) == "option" and r.get("strike") is not None \
+                and r.get("side") and r.get("expiry"):
+            try:
+                import occ as _occ
+                r["occ"] = _occ.build(sym, r["expiry"], r["side"], float(r["strike"]))
+            except Exception:                               # noqa: BLE001
+                pass
+
         # --- the broker's own export: confirm, and fill a missing exit ---
         trip = _find_trip(date, sym, _r2(r.get("strike")), _side_letter(r.get("side")), fill, qty)
         export_confirmed = trip is not None
@@ -986,6 +1043,8 @@ def summary(rows, broker):
           f"archive/paper-fills-*.csv)")
     print(f"  (one row per POSITION — a trade held overnight is not counted "
           f"once per day)")
+    _ef = [r for r in rows if r.get("occ") and r.get("kind") == "option"]
+    print(f"  option rows with a full contract:    {len(_ef)}")
     _cf = [r for r in rows if "contract read back from the log" in (r.get("why") or "")
            or "and contract read back" in (r.get("why") or "")]
     if _cf:
