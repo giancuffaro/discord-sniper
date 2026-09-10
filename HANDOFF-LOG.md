@@ -9,6 +9,20 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-09 21:20 — "DO WE HAVE A REAL TRADER SCOREBOARD?" (v3.5.82).** Three
+existed: trader-scoreboard.xlsx (autopilot, daily, corrected caller trades),
+caller_report.py (claimed-vs-ours three-way), and tonight's Callers tab. The
+Callers tab is now THE scoreboard: caller_stats() ranks by net $ (never-filled
+callers at the bottom), shows W-L-flat, win %, $/trade, fills, and how many
+rows are broker-verified (export_confirmed — 9/4 on); pre-tagging fills are
+no longer dropped but shown as one "(caller unknown)" line so the money
+reconciles (+$994 over 147 fills, 106 of them with no exit on record).
+Honest read of the board tonight: Unraveller +$929 (4-4-3, $116/trade),
+The Pawn +$705, Bullwinkle +$649 (7-3, 70%), then a long tail; named
+callers' P&L before 9/4 is the bot's own accounting (0 verified), 9/4+ is
+the broker's. "flat" = no exit on record, not a scratch — a data gap the
+post-mortems/ledger will close going forward.
+
 **2026-09-09 18:50 — ROOM HOURS + LAST-MESSAGE STAMP (v3.5.81).** G: "to
 the rooms I want to know what time was the last message from each channel.
 Also — wouldn't it be convenient to open the rooms at 9:15 and close them

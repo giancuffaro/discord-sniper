@@ -394,15 +394,21 @@ def caller_stats():
     """Every trader we have ever followed, from the records: trades, wins,
     net $ (broker-reconciled ledger), alerts seen, rooms, last date."""
     out = {}
+
+    def _blank(k, name):
+        return {"key": k, "name": name, "trades": 0, "wins": 0, "losses": 0,
+                "flat": 0, "net": 0.0, "verified": 0, "alerts": 0, "rooms": set(),
+                "last": ""}
     try:
         import ledger as _lg
         for date, r in _lg.rows(real_only=True):
-            k = caller_key(r.get("who"))
-            if not k or k == "gian":
+            who = str(r.get("who") or "").strip()
+            k = caller_key(who)
+            if k == "gian":
                 continue
-            c = out.setdefault(k, {"key": k, "name": r.get("who"), "trades": 0, "wins": 0,
-                                   "losses": 0, "net": 0.0, "alerts": 0, "rooms": set(),
-                                   "last": ""})
+            if not k:                      # pre-tagging fills: keep the money visible
+                k, who = "_unattributed", "(caller unknown — pre-tagging fills)"
+            c = out.setdefault(k, _blank(k, who))
             c["trades"] += 1
             pl = r.get("pl")
             try:
@@ -414,6 +420,10 @@ def caller_stats():
                 c["wins"] += 1
             elif pl < 0:
                 c["losses"] += 1
+            else:
+                c["flat"] += 1             # no exit on record, or a true scratch
+            if str(r.get("export_confirmed")).lower() == "true":
+                c["verified"] += 1         # this row's exit/P&L is the broker's own
             if r.get("room") and r.get("room") != "?":
                 c["rooms"].add(str(r["room"]))
             c["last"] = max(c["last"], str(date or ""))
@@ -421,9 +431,7 @@ def caller_stats():
             k = caller_key(a.get("caller"))
             if not k or k == "gian":
                 continue
-            c = out.setdefault(k, {"key": k, "name": a.get("caller"), "trades": 0, "wins": 0,
-                                   "losses": 0, "net": 0.0, "alerts": 0, "rooms": set(),
-                                   "last": ""})
+            c = out.setdefault(k, _blank(k, a.get("caller")))
             c["alerts"] += 1
             if a.get("room"):
                 c["rooms"].add(str(a["room"]))
@@ -435,9 +443,14 @@ def caller_stats():
     for c in out.values():
         c["rooms"] = sorted(c["rooms"])
         c["net"] = round(c["net"], 2)
+        decided = c["wins"] + c["losses"]
+        c["win_pct"] = round(100.0 * c["wins"] / decided) if decided else None
+        c["per_trade"] = round(c["net"] / decided, 2) if decided else None
         c["state"] = "off" if c["key"] in off else "on"
         rows.append(c)
-    rows.sort(key=lambda c: (-c["trades"], -c["alerts"], c["key"]))
+    # THE SCOREBOARD ORDER: money first. Never-filled callers (alerts only)
+    # sit at the bottom by how often they call.
+    rows.sort(key=lambda c: (0 if c["trades"] else 1, -c["net"], -c["trades"], -c["alerts"], c["key"]))
     return rows
 
 
