@@ -9,6 +9,85 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-10 10:12 — WHOP WAS DARK A MONTH; SELF-HEAL + WATCHDOG BUILT.**
+G asked to join Felony's morning Zoom (scheduled task) and then, separately,
+asked to check the Whop channels directly. Day Trades showed a live
+Trademorewiser (MOD) call — "Short NQ 29095, SL 29135" — posted ~25 min
+earlier. Grepped trades.log and reads.log for it: nothing. Widened the
+search to "any Whop room ever" — trades.log has exactly FOUR lines mentioning
+a Whop room, all from 2026-08-13 (one Trademorewiser NVDA call, logged 4x by
+retries). Zero since. A month of Whop rooms marked `on` in rooms.txt,
+verified working 8/30, reading essentially nothing.
+
+ROOT CAUSE, live-tested: opened a fresh Day Trades tab via Claude-in-Chrome
+in the Whop-lane browser (confirmed by URL-survival test, deviceId
+17c68ff9). It vanished from tracking within ~15 seconds — same thing had
+already happened to a Zoom tab minutes earlier in the same browser. Read
+background.js: openMissingRooms() — the function that fills in any `on` room
+missing a tab — only runs when honourOpenRoomsRequest() sees the
+"open-rooms.request" token file, which only START HERE.bat writes. It was
+deliberately pulled out of the continuous watch-build sweep on 9/8 (G: "if i
+close one it wont stop opening them") so a DISCORD tab he closes by hand
+stays closed. That's the right rule for Discord, where he curates ~19 tabs
+himself. But he doesn't touch the Sniper Whop profile day to day — it's a
+dedicated automation lane (9/8 two-browser split) — so when a Whop tab dies
+from a crash, memory pressure, or the eviction/dedupe logic (evictOtherLane,
+oneTabPerChannel), nothing ever notices or recreates it. Compounding: HANDOFF
+already flagged the Whop browser (17c68ff9) as having "disconnected 9/9
+evening... unconfirmed" — the whole profile may not have even been running
+for stretches.
+
+G's call, asked via AskUserQuestion (self-heal tabs / standalone reader
+process / push for Whop's official API / explain more first): standalone
+process. Considered a from-scratch Playwright/Python scraper first and
+rejected it — it would have to reimplement EXIT-IGNORED (room-side exits
+never trade), the echo-lock/double-trade window, the ticker-validity check,
+and every other guard currently living in background.js's ~220KB, in a
+second language, for a live-money pipeline. Divergence risk too high.
+Instead: the "Sniper Whop" Chrome profile IS already the dedicated, isolated
+process the 9/8 split built — the gap is just that nothing keeps it alive.
+Built two pieces instead of one script, so the fix survives both failure
+modes actually observed:
+  1. whopSelfHeal() (background.js) — calls the existing openMissingRooms()
+     every watch-build tick (~30s), but ONLY when profile_lane === "whop".
+     Discord's lane is completely untouched — same one-shot-token gate as
+     before. Reuses 100% of the existing room-list/hours/lane-filtering
+     logic already inside openMissingRooms(); no new parsing, no new guards,
+     nothing to drift out of sync.
+  2. _whop_loop.bat + _whop_hidden.vbs — same pattern as the bridge's own
+     _run_hidden.vbs/_bridge_loop.bat (and the Fill Announcer's). Checks
+     every 60s via `Get-CimInstance Win32_Process` whether a chrome.exe is
+     running with `--profile-directory="Sniper Whop"` in its command line;
+     if not, relaunches Chrome with the same perf flags START HERE.bat uses
+     and drops the open-rooms.request token as a belt-and-suspenders nudge
+     (whopSelfHeal doesn't need it, but costs nothing). Wired into START
+     HERE.bat: starts hidden immediately, installs a Startup-folder entry
+     (60s delay, same OneDrive-not-ready guard as the announcer's) and a
+     "Sniper Whop watchdog revive" scheduled task every 30 min, so it comes
+     back at logon or if the watchdog process itself is ever killed — same
+     durability model as ANNOUNCER.bat, none of it duplicated (points at the
+     new files by name only).
+
+Also checked, since G asked specifically: Whop has no per-channel or
+per-message email/push notification option at all (checked
+whop.com/@me/settings/notifications live) — only broad toggles for AI chat,
+bounty claims, followers, payments. Ruled out as a path. The official Whop
+API reader (v3.4.9, built 8/30) stays walled for member-side chat reads
+until Felony installs G's Whop app with chat:read — noted in HANDOFF.md,
+not actionable from our side.
+
+bumped extension/manifest.json 3.5.85 -> 3.5.86 (background.js changed).
+node --check background.js passed. Could NOT execute or test the .bat/.vbs
+files — this session runs in an isolated Linux sandbox with the discord-
+sniper folder mounted read/write, not on G's actual Windows PC, so nothing
+here can double-click a .bat, launch real Chrome, or watch the watchdog
+actually catch a dead tab. Reviewed both files by hand against the working
+_bridge_loop.bat/_run_hidden.vbs/_announcer_hidden.vbs patterns line by
+line (quoting, escaping, delayed-expansion scope) but this needs a real run
+on his PC to be proven, not just believed. Takes effect the next time G
+double-clicks START HERE.bat (or at next Windows logon once that's
+happened once, since that's what installs the Startup entry).
+
 **2026-09-10 02:30 — THE TAPE, THE RATCHET VERDICT, AND ALL 25 SERVERS.**
 Two jobs while G slept: buy the OPRA tape and finish the Discord sweep.
 
