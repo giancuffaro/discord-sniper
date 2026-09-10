@@ -366,6 +366,28 @@ FUT_STOP_PTS = 25.0
 FUT_TARGET_PTS = 50.0
 
 
+def _entry_clears_stop(direction, entry, stop):
+    """Is this bracket a trade at all, or an instant scratch? (9/10)
+
+    Found by the Chika replay, not by a test: she called "starter long 220s,
+    stop 200", and the round-number rule — which moves a long's entry DOWN to
+    the next 25 — put the entry at exactly 29,200. Her stop. An order whose
+    entry IS its stop is not a trade; it is a fill and an immediate stop-out,
+    for a commission and a slippage.
+
+    The round-number wait and a caller's stop are each sane alone. Together
+    they can collide, and nothing downstream would have noticed: both prices
+    are real, the bracket is well-formed, and the broker would take it.
+    """
+    try:
+        e, s = float(entry), float(stop)
+    except (TypeError, ValueError):
+        return True                     # unknown -> do not block on a guess
+    if str(direction or "").upper().startswith("S"):
+        return s > e                    # a short's stop must sit ABOVE it
+    return s < e                        # a long's stop must sit BELOW it
+
+
 def _bracket(direction, entry, their_stop=None, their_target=None):
     """(stop, target) for a futures entry.
 
