@@ -342,8 +342,15 @@ def record_fill(p, quote=None, integrity="UNKNOWN"):
         entry = _entry_math(p, g, ours)
         _append(FILLS, FILL_COLS, {
             "ts": round(now, 3), "iso": _iso(now),
-            "coid": p.get("coid") or "", "room": p.get("room") or "",
-            "trader": p.get("trader") or "", "symbol": p.get("symbol") or "",
+            "coid": p.get("coid") or "",
+            # 9/10: the caller is "who" everywhere in positions.py and the
+            # ledger; this asked for "trader" and got nothing — 0 of 2,176
+            # rows had a caller, which is why the per-caller telemetry
+            # scorecard was empty and why master_alerts could not name a
+            # room. Read both names, prefer whichever is filled.
+            "room": p.get("room") or p.get("room_label") or "",
+            "trader": p.get("trader") or p.get("who") or "",
+            "symbol": p.get("symbol") or "",
             "side": p.get("side") or "", "strike": p.get("strike") or "",
             "expiry": p.get("expiry") or "", "dte": p.get("dte", ""),
             "live": 1 if p.get("live") else 0, "qty": p.get("qty") or 0,
@@ -404,8 +411,9 @@ def watch_decay(p, quote_fn, marks=(1, 5, 30, 60), note=None):
                     pass
                 _append(DECAY, DECAY_COLS, {
                     "ts": round(time.time(), 3), "iso": _iso(time.time()),
-                    "coid": p.get("coid") or "", "room": p.get("room") or "",
-                    "trader": p.get("trader") or "",
+                    "coid": p.get("coid") or "",
+                    "room": p.get("room") or p.get("room_label") or "",
+                    "trader": p.get("trader") or p.get("who") or "",
                     "symbol": p.get("symbol") or "",
                     "side": p.get("side") or "",
                     "strike": p.get("strike") or "",

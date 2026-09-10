@@ -152,9 +152,89 @@ def _declined():
     return rows
 
 
+def _room_index():
+    """(date, SYMBOL) -> room, and caller -> room, both read from the LEDGER.
+
+    9/10: master_alerts had a room on 18 of 323 rows. Every row sourced from
+    trades.log had none at all, because the log line the miss-parser reads
+    ("REFUSED OPEN NFLX (EvaPanda Alerts's call) ...") names the CALLER and
+    never the room. The ledger DOES carry the room — 26 of 26 rows on a
+    normal day — so the room is not lost, just never joined. This joins it.
+    Falls back to a caller->room map for rows whose symbol/date miss, and
+    refuses to guess when one caller has posted in more than one room.
+    """
+    import collections
+    by_key = {}
+    by_caller = collections.defaultdict(collections.Counter)
+    try:
+        import ledger as _lg
+        for day, rs in _lg.by_day().items():
+            for r in rs:
+                room = (r.get("room") or "").strip()
+                if not room or room == "?":
+                    continue
+                sym = (r.get("symbol") or "").upper()
+                if sym:
+                    by_key.setdefault((day, sym), room)
+                who = (r.get("who") or "").strip().lower()
+                if who and who not in ("?", "gian"):
+                    by_caller[who][room] += 1
+    except Exception:                                       # noqa: BLE001
+        return {}, {}
+    # only trust a caller->room mapping that is UNAMBIGUOUS
+    solo = {c: v.most_common(1)[0][0] for c, v in by_caller.items() if len(v) == 1}
+    return by_key, solo
+
+
+def _labels():
+    """channel id -> human label, straight out of extension/rooms.txt.
+
+    9/10: rooms were landing in master_alerts as raw ids
+    ("1334236429655740457", "911389167169191946") because the bridge's
+    hand-typed ROOM_LABELS map never had them. rooms.txt is THE list and
+    already carries every label, so read it instead of maintaining a second
+    copy — the same mistake rooms.txt's own header warns about."""
+    out = {}
+    try:
+        p = os.path.join(HERE, "extension", "rooms.txt")
+        with open(p, encoding="utf-8") as fh:
+            for line in fh:
+                t = line.strip()
+                if not t or t.startswith("#"):
+                    continue
+                parts = t.split("|")
+                if len(parts) >= 3 and parts[0] and parts[2]:
+                    out[parts[0].strip()] = parts[2].strip()
+    except OSError:
+        pass
+    return out
+
+
 def build():
     lk = _ledger_keys()
     rows = _taken(lk) + _declined()
+    by_key, by_caller = _room_index()
+    filled = 0
+    for r in rows:
+        if (r.get("room") or "").strip():
+            continue
+        room = by_key.get((r.get("date"), (r.get("symbol") or "").upper()))
+        if not room:
+            room = by_caller.get((r.get("caller") or "").strip().lower())
+        if room:
+            r["room"] = room
+            filled += 1
+    lab = _labels()
+    named = 0
+    for r in rows:
+        rm = (r.get("room") or "").strip()
+        if rm and rm in lab and lab[rm] != rm:
+            r["room"] = lab[rm]
+            named += 1
+    if named:
+        sys.stderr.write("build_alerts: %d raw channel id(s) resolved to labels\n" % named)
+    if filled:
+        sys.stderr.write("build_alerts: room backfilled on %d row(s)\n" % filled)
     rows.sort(key=lambda r: (r["date"], r["time"] or "99:99:99", r["symbol"]))
     return rows
 
