@@ -62,19 +62,34 @@ it earns the room for a better one.
 # everywhere. HONEST LIMIT, same as the sweep's own: 80 trades over ~5
 # weeks is a small sample and this doesn't model the tick/spread floors
 # below — read it as a lean, not a verdict, and see HANDOFF.md 9/8.
-# 9/9 — RUNG TIGHTENED 5% -> 2% (G's settle). ratchet_sweep_fine.py decoupled the
-# rung from the arm (the earlier sweep forced them equal) and swept 294 combos on
-# the same 80 fills: the live 7.5/5/5 ranked #13; the whole top of the board uses
-# a +2-3% rung, and 7.5 / arm +5 / step +2 lifts the sample from $152 to $281
-# (best cell 7.5/4/2 = $321, but arm 4-vs-5 is within noise, so the arm stays +5).
-# Small rungs lock a run more smoothly; the stop still trails ~4-6% off price (the
-# ARM sets that gap, not the step), and MIN_RUNG_TICKS=4 below floors the rung so
-# 2% never goes sub-tick. ONE ladder kept — cheap (<$1) loses under EVERY spacing,
-# so no cheap tier (G's call 9/9); the real cheap lever is sizing/filtering, which
-# is tracked separately. Same HONEST LIMIT: 80 fills / ~5 weeks, a lean not a
-# verdict — the rn/ratchet tooling keeps collecting so this can be re-checked.
+# 9/10 — RESPACED AGAIN, and this time the number clears its own error bar.
+# G's call ("flip it") after the OPRA tape was bought: 537 contract-days,
+# 1.02M per-second quotes, so ratchet_sweep_fine.py re-swept its 294 combos
+# on REAL price paths instead of the 80-fill backfill — and on 115 trades,
+# not 80, because the sweep was also carrying a filter bug (707 rows whose
+# caller was "?" — G's own hand trades and adopted positions — were being
+# scored as room calls; EXCLUDE_WHO now drops "" and "?" with "gian").
+#   live  7.5 born / arm +5 / step +2   $158   rank #82 of 294
+#   NEW   5.0 born / arm +3 / step +5   $504   rank #1
+# Paired bootstrap, same trades, 2000 resamples: +$3.01 a trade, 95% band
+# +$0.72..+$4.91. Outside zero — the first ratchet number here that is an
+# edge rather than the luckiest cell of 294. The shape agrees too: born 5-6
+# and arm +3 own the whole top of the board.
+# WHY THIS SHAPE. The tighter born stop (7.5 -> 5) cuts the loser, the
+# earlier arm (+5 -> +3) gets to breakeven sooner, and the WIDER rung
+# (+2 -> +5) is the surprise — the 9/9 finding that small rungs win was an
+# artifact of the backfilled minute data, which never showed the intraday
+# retraces that a 2% rung keeps stopping out into. Win rate drops (35% ->
+# 25%) while dollars rise: more small scratches, far fewer big losers.
+# MIN_RUNG_TICKS=4 below still floors the rung. ONE ladder kept — cheap
+# (<$1) loses under EVERY spacing, so no cheap tier (G's call 9/9); the
+# real cheap lever is sizing/filtering, tracked separately.
+# HONEST LIMIT: 115 fills over ~13 weeks. Real tape, real error bar, but
+# still one regime. Re-run `python3 ratchet_sweep_fine.py` as trades
+# accumulate — it now reads the LIVE spacing out of this file and
+# settings.json rather than having it typed in, so it can never drift.
 TIERS = (
-    (None, (5.0, 0.0, 2.0)),         # every premium: arm +5%, lock BE, +2% rungs
+    (None, (3.0, 0.0, 5.0)),         # every premium: arm +3%, lock BE, +5% rungs
 )
 
 MIN_RUNG_TICKS = 4.0                 # floor 1
