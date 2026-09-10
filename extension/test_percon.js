@@ -50,7 +50,10 @@ console.log(`  ${rawOk ? "PASS" : "FAIL"}  ${"non-index /con".padEnd(22)} limit=
  * "640c" in a room that trades everything is unknowable and inventing a
  * symbol there buys the wrong underlying. */
 console.log("\nIMPLIED SYMBOL (per channel):");
-const SPXCFG = { default_symbol: "SPX", spx_entries: true };
+// 9/10: index_broker is what lets an INDEX entry fire now. spx_entries used
+// to gate the SPX->SPY retarget; that retarget is deleted, so the gate that
+// matters is "is a broker attached that can actually trade SPX".
+const SPXCFG = { default_symbol: "SPX", index_broker: "tastytrade" };
 const IMPLIED = [
   ["in 7655p 2.9",       "bored, in 7655p 2.9 @here",                 "SPX", 7655, "PUTS"],
   ["in 7730c 4.3",       "in 7730c 4.3 @here",                        "SPX", 7730, "CALLS"],
@@ -66,6 +69,18 @@ for (const [n, t, sym, k, side] of IMPLIED) {
 }
 // Without the per-channel setting the SAME lines must stay unreadable — this
 // is the guard against a bare strike ever being given a guessed underlying.
+/* THE INDEX GUARD (9/10). With no index_broker configured, an SPX entry must
+ * still PARSE (so it is logged and visible) but must NOT fire — the old
+ * behaviour silently bought SPY instead, which is the thing that was deleted. */
+console.log("\nINDEX GUARD — parses but must NOT fire without a broker:");
+for (const [n, t] of [["7655p no broker","bored, in 7655p 2.9 @here"],
+                      ["7760c no broker","7760c at 300/con @here"]]) {
+  const g = parseSignal(t, { default_symbol: "SPX" }) || {};
+  const ok = g.symbol === "SPX" && g.fire === false;
+  if (!ok) bad++;
+  console.log(`  ${ok ? "PASS" : "FAIL"}  ${n.padEnd(20)} ${g.symbol||"-"} fire=${g.fire}`);
+}
+
 console.log("\nWITHOUT the setting, the same lines must NOT resolve:");
 for (const [n, t] of [["in 7655p 2.9","bored, in 7655p 2.9 @here"],
                       ["7760c at 300/con","7760c at 300/con @here"]]) {
