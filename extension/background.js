@@ -2427,6 +2427,26 @@ armAutoExport();
 chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch.export_every_min) armAutoExport();
 });
+/* WHOP LANE SELF-HEAL (9/10 — Day Trades caught exactly 1 alert in the month
+ * since 8/13). openMissingRooms() only runs on the one-shot START HERE token
+ * (9/8, G: "if i close one it wont stop opening them" — an open tab is the on
+ * switch for DISCORD, closing one is how he turns a room off, and that rule
+ * stays exactly as it was). But he doesn't hand-manage the Whop profile the
+ * same way — those tabs die from crashes, memory pressure, or the eviction/
+ * dedupe logic, never from him closing one on purpose. So in the whop lane
+ * only, this calls openMissingRooms() every watch-build tick regardless of
+ * the token; openMissingRooms already skips Discord rooms when the lane is
+ * "whop" (the isWhop/lane check inside it), so Discord's 9/8 behavior is
+ * completely untouched. Paired with _whop_loop.bat, which relaunches the
+ * whole Sniper Whop Chrome window if it isn't even running. */
+async function whopSelfHeal() {
+  try {
+    const { profile_lane } = await chrome.storage.local.get("profile_lane");
+    if (profile_lane !== "whop") return;
+  } catch (e) { return; }
+  try { await openMissingRooms(); } catch (e) {}
+}
+
 chrome.alarms.onAlarm.addListener(a => {
   // openMissingRooms() REMOVED from this sweep 9/8 (G: "revert the check the
   // browser and open missing tabs, because if i close one it wont stop opening
@@ -2434,7 +2454,8 @@ chrome.alarms.onAlarm.addListener(a => {
   // tab is how he turns a room off. The launcher (START HERE) opens the tabs
   // once at startup; after that nothing reopens a tab he closed. Function left
   // defined-but-uncalled below in case it's ever wanted back.
-  if (a.name === "watch-build") { checkBuild(); pollRoomsFile(); roomSchedule(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); }
+  // whopSelfHeal() ADDED BACK 9/10, whop lane only — see its own comment.
+  if (a.name === "watch-build") { checkBuild(); pollRoomsFile(); roomSchedule(); syncFills(); ensureReaders(); oneTabPerChannel(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); whopSelfHeal(); }
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
