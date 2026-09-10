@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (01:15) — P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-10 (03:20) — the bot's own record isolated (134 entries, NET −$309, verified subset flat); contracts and expiries recovered so bot rows can be checked against the broker at all; P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -420,6 +420,25 @@ FILL ANNOUNCER (announcer.py, read-only)
   not exist until 8/06), Aug −4,544, Sep +721. Worst days 8/24 −1,325 and
   8/17 −1,048. Do not quote a P&L from anything but broker-priced rows.
   COVERAGE TODAY: 728 of 905 real fills (80%) are broker-settled.
+- THE BOT ON ITS OWN (9/10, G: "let's not take my own trades, the app is
+  for this"). A BOT trade = a row with a REAL caller — caller "?" means
+  unknown, NOT a caller, and treating it as one put 36 of G's/adopted rows
+  on the bot's record (−$373 of them) — AND not manual/adopted AND not
+  export-only. By that rule: 134 entries, 73 closed, NET −$309, 33% win
+  rate. Of those 73, only 27 are broker-verified (+$9); the other 46 are
+  book-priced (−$318). SO THE BOT'S VERIFIED RECORD IS ESSENTIALLY FLAT and
+  the honest range is "flat to −$309" — do not quote −$309 as fact.
+  8/07's seven "missing" trades were ADOPTED at 08:12:13 pre-open — G's own
+  positions from before, never bot trades, and no broker BUY exists that
+  day because they were bought earlier.
+  TWO RECOVERIES that made the bot's rows checkable at all:
+  load_fill_contracts() reads the contract back off the ORDER IN line for
+  trades.log-only rows (39 recovered — they had no strike/side/expiry, so
+  they could never be matched to anything), and _resolve_expiry() gives a
+  short expiry its year from the trade's own date ("8/21" on a trade dated
+  8/17 → 2026-08-21; NDTE → date+N). Bot option rows with a full contract:
+  85 of 124, of which 81 match the broker on both legs, 2 have no BUY, 2 no
+  SELL. Ledger option rows with a full contract: 879 of 950.
   TWO MORE BUGS THE SAME NIGHT, both found by G spot-checking one trade
   ("SKHY actually made me like 300"): (a) THE BROKER DATES A TRADE BY ITS
   ENTRY, THE BOOK BY ITS EXIT — SKHY was bought 8/11 and sold 8/12, so an

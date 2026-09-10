@@ -9,6 +9,37 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-10 03:20 — THE BOT ON ITS OWN, AND THE MISSING TRADES HUNT.**
+G: "let's not take my own trades, I know I suck — we need to focus on the
+bot since the app is for this" and "let's look for the missing trades, I
+know I can find them."
+FIRST, A FILTER BUG OF MINE: I counted any row with a non-empty caller as
+the bot's. But caller "?" means UNKNOWN, not a caller — 36 rows (−$373),
+mostly adopted positions and pre-tagging August, were sitting on the bot's
+record. Excluded now.
+8/07 ANSWERED IN ONE LOOK, exactly as G predicted ("start with the easiest,
+8/7 will have a lot of your answers quick"): all seven "trades the broker
+never heard of" are ADOPTED at 08:12:13 — pre-open, positions already in
+the account when the bot started. G's own, bought earlier; that is why no
+broker BUY exists on 8/07. Not bot trades, not missing trades.
+THEN THE REAL GAP: 80 of the bot's own rows could not be matched to ANY
+contract — 41 trades.log-only rows built from FILLED lines that name only a
+ticker, and 31 whose expiry was stored as the caller typed it ("8/21",
+"0DTE", "09/01") with no year, which occ.build() refuses. Both recovered:
+  · load_fill_contracts() reads strike/side/expiry back off the ORDER IN
+    line that started the trade, nearest order at or before the fill —
+    39 rows recovered.
+  · _resolve_expiry() takes the year from the trade's own date, rolls
+    forward if the expiry would land in the past, and handles NDTE.
+Bot option rows with a full contract: 54 → 85 of 124. Against the broker:
+81 match on both legs, 2 have no BUY, 2 no SELL. Ledger-wide, 879 of 950
+option rows now carry a full contract.
+THE BOT ONLY: 134 entries, 73 closed, NET −$309, 33% win rate, avg win +$45
+avg loss −$27. BUT only 27 of the 73 are broker-verified and those come to
++$9 — the verified subset is FLAT. The honest statement is "somewhere
+between flat and −$309", and the way to close it is the same as always:
+more of the record priced by the broker rather than the book.
+
 **2026-09-10 02:30 — THE BROKER PULL WAS SILENTLY TRUNCATED. FIXED; THE REAL
 NUMBER IS −$4,228.** G, on the 13 rows the broker seemed never to have heard
 of: "those tickers were just recently cancelled, they were allowed before."
