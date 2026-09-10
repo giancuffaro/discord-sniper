@@ -250,6 +250,19 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # lines all stay silent or land as EXIT-IGNORED.
 # Single-digit strikes are real here ($ABAT 4C) — the reader handles them.
 1319444838826905650|https://discord.com/channels/718624848812834903/1319444838826905650|FloridaManFinance|Florida Man Alerts|on|bare
+# AbTrades Alert Bot — ADDED 9/10 on G's paste. Same guild, fourth room from it
+# in one day; that guild is a hub and the 9/9 scan under-read it. A BOT posts
+# these, so the format never varies: TICKER, expiry, strike+side, price. No
+# verb, no "@" in front of the price — hence `bare`.
+#   "$GOOGL 11/20 370c 8.3"      "$DAL 11/20 90c 1.65"
+#   "$AMZN 11/20 300c 4.8 Starters"
+# TWO CONTRACTS IN ONE MESSAGE, same ticker, different expiry AND price:
+#   "$APLD 10/16 30c 2.75 1/4th size $APLD 9/18 30c .9 Lotto size"
+# Both go out, one contract each, each with its OWN expiry and price. That
+# shape was found here and the reader was taught it here (extraStrikes shape 2).
+# Mostly 30-70 DTE — these are SWINGS, so the wide -25% swing stop runs them,
+# re-armed at 9:31 each morning, not the intraday ratchet.
+1235366372385493074|https://discord.com/channels/718624848812834903/1235366372385493074|AbTrades Alert Bot|AbTrades|on|bare
 
 # ============================================================
 # FULL-DEPTH SCAN, 9/10/26 (G: "go channel by channel, don't skip any; the
