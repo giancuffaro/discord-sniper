@@ -509,18 +509,19 @@ FILL ANNOUNCER (announcer.py, read-only)
   BEFORE PC2 goes live.
 
 ## Pending — G's side (real-money / restart actions only he takes)
-1. OWLS all-alerts (shabs + eli's coverage) has had NO TAB since it was added
-   to rooms.txt at 02:08 — dark all session (confirmed again at today's
-   close-out, still in the "silent configured" list, zero reads in bridge.log
-   ever). Only a START HERE run (or hand-opening the room tab) fixes it — the
-   silence-alarm code fix shipped, but nothing opens a tab for a room added
-   outside START HERE. Costly while dark: shabs alone ran +$15,898 in August.
-2. Restart the announcer when he wants it back (it posts the ledger board).
-3. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung,
-   futures decouple).
-4. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50
+1. The Claude Project: paste project/PROJECT-INSTRUCTIONS.md into the
+   Instructions box; re-upload project/context/HANDOFF-snapshot.md and
+   rooms-snapshot.txt; delete the six 9/2 files listed in project/README.txt.
+2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung,
+   futures decouple) — G's call whether Claude does it or he does.
+3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50
    MNQ pts), qty 1 — create in NT8, type SNIPER in the popup.
-5. Chrome: hardware acceleration OFF. Close any old parked Whop tabs.
+4. Chrome: hardware acceleration OFF. Close any old parked Whop tabs.
+5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
+(OWLS all-alerts "no tab" — RESOLVED by ROOM HOURS: the extension opens
+every `on` room at 9:15 by itself; verify OWLS reads on 9/10.)
+(daily-journal-and-fix — DELETED 9/9 evening; Mode C did its first clean
+close-out today.)
 
 ## Watch items (open)
 - **7-ROOM RE-ENABLE (04:14) — RESOLVED, rooms.txt back at 19 by 04:36.**
