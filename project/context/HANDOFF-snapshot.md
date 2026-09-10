@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (00:50) — the bot's own record isolated (134 entries, NET −$309, verified subset flat); contracts and expiries recovered so bot rows can be checked against the broker at all; P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-10 (00:50) — the bot's own record isolated (134 entries, NET −$301 priced by the broker — it loses ~$4/trade); contracts and expiries recovered so bot rows can be checked against the broker at all; P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (705 round-trips, −$4,228 all in — G's hand trading −$4,332, the bot +$301); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -426,8 +426,20 @@ FILL ANNOUNCER (announcer.py, read-only)
   on the bot's record (−$373 of them) — AND not manual/adopted AND not
   export-only. By that rule: 134 entries, 73 closed, NET −$309, 33% win
   rate. Of those 73, only 27 are broker-verified (+$9); the other 46 are
-  book-priced (−$318). SO THE BOT'S VERIFIED RECORD IS ESSENTIALLY FLAT and
-  the honest range is "flat to −$309" — do not quote −$309 as fact.
+  book-priced (−$318). THEN PRICED STRAIGHT OFF THE BROKER instead (each
+  bot row matched to a completed round-trip by contract + entry price, the
+  book bypassed entirely): 74 matched, NET −$301, 34% win rate, avg win
+  +$46, avg loss −$30, Aug −321, Sep +20. TWO INDEPENDENT METHODS AGREE
+  (−$309 from the book, −$301 from the broker), so it is real: THE BOT
+  LOSES ABOUT $300 OVER 5 WEEKS, roughly −$4 a trade. Why, in one line:
+  34% × $46 = $15.6 won per trade against 66% × $30 = $19.8 lost. The stop
+  is NOT the problem — the losses are already small, which is the ratchet
+  doing its job. The gap is hit rate and winner size: WHICH CALLERS get
+  followed and WHERE it takes profit. Best: SKHY +249 (The Pawn), NVDA
+  +120 (Bullwinkle), GOOGL +119 (Unraveller). Worst: TSLA −112 and META
+  −106 (both Unraveller), MP −96 (EvaPanda). Still unpriced: 60 entries
+  (49 with no contract — futures and rows with no ORDER IN line — and 11
+  with no matching round-trip).
   8/07's seven "missing" trades were ADOPTED at 08:12:13 pre-open — G's own
   positions from before, never bot trades, and no broker BUY exists that
   day because they were bought earlier.

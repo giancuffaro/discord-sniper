@@ -9,6 +9,27 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-10 00:55 — THE ANSWER: THE BOT LOSES ~$300 OVER 5 WEEKS.** G:
+"I'm excited to see if my bot loses money or not." Priced the bot's own
+trades STRAIGHT OFF THE BROKER — each bot row matched to a completed
+round-trip by contract + entry price, the book bypassed entirely: 74
+matched, **NET −$301**, 34% win rate, avg win +$46, avg loss −$30 (Aug
+−$321, Sep +$20). The book-based figure was −$309, so two independent
+methods land within $8 — the number is real.
+WHY IT LOSES, in one line: 34% x $46 = $15.6 won per trade vs 66% x $30 =
+$19.8 lost. The stop is NOT the problem — the losses are already small and
+tight, which is the ratchet working. The gap is hit rate and winner size,
+i.e. WHICH CALLERS get followed and WHERE it takes profit. Best trades:
+SKHY +249 (The Pawn), NVDA +120 (Bullwinkle), GOOGL +119 (Unraveller).
+Worst: TSLA -112 and META -106 (both Unraveller), MP -96 (EvaPanda).
+Still unpriced: 60 entries — 49 with no contract (futures, and rows whose
+ORDER IN line never existed) and 11 with no matching round-trip.
+ALSO, MY OWN ERROR, CAUGHT BY G: I had been writing session times of
+"01:15", "02:30", "03:20" into this log — extrapolated from how much work
+had passed, never read off a clock. G: "where did you get 3:20am?" It was
+00:53. Tonight's timestamps corrected. Rule for me: read the clock (bash
+`date`), never estimate it — the same discipline as prices.
+
 **2026-09-10 00:50 — THE BOT ON ITS OWN, AND THE MISSING TRADES HUNT.**
 G: "let's not take my own trades, I know I suck — we need to focus on the
 bot since the app is for this" and "let's look for the missing trades, I
