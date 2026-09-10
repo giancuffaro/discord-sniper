@@ -432,6 +432,18 @@ def execute(wb, book, order, key, note):
             _tl = "theirs" if order.get("their_target") is not None                 else "yours (%g pts)" % FUT_TARGET_PTS
             note("FUTURES  %s bracket: stop %g (%s), target %g (%s)"
                  % (sym, stop_px, _sl, target_px, _tl))
+        # THE ENTRY MUST CLEAR THE STOP. See _entry_clears_stop — the
+        # round-number snap above can land the entry exactly ON the caller's
+        # stop, which is a fill and an instant stop-out. Refusing costs a
+        # missed trade; sending it costs a commission and a slippage for
+        # nothing, and looks like a losing strategy in the journal.
+        if not _entry_clears_stop(direction, entry_px, stop_px):
+            _m = ("%s %s refused: the 25-pt snap put the entry at %g and the "
+                  "stop is %g — same side, so it would fill and stop out on "
+                  "the spot. Nothing was sent."
+                  % (sym, direction, entry_px, stop_px))
+            note("FUTURES  " + _m)
+            return (False, _m)
         order = dict(order, their_stop=stop_px, their_target=target_px)
         oid = _place(wb, contract, side, 1, entry_px)
         note("FUTURES  ORDER IN %s %s x1 (%s) @ %s, stop %s target %s"
