@@ -206,6 +206,18 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # the relay to the real analyst. Wired yesterday — 0 rows so far is expected
 # at this age, not a reason to cut; carries shabs' proven record through it.
 1449226651064991806|https://discord.com/channels/718624848812834903/1449226651064991806|OWLS all-alerts|OWLS Capital|on
+# TheArchitech / "VIX Insights from Alice Capitals" — ADDED 9/10 on G's paste.
+# Never captured before: 0 messages in the whole corpus, so this is a genuinely
+# new room, not one we were reading badly. His grammar is the SIMPLEST of the
+# SPX rooms — a bare contract and nothing else:  "7730C 0DTE".
+# No price at all, which does not matter: the spx rule retargets to SPY and
+# drops the caller's premium anyway (an SPX premium is not a SPY premium), so
+# the bot bids the SPY market. VERIFIED against the live parser 9/10 —
+# "7730C 0DTE" -> SPY 773 CALLS with these three rules on, and DEAD without
+# them ("nothing in it that means buy or sell"). Do not turn this on without
+# the rules or it is another silent room.
+# OFF until G has watched it for a day.
+1519715923752128572|https://discord.com/channels/718624848812834903/1519715923752128572|TheArchitech VIX Insights|OWLS Capital|off|spx,sym=SPX,bare
 
 # ============================================================
 # FULL-DEPTH SCAN, 9/10/26 (G: "go channel by channel, don't skip any; the
