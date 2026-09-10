@@ -518,19 +518,41 @@ async function revokeCheck() {
     const seen = revoked_seen || {};
     let changed = false;
     for (const t of tabs) {
+      if (t.status === "loading" || t.discarded) continue;   // not settled yet
       const title = String(t.title || "");
-      if (!/no access/i.test(title)) continue;
-      const url = String(t.url || "");
+      const url = String(t.pendingUrl || t.url || "");
       const id = (url.match(/\/channels\/\d+\/(\d+)/) || [])[1];
-      if (!id) continue;
-      if (seen[id]) continue;                    // already told him once
-      seen[id] = Date.now(); changed = true;
-      const label = roomName(id) || id;
+      // TWO WAYS A DOOR IS SHUT, and only one of them says so (9/10).
+      // Discord titles a room you have lost the role for "No Access", but a
+      // server you have been REMOVED from bounces the URL to the guild root
+      // or to /channels/@me and the title just reads the server name. That
+      // second shape is how RWGates hid for three weeks. Catch both.
+      const noAccess = /no access/i.test(title);
+      const bounced = !id && /discord\.com\/channels\//.test(url);
+      if (!noAccess && !bounced) continue;
+      const rid = id || _roomIdForUrl(url);
+      if (!rid) continue;
+      const label = roomName(rid) || rid;
+      // THE LAPSE RUNS EVERY TIME, THE NAG RUNS ONCE. Written the other way
+      // round at first and it was dead on arrival: `seen` already held every
+      // room that had ever been flagged, so the rooms that most needed
+      // taking out of service were exactly the ones it skipped. ZTRADEZ
+      // proved it within the hour — flagged days ago, still opening a
+      // "No Access" tab on every START HERE.
+      try {
+        const room = ALL_ROOMS.find(x => String(x.id) === String(rid));
+        if (room && room.state === "on") await setRoomLapsed(rid, label);
+      } catch (e) {}
+      if (seen[rid]) continue;                   // already told him once
+      seen[rid] = Date.now(); changed = true;
       await addLog({ kind: "failed", what: "ACCESS LOST",
-        why: "🔒 " + label + " now says \"No Access\" — you are still opening " +
-             "this room and it is reading NOTHING. If you pay for it, the " +
-             "subscription or the seller's Discord role has gone. Check it, " +
-             "then either fix it or switch the room OFF in the popup." });
+        why: "🔒 " + label + (noAccess
+              ? " says \"No Access\" — the subscription or the seller's Discord "
+                + "role has gone."
+              : " bounced out of its channel — you are not in that server any more.")
+           + " It has been switched to LAPSED and its tab closed, so it will not "
+           + "be opened again. If you fix the sub, the off-hours probe will "
+           + "notice and tell you." });
       try {
         chrome.notifications.create({ type: "basic", iconUrl: "icon128.png",
           title: "🔒 " + label + " — access lost",
@@ -549,6 +571,17 @@ async function revokeCheck() {
     }
     if (changed) await chrome.storage.local.set({ revoked_seen: seen });
   } catch (e) { /* never break the reader */ }
+}
+
+function _roomIdForUrl(url) {
+  /* A bounced tab has lost its channel id, so match the room by its GUILD.
+   * Only answers when that guild has exactly one room in rooms.txt — two
+   * rooms in the same server are indistinguishable once the id is gone, and
+   * lapsing the wrong one is worse than lapsing neither. */
+  const g = (String(url).match(/\/channels\/(\d+)/) || [])[1];
+  if (!g) return "";
+  const hits = ALL_ROOMS.filter(r => String(r.url || "").includes("/channels/" + g + "/"));
+  return hits.length === 1 ? String(hits[0].id) : "";
 }
 
 async function accessCheck(force) {
