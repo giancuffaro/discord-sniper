@@ -128,21 +128,59 @@ async function startListen(id, label, streamId, dgKey, model, keyterms) {
   ws = openSocket(mdl0, /^nova-3/.test(mdl0));
   if (!ws) { cleanup(); return; }
 
-  const processor = ctx.createScriptProcessor(4096, 1, 1);
-  source.connect(processor);
-  processor.connect(ctx.destination);   // keeps the node alive; emits silence
-  processor.onaudioprocess = (e) => {
-    if (!ws || ws.readyState !== 1) return;
-    ws.send(floatToPCM16(downsample(e.inputBuffer.getChannelData(0), inRate, outRate)));
-  };
+  // OFF THE MAIN THREAD (9/10, G: "when I join a voice channel everything
+  // lags out"). This was a ScriptProcessorNode, whose onaudioprocess runs on
+  // the MAIN thread every 4096 samples — per session, four sessions deep at
+  // the time he reported it. Deprecated for exactly this reason. The
+  // downsample and the PCM conversion now happen on the audio thread in
+  // pcm-worklet.js; all that is left here is handing a finished, transferred
+  // ArrayBuffer to the socket.
+  let node = null;
+  try {
+    await ctx.audioWorklet.addModule(chrome.runtime.getURL("pcm-worklet.js"));
+    node = new AudioWorkletNode(ctx, "pcm-worklet", {
+      numberOfInputs: 1, numberOfOutputs: 0, channelCount: 1,
+      processorOptions: { inRate: inRate, outRate: outRate },
+    });
+    node.port.onmessage = (e) => {
+      if (!ws || ws.readyState !== 1) return;
+      ws.send(e.data);
+    };
+    source.connect(node);
+  } catch (e) {
+    // A worklet can fail to load (CSP, a stripped build). Fall back to the
+    // old node rather than losing the ears entirely — and SAY SO, because
+    // the fallback is the slow path and a silent downgrade is how this kind
+    // of thing hides for weeks.
+    toBg({ type: "LISTEN_NOTE", id, label,
+           why: "the audio worklet wouldn't load, so this session is on the old "
+              + "main-thread capture — expect the browser to feel heavy: "
+              + String((e && e.message) || e).slice(0, 90) });
+    node = ctx.createScriptProcessor(4096, 1, 1);
+    source.connect(node);
+    node.connect(ctx.destination);
+    node.onaudioprocess = (ev) => {
+      if (!ws || ws.readyState !== 1) return;
+      ws.send(floatToPCM16(downsample(ev.inputBuffer.getChannelData(0), inRate, outRate)));
+    };
+  }
 
-  SESS.set(id, { ctx, ws, source, processor, stream });
+  SESS.set(id, { ctx, ws, source, processor: node, stream });
 }
 
 function stopListen(id) {
   const s = SESS.get(id);
   if (!s) return;
-  try { if (s.processor) { s.processor.disconnect(); s.processor.onaudioprocess = null; } } catch (e) {}
+  try {
+    if (s.processor) {
+      // Tell a worklet to return false from process() so it can be collected;
+      // a ScriptProcessor just needs its handler cleared. Same field, two
+      // shapes, because the fallback above can produce either.
+      try { if (s.processor.port) s.processor.port.postMessage("stop"); } catch (e2) {}
+      s.processor.disconnect();
+      if ("onaudioprocess" in s.processor) s.processor.onaudioprocess = null;
+    }
+  } catch (e) {}
   try { if (s.source) s.source.disconnect(); } catch (e) {}
   try { if (s.ws && s.ws.readyState <= 1) s.ws.close(); } catch (e) {}
   try { if (s.stream) s.stream.getTracks().forEach(t => t.stop()); } catch (e) {}

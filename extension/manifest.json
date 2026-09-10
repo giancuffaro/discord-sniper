@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Discord Sniper",
-  "version": "3.5.94",
+  "version": "3.5.95",
   "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
   "permissions": [
     "storage",
@@ -64,7 +64,11 @@
   "commands": {
     "grab-history": {
       "suggested_key": {
-        "default": "Ctrl+Shift+X"
+        "default": "Ctrl+Shift+X",
+        "windows": "Ctrl+Shift+X",
+        "linux": "Ctrl+Shift+X",
+        "chromeos": "Ctrl+Shift+X",
+        "mac": "Command+Shift+X"
       },
       "description": "Grab this room's history (auto-scroll + save to DS Logs)"
     }
@@ -73,5 +77,16 @@
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "pcm-worklet.js"
+      ],
+      "matches": [
+        "https://discord.com/*",
+        "https://*.discord.com/*"
+      ]
+    }
+  ]
 }
