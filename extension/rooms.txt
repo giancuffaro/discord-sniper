@@ -282,6 +282,58 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 728711121128652851|https://discord.com/channels/718624848812834903/728711121128652851|OWLS jon-and-kian|OWLS Capital|on
 
 # ============================================================
+# LOW KEY STONKS (guild 722872384800948227) — scanned live 9/10.
+# G's sub here was ~20 hours for $5 and access has outlasted it. He asked to
+# fish the whole server before it closes. 40 channels; 20 carry alerts.
+# THE SIDEBAR IS VIRTUALISED — the first scrape saw 26 channels and MISSED the
+# entire "Futures Alerts" and "Stock/Option Alerts" sections. Scroll the
+# channel list end to end before believing a server has been scanned. This is
+# almost certainly what the 9/9 full-depth scan got wrong everywhere.
+# Every room below was READ and every format RUN THROUGH THE PARSER first.
+# ---- TAKEN ----
+# demon-day-trades: the cleanest options grammar in the server, no rules.
+#   "BTO $TSLA 380c 09/09 @0.60"   "BTO $QQQ 709p 09/10 @0.78"
+1169216956746969088|https://discord.com/channels/722872384800948227/1169216956746969088|Demon day-trades|Low Key Stonks|on
+# nando-alerts: SWINGS, months out, verb and price every time. No rules.
+#   "Swing Trade: BTO 6 KO 92.5C 1/15/2027 @ 2.59"
+#   "Swing Trade: BTO 4 WMT 110C 12/18 @ 4.05"
+# His trims and "contracts sitting @ $500" updates stay silent / EXIT-IGNORED.
+1315500058573144166|https://discord.com/channels/722872384800948227/1315500058573144166|Nando Alerts|Low Key Stonks|on
+# brick-alerts: needs `bare` — he writes the contract with no verb, either way
+# round:  "DDOG 10/16 290c 4.7"   "MRK 155c 10/16 3.20 Half size"
+# Verified 9/10: both read correctly WITH the rule and his chatter ("Might be
+# out again this week", "HOOD re entered this @ 5.10") stays silent.
+1315498906036994129|https://discord.com/channels/722872384800948227/1315498906036994129|Brick Alerts|Low Key Stonks|on|bare
+# ---- LEFT OFF, WITH THE REASON ----
+# maguro-alerts — OFF because turning it on would LOSE MONEY TODAY. He writes
+# the expiry with a DOT: "$slv 63c 10.16 2.35" is Oct 16 at $2.35. With `bare`
+# the reader takes 10.16 as the PRICE and the expiry as MISSING — it would bid
+# $10.16 for a $2.35 contract and buy this Friday instead of October. Needs a
+# dot-date rule before it can ever be `on`. Real alerts, worth doing.
+1315499172425764975|https://discord.com/channels/722872384800948227/1315499172425764975|Maguro Alerts|Low Key Stonks|off|needs dot-date grammar
+# kaori-alerts — same class of danger: "$NOK 20C jan 2028 @1.38" fires with NO
+# expiry, so it would buy this Friday instead of January 2028. Also writes
+# "$RDDT 1dte lotto for ER - 220C @0.96" (strike after a dash). Needs a
+# month-year expiry rule first.
+1315499776741081138|https://discord.com/channels/722872384800948227/1315499776741081138|Kaori Alerts|Low Key Stonks|off|needs month-year grammar
+# xephyr-alerts — SPX iron condors ("Sell 7680C Buy 7685C Sell 7595P Sell
+# 7590P Credit - 1.90"). Two reasons off: multi-leg spreads are refused by
+# design, and SPX has no broker connected.
+1315504529898209310|https://discord.com/channels/722872384800948227/1315504529898209310|Xephyr Alerts|Low Key Stonks|off|spreads + SPX
+# FUTURES SCALPERS — chika, ducci, jon-tran, hog. Real traders, unusable
+# grammar: "long 218", "Short gc 4461", "+65 trim". No contract, no size, and
+# the instrument is only knowable from context. Nothing to trade off.
+1315502322985603082|https://discord.com/channels/722872384800948227/1315502322985603082|Chika Alerts|Low Key Stonks|off|futures scalps, no contract
+1316182395652669510|https://discord.com/channels/722872384800948227/1316182395652669510|Ducci Alerts|Low Key Stonks|off|futures scalps, no contract
+1478913485579489330|https://discord.com/channels/722872384800948227/1478913485579489330|Jon Tran Alerts|Low Key Stonks|off|futures commentary, no calls
+1535565295350194187|https://discord.com/channels/722872384800948227/1535565295350194187|Hog Alerts|Low Key Stonks|off|futures scalps, no contract
+# quantum-alerts — last real call was March 2026. Dead.
+1360350391522426940|https://discord.com/channels/722872384800948227/1360350391522426940|Quantum Alerts|Low Key Stonks|off|dead since March 2026
+# prediction-alerts is SPORTS BETTING. degenken/ascendancy/phiccduck/snakeeyes/
+# ahjummamacita read EMPTY (no access or no posts). longterm-alerts rooms are
+# share positions, not contracts.
+
+# ============================================================
 # FULL-DEPTH SCAN, 9/10/26 (G: "go channel by channel, don't skip any; the
 # ones you find add them off with the corresponding description"). All 25
 # servers, every channel the account can see (289 channels). Everything
