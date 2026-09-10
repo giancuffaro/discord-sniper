@@ -9,6 +9,40 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-10 01:15 — G WAS RIGHT: THE WINS WERE FAKE. THREE MONTHS OF BROKER
+TRUTH PULLED.** G, looking at the corrected scoreboard: "looks like the ledger
+is doing some magic huh? but I feel I'm still missing losing trades — no way
+I've won and not lost that much." Audited it. 111 of 244 positions had no
+exit on record (each counted as $0), and the win/loss shape was implausible
+for a 7.5% stop system (avg win +$97 vs avg loss −$29). Then the actual bug,
+found by checking the top winners one by one: **26 of 74 closed August option
+positions had the SALE PROCEEDS in `pl`** — SKHY bought 6.01, sold 5.90,
+booked "+590" (= 5.90 × 100) on an $11 LOSS. AMD 6.20→5.35 "+535" (−$85).
+META 5.20→4.20 "+420" (−$100). Every one of the board's biggest wins was a
+loss. Overstatement: **+$5,137**.
+FIX 1 — build_ledger computes P&L from the fill and exit prices whenever it
+has both; the book's number is kept in store_pl and never trusted; the
+broker's export still outranks both. 26 rows corrected on the first run.
+FIX 2 — pulled the ENTIRE broker history 6/12→9/09 via the Webull connector
+(get_order_history caps at 100 orders per call, so ~10 date-window calls;
+1,186 option order legs → Webull_Orders_2026-history_auto.csv → absorbed
+into master_broker.csv, 1,242 legs over 49 days). The ledger went 346 → 849
+rows and every August day now reconciles against the broker instead of the
+book.
+THE TRUE RECORD: 510 completed round-trips, **−$802**, 35% win rate, avg win
++$85, avg loss −$48. By month: June −70, July −335, Aug −1,118, Sep +721.
+THE SPLIT THAT MATTERS: the BOT is 28 broker-confirmed trades, **+$118**
+(Aug +82, Sep +36). The other 482 trades, −$920, are G's OWN hand trading
+(June and July are 100% his — the bot did not exist until 8/06). The old
+"+$4,770" was the book's fiction on both sides.
+G: "so now we have much much more trades to run backtesting and ratchet
+scenarios on right?" — for COUNTS and P&L yes, 510 round-trips vs ~90. For
+RATCHET scenarios NOT YET: those need the price PATH while held (per-second
+bid), which order records do not contain. Databento quoted **$7.23** for the
+OPRA tape covering all 385 contract-days (cmbp-1, entry→exit+10min, priced
+via metadata.get_cost with OSI raw_symbols — note occ.to_tasty() produces
+the padded form Databento needs; the bare OCC is rejected). G's call.
+
 **2026-09-10 00:20 — "SHOW ME THE ONES YOU COULDN'T ATTRIBUTE — ARE THOSE FROM
 ALERTS?" (v3.5.85).** They were, all 41. Each is a real bot entry on a room
 call whose day-JSON row was lost (the table truncates, the wallet clears on

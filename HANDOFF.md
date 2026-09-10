@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (00:20) — v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-10 (01:15) — P&L now COMPUTED from prices, not trusted (a book bug booked sale proceeds as profit, +$5,137 of phantom wins); the broker's whole 3-month history pulled and absorbed (510 round-trips, −$802 all in; the bot's own share is +$118 over 28 trades); v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -394,6 +394,22 @@ FILL ANNOUNCER (announcer.py, read-only)
   limit): a later pull replaces a WORKING snapshot, never duplicates it.
   Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
   master_ledger and master_alerts; NO .bak files in the root anymore.
+- THE RECORD IS THE BROKER'S, THREE MONTHS DEEP (9/10, G: "I feel I'm still
+  missing losing trades — no way I've won and not lost that much"). He was
+  right, and the cause was an accounting bug: 26 of 74 closed August option
+  positions had the SALE PROCEEDS written into `pl` (sold at 5.90 → "+590"
+  on a trade that lost $11). It overstated the record by +$5,137 and made
+  26 losses the board's biggest wins. Two fixes: build_ledger now COMPUTES
+  P&L from the fill and exit prices (the book's claim is kept in store_pl,
+  the broker's export still outranks both), and the whole broker history
+  6/12→9/09 was pulled from Webull (1,186 orders, MCP get_order_history in
+  ≤100-order windows → Webull_Orders_2026-history_auto.csv → absorbed).
+  THE REAL NUMBERS, from the broker: 510 completed round-trips, −$802 all
+  in; 35% win rate, avg win +$85, avg loss −$48. Split: THE BOT is 28
+  broker-confirmed trades, +$118 (Aug +82, Sep +36); the other 482 trades,
+  −$920, are G'S OWN hand trading (June −70, July −335 — the bot did not
+  exist yet — Aug −1,200, Sep +685). Do not quote a bot P&L from anything
+  but broker-confirmed rows.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
   don't want any more confusions"). build_ledger keeps account="paper" rows
   OUT of master_ledger.csv, so the board, journal, scoreboard, announcer and
