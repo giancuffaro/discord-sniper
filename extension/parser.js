@@ -652,15 +652,46 @@ function contractSymbolAfter(text) {
 function extraStrikes(text, first) {
   if (!first || first.strike == null) return [];
   const want = String(first.side || "").toUpperCase().startsWith("C") ? "C" : "P";
-  const re = /(?<![A-Za-z0-9$.])\$?(\d{2,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b/gi;
   const out = [];
+  const seen = (k, e) => out.some(o => o.strike === k && (o.expiry || null) === (e || null));
+
+  /* SHAPE 1 — the strike alone, sharing everything else with the first:
+   *   "$NVDA $225C/ and $230C NEXT FRI"
+   * Same ticker, same side, same expiry; only the strike differs. */
+  const re = /(?<![A-Za-z0-9$.])\$?(\d{2,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b/gi;
   let m;
   while ((m = re.exec(text)) !== null && out.length < 3) {
     const k = parseFloat(m[1]);
     if (m[2][0].toUpperCase() !== want) continue;
-    if (k === first.strike || out.indexOf(k) !== -1) continue;
+    if (k === first.strike || seen(k, first.expiry)) continue;
     if (Math.abs(k - first.strike) > 0.4 * first.strike) continue;
-    out.push(k);
+    out.push({ strike: k, side: first.side, expiry: first.expiry || null,
+               limit: null });
+  }
+
+  /* SHAPE 2 — the WHOLE contract written out a second time, ticker and all,
+   * with its own expiry and its own price (9/10, AbTrades):
+   *   "$APLD 10/16 30c 2.75 1/4th size  $APLD 9/18 30c .9 Lotto size"
+   * Same strike, different expiry, different price — two real positions in
+   * one post. Shape 1 can't see it (the strike matches) and the old reader
+   * silently traded only the first, which is half of what he called.
+   *
+   * SAME TICKER ONLY. Two DIFFERENT tickers on one line is the shape of a
+   * levels row and a watchlist, and those must never become orders. */
+  RE_CONTRACT.lastIndex = 0;
+  while ((m = RE_CONTRACT.exec(text)) !== null && out.length < 3) {
+    if (m[1].toUpperCase() !== String(first.symbol || "").toUpperCase()) continue;
+    const k = parseFloat(m[3]);
+    if (!m[5] || m[5].toLowerCase()[0] !== want.toLowerCase()) continue;
+    let e = ((m[2] || m[4]) || "").toUpperCase().trim() || null;
+    if (e && /DTE$/.test(e)) e = e.replace(/\s+/g, "");
+    if (k === first.strike && (e || null) === (first.expiry || null)) continue;
+    if (seen(k, e)) continue;
+    // its own price, if one trails it: "30c .9" / "30c @ 2.75"
+    const after = text.slice(RE_CONTRACT.lastIndex, RE_CONTRACT.lastIndex + 12);
+    const p = /^\s*@?\s*\$?(\d{1,3}(?:\.\d{1,2})?|\.\d{1,2})(?![\d/])/.exec(after);
+    out.push({ strike: k, side: first.side, expiry: e,
+               limit: p ? parseFloat(p[1]) : null });
   }
   return out;
 }
@@ -2355,7 +2386,7 @@ function parseSignalInner(text, cfg) {
     // "$NVDA $225C/ and $230C NEXT FRI Starters" — one call, two contracts.
     // See extraStrikes. One order each; the ratchet then owns them separately.
     const sibsE = extraStrikes(t, s);
-    if (sibsE.length) s.also_strikes = sibsE;
+    if (sibsE.length) s.also = sibsE;
     s.fire = true;
     s.why = "entry: " + human(s);
     return s;
@@ -2399,9 +2430,9 @@ function parseSignalInner(text, cfg) {
       let stripped = t;
       // the sibling strikes ("... and $230C") come out first, so a two-strike
       // call is still judged on whether anything ELSE is left over
-      for (const k of sibs)
+      for (const sb of sibs)
         stripped = stripped.replace(
-          new RegExp("\\$?" + esc(String(k).replace(/\.0+$/, "")) + "(?:\\.\\d{1,2})?\\s*(?:calls?|puts?|c|p)\\b", "i"), " ");
+          new RegExp("\\$?" + esc(String(sb.strike).replace(/\.0+$/, "")) + "(?:\\.\\d{1,2})?\\s*(?:calls?|puts?|c|p)\\b", "i"), " ");
       const leftover = (anyOrder
         ? stripped
           // strike + side, with the optional "0 day" that can sit between them
@@ -2425,7 +2456,7 @@ function parseSignalInner(text, cfg) {
       if (!leftover || (lonePrice && parseFloat(lonePrice[1]) < 100)) {
         s.symbol = c5.symbol; s.strike = c5.strike; s.side = c5.side;
         s.expiry = c5.expiry;
-        if (sibs.length) s.also_strikes = sibs;
+        if (sibs.length) s.also = sibs;
         s.action = "OPEN"; s.matched = "bare contract entry";
         s.fire = true;
         if (lonePrice) s.limit = parseFloat(lonePrice[1]);

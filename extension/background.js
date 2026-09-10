@@ -1549,8 +1549,11 @@ async function sendOrder(sig, qty, c, author, postedAt) {
 
   /* TWO STRIKES IN ONE CALL (9/10). G: "when you have multistrikes, just buy
    * both of them. Buy two contracts, one of each." The parser puts the extra
-   * strikes on sig.also_strikes (same ticker, same side, same expiry — see
-   * extraStrikes in parser.js); each one goes out as its own separate order.
+   * contracts on sig.also — same ticker and side, its own strike, expiry and
+   * price (see extraStrikes in parser.js). Two shapes reach here:
+   *   "$NVDA $225C/ and $230C NEXT FRI"                  two strikes
+   *   "$APLD 10/16 30c 2.75 ... $APLD 9/18 30c .9"       two expiries
+   * Each goes out as its own separate order.
    *
    * SEPARATE, NOT A SPREAD. Two independent positions, each with its own born
    * stop and its own ratchet, which is the only shape this machine has: a
@@ -1560,16 +1563,27 @@ async function sendOrder(sig, qty, c, author, postedAt) {
    * ALWAYS ONE CONTRACT EACH, whatever qty the first leg got — his words. And
    * only after the first order was ACCEPTED: if the bridge refused leg one,
    * firing leg two would be doubling down on a refusal.
-   * The recursion is safe because also_strikes is stripped from the clone. */
-  if (Array.isArray(sig.also_strikes) && sig.also_strikes.length) {
-    for (const k of sig.also_strikes) {
-      const leg = Object.assign({}, sig, { strike: k, also_strikes: null });
+   * The recursion is safe because `also` is stripped from the clone. */
+  if (Array.isArray(sig.also) && sig.also.length) {
+    for (const leg2 of sig.also) {
+      const leg = Object.assign({}, sig, {
+        strike: leg2.strike,
+        side: leg2.side || sig.side,
+        // Its OWN expiry and price when it brought them, the first leg's
+        // otherwise. A second contract with a different expiry is a different
+        // trade and must never inherit the first one's date.
+        expiry: (leg2.expiry === undefined || leg2.expiry === null)
+                  ? sig.expiry : leg2.expiry,
+        limit: (leg2.limit === 0 || leg2.limit) ? leg2.limit : sig.limit,
+        also: null
+      });
       try {
         await sendOrder(leg, 1, c, author, postedAt);
       } catch (e) {
         try {
-          await addLog({ kind: "failed", what: "MULTI-STRIKE LEG",
-            why: "the second strike (" + sig.symbol + " " + k + ") did not go "
+          await addLog({ kind: "failed", what: "SECOND CONTRACT",
+            why: "the second contract (" + sig.symbol + " " + leg2.strike
+               + (leg2.expiry ? " " + leg2.expiry : "") + ") did not go "
                + "out: " + (e && e.message ? e.message : e) + ". The first one "
                + "did — check the popup before adding it by hand." });
         } catch (e2) {}

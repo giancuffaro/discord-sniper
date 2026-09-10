@@ -33,7 +33,8 @@ function read(msg, cfg) {
   if (!s || !s.action) return "silent";
   let out = s.action + " " + (s.symbol || "?") + " " + (s.strike == null ? "?" : s.strike) +
             (s.side ? s.side[0] : "") + (s.expiry ? " " + s.expiry : "");
-  if (s.also_strikes && s.also_strikes.length) out += " +" + s.also_strikes.join("/");
+  if (s.also && s.also.length)
+    out += " +" + s.also.map(a => a.strike + (a.expiry ? "@" + a.expiry : "")).join("/");
   if (!s.fire) out += " [held]";
   return out;
 }
@@ -57,6 +58,18 @@ show("call + put refuses", read("$NVDA $225C and $230P", BARE),     "silent");
 // read as three more contracts to buy.
 show("TP ladder ignored",
   read("MU 1020 9/11 CALLS @ 2.2 SL 1.45 TP 2.6 / 3.3 / 4.4", {}), "OPEN MU 1020C 9/11");
+
+// AbTrades posts two whole contracts, same ticker, DIFFERENT expiry and
+// price, in one message. Shape 1 cannot see it (the strike is identical) and
+// the old reader traded only the first — half of what he called.
+show("two expiries",
+  read("$APLD 10/16 30c 2.75 1/4th size $APLD 9/18 30c .9 Lotto size", BARE),
+  "OPEN APLD 30C 10/16 +30@9/18");
+// Two DIFFERENT tickers on one line is a levels row or a watchlist, never a
+// pair of orders.
+show("two tickers never pair",
+  read("$AMZN 11/20 300c 4.8 $GOOGL 11/20 370c 8.3", BARE),
+  "OPEN AMZN 300C 11/20");
 
 console.log("\nSCOPED — the same lines must stay SILENT with no room rule:");
 show("ticker last",     read("8/24 $255P $AMZN", {}),               "silent");
