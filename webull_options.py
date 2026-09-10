@@ -1474,7 +1474,8 @@ class WebullOptions:
             return "working", fq, avg
         return "unknown", fq, avg
 
-    def last_sell_fill(self, symbol, side, strike, expiry, since=None):
+    def last_sell_fill(self, symbol, side, strike, expiry, since=None,
+                       until=None):
         """What this contract ACTUALLY last sold for at Webull, or None.
 
         Built 8/27 for the phantom-exit bug. When a position disappears from
@@ -1493,6 +1494,14 @@ class WebullOptions:
 
         `since` is an epoch seconds floor — pass the position's open time so an
         older round trip on the same strike can't be mistaken for this exit.
+        `until` is an optional epoch seconds ceiling (9/10, the back-to-back
+        SPY 758C bug): the same contract entered and exited twice inside
+        three minutes made the newest fill always win, so checking the
+        FIRST round trip's exit picked up the SECOND one's fill instead —
+        1.47 recorded, 1.37 (the other trade) reported as "the broker
+        filled". Pass the record's own close time as `until` when checking
+        a specific trade so a later, unrelated round trip on the same
+        contract can't be mistaken for this one.
         """
         want = str(symbol or "").upper()
         if not want:
@@ -1594,6 +1603,8 @@ class WebullOptions:
                     if t > 1e12:            # Webull hands these back in ms
                         t /= 1000.0
                     if since and t and t < float(since) - 5:
+                        continue
+                    if until and t and t > float(until) + 5:
                         continue
                     if best_t is None or t >= best_t:
                         best_t, best_px = t, px

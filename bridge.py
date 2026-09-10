@@ -5955,9 +5955,20 @@ def main():
                             if time.time() - float(r.get("closed") or 0) > 120:
                                 continue
                             _last = r["exits"][-1]
-                            _real = WB.last_sell_fill(r.get("symbol"), r.get("side"),
-                                                      r.get("strike"), r.get("expiry"),
-                                                      since=time.time() - 180)
+                            # Anchored to THIS record's own open->close window
+                            # (9/10), not a blanket "now minus 180s" — a
+                            # blanket floor let a second round trip on the
+                            # same contract inside that window (back-to-back
+                            # SPY 758C, ~90s apart) win as "newest fill" when
+                            # checking the FIRST trade's exit, false-alarming
+                            # a $10 P&L mismatch that was really just the
+                            # other trade's fill.
+                            _real = WB.last_sell_fill(
+                                r.get("symbol"), r.get("side"),
+                                r.get("strike"), r.get("expiry"),
+                                since=r.get("opened") or (time.time() - 180),
+                                until=(float(r["closed"]) + 60)
+                                      if r.get("closed") else None)
                             if _real and float(_last.get("price") or 0) > 0:
                                 _d = abs(float(_real) - float(_last["price"]))
                                 if _d >= 0.02:
