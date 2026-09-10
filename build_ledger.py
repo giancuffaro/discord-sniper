@@ -612,26 +612,6 @@ def build():
             exits = [{"t": closed_ts, "qty": qty, "price": _r2(r.get("exit")),
                       "pl": _r2(r.get("pl"))}]
             derived = True
-        # --- put the contract back on rows that lost it (9/10) ---
-        if _kind(r) == "option" and (r.get("strike") is None or not r.get("side")
-                                     or not r.get("expiry")):
-            cands = fill_contracts.get((date, sym), [])
-            pick = None
-            for cnd in cands:
-                if opened_ts and cnd["ts"] and cnd["ts"] > opened_ts + 90:
-                    continue                    # ordered after we were filled
-                pick = cnd                      # keep the latest one before us
-            if pick is None and len(cands) == 1:
-                pick = cands[0]
-            if pick:
-                if r.get("strike") is None:
-                    r["strike"] = pick["strike"]
-                if not r.get("side"):
-                    r["side"] = "CALLS" if pick["cp"] == "C" else "PUTS"
-                if not r.get("expiry"):
-                    r["expiry"] = pick["expiry"]
-                r["_contract_fixed"] = True
-
         # --- the broker's own export: confirm, and fill a missing exit ---
         trip = _find_trip(date, sym, _r2(r.get("strike")), _side_letter(r.get("side")), fill, qty)
         export_confirmed = trip is not None
@@ -758,9 +738,7 @@ def build():
             "derived": derived,
             "day_file": r["_file"],
             "raw": (r.get("raw") or "").replace("\n", " ").strip(),
-            "why": (("contract read back from the log's ORDER IN line; "
-                     if r.get("_contract_fixed") else "")
-                    + (r.get("why") or "").replace("\n", " ").strip()
+            "why": ((r.get("why") or "").replace("\n", " ").strip()
                     or ("P&L recomputed from the fill and exit prices — the book's "
                         "number was wrong (see store_pl)" if r.get("_pl_fixed") else "")),
         })
@@ -780,8 +758,23 @@ def build():
         qty, ts = b.get("qty"), b.get("ts")
         _who = fill_callers.get((date, sym, price), "")
         _room = caller_room.get(_who.strip().lower(), "?") if _who else "?"
+        # THE CONTRACT, read back from the ORDER IN line that started it
+        # (9/10). A FILLED line names only the ticker, so every one of these
+        # rows was a trade with no strike, side or expiry — unmatchable
+        # against the broker forever. The ORDER IN above it has all three.
+        # Nearest order for that symbol at or before the fill; a fill with
+        # no order before it is left bare rather than guessed at.
+        _c = None
+        for _cnd in fill_contracts.get((date, sym), []):
+            if ts and _cnd["ts"] and _cnd["ts"] > ts + 90:
+                break
+            _c = _cnd
+        _strike = _c["strike"] if _c else ""
+        _side = ("CALLS" if _c["cp"] == "C" else "PUTS") if _c else ""
+        _expiry = _c["expiry"] if _c else ""
         out.append({c: "" for c in COLUMNS} | {
             "date": date, "room": _room, "caller": _who, "symbol": sym, "fill": price,
+            "strike": _strike, "side": _side, "expiry": _expiry,
             "avg_in": price, "qty": qty if qty is not None else "",
             "opened": _hms(ts), "opened_ts": ts if ts is not None else "",
             "kind": "future" if FUT_RE.match(sym) else "option",
@@ -794,8 +787,11 @@ def build():
             "source": "trades.log-only",
             "in_table": False, "in_wallet": False,
             "opened_from": "trades.log", "exit_from": "", "derived": True,
-            "why": ("broker FILLED with no day-JSON row — caller read back from "
-                    "the WORKING line above it" if _who else
+            "why": ("broker FILLED with no day-JSON row — "
+                    + ("caller" if _who else "")
+                    + (" and contract" if (_who and _c) else ("contract" if _c else ""))
+                    + " read back from the log above it"
+                    if (_who or _c) else
                     "broker FILLED with no day-JSON row (caller unknown)"),
         })
 
@@ -990,7 +986,8 @@ def summary(rows, broker):
           f"archive/paper-fills-*.csv)")
     print(f"  (one row per POSITION — a trade held overnight is not counted "
           f"once per day)")
-    _cf = [r for r in rows if "contract read back" in (r.get("why") or "")]
+    _cf = [r for r in rows if "contract read back from the log" in (r.get("why") or "")
+           or "and contract read back" in (r.get("why") or "")]
     if _cf:
         print(f"  CONTRACT recovered from the log:     {len(_cf)}  "
               f"(rows that had no strike/side/expiry)")
