@@ -1266,11 +1266,34 @@ async function pumpGrabQueue() {
       try { await chrome.windows.update(t.windowId, { focused: true }); } catch (e) {}
       await chrome.tabs.update(next.tabId, { active: true });
       await new Promise(r => setTimeout(r, 400));   // let it paint before scrolling
-      await chrome.tabs.sendMessage(next.tabId, { type: "GRAB_HISTORY" });
+      // WAKE THE READER FIRST, DON'T GIVE UP ON IT (9/10, G: "I'm pressing
+      // the button, it doesn't work"). Reloading the extension orphans the
+      // content script in every tab that was already open: the tab looks
+      // perfectly fine, but sendMessage throws "Receiving end does not
+      // exist" and the old code took that as "tab gone" and silently
+      // dropped the grab. Nothing on screen, nothing in the log he was
+      // looking at. Re-inject and retry once — that is the whole fix, and
+      // ensureReaders already does exactly this for the live readers.
+      try {
+        await chrome.tabs.sendMessage(next.tabId, { type: "GRAB_HISTORY" });
+      } catch (e1) {
+        const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
+        await chrome.scripting.executeScript({ target: { tabId: next.tabId },
+          files: [isWhop ? "whop.js" : "content.js"] });
+        await new Promise(r => setTimeout(r, 600));
+        await chrome.tabs.sendMessage(next.tabId, { type: "GRAB_HISTORY" });
+        await addLog({ kind: "update", why: "the reader in that tab was stale "
+          + "(an extension reload orphans it) — put a fresh one in and started "
+          + "the grab. Nothing lost." });
+      }
       await addLog({ kind: "update", why: "⏳ grabbing " + roomName(next.channelId) + " — brought it to the front. Leave it; it closes itself when done." });
     } catch (e) {
-      // Tab was closed, or its reader isn't loaded — drop it and move on.
-      await addLog({ kind: "ignored", why: "skipped " + roomName(next.channelId) + " — its tab was gone or not ready. Reopen it and re-queue." });
+      // Still no. Say WHY, instead of the old catch-all that blamed the tab.
+      await addLog({ kind: "failed", what: "GRAB",
+        why: "couldn't start the grab on " + roomName(next.channelId) + " — "
+           + String((e && e.message) || e).slice(0, 120)
+           + ". If the tab is open and this keeps happening, refresh that tab "
+           + "(F5) and press Grab again." });
       await advanceQueue(next.tabId, false);
     }
   } finally {
