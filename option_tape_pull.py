@@ -225,7 +225,7 @@ def main():
             stop = True
     for f in queue:                 # drain what is already paid for
         try:
-            occ_s, day, buf, err = f.result(timeout=45)
+            occ_s, day, buf, err = f.result(timeout=8)
         except Exception:                                   # noqa: BLE001
             continue
         if err is None:
