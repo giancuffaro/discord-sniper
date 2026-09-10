@@ -817,7 +817,7 @@ async function pollRoomsFile() {
         const wasOn = before.has(room.id), isOn = room.state === "on";
         if (wasOn === isOn) continue;
         const tabs = await roomTabsFor(room);
-        if (isOn && !tabs.length && room.url) {
+        if (isOn && roomWantsTab(room) && !tabs.length && room.url) {
           if (Date.now() - (ROOM_OPENED_AT[room.id] || 0) < 120000) continue;
           ROOM_OPENED_AT[room.id] = Date.now();
           try { await chrome.tabs.create({ url: room.url, active: false }); opened++; } catch (e) {}

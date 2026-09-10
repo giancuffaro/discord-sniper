@@ -15,6 +15,13 @@
 #   lapsed  the subscription ran out — same as off, but the extension knocks
 #           on its door once a day (off-hours) and tells you when it is
 #           readable again; flipping it on is still your click
+# An optional 6th field holds the room's RULES, comma-separated:
+#   spx       index calls in this room trade as SPY (strike/10, premium dropped)
+#   bare      an entry with no verb still counts ("SPY 650c 1.20")
+#   sym=SPX   the symbol to assume when a call names none
+#   always    tab open 24h — the FUTURES rooms. Every other `on` room opens at
+#             9:15 and closes at 4:30 PM ET, weekdays, no holidays (G, 9/9:
+#             "we can't follow any alert then — don't bomb Discord with pings")
 # Lines starting with # are comments. Blank lines are ignored.
 # Whop rooms use their canonical "whop:xxx" id in the first field — that's
 # what background.js's whopRoomOf() matches on.
@@ -49,7 +56,7 @@
 # dead, silently dropping every tab read since that morning) — tabs are the
 # only Whop source again.
 whop:day-trades|https://whop.com/firststeptrading/exp_cvgzKYDmcUEDGh/app/|Whop Day Trades|firststeptrading (Whop)|on
-whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)|on
+whop:futures|https://whop.com/firststeptrading/exp_26GaLgZVMzB2PL/app/|Whop Futures|firststeptrading (Whop)|on|always
 whop:high-risk|https://whop.com/firststeptrading/exp_hpXJymtw0yMqzB/app/|Whop High Risk|firststeptrading (Whop)|on
 whop:2k-challenge|https://whop.com/firststeptrading/exp_Yg9HGTPsXPhQ5D/app/|Whop 2K Challenge|firststeptrading (Whop)|on
 # CUT 9/7 (Whop Swing Trades) — a SWING room. Swings have been paused since 9/4 and G restated the rule 9/7 ("we shouldnt have any"). Reading a room we will not trade is dead weight.
@@ -104,9 +111,9 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # cut 8/30 — redundant: this trader flows through the mashup
 1179200811650252850|https://discord.com/channels/496871546963492874/1179200811650252850|ZT swing-4|ZTRADEZ|off
 # REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 18 real signals since reopening. CUT 9/9 — ZTRADEZ sub lapsing in 1 day, not a performance cut.
-1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ|off
+1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ|off|always
 # REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 19 real signals since reopening. CUT 9/9 — ZTRADEZ sub lapsing in 1 day, not a performance cut.
-1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ|off
+1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ|off|always
 
 # SUBSCRIPTION LAPSED (checked on whop.com 9/7/26). A room whose
 # subscription has expired shows nothing, so the tab is dead weight:
@@ -150,7 +157,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # sweep deleted every explicit TEST flag, they are LIVE unless G has flipped
 # one to TESTING in the popup since.
 911389167169191946|https://discord.com/channels/911385966864896081/911389167169191946|Platinum nitro|Platinum Trading|on
-911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|Platinum futures-alerts|Platinum Trading|on
+911390080285962290|https://discord.com/channels/911385966864896081/911390080285962290|Platinum futures-alerts|Platinum Trading|on|always
 1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum day-trades|Platinum Trading|on
 1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum ei-alerts|Platinum Trading|on
 # CUT 9/7 (Platinum equity) — 203 captured messages, 4 fires, ZERO entries — MrMTrades posting SWING ideas on SHARES, no strike/expiry. Fails the no-swings, options-only, and no-watchlist rules at once.
@@ -161,7 +168,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # same signal twice (8/23).
 
 # CUT 9/9 — 0 rows in master_ledger.csv, no signal since it was added.
-1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|NGD ngd-trades (Ninjago Futures Radar)|NGD|off
+1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|NGD ngd-trades (Ninjago Futures Radar)|NGD|off|always
 
 # ELITE OPTIONS. Both callers (Brando, Shoof) were wired 9/7 off 148 real
 # alerts pulled from scrollback — full grammar notes (their pipe-delimited

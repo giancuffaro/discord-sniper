@@ -1092,13 +1092,27 @@ function chanLabel(id) {
  * rewrites the line → the tab opens or closes). ROOM_NAMES stays the
  * id→label map chanLabel() reads for positions and the log. */
 let ROOM_NAMES = {};
-let ALL_ROOMS = [];             // [{id,url,name,group,state,why}] file order
+let ALL_ROOMS = [];             // [{id,url,name,group,state,why,rules,last_post}] file order
+let ROOMS_WINDOW_OPEN = true;   // 9:15-4:30 ET weekdays (background decides)
+/* "15:52" today, "Mon 15:52" this week, "9/3" older — for the last-message stamp */
+function whenShort(ms) {
+  const d = new Date(Number(ms));
+  if (!Number.isFinite(d.getTime())) return "";
+  const ny = { timeZone: "America/New_York" };
+  const today = new Intl.DateTimeFormat("en-CA", Object.assign({ year: "numeric", month: "2-digit", day: "2-digit" }, ny));
+  const hm = new Intl.DateTimeFormat("en-GB", Object.assign({ hour: "2-digit", minute: "2-digit", hour12: false }, ny)).format(d);
+  if (today.format(d) === today.format(new Date())) return hm;
+  if (Date.now() - d.getTime() < 6 * 86400000)
+    return new Intl.DateTimeFormat("en-US", Object.assign({ weekday: "short" }, ny)).format(d) + " " + hm;
+  return new Intl.DateTimeFormat("en-US", Object.assign({ month: "numeric", day: "numeric" }, ny)).format(d) + " " + hm;
+}
 let _roomsLoaded = false;
 async function loadRoomsForPopup() {
   try {
     const res = await chrome.runtime.sendMessage({ type: "ROOMS?" });
     if (res && res.ok && Array.isArray(res.rooms)) {
       ALL_ROOMS = res.rooms;
+      if (typeof res.window_open === "boolean") ROOMS_WINDOW_OPEN = res.window_open;
     } else {
       // background not answering (mid-reload): read the file directly
       const r = await fetch(chrome.runtime.getURL("rooms.txt"), { cache: "no-store" });
@@ -1202,7 +1216,10 @@ function renderRoomToggles() {
     'border-bottom:1px solid #2a303c">' +
     '<span class="grow" style="font-size:12px;font-weight:600">Rooms ' +
     '<span style="color:#7d8697;font-weight:400">(' + on + ' of ' + rooms.length +
-    ' on — on = tab open, reading, LIVE)</span></span></div>';
+    ' on — on = tab open, reading, LIVE · hours 9:15–4:30 ET, ' +
+    (ROOMS_WINDOW_OPEN ? '<span style="color:#4ade80">open now</span>' :
+                         '<span style="color:#fbbf24">closed now — 24h rooms only</span>') +
+    ')</span></span></div>';
   box.innerHTML = head + groups.map(g =>
     '<div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;' +
     'color:#7d8697;margin:8px 0 3px">' + esc(g.name) + '</div>' +
@@ -1216,6 +1233,8 @@ function renderRoomToggles() {
         'style="font-size:12px;cursor:pointer;text-decoration:underline;' +
         'text-decoration-style:dotted;text-underline-offset:3px">' + esc(chanLabel(r.id)) +
         (r.why && !isOn ? ' <span style="color:#7d8697;font-size:10px">— ' + esc(r.why.slice(0, 70)) + '</span>' : "") +
+        (r.last_post ? ' <span style="color:#7d8697;font-size:10px" title="newest message this room posted">· last msg ' +
+                       esc(whenShort(r.last_post)) + '</span>' : "") +
         '</span>' +
         rulePills(r) +
         '<span style="font-size:11px;letter-spacing:.04em;width:52px;text-align:right;color:' +
@@ -1280,6 +1299,7 @@ function rulePills(r) {
     pill("spx", "SPY-proxy", rules.has("spx"), "index calls in this room trade as SPY (strike/10, premium dropped)") +
     pill("bare", "bare", rules.has("bare"), "an entry with no verb still counts here (\"SPY 650c 1.20\")") +
     pill("sym=SPX", "SPX", rules.has("sym=spx"), "assume SPX when a call names no symbol") +
+    pill("always", "24h", rules.has("always"), "tab stays open round the clock (futures rooms); others open 9:15, close 4:30 PM ET") +
     '</span>';
 }
 

@@ -229,7 +229,7 @@ ROOMS_TXT = os.path.join(HERE, "extension", "rooms.txt")
 ROOM_STATES = ("on", "off", "lapsed")
 
 
-ROOM_RULE_FLAGS = ("spx", "bare")          # + "sym=XXX"
+ROOM_RULE_FLAGS = ("spx", "bare", "always")   # + "sym=XXX"; always = tab open 24h (futures rooms)
 
 
 def read_rooms():
@@ -240,6 +240,8 @@ def read_rooms():
       spx       index calls in this room trade as SPY (strike/10, premium dropped)
       bare      an entry with no verb still counts ("SPY 650c 1.20")
       sym=SPX   the symbol to assume when the call names none
+      always    tab stays open 24h (futures rooms); everything else opens
+                9:15 and closes 4:30 PM ET (extension ROOM_HOURS)
     The bridge derives spx_entry_channels / entry_no_verb_channels /
     default_symbol_channels from these — settings.json no longer holds them."""
     rooms, last_comment = [], ""
