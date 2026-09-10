@@ -2404,6 +2404,19 @@ class Book:
                             oid, stop_price = wb.place_stop(sym, side, strike,
                                                             expiry, qty, fill,
                                                             stop_price=stop_price)
+                        elif "CAVERED_CALL_STOCK_NO_ENOUGH" in up0:
+                            # 9/10 SPY: no orphan order to clear, and Webull
+                            # still 417'd this SELL as an uncovered call write.
+                            # No stale order was the cause here — their own
+                            # position record hadn't caught up with a fill
+                            # only ~1-4s old (same lag POSTCHECK flags as
+                            # "book holds X, the account doesn't"). One short
+                            # wait for their side to sync, then one more try,
+                            # beats going watchdog-only on a brand-new fill.
+                            time.sleep(1.5)
+                            oid, stop_price = wb.place_stop(sym, side, strike,
+                                                            expiry, qty, fill,
+                                                            stop_price=stop_price)
                         else:
                             raise
                     else:
