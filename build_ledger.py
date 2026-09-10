@@ -228,6 +228,39 @@ def load_broker_fills():
     return fills
 
 
+WORKING_RE = re.compile(r"\tWORKING\s+(\S+)\s+—\s+(.+?)'s call")
+
+
+def load_fill_callers():
+    """(date, SYMBOL, price) -> caller, read from trades.log.
+
+    WHY (9/9, G: "show me the ones you couldn't attribute — why couldn't we?
+    are those from alerts?"): 41 fills sat in the ledger with room "?" and no
+    caller. They ARE from alerts — real bot entries on room calls — but their
+    day-JSON row was lost (the table truncates; the wallet clears on restart),
+    and the FILLED line that survived carries no caller tag. It doesn't have
+    to: the WORKING line a few lines above it names the caller for that exact
+    symbol ("WORKING QQQ — Demon Alerts's call, bid is in at 0.90"). Walking
+    back to it attributed all 41. Same-symbol match only, 60 lines of reach —
+    a miss leaves the row unattributed rather than guessing."""
+    out = {}
+    if not os.path.exists(TRADES_LOG):
+        return out
+    with open(TRADES_LOG, encoding="utf-8", errors="replace") as fh:
+        lines = fh.read().split("\n")
+    for i, ln in enumerate(lines):
+        m = FILLED_RE.match(ln)
+        if not m:
+            continue
+        iso, sym, _qty, price = m.group(1), m.group(2).upper(), m.group(3), m.group(4)
+        for j in range(i - 1, max(-1, i - 60), -1):
+            w = WORKING_RE.search(lines[j])
+            if w and w.group(1).upper() == sym:
+                out[(iso[:10], sym, round(float(price), 2))] = w.group(2).strip()
+                break
+    return out
+
+
 def _take_fill(broker, key):
     """First unused FILLED line for this key, marked used. None if spent."""
     for b in broker.get(key, ()):
@@ -636,14 +669,22 @@ def build():
         })
 
     # broker fills with NO day-JSON row → visible gap rows (every FILLED line
-    # nothing above consumed)
+    # nothing above consumed). The caller comes from the WORKING line above
+    # the fill, and the room from wherever that caller's OTHER trades sat.
+    fill_callers = load_fill_callers()
+    caller_room = {}
+    for r in out:
+        if r.get("caller") and r.get("room") and r["room"] != "?":
+            caller_room.setdefault(str(r["caller"]).strip().lower(), r["room"])
     for (date, sym, price), queue in broker.items():
       for b in queue:
         if b["used"]:
             continue
         qty, ts = b.get("qty"), b.get("ts")
+        _who = fill_callers.get((date, sym, price), "")
+        _room = caller_room.get(_who.strip().lower(), "?") if _who else "?"
         out.append({c: "" for c in COLUMNS} | {
-            "date": date, "room": "?", "symbol": sym, "fill": price,
+            "date": date, "room": _room, "caller": _who, "symbol": sym, "fill": price,
             "avg_in": price, "qty": qty if qty is not None else "",
             "opened": _hms(ts), "opened_ts": ts if ts is not None else "",
             "kind": "future" if FUT_RE.match(sym) else "option",
@@ -656,7 +697,9 @@ def build():
             "source": "trades.log-only",
             "in_table": False, "in_wallet": False,
             "opened_from": "trades.log", "exit_from": "", "derived": True,
-            "why": "broker FILLED with no day-JSON row (room unknown)",
+            "why": ("broker FILLED with no day-JSON row — caller read back from "
+                    "the WORKING line above it" if _who else
+                    "broker FILLED with no day-JSON row (caller unknown)"),
         })
 
     # export round-trips no store ever saw → the account's own record wins.
