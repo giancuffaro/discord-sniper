@@ -4484,3 +4484,11 @@ unattended (one-shot open-rooms request, no git/Chrome prompts);
 REPLACE-DON'T-STACK rule; folder cleanup to archive/; POSTCHECK stale-snapshot
 false alarm fixed. Story of each in HANDOFF-LOG.md.
 
+
+
+---
+
+## 2026-09-10 13:15 — HANDOFF.md header, moved here again
+It went back over the 50 KB ceiling. State stays in HANDOFF.md; this is history.
+
+Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trademorewiser NQ short (Day Trades) found it never reached trades.log, and the room had caught exactly 1 alert total since 8/13. Cause: nothing ever recreated a Whop tab once it died, and nothing noticed if the whole "Sniper Whop" Chrome profile wasn't running. Fixed — whopSelfHeal() (background.js, whop lane only, Discord's 9/8 "a closed tab stays closed" rule untouched) + _whop_loop.bat/_whop_hidden.vbs watchdog (installed by START HERE.bat, Startup entry + 30-min revive task, same model as the Fill Announcer). Takes effect next time START HERE.bat runs. Story in HANDOFF-LOG.md. ALSO TODAY: the ratchet moved 7.5/5/2 -> 5/3/5 on G's call (OPRA tape bought, 537 contract-days; 115 real room calls; old $158 rank #82, new $504 rank #1, +$3.01 a trade, 95% band +$0.72..+$4.91 — the first spacing to clear its own error bar) and every backtest/report now READS the spacing from ratchet_tiers.live_spacing(); full-depth scan of all 25 Discord servers / 289 channels (2 live options feeds found in TradingTheTrend, added `off`); RWGates set LAPSED — the account has been REMOVED from that server, not just unsubscribed. Everything before today is in HANDOFF-LOG.md.

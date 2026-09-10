@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trademorewiser NQ short (Day Trades) found it never reached trades.log, and the room had caught exactly 1 alert total since 8/13. Cause: nothing ever recreated a Whop tab once it died, and nothing noticed if the whole "Sniper Whop" Chrome profile wasn't running. Fixed — whopSelfHeal() (background.js, whop lane only, Discord's 9/8 "a closed tab stays closed" rule untouched) + _whop_loop.bat/_whop_hidden.vbs watchdog (installed by START HERE.bat, Startup entry + 30-min revive task, same model as the Fill Announcer). Takes effect next time START HERE.bat runs. Story in HANDOFF-LOG.md. ALSO TODAY: the ratchet moved 7.5/5/2 -> 5/3/5 on G's call (OPRA tape bought, 537 contract-days; 115 real room calls; old $158 rank #82, new $504 rank #1, +$3.01 a trade, 95% band +$0.72..+$4.91 — the first spacing to clear its own error bar) and every backtest/report now READS the spacing from ratchet_tiers.live_spacing(); full-depth scan of all 25 Discord servers / 289 channels (2 live options feeds found in TradingTheTrend, added `off`); RWGates set LAPSED — the account has been REMOVED from that server, not just unsubscribed. Everything before today is in HANDOFF-LOG.md.
+Last updated: 2026-09-10 (13:15) — ratchet 7.5/5/2 -> 5/3/5 (G's call; first spacing to clear its own error bar). TAB RULE: only START HERE, the popup switch and whopSelfHeal may open a tab; a room that says "No Access" auto-lapses and its tab closes. Export filenames now carry the lane — the two Chrome profiles had been wiping each other's day. Room attribution on alerts 6% -> 48% (telemetry read `trader`, everything else calls it `who`). Whop self-heal + watchdog (10:12 pass). Full-depth scan of all 25 Discord servers. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Story of each in HANDOFF-LOG.md.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -28,7 +28,7 @@ Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trad
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.85) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.90) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
@@ -110,6 +110,25 @@ ENTRIES
   own lane's rooms. START HERE opens only `on` rooms. CLOSING A TAB BY
   HAND IS NOT A BENCH — START HERE and a flip reopen every `on` room; the
   switch is the only bench. Benched rooms are never deleted from the file.
+  WHO MAY OPEN A TAB (9/10, G: "get rid of auto opening tabs UNLESS it's
+  the start sniper"). Exactly three things, and nothing else:
+    1. START HERE.bat, through its one-shot open-rooms request
+    2. the popup's Channels switch (his click)
+    3. whopSelfHeal() — kept on his call so the Whop lane can revive its own
+       4 tabs; its dedupe now reads pendingUrl and queries the whole origin,
+       because the old query missed a still-LOADING tab and that is how a
+       heal pass turned 4 Whop tabs into 8
+  roomSchedule() no longer opens anything — it used to open every `on` room
+  at 9:15. It still CLOSES at 4:30, which is what stops the overnight pings.
+  probeOne() opens a lapsed room off-hours to see if access came back and
+  closes that tab seconds later in a finally — a door-knock, not an open.
+  NO ACCESS = OUT OF SERVICE (9/10, G: "do not open the tab if we don't have
+  access"). revokeCheck() reads the tab titles it already has; a room whose
+  title says "No Access" is now written to rooms.txt as `lapsed` through the
+  bridge and its tab closed, instead of only logging a warning. RWGates
+  proved the warning alone was useless — it fired for three weeks while the
+  room kept opening a blank tab every morning. `lapsed` not `off` on purpose:
+  the daily probe keeps knocking, so it un-lapses itself if the sub returns.
   6th field = the room's RULES (9/9 evening): comma flags `spx` (index
   calls trade as SPY, strike/10, premium dropped), `bare` (an entry with
   no verb counts), `sym=SPX` (symbol to assume when the call names none).
