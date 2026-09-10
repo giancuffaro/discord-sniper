@@ -7,7 +7,65 @@ HANDOFF.md (the rules in force) always wins over anything here.
 From 2026-09-09 on, session notes are appended at the TOP of the
 "SESSION NOTES" section below, dated, and HANDOFF.md gets only the rule edit.
 
-## SESSION NOTES (newest first)
+## SESSION NOTES
+
+## 2026-09-10 (evening) — THE READER SESSION
+
+Carried over from HANDOFF.md: 2026-09-10 (15:55) — broker pull is ONE overwritten file, Webull_Orders_auto.csv, never deleted (G's call). ratchet 7.5/5/2 -> 5/3/5 (G's call; first spacing to clear its own error bar). TAB RULE: only START HERE, the popup switch and whopSelfHeal may open a tab; a room that says "No Access" auto-lapses and its tab closes. Export filenames now carry the lane — the two Chrome profiles had been wiping each other's day. Room attribution on alerts 6% -> 48% (telemetry read `trader`, everything else calls it `who`). Whop self-heal + watchdog (10:12 pass). Full-depth scan of all 25 Discord servers. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Story of each in HANDOFF-LOG.md. 9/10 pm (ext 3.6.1): the reader takes the three tokens in ANY ORDER in `bare` rooms; multi-strike calls become two orders, one contract each; NDTE rolls BACK off a weekend; no date = 0DTE wherever a same-day listing exists, that Friday where it doesn't; "NEXT FRI" reads. Rooms added: Mugzone Options (on), FloridaManFinance (on, bare), AbTrades Alert Bot (on, bare, swings), TheArchitech (off, SPX), OWLS jon-and-kian (on, read live). All FIVE are in guild 718624848812834903 — the 9/9 scan badly under-read it; RE-SCAN THAT GUILD channel by channel. jon-and-kian also exposed three parser defects, all fixed: a date GLUED to "exp" ("3/19exp") was DROPPED and the order took the default date instead (would have bought a January leap as this Friday); a price with no "@" in front of it was ignored on every OPEN-label entry, so those bid the market; and the label CLOSE read as the ticker. THEN THE REPLAY CAUGHT A NEAR-DISASTER: the new any-order reader, run over 11,187 real logged messages, produced 14 new entries and THIRTEEN were English words turned into tickers (NEX, FOR, CALLY, THETA, BREAK) — and NEX and FOR are REAL LISTED SYMBOLS, so the allowlist downstream would have waved them through and bought a contract nobody named. Three rails added: that branch is `bare`-rooms-only, the ticker must be a $CASHTAG or ALL CAPS, and it must sit within 10 characters. AND optionable.txt is now read by parser.js itself (G: "they have to go through the filter of the tickers you created") — one file, three readers, fails open. Net on the whole historical corpus: +0 real alerts, -6 FAKE ones that were firing before today (tickers HAD and EARLY). ALWAYS REPLAY A READER CHANGE OVER "DS Logs" BEFORE SHIPPING IT. Low Key Stonks (722872384800948227) scanned live: 40 channels, 3 taken (Demon day-trades, Nando Alerts, Brick Alerts+bare), 9 logged off with reasons. WHY THE 9/9 SCAN MISSED ROOMS: DISCORD VIRTUALISES THE CHANNEL SIDEBAR — scraping hrefs once saw 26 of 40 and missed the whole "Stock/Option Alerts" section. Scroll the list end to end before believing a server is scanned. Two rooms left OFF because turning them on would lose money today: maguro writes the expiry with a DOT ("$slv 63c 10.16 2.35" = Oct 16 @ $2.35 — the reader would bid $10.16 and buy this Friday) and kaori writes "jan 2028" (fires with no expiry at all). Both need grammar before they can go on.
+
+### What changed in the reader (ext 3.5.97 -> 3.6.1)
+- ANY WORD ORDER in `bare` rooms. G: "it doesn't matter the order of the
+  expiration or the price or the ticker." The strip is built from the contract
+  that was found, so its three tokens come out wherever they sit.
+- TWO CONTRACTS IN ONE MESSAGE become TWO ORDERS, one contract each.
+- NDTE rolls BACK off a weekend/holiday (G: "there is no 3DTE if in three days
+  is a Saturday"). No date = 0DTE wherever a same-day listing exists.
+- "3/19exp" — the date glued to "exp" — was being DROPPED, so the order took
+  the bridge's default date. PURR 1/15exp would have been bought as this Friday.
+- A price with no "@" in front of it was ignored on every OPEN-label entry.
+- The label CLOSE was being read as the ticker.
+- optionable.txt is now read by parser.js itself, not only by background.js and
+  bridge.py. G's call, and it was the right one.
+
+### THE NEAR-DISASTER, and the discipline that caught it
+G asked whether all this meant "way more alerts". Instead of answering from
+feel I replayed the OLD parser and the NEW one over all 11,187 messages in
+"DS Logs". The new one produced 14 new entries and THIRTEEN were English words
+turned into tickers:
+    "revising $338,00 BREAK 4.65"      -> NEX 350 CALLS
+    "buy DOCU Calls July 31st - 48"    -> FOR 48 CALLS
+    "$776C cally spy TUESDAY"          -> CALLY 776 CALLS
+    "772.35 - 772.40 has to hold"      -> THETA 773 CALLS
+NEX and FOR are REAL LISTED SYMBOLS. The allowlist would have waved both
+through and bought a contract nobody named.
+Three rails: that branch is `bare`-rooms-only; the ticker must be a $CASHTAG
+or ALL CAPS; it must sit within 10 characters. Plus optionable.txt in the
+parser.
+FINAL SCORE on the whole corpus: +0 real alerts, -6 FAKE ones that had been
+firing before today (tickers HAD and EARLY). So the honest answer to "way more
+alerts" is NO — the gains are confined to the new rooms, and the old corpus got
+slightly SAFER, not bigger.
+RULE FROM THIS: replay every reader change over "DS Logs" before shipping it.
+
+### Why the 9/9 full-depth scan missed rooms
+DISCORD VIRTUALISES THE CHANNEL SIDEBAR. Scraping the hrefs once returned 26 of
+Low Key Stonks' 40 channels and missed the entire "Stock/Option Alerts"
+section — demon, brick, quantum, maguro, kaori, nando and eight more. Scroll
+the channel list end to end before believing a server has been scanned.
+
+### Rooms added (8)
+Guild 718624848812834903, five in one day: Mugzone Options (on), FloridaMan-
+Finance (on, bare), AbTrades Alert Bot (on, bare, swings), OWLS jon-and-kian
+(on), TheArchitech (off, SPX).
+Low Key Stonks: Demon day-trades (on), Nando Alerts (on), Brick Alerts (on,
+bare). Nine more logged OFF with the reason on the line.
+Two were left off because turning them on would have LOST MONEY TODAY:
+maguro writes the expiry with a DOT ("$slv 63c 10.16 2.35" is Oct 16 at $2.35 —
+the reader takes 10.16 as the PRICE and the date as missing, so it would bid
+$10.16 for a $2.35 contract and buy this Friday); kaori writes "jan 2028",
+which fires with no expiry at all. Both need grammar first.
+
+ (newest first)
 
 **THE PULLBACK EXIT CALLED ITSELF A ROOM CALL (9/10 15:10 autopilot).** The
 META 645P 9/11 pullback target sold at 6.23 (+$80) and the book wrote
