@@ -9,6 +9,28 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**2026-09-10 00:20 — "SHOW ME THE ONES YOU COULDN'T ATTRIBUTE — ARE THOSE FROM
+ALERTS?" (v3.5.85).** They were, all 41. Each is a real bot entry on a room
+call whose day-JSON row was lost (the table truncates, the wallet clears on
+restart); the trades.log FILLED line survived but carries no caller tag. It
+didn't need one — the WORKING line a few lines above names the caller for
+that exact symbol ("WORKING QQQ — Demon Alerts's call, bid is in at 0.90").
+build_ledger.load_fill_callers() walks back 60 lines, same-symbol only, and
+attributed 41/41: Bullwinkle 7, Unraveller 6, EvaPanda 4, Demon 2, Brett 2,
+Mike 2, JpmInvestments 2 … Room came from that caller's other trades (36/41).
+Checked and rejected two wrong stories on the way: "cost $0" is a display
+bug present on attributed rows too (29 of 92), not a paper tell; and only 3
+of the 41 were exit-fills misread as entries.
+SECOND FIND, from the same pull: 28 rows in the board's unattributed bucket
+were G's OWN hand trades (webull-export-only / manual, +$1150 all told) —
+his Market Sniper scalps, correctly in the ledger, but nobody's call. A
+caller board that includes them can't answer "is this room worth paying
+for". Now skipped, not bucketed. What remains unattributed is 30 fills /
+−$194 from Aug 7-20, when the book wrote "?" for who and the log had no
+WORKING lines yet — genuinely unknowable, labelled as such.
+INTEGRITY CHECK now passes end to end: ledger +4770 = G named +36 + G hand
++1150 + callers +3584. Board total = caller sum, to the cent.
+
 **2026-09-10 00:05 — PAPER DELETED FROM THE APP (v3.5.84).** G: "delete all
 paper trades data from the app. I don't want any more confusions." Checked
 first: only 4 ledger rows were actually account="paper" (AAPL nofill, the

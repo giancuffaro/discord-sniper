@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-09 (late) — v3.5.84: NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
+Last updated: 2026-09-10 (00:20) — v3.5.85: caller recovered for the 41 fills that had no book row (read back from the log's WORKING line); G's own hand trades out of the caller board, which now reconciles to the ledger; NO PAPER DATA anywhere in the app (paper rows never enter the ledger; the 4 that existed archived); the Callers tab is the trader scoreboard, corrected (one row per position, paper never counted as money, futures counted not valued); ROOM HOURS 9:15–4:30 ET (futures rooms 24h), last-message stamp per room, START HERE seeds only; the popup as a full PAGE (⤢ page button / popup.html?page=1); SELF-SERVE test build (Callers tab, Needs-you tab + fix buttons, Strategy numbers, room-rule pills; grabber moved to Logs); ONE SWITCH PER ROOM — rooms.txt
 now lists all 51 rooms with on|off|lapsed, the popup's Channels tab shows every
 one grouped with a single switch (on = tab + read + LIVE; no testing state),
 the bridge writes the flip (POST /rooms), START HERE opens only `on` rooms;
@@ -47,7 +47,7 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.84) reads 19 rooms —
+- The machine: Chrome MV3 extension (Profile 2; v3.5.85) reads 19 rooms —
   15 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
   NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
   Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
@@ -148,8 +148,9 @@ ENTRIES
   test, I might want to remove"). Four panels, each one bridge endpoint
   pair + one popup block, marked "SELF-SERVE" in bridge.py / popup.js /
   popup.html / background.js so removal is deleting the marked blocks:
-  · CALLERS tab — THE TRADER SCOREBOARD. Ranked by LIVE net $. Three rules
-    learned the hard way 9/9 when G asked to check Stormzy and MR.TOPHAT:
+  · CALLERS tab — THE TRADER SCOREBOARD. Ranked by net $, and the board's
+    total RECONCILES: ledger +4770 = G's named +36 + G's hand trades +1150
+    + callers +3584. Rules learned 9/9-9/10 from G's spot-checks:
     (a) ONE ROW PER POSITION — days/*.json re-lists an open position every
     day until it closes, so a 3-day hold read as 3 fills (299 rows for 247
     positions; Stormzy's 5 futures positions read as 13). Keyed on
@@ -158,7 +159,16 @@ ENTRIES
     read −$732 when the real number was −$62 live; the rest was one paper
     HPE trade). (c) FUTURES fills are counted, not valued — the NinjaTrader
     path records no P&L, so a futures caller shows "$0 · N futures", never
-    a fake zero. WHEN FUTURES EXECUTION WORKS, PULL ITS RECORDS THE SAME WAY
+    a fake zero. (d) A FILL WITH NO BOOK ROW IS STILL SOMEBODY'S CALL —
+    build_ledger.load_fill_callers() reads the caller back from the WORKING
+    line above each trades.log FILLED ("WORKING QQQ — Demon Alerts's call"),
+    same symbol, 60 lines of reach. That attributed all 41 rows that used to
+    sit at room "?" with no name. (e) G'S OWN HAND TRADES ARE NOT A CALLER'S
+    RECORD — export-only/manual rows are skipped, not bucketed (+$1150 of
+    his Market Sniper scalps was inflating the board). What is left in the
+    bucket is 30 fills / −$194 from Aug 7-20, before the book recorded a
+    caller at all; the log has no WORKING lines that far back, so it stays.
+    WHEN FUTURES EXECUTION WORKS, PULL ITS RECORDS THE SAME WAY
     THE OPTIONS ONES ARE PULLED (broker export → master_broker.csv →
     ledger), or the board keeps lying about the futures callers.
     Every trader ever followed (ledger + alerts; key =
@@ -559,7 +569,9 @@ close-out today.)
   19 (the 04:14 blip above never stuck). Watch whether logoffs stay clear at
   this count; if not, the next lever is moving rooms across more Chrome
   profiles, not further cuts.
-- 154 ledger fills with room "?" (pre-tagging August + recovered rows).
+- 141 ledger fills still at room "?" — but only 30 have no CALLER now
+  (Aug 7-20, before the book recorded one). Room "?" on the rest is
+  cosmetic: the caller is known, the room name was never written.
 - FUTURES RECORDS (G, 9/9): the moment futures execution works, its fills
   need pulling into the ledger the way options fills are (a broker export
   into master_broker.csv). Until then every futures caller — Stormzy 5

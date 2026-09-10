@@ -301,3 +301,7 @@ date,time,room,caller,symbol,side,strike,expiry,dte,their_price,qty,outcome,reas
 2026-09-09,14:53,,,AAPL,,,,,,,PULLBACK never hit,PULLBACK never hit,AAPL ($313),,,,,,,,,,,,,,,,,,,,False,trades.log,"PULLBACK AAPL: never touched $313 in 10 min — skipped, as designed"
 2026-09-09,15:17,,Eva,IBM,CALLS,245,9/11,,,,OTHER refusal,OTHER refusal,IBM,,,,,,,,,,,,,,,,,,,,False,trades.log,"REFUSED  OPEN IBM (Eva's call) 245C 9/11 x1  ->  the spread on IBM260911C00245000 is 1.00/1.21 — $21 a contract to cross it, over your cap ($20 for a contract this price). Nothing was sent."
 2026-09-09,15:59,,,SPY,,,,,,,SWINGS paused,SWINGS paused,SPY,,,,,,,,,,,,,,,,,,,,False,trades.log,SWING-OFF SPY refused — swing trades are PAUSED (the call said swing). Nothing was sent.
+2026-09-10,00:01:38,,,SPY,CALLS,745,7/31,,2.8,1,filled,,,2.77,-0.03,-1.07,,,1789012898.612209,1789012898.8128166,,,200.6,,2.77,2.83,2.14,,,0,,2026-09-10|SPY|2.77,False,telemetry,
+2026-09-10,00:01:48,,,ES,,,,,7500.0,1,filled,,,7500.0,0.0,0.0,,,1789012908.7938688,1789012908.9942756,,,200.4,,,,,,,0,,2026-09-10|ES|7500.00,False,telemetry,
+2026-09-10,00:01:48,,,NQ,,,,,28660.0,3,filled,,,28660.0,0.0,0.0,,,1789012908.5897129,1789012908.7901397,,,200.4,,,,,,,0,,2026-09-10|NQ|28660.00,False,telemetry,
+2026-09-10,00:01:49,,,TSLA,PUTS,305,7/31,,4.5,5,filled,,,4.5,0.0,0.0,,,1789012908.9982119,1789012909.1987276,,,200.5,,4.5,4.56,1.32,,,0,,2026-09-10|TSLA|4.50,False,telemetry,
