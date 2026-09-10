@@ -988,6 +988,17 @@ function tokenContract(text, cfg) {
    *        thing left that means "belongs together".
    */
   if (RE_EXIT.test(t.toLowerCase()) || RE_TRIM.test(t.toLowerCase())) return null;
+  /* RAIL 7 — A REAL ALERT IS SHORT. Found by the second gate run (9/10): of
+   * 24 new entries, FOURTEEN were Bullwinkle UPDATE posts from the ZTRADEZ
+   * relay — "TSLA | 4.60", "WIN ON ALL HERE", "AMD ENTRY WILL BE 5.15" —
+   * where the strike came from a quoted entry earlier in the SAME 300-char
+   * blob. Firing those buys a position we are already in. Loose tokens have
+   * no way to know two sentences are different sentences; length does. Every
+   * genuine call this reader is for is under 120 characters:
+   *     "buy DOCU Calls July 31st - 48"          29
+   *     "$mrvl 10.16 250c 11.5 ... gapper fill"  64
+   *     "AAPL 9/14. $330 CALL .87 SL .5 TP 1.24" 38 */
+  if (t.length > 120) return null;
 
   // --- strike + side: exactly one, or refuse -------------------------------
   RE_TOK_STRIKESIDE.lastIndex = 0;
@@ -1024,9 +1035,13 @@ function tokenContract(text, cfg) {
     }
     cands = caps;
   }
-  // The room's own default counts as the ticker when the call names none —
-  // that is what `sym=SPX` is for, and it is not a guess, it is the room.
-  if (!cands.length && cfg && cfg.default_symbol)
+  /* THE ROOM'S OWN TICKER OUTRANKS A LOOSE CAPITALISED WORD, and that order
+   * matters (9/10 gate): in shabs' room — which trades SPX and says so with
+   * `sym=SPX` — "7620c at 350 if..." picked up IQ from elsewhere in the line
+   * and booked an IQ 7620 call. IQ is a REAL LISTED TICKER, so no allowlist
+   * can catch that; only knowing whose room it is can. When the room declares
+   * its symbol, that IS the symbol. */
+  if (cfg && cfg.default_symbol && !cash.length)
     cands = [{ sym: String(cfg.default_symbol).toUpperCase(), at: ks[0].at }];
   // Two different tickers on one line is a watchlist. Take nothing.
   const uniq = Array.from(new Set(cands.map(c => c.sym)));
