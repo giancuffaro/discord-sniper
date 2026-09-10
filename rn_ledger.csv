@@ -10,3 +10,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1788980027.706,missed,AAPL,CALLS,315,9/14,,313.0,,Eva,OWLS all-alerts
 1789047258.181,armed,SPY,CALLS,758,0DTE,,758.0,,Midas (Admin),Midas
 1789047267.365,filled,SPY,CALLS,758,0DTE,,758.0,758.0,Midas (Admin),Midas
+1789047789.181,armed,META,PUTS,645,9/11,,651.0,,Unraveller,Honeydrip daytrades
