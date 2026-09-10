@@ -633,6 +633,38 @@ function contractSymbolAfter(text) {
            expiry: expiryAnywhere(text) || null };
 }
 
+/* TWO STRIKES IN ONE CALL (9/10, G on TheArchitech's
+ *      "$NVDA $225C/ and $230C NEXT FRI Starters"
+ * — "starters means he's getting in, and he's buying two types of contracts.
+ * So this is like a double alert." And: "when you have multistrikes, just buy
+ * both of them. Buy two contracts, one of each.")
+ *
+ * Returns the EXTRA strikes only — the first one is already the signal's own.
+ * Same ticker, same side, same expiry; only the strike differs. That is the
+ * whole shape and it is deliberately narrow:
+ *   * the two strikes must carry the SAME side letter. "$225C and $230P" is a
+ *     strangle, a different trade, and it is left alone.
+ *   * capped at 3 extras, so a levels row or a target ladder that slipped
+ *     through everything else cannot become nine orders.
+ *   * a strike more than 40% away from the first is not a sibling — that is a
+ *     price, a level or another ticker's number.
+ */
+function extraStrikes(text, first) {
+  if (!first || first.strike == null) return [];
+  const want = String(first.side || "").toUpperCase().startsWith("C") ? "C" : "P";
+  const re = /(?<![A-Za-z0-9$.])\$?(\d{2,5}(?:\.\d{1,2})?)\s*(calls?|puts?|c|p)\b/gi;
+  const out = [];
+  let m;
+  while ((m = re.exec(text)) !== null && out.length < 3) {
+    const k = parseFloat(m[1]);
+    if (m[2][0].toUpperCase() !== want) continue;
+    if (k === first.strike || out.indexOf(k) !== -1) continue;
+    if (Math.abs(k - first.strike) > 0.4 * first.strike) continue;
+    out.push(k);
+  }
+  return out;
+}
+
 function findContract(text) {
   const osi = RE_CONTRACT_OSI.exec(text);
   if (osi && !blockedTicker(osi[1], text)) {
@@ -2320,6 +2352,10 @@ function parseSignalInner(text, cfg) {
       s.warn = "they didn't post a fill price on this one — nothing to " +
                "compare your fill against.";
     }
+    // "$NVDA $225C/ and $230C NEXT FRI Starters" — one call, two contracts.
+    // See extraStrikes. One order each; the ratchet then owns them separately.
+    const sibsE = extraStrikes(t, s);
+    if (sibsE.length) s.also_strikes = sibsE;
     s.fire = true;
     s.why = "entry: " + human(s);
     return s;
@@ -2348,19 +2384,33 @@ function parseSignalInner(text, cfg) {
     if (c5) {
       const esc = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const kNum = esc(String(c5.strike).replace(/\.0+$/, ""));
-      const leftover = t
+      const sibs = extraStrikes(t, c5);
+      let stripped = t;
+      // the sibling strikes ("... and $230C") come out first, so a two-strike
+      // call is still judged on whether anything ELSE is left over
+      for (const k of sibs)
+        stripped = stripped.replace(
+          new RegExp("\\$?" + esc(String(k).replace(/\.0+$/, "")) + "(?:\\.\\d{1,2})?\\s*(?:calls?|puts?|c|p)\\b", "i"), " ");
+      const leftover = stripped
         // strike + side, with the optional "0 day" that can sit between them
         .replace(new RegExp("\\$?" + kNum + "(?:\\.\\d{1,2})?\\s*(?:\\d{1,2}\\s*days?\\s*)?(?:calls?|puts?|c|p)\\b", "i"), " ")
         // the ticker, wherever it is. (When the room supplies a default symbol
         // the word isn't in the text at all and this simply does nothing.)
         .replace(new RegExp("(^|[^A-Za-z])\\$?" + esc(c5.symbol) + "\\b", "i"), "$1 ")
         .replace(/\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b|\b\d*\s*dte\b|\b\d{1,2}\s*days?\b|\bnext\s+(?:fri(?:day)?|week|wk)\b|\bweeklie?s?\b|\bexp(?:iry|iration)?\b/gi, " ")
+        // a side word left standing on its own: "2DTE $765C SPY CALLS" spends
+        // its C inside the contract token and leaves the word CALLS behind.
+        // It repeats what the contract already says, so it is not leftover.
+        .replace(/\b(?:calls?|puts?)\b/gi, " ")
         .replace(RE_FILLER, " ")
+        .replace(/^[\s/&+,-]+|[\s/&+,-]+$/g, " ")
+        .replace(/\s+(?:and|\/|&|\+)\s+/gi, " ")
         .replace(/\s+/g, " ").trim();
       const lonePrice = /^\$?(\d{1,2}(?:\.\d{1,2})?)$/.exec(leftover);
       if (!leftover || (lonePrice && parseFloat(lonePrice[1]) < 100)) {
         s.symbol = c5.symbol; s.strike = c5.strike; s.side = c5.side;
         s.expiry = c5.expiry;
+        if (sibs.length) s.also_strikes = sibs;
         s.action = "OPEN"; s.matched = "bare contract entry";
         s.fire = true;
         if (lonePrice) s.limit = parseFloat(lonePrice[1]);
