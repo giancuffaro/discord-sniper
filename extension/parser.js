@@ -1256,6 +1256,9 @@ function parseSignalInner(text, cfg) {
               // dry run has.
               kind: "", direction: null, their_stop: null, their_target: null,
               usd: null,
+              // PIVOT ROOMS: the last digits of a futures level, as written.
+              // Expanded to a real price by the bridge, which has a quote.
+              pivot: null,
               // "All positions closed" — close everything this trader holds.
               all: false,
               warn: "", raw, clean: "", matched: "" };
@@ -1267,6 +1270,49 @@ function parseSignalInner(text, cfg) {
   // signals.py — Market Bishop's "idea" and Namrood's "P/L:" were killing real
   // trims. Cuts from a known marker to the end only.
   t = (t.replace(RE_FOOTER, "").trim()) || t;
+
+  /* A PIVOT ROOM speaks a language of its own and is read FIRST, before any
+   * of the option grammar below can mistake "short 195" for something else.
+   * See pivotEntry. Only rooms carrying `pivot=NQ` in rooms.txt get here. */
+  if (cfg && cfg.pivot_root) {
+    const root = String(cfg.pivot_root).toUpperCase();
+    s.kind = "future";
+    s.symbol = root;
+    if (RE_PIV_EXIT.test(t)) {
+      // Her trims, stop-moves and flats. ENTRIES ONLY, unchanged: recorded so
+      // the room's real behaviour is on the record, never acted on.
+      s.action = /\bflat\b|\bi[' ]?m\s+out\b/i.test(t) ? "CLOSE" : "TRIM";
+      s.matched = "pivot-room exit";
+      s.fire = false;
+      s.why = "her exit on " + root + " — EXIT-IGNORED. The ratchet's resting "
+            + "stop is the only way out of a position.";
+      return s;
+    }
+    const pv = pivotEntry(t);
+    if (!pv) { s.why = "nothing in it that names a side and a level"; return s; }
+    s.action = "OPEN";
+    s.direction = pv.direction;
+    s.pivot = pv.pivot;                 // the DIGITS she wrote, not a price
+    s.their_stop = pv.their_stop;
+    s.matched = "pivot entry";
+    // READ-ONLY (G, 9/10). His call on this room: "read-only first — log every
+    // call with what we WOULD have done, trade nothing", so there is a real
+    // record to judge her on. The hold lives here rather than in the room's
+    // on/off switch because OFF would mean not reading her at all, and the
+    // whole point is to collect. Drop `readonly` from her rules line to arm it.
+    if (cfg.read_only) {
+      s.fire = false;
+      s.why = "SHADOW — " + pv.direction + " " + root + " at ...." + pv.pivot
+            + (pv.their_stop ? ", her stop ...." + pv.their_stop : "")
+            + ". Read-only room: written down, nothing sent.";
+    } else {
+      s.fire = true;
+      s.why = "entry: " + pv.direction + " " + root + " at the level ending "
+            + pv.pivot + " (the bridge expands it against a live quote and "
+            + "rounds to the next 25 against the trade)";
+    }
+    return s;
+  }
   // A2 - forwarded/relayed embed: "X (MOD) posted <Channel> - <Cat> Entered
   //      ...". Unwrap to the trading verb and re-parse; drop lotto/yolo noise.
   {
