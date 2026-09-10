@@ -76,6 +76,57 @@ all pass; bridge.py + postmortem.py compile. Bridge restarts itself after
 hours (it did at 16:34 on the other session's edits; will again on mine).
 
 
+### The GATE, and the reader that can read any word order (9/10 night)
+G asked for two things and named the second one first: "we definitely do need
+a gate, that should be the first thing to measure."
+THE THREE WORDS, so they stop getting mixed up:
+    PARSER  the machine that reads. Code. extension/parser.js.
+    CORPUS  every real message ever captured. Data. "DS Logs", 11,372 of them.
+    GATE    parser_gate.js — runs the parser over the corpus and diffs the
+            result against the parser as it was before the change.
+`node parser_gate.js` before every parser change, no exceptions. It exits
+non-zero on an invented ticker and prints gained / lost / expiry-changed with
+the ROOM on each line so the diff can actually be read.
+
+WHAT IT FOUND, in three rounds, on a reader that passed every unit test:
+  round 1  14 new entries, 13 of them English words as tickers.
+  round 2  the same idea with rails: an EXIT quoting its own entry ("OUT TSLA
+           ... TSLA | $350 C 5.25") became a firing ENTRY, and "buy AI 12.50
+           .43 calls" booked a 0.43 STRIKE (that is the price).
+  round 3  of 24 gains, FOURTEEN were Bullwinkle UPDATE posts where the strike
+           came from a quoted line earlier in the same 300-char blob, and one
+           picked IQ — a real ticker — in shabs' room, which trades SPX.
+Each rail I added to separate good from bad cut real alerts too. That is the
+point to stop tuning heuristics and admit what the evidence supports, so the
+token reader is scoped to `bare` rooms, where its behaviour is known. The
+corpus cannot settle it wider: the only rooms exercising that path are the
+ZTRADEZ relay blobs and ZTRADEZ is dead.
+
+THE REAL WIN WAS NOT SCOPED. expiryAnywhere now knows month+year and
+month+monthly ("jan 2028", "june monthly" -> the third Friday, arithmetic not
+a guess), and the bullwinkle branch — which only ever knew a leading m/d —
+falls back to it. SIXTEEN real orders across the corpus were firing with NO
+expiry and taking the bridge's guessed Friday; they now carry the caller's own
+date (AUG 28, 0DTE, 3DTE, 9/18, 9/14). Silent wrong-date is the worst class of
+bug this parser has, and that is sixteen of them dead.
+Final gate: +1 real entry, -7 junk tickers, 16 expiry corrections, 0 invented.
+
+### The futures bracket could round its entry onto the stop (9/10 night)
+Found by the Chika replay, not by a test. She called "starter long 220s, stop
+200"; the round-number rule moves a long's entry DOWN to the next 25, which
+put it at exactly 29,200 — her stop. Entry and stop at the same price is a
+fill and an instant stop-out, and nothing downstream would have blinked: both
+prices are real and the broker would take it. webull_futures now refuses it
+with the reason (_entry_clears_stop). The round-number wait and a caller's
+stop are each sane alone; together they can collide.
+
+### Contract naming, every broker — reference/CONTRACT-NAMING.md
+G: "find out how the contracts are named in every single broker." Written and
+verified live: OCC / Webull / Tradier all take NVDA260918C00235000; tastytrade
+pads the root to SIX (NVDA  260918C00235000); dxfeed is .NVDA260918C235;
+Databento pads too. Futures: Webull NQU6, ProjectX CON.F.US.ENQ.U25 (a lookup,
+never a guess), NinjaTrader just the root. occ.py is the only translator.
+
 ## 2026-09-10 (evening) — THE READER SESSION
 
 ### Chika, WIDENED to 4 sessions (9/10 late) — SHE GOT WORSE, NOT BETTER
