@@ -748,46 +748,40 @@ function signalKey(s) {
 // Cash-settled index options can't trade on Webull, but their ETF proxy is the
 // same directional bet at 1/10 the strike (SPX 7770 ≈ SPY 777). Retarget them so
 // the room's SPX call becomes a tradeable SPY one. Mirrors signals.py.
-const INDEX_ETF = { SPX: ["SPY", 10], SPXW: ["SPY", 10], XSP: ["SPY", 1],
-                    RUT: ["IWM", 10], RUTW: ["IWM", 10] };
-function indexToEtf(s, cfg) {
+/* NO INDEX -> ETF TRANSLATION. DELETED 9/10 on G's instruction: "do not
+ * translate any SPX to SPY... delete any sort of translation between SPX and
+ * SPY. We're going to connect the SPX-emitting channels to tastytrade
+ * directly and they will be executed in a different broker."
+ *
+ * WHAT WAS HERE: INDEX_ETF mapped SPX/SPXW -> SPY at 10:1, RUT/RUTW -> IWM,
+ * XSP -> SPY 1:1. A room flagged `spx` had its strike divided by 10, its
+ * symbol swapped and its limit thrown away. It existed because Webull's
+ * OpenAPI cannot reliably place an index-option order (see
+ * reference/OPTIONS-BROKER-REFERENCE.md: sold at Webull retail, but the API
+ * path is UNVERIFIED and reports a parameter error). Trading the ETF was the
+ * workaround.
+ *
+ * WHY IT IS GONE: SPY 760c is NOT SPX 7600c. Different multiplier, tick,
+ * settlement (SPX is cash-settled, European, Section 1256) and premium.
+ * Following a caller into a DIFFERENT INSTRUMENT and then scoring him on it
+ * measures the wrong thing. Trade what he called, or do not trade it.
+ *
+ * NOW: symbol and strike are left EXACTLY as written. An index ENTRY is
+ * refused, loudly, unless execution.index_broker names a broker that can
+ * take it — instead of being silently rerouted into SPY. Exits on an
+ * existing position always pass, so nothing can get stranded. */
+const INDEX_ROOTS = { SPX: 1, SPXW: 1, XSP: 1, RUT: 1, RUTW: 1,
+                      NDX: 1, NDXP: 1, VIX: 1, VIXW: 1 };
+function indexGuard(s, cfg) {
   if (!s || !s.symbol) return;
-  const m = INDEX_ETF[String(s.symbol).toUpperCase()];
-  if (!m) return;
-  const hasAction = s.action === "OPEN" || s.action === "ADD" ||
-                    s.action === "TRIM" || s.action === "CLOSE";
-  const isOpt = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
-  if (!hasAction && !isOpt) return;
-  // Fresh index entries are switched OFF (8/15, his word — mirrors
-  // signals.py SPX_ENTRIES_ENABLED = False). This gate was missing here
-  // while Python had it, so the extension would have bought SPY on an SPX
-  // call Python refused — caught by test_parity on 8/17. Refuse loudly,
-  // leave symbol/strike exactly as parsed; exits/trims still retarget below
-  // so an old position can always be closed.
-  if ((s.action === "OPEN" || s.action === "ADD") &&
-      !(cfg && cfg.spx_entries)) {
-    // Per-channel override (8/30, G: Ryan's alerts trade SPX — "make me
-    // enter with SPY instead, pretty much the equivalent"): background.js
-    // sets cfg.spx_entries = true when the message came from a channel in
-    // settings.json spx_entry_channels. Everywhere else the 8/15 off
-    // switch still holds.
-    const was0 = String(s.symbol).toUpperCase();
-    s.fire = false;
-    s.why = was0 + " is a cash-index option - following it as an ETF is " +
-            "turned off for now, so nothing was sent";
-    return;
-  }
-  const etf = m[0], ratio = m[1];
-  if (s.strike !== null && s.strike !== undefined) {
-    const k = parseFloat(s.strike);
-    if (!isNaN(k)) s.strike = Math.round(k / ratio);   // 7770 -> 777
-  }
-  const was = String(s.symbol).toUpperCase();
-  s.symbol = etf;
-  s.limit = null;                 // index premium ≠ ETF premium; bid the ETF market
-  s.why = was + " isn't tradeable on Webull — following it as " + etf +
-          (s.strike != null ? " " + s.strike : "") +
-          (s.side === "CALLS" ? "C" : s.side === "PUTS" ? "P" : "") + " instead";
+  if (!INDEX_ROOTS[String(s.symbol).toUpperCase()]) return;
+  if (!(s.action === "OPEN" || s.action === "ADD")) return;
+  if (cfg && cfg.index_broker) return;
+  s.fire = false;
+  s.why = String(s.symbol).toUpperCase() + " is a cash-settled index option and no "
+        + "index-capable broker is connected, so nothing was sent. The SPX->SPY "
+        + "substitution was deleted 9/10 on purpose. Set execution.index_broker "
+        + "(tradier / tastytrade) to enable these.";
 }
 
 /* Refuse a futures entry whose LEVELS contradict the word. Mirrors
@@ -825,7 +819,7 @@ function directionSanity(s) {
 
 function parseSignal(text, cfg) {
   const s = parseSignalInner(text, cfg);
-  indexToEtf(s, cfg);
+  indexGuard(s, cfg);
   directionSanity(s);
   // TRAILING PARTIAL (9/7, ELITE OPTIONS). The partial-sell reader wants the
   // fraction right after the verb ("sold 1/2 UPS"). Both Elite callers put it
