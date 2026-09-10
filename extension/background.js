@@ -390,6 +390,13 @@ function loadOptionable() {
         const s = line.trim().toUpperCase();
         if (s && s[0] !== "#") set.add(s);
       }
+      // HAND IT TO THE PARSER TOO (9/10, G's call). The parser used to invent
+      // tickers out of ordinary words and the allowlist only caught them after
+      // the parse, three layers downstream, by which point the wrong symbol
+      // was already in the log and in the room's attribution. Same one file,
+      // now three readers: parser.js, here, and bridge.py. setOptionable
+      // ignores a short list, so the fail-open rule below still holds.
+      try { if (typeof setOptionable === "function") setOptionable(set); } catch (e) {}
       // Under a thousand means the file is truncated; an unusable list must
       // not become a blocklist for everything.
       if (set.size < 1000) {

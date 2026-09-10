@@ -612,8 +612,37 @@ function expiryAnywhere(text) {
  * separate NOT_TICKERS tests in findContract plus one in bareSymbol, so the
  * SMH rescue below only reached the exit path and Shoof's SMH ENTRIES stayed
  * invisible. Every check now goes through here. */
+/* THE ALLOWLIST, READ AT THE SOURCE (9/10, G: "the new tickers, CLOSE and a
+ * whole bunch of other bullshit that you read — they have to go through the
+ * filter of the tickers you created the other day").
+ *
+ * He is right, and it is the stronger rail. optionable.txt is 6,387 option
+ * roots pulled from the broker's own universe; background.js and bridge.py
+ * both check it, but only AFTER the parse, so a word-as-ticker still travelled
+ * three layers with a symbol on it, poisoning the log and the room's
+ * attribution on the way. Checking it HERE kills it at the read.
+ *
+ * It does not replace NOT_TICKERS: FOR and NEX are REAL LISTED SYMBOLS and the
+ * allowlist would wave both through. Blacklist stops real tickers that are
+ * also English; allowlist stops invented ones. Both, or neither works.
+ *
+ * FAILS OPEN, exactly as the other two readers do. background.js calls
+ * setOptionable() once the file is parsed; until then, and forever if the file
+ * is missing or short, this rail is simply absent and the two checks
+ * downstream still stand. A text file that failed to load must never become a
+ * silent trading halt. */
+let _OPTIONABLE = null;
+function setOptionable(set) {
+  _OPTIONABLE = (set && set.size >= 1000) ? set : null;
+}
+
 function blockedTicker(sym, text) {
   const s = String(sym || "").toUpperCase();
+  if (_OPTIONABLE && !_OPTIONABLE.has(s)) {
+    // The slang rescues (SMH, DIS...) are real roots and are on the list, so
+    // nothing legitimate is lost by refusing here.
+    return true;
+  }
   if (!NOT_TICKERS.has(s)) return false;
   const rescue = SLANG_TICKERS[s];
   return !(rescue && rescue.test(String(text || "")));
@@ -2601,5 +2630,5 @@ function parseSignalInner(text, cfg) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { parseSignal, human, signalKey, cleanText };
+  module.exports = { parseSignal, human, signalKey, cleanText, setOptionable };
 }
