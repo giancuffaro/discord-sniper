@@ -238,6 +238,18 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # but NOT traded: G, 9/10 — "we can ignore that since we have the ratchet."
 # That is the ENTRIES ONLY doctrine, unchanged.
 1503509270526951575|https://discord.com/channels/718624848812834903/1503509270526951575|Mugzone Options|Dallas Capital|on
+# FloridaManFinance — ADDED 9/10 on G's paste. Same guild again.
+#   "@Florida man alerts entered $CCXI 17.5C 10/16 @ $0.50-0.55/ea."
+#   "@Florida man alerts Lotto Entered $GLD 416C 0DTE @ $0.53/ea"
+#   "1. $ABAT 4C 8/21 @ $0.05/ea"
+# The first two carry the verb "entered" and read with no rules at all. The
+# NUMBERED ones do not — they are a bare contract and a price, which is exactly
+# what the `bare` rule is for, so it is on here. Verified 9/10: all three fire
+# with the right contract and limit (a range "@ $0.50-0.55" takes the LOW end,
+# which is the bid we want), and his exits, trims, "up 100%" and "watching"
+# lines all stay silent or land as EXIT-IGNORED.
+# Single-digit strikes are real here ($ABAT 4C) — the reader handles them.
+1319444838826905650|https://discord.com/channels/718624848812834903/1319444838826905650|FloridaManFinance|Florida Man Alerts|on|bare
 
 # ============================================================
 # FULL-DEPTH SCAN, 9/10/26 (G: "go channel by channel, don't skip any; the
