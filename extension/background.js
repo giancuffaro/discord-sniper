@@ -1380,6 +1380,24 @@ async function stopAllGrabs() {
 }
 
 /* Ctrl+Shift+X — queue whatever room tab is in front. */
+/* The page-level Ctrl+Shift+X (content.js) lands here. Same door as the
+ * real command and as the popup button — enqueueGrab already refuses a tab
+ * that is queued or running, so pressing it twice, or having BOTH the bound
+ * command and the page listener fire, costs nothing. (9/10) */
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (!msg || msg.type !== "GRAB_HOTKEY") return;
+  (async () => {
+    let tab = sender && sender.tab;
+    if (!tab) {
+      try { tab = (await chrome.tabs.query({ active: true, currentWindow: true }))[0]; }
+      catch (e) { return; }
+    }
+    await enqueueGrab(tab);
+  })();
+  reply && reply({ ok: true });
+  return true;
+});
+
 try {
   chrome.commands.onCommand.addListener(async (cmd) => {
     if (cmd !== "grab-history") return;

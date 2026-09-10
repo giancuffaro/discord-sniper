@@ -363,7 +363,32 @@ async function grabHistory(untilTs) {
 }
 
 try {
-  chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  /* CTRL+SHIFT+X, FROM THE PAGE (9/10, G: "program control shift x for the
+ * grabber, just program it again").
+ *
+ * chrome.commands is the proper way and it is still declared in the manifest,
+ * but it has a failure mode nobody can see: `suggested_key` is only a
+ * SUGGESTION. If another extension already holds the combo when this one is
+ * installed, Chrome leaves the command UNBOUND and never says a word — the
+ * key simply does nothing forever. Discord also grabs a lot of keystrokes of
+ * its own before the page is finished with them.
+ *
+ * So: listen for the chord here too, in the CAPTURE phase, ahead of Discord's
+ * own handlers. The background dedupes, so if the real command IS bound both
+ * paths land on the same queue and the second is ignored as "already in line".
+ * Belt and braces on a key he has now asked for twice. */
+document.addEventListener("keydown", (e) => {
+  if (!e.ctrlKey || !e.shiftKey || e.altKey) return;
+  if (String(e.key || "").toLowerCase() !== "x" && e.code !== "KeyX") return;
+  // Never steal it from a place he might be typing.
+  const t = e.target;
+  if (t && (t.isContentEditable || /^(INPUT|TEXTAREA)$/.test(t.tagName || ""))) return;
+  e.preventDefault();
+  e.stopPropagation();
+  try { chrome.runtime.sendMessage({ type: "GRAB_HOTKEY" }); } catch (err) {}
+}, true);
+
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     if (!msg) return;
     // ACCESS PROBE (9/7). The background opens a SLEEPING room in a hidden
     // tab and asks this: how many message rows can you actually see? A room
