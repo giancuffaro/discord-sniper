@@ -62,6 +62,30 @@ rem  of the ~30s watch-build alarm - generous margin, no flapping).
 set "ALIVE=0"
 if defined AGO if not "!AGO!"=="" if !AGO! LSS 180 set "ALIVE=1"
 
+rem  NEVER-PINGED IS NOT THE SAME AS DIED (9/10). /whopalive returns
+rem  ago_sec=null until the whop lane's extension has pinged even once,
+rem  and this script read that empty answer as "dead" and relaunched
+rem  Chrome every 5 minutes forever - 13:21, 13:27, 13:32, 13:37, 13:42 -
+rem  each time opening a blank tab and writing a new open-rooms token that
+rem  made EVERY profile reopen rooms. That is a tab storm, not a heal.
+rem  An empty answer means the extension there is old or not installed;
+rem  restarting Chrome cannot fix either. Try a few times, then say so
+rem  plainly and stop, instead of flapping until someone notices.
+set "STRIKES=0"
+if exist "%~dp0whop-loop-strikes.txt" set /p STRIKES=<"%~dp0whop-loop-strikes.txt"
+if "!ALIVE!"=="1" (
+  > "%~dp0whop-loop-strikes.txt" echo 0
+) else (
+  if not defined AGO set /a STRIKES+=1
+  if "!AGO!"=="" set /a STRIKES+=1
+  > "%~dp0whop-loop-strikes.txt" echo !STRIKES!
+  if !STRIKES! GEQ 4 (
+    echo [%date% %time%] GIVING UP: /whopalive has never returned a number after !STRIKES! tries. The Whop profile's extension is old or not installed - reload it there (chrome://extensions) and delete whop-loop-strikes.txt to re-arm. No more relaunches. >> "%~dp0whop-loop.log"
+    timeout /t 300 /nobreak >nul
+    goto loop
+  )
+)
+
 if "!ALIVE!"=="1" (
   timeout /t 60 /nobreak >nul
   goto loop
@@ -82,12 +106,28 @@ if exist "whop-profile.txt" set /p WHOP_PROFILE=<"whop-profile.txt"
 
 echo [%date% %time%] whop lane heartbeat is !AGO!s old (or missing) - starting Sniper Whop Chrome, next attempt no sooner than 5 min from now >> "%~dp0whop-loop.log"
 > "%MARKER%" echo %date% %time%
-start "" "%CHROME%" --profile-directory="%WHOP_PROFILE%" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion
+rem  SEED IT ON A ROOM, not on nothing (9/10). Launching bare left an empty
+rem  new tab behind on every single revive - G saw them piling up. START
+rem  HERE seeds with the first ON whop room; do the same here.
+set "WHOP_SEED_URL="
+for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("%~dp0extension\rooms.txt") do (
+  if not defined WHOP_SEED_URL (
+    set "RID=%%A"
+    set "RST=%%C"
+    if /i "!RID:~0,5!"=="whop:" if /i "!RST!"=="on" set "WHOP_SEED_URL=%%B"
+  )
+)
+start "" "%CHROME%" --profile-directory="%WHOP_PROFILE%" --hide-crash-restore-bubble --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-features=Translate,MediaRouter,CalculateNativeWinOcclusion "!WHOP_SEED_URL!"
 rem  Give Chrome a moment to actually come up, then ask the extension to
 rem  fill in any rooms missing a tab (belt-and-suspenders - the whop lane
 rem  self-heals on its own every watch-build tick regardless of this token).
+rem  NO TOKEN FROM HERE (9/10). open-rooms.request is GLOBAL - every profile
+rem  running the extension acts on it, so a whop revive was making the
+rem  DISCORD browser reopen its rooms too, every 5 minutes. The comment
+rem  below already said the whop lane self-heals on its own watch-build
+rem  tick, which makes the token pure downside. START HERE is the only
+rem  thing that writes it now.
 timeout /t 8 /nobreak >nul
-> "%~dp0open-rooms.request" echo %date%-%time%-%RANDOM%%RANDOM%
 
 timeout /t 60 /nobreak >nul
 goto loop
