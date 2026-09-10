@@ -398,10 +398,24 @@ def caller_stats():
     def _blank(k, name):
         return {"key": k, "name": name, "trades": 0, "wins": 0, "losses": 0,
                 "flat": 0, "net": 0.0, "verified": 0, "alerts": 0, "rooms": set(),
-                "last": ""}
+                "paper": 0, "paper_net": 0.0, "futures": 0, "last": ""}
     try:
         import ledger as _lg
+        # ONE ROW PER POSITION (9/9 evening, found by G's "check Stormzy and
+        # MR.TOPHAT"): days/*.json re-lists an OPEN position in every day's
+        # table until it closes, so a 3-day hold arrived here as 3 fills —
+        # 299 rows for 247 real positions, and Stormzy's 5 futures positions
+        # read as 13. Key on caller+contract+ENTRY TIME and keep the richest
+        # copy (the one that knows its exit).
+        _pos = {}
         for date, r in _lg.rows(real_only=True):
+            pk = (caller_key(r.get("who")), str(r.get("symbol") or ""),
+                  str(r.get("strike") or ""), str(r.get("side") or ""),
+                  str(r.get("expiry") or ""), str(r.get("opened_ts") or r.get("opened") or date))
+            prev = _pos.get(pk)
+            if prev is None or (r.get("exit_avg") not in (None, "") and prev[1].get("exit_avg") in (None, "")):
+                _pos[pk] = (date, r)
+        for date, r in _pos.values():
             who = str(r.get("who") or "").strip()
             k = caller_key(who)
             if k == "gian":
@@ -409,6 +423,18 @@ def caller_stats():
             if not k:                      # pre-tagging fills: keep the money visible
                 k, who = "_unattributed", "(caller unknown — pre-tagging fills)"
             c = out.setdefault(k, _blank(k, who))
+            # PAPER IS NOT MONEY. A paper fill counts as a call taken, never
+            # in the net — "are alerts" showed -$732 on the board when the
+            # real number was -$62 live; the rest was one paper HPE trade.
+            if r.get("account") != "live":
+                c["paper"] += 1
+                c["paper_net"] += float(r.get("pl") or 0)
+                if r.get("room") and r.get("room") != "?":
+                    c["rooms"].add(str(r["room"]))
+                c["last"] = max(c["last"], str(date or ""))
+                continue
+            if (r.get("kind") or "") == "future":
+                c["futures"] += 1          # futures P&L isn't recorded (NT8 path)
             c["trades"] += 1
             pl = r.get("pl")
             try:
@@ -443,6 +469,7 @@ def caller_stats():
     for c in out.values():
         c["rooms"] = sorted(c["rooms"])
         c["net"] = round(c["net"], 2)
+        c["paper_net"] = round(c["paper_net"], 2)
         decided = c["wins"] + c["losses"]
         c["win_pct"] = round(100.0 * c["wins"] / decided) if decided else None
         c["per_trade"] = round(c["net"] / decided, 2) if decided else None
