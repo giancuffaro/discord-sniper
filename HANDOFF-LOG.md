@@ -9,6 +9,64 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**FOUR THINGS TESTED ON THE TAPE, FOUR NEGATIVE RESULTS (9/10).** Recorded so
+nobody re-runs them on a hunch. All on the same 115 trades, live ladder 5/3/5,
+each judged by a paired bootstrap and not by the headline dollar.
+1. PAUSE THE RATCHET BY TIME (G: "wait 10 seconds before it could start the
+   rung"). Worse at every value and monotonically so: 10s -$64, 30s -$100,
+   60s -$154, 300s -$300. WHY: pausing does not help a trade run, it only
+   delays the stop being RAISED. A contract that spikes +6% and fades
+   currently locks breakeven on the way up and exits at 0%; with a pause it
+   never locks and rides the born stop to -5%. Every second of pause is a
+   second a fader cannot be saved.
+2. PAUSE BY MONEY ("wait for 25 or 50 cents in favour"). +$0.10 was +$22 and
+   everything above it fell away: $0.25 -$48, $0.50 -$126, $1.00 -$422. The
+   +$0.10 bump is a one-tick noise filter, not a pause, and it is inside the
+   noise (+$0.19/trade, band -$0.34..+$0.85).
+3. RUNNER MODE — loosen only on trades already up N% (the mechanically correct
+   version of 1 and 2). Best was trail 25% under the peak above +20%: +$75,
+   +$0.65/trade, band -$2.32..+$5.23, INSIDE THE NOISE. The surface gives it
+   away: at the +20% trigger, trails of 5/10/15% are -$58/-$199/-$253 and then
+   20/25% are +$68/+$75. A real effect does not flip-flop. Only 32 of 115
+   trades ever reach +20%, so the whole thing rests on 32 trades.
+4. TICK FLOOR ON THE ARM. Real mechanism, no money in it. MIN_RUNG_TICKS=4
+   floors the RUNG; the ARM has no floor, so on a $0.70 SPY 0DTE +3% is
+   $0.021 = TWO TICKS and the ratchet arms on noise. Flooring the arm at 3
+   ticks is +$4 (inside the noise); at 4+ ticks it goes sharply negative
+   (-$86 at 4, -$383 at 12). Worth +$11 across the 22 SPY/QQQ/IWM trades and
+   -$1 across the 97 single names — right direction, no size. NOT APPLIED.
+
+**WHAT THE CONTRACT ITSELF SAYS (9/10, G: "different contracts move
+differently... would ATM or ITM be better?").** The clean cut is not moneyness.
+  * SPY/QQQ/IWM: 22 trades, 9% win, 41% SCRATCHED, -$2.71/trade.
+    Single names: 97 trades, 29% win, 10% scratched, +$2.68/trade.
+    The index ETFs are scratched four times as often — penny ticks mean a 3%
+    arm is two ticks — but fixing the scratching only recovers $11 of it, so
+    they lose for a reason other than the stop.
+  * By premium: $4+ made +$16.94/trade at a 0% scratch rate; $2.00-3.99 lost
+    -$9.64/trade at a 4% win rate. Non-monotonic, so read it as a hint.
+  * 118 of 119 trades are 0DTE. That is what this bot actually trades, and it
+    is the product most exposed to exactly the scratching G is describing.
+  * MONEYNESS ITSELF IS STILL UNANSWERED: only 40 of 115 trades have cached
+    underlying bars (the pullback study only cached beta names, so SPY/QQQ/IWM
+    have no spot to compare a strike against). On those 40 the direction was
+    the OPPOSITE of the hypothesis — far OTM had the best win rate (50%) and
+    ITM was the only losing bucket — but at n=5 for ITM that is not a finding.
+    Settling it means pulling stock bars for the remaining 75.
+
+**THE REAL LIMIT IS THE SAMPLE, AND IT IS NOT THE TAPE (9/10, G: "why only
+115 trades? isn't there more?").** The funnel, exactly: 975 ledger rows -> 943
+option rows -> 751 have NO CALLER (hand trades and adopted positions) and 40
+are explicitly Gian's -> **152 real room calls in the entire history** -> 19
+never became a position (nofill/failed) -> 6 have no entry price or time -> 12
+have no tape -> 115. The tape costs 12 trades and 8 of those are 9/9-9/10,
+which need a live Databento licence, so buying more tape buys almost nothing.
+The bot has made 152 calls in three months across 20 rooms — about 2.5 a day —
+while 791 of the 943 option rows in the account were G trading by hand. At
+that rate the sample doubles in roughly two months. Until then every one of
+these studies rests on 115 trades (32 for the runner test) and will keep
+coming back INSIDE THE NOISE no matter how clever the variant.
+
 **RWGates IS GONE, NOT QUIET (9/10, G: "the bot keeps opening
 discord.com/channels/588137369409159208 — not sure what this is").** That is
 Summit Trading Strategies, and the bare guild URL with no channel on the end
