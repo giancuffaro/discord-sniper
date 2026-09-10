@@ -116,6 +116,20 @@ const VOICE_TOOK_MS = 5 * 60 * 1000;
 // first-word-of-a-call costs the entire edge.
 const VOICE_QUIET = new Map();          // tabId -> pending stop timer
 const VOICE_QUIET_GRACE_MS = 60 * 1000;
+/* WARM-UP BEFORE THE EARS OPEN (9/10, G: "voice is listening to 4 channels??
+ * so we're getting lots of voice?"). A tab going `audible` is NOT the same as
+ * a trader talking. Discord plays a notification blip in a TEXT channel and
+ * that tab is audible for about a second — enough, under the old rule, to open
+ * a paid Deepgram session. The extension log proves it: 42 of the 48
+ * auto-listen sessions on record were on #daytrades-scalps, a text room, and
+ * the voice path has never once produced a transcript that reached the parser.
+ * The 9/2 patch only skipped tabs TITLED sniper-alerts, which fixed one room
+ * and left every other one doing it.
+ * A blip cannot stay audible; a live room can. So: hold for 25 seconds and
+ * re-check before spending anything. Costs a live room 25s of its opening
+ * remarks, saves paying to transcribe every ping of the day. */
+const VOICE_WARMUP = new Map();         // tabId -> pending start timer
+const VOICE_WARMUP_MS = 25 * 1000;
 function voiceTookThis(sig) {
   const now = Date.now();
   for (const [k, t] of VOICE_TOOK) if (now - t > VOICE_TOOK_MS) VOICE_TOOK.delete(k);
@@ -3101,6 +3115,22 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
         if (t) { clearTimeout(t); VOICE_QUIET.delete(tabId); }
         if (LISTENING.has(tabId)) return;   // the grace held; nothing to start
         if (!(await dgKey())) return;               // no Deepgram key = no ears
+        // WARM-UP: a notification blip is audible for about a second. Only a
+        // tab still making noise 25s later is somebody actually talking.
+        if (VOICE_WARMUP.has(tabId)) return;        // already counting down
+        VOICE_WARMUP.set(tabId, setTimeout(async () => {
+          VOICE_WARMUP.delete(tabId);
+          try {
+            let stillAudible = false;
+            try { stillAudible = !!(await chrome.tabs.get(tabId)).audible; } catch (e) { return; }
+            if (!stillAudible) return;              // it was a ping — spend nothing
+            if (LISTENING.has(tabId)) return;
+            await _startEarsNow(tabId);
+          } catch (e) {}
+        }, VOICE_WARMUP_MS));
+        return;
+      }
+      if (false) {                                  // (unreachable; kept flat below)
         // Our own server's notification pings are not a trader talking
         // (9/2: "auto-listening to #sniper-alerts-options" — a Deepgram
         // session on the announcer channel). Text channels that merely
