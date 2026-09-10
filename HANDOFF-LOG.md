@@ -9,6 +9,49 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
+**RWGates IS GONE, NOT QUIET (9/10, G: "the bot keeps opening
+discord.com/channels/588137369409159208 — not sure what this is").** That is
+Summit Trading Strategies, and the bare guild URL with no channel on the end
+IS the symptom: Discord serves the server root when you are not in the server.
+Three independent confirmations: the 9/10 full sweep enumerated all 25 guilds
+this account belongs to and 588137369409159208 was not one of them; the
+extension had been logging "RWGates has been silent 40 / 120 min during market
+hours"; and its last signal in master_ledger.csv is 8/20. The 9/7 note in
+rooms.txt said the opposite — "Whop shows STS/Summit as LAPSED, but Discord
+access is INTACT ... AWAKE" — and it was TRUE when written. The sub lapsed
+first, then they removed the account. Set to `lapsed` (G's pick over `off`) so
+the daily off-hours probe tells him if access ever comes back. Rooms: 19 on,
+33 off, 5 lapsed of 57.
+THE LESSON: "verified by opening it" has a shelf life. A room that was awake
+three days ago can be gone today, and the failure is SILENT — a blank tab, not
+an error. The silent-reader alarm was firing the whole time and nobody read it.
+
+**WHERE TODAY'S -$655 WENT (G: "yes, but what missing $500??").** Split from
+the raw Webull order history, 42 filled legs: the BOT was +$55 on 5 trades
+(META 645P closed on their call +$80 carried it); the 6 hand trades the bot
+adopted and watched close were -$238; the remaining ~-$472 is hand trades the
+bot never saw at all. They are unmistakable in the order history — MARKET
+orders, multi-contract (x2 through x21), 0DTE QQQ/SPY, no stop. The bot cannot
+produce any of those: no MARKET orders on options, one_contract true, and a
+stop always born with the order. They opened and closed inside 1-8 minutes,
+faster than the position sweep, so they never got adopted and never reached
+trades.log. Biggest single ticket: SPY 754P x21, held 8 minutes.
+CAVEAT ON THE METHOD: get_order_history returns avg_filled_price as 0.00, so
+the -$472 is by SUBTRACTION from Webull's own day P&L, not from fills. Pricing
+each hand trade needs order-detail paging, which competes with the live bridge
+for the 2-per-2s door — after the close, not during.
+G's response: deposit and leave the account to the bot alone. If that holds,
+the bot's record becomes measurable for the first time — every number this
+session had to be de-contaminated by hand first (707 "?" rows in the ratchet
+sweep, -$4,332 of the -$4,228 broker total, and today's -$710 of -$655).
+
+**THE MARGIN ACCOUNT IS AT $9.85 AND CANNOT TRADE.** Median bot entry is $167.
+Buying power needed to never miss a call, bot alone, from the broker record:
+$600 covers a typical day, $800 the 75th percentile, $1,300 the 90th, $3,197
+the worst day on record (8/24; peak 9 positions open at once was 8/18). Those
+were measured with hand trades crowding the same account, and with fewer rooms
+live than today, so treat the top number as a floor on the worst case.
+
 **2026-09-10 10:12 — WHOP WAS DARK A MONTH; SELF-HEAL + WATCHDOG BUILT.**
 G asked to join Felony's morning Zoom (scheduled task) and then, separately,
 asked to check the Whop channels directly. Day Trades showed a live
