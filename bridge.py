@@ -398,7 +398,7 @@ def caller_stats():
     def _blank(k, name):
         return {"key": k, "name": name, "trades": 0, "wins": 0, "losses": 0,
                 "flat": 0, "net": 0.0, "verified": 0, "alerts": 0, "rooms": set(),
-                "paper": 0, "paper_net": 0.0, "futures": 0, "last": ""}
+                "futures": 0, "last": ""}
     try:
         import ledger as _lg
         # ONE ROW PER POSITION (9/9 evening, found by G's "check Stormzy and
@@ -423,16 +423,9 @@ def caller_stats():
             if not k:                      # pre-tagging fills: keep the money visible
                 k, who = "_unattributed", "(caller unknown — pre-tagging fills)"
             c = out.setdefault(k, _blank(k, who))
-            # PAPER IS NOT MONEY. A paper fill counts as a call taken, never
-            # in the net — "are alerts" showed -$732 on the board when the
-            # real number was -$62 live; the rest was one paper HPE trade.
-            if r.get("account") != "live":
-                c["paper"] += 1
-                c["paper_net"] += float(r.get("pl") or 0)
-                if r.get("room") and r.get("room") != "?":
-                    c["rooms"].add(str(r["room"]))
-                c["last"] = max(c["last"], str(date or ""))
-                continue
+            # (no paper branch: build_ledger keeps paper fills OUT of
+            #  master_ledger.csv entirely — 9/9, G: "delete all paper trades
+            #  data from the app". account is live or unknown-but-real here.)
             if (r.get("kind") or "") == "future":
                 c["futures"] += 1          # futures P&L isn't recorded (NT8 path)
             c["trades"] += 1
@@ -469,7 +462,6 @@ def caller_stats():
     for c in out.values():
         c["rooms"] = sorted(c["rooms"])
         c["net"] = round(c["net"], 2)
-        c["paper_net"] = round(c["paper_net"], 2)
         decided = c["wins"] + c["losses"]
         c["win_pct"] = round(100.0 * c["wins"] / decided) if decided else None
         c["per_trade"] = round(c["net"] / decided, 2) if decided else None
@@ -646,6 +638,13 @@ def load_settings():
 CFG = load_settings()
 EXEC = CFG.get("execution", {})
 MODE = str(EXEC.get("mode", "dryrun")).lower()
+if (EXEC.get("webull") or {}).get("paper_trading"):
+    # 9/9: paper fills are no longer written to master_ledger.csv, so a paper
+    # order placed from here would trade and leave NO record anywhere the app
+    # can see. Say it at boot rather than let it be discovered in a journal.
+    note("PAPER    WARNING — webull.paper_trading is ON, but paper fills are "
+         "NOT recorded any more (they are kept out of master_ledger.csv on "
+         "purpose). Turn it off, or expect trades with no record.")
 apply_room_rules()          # rooms.txt rules → the per-channel lists (9/9)
 apply_strategy_numbers()    # settings numbers → the live ratchet (9/9)
 # THE MASTER SWITCH IS RETIRED — his word: "remove the main big switch since

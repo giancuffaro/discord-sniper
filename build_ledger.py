@@ -692,6 +692,8 @@ def build():
             "why": "in the Webull order export, in no store — a hand trade",
         })
 
+    out, paper = _drop_paper(out)
+    _archive_paper(paper)
     out.sort(key=lambda x: (x["date"], x["opened"] or "99:99:99", x["symbol"]))
     return out, broker
 
@@ -712,6 +714,42 @@ def _rotate_bak(path=OUT):
                 os.remove(old)
             except OSError:
                 pass
+    except OSError:
+        pass
+
+
+# NO PAPER IN THE LEDGER (9/9, G: "delete all paper trades data from the app,
+# I don't want any more confusions"). A paper fill is not money: it made the
+# Callers board read "are alerts -$732" when the real number was -$62 live.
+# Paper rows never enter master_ledger.csv now, so nothing downstream — the
+# board, the journal, the scoreboard, the announcer, every backtest — can show
+# one again. They are not destroyed: the first build after this rule wrote
+# them to archive/paper-fills-<date>.csv, and days/*.json still holds them.
+# NOTE the account="unknown" rows are NOT paper — those are broker FILLED
+# lines with no room row (41 of them, real money) and they stay.
+PAPER_ARCHIVE = os.path.join(HERE, "archive", "paper-fills-%s.csv"
+                             % datetime.now().strftime("%Y-%m-%d"))
+
+
+def _drop_paper(rows):
+    """Split paper off. Returns (kept, dropped)."""
+    kept, dropped = [], []
+    for r in rows:
+        (dropped if r.get("account") == "paper" else kept).append(r)
+    return kept, dropped
+
+
+def _archive_paper(dropped):
+    """Write the paper rows out ONCE, so the history exists outside the app."""
+    if not dropped or os.path.exists(PAPER_ARCHIVE):
+        return
+    try:
+        os.makedirs(os.path.dirname(PAPER_ARCHIVE), exist_ok=True)
+        with open(PAPER_ARCHIVE, "w", newline="", encoding="utf-8") as fh:
+            w = csv.DictWriter(fh, fieldnames=COLUMNS)
+            w.writeheader()
+            for r in dropped:
+                w.writerow({c: r.get(c, "") for c in COLUMNS})
     except OSError:
         pass
 
@@ -749,6 +787,8 @@ def summary(rows, broker):
     print(f"  broker fills with no room row:      {len(gaps)}  (source=trades.log-only)")
     print(f"  hand trades only in the export:     {len(hand)}  (source=webull-export-only)")
     print(f"  real fills untagged room '?':       {untag}")
+    print(f"  paper fills:                        0  (never written — see "
+          f"archive/paper-fills-*.csv)")
     # RECONCILIATION — the ledger must equal the broker's own history on
     # every day we hold an export. If a day drifts, something upstream lied.
     trips = load_broker_exports()
