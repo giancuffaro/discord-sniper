@@ -9,7 +9,7 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES (newest first)
 
-**2026-09-10 03:20 — THE BOT ON ITS OWN, AND THE MISSING TRADES HUNT.**
+**2026-09-10 00:50 — THE BOT ON ITS OWN, AND THE MISSING TRADES HUNT.**
 G: "let's not take my own trades, I know I suck — we need to focus on the
 bot since the app is for this" and "let's look for the missing trades, I
 know I can find them."
@@ -40,7 +40,7 @@ avg loss −$27. BUT only 27 of the 73 are broker-verified and those come to
 between flat and −$309", and the way to close it is the same as always:
 more of the record priced by the broker rather than the book.
 
-**2026-09-10 02:30 — THE BROKER PULL WAS SILENTLY TRUNCATED. FIXED; THE REAL
+**2026-09-10 00:35 — THE BROKER PULL WAS SILENTLY TRUNCATED. FIXED; THE REAL
 NUMBER IS −$4,228.** G, on the 13 rows the broker seemed never to have heard
 of: "those tickers were just recently cancelled, they were allowed before."
 Right — and it exposed the real fault: **get_order_history caps at 100
@@ -96,7 +96,7 @@ trade, not by any check in the code. A reconciliation that only compares
 DAY TOTALS hides per-row errors that cancel out. Per-trade broker matching
 is the only real check.
 
-**2026-09-10 01:15 — G WAS RIGHT: THE WINS WERE FAKE. THREE MONTHS OF BROKER
+**2026-09-10 00:10 — G WAS RIGHT: THE WINS WERE FAKE. THREE MONTHS OF BROKER
 TRUTH PULLED.** G, looking at the corrected scoreboard: "looks like the ledger
 is doing some magic huh? but I feel I'm still missing losing trades — no way
 I've won and not lost that much." Audited it. 111 of 244 positions had no
@@ -152,7 +152,7 @@ WORKING lines yet — genuinely unknowable, labelled as such.
 INTEGRITY CHECK now passes end to end: ledger +4770 = G named +36 + G hand
 +1150 + callers +3584. Board total = caller sum, to the cent.
 
-**2026-09-10 00:05 — PAPER DELETED FROM THE APP (v3.5.84).** G: "delete all
+**2026-09-09 23:58 — PAPER DELETED FROM THE APP (v3.5.84).** G: "delete all
 paper trades data from the app. I don't want any more confusions." Checked
 first: only 4 ledger rows were actually account="paper" (AAPL nofill, the
 HPE twin pair −$335 each, SPY −$16 = −$686). The other 41 non-live rows are
