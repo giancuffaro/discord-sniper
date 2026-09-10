@@ -165,13 +165,31 @@ def analyze(r):
     arm_ts = next((ts for ts, ln in lines if "ratchet moved your stop" in ln), None)
     if arm_ts and opened:
         arm_after = round(arm_ts - opened)
+    # 9/10 fix: "resting stop had already filled at X before the pull landed"
+    # (broker's own stop beat the bridge's poll — 6+ of these a day) was
+    # falling through this whole ladder to "hand close" or "other/unknown",
+    # because only the "at or under your Y stop" phrasing was recognized.
+    # Both mean the same thing (the ratchet's resting stop did its job); the
+    # filled price is used as the level proxy for the born/breakeven/rung
+    # split when the threshold itself wasn't logged.
     stop_ln = next(((ts, ln) for ts, ln in lines
                     if re.search(r"STOPPED\s.*at or under your ([\d.]+) stop", ln)), None)
+    stop_lvl_pat = r"at or under your ([\d.]+) stop"
+    if not stop_ln:
+        stop_ln = next(((ts, ln) for ts, ln in lines
+                        if re.search(r"STOPPED\s.*resting stop had already filled at ([\d.]+)", ln)), None)
+        stop_lvl_pat = r"resting stop had already filled at ([\d.]+)"
     stk_ln = next((ts for ts, ln in lines
                    if "PULLBACK" in ln and "stock hit the" in ln and "stop" in ln), None)
-    hand_ln = next((ts for ts, ln in lines if re.search(r"you closed it yourself|ADOPT|hand close", ln)), None)
+    # "ADOPT"/"ADOPTED" mark picking up a position at OPEN, not closing one —
+    # matching bare "ADOPT" here grabbed any same-ticker adoption line inside
+    # the lookback window (e.g. a same-day SPY ADOPT notice for an unrelated
+    # hold) and mislabeled a clean ratchet-stop exit as "hand close" (9/10,
+    # SPY 757P). Only match actual close phrasing.
+    hand_ln = next((ts for ts, ln in lines
+                    if re.search(r"you closed it yourself|didn't send this sell", ln)), None)
     if stop_ln and fill:
-        lvl = float(re.search(r"at or under your ([\d.]+) stop", stop_ln[1]).group(1))
+        lvl = float(re.search(stop_lvl_pat, stop_ln[1]).group(1))
         if abs(lvl - fill) <= 0.011:
             trig = "breakeven stop (ratchet arm)"
         elif lvl < fill:
