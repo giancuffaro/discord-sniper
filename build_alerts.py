@@ -697,6 +697,14 @@ def _apply_log(rows):
                         and (r.get("symbol") or "").upper() == e["symbol"]
                         and _blank(r.get("strike"))
                         and abs(_minutes(r.get("time")) - _minutes(e["time"])) <= 15):
+                    # SAME RULE AS THE ARM LINK: if the row already knows which
+                    # way the call went, the log line has to agree. A PUT
+                    # refusal enriched with the CALL contract from the same
+                    # symbol a minute away is a fabricated trade, and it reads
+                    # exactly like a real one afterwards.
+                    rs = (r.get("side") or "")[:1].upper()
+                    if rs and rs != e["side"][:1]:
+                        continue
                     hit = [i]
                     break
         if hit:
