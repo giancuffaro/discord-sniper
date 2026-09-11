@@ -33,3 +33,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789070173.186,armed,AMD,CALLS,525,1DTE,,504.0,,MuggZone,Mugzone Options
 1789070175.883,fill_failed,AMD,CALLS,525,1DTE,,504.0,504.0,MuggZone,Mugzone Options
 1789155612.866,armed,QQQ,CALLS,716,9/11,,715.0,,TradingTheTrend,Option Alerts
+1789156213.066,missed,QQQ,CALLS,716,9/11,,715.0,,TradingTheTrend,Option Alerts
