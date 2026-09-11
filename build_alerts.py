@@ -56,7 +56,8 @@ COLUMNS = [
     # tier/confidence say how the row was recovered and how much to trust it;
     # source_line is the log line itself, verbatim, so any row can be checked
     # against the log in one grep.
-    "caller_strike", "tier", "confidence", "how_recovered", "source_line",
+    "caller_strike", "our_limit", "tier", "confidence", "how_recovered",
+    "source_line",
 ]
 
 
@@ -475,7 +476,7 @@ def _log_events():
             if ts is None:
                 continue
             base = {"ts": ts, "date": date, "time": hhmm, "raw": msg[:300],
-                    "caller": "", "qty": "", "their_price": ""}
+                    "caller": "", "qty": "", "their_price": "", "our_limit": ""}
 
             m = RE_ORDER_IN.match(msg)
             if m and m.group(1) == "BUY":
@@ -483,7 +484,7 @@ def _log_events():
                                    side="CALLS" if m.group(5) == "C" else "PUTS",
                                    strike=m.group(4), expiry_raw=m.group(6),
                                    expiry=m.group(6), qty=m.group(2),
-                                   their_price=m.group(7),
+                                   our_limit=m.group(7),
                                    outcome="order-sent", tier="E-order",
                                    confidence="high",
                                    how="the bot's own ORDER IN line — "
@@ -572,6 +573,7 @@ def _log_events():
                        "symbol": a["symbol"], "side": a["side"],
                        "strike": best["strike"], "expiry_raw": best["expiry_raw"],
                        "expiry": best["expiry"], "their_price": best["their_price"],
+                       "our_limit": best.get("our_limit", ""),
                        "qty": best["qty"], "caller": best["caller"],
                        "outcome": a["outcome"],
                        "tier": "C-linked(%s)" % best["tier"],
@@ -685,6 +687,7 @@ def _apply_log(rows):
             for col, val in (("side", e.get("side")), ("strike", e.get("strike")),
                              ("expiry", e.get("expiry")),
                              ("their_price", e.get("their_price")),
+                             ("our_limit", e.get("our_limit")),
                              ("qty", e.get("qty")), ("caller", e.get("caller"))):
                 if val and _blank(r.get(col)):
                     r[col] = val
@@ -708,7 +711,8 @@ def _apply_log(rows):
             "symbol": e["symbol"], "side": e.get("side") or "",
             "strike": e.get("strike") or "", "expiry": e.get("expiry") or "",
             "caller_strike": e.get("caller_strike") or "",
-            "their_price": e.get("their_price") or "", "qty": e.get("qty") or "",
+            "their_price": e.get("their_price") or "",
+            "our_limit": e.get("our_limit") or "", "qty": e.get("qty") or "",
             "outcome": e["outcome"], "reason": e["outcome"], "detail": "",
             "in_ledger": False, "source": "trades.log:" + e["tier"],
             "tier": e["tier"], "confidence": e["confidence"],
@@ -733,6 +737,7 @@ def _keep_richer(row, e):
     it: fill its blanks, and take the outcome only when it is further along."""
     for col, val in (("side", e.get("side")), ("expiry", e.get("expiry")),
                      ("their_price", e.get("their_price")),
+                     ("our_limit", e.get("our_limit")),
                      ("qty", e.get("qty")), ("caller", e.get("caller")),
                      ("caller_strike", e.get("caller_strike"))):
         if val and _blank(row.get(col)):
