@@ -29,10 +29,11 @@ Caller claims are separate from broker results and ratchet simulations. Partial 
 | 10:39:56 | 10:49:02 | Mike | AMZN 255C 9/14 @ 2.05 | $2.05 | full exit | price unavailable | unavailable | caller exit; price unavailable |
 | 10:50:04 | 11:03:21 | Brett | HOOD 118C 9/18 @ 2.50 | $2.50 | partial trim | +10.0% | implied $2.75 | caller-stated |
 | 10:54:00 | 11:12:46 | 🇳🇬｜midas-small-account-challenge | AAPL 335C 0DTE @ 1.46 | $1.46 | partial trim | +22.0% | implied $1.78 | caller-stated |
+| 11:13:20 | 11:28:10 | 🛎️｜all-alerts | MU 980C 0DTE @ 3.00 | $3.00 | partial trim | $500/contract | +166.7% | caller-stated |
 | 12:01:49 | 12:31:05 | Brett (Admin) | HOOD 118C | — | full exit | -6.0% | unavailable | caller-stated |
 | 15:40:12 | 15:46:18 | TradingTheTrend | QQQ 716C 9/11 @ 0.15 | $0.15 | partial trim | $0.24 | +60.0% | caller-stated |
 | 15:22:16 | 15:59:59 | Demon × LKS | IBM 250C 9/18 @ 1.70 | $1.70 | partial trim | $2.20 | +29.4% | caller-stated |
 
-- Claim events paired: **28**.
+- Claim events paired: **29**.
 - Full exits recorded: **7**; calculable: **3**; price/percent unavailable: **4**.
 - Quantity-weighted caller P&L stays unavailable when trim size or the final runner exit is missing.
