@@ -13,9 +13,9 @@ rem  ahead. settings.json stays gitignored - keys never travel.
 rem ============================================================
 cd /d "%~dp0"
 
-rem --- single instance: a heartbeat younger than 2 min means the
-rem --- loop is already running somewhere; this copy stands down.
-powershell -nop -c "$f='.autopush.alive'; if(Test-Path $f){$a=(Get-Date)-(Get-Item $f).LastWriteTime; if($a.TotalSeconds -lt 120){exit 1}}; exit 0" >nul 2>&1
+rem --- single instance: a live owner PID remains valid even when git or the
+rem --- network blocks longer than two minutes. A dead owner is replaced.
+powershell -nop -c "$owner=(Get-CimInstance Win32_Process -Filter ('ProcessId='+$PID)).ParentProcessId; $f='.autopush.pid'; $prior=0; if(Test-Path $f){[void][int]::TryParse((Get-Content -Raw $f -EA SilentlyContinue),[ref]$prior)}; if($prior -and $prior -ne $owner){$p=Get-CimInstance Win32_Process -Filter ('ProcessId='+$prior) -EA SilentlyContinue; if($p -and $p.Name -eq 'cmd.exe' -and $p.CommandLine -like '*AUTO PUSH.bat*'){exit 1}}; [IO.File]::WriteAllText($f,[string]$owner); exit 0" >nul 2>&1
 if errorlevel 1 exit /b 0
 
 :loop

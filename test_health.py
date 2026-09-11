@@ -34,5 +34,17 @@ class WebullStreamHealthTests(unittest.TestCase):
         self.assertEqual(state["last"], "connected")
 
 
+class ProcessTopologyTests(unittest.TestCase):
+    def test_duplicate_autopush_is_visible(self):
+        rows = [
+            {"Name": "python.exe", "CommandLine": "python bridge.py"},
+            {"Name": "cmd.exe", "CommandLine": "cmd /c AUTO PUSH.bat"},
+            {"Name": "cmd.exe", "CommandLine": "cmd /c AUTO PUSH.bat"},
+            {"Name": "chrome.exe", "CommandLine": "chrome --profile-directory=Profile 2"},
+        ]
+        self.assertEqual(health.process_topology(rows),
+                         {"bridge": 1, "autopush": 2, "chrome_roots": 1})
+
+
 if __name__ == "__main__":
     unittest.main()

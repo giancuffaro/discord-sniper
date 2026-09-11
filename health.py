@@ -42,6 +42,7 @@ import argparse
 import json
 import os
 import ssl
+import subprocess
 import sys
 import time
 import urllib.error
@@ -209,6 +210,47 @@ def check_bridge(c, trials):
     return ("Bridge 8787", ok, lat, err)
 
 
+def process_topology(rows=None):
+    """Count the long-lived local owners without starting another service."""
+    if rows is None:
+        if os.name != "nt":
+            return None
+        command = (
+            "Get-CimInstance Win32_Process | "
+            "Where-Object {$_.Name -in @('cmd.exe','python.exe','pythonw.exe','chrome.exe')} | "
+            "Select-Object Name,ProcessId,CommandLine | ConvertTo-Json -Compress")
+        try:
+            raw = subprocess.check_output(
+                ["powershell.exe", "-NoProfile", "-Command", command],
+                text=True, encoding="utf-8", errors="replace", timeout=12).strip()
+            rows = json.loads(raw) if raw else []
+        except Exception:                                  # noqa: BLE001
+            return None
+    if isinstance(rows, dict):
+        rows = [rows]
+    counts = {"bridge": 0, "autopush": 0, "chrome_roots": 0}
+    for row in rows or []:
+        name = str(row.get("Name") or "").lower()
+        low = str(row.get("CommandLine") or "").lower()
+        if name in ("python.exe", "pythonw.exe") and "bridge.py" in low:
+            counts["bridge"] += 1
+        if name == "cmd.exe" and "auto push.bat" in low:
+            counts["autopush"] += 1
+        if name == "chrome.exe" and "--profile-directory=" in low:
+            counts["chrome_roots"] += 1
+    return counts
+
+
+def check_local_processes(_c, _trials):
+    counts = process_topology()
+    if counts is None:
+        return ("Local process owners", None, [], "process inventory unavailable")
+    ok = counts["bridge"] == 1 and counts["autopush"] == 1 and counts["chrome_roots"] >= 1
+    note = "bridge=%d autopush=%d chrome-roots=%d" % (
+        counts["bridge"], counts["autopush"], counts["chrome_roots"])
+    return ("Local process owners", 1 if ok else 0, [0.0] if ok else [], note)
+
+
 def dxlink_from_log(max_read=4000000):
     """DXLink health WITHOUT connecting — read the running session's own log.
 
@@ -353,7 +395,7 @@ def run_once(trials, quiet=False):
               % ("ENDPOINT", "OK", "p50 ms", "p90 ms", "worst", "note"))
         print("-" * 66)
 
-    for fn in (check_bridge, check_tradier, check_tasty_oauth, check_webull,
+    for fn in (check_bridge, check_local_processes, check_tradier, check_tasty_oauth, check_webull,
                check_webull_stream):
         try:
             name, ok, lat, err = fn(c, trials)
