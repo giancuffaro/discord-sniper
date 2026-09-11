@@ -75,20 +75,34 @@ def build(day):
                  "real bot fill" if event.get("fill") is not None else
                  "caller posted" if caller_entry is not None else
                  "first recorded ask; caller price absent")
-        compared.append((event, entry, basis, caller, evidence, ratchet))
+        if event.get("actual") is not None:
+            shown_exit = event.get("actual_exit")
+            shown_pl = event["actual"]
+            shown_pct = (shown_pl / (entry * 100.0) * 100.0
+                         if entry and shown_pl is not None else None)
+            ratchet_basis = "broker-confirmed actual"
+        else:
+            shown_exit = ratchet["exit"]
+            shown_pl = ratchet["pl"]
+            shown_pct = ratchet["pct"]
+            ratchet_basis = "quote-path replay"
+        compared.append((event, entry, basis, caller, evidence, ratchet,
+                         shown_exit, shown_pct, shown_pl, ratchet_basis))
 
     total = policy._observed_total(day)
     lines = ["# Caller entry versus our ratchet — %s" % day, "",
              "The caller's posted premium is the hypothetical fill when available. Our 5/3/5 ratchet is replayed against the recorded Tastytrade bid path. Caller exits use their posted price/percentage, or the contemporaneous bid when they posted only the exit time.", "",
              "| Alert | Source | Hypothetical entry | Entry basis | Caller result | Caller evidence | Our ratchet exit | Our ratchet result |",
              "|---|---|---:|---|---|---|---:|---:|"]
-    for event, entry, basis, caller, evidence, ratchet in compared:
-        lines.append("| %s | %s | $%.2f | %s | %s | %s | $%.2f | %+.1f%% / %+.0f |" % (
+    for (event, entry, basis, caller, evidence, _ratchet, shown_exit,
+         shown_pct, shown_pl, ratchet_basis) in compared:
+        lines.append("| %s | %s | $%.2f | %s | %s | %s | $%.2f | %+.1f%% / %+.0f (%s) |" % (
             event["label"], event["source"].replace("|", "\\|"), entry,
-            basis, caller, evidence, ratchet["exit"], ratchet["pct"], ratchet["pl"]))
-    ratchet_sum = sum(row[-1]["pl"] for row in compared)
+            basis, caller, evidence, shown_exit, shown_pct, shown_pl,
+            ratchet_basis))
+    ratchet_sum = sum(row[8] for row in compared)
     strict = [row for row in compared if row[0].get("caller_entry") is not None]
-    strict_sum = sum(row[-1]["pl"] for row in strict)
+    strict_sum = sum(row[8] for row in strict)
     numeric_caller = sum(1 for row in compared
                          if "unavailable" not in row[3])
     lines += ["", "## Result", "",
@@ -97,6 +111,7 @@ def build(day):
               "- Our ratchet on the **%d paths with a caller-posted entry**: **%+.0f per one-contract replay**." % (len(strict), strict_sum),
               "- Including the one no-price alert at its first recorded ask: **%+.0f across all %d paths**." % (ratchet_sum, len(compared)),
               "- Numeric caller full-exit results on this subset: **%d of %d**; missing caller exit prices prevent an honest aggregate caller P&L." % (numeric_caller, len(compared)),
+              "- Broker-confirmed results override quote-path simulations whenever the bot actually traded.",
               "- This assumes the caller's posted price filled. It measures trade management from their original entry, not whether that fill was executable for us."]
     out = os.path.join(HERE, "daily-reports",
                        "CALLER-VS-RATCHET-%s.md" % day)

@@ -59,6 +59,7 @@ def _events(day):
                     "label": "%s %s" % (row.get("time", "")[:5], row.get("symbol", "?")),
                     "source": row.get("room") or row.get("caller") or "alert",
                     "fill": None, "actual": None,
+                    "actual_exit": None,
                     "caller_entry": _f(row.get("their_price")),
                 })
     # Filled bot trades have the best entry evidence and must be represented
@@ -79,6 +80,7 @@ def _events(day):
                 "label": "%s %s" % ((row.get("opened") or "")[:5], row.get("symbol") or "?"),
                 "source": row.get("room") or row.get("caller") or "bot fill",
                 "fill": _f(row.get("avg_in")), "actual": _f(row.get("pl")),
+                "actual_exit": _f(row.get("exit_avg")),
                 "caller_entry": _f(row.get("their_avg")),
             })
     return sorted(events, key=lambda x: x["ts"] or 0)
