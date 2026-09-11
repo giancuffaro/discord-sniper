@@ -1148,11 +1148,12 @@ function addLog(entry) {
 let CAPTURE_PENDING = [];
 let CAPTURE_TIMER = null;
 let CAPTURE_FLUSHING = false;
-function capture(text, author, channel, at, history) {
+function capture(text, author, channel, at, history, parseText) {
   return new Promise(resolve => {
     CAPTURE_PENDING.push({
-      entry: { t: at || Date.now(), author, text, channel: String(channel || ""),
-               history: !!history },
+      entry: { t: at || Date.now(), author, text,
+               parse_text: String(parseText || text || ""),
+               channel: String(channel || ""), history: !!history },
       resolve
     });
     if (!CAPTURE_TIMER && !CAPTURE_FLUSHING) {
@@ -3009,6 +3010,14 @@ async function autoExportForLearning() {
     (c.channel ? " #" + c.channel : "") + "]  " +
     (c.history ? "<history> " : "") + (c.author || "?") + ": " +
     String(c.text || "").replace(/\s+/g, " ").trim());
+  // Raw rows preserve embeds and quotes for tuning. Replay uses this exact
+  // clean live input so quoted calls are not reported as silent live drops.
+  const parserCaps = captured.filter(c => !c.history && c.parse_text != null)
+    .sort((a, b) => a.t - b.t).map(c =>
+      stamp(c.t) + "  [" + (roomName(c.channel) || "?") +
+      (c.channel ? " #" + c.channel : "") + "]  " +
+      (c.author || "?") + ": " +
+      String(c.parse_text || "").replace(/\s+/g, " ").trim());
   const acts = log.slice().reverse().map(e =>
     stamp(e.t) + "  <" + (e.kind || "?") + ">  " +
     (e.what ? e.what + " — " : "") + String(e.why || "").replace(/\s+/g, " ").trim() +
@@ -3094,6 +3103,7 @@ async function autoExportForLearning() {
     "Discord Sniper — self-learning export (" + day + ", refreshed " + stamp(Date.now()) + " ET)\n\n" +
     state +
     "=== RAW MESSAGES THE READER SAW (" + caps.length + ") ===\n" + caps.join("\n") +
+    "\n\n=== LIVE PARSER INPUTS (" + parserCaps.length + ") ===\n" + parserCaps.join("\n") +
     "\n\n=== WHAT THE BOT DID (" + acts.length + ") ===\n" + acts.join("\n") + "\n";
   // Through the BRIDGE now, into <folder>\DS Logs (his ask, 8/18: "logs
   // download here"). Chrome's download API can't write outside Downloads
@@ -3877,7 +3887,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // Grabber export stores the FULL row text (embeds and all); trading still
     // reads the clean msg.text below.
     if (c.capture) capture(msg.full || msg.text, msg.author, msg.channelId,
-                           msg.postedAt, msg.history);
+                           msg.postedAt, msg.history, msg.text);
     ROOM_MSG_AT[String(msg.channelId || "")] = Date.now();
     notePost(String(msg.channelId || ""), msg.postedAt);
 

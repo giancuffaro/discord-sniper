@@ -115,7 +115,7 @@ def exports_for_day(day):
 
 
 def load(fn):
-    msgs, dids = {}, []
+    msgs, parser_msgs, dids = {}, {}, []
     sec = None
     with open(fn, encoding="utf-8", errors="replace") as f:
         for ln in f:
@@ -123,10 +123,13 @@ def load(fn):
             if ln.startswith("=== RAW MESSAGES"):
                 sec = "m"
                 continue
+            if ln.startswith("=== LIVE PARSER INPUTS"):
+                sec = "p"
+                continue
             if ln.startswith("=== WHAT THE BOT DID"):
                 sec = "d"
                 continue
-            if sec == "m":
+            if sec in ("m", "p"):
                 m = RE_MSG.match(ln)
                 if m and m.group(1) == DAY:
                     d, t, room, cid, text = m.groups()
@@ -134,12 +137,13 @@ def load(fn):
                     # entered the live path and cannot be a silent live drop.
                     if text.startswith("<history> "):
                         continue
-                    msgs[(t, cid, text[:100])] = (t, room, cid, text)
+                    target = parser_msgs if sec == "p" else msgs
+                    target[(t, cid, text[:100])] = (t, room, cid, text)
             elif sec == "d":
                 m = RE_DID.match(ln)
                 if m and m.group(1) == DAY:
                     dids.append(m.groups()[1:])
-    return list(msgs.values()), dids
+    return list((parser_msgs or msgs).values()), dids
 
 
 def bridge_lines(day=None):
@@ -169,7 +173,14 @@ def bridge_lines(day=None):
 
 def strip_header(text):
     # "Author: " prefix the export adds, then the parser's own cleaners
-    return text.split(": ", 1)[1] if ": " in text[:60] else text
+    text = text.split(": ", 1)[1] if ": " in text[:60] else text
+    # Discord's accessible row repeats its visible timestamp before the post.
+    # The activity log stores the clean post ("Filled"), so remove the display
+    # header before both parsing and verdict matching.
+    return re.sub(
+        r"^(?:.*?)?(?:\[\s*)?\d{1,2}:\d{2}\s*[AP]M(?:\s*\])?\s+"
+        r"[A-Za-z]+,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+"
+        r"\d{1,2}:\d{2}\s*[AP]M\s+", "", text)
 
 
 def near(t1, t2, secs):
