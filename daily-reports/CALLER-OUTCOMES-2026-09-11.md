@@ -35,5 +35,5 @@ Caller claims are separate from broker results and ratchet simulations. Partial 
 | 15:22:16 | 15:59:59 | Demon × LKS | IBM 250C 9/18 @ 1.70 | $1.70 | partial trim | $2.20 | +29.4% | caller-stated |
 
 - Claim events paired: **29**.
-- Full exits with calculable results: **3**.
+- Full exits recorded: **7**; calculable: **3**; price/percent unavailable: **4**.
 - Quantity-weighted caller P&L stays unavailable when trim size or the final runner exit is missing.

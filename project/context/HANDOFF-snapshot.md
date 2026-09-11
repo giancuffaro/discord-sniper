@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (17:02) — 33 entries: 5 option paths priced, 20 option paths missing, 8 futures. Ratchet won priced subset -$18 vs fixed -$39; actual CPS +$5. Alert tape now survives bridge restarts, resolves shorthand expiries, and records re-entries. Today's historical recovery is delayed by OPRA's live-license cutoff.
+Last updated: 2026-09-11 (17:11) — 34 entries: 5 option paths priced, 21 option paths missing, 8 futures. Ratchet won priced subset -$18 vs fixed -$39; actual CPS +$5. Caller ledger paired 29 trim/exit claims. Alert tape now survives restarts and records re-entries. Historical recovery is delayed by OPRA's live-license cutoff.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -328,6 +328,9 @@ RESTARTS / SAFETY
   stop. It reports coverage and never extrapolates uncovered alerts. Alert
   tape restores today's contracts from `alert_meta.csv` after bridge/code
   restarts, resolves shorthand expiries, and records distinct re-entries.
+  `CALLER-OUTCOMES-<date>.md/.csv` separately preserves caller entry, every
+  supported trim/full exit, exact or implied price and calculated percent;
+  partial trims never become full-trade results and absent prices stay absent.
 - GIT: settings.json holds every key, gitignored, never committed, never
   pasted back. Never run git write commands from a sandbox (locks). AUTO
   PUSH sweeps commits and retries outstanding pushes every 45 s; it never

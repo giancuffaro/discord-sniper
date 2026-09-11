@@ -369,10 +369,11 @@ def build(day):
             "$%.2f" % r["entry"] if r["entry"] is not None else "—",
             r["event"], claim, calc, r["basis"]))
     full = [r for r in claims if r["event"] == "full exit"]
+    calculable_full = [r for r in full if r["calculated_pct"] is not None
+                       or r["reported_pct"] is not None]
     lines += ["", "- Claim events paired: **%d**." % len(claims),
-              "- Full exits with calculable results: **%d**." % len(
-                  [r for r in full if r["calculated_pct"] is not None
-                   or r["reported_pct"] is not None]),
+              "- Full exits recorded: **%d**; calculable: **%d**; price/percent unavailable: **%d**." %
+              (len(full), len(calculable_full), len(full) - len(calculable_full)),
               "- Quantity-weighted caller P&L stays unavailable when trim size or the final runner exit is missing."]
     with open(md_path + ".tmp", "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines).rstrip() + "\n")
