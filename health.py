@@ -262,6 +262,62 @@ def dxlink_from_log(max_read=4000000):
     return out
 
 
+def webull_stream_from_log(path=None, max_read=4000000):
+    """Read Webull's stock/ETF MQTT state without opening another socket.
+
+    The SDK retries internally, so the bridge can stay healthy while its
+    optional push feed is disconnected. Scope the result to the most recent
+    ``STREAM on`` marker and let the last connect/error event decide state.
+    Option quotes and order execution use separate paths.
+    """
+    path = path or os.path.join(HERE, "bridge.log")
+    out = {"scoped": False, "connected": 0, "tls_errors": 0,
+           "retries": 0, "healthy": None, "last": "unknown"}
+    try:
+        size = os.path.getsize(path)
+        want = min(size, max_read)
+        with open(path, "rb") as fh:
+            fh.seek(size - want)
+            lines = fh.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return out
+    start = 0
+    for i in range(len(lines) - 1, -1, -1):
+        if "STREAM on" in lines[i]:
+            start, out["scoped"] = i, True
+            break
+    for line in lines[start:]:
+        low = line.lower()
+        if "[stream] connected" in low:
+            out["connected"] += 1
+            out["last"] = "connected"
+        elif "peer sent no certificates to verify" in low:
+            out["tls_errors"] += 1
+            out["last"] = "tls_error"
+        if "next retry will be started" in low and "webull.data" in low:
+            out["retries"] += 1
+    if out["last"] == "connected":
+        out["healthy"] = True
+    elif out["tls_errors"]:
+        out["healthy"] = False
+    return out
+
+
+def check_webull_stream(_c, _trials):
+    stream = webull_stream_from_log()
+    if not stream["scoped"]:
+        return ("Webull MQTT stream", None, [],
+                "no STREAM-on marker in the readable log tail")
+    if stream["healthy"] is True:
+        return ("Webull MQTT stream", 1, [0.0], "")
+    if stream["healthy"] is False:
+        return ("Webull MQTT stream", 0, [],
+                "%d TLS certificate errors; SDK retrying (%d retry notices)" %
+                (stream["tls_errors"], stream["retries"]))
+    return ("Webull MQTT stream", None, [],
+            "started, but no connection result is present yet")
+
+
 def market_state(c):
     tok = ((c.get("execution") or {}).get("tradier") or {}).get("access_token")
     if not tok:
@@ -297,7 +353,8 @@ def run_once(trials, quiet=False):
               % ("ENDPOINT", "OK", "p50 ms", "p90 ms", "worst", "note"))
         print("-" * 66)
 
-    for fn in (check_bridge, check_tradier, check_tasty_oauth, check_webull):
+    for fn in (check_bridge, check_tradier, check_tasty_oauth, check_webull,
+               check_webull_stream):
         try:
             name, ok, lat, err = fn(c, trials)
         except Exception as e:                              # noqa: BLE001
