@@ -1,6 +1,8 @@
 import ssl
 import unittest
 
+import paho.mqtt.client as mqtt
+
 import stream_bus
 
 
@@ -10,6 +12,11 @@ class StreamTlsTests(unittest.TestCase):
         self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
         self.assertTrue(context.check_hostname)
         self.assertEqual(type(context).__module__, "ssl")
+
+        client = mqtt.Client(client_id="context-replacement-test")
+        client.tls_set()
+        client._ssl_context = context
+        self.assertIs(client._ssl_context, context)
 
 
 if __name__ == "__main__":

@@ -315,7 +315,7 @@ RESTARTS / SAFETY
   decisions, sent/refused/stale/other skips, recovered unique gaps, real
   fills and P&L, postmortem entry/exit comparison, and room activity. Relay
   duplicates stay raw but count once. The 15-minute Codex heartbeat
-  `Discord Sniper guard` passively checks readers, feeds, retry storms,
+  `Discord Sniper guard` checks readers, feeds, retry storms,
   processes, logs and ledger agreement; it stays quiet unless state changes.
   Findings become tested fixtures; chat never edits source. Caller-vs-system P&L is shown
   only when caller entry and exit can be paired with contemporaneous option

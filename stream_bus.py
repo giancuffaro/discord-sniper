@@ -215,7 +215,11 @@ class StockStream:
                 # system-certificate shim cannot support that sequence; give
                 # this MQTT client a normal verified context while leaving the
                 # shim active for the rest of the bridge.
-                cli.tls_set_context(paho_compatible_tls_context())
+                # The Webull constructor has already called tls_set(), so
+                # Paho's public tls_set_context() refuses a second setup.
+                # Replace only the not-yet-used context it created; _ssl and
+                # every other TLS setting remain enabled.
+                cli._ssl_context = paho_compatible_tls_context()
                 cli.on_connect_success = self._on_connect
                 cli.on_quotes_message = self._on_message
                 cli.on_subscribe_success = lambda c, a, s: None
