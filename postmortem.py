@@ -36,6 +36,7 @@ import glob
 import os
 import re
 import sys
+import threading
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -46,6 +47,14 @@ import tape as _tape  # noqa: E402
 TRADES_LOG = os.path.join(HERE, "trades.log")
 OUT_DIR = os.path.join(HERE, "postmortems")
 OUT_CSV = os.path.join(HERE, "master_postmortems.csv")
+# F11 (9/11 audit): the CSV rewrite below is read-modify-write (read every
+# row, drop this trade's old one, add the new one, write the whole file
+# back) with a shared ".tmp" name and no lock — two postmortems finishing
+# close together could each read the same starting file, and the second
+# writer's version would silently not contain the first one's row. One
+# lock around the whole read+write closes both the lost-update and the
+# shared-temp-file race at once.
+_CSV_LOCK = threading.Lock()
 STOP_GRID = (5.0, 7.5, 10.0, 12.5, 15.0, 20.0, 25.0)
 AFTER_MARKS = ((30, "+30s"), (60, "+1m"), (300, "+5m"), (600, "+10m"))
 FAULT_PATS = (
@@ -377,19 +386,24 @@ def _write(res):
     res["file"] = "postmortems/" + fn
     # central csv: replace THIS trade's row (date, occ, fill, exit) if
     # present; a different trade on the same (date, occ) is kept, not lost.
-    rows = [x for x in _read_postmortems_csv()
-            if not (x.get("date") == res["date"] and x.get("occ") == res["occ"]
-                    and _f(x.get("fill")) == res.get("fill")
-                    and _f(x.get("exit")) == res.get("exit"))]
-    rows.append({c: ("" if res.get(c) is None else res.get(c)) for c in COLUMNS})
-    rows.sort(key=lambda x: (x.get("date") or "", x.get("occ") or ""))
-    tmp = OUT_CSV + ".tmp"
-    with open(tmp, "w", encoding="utf-8", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=COLUMNS)
-        w.writeheader()
-        for x in rows:
-            w.writerow({c: x.get(c, "") for c in COLUMNS})
-    os.replace(tmp, OUT_CSV)
+    # F11 (9/11 audit): read, modify and write all happen under one lock
+    # now — two postmortems finishing close together used to be able to
+    # both read the file before either wrote it back, so the loser's write
+    # silently erased the winner's row.
+    with _CSV_LOCK:
+        rows = [x for x in _read_postmortems_csv()
+                if not (x.get("date") == res["date"] and x.get("occ") == res["occ"]
+                        and _f(x.get("fill")) == res.get("fill")
+                        and _f(x.get("exit")) == res.get("exit"))]
+        rows.append({c: ("" if res.get(c) is None else res.get(c)) for c in COLUMNS})
+        rows.sort(key=lambda x: (x.get("date") or "", x.get("occ") or ""))
+        tmp = "%s.tmp.%d" % (OUT_CSV, threading.get_ident())
+        with open(tmp, "w", encoding="utf-8", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=COLUMNS)
+            w.writeheader()
+            for x in rows:
+                w.writerow({c: x.get(c, "") for c in COLUMNS})
+        os.replace(tmp, OUT_CSV)
     return path
 
 

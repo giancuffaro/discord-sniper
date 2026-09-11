@@ -148,13 +148,11 @@
   },
   {
     "name": "atomic_writer_race_removes_primary",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
-      "primary_exists": false,
-      "backup_exists": true,
-      "errors": [
-        "FileNotFoundError"
-      ]
+      "primary_exists": true,
+      "backup_exists": false,
+      "errors": []
     }
   },
   {
