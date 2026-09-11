@@ -136,8 +136,14 @@ def run(day):
                        [sys.executable, os.path.join(HERE, "daily_report.py"), day],
                        120)
     if not report_step["ok"]:
+        attention = True
         summary["status"] = "attention"
         summary["failed_checks"].append(report_step["name"])
+        _write_atomic(os.path.join(OUT_DIR, "latest.json"),
+                      json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    else:
+        summary["daily_report"] = os.path.relpath(
+            os.path.join(HERE, "daily-reports", "REPORT-%s.md" % day), HERE)
         _write_atomic(os.path.join(OUT_DIR, "latest.json"),
                       json.dumps(summary, indent=2, sort_keys=True) + "\n")
     if attention:

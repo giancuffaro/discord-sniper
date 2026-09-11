@@ -271,7 +271,10 @@ def find_missed_entries(keep, parsed, dids=None, blog=None):
         # needs_loaded would otherwise count the old heuristic "POSSIBLE
         # MISSED" warning as a verdict and hide the fact that no OPEN was ever
         # produced. Require a concrete OPEN/bridge record for the loaded symbol.
-        if act == "OPEN" and sig.get("needs_loaded"):
+        needs_loaded = (sig.get("needs_loaded") or
+                        (act == "OPEN" and not sig.get("symbol") and
+                         sig.get("matched") == "fill confirmation on a loaded contract"))
+        if act == "OPEN" and needs_loaded:
             cand = shelf.get(author)
             if not cand:
                 continue
