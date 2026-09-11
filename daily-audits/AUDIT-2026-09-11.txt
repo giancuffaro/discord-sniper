@@ -1,5 +1,5 @@
 DISCORD SNIPER DAILY AUDIT — 2026-09-11
-generated: 2026-09-11T17:35:44.824374-04:00
+generated: 2026-09-11T17:47:47.731901-04:00
 status: ATTENTION
 silent drops: 8
 possible missed entries: 1
@@ -67,4 +67,4 @@ PASS  JS test_plan_entry.js  0.08s
 PASS  JS test_spreads.js  0.07s
 PASS  JS test_word_order.js  0.09s
 PASS  JS test_resolve.js  0.09s
-PASS  Python regression suite  29.71s
+PASS  Python regression suite  29.70s
