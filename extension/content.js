@@ -505,8 +505,8 @@ async function joinLiveVoice() {
   }
 }
 
-// Belt-and-suspenders for the MutationObserver: re-read every message on
-// screen on a timer, don't trust the "new message" event alone. Discord's
+// Belt-and-suspenders for the MutationObserver: occasionally re-read every
+// message on screen, don't trust the "new message" event alone. Discord's
 // observer can drop an event when the tab is backgrounded, throttled, or busy
 // re-rendering — that's how Unraveller's "all out of TSLA" was never read and
 // the position sat open (8/19). handle() dedupes via SEEN, so re-sweeping the
@@ -524,6 +524,9 @@ function liveSweep() {
 // from under us, so re-check for it rather than attaching once and hoping.
 attach();
 liveSweep();
+// The observer handles normal alerts immediately. This timer only repairs a
+// replaced list or a missed mutation, so running it every 1.5 seconds across
+// every room wasted multiple CPU cores for no speed benefit.
 timer = setInterval(function () {
   // After an update the old copy of this file is still running but is no longer
   // connected to anything — chrome.runtime.id goes undefined. Stand down rather
@@ -534,7 +537,7 @@ timer = setInterval(function () {
   attach();
   liveSweep();       // catch anything the live observer missed, every tick
   liveScan();        // and notice when the server goes LIVE on voice/stage
-}, 1500);
+}, 5000);
 
 /* HEARTBEAT (v3.5.0 A3.1, 9/2). A dead reader and a quiet room look
  * identical for 40 minutes today — the silence alert even says so. But a

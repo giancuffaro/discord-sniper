@@ -2144,12 +2144,9 @@ async function checkBuild() {
   }
   if (stamp === build_stamp) return;
 
-  // Used to wait for the manual OFF switch — deleted 8/17 because that's
-  // exactly what left the bot silently dead for 90 minutes on 8/17: it
-  // waited for OFF, something turned it OFF once, and nothing ever turned
-  // it back ON. Wait for the market to be closed instead — a real state
-  // that always ends on its own, with nothing to remember to flip.
-  if (inFlight > 0 || marketOpenNow()) {
+  // Apply a ready build during market hours too. Finish any active alert
+  // submission first so reloading cannot interrupt its response handling.
+  if (inFlight > 0) {
     const { build_waiting } = await chrome.storage.local.get("build_waiting");
     if (build_waiting !== stamp) {
       await chrome.storage.local.set({ build_waiting: stamp });
@@ -2745,8 +2742,13 @@ async function roomSilenceCheck() {
   // tripped "silent 40 min" every session — roughly 40 false alarms a day,
   // which is how a real dead reader gets lost in the noise.
   try { await loadRoomsFile(); } catch (e) {}
+  let lane = "";
+  try { lane = (await chrome.storage.local.get("profile_lane")).profile_lane || ""; } catch (e) {}
   const _watch = LIVE_ROOM_IDS.size ? LIVE_ROOM_IDS : Object.keys(ROOM_LABELS);
   for (const id of _watch) {
+    if (lane && (lane === "whop") !== String(id).startsWith("whop:")) continue;
+    // A fresh heartbeat proves the reader is answering even when nobody posts.
+    if (readerHealth(id, now) === "quiet (heartbeat current)") continue;
     const last = ROOM_MSG_AT[id] || _pulseBoot;
     const quiet = now - last;
     if (quiet < QUIET) continue;
@@ -2770,6 +2772,8 @@ async function roomSilenceCheck() {
                         "during market hours — dead reader or sleeping room. " +
                         "Check its tab.", text: "", author: label });
   }
+  // Each profile can see only its own tabs. Discord cannot diagnose Whop.
+  if (lane !== "whop") return;
   // No whop tab open at all — nothing can be read, say so plainly.
   try {
     let wt = await chrome.tabs.query({ url: ["https://whop.com/*"] });
@@ -2961,6 +2965,10 @@ async function autoExportForLearning() {
         (p.last != null ? " now " + Number(p.last).toFixed(2) : "") + plp;
     });
     const onoff = b => b ? "ON" : "off";
+    const readerLane = (await chrome.storage.local.get("profile_lane")).profile_lane || "";
+    const readerLines = Array.from(LIVE_ROOM_IDS)
+      .filter(id => !readerLane || (readerLane === "whop") === String(id).startsWith("whop:"))
+      .map(id => "    " + (roomName(id) || id) + ": " + readerHealth(id, Date.now()));
     state =
       "=== CURRENT STATE (as of " + stamp(Date.now()) + " ET) ===\n" +
       "  version:        v" + ver + "\n" +
@@ -2985,7 +2993,8 @@ async function autoExportForLearning() {
       "  SHADOW rooms:   " + (shadowRooms.length ? shadowRooms.join(", ") : "none") + "\n" +
       "  RN-pullback:    " + (c.rn_pullback_all ? "ON — all channels wait for the round number" : "off (all instant)") + "\n" +
       "  open positions (" + ((posData && posData.positions) || []).length + "):\n" +
-      (posLines.length ? posLines.join("\n") : "    (none)") + "\n\n";
+      (posLines.length ? posLines.join("\n") : "    (none)") + "\n" +
+      "  reader coverage (this profile):\n" + readerLines.join("\n") + "\n\n";
   } catch (e) { state = ""; }
 
   const text =
