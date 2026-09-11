@@ -132,6 +132,14 @@ def run(day):
                "report": os.path.relpath(report_path, HERE)}
     _write_atomic(os.path.join(OUT_DIR, "latest.json"),
                   json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    report_step = _run("daily operating report",
+                       [sys.executable, os.path.join(HERE, "daily_report.py"), day],
+                       120)
+    if not report_step["ok"]:
+        summary["status"] = "attention"
+        summary["failed_checks"].append(report_step["name"])
+        _write_atomic(os.path.join(OUT_DIR, "latest.json"),
+                      json.dumps(summary, indent=2, sort_keys=True) + "\n")
     if attention:
         _queue_attention(day, summary, report_path)
     print("DAILY AUDIT %s — %s; silent=%d possible=%d coverage=%d failed=%d"

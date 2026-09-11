@@ -1,0 +1,15 @@
+{
+  "entries": [
+    {"time": "09:39", "alert": "QCOM 185C @ 0.97", "why": "Chrome was not running", "class": "reader outage"},
+    {"time": "09:42", "alert": "NVDA 220C 9/16 @ 3.06", "why": "Chrome was not running", "class": "reader outage"},
+    {"time": "09:42", "alert": "MNQ short @ 29462.375", "why": "Chrome was not running", "class": "reader outage"},
+    {"time": "09:42", "alert": "DELL 560C @ 1.05", "why": "Chrome was not running", "class": "reader outage"},
+    {"time": "10:35", "alert": "SPX 7700C @ 1.05", "why": "no normal verdict in recovered data", "class": "review gap"},
+    {"time": "10:54", "alert": "AAPL 335C 0DTE @ 1.46", "why": "split loading/fill only raised the heuristic warning", "class": "parser gap"},
+    {"time": "13:27", "alert": "RKLB 70C 9/25 @ 1.39", "why": "clls typo and missing bare-room rule", "class": "parser gap"}
+  ],
+  "adds": [
+    {"time": "14:15", "alert": "ADD RKLB 70C 10/16 @ 3.30", "why": "no verdict; old capture cannot prove live versus backfill", "class": "review gap"}
+  ],
+  "note": "The recovered entries are forensic additions for this day. Future exports store live/history markers so this distinction is automatic."
+}
