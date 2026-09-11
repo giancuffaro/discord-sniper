@@ -1,0 +1,20 @@
+[
+  {
+    "name": "second_contract_refusal_hidden",
+    "reproduced": true,
+    "detail": {
+      "requests": 2,
+      "second_http_status": 502,
+      "reported_success": true,
+      "error_logs": 0
+    }
+  },
+  {
+    "name": "spy_guard_disagrees_with_market_hours",
+    "reproduced": true,
+    "detail": {
+      "allowed": false,
+      "reason": "it's 16:05 ET — new option trades are only allowed between 09:30 and 16:00"
+    }
+  }
+]

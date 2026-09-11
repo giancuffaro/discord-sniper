@@ -1,0 +1,200 @@
+[
+  {
+    "name": "multi_contract_overwrite",
+    "reproduced": false,
+    "detail": {
+      "caller|NVDA|225|C|2026-10-16": {
+        "strike": 225,
+        "order_id": "225"
+      },
+      "caller|NVDA|230|C|2026-10-16": {
+        "strike": 230,
+        "order_id": "230"
+      }
+    }
+  },
+  {
+    "name": "undefined_symbol_silences_hard_stop",
+    "reproduced": false,
+    "detail": {
+      "entry_result": [
+        true,
+        "accepted"
+      ],
+      "workers_started": 1
+    }
+  },
+  {
+    "name": "ambiguous_bracket_duplicate_buy",
+    "reproduced": true,
+    "detail": [
+      "bracket BUY submitted, response lost",
+      "plain BUY submitted"
+    ]
+  },
+  {
+    "name": "429_eight_requests_no_backoff_signal",
+    "reproduced": true,
+    "detail": {
+      "requests": 8,
+      "returned": {
+        "SPY261016C00600000": [
+          null,
+          null,
+          null
+        ]
+      }
+    }
+  },
+  {
+    "name": "budget_denial_ignored",
+    "reproduced": true,
+    "detail": {
+      "denied": true,
+      "returned_without_error": true
+    }
+  },
+  {
+    "name": "watchdog_dead_flag_remains_true",
+    "reproduced": true,
+    "detail": {
+      "caller|SPY": {
+        "state": "working",
+        "watching": true
+      }
+    }
+  },
+  {
+    "name": "failed_stop_rearm_marked_done",
+    "reproduced": true,
+    "detail": {
+      "reported_rearmed": 1,
+      "stop_order_id": null
+    }
+  },
+  {
+    "name": "orphan_cleaner_cancels_unowned_contract",
+    "reproduced": true,
+    "detail": [
+      "human-put-later-expiry"
+    ]
+  },
+  {
+    "name": "sell_retry_ignores_late_fill",
+    "reproduced": true,
+    "detail": {
+      "sell_submissions": 2,
+      "result": [
+        false,
+        null
+      ]
+    }
+  },
+  {
+    "name": "different_put_mistaken_for_call_fill",
+    "reproduced": true,
+    "detail": [
+      [
+        "caller|SPY",
+        1,
+        5.0
+      ]
+    ]
+  },
+  {
+    "name": "armed_pullback_bypasses_stop_file",
+    "reproduced": true,
+    "detail": {
+      "STOP_present": true,
+      "result": [
+        true,
+        "sent"
+      ]
+    }
+  },
+  {
+    "name": "alert_metadata_cross_contract_join",
+    "reproduced": true,
+    "detail": [
+      {
+        "date": "2026-09-11",
+        "symbol": "SPY",
+        "strike": "600",
+        "side": "CALLS",
+        "expiry": "2026-10-16",
+        "room": "room-A",
+        "caller": "A",
+        "bid": "1",
+        "ask": "1.1",
+        "spread_pct": 9.52
+      }
+    ]
+  },
+  {
+    "name": "ledger_dedupe_key_omits_expiry",
+    "reproduced": true,
+    "detail": {
+      "different_expiries_same_key": true
+    }
+  },
+  {
+    "name": "expired_greek_slots_leak",
+    "reproduced": true,
+    "detail": {
+      "remaining_greek_slots": 1
+    }
+  },
+  {
+    "name": "concurrent_coid_dispatches_twice",
+    "reproduced": true,
+    "detail": [
+      "same-id",
+      "same-id"
+    ]
+  },
+  {
+    "name": "atomic_writer_race_removes_primary",
+    "reproduced": true,
+    "detail": {
+      "primary_exists": false,
+      "backup_exists": true,
+      "errors": [
+        "FileNotFoundError"
+      ]
+    }
+  },
+  {
+    "name": "alternate_adapter_sell_contract_mismatch",
+    "reproduced": true,
+    "detail": {
+      "returned_type": "str",
+      "consumer_error": "AttributeError"
+    }
+  },
+  {
+    "name": "backtest_credits_unavailable_stop_price",
+    "reproduced": true,
+    "detail": {
+      "entry": 2,
+      "observed_bid": 1,
+      "reported_percent": -5.000000000000004
+    }
+  },
+  {
+    "name": "throttle_misreported_as_verified_flat",
+    "reproduced": true,
+    "detail": {
+      "adapter_failure": "HTTP 429",
+      "positions": [],
+      "trusted_live": true
+    }
+  },
+  {
+    "name": "restored_watchdog_never_started",
+    "reproduced": true,
+    "detail": {
+      "watching_flag": true,
+      "threads_created": 0
+    }
+  }
+]
