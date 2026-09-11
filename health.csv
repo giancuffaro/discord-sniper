@@ -39,3 +39,8 @@ ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err
 1789063371.913,open,Tradier REST,6,6,200.8,230.2,261.8,
 1789063371.913,open,tastytrade OAuth,6,6,519.5,536.7,542.4,
 1789063371.913,open,Webull connect+bal,,6,,,,not reachable from this shell — run  python health.py  ON the PC where the bridge runs
+1789165103.144,postmarket,Bridge 8787,1,1,21.0,21.0,21.0,
+1789165103.144,postmarket,Tradier REST,1,1,259.6,259.6,259.6,
+1789165103.144,postmarket,tastytrade OAuth,1,1,683.2,683.2,683.2,
+1789165103.144,postmarket,Webull connect+bal,1,1,1343.2,1343.2,1343.2,
+1789165103.144,postmarket,Webull MQTT stream,0,1,,,,24 TLS certificate errors; SDK retrying (8 retry notices)
