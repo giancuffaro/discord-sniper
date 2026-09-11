@@ -72,10 +72,10 @@ def _events(day):
             contract = row.get("occ")
             if not contract:
                 continue
-            opened = _f(row.get("opened"))
+            opened = _f(row.get("opened_ts"))
             events.append({
                 "ts": opened, "occ": contract,
-                "label": "%s %s" % ((row.get("open_time") or "")[:5], row.get("symbol") or "?"),
+                "label": "%s %s" % ((row.get("opened") or "")[:5], row.get("symbol") or "?"),
                 "source": row.get("room") or row.get("caller") or "bot fill",
                 "fill": _f(row.get("avg_in")), "actual": _f(row.get("pl")),
             })
@@ -161,7 +161,7 @@ def build(day):
     if total is not None and total > len(compared):
         lines.append("- **%d alerts cannot be scored yet** because no exact-contract bid/ask path was recorded. This subset cannot establish the winner for the entire day." % (total - len(compared)))
     lines += ["- Every replayed path reached a stop, so none of the values above is an end-of-tape mark." if all(x[2]["stopped"] and x[3]["stopped"] for x in compared) else "- At least one value is marked at the end of its available tape and is not a final exit.",
-              "- HOOD is deliberately included because the question asks what happened if every alert were forced through. The live bot refused its 22%% spread; bypassing that filter would have produced the replayed loss."]
+              "- HOOD is deliberately included because the question asks what happened if every alert were forced through. The live bot refused its 22% spread; bypassing that filter would have produced the replayed loss."]
     actual = [x for x in compared if x[0]["actual"] is not None]
     if actual:
         lines += ["", "## Actual bot trade", ""]

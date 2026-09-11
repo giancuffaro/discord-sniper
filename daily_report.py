@@ -84,6 +84,8 @@ def _reason(row):
     low = row["text"].lower()
     if row["kind"] == "sent":
         return "order sent"
+    if "pullback trigger expired" in low:
+        return "pullback expired; no order"
     if "too stale" in low:
         return "stale when read"
     if "costs $" in low or "buying power" in low:

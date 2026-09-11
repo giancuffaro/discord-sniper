@@ -151,12 +151,27 @@ def run(day):
             os.path.join(HERE, "daily-reports", "REPORT-%s.md" % day), HERE)
         _write_atomic(os.path.join(OUT_DIR, "latest.json"),
                       json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    policy_step = _run("ratchet policy comparison",
+                       [sys.executable,
+                        os.path.join(HERE, "daily_policy_compare.py"), day],
+                       120)
+    if not policy_step["ok"]:
+        attention = True
+        summary["status"] = "attention"
+        summary["failed_checks"].append(policy_step["name"])
+    else:
+        summary["ratchet_comparison"] = os.path.relpath(
+            os.path.join(HERE, "daily-reports",
+                         "RATCHET-COMPARE-%s.md" % day), HERE)
+    summary["status"] = "attention" if attention else "pass"
+    _write_atomic(os.path.join(OUT_DIR, "latest.json"),
+                  json.dumps(summary, indent=2, sort_keys=True) + "\n")
     if attention:
         _queue_attention(day, summary, report_path)
     print("DAILY AUDIT %s — %s; silent=%d possible=%d coverage=%d failed=%d"
-          % (day, status.upper(), counts["silent_drops"],
+          % (day, summary["status"].upper(), counts["silent_drops"],
              counts["possible_missed"], counts["coverage_warnings"],
-             len(failed)))
+             len(summary["failed_checks"])))
     print(report_path)
     return 1 if attention else 0
 
