@@ -305,6 +305,36 @@ ok(b.qty_of(K) == 0 and b.qty_of(U) == 5,
    "Brett's exit must not touch Unraveler's trade, got %s and %s"
    % (b.qty_of(K), b.qty_of(U)))
 
+# --- F03 (9/11 audit): ONE trader, ONE ticker, TWO contracts -----------------
+# This is what sig.also actually does — "$NVDA $225C/ and $230C" or "$APLD
+# 10/16 30c ... $APLD 9/18 30c" fire as two separate orders from the SAME
+# trader on the SAME symbol. Before the fix both legs computed the identical
+# "brett|SPY" key and the second entry_sent() call silently overwrote the
+# first position's row in _pos — the first contract's stop/ratchet tracking
+# vanished the moment the second leg filled. key_of() now folds strike/side/
+# expiry into the key, so two legs from one caller are two rows.
+wb = FakeWB(fills=True, ask=3.00, bid=3.00)
+b = book(wb)
+LEG1 = dict(ORDER, strike=225, expiry="9/19")     # both legs Brett, both SPY
+LEG2 = dict(ORDER, strike=230, expiry="9/19")
+K1 = positions.key_of("Brett", "SPY", 225, "CALLS", "9/19")
+K2 = positions.key_of("Brett", "SPY", 230, "CALLS", "9/19")
+b.entry_sent(LEG1, ticket(wb, limit=3.00, qty=1, oid="leg1"))
+settle(b, K1)
+b.entry_sent(LEG2, ticket(wb, limit=3.00, qty=1, oid="leg2"))
+settle(b, K2)
+ok(K1 != K2, "two different contracts under the same trader+ticker must "
+   "never collide on one key")
+ok(b.holding(K1) and b.qty_of(K1) == 1,
+   "the FIRST leg must still be tracked after the second leg fills, got "
+   "state=%s qty=%s" % (b.state_of(K1), b.qty_of(K1)))
+ok(b.holding(K2) and b.qty_of(K2) == 1,
+   "the second leg is its own position too, got state=%s qty=%s"
+   % (b.state_of(K2), b.qty_of(K2)))
+ok(b.open_count() == 2,
+   "two legs from one caller on one ticker must show as two open trades, "
+   "got %s" % b.open_count())
+
 # --- a trim sells 3 of 5 and the trade stays open ----------------------------
 wb = FakeWB(fills=True, ask=3.00, bid=3.00)
 b = book(wb, unlimited=True)
