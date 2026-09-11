@@ -9,6 +9,18 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (16:24 recreated Claude projects, historical-source guard)
+Reconstructed all nine projects from the completed Claude export under
+`Documents/Claude Projects Recreated`, each with metadata, exported project instructions,
+document mapping/hashes, and a recovery-status README. Discord Sniper and Isuzu NPR contain
+substantive exported context; Roomsta, Rents, AIRBNB, and the unnamed projects are metadata-only
+or effectively empty in the export. PDF uploads were exported by Claude as extracted text, so
+they were saved with `.pdf.extracted.txt` rather than mislabeled as original PDFs. Added an
+explicit Discord Sniper source-use policy: recovered prompts, snapshots, rules, bug reports,
+and claimed fixes are quarantined history only. They cannot influence production until checked
+against the current user instructions, HANDOFF, code/config, tests, live logs/audits, and broker
+truth. No historical trading behavior was imported.
+
 ## 2026-09-11 (16:22 Claude export completion)
 Downloaded and CRC-validated all five packages from the second Claude manifest, then extracted
 them under `Downloads/Claude Export 2026-09-11`. This recovered the missing projects and

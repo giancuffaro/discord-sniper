@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (16:22) — Claude export completed and validated; the formerly missing projects archive, including the Discord Sniper project prompt and 14 documents, is preserved as historical reference without replacing current rules or files. Day: 1 bot trade CPS +$5, RECONCILIATION MATCH, no errors in the closing 35 min.
+Last updated: 2026-09-11 (16:24) — Claude export completed and all nine projects reconstructed under Documents; Discord Sniper history is explicitly quarantined and cannot affect production without verification against current HANDOFF/code/tests/logs/broker truth. Day: 1 bot trade CPS +$5, RECONCILIATION MATCH, no errors in the closing 35 min.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
