@@ -2753,6 +2753,21 @@ class Book:
                     _bus.unwatch(_occ_watched)
                 except Exception:                   # noqa: BLE001
                     pass
+            # F05 (9/11 audit): this function has a dozen early returns above
+            # (state no longer FILLED, no broker client, claim() lost the
+            # race, a clean exit at the broker...) and NONE of them used to
+            # clear "watching" — so the flag kept saying a thread was
+            # guarding the position long after that thread was gone. Two
+            # ways that bit: a restart loads watching=True from state.json
+            # and reconciliation reads it as "already covered", never
+            # starting a replacement; an ADD's own short-lived watchdog
+            # exits the same way and blocks the position's real one from
+            # ever re-arming. One place, on every exit from this function
+            # for any reason, is safer than chasing each return site by hand.
+            with self._lock:
+                _wp = self._pos.get(key)
+                if _wp is not None:
+                    _wp["watching"] = False
 
 
     def _gone_at_broker(self, wb, sym, side, strike):
@@ -4070,6 +4085,15 @@ class Book:
                     continue
                 p["state"] = FILLED
                 p["closing"] = False
+                # F05 (9/11 audit): "watching" is a THREAD's flag, not the
+                # position's — no thread survives a restart, whatever this
+                # photo says. Leaving a saved True in place made
+                # reconcile_gone read "already covered" for a restored swing
+                # and never start its replacement watchdog: a real holding
+                # with no stop management until something else noticed.
+                # Always false on load; the first broker sweep below arms
+                # the real one.
+                p["watching"] = False
                 # VERIFY-BEFORE-TRUST (8/27): a restored position arms no
                 # watchdog and no ratchet until the first broker sweep
                 # confirms Webull actually still holds it. The photo is for

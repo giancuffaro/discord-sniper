@@ -59,11 +59,11 @@
   },
   {
     "name": "watchdog_dead_flag_remains_true",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
       "caller|SPY": {
         "state": "working",
-        "watching": true
+        "watching": false
       }
     }
   },
@@ -194,10 +194,10 @@
   },
   {
     "name": "restored_watchdog_never_started",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
       "watching_flag": true,
-      "threads_created": 0
+      "threads_created": 1
     }
   }
 ]
