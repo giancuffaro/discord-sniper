@@ -110,11 +110,25 @@ HOLDING = (FILLED,)
 DONE = (NOFILL, STOPPED, CLOSED, FAILED)
 
 
-def key_of(trader, symbol):
-    """One trade = one trader + one ticker. "brett|SPY" and "unraveler|SPY"
-    are different trades in the same name, which is the whole point."""
+def key_of(trader, symbol, strike=None, side=None, expiry=None):
+    """One trade = one trader + one CONTRACT, not just one ticker.
+    "brett|SPY" and "unraveler|SPY" are different trades in the same name,
+    which was always the point — but "brett|SPY" alone was ALSO the same
+    key for brett's SPY 225C and brett's SPY 230C, so the second multi-leg
+    order (sig.also, 9/10) silently overwrote the first leg's row instead
+    of tracking two positions (found 9/11 audit, F03). Contract fields are
+    appended; empty when the caller has none (a bare "out AMD" carries no
+    strike) — find_key()'s find_by_symbol() fallback resolves those by
+    symbol alone already and does not need the key itself to match."""
     who = str(trader or "?").strip().lower() or "?"
-    return "%s|%s" % (who, str(symbol or "").upper())
+    sym = str(symbol or "").upper()
+    try:
+        strike_s = ("%g" % float(strike)) if strike not in (None, "") else ""
+    except (TypeError, ValueError):
+        strike_s = str(strike or "")
+    side_s = str(side or "").upper()[:1]           # "C" / "P" / ""
+    exp_s = str(expiry or "")
+    return "%s|%s|%s|%s|%s" % (who, sym, strike_s, side_s, exp_s)
 
 
 def ratchet_locked_pct(gain_pct, stop_loss_pct, take_profit_pct):
@@ -810,7 +824,8 @@ class Book:
         """Called the moment Webull accepts the buy. Starts the watcher that
         decides whether this ever becomes a real position."""
         sym = str(order.get("symbol", "")).upper()
-        key = key_of(order.get("trader"), sym)
+        key = key_of(order.get("trader"), sym, order.get("strike"),
+                     order.get("side"), order.get("expiry"))
         who = str(order.get("trader") or "?").strip() or "?"
         with self._lock:
             prev = self._pos.get(key) or {}
