@@ -287,9 +287,11 @@ def main():
     if not fns:
         print("no DS Logs export found")
         return
-    msg_map, dids = {}, []
+    msg_map, dids, empty_exports = {}, [], []
     for fn in fns:
         lane_msgs, lane_dids = load(fn)
+        if not lane_msgs:
+            empty_exports.append(os.path.basename(fn))
         for row in lane_msgs:
             msg_map[(row[0], row[2], row[3][:100])] = row
         dids.extend(lane_dids)
@@ -333,6 +335,9 @@ def main():
 
     print("REPLAY CHECK for %s — exports: %s" %
           (DAY, ", ".join(os.path.basename(f) for f in fns)))
+    for fn in empty_exports:
+        print("COVERAGE WARNING: %s contains no live parser inputs for %s; "
+              "a zero-miss result does not audit that lane." % (fn, DAY))
     total_silent = 0
     for room, p in sorted(per.items(), key=lambda kv: -len(kv[1]["silent"])):
         if not p["actionable"]:
