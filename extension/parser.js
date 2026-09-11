@@ -234,7 +234,11 @@ const RE_ALLOUT = /\ball\s+out\b/i;
 // 8/24: King Maker's "up +35%! taking some profits" slipped past this and the
 // generic entry pattern BOUGHT the victory lap (spread guard saved it). Any
 // "taking/took (some) profits" is an update on a ride, never a fresh entry.
-const RE_TRIM = /\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b|\b(?:taking|took|booking|booked)\s+(?:some\s+)?profits?\b/i;
+// 9/11: "MU 980c 500/con left 1 runner for valhalla" (shabs) is a SALE that
+// keeps one contract — "left/leaving N runner(s)" and "runner(s) left" only
+// ever follow a trim, so they are trim tells. Read as an entry it was a $5.00
+// BUY on a contract he was busy selling; only the $109 balance stopped it.
+const RE_TRIM = /\btrim(?:ming|med|s)?\b|\btook\s+some\s+off\b|\b(?:taking|took|booking|booked)\s+(?:some\s+)?profits?\b|\b(?:left|leaving|keeping|kept|holding)\s+(?:a|an|one|\d+)\s+runners?\b|\brunners?\s+left\b/i;
 const RE_BACKIN = /\bback\s+in\b/i;
 // "swinging" is an ENTRY verb here (his rule, 8/12: open today, close
 // tomorrow) — mirrors signals.py RE_ENTRY. Present-progressive only, so
@@ -1924,6 +1928,17 @@ function parseSignalInner(text, cfg) {
     s.symbol = bw[1].toUpperCase();
     s.strike = parseFloat(bw[4]);
     s.side = bw[5].toUpperCase() === "C" ? "CALLS" : "PUTS";
+    // 9/11: this verbless shape never looked for a SELL word, so "MU 980c
+    // 500/con left 1 runner" and "trimmed MU 980c at 500/con" both read as a
+    // fresh $5.00 entry. A trim or exit tell anywhere in the line makes it
+    // the caller's exit — recorded, never traded (entries only).
+    if (RE_TRIM.test(low) || RE_EXIT.test(low)) {
+      s.action = RE_TRIM.test(low) ? "TRIM" : "CLOSE"; s.fire = false;
+      s.matched = "bullwinkle " + s.action.toLowerCase();
+      s.why = "their " + s.action.toLowerCase() + " on " + s.symbol +
+              " — an exit, not an entry; the ratchet owns the exit";
+      return s;
+    }
     const md = /\b(\d{1,2}\/\d{1,2})\b/.exec(rest);
     if (md) s.expiry = md[1];
     else if (bwLeadExp) s.expiry = /dte/i.test(bwLeadExp) ? bwLeadExp.toUpperCase() : bwLeadExp;
@@ -1971,7 +1986,8 @@ function parseSignalInner(text, cfg) {
     const bare = findContract(t);
     const atp = /\b(?:at|@)\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b(?!\s*%)/i.exec(t);
     if (bare && atp && t.length <= 110 &&
-        !/\b(sold|sell|selling|out|close|closed|closing|trim|trimm|stop|stops|update|watch|watching|target hit|hedge|spread|avg|average|now)\b/i.test(t) &&
+        !/\b(sold|sell|selling|out|close|closed|closing|trimm?(?:ed|ing|s)?|stop|stops|update|watch|watching|target hit|hedge|spread|avg|average|now)\b/i.test(t) &&
+        !RE_TRIM.test(low) && !RE_EXIT.test(low) &&
         !NOT_TICKERS.has(bare.symbol)) {
       const px = parseFloat(atp[1]);
       if (px > 0 && px !== bare.strike) {

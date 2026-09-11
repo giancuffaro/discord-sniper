@@ -26,6 +26,11 @@ const REAL_EXITS = [
   ["fully out",       "fully out of MNQ here"],
   ["stopped out",     "stopped out of MNQ"],
   ["sold out",        "sold out of the SPY 640c"],
+  // 9/11 (shabs / OWLS): the verbless "bullwinkle" shape never looked for a
+  // sell word, so a trim that names the contract fired as a $5.00 BUY.
+  ["runner left",     "MU 980c 500/con left 1 runner for valhalla cause I can"],
+  ["trimmed verbless","trimmed MU 980c at 500/con"],
+  ["bare out",        "MU 980c 5.00 out here"],
 ];
 /* ---- CROSS-ROOM AUDIT, 9/7 ----------------------------------------------
  * Running every room's captured messages through the parser and looking for
