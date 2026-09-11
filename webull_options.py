@@ -124,6 +124,10 @@ def weekly_expiry(today=None):
     return friday.isoformat()
 
 
+_MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+           "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+
+
 def expiry_to_date(expiry, today=None):
     """"7/31" -> "2026-07-31". "0dte" -> today. Anything it can't be sure
     about raises, because guessing an expiry means buying a contract nobody
@@ -181,6 +185,31 @@ def expiry_to_date(expiry, today=None):
             raise Refused("%s is not a trading day, so that contract doesn't "
                           "exist. Nothing was sent." % d.isoformat())
         return d.isoformat()
+
+    # EVERY OTHER SHAPE THE ROOMS ACTUALLY WRITE, normalised to M/D(/Y) right
+    # here so the calendar below stays the ONE place a date is decided (9/11).
+    # Not hypotheticals - each was measured in trades.log:
+    #   "AUG 21" / "SEPT 14" / "Oct 16th"  the AI reader hands the month back in
+    #       the caller's own words. This used to refuse it, and a refusal at
+    #       this stage is not a skipped trade: the bridge had already filled in
+    #       THIS FRIDAY, so "AUG 21" bought an 8/14 contract. Silent wrong date.
+    #   "260814"  the YYMMDD out of an OSI symbol (".SMCI260814C39.5"), passed
+    #       through bare by the reader.
+    #   "10.16"  the `dotdate` rooms' expiry (Maguro: "$slv 63c 10.16 2.35" =
+    #       Oct 16). The parser converts it per room; anything that reaches
+    #       HERE in that shape is already a date claim, so it is read as one.
+    mn = re.match(r"^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+"
+                  r"(\d{1,2})(?:st|nd|rd|th)?$", e)
+    if mn:
+        e = "%d/%d" % (_MONTHS[mn.group(1)[:3]], int(mn.group(2)))
+    elif re.match(r"^\d{6}$", e):
+        y2, mo2, d2 = int(e[0:2]), int(e[2:4]), int(e[4:6])
+        if 1 <= mo2 <= 12 and 1 <= d2 <= 31:
+            e = "%d/%d/%d" % (mo2, d2, 2000 + y2)
+    elif re.match(r"^\d{1,2}\.\d{1,2}$", e):
+        mo2, d2 = (int(x) for x in e.split("."))
+        if 1 <= mo2 <= 12 and 1 <= d2 <= 31:
+            e = "%d/%d" % (mo2, d2)
 
     m = re.match(r"^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?$", e)
     if not m:
