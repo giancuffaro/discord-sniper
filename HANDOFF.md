@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (16:05) — accounts note corrected: execution.mode=dryrun is by design (master switch retired), rooms fire real orders per popup toggle; do not read status `live:false` as bot-off. Day: 1 bot trade CPS +$5, RECONCILIATION MATCH, no errors in the closing 35 min, 5 bridge restarts 15:07-15:22 all from code edits (not a loop).
+Last updated: 2026-09-11 (16:22) — Claude export completed and validated; the formerly missing projects archive, including the Discord Sniper project prompt and 14 documents, is preserved as historical reference without replacing current rules or files. Day: 1 bot trade CPS +$5, RECONCILIATION MATCH, no errors in the closing 35 min.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -51,7 +51,10 @@ Last updated: 2026-09-11 (16:05) — accounts note corrected: execution.mode=dry
   G's call, still open 9/10.
 - The Claude Project (claude.ai): project/PROJECT-INSTRUCTIONS.md is its
   Instructions; project/context/ holds its uploads (HANDOFF-snapshot.md,
-  rooms-snapshot.txt, OPTIONS-BROKER-REFERENCE.md ...).
+  rooms-snapshot.txt, OPTIONS-BROKER-REFERENCE.md ...). The complete
+  2026-09-11 Claude export is under Downloads/Claude Export 2026-09-11;
+  its recovered Discord Sniper project prompt and 14 documents are historical
+  reference only. Current HANDOFF/code wins wherever an exported copy differs.
 
 ## Rules of the house (current, in force)
 ENTRIES

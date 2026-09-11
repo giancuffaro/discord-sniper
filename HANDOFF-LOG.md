@@ -9,6 +9,18 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (16:22 Claude export completion)
+Downloaded and CRC-validated all five packages from the second Claude manifest, then extracted
+them under `Downloads/Claude Export 2026-09-11`. This recovered the missing projects and
+light-metadata packages plus feedback/reflections. The Discord Sniper Claude project contains
+its 4,605-character project prompt and 14 uploaded documents; preserved them separately under
+`Discord Sniper Project` with an inventory, hashes, duplicate HANDOFF filenames versioned, and
+clear historical-only labeling. The refreshed conversations archive has 147 conversations versus
+145 before: two new unrelated two-message chats, no removals. Thirty-five common records changed
+only because Claude regenerated nested content UUIDs; visible text, titles, timestamps, and message
+counts are unchanged. The prior conversation ZIP and first manifest remain archived. No exported
+instructions, old trading rules, or stale HANDOFF versions were applied to the live project.
+
 ## 2026-09-11 (16:05 sync watch, autopilot Mode B — closing 35 min)
 Closing window clean: no ERROR/FAILED/PHANTOM/429, 0 room-exit trades, 0 EXIT-IGNORED lines.
 Refusals all by design: IBM/HAL swing-off, QQQ $715 pullback never touched, SPY 772C add
