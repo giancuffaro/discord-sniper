@@ -30,9 +30,12 @@ Last updated: 2026-09-11 (15:18) — extension source 3.8.10 and Discord Profile
   multiple-choice, recommended option first.
 - The machine: Chrome MV3 extension source v3.8.10 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
 - Accounts (Webull, one app key), read live 9/11 15:20: MARGIN ENIQGUV4
-  connected, $113.71 buying power, flat; the bridge is currently `live:false`
-  / dry-run, so it reviews alerts but sends no new broker orders until G
-  changes that real-money control. CASH MOI680 was $0.55 at the 9/10 close.
+  connected, $113.71 buying power, flat. settings.json `execution.mode` is
+  `dryrun` BY DESIGN (the master switch is retired — bridge.py treats even
+  `webull` as dryrun); real orders are decided per ORDER by each room's own
+  popup toggle, and rooms toggled live DO send real orders (CPS filled real
+  at 12:40 on 9/11). Do not read the status page's `live:false` as "bot off".
+  CASH MOI680 was $0.55 at the 9/10 close.
   FUTURES R8IEC is flat with $0.82 available in the current read and
   `futures_brokers.webull` is false, so the bot will not touch it. Topstep,
   NinjaTrader and Tradovate are also disabled. The 9/10 close was −$671 net
