@@ -207,6 +207,11 @@ with rec._lock:rec._prune_locked()
 record('expired_greek_slots_leak',not rec._occs and old in rec._greeked,{'remaining_greek_slots':len(rec._greeked)})
 
 # 15: same coid is not reserved before dispatch, so concurrent ADDs both run.
+# FIXED (F10, same-night patch): place() now reserves the coid under a lock
+# BEFORE calling _place_impl, so a second concurrent caller waits on the
+# first one's Event instead of racing it to dispatch. Needs _RECENT_LOCK /
+# _INFLIGHT / threading in the isolated namespace now, same reason F09's
+# test needed _stop_file_set.
 barrier = threading.Barrier(2)
 dispatches = []
 def dispatch(o):
@@ -214,7 +219,8 @@ def dispatch(o):
     barrier.wait(timeout=3)
     return True, 'accepted'
 place = extract('bridge.py','place',dict(_alert_tape_register=lambda o:None,
-    _place_impl=dispatch,_RECENT_COIDS={},QUOTES=None,time=time,note=lambda s:None))
+    _place_impl=dispatch,_RECENT_COIDS={},QUOTES=None,time=time,note=lambda s:None,
+    threading=threading,_RECENT_LOCK=threading.Lock(),_INFLIGHT=object()))
 ts=[threading.Thread(target=place,args=(dict(action='ADD',coid='same-id'),)) for _ in range(2)]
 for t in ts:t.start()
 for t in ts:t.join(5)

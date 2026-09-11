@@ -2580,22 +2580,61 @@ def place(order):
     _alert_tape_register(order)
     coid = str(order.get("coid") or "").strip()
     dedupe = coid and order.get("action") in ("OPEN", "ADD")
+    _my_event = None
     if dedupe:
-        now = time.time()
-        for _c in [c for c, (t, _r) in list(_RECENT_COIDS.items()) if now - t > 60]:
-            _RECENT_COIDS.pop(_c, None)
-        prior = _RECENT_COIDS.get(coid)
-        if prior is not None:
-            note("DEDUP    ignored a repeat of %s (retry) — not placed twice"
-                 % coid)
-            return prior[1]
+        # F10 (9/11 audit): claim the coid HERE, inside the lock, before
+        # _place_impl ever runs — not after it returns. The old code read
+        # "is there a prior result" and wrote "here is the result" as two
+        # separate unlocked steps, so two requests for the same coid that
+        # both arrived before either finished both read "no prior" and both
+        # dispatched a real order. Whichever thread gets the lock first now
+        # writes an _INFLIGHT placeholder immediately; a second thread for
+        # the same coid sees that placeholder and WAITS on this thread's
+        # Event instead of racing it to _place_impl.
+        with _RECENT_LOCK:
+            now = time.time()
+            for _c in [c for c, v in list(_RECENT_COIDS.items())
+                       if now - v[0] > 60 and v[1] is not _INFLIGHT]:
+                _RECENT_COIDS.pop(_c, None)
+            prior = _RECENT_COIDS.get(coid)
+            if prior is not None and prior[1] is _INFLIGHT:
+                _wait_ev = prior[2]
+            elif prior is not None:
+                note("DEDUP    ignored a repeat of %s (retry) — not placed twice"
+                     % coid)
+                return prior[1]
+            else:
+                _wait_ev = None
+                _my_event = threading.Event()
+                _RECENT_COIDS[coid] = (now, _INFLIGHT, _my_event)
+        if _wait_ev is not None:
+            # Someone else already has this coid in flight — wait for THEIR
+            # result rather than dispatching a second, real, order.
+            _wait_ev.wait(30)
+            with _RECENT_LOCK:
+                _settled = _RECENT_COIDS.get(coid)
+            if _settled is not None and _settled[1] is not _INFLIGHT:
+                note("DEDUP    ignored a concurrent repeat of %s — not "
+                     "placed twice" % coid)
+                return _settled[1]
+            return (False, "a duplicate of this order was already in "
+                    "flight and never resolved in 30s — refusing rather "
+                    "than risking two sends")
     # (same-contract echo guard lives in _place_impl — ECHO, 20s window)
-    result = _place_impl(order)
-    if dedupe:
-        try:
-            _RECENT_COIDS[coid] = (time.time(), result)
-        except Exception:                               # noqa: BLE001
-            pass
+    try:
+        result = _place_impl(order)
+    except Exception:                                   # noqa: BLE001
+        result = (False, "internal error placing the order")
+        raise
+    finally:
+        # Whatever happened — filled, refused, or an exception this
+        # function isn't even supposed to be able to raise — release
+        # anyone waiting on this coid. A stuck placeholder would otherwise
+        # make every retry of a dead request wait the full 30s for nothing.
+        if _my_event is not None:
+            with _RECENT_LOCK:
+                _RECENT_COIDS[coid] = (time.time(), result)
+            _my_event.set()
     # UNDERLYING hard stop (his INTC alert, 8/18): an accepted OPTIONS entry
     # that carried "stop loss under $X" gets a stock watcher — see
     # _underlying_stop_watch. Futures keep their own broker-side levels.

@@ -149,9 +149,8 @@
   },
   {
     "name": "concurrent_coid_dispatches_twice",
-    "reproduced": true,
+    "reproduced": false,
     "detail": [
-      "same-id",
       "same-id"
     ]
   },
