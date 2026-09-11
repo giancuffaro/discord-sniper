@@ -195,7 +195,10 @@ def main():
             # a symbol. Production resolveLoaded attaches the fresh contract
             # kept from PREPARE. Mirror that here so a historical AI/verdict
             # line can be matched to its symbol instead of reported missed.
-            if act == "OPEN" and sig.get("needs_loaded") and loaded_cand:
+            # jsparse intentionally returns the compact bridge schema and
+            # omits needs_loaded/named_symbol. A symbol-less OPEN is the
+            # observable form of that parser result here.
+            if act == "OPEN" and not sig.get("symbol") and loaded_cand:
                 named = str(sig.get("named_symbol") or "").upper()
                 if not named or named == str(loaded_cand[0]).upper():
                     sig["symbol"] = loaded_cand[0]

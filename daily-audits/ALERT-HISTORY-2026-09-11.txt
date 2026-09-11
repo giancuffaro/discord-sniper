@@ -1,0 +1,197 @@
+ALERT AUDIT — every export since the bot went live (2026-08-18 .. 2026-09-11)
+
+PER DAY   traded / missed(action) / blind(no action)
+  2026-08-18      2     0     0
+  2026-08-19     79     4     0
+  2026-08-20     76     4     0
+  2026-08-21     54     5     0
+  2026-08-23      0     0     0   <-- nothing captured
+  2026-08-24     67    16     0
+  2026-08-25     85     8     0
+  2026-08-26     25     0     0
+  2026-08-27      0    11     0
+  2026-08-28      8     6     0
+  2026-08-31      9    12     0
+  2026-09-01      0     0     0   <-- nothing captured
+  2026-09-02     38   112     0
+  2026-09-03     57    45     0
+  2026-09-04      0     0     0   <-- nothing captured
+  2026-09-06      0     0     0   <-- nothing captured
+  2026-09-08      0     0     0   <-- nothing captured
+  2026-09-09     16     4     0
+  2026-09-10     34    15     0
+  2026-09-11     57     9     0
+
+TOTAL  missed(action) 251   blind(no action) 0
+
+  READ THIS BEFORE TRUSTING 'MISSED': until 9/2 the extension kept only
+  the last 400 verdicts of a day (LOG_MAX). Every export from 8/19-8/31
+  shows exactly 400 while capturing 700-8,400 messages, so the MORNING
+  verdicts of every one of those days are simply gone. A 'missed' on
+  those days can mean the bot never judged it OR the record was trimmed
+  — the two are indistinguishable now. The cap is 2500 since 9/3, so
+  from here on 'missed' means missed. BLIND is trustworthy on every day:
+  it is the parser's own verdict on the text, not a logging artifact.
+
+BY ROOM  (days spoken / msgs / tradable calls / traded / missed / blind)
+  NGD: ngd-trades                                       2d   113   113    24   89    0
+  Day Trades                                            8d   123    80     1   35    0
+  Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps          14d   693   426   130   21    0
+  High Risk                                             4d    13     9     0    9    0
+  Honey Drip Network 🍯💰📈: 👑｜aristotle-trades           14d   456   137    16    8    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup       5d   253    76    37    8    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr-top-hat            10d   185    34    23    7    0
+  Summit Trading Strategies: 📌｜alert-room              12d   162    73    12    7    0
+  Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-chall  6d   141    27     6    6    0
+  ZTRADEZ (OPTIONS & STOCKS): 🟢︱🔪scalps                 7d    51    24    18    4    0
+  ZTRADEZ (OPTIONS & STOCKS): 📶︱stormzyy                7d    91    19    15    4    0
+  OWLS Capital: 🛎️｜all-alerts                           3d   167    36    18    4    0
+  ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru-futures            9d   197    67    29    3    0
+  BOKA Trading: 🚨︱option-alerts                        11d    65    48    17    3    0
+  ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺clutchinvestments      7d    23    15     4    3    0
+  TradingTheTrend: 🚨option-alerts🚨                     12d    50    28    19    3    0
+  VeroTrade: ✅⏐1k-challenge                             8d    27    27    16    3    0
+  Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-chall  8d    80    21     5    3    0
+  Platinum Trading: 🟣│futures-alerts                   12d   220    12     9    3    0
+  BOKA Trading: 🦩︱ryans-alerts                          7d    21     6     1    3    0
+  OWLS Capital: 🌟｜shabs-sky-alerts                      2d    21     5     0    3    0
+  ZTRADEZ (OPTIONS & STOCKS): 🟢︱🏆top-flow               8d   233    65    49    2    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments         7d    25    10     8    2    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱🎰sir-goldman            5d     9     2     0    2    0
+  Platinum Trading: 👑│nitro                            12d    99    45    22    2    0
+  OWLS Capital: 🌟｜ab                                    2d    10     4     0    2    0
+  Low Key Stonks: ⚖chika-alerts                         1d     6     4     0    2    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯madhatter-trades       4d    40     9     3    1    0
+  VeroTrade: ✅⏐vero-trades                              4d    17    16     7    1    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯tlm-options            5d     8     5     4    1    0
+  BOKA Trading: 🚨︱equity-alerts                         3d     5     1     0    1    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱🎯cranmer                2d     2     2     0    1    0
+  ELITE OPTIONS: 🔔︱brandos-trade-alerts                 2d     2     2     1    1    0
+  ELITE OPTIONS: 🔔︱shoofs-trade-alerts                  1d     2     2     1    1    0
+  OWLS Capital: 🌟｜giul-heatseeker                       1d     3     1     0    1    0
+  OWLS Capital: 🌟｜muggzone-options                      2d    44    13     7    1    0
+  Low Key Stonks: 🧱brick-alerts                         1d     2     2     1    1    0
+  VeroTrade: ⚡⏐daily-futures-levels                     1d     3     0     0    0    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱♟market-bishop          8d   102    36    21    0    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱🐼evapanda               8d    83    19    16    0    0
+  TradingTheTrend: 🔵options-watchlist                   9d    15     0     0    0    0
+  ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺kumo-debit             6d    11     0     0    0    0
+  ZTRADEZ (OPTIONS & STOCKS): 🔸︱🏰king-maker             5d    14     7     3    0    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱😈demon                  8d    65    14    14    0    0
+  TradingTheTrend: 🚀options-chat🚀                       1d     5     0     0    0    0
+  ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options         8d    93    69    33    0    0
+  FST × 2K Challenge                                   14d   639     0     0    0    0
+  ZTRADEZ (OPTIONS & STOCKS): 🔸︱🅰adex-swings            3d     4     0     0    0    0
+  ZTRADEZ (OPTIONS & STOCKS): 🔸︱🌗are-swings             7d    30     3     3    0    0
+  Platinum Trading: ❓┃questions                         1d    10     0     0    0    0
+  Platinum Trading: 🟣│day-trades                        5d     9     0     0    0    0
+  Platinum Trading: 💡│weekly-watchlist                  1d     1     0     0    0    0
+  kev                                                   2d     4     0     0    0    0
+  Platinum Trading: 📝│general-chat                      1d     5     0     0    0    0
+  Platinum Trading: 🟣│equity                            7d    20     0     0    0    0
+  Platinum Trading: 🟣│ei-alerts                        10d    33     1     1    0    0
+  VeroTrade: ✅⏐swing-trades                             5d    10     5     4    0    0
+  FirstStepTrading                                      2d     2     0     0    0    0
+  Platinum Trading: 🟣│lottos                            1d     1     0     0    0    0
+  Summit Trading Strategies: 👀｜day-trade-watchlist      1d     1     0     0    0    0
+  Platinum Trading: 💡│daily-watchlist                   1d     1     0     0    0    0
+  Long Term                                             1d     1     0     0    0    0
+  Trading Chat                                          2d    57     2     0    0    0
+  Whop. Create or run businesses with AI                1d     2     0     0    0    0
+  Felony                                                1d     2     0     0    0    0
+  Questions & Answers                                   1d     1     0     0    0    0
+  Swing Trades                                          1d     1     0     0    0    0
+  OWLS Capital: 💬｜spx-trading                           2d    10     0     0    0    0
+  TradingTheTrend: 🎰lotto-alerts                        2d     6     3     2    0    0
+  Trading Decoded: 🎯┃option-sniper                      1d     1     0     0    0    0
+  Owls Options Traders's support chat                   1d    18     1     1    0    0
+  Trading Decoded: 🚀┃back-to-the-futures                1d     1     0     0    0    0
+  Trading Decoded: newsfeed                             1d     2     0     0    0    0
+  Low Key Stonks: 🧿ducci-alerts                         2d     4     0     0    0    0
+  Low Key Stonks: 👃futures-floor                        1d     3     0     0    0    0
+  Low Key Stonks: 😉jon-tran-alerts                      2d     2     0     0    0    0
+  OWLS Capital: 🌟｜do-not-fall-charts                    1d    14     0     0    0    0
+  Low Key Stonks: ☕pre-market-movers                    1d     2     1     0    0    0
+  Low Key Stonks: 🐂degenken-alerts                      1d     1     0     0    0    0
+  Low Key Stonks: 👄trading-floor                        1d     1     0     0    0    0
+  Low Key Stonks: 👀daily-watchlist                      1d     1     0     0    0    0
+  OWLS Capital: 🌟｜tt                                    1d     1     0     0    0    0
+  Low Key Stonks: 🐱xephyr-alerts                        2d    10     0     0    0    0
+  OWLS Capital: 🌟｜jon-and-kian                          2d     4     1     1    0    0
+  OWLS Capital: 🌟｜eli-alerts                            2d    27     0     0    0    0
+  Low Key Stonks: 🍣maguro-alerts                        1d     2     0     0    0    0
+  OWLS Capital: 🌟｜vix-insights                          1d     2     0     0    0    0
+  OWLS Capital: 💬｜futures-trading                       1d     1     0     0    0    0
+  OWLS Capital: 🌟｜neal                                  1d     1     0     0    0    0
+  Low Key Stonks: 👉member-picks                         1d     1     0     0    0    0
+  OWLS Capital: 🌟｜bobby-spx-coms                        1d    15     0     0    0    0
+  OWLS Capital: 🔥｜heatseeker-bot                        1d     2     0     0    0    0
+  Low Key Stonks: 🚨ai-scalps                            1d     1     0     0    0    0
+  Low Key Stonks: 😈demon-day-trades                     2d    13     8     4    0    0
+  Low Key Stonks: 💡option-sweeps                        1d     6     0     0    0    0
+  Low Key Stonks: 🐺hog-alerts                           1d     1     0     0    0    0
+  OWLS Capital: 📝｜ab-updates                            1d     1     0     0    0    0
+  OWLS Capital: ▼▲｜volume-spike                         1d     2     0     0    0    0
+  VeroTrade: 🌊⏐aaron-swing-watchlist                    1d     1     0     0    0    0
+  OWLS Capital: 🎲｜members-plays                         1d     1     0     0    0    0
+  OWLS Capital: 🤖｜uw-premium-bot                        1d     2     0     0    0    0
+  OWLS Capital: 🌟｜eva                                   1d     1     0     0    0    0
+  Low Key Stonks: 🗞market-news                          1d     2     1     0    0    0
+  OWLS Capital: 📝｜notable-etf-flow                      1d     1     0     0    0    0
+  Low Key Stonks: 🧭gex-stream                           1d     1     0     0    0    0
+  Low Key Stonks: 💡unusual-flow                         1d     1     1     0    0    0
+  Low Key Stonks: 🐳unusual-whales                       1d     1     0     0    0    0
+  Low Key Stonks: 🕵darkpool                             1d     2     0     0    0    0
+  Home                                                  1d     3     1     1    0    0
+  ELITE OPTIONS: shoof-alerts                           1d     1     1     0    0    0
+
+BY SHAPE  (what beat the parser — fix the shape, not the line)
+
+  [94] labelled template (Ticker:/Contract:/Entry:)
+      08-24 ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru @everyone Ticker: MGC SHORT VERY SMALL ORDER JUST TRY Entry: 4730 Stoploss: 4738 I am not a fina
+      08-24 ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru Market Guru™ Alerts APP — 10:00 PM Monday, August 24, 2026 at 10:00 PM @everyone 414 ticks on go
+      08-28 ZTRADEZ (OPTIONS & STOCKS): ◽︱🎰sir Sir Goldman Alert Bot APP — 11:12 AM Friday, August 28, 2026 at 11:12 AM @everyone ENTRY $SPX 77
+      09-02 Platinum Trading: 👑│nitro          [ 9:38 AM ] Wednesday, September 2, 2026 at 9:38 AM @Owner Alerts Entry Contract: TSLA $350p Pri
+
+  [77] other / unclassified
+      08-19 Honey Drip Network 🍯💰📈: 👑｜aristotl [ 10:00 AM ] Wednesday, August 19, 2026 at 10:00 AM Fully out @here 103%
+      08-19 ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr- [ 9:13 PM ] Wednesday, August 19, 2026 at 9:13 PM @everyone 29641 averaged down here weird flush
+      08-19 ZTRADEZ (OPTIONS & STOCKS): 📶︱stor [ 10:34 PM ] Wednesday, August 19, 2026 at 10:34 PM @everyone Trade Alert Stopped out
+      08-20 ZTRADEZ (OPTIONS & STOCKS): ◽︱🎩mr- [ 10:20 AM ] Thursday, August 20, 2026 at 10:20 AM @everyone IWM 300P now 2.16 © 2021-2026, Hori
+
+  [38] futures phrasing
+      09-02 Platinum Trading: 🟣│futures-alerts [ 10:14 AM ] Wednesday, September 2, 2026 at 10:14 AM IN MNQ LONG @ $29118.75 TP @ $29150 SL @ $
+      09-02 Day Trades                         Long NQ 29125 Sl 29090
+      09-02 High Risk                          Long NQ @ 29165 Stop 29135 Target 29285 Higher risk with that 29185 failure but like this HL as 
+      09-03 Day Trades                         Stopped BE on NQ
+
+  [15] Discord Server Tag junk around the call
+      08-20 Honey Drip Network 🍯💰📈: 🐝｜aristotl 👑KingBeeAri🐝 [DRIP], Server Tag: DRIP DRIP OWNER🤴🏾 — 3:44 PM Thursday, August 20, 2026 at 3:44 P
+      08-24 BOKA Trading: 🚨︱equity-alerts      JonnyOptions [BOKA], Server Tag: BOKA BOKA BOKA — 9:43 AM Monday, August 24, 2026 at 9:43 AM sto
+      08-27 VeroTrade: ✅⏐1k-challenge          Vero [PAID], Server Tag: PAID PAID Owner — 10:39 AM Thursday, August 27, 2026 at 10:39 AM QQQ OU
+      09-02 VeroTrade: ✅⏐1k-challenge          Vero [PAID], Server Tag: PAID PAID SPY 763C 9/2 1.22 2 CONTRACTS @vero-alerts Vero [PAID], Serve
+
+  [10] bot footer swallowed the call (veto words)
+      08-19 ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺clu @everyone 8/28 SLV 60C 1.68 swing IG: ClutchInvestments | None of this is financial advice•Today
+      08-24 ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm- @everyone Close SPY 08/24 763P @.98 (All out) Jpm Options | For Informational Purposes Only – No
+      08-25 ZTRADEZ (OPTIONS & STOCKS): 🔸︱🦺clu @everyone 1DTE SPX 7700C 6.20 IG: ClutchInvestments | None of this is financial advice•Today at 
+      08-25 ZTRADEZ (OPTIONS & STOCKS): 🚀︱guru Market Guru™ Alerts APP — 4:23 PM Tuesday, August 25, 2026 at 4:23 PM @everyone 55 points but I 
+
+  [9] date-first contract ("8/28 SLV 60C 1.68")
+      08-27 TradingTheTrend: 🚨option-alerts🚨   TradingTheTrend — 12:04 PM Thursday, August 27, 2026 at 12:04 PM BTO QQQ 9/01 725c @ 2.52 risky
+      08-28 TradingTheTrend: 🚨option-alerts🚨   TradingTheTrend — 11:12 AM Friday, August 28, 2026 at 11:12 AM STC QQQ 9/01 725c @ 2.60 alright 
+      09-02 Honey Drip Network 🍯💰📈: ☀️｜daytrad HoneyDrip (Scribe) ADMINS — 10:51 AM Wednesday, September 2, 2026 at 10:51 AM @Unraveller (Admin
+      09-02 Honey Drip Network 🍯💰📈: ☀️｜daytrad [ 10:51 AM ] Wednesday, September 2, 2026 at 10:51 AM @Unraveller (Admin)🔮 in TSLA 9/4 352.5 P @
+
+  [5] "avg $PRICE" (price-only average-in)
+      08-24 BOKA Trading: 🚨︱option-alerts      [ 9:52 AM ] Monday, August 24, 2026 at 9:52 AM avg 6.30
+      09-03 Honey Drip Network 🍯💰📈: 🇳🇬｜midas-s [ 9:51 AM ] Thursday, September 3, 2026 at 9:51 AM Avg 1.59
+      09-03 Honey Drip Network 🍯💰📈: ☀️｜daytrad Unraveller (Admin)🔮 ADMINS — 10:30 AM Thursday, September 3, 2026 at 10:30 AM Meta avg 5.7 @here
+      09-10 Honey Drip Network 🍯💰📈: 👑｜aristotl [ 11:19 AM ] Thursday, September 10, 2026 at 11:19 AM Avg 1.43
+
+  [3] ticker-first fill: "$X I took entry 1.37 fill"
+      08-24 Summit Trading Strategies: 📌｜alert [ 9:37 AM ] Monday, August 24, 2026 at 9:37 AM @here $GOOGL took entry 1.91 fill
+      08-25 Summit Trading Strategies: 📌｜alert [ 9:37 AM ] Tuesday, August 25, 2026 at 9:37 AM @here Took entry $META META260826C570 Fill: 5.15
+      08-25 Summit Trading Strategies: 📌｜alert TradeLikeGates [$STS], Server Tag: $STS $STS Founder — 9:42 AM Tuesday, August 25, 2026 at 9:42 
+
+wrote C:\Users\Hulk\Desktop\discord-sniper\ALERT-AUDIT.html
