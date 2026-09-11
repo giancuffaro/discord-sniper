@@ -3453,6 +3453,18 @@ def _place_impl(order):
                             _brk = 25.0
                             note("SWING    %s — wide -25%% stop (swing, no "
                                  "level given)" % order["symbol"])
+                # Capture exact-contract quantity before the BUY. If Webull
+                # later loses the order-status response, the account can prove
+                # a fill only through a positive increase over this baseline.
+                _account_before = None
+                if live_order and BOOK is not None:
+                    try:
+                        _rows_before = broker_positions()
+                        if _POS.get("ok_live"):
+                            _account_before = BOOK.account_contract_position(
+                                _rows_before, order)[0]
+                    except Exception:                   # noqa: BLE001
+                        _account_before = None
                 ticket = client.buy(order["symbol"], order.get("side"),
                                     order.get("strike"), order.get("expiry"), qty,
                                     their_price=order.get("limit"),
@@ -3469,6 +3481,7 @@ def _place_impl(order):
                              "on the fill, as before" % (order["symbol"], _cn))
                 ticket["live"] = bool(live_order)   # real money?
                 ticket["paper"] = bool(paper)       # or Webull's sim engine
+                ticket["account_qty_before"] = _account_before
                 # "ORDER IN", not "BOUGHT". Webull has accepted a resting bid;
                 # nobody has sold you anything yet.
                 note("ORDER IN %s" % ticket["what"])
@@ -3485,6 +3498,14 @@ def _place_impl(order):
                         if not _extra_active(_x):
                             continue   # subscription off/expired: no NEW entries
                         try:
+                            _extra_before = None
+                            try:
+                                _extra_rows = _x["client"].positions() or []
+                                if getattr(_x["client"], "last_read_ok", False):
+                                    _extra_before = _x["book"].account_contract_position(
+                                        _extra_rows, order)[0]
+                            except Exception:           # noqa: BLE001
+                                _extra_before = None
                             _t2 = _x["client"].buy(
                                 order["symbol"], order.get("side"),
                                 order.get("strike"), order.get("expiry"), qty,
@@ -3492,6 +3513,7 @@ def _place_impl(order):
                                 price_mode=order.get("price_mode"),
                                 bracket_stop_pct=_brk)
                             _t2["live"] = True
+                            _t2["account_qty_before"] = _extra_before
                             note("ORDER IN [%s] %s" % (_x["name"], _t2["what"]))
                             _x["book"].entry_sent(order, _t2)
                             if action == "ADD" and order.get("avg"):

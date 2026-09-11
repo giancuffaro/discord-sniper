@@ -851,6 +851,9 @@ class Book:
                 "limit": ticket.get("limit"),
                 "bid_at_send": ticket.get("bid"),
                 "ask_at_send": ticket.get("ask"),
+                # Exact-contract quantity held immediately before this BUY.
+                # Account-based fill recovery may only trust an increase.
+                "account_qty_before": ticket.get("account_qty_before"),
                 "fill": prev.get("fill") if adding else None,
                 "stop": prev.get("stop") if adding else None,
                 "stop_order_id": prev.get("stop_order_id") if adding else None,
@@ -1622,29 +1625,15 @@ class Book:
             try:
                 with self._lock:
                     p_h = dict(self._pos.get(key) or {})
-                for row in (wb.positions() or []):
-                    if str(row.get("symbol") or "").upper() != str(p_h.get("symbol") or "").upper():
-                        continue
-                    if p_h.get("strike") is not None and row.get("strike") is not None and abs(float(row["strike"]) - float(p_h["strike"])) > 0.001:
-                        continue
-                    # F08 (9/11 audit): symbol+strike alone can match a
-                    # DIFFERENT contract entirely — a cancelled CALL used to
-                    # be declared filled because the account happened to
-                    # hold a PUT at the same strike. Side and expiry now
-                    # have to agree too, whenever both this position and
-                    # the broker's row report them.
-                    _rs = str(row.get("side") or "").upper()
-                    _ps = str(p_h.get("side") or "").upper()
-                    if _ps and _rs and _rs != _ps:
-                        continue
-                    _re = str(row.get("expiry") or "")
-                    _pe = str(p_h.get("expiry") or "")
-                    if _pe and _re and _re != _pe:
-                        continue
-                    got = int(row.get("qty") or 0)
-                    px = row.get("fill")
-                    if got > 0:
-                        self._became_filled(key, min(got, want),
+                before = p_h.get("account_qty_before")
+                if before is not None:
+                    got, px = self.account_contract_position(
+                        wb.positions() or [], p_h)
+                    # A pre-existing holding is not proof this order filled.
+                    # Only the positive exact-contract delta is attributable.
+                    delta = max(0, int(got) - int(before or 0))
+                    if delta > 0:
+                        self._became_filled(key, min(delta, want),
                                             float(px) if px else (limit or 0))
                         return
             except Exception:                           # noqa: BLE001
@@ -3869,40 +3858,27 @@ class Book:
             # cannot. Ask it before saying "you own nothing".
             if not held and wb is not None and not self._sim(p):
                 try:
-                    for _r in (wb.positions() or []):
-                        if str(_r.get("symbol") or "").upper() != sym.upper():
-                            continue
-                        if _r.get("strike") is not None and p.get("strike") is not None \
-                                and abs(float(_r["strike"]) - float(p["strike"])) > 0.001:
-                            continue
-                        _rs = str(_r.get("side") or "").upper()
-                        if _rs and p.get("side") and _rs != str(p["side"]).upper():
-                            continue
-                        # F08 (9/11 audit): side was checked but expiry
-                        # wasn't — a same-strike, same-side position in a
-                        # LATER expiry could still be mistaken for this
-                        # one's fill.
-                        _re = str(_r.get("expiry") or "")
-                        _pe = str(p.get("expiry") or "")
-                        if _re and _pe and _re != _pe:
-                            continue
-                        _q = abs(int(float(_r.get("qty") or 0)))
-                        if _q <= 0:
-                            continue
+                    _before = p.get("account_qty_before")
+                    if _before is not None:
+                        _q, _fill = self.account_contract_position(
+                            wb.positions() or [], p)
+                        _q = max(0, int(_q) - int(_before or 0))
+                    else:
+                        _q, _fill = 0, None
+                    if _q > 0:
                         with self._lock:
                             p3 = self._pos.get(key)
                             if p3 is not None:
                                 p3["state"] = FILLED
                                 p3["qty"] = _q
-                                if _r.get("fill"):
-                                    p3["fill"] = float(_r["fill"])
+                                if _fill:
+                                    p3["fill"] = float(_fill)
                                 p3.pop("closed_at", None)
                         held = _q
                         self._event(key, "update",
                                     "%s — the order probe said no fill, but the "
                                     "ACCOUNT holds %d at %s. You DO own it; "
-                                    "managing it now." % (sym, _q, _r.get("fill") or "?"))
-                        break
+                                    "managing it now." % (sym, _q, _fill or "?"))
                 except Exception:                       # noqa: BLE001
                     pass
         self._event(key, "pulled",
