@@ -2591,9 +2591,15 @@ def place(order):
     # free — it would put an unwatched contract on the bus. Deliberately
     # not done here; that is a decision about quota, not a missing feature.)
     try:
+        # BOOK.quotes IS the bus (build_book sets it: "BOOK.quotes = QUOTES").
+        # This used to reference a bare `QUOTES` name that only exists as a
+        # LOCAL inside build_book() -- a NameError on every call, eaten by
+        # this same except, so alert decay never taped a single sample
+        # (found in the 9/11 audit, same shape as the under-stop bug above).
+        _qb = getattr(BOOK, "quotes", None) if BOOK is not None else None
         if (ok0 and order.get("action") == "OPEN"
                 and (order.get("kind") or "option") != "future"
-                and QUOTES is not None):
+                and _qb is not None):
             import telemetry as _tm
 
             # This was an EIGHTH hand-rolled OCC builder, written inline here
@@ -2602,18 +2608,19 @@ def place(order):
             # solution. One import now. (9/7)
             try:
                 from occ import build as _occ_b
-                _occ = _occ_b(sym, order.get("expiry"), order.get("side"),
+                _occ = _occ_b(str(order.get("symbol") or "").upper(),
+                              order.get("expiry"), order.get("side"),
                               order.get("strike"))
             except (ValueError, TypeError):
                 _occ = None
 
-            def _decay_quote(_p, _o=_occ):
+            def _decay_quote(_p, _o=_occ, _qb=_qb):
                 # QUOTES.get returns (ASK, BID, row) — ask first. Getting
                 # that backwards would have taped every mid inverted and
                 # the whole decay curve would have been quietly wrong.
                 if not _o:
                     return None
-                ask, bid, _row = QUOTES.get(_o)
+                ask, bid, _row = _qb.get(_o)
                 try:
                     if ask is None or bid is None:
                         return None
