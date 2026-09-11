@@ -146,8 +146,8 @@ bought whatever contract that nonsense date happened to resolve to. Fixed
 by reading the year from WHICH piece is 4 (or 2) digits and where it sits,
 before the separators that carried that information are thrown away.
 
-**`tape.py` — one reader for everything recorded.** Four files record the
-same contracts at the same moments in three schemas and two symbol formats
+**`tape.py` — one reader for everything recorded.** The price files record the
+same contracts at the same moments in several schemas and two symbol formats
 (`option_tape.csv` and `databento_tape.csv` key on OCC, the other two on
 dxfeed). Every tool had to know all three original ones and join by hand —
 `quote_shadow.py` did it with `bisect`. `tape.rows()` / `tape.at()` /
@@ -156,7 +156,10 @@ still own their own files, because Webull keeps no historical option prices
 and the live-recorded tapes cannot be regenerated. `databento_tape.csv` is
 the one exception that CAN be regenerated — it's a backfill from OPRA via
 `databento_backfill.py` (9/8), covering calls the live feeds never saw
-(refused, missed, never filled), re-runnable and idempotent.
+(refused, missed, never filled), re-runnable and idempotent. The live
+`alert_tape.csv` all-alert recorder is registered as source `alert`, so its
+refused/missed-contract snapshots use the same reader and can support
+caller-exit comparisons.
 
 **Atomic state writes.** `save_state`, the extra-account books and
 `save_day` used `open(path, "w")`, which truncates first. A crash mid-write

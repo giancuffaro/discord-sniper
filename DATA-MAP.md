@@ -353,8 +353,8 @@ record we will ever have of what a contract was worth at a given minute.
 | `option_tape.csv` | `ts,occ,bid,ask` | 161,482 | **31** | 2026-09-02 → 2026-09-10, **6 days only** | LIVE in market hours |
 | `missed_tape.csv` | `ts,occ,bid,ask` | 46,394 | **3** | 2026-08-05, 08-11, 09-03 | frozen |
 | `quote_shadow.csv` | `ts,symbol,bid,ask,mid,bid_size,ask_size` | 29,525 | 27 | 2026-09-08 → 2026-09-10 | LIVE (DXLink shadow) |
-| `alert_tape.csv` | `ts,occ,bid,ask,und` | **0** | 0 | — | LIVE, **recreated empty 2026-09-11 05:08** |
-| `alert_meta.csv` | `ts,stage,coid,date,time,room,caller,symbol,side,strike,expiry,occ,their_price,alert_at,seen_at,bid,ask,und,delta,iv` | **0** | 0 | — | LIVE, **recreated empty 2026-09-11 05:08** |
+| `alert_tape.csv` | `ts,occ,bid,ask,und` | **2,333** | 3 | 2026-09-11 10:01 → 13:13 | LIVE all-alert snapshots |
+| `alert_meta.csv` | `ts,stage,coid,date,time,room,caller,symbol,side,strike,expiry,occ,their_price,alert_at,seen_at,bid,ask,und,delta,iv` | **8** | 3 | 2026-09-11 10:01 → 12:41 | LIVE alert/quote metadata |
 | `greeks_tape.csv` | `ts,symbol,price,iv,delta,gamma,theta,vega,rho` | 842 | — | 2026-09-04 → 2026-09-10 | LIVE |
 
 ### Tape traps
@@ -370,10 +370,10 @@ record we will ever have of what a contract was worth at a given minute.
 - **`quote_shadow.csv` uses a different symbol format** — `.MSTR260911P132`
   (DXLink/tastytrade), not OCC `MSTR260911P00132000`. It will not join to the
   other tapes without conversion.
-- `alert_tape.csv` / `alert_meta.csv` — the slow "what did the contracts we
-  *didn't* buy cost" lane — **currently hold nothing.** They were recreated
-  empty this morning. Anything they held before is gone unless it is in
-  `backups/` or `archive/`.
+- `alert_tape.csv` / `alert_meta.csv` are the slow "what did the contracts we
+  *didn't* buy cost" lane. They started fresh 2026-09-11 and now retain live
+  snapshots/metadata; `tape.py` exposes them as source `alert`. Anything they
+  held before the recreation is gone unless it is in `backups/` or `archive/`.
 - Timestamps are **Unix epoch seconds, Eastern-facing**. Convert with a fixed
   −04:00 offset to match `trades.log`.
 - `greeks_tape.csv` is tastytrade DXLink data, options **and** stock symbols
@@ -572,8 +572,9 @@ a busy day. Dedupe before counting rooms.
    is priceless in the literal sense. `quotes_needed_backfill.txt` lists 413
    such OCCs; `missing_contracts_for_backfill.txt` the 84 that matter most.
    They can only be recovered by paying Databento for them.
-3. **`alert_tape.csv` and `alert_meta.csv` are empty.** Recreated 2026-09-11
-   05:08. The "what did the contracts we didn't buy cost" lane starts from zero.
+3. **`alert_tape.csv` and `alert_meta.csv` started from zero on 2026-09-11.**
+   They now record the "what did the contracts we didn't buy cost" lane, but
+   cannot recreate calls from before that start time.
 4. **Voice rooms are speech-to-text and mostly unparseable by design.** The
    26,475 `[this room #538…]` lines are Deepgram transcripts — "Get an
    opportunity to add. Let's see." No ticker, no strike, no expiry. They are

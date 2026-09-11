@@ -447,8 +447,12 @@ FILL ANNOUNCER (announcer.py, read-only)
   (BUYING POWER / THIN / PULLBACK never hit / SWINGS paused / TEST room /
   FUTURES prop …), filled ones linked to their ledger row. Thin spot:
   telemetry rows carry no room/caller (bridge doesn't populate them).
-- PRICE TAPES → tape.py is the ONE registry. Six sources, verified 9/9:
-  webull, tasty_greeks, tasty_quote, databento, databento_clean, missed.
+- PRICE TAPES → tape.py is the ONE registry. Seven sources:
+  webull, tasty_greeks, tasty_quote, databento, databento_clean, missed,
+  and alert. `alert` is `alert_tape.csv`, the slow all-alert lane used for
+  refused/missed-call outcomes and caller-exit comparisons; it was wired
+  into the registry 9/11 after its writer existed but the common reader did
+  not know about it.
   NOT bars/ — that and bars_capture.py were archived 9/9 and tape.py never
   registered them. (test_architecture.py asserted an exact set of four and
   had gone stale; it now requires the four core sources and checks every
