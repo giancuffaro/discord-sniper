@@ -304,7 +304,7 @@ const RE_BARE_FILL = /^(?:just\s+|we\s+|i\s+|i've\s+|ive\s+|we've\s+)*(?:filled|
 // 570). A typo'd verb ("i took enry ...") is left to the POSSIBLE MISSED
 // ENTRY net in replay_check instead: a mistyped word should be surfaced
 // for a human, never fuzzy-matched into a real-money order.
-const RE_TOOK_ENTRY_FILL = /\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[^\d%]{0,40}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b|\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[\s\S]{0,60}?\bfill(?:ed)?\s*[:@]\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b/i;
+const RE_TOOK_ENTRY_FILL = /\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[^\d%]{0,40}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b|\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[\s\S]{0,60}?\bfill(?:ed)?\s*[:@]\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b|\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[\s\S]{0,80}?\s\$?(\d{1,3}\.\d{1,2})\b(?:\s|$)|\b\$?(\d{1,3}\.\d{1,2})\s+(?:fill(?:ed)?\s+)?took\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b/i;
 // "added to SPY @everyone new avg is 2.8" — they doubled up and their average
 // moved. Whether that buys you a second contract is a setting, not a parser
 // decision: resolveAdd in guards.js has the final word, because only the guards
@@ -2855,7 +2855,13 @@ function parseSignalInner(text, cfg) {
     && RE_ENTRY_PLAN.test(t)
     && !RE_EXIT.test(low) && !RE_TRIM.test(low) && !RE_PARTIAL.test(low)
     && !/\bhit\b|\bfilled\s+at\b|\bup\s+\d{1,4}\s*%|\bran\s+to\b/i.test(low);
-  if ((RE_ENTRY.test(low) || _takingEntry || _buyCmd || _planEntry || _bareEntry || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
+  // These messages confirm a prior LOADING call but may contain neither a
+  // full contract nor a normal entry verb ("Fill is 1.79", "3.65 took
+  // entry"). They remain harmless on their own: resolveLoaded refuses them
+  // unless the same caller has a fresh, complete contract on the shelf.
+  const _loadedConfirmation = RE_BARE_FILL.test(t) || RE_TOOK_ENTRY_FILL.test(t);
+  if ((RE_ENTRY.test(low) || _takingEntry || _buyCmd || _planEntry || _bareEntry ||
+      _loadedConfirmation || RE_QTY_LEAD.test(t)) && !_exitWithWeakIn) {
     const c = findContract(t);
     if (!c) {
       // The two-message entry: "Loading 205 calls Friday expiration on NVDA",
@@ -2923,7 +2929,7 @@ function parseSignalInner(text, cfg) {
       if (mte) {
         s.action = "OPEN"; s.matched = "took-entry fill on a loaded contract";
         s.needs_loaded = true;
-        s.limit = parseFloat(mte[1] || mte[2]);
+        s.limit = parseFloat(mte.slice(1).find(Boolean));
         // If they named a ticker ("$NVDA I took entry..."), pin it so
         // resolveLoaded won't pair it with a different ticker's load.
         s.named_symbol = bareSymbol(t, allowed);

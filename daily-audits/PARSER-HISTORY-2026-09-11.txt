@@ -3,15 +3,24 @@ PARSER GATE — extension/parser.js  vs  b3f76f5
 11385 messages, 74 rooms, 6362 on the allowlist
 ============================================================================
   entries fired BEFORE : 850
-  entries fired NOW    : 852   (+2)
-  gained: 2   lost: 0   expiry changed: 0
-  all actions BEFORE/NOW: 3049 / 3041
-  action gained: 0   lost: 8   changed: 2
+  entries fired NOW    : 853   (+3)
+  gained: 3   lost: 0   expiry changed: 0
+  all actions BEFORE/NOW: 3049 / 3047
+  action gained: 6   lost: 8   changed: 2
   JUNK TICKERS: 0 
 
---- GAINED — new entries (2) ---
+--- GAINED — new entries (3) ---
+  HOOD   120   CALL 9/4/26  📌｜alert-room              | @here $HOOD i took enry .HOOD260904C120 1.83 fill price 
   XLF    58    CALL 10/16   ✅⏐swing-trades             | XLF 58C 10/16 1.58 5 CONTRACTS - Finance sector breaking out into new all-time highs. I expect a
   SHOP   150   CALL 11/20   🧱brick-alerts             | SHOP 150c 11/20 6.80 starter @Brick Alerts $SHOP is down almost 15% in the last couple days on A
+
+--- ACTION GAINED — any newly recognized entry/management message (6) ---
+  2026-08-19 09:35:13  OPEN ?                            📌｜alert-room              | @here Fill is 1.79 not using a lot of size here 
+  2026-08-20 09:38:25  OPEN ?                            📌｜alert-room              | @here I took entry $NFLX NFLX260821C80 1.28 
+  2026-08-21 09:59:07  OPEN ?                            📌｜alert-room              | @here 3.65 took entry 
+  2026-08-25 09:42:22  OPEN ?                            📌｜alert-room              | @here $MRNA took entry Fill is 11.25 
+  2026-08-26 09:35:56  OPEN ?                            📌｜alert-room              | @here 1.56 fill took entry 
+  2026-09-03 09:35:33  OPEN HOOD 120 CALLS 9/4/26        📌｜alert-room              | @here $HOOD i took enry .HOOD260904C120 1.83 fill price 
 
 --- ACTION LOST — any message the new rule no longer acts on (8) ---
   2026-08-19 10:18:43  CLOSE AAPL                        🚀options-chat🚀           | AAPL flag on 5min breaking out 

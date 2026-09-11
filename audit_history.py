@@ -42,6 +42,11 @@ if hasattr(sys.stdout, "reconfigure"):
 RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)\]  (.*)$")
 RE_DID = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  <(\w+)>  (.*)$")
 RE_PRICE = re.compile(r"\b\d{1,4}\.\d{1,2}\b")
+RE_CONFIRMED_FILL = re.compile(
+    r"\btook\s+en(?:try|ry|rty|trey|ty)\b|"
+    r"\bfill(?:ed)?\s+(?:is\s+)?\$?\d{1,3}\.\d{1,2}\b|"
+    r"\b\d{1,3}\.\d{1,2}\s+(?:fill(?:ed)?\s+)?took\s+en(?:try|ry|rty|trey|ty)\b",
+    re.I)
 SKIP = ("Sniper HQ", "this room")
 
 
@@ -184,6 +189,18 @@ def main():
             R["msgs"] += 1
             body = strip_header(text)
             act = sig.get("action")
+            loaded_cand = shelf.get(author)
+
+            # The parser deliberately leaves confirmation-only fills without
+            # a symbol. Production resolveLoaded attaches the fresh contract
+            # kept from PREPARE. Mirror that here so a historical AI/verdict
+            # line can be matched to its symbol instead of reported missed.
+            if act == "OPEN" and sig.get("needs_loaded") and loaded_cand:
+                named = str(sig.get("named_symbol") or "").upper()
+                if not named or named == str(loaded_cand[0]).upper():
+                    sig["symbol"] = loaded_cand[0]
+                    sig["strike"] = loaded_cand[1]
+                    sig["side"] = loaded_cand[2]
 
             # --- BLIND pass: shelf armed, no action, price present
             if act == "PREPARE" and sig.get("symbol"):
@@ -192,7 +209,7 @@ def main():
                 shelf.pop(author, None)
             else:
                 cand = shelf.get(author)
-                if cand and RE_PRICE.search(body):
+                if cand and RE_PRICE.search(body) and RE_CONFIRMED_FILL.search(body):
                     R["blind"].append((day, t, cand[0], body[:160]))
                     shapes[shape_of(body)].append((day, room, body[:120]))
                     d_blind += 1
