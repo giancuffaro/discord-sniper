@@ -154,9 +154,9 @@ function ok(cond, label) { if (!cond) { bad++; console.log("  - " + label); } }
      "their blended average must not become the limit, got " + s.limit);
   await G.guardRecord(s, AVON, "Brett");
   let st = await G.guardState();
-  // Positions are keyed "trader|SYM" now — Brett's SPY, not just SPY.
-  ok(st.positions["brett|SPY"].qty === 2 && st.positions["brett|SPY"].adds === 1,
-     "after one add you hold two contracts, got " + JSON.stringify(st.positions["brett|SPY"]));
+  const brettSpy = Object.values(st.positions)[0];
+  ok(brettSpy.qty === 2 && brettSpy.adds === 1,
+     "after one add you hold two contracts, got " + JSON.stringify(brettSpy));
 
   s = await G.resolveAdd(add(), "Brett", AVON);
   ok(s.fire, "the second add follows: " + s.why);
@@ -173,6 +173,15 @@ function ok(cond, label) { if (!cond) { bad++; console.log("  - " + label); } }
      "max_qty caps what you buy, never what you sell, got " +
      G.clampQty(exit.qty, AVON, "CLOSE"));
   ok(G.clampQty(5, AVON, "OPEN") === 1, "an entry is still capped at max_qty");
+
+  // Two sibling strikes from the same caller remain separate positions.
+  store = {};
+  await G.guardRecord(opened, AVON, "Brett");
+  await G.guardRecord(Object.assign({}, opened, { strike: 750 }), AVON, "Brett");
+  st = await G.guardState();
+  ok(Object.keys(st.positions).length === 2,
+     "two strikes must create two position keys, got " +
+     JSON.stringify(Object.keys(st.positions)));
 
   // Adding to something you're not in has nothing to average into.
   store = {};

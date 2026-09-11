@@ -14,13 +14,20 @@ rem --- the book restores). A WORKING bid loses its 90-second puller, and an
 rem --- armed pullback hunt dies silently - so those get a real warning and
 rem --- a choice before anything is killed.
 powershell -NoProfile -Command ^
-  "try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8787/status' -TimeoutSec 3 } catch { exit 0 };" ^
-  "$rc = $s.restart_check; if (-not $rc) { exit 0 };" ^
+  "try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8787/mode' -TimeoutSec 3 } catch { exit 3 };" ^
+  "$rc = $s.restart_check; if ($null -eq $rc -or $null -eq $rc.working -or $null -eq $rc.armed_pullbacks) { exit 3 };" ^
   "if ($rc.held.Count)   { Write-Host ('  SAFE to restart: holding ' + ($rc.held -join ', ') + ' - stops rest at Webull, the book restores them.') };" ^
   "if ($rc.working.Count -or $rc.armed_pullbacks.Count) {" ^
   "  if ($rc.working.Count) { Write-Host ('  !! RESTING BID in flight: ' + ($rc.working -join ', ') + ' - a restart kills its 90s puller (cancel it in Webull if you proceed).') -ForegroundColor Yellow };" ^
   "  if ($rc.armed_pullbacks.Count) { Write-Host ('  !! PULLBACK HUNT armed: ' + $rc.armed_pullbacks.Count + ' waiting for a touch - a restart drops the hunt (missed entry, not a loss).') -ForegroundColor Yellow };" ^
   "  exit 2 } else { exit 0 }"
+if errorlevel 3 (
+  echo.
+  echo   The bridge safety check did not return a valid answer.
+  echo   Restart REFUSED so an in-flight order cannot be interrupted.
+  pause
+  exit /b 1
+)
 if errorlevel 2 (
   echo.
   choice /c YN /m "  Something is mid-flight. Restart anyway"

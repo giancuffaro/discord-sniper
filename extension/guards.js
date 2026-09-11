@@ -45,15 +45,32 @@ function todayET() {
     .format(new Date());
 }
 
-/* One trade = one trader + one ticker. "brett|SPY" and "unraveler|SPY" are
- * different trades in the same name — that's the whole point. Mirrors
- * positions.key_of on the bridge, so the two sides' books line up key for key. */
-function posKey(trader, symbol) {
-  return ((String(trader || "?").trim().toLowerCase()) || "?") + "|" +
-         String(symbol || "").toUpperCase();
+/* Mirrors positions.key_of: caller + complete option identity. Contract-less
+ * calls still use the legacy prefix and are resolved only when unambiguous. */
+function posKey(trader, symbol, strike, side, expiry) {
+  const who = (String(trader || "?").trim().toLowerCase()) || "?";
+  const sym = String(symbol || "").toUpperCase();
+  if (strike == null && !side && !expiry) return who + "|" + sym;
+  const n = Number(strike);
+  const strikeKey = Number.isFinite(n) ? String(n) : String(strike || "");
+  const sideKey = String(side || "").toUpperCase().slice(0, 1);
+  return [who, sym, strikeKey, sideKey, String(expiry || "")].join("|");
 }
-function keySymbol(k) { return String(k || "").split("|").pop(); }
+function keySymbol(k) {
+  const p = String(k || "").split("|");
+  return p.length > 1 ? p[1] : p[0];
+}
 function keyWho(k) { return String(k || "").split("|")[0]; }
+
+function exactPosition(held, who, sig) {
+  const full = posKey(who, sig.symbol, sig.strike, sig.side, sig.expiry);
+  if ((held || {})[full]) return held[full];
+  const legacy = (held || {})[posKey(who, sig.symbol)];
+  if (legacy && Number(legacy.strike) === Number(sig.strike) &&
+      String(legacy.side || "").slice(0, 1) === String(sig.side || "").slice(0, 1) &&
+      String(legacy.expiry || "") === String(sig.expiry || "")) return legacy;
+  return null;
+}
 
 /* Positions written down before the trader went into the key were stored under
  * the bare ticker. Move them once, using the author that was already on them —
@@ -198,7 +215,7 @@ async function guardCheck(sig, ctx, cfg) {
   // Market Sniper tool works the same account. His QQQ scalp must not
   // block a room's QQQ call; they're two different trades by design.
   // Only the SAME TRADER already being in the name blocks a re-entry.
-  const already = st.positions[posKey(who, sig.symbol)];
+  const already = exactPosition(st.positions, who, sig);
   if (sig.action === "OPEN" && already) {
     // BETTER-AVERAGE ADD (8/26, his call: "we can double if the avg is
     // better"). Same trader, same CONTRACT, position actually filled, and
@@ -209,7 +226,7 @@ async function guardCheck(sig, ctx, cfg) {
     // averaging. Note: if the first entry was strike-translated, the paid
     // price belongs to the translated contract and this compare is
     // conservative; a mismatch just leaves a resting bid that never fills.
-    const heldPos = st.positions[posKey(who, sig.symbol)];
+    const heldPos = already;
     const samePaper = heldPos && heldPos.strike === sig.strike &&
       String(heldPos.expiry || "") === String(sig.expiry || "") &&
       heldPos.side === sig.side;
@@ -247,12 +264,12 @@ async function guardCheck(sig, ctx, cfg) {
                     YM: "MYM", MYM: "YM", RTY: "M2K", M2K: "RTY",
                     CL: "MCL", MCL: "CL", GC: "MGC", MGC: "GC" };
     const _sib = _sibs[sig.symbol];
-    if (_sib && !st.positions[posKey(who, sig.symbol)] &&
+    if (_sib && !findHeld(st.positions, who, sig.symbol) &&
         !Object.keys(st.positions).some(k => keySymbol(k) === sig.symbol) &&
         Object.keys(st.positions).some(k => keySymbol(k) === _sib)) {
       sig.symbol = _sib;
     }
-    if (!st.positions[posKey(who, sig.symbol)] &&
+    if (!findHeld(st.positions, who, sig.symbol) &&
         !Object.keys(st.positions).some(k => keySymbol(k) === sig.symbol))
       // At most brokers a sell with nothing to sell isn't a no-op — it opens
       // a short. Never send it.
@@ -269,7 +286,8 @@ async function guardCheck(sig, ctx, cfg) {
       const p = st.positions[k] || {};
       return !!p.adopted && ["?", "gian", ""].includes(String(p.who || "?").toLowerCase());
     };
-    if (_inSym.length && _inSym.every(_hand) && !st.positions[posKey(who, sig.symbol)])
+    if (_inSym.length && _inSym.every(_hand) &&
+        !findHeld(st.positions, who, sig.symbol))
       return { allowed: false, reason: "that " + sig.symbol + " is YOUR own hand " +
         "trade (picked up off the account, not a room's call) — rooms can't " +
         (sig.action === "TRIM" ? "trim" : "close") + " it. Nothing was sent." };
@@ -468,11 +486,15 @@ function findHeld(held, who, symbol) {
   const exact = (held || {})[posKey(who, symbol)];
   if (exact) return exact;
   const ks = Object.keys(held || {}).filter(k => keySymbol(k) === String(symbol || "").toUpperCase());
+  const mine = ks.filter(k => keyWho(k) === String(who || "").toLowerCase());
+  if (mine.length === 1) return held[mine[0]];
   return ks.length === 1 ? held[ks[0]] : null;
 }
 function findHeldKey(held, who, symbol) {
   if ((held || {})[posKey(who, symbol)]) return posKey(who, symbol);
   const ks = Object.keys(held || {}).filter(k => keySymbol(k) === String(symbol || "").toUpperCase());
+  const mine = ks.filter(k => keyWho(k) === String(who || "").toLowerCase());
+  if (mine.length === 1) return mine[0];
   return ks.length === 1 ? ks[0] : null;
 }
 
@@ -597,7 +619,7 @@ async function resolveReenter(sig, author, cfg) {
   const st = await guardState();
   const who = String(sig.caller || author || "").toLowerCase();
   const last = st.lastCall || {};
-  let ref = st.positions[posKey(who, sym)] || last[posKey(who, sym)] || null;
+  let ref = findHeld(st.positions, who, sym) || last[posKey(who, sym)] || null;
   if (!ref && sym) {
     const cand = Object.keys(st.positions).concat(Object.keys(last))
       .filter(x => keySymbol(x) === sym);
@@ -618,7 +640,7 @@ async function resolveReenter(sig, author, cfg) {
               " call on record to copy the contract from";
     return sig;
   }
-  const cur = st.positions[posKey(who, sym)];
+  const cur = exactPosition(st.positions, who, sig);
   if (cur && String(cur.side) === String(sig.side) &&
       Number(cur.strike) === Number(sig.strike) &&
       String(cur.expiry || "") === String(sig.expiry || "")) {
@@ -658,7 +680,7 @@ async function guardRecord(sig, cfg, author, isTest) {
   const cut = now - Math.max(g.dedupe_seconds, 300) * 1000;
   for (const k of Object.keys(st.recent)) if (st.recent[k] < cut) delete st.recent[k];
 
-  const k = posKey(who, sig.symbol);
+  const k = posKey(who, sig.symbol, sig.strike, sig.side, sig.expiry);
   if (sig.action === "OPEN") {
     // Written down for the echo guard: this exact call has now run today.
     if (sig.limit !== null && sig.limit !== undefined) {
@@ -754,8 +776,7 @@ async function guardUnrecord(sig, author) {
   if (!sig || (sig.action !== "OPEN" && sig.action !== "ADD")) return;
   const st = await guardState();
   const who = String(sig.caller || author || "").toLowerCase() || "?";
-  const pk = findHeldKey(st.positions, who, sig.symbol) ||
-             posKey(who, sig.symbol);
+  const pk = posKey(who, sig.symbol, sig.strike, sig.side, sig.expiry);
   const p = st.positions[pk];
   if (!p) return;
   // Never unwind a fill the bridge already confirmed — only the resting/assumed

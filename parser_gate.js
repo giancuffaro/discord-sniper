@@ -41,8 +41,9 @@
  *   node parser_gate.js --show 40          print more of the changed lines
  */
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 
 const HERE = __dirname;
 const LOGS = path.join(HERE, "DS Logs");
@@ -56,16 +57,20 @@ const SHOW = parseInt(argOf("--show", "12"), 10);
 // ---- the two parsers -------------------------------------------------------
 const NEW = require(path.join(HERE, "extension", "parser.js"));
 let BASE = argOf("--base", "HEAD");
-const oldPath = "/tmp/parser_gate_base.js";
+const oldPath = path.join(os.tmpdir(),
+  `parser_gate_base_${process.pid}_${Date.now()}.js`);
 try {
-  execSync(`git -C "${HERE}" show ${BASE}:extension/parser.js > ${oldPath}`,
-           { stdio: ["ignore", "ignore", "pipe"] });
+  const source = execFileSync(
+    "git", ["-C", HERE, "show", `${BASE}:extension/parser.js`],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  fs.writeFileSync(oldPath, source, "utf8");
 } catch (e) {
   console.error("could not read extension/parser.js at " + BASE + " — is it a"
     + " valid commit? (" + String(e.message).slice(0, 90) + ")");
   process.exit(2);
 }
 const OLD = require(oldPath);
+process.on("exit", () => { try { fs.unlinkSync(oldPath); } catch (e) {} });
 
 // ---- the allowlist, so JUNK can be named --------------------------------
 const OPTIONABLE = new Set();
@@ -73,10 +78,10 @@ for (const line of fs.readFileSync(path.join(HERE, "extension", "optionable.txt"
   const s = line.trim().toUpperCase();
   if (s && s[0] !== "#") OPTIONABLE.add(s);
 }
-// The NEW parser gets the list, because that is how it runs in production
-// (background.js hands it over once optionable.txt is parsed). The OLD one is
-// left as it was — the point is to compare against what actually shipped.
+// Compare code against code under the same production configuration. Giving
+// this list to only one side made byte-identical parsers report differences.
 if (typeof NEW.setOptionable === "function") NEW.setOptionable(OPTIONABLE);
+if (typeof OLD.setOptionable === "function") OLD.setOptionable(OPTIONABLE);
 
 // ---- the room rules, so each message is parsed the way its room is -------
 const ROOMS = {};

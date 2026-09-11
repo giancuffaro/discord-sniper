@@ -2409,6 +2409,7 @@ def tape_read(kind, room, who, heard, action="", symbol="", strike=None,
 # entry now spends whatever the room's own TESTING/LIVE toggle says, exactly
 # like an instant entry — RN wait on a LIVE room is real money.
 _PULLBACK = None
+_DISPATCH_GATE = threading.RLock()
 
 
 def _pullback_streamed(sym):
@@ -2455,7 +2456,8 @@ def _pullback_enter(order):
     # Waiting for the pullback already earned the discount; when the level
     # prints he wants the fill, not a resting bid that watches the bounce.
     o["price_mode"] = "ask"
-    return _place_impl(o)
+    with _DISPATCH_GATE:
+        return _place_impl(o)
 
 
 def _pullback_close(order, why):
@@ -2472,13 +2474,14 @@ def _pullback_close(order, why):
     # 2.18, the stock stop hit at 11:43, the exit was refused as paper, and
     # he had to close it by hand at 1.87 (-$31). An exit must always route to
     # the same account the entry went to — the position is real either way.
-    return _place_impl({
-        "action": "CLOSE", "symbol": order.get("symbol"),
-        "side": order.get("side"), "strike": order.get("strike"),
-        "expiry": order.get("expiry"), "trader": order.get("trader"),
-        "kind": order.get("kind") or "option",
-        "live": bool(order.get("live")),
-        "raw": "pullback exit: " + str(why), "source": "pullback"})
+    with _DISPATCH_GATE:
+        return _place_impl({
+            "action": "CLOSE", "symbol": order.get("symbol"),
+            "side": order.get("side"), "strike": order.get("strike"),
+            "expiry": order.get("expiry"), "trader": order.get("trader"),
+            "kind": order.get("kind") or "option",
+            "live": bool(order.get("live")),
+            "raw": "pullback exit: " + str(why), "source": "pullback"})
 
 
 _UNDER_STOP_LOCK = threading.Lock()
@@ -2602,7 +2605,10 @@ def pullback_manager():
             # closest thing to a broker-side "trigger at $761" that Webull's
             # option API actually allows (9/3).
             streamed_fn=_pullback_streamed,
-            entry_poll_streamed=float(pcfg.get("entry_poll_streamed", 0.25)))
+            entry_poll_streamed=float(pcfg.get("entry_poll_streamed", 0.25)),
+            position_fn=lambda o: (BOOK.info(find_key(o))
+                                   if BOOK is not None else None),
+            fill_wait_seconds=float(pcfg.get("fill_wait_seconds", 120)))
         apply_strategy_numbers()   # the popup's pullback window, if set (9/9)
     return _PULLBACK
 
@@ -2698,7 +2704,8 @@ def place(order):
                     "than risking two sends")
     # (same-contract echo guard lives in _place_impl — ECHO, 20s window)
     try:
-        result = _place_impl(order)
+        with _DISPATCH_GATE:
+            result = _place_impl(order)
     except Exception:                                   # noqa: BLE001
         result = (False, "internal error placing the order")
         raise
@@ -2807,6 +2814,25 @@ def _place_impl(order):
     sym = str(order.get("symbol", "")).upper()
     action = order.get("action")
     key = find_key(order) if BOOK is not None else tkey(order)
+
+    # Final session policy lives on the bridge too, at the dispatch boundary.
+    # The extension remains the friendly early warning; this is the authority
+    # for holidays, half-days, late-close symbols, and delayed pullback entries.
+    _hours_cfg = CFG.get("guards") or {}
+    if (action in ("OPEN", "ADD") and not order.get("test")
+            and _hours_cfg.get("regular_hours_only", True)):
+        try:
+            import market_hours as _mh
+            _kind = order.get("kind") or "option"
+            if not _mh.is_open(_kind, sym):
+                note("HOURS    %s %s refused — the shared market calendar "
+                     "says this session is closed" % (action, sym))
+                return False, ("the market session for %s is closed right now "
+                               "(shared holiday/half-day calendar)" % sym)
+        except Exception as _he:                        # noqa: BLE001
+            note("HOURS    calendar unavailable (%s) — refusing %s %s"
+                 % (str(_he)[:70], action, sym))
+            return False, "could not verify market hours, so no entry was sent"
 
     # STOPMOVE (8/29, his annotation: "Tesla three fifty one new stop
     # loss" = the UNDERLYING price 351 is the new stop). Updates the
@@ -3827,6 +3853,7 @@ def broker_positions():
     def _refresh():
         rows = []
         seen = set()
+        _POS["ok_live"] = False
         try:
             # With paper execution off there is nothing of ours in the
             # sandbox, and polling it was 79% of all Webull traffic on 8/12
@@ -3859,7 +3886,7 @@ def broker_positions():
                     # set fresh inside positions() every call, True only when
                     # a broker response actually came back.
                     if is_live:
-                        _POS["ok_live"] = bool(getattr(wb, "last_read_ok", True))
+                        _POS["ok_live"] = bool(getattr(wb, "last_read_ok", False))
                         if not _POS["ok_live"]:
                             note("POS-READ live positions() got no broker "
                                  "response (throttled/unreachable) — NOT "
@@ -3938,6 +3965,14 @@ def broker_positions():
                                      "option stops need, and on 9/6 it burned "
                                      "363 of 364 throttles. Topstep futures "
                                      "are unaffected." % _wait)
+            if not _POS.get("ok_live"):
+                # Keep the last valid live option snapshot visible through an
+                # outage. Fresh paper/futures rows can still update around it.
+                prior_live = [dict(p) for p in (_POS.get("v") or [])
+                              if p.get("live") and p.get("kind") != "future"]
+                rows = prior_live + [p for p in rows
+                                     if not (p.get("live")
+                                             and p.get("kind") != "future")]
             _POS["t"], _POS["v"] = time.time(), rows
         finally:
             _POS["busy"] = False
@@ -4018,9 +4053,12 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "text/plain; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        # The browser extension is a different origin, so without this the
-        # order never arrives and Chrome tells you nothing useful.
-        self.send_header("Access-Control-Allow-Origin", "*")
+        # Reflect only extension origins. A normal website must never receive
+        # permission to read or mutate the local trading bridge.
+        origin = str(self.headers.get("Origin") or "")
+        if origin.startswith("chrome-extension://"):
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Sniper-Token")
         self.end_headers()
         self.wfile.write(body)
@@ -4035,7 +4073,8 @@ class Handler(BaseHTTPRequestHandler):
     # other subs"). ONE bridge, ONE book: PC2 runs only Chrome + the extension
     # and sends here over the LAN. That is only allowed behind a shared secret
     # — an open order endpoint on the home network is not acceptable. Rules:
-    #   * loopback callers (this PC) are untouched — no token needed, ever;
+    #   * loopback callers may be the extension or a local no-Origin utility;
+    #     browser pages carrying an http(s) Origin are refused;
     #   * any other address must send X-Sniper-Token == execution.bridge_token;
     #   * the server never binds off loopback without a token (see main).
     _AUTH_NOTED = set()
@@ -4046,7 +4085,8 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:                               # noqa: BLE001
             ip = "?"
         if ip in ("127.0.0.1", "::1", "localhost"):
-            return True
+            origin = str(self.headers.get("Origin") or "")
+            return not origin or origin.startswith("chrome-extension://")
         want = str(EXEC.get("bridge_token") or "")
         got = str(self.headers.get("X-Sniper-Token") or "")
         import hmac as _hmac
@@ -5756,7 +5796,8 @@ def connect_broker(quiet=False):
                 if _bname and _bname != "webull":
                     try:
                         import broker as _bk
-                        wbl = _bk.get_broker(lc, _bname)
+                        wbl = _bk.get_broker(lc, _bname,
+                                             require_execution=True)
                         note("BROKER   using %s instead of Webull — %s"
                              % (_bname, _bk.capabilities(wbl)))
                     except Exception as _be:            # noqa: BLE001
@@ -6036,6 +6077,19 @@ def main():
                      "onto the new build now instead of waiting for the "
                      "close")
                 # fall through to the compile-check + restart below
+            # Exclude all final broker dispatches before the last exposure
+            # check. Once held, this gate is never released on a successful
+            # exec, so no request can slip into the shutdown gap.
+            _DISPATCH_GATE.acquire()
+            try:
+                _h2, _w2 = (BOOK.restart_exposure()
+                            if BOOK is not None else ([], []))
+                _armed2 = bool(_PULLBACK is not None and _PULLBACK._armed)
+            except Exception:                           # noqa: BLE001
+                _w2, _armed2 = ["?"], True
+            if _w2 or _armed2:
+                _DISPATCH_GATE.release()
+                continue
             ok = True
             for fn in sorted(cur):
                 try:
@@ -6046,6 +6100,7 @@ def main():
                     ok = False
                     break
             if not ok:
+                _DISPATCH_GATE.release()
                 pending_since = None
                 warned_open = False
                 continue
@@ -6058,6 +6113,7 @@ def main():
                 os.execv(sys.executable,
                          [sys.executable, os.path.join(HERE, "bridge.py")])
             except Exception as e:                      # noqa: BLE001
+                _DISPATCH_GATE.release()
                 note("CODE     restart failed (%s) — the next START HERE "
                      "loads it" % e)
                 pending_since = None

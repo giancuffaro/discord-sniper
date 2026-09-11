@@ -50,6 +50,7 @@ import occ as OCC           # noqa: E402
 ET = ZoneInfo("America/New_York")
 SETTINGS = os.path.join(HERE, "settings.json")
 OUT_CSV = os.path.join(HERE, "databento_tape.csv")
+COVERAGE_JSON = os.path.join(HERE, "databento_tape.coverage.json")
 AFTER_EXIT_MIN = 10          # keep taping past the exit — that is the
                              # "what did we leave behind" half of a post-mortem
 
@@ -95,29 +96,40 @@ def windows(bot_only=False):
     return win
 
 
-def already_taped():
-    done = set()
-    if not os.path.exists(OUT_CSV):
-        return done
+def _window_id(occ_s, day, start, end):
+    return (occ_s, day, int(start.timestamp()), int(end.timestamp()))
+
+
+def completed_windows():
+    """Exact windows durably completed by this downloader.
+
+    A row in the tape is not a completion marker: it may be one surviving row
+    from a killed append or from a narrower earlier request.
+    """
     try:
-        with open(OUT_CSV, encoding="utf-8") as fh:
-            for row in csv.DictReader(fh):
-                ts, o = row.get("ts"), row.get("occ")
-                if ts and o:
-                    day = datetime.fromtimestamp(float(ts), tz=timezone.utc)\
-                        .astimezone(ET).strftime("%Y-%m-%d")
-                    done.add((o, day))
-    except (OSError, ValueError):
-        pass
-    return done
+        with open(COVERAGE_JSON, encoding="utf-8") as fh:
+            rows = json.load(fh)
+        return {tuple(x) for x in rows if isinstance(x, list) and len(x) == 4}
+    except (OSError, ValueError, TypeError):
+        return set()
+
+
+def save_completed(done):
+    tmp = "%s.%d.tmp" % (COVERAGE_JSON, os.getpid())
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump([list(x) for x in sorted(done)], fh, indent=2)
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, COVERAGE_JSON)
 
 
 def main():
     cost_only = "--cost" in sys.argv
     bot_only = "--bot" in sys.argv
     win = windows(bot_only)
-    done = already_taped()
-    win = {k: v for k, v in win.items() if (k[1], k[2]) not in done}
+    done = completed_windows()
+    win = {k: v for k, v in win.items()
+           if _window_id(k[1], k[2], v[0], v[1]) not in done}
     print("contract-days to pull: %d%s" % (len(win), "  (bot only)" if bot_only else ""))
     if not win:
         print("nothing new — the tape already covers every one.")
@@ -184,7 +196,7 @@ def main():
                 start=a.astimezone(timezone.utc),
                 end=b.astimezone(timezone.utc)).to_df()
         except Exception as e:                              # noqa: BLE001
-            return occ_s, day, None, str(e)[:120]
+            return occ_s, day, a, b, None, str(e)[:120]
         last = None
         buf = []                # a window is written ALL-OR-NOTHING: a run
                                 # killed mid-window must not leave a half
@@ -201,7 +213,7 @@ def main():
             if bid <= 0 and ask <= 0:
                 continue
             buf.append([sec, occ_s, round(bid, 4), round(ask, 4)])
-        return occ_s, day, buf, None
+        return occ_s, day, a, b, buf, None
 
     # The wall clock is the whole cost here — one window is a second of compute
     # and ten of waiting on Databento. Four in flight, one writer.
@@ -214,13 +226,15 @@ def main():
     while (queue or nxt < len(order)) and not stop:
         while len(queue) < 4 and nxt < len(order) and not stop:
             queue.append(pool.submit(fetch, order[nxt])); nxt += 1
-        occ_s, day, buf, err = queue.pop(0).result()
+        occ_s, day, a, b, buf, err = queue.pop(0).result()
         if err is not None:
             print("  %s %s failed: %s" % (day, occ_s, err), flush=True)
         else:
             w.writerows(buf)
             fh.flush()
             os.fsync(fh.fileno())
+            done.add(_window_id(occ_s, day, a, b))
+            save_completed(done)
             wrote += len(buf)
             done_n += 1
             print("  %s %-22s %6d rows   (%d/%d)"
@@ -229,11 +243,16 @@ def main():
             stop = True
     for f in queue:                 # drain what is already paid for
         try:
-            occ_s, day, buf, err = f.result(timeout=8)
+            occ_s, day, a, b, buf, err = f.result(timeout=8)
         except Exception:                                   # noqa: BLE001
             continue
         if err is None:
-            w.writerows(buf); wrote += len(buf); done_n += 1
+            w.writerows(buf)
+            fh.flush()
+            os.fsync(fh.fileno())
+            done.add(_window_id(occ_s, day, a, b))
+            save_completed(done)
+            wrote += len(buf); done_n += 1
     fh.flush()
     os.fsync(fh.fileno())
     pool.shutdown(wait=False)

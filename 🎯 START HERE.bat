@@ -143,15 +143,11 @@ if errorlevel 1 (
 )
 git checkout -B main >nul 2>&1
 :haverepo
-rem  A stale git lock (a crashed git, or the sandbox's FUSE mount) makes the
-rem  save-guard silently FAIL and the reset then eats local work (23:28,
-rem  8/23 — the bench and Rafita vanished). Clear it before anything git.
-if exist ".git\index.lock" del /f ".git\index.lock" >nul 2>&1
-if exist ".git\HEAD.lock" del /f ".git\HEAD.lock" >nul 2>&1
 rem  SAVE LOCAL WORK FIRST (8/23): clicking this between auto-pushes used to
 rem  hard-reset away anything Claude changed in the last half hour. Now the
 rem  folder pushes ITSELF before the mirror step - and if the push fails
 rem  (offline), the reset is SKIPPED so nothing local is ever thrown away.
+git rm -r --cached --ignore-unmatch state.json.bak "webull_api.log*" >nul 2>&1
 git add -A >nul 2>&1
 git commit -m "pre-start save" >nul 2>&1
 set "PUSHOK=1"
@@ -623,4 +619,3 @@ if defined FOUND if not "!FOUND!"=="" (
   endlocal & set "%~2=%FOUND%" & goto :eof
 )
 endlocal & set "%~2=%~1" & goto :eof
-

@@ -76,8 +76,7 @@ if exist "%~dp0whop-loop-strikes.txt" set /p STRIKES=<"%~dp0whop-loop-strikes.tx
 if "!ALIVE!"=="1" (
   > "%~dp0whop-loop-strikes.txt" echo 0
 ) else (
-  if not defined AGO set /a STRIKES+=1
-  if "!AGO!"=="" set /a STRIKES+=1
+  set /a STRIKES+=1
   > "%~dp0whop-loop-strikes.txt" echo !STRIKES!
   if !STRIKES! GEQ 4 (
     echo [%date% %time%] GIVING UP: /whopalive has never returned a number after !STRIKES! tries. The Whop profile's extension is old or not installed - reload it there (chrome://extensions) and delete whop-loop-strikes.txt to re-arm. No more relaunches. >> "%~dp0whop-loop.log"
@@ -159,4 +158,3 @@ if defined FOUND if not "!FOUND!"=="" (
   endlocal & set "%~2=%FOUND%" & goto :eof
 )
 endlocal & set "%~2=%~1" & goto :eof
-

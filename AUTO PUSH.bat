@@ -22,20 +22,20 @@ if errorlevel 1 exit /b 0
 rem heartbeat (also proves to the next scheduled copy we're alive)
 type nul > ".autopush.alive"
 
-rem --- clear stale lock files that block git ---
-if exist ".git\index.lock"  del /f /q ".git\index.lock"  >nul 2>&1
-if exist ".git\HEAD.lock"   del /f /q ".git\HEAD.lock"   >nul 2>&1
-
+rem Runtime state/logs stay on this PC. --cached removes old tracked copies
+rem from Git without deleting the local files; .gitignore keeps them out.
+git rm -r --cached --ignore-unmatch state.json.bak "webull_api.log*" >nul 2>&1
 git add -A >nul 2>&1
 git diff --cached --quiet
 if errorlevel 1 (
   git commit -m "auto-push %date% %time%" >nul 2>&1
-  git push origin main >nul 2>&1
-  if errorlevel 1 (
-    git pull --rebase origin main >nul 2>&1
-    git push origin main >nul 2>&1
-  )
 )
+
+rem Push is independent of committing. If the network failed after a commit,
+rem every later pass retries even while the working tree stays clean. Never
+rem delete Git lock files or auto-rebase over another active Git operation.
+git rev-list --count origin/main..HEAD 2>nul | findstr /r "^[1-9][0-9]*$" >nul
+if not errorlevel 1 git push origin main >nul 2>&1
 
 timeout /t 45 /nobreak >nul
 goto loop

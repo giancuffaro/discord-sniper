@@ -220,7 +220,7 @@ def _alert_meta():
     """
     if not os.path.exists(META):
         return {}, {}
-    exact, loose = {}, {}
+    records = {}
     try:
         with open(META, encoding="utf-8-sig", newline="", errors="replace") as fh:
             for m in csv.DictReader(fh):
@@ -229,23 +229,36 @@ def _alert_meta():
                 if not date or not sym:
                     continue
                 k = (date, sym, _strike_key(m.get("strike")),
-                     (m.get("side") or "")[:1].upper())
-                for store, key in ((exact, k), (loose, (date, sym))):
-                    cur = store.setdefault(key, {})
-                    quote = (m.get("stage") == "quote")
-                    for col in ("room", "caller", "their_price", "alert_at",
-                                "seen_at", "bid", "ask", "delta", "iv", "expiry"):
-                        v = (m.get(col) or "").strip()
-                        if not v:
-                            continue
-                        # a real quote overrides a cached one; the call's own
-                        # words are never overwritten by a later sweep
-                        if col not in cur or (quote and col in
-                                              ("bid", "ask", "delta", "iv")):
-                            cur[col] = v
+                     (m.get("side") or "")[:1].upper(),
+                     (m.get("expiry") or "").strip(),
+                     (m.get("caller") or "").strip().lower())
+                cur = records.setdefault(k, {})
+                quote = (m.get("stage") == "quote")
+                for col in ("room", "caller", "their_price", "alert_at",
+                            "seen_at", "bid", "ask", "delta", "iv", "expiry"):
+                    v = (m.get(col) or "").strip()
+                    if not v:
+                        continue
+                    # a real quote overrides a cached one; the call's own
+                    # words are never overwritten by a later sweep
+                    if col not in cur or (quote and col in
+                                          ("bid", "ask", "delta", "iv")):
+                        cur[col] = v
     except OSError:
-        return {}, {}
-    return exact, loose
+        return {}, {}, {}
+
+    # Caller-aware identity is preferred. Caller-free contract and symbol
+    # fallbacks are exposed only when exactly one candidate exists; ambiguity
+    # leaves fields blank instead of borrowing metadata from another alert.
+    import collections
+    by_contract = collections.defaultdict(list)
+    by_symbol = collections.defaultdict(list)
+    for k, value in records.items():
+        by_contract[k[:5]].append(value)
+        by_symbol[k[:2]].append(value)
+    contract_unique = {k: v[0] for k, v in by_contract.items() if len(v) == 1}
+    symbol_unique = {k: v[0] for k, v in by_symbol.items() if len(v) == 1}
+    return records, contract_unique, symbol_unique
 
 
 def _blank(v):
@@ -265,8 +278,8 @@ def _strike_key(v):
 def _apply_meta(rows):
     """Fill BLANK columns on each alert row from alert_meta.csv. Returns the
     number of rows that gained something."""
-    exact, loose = _alert_meta()
-    if not exact and not loose:
+    exact, contract_unique, symbol_unique = _alert_meta()
+    if not exact and not contract_unique and not symbol_unique:
         return 0
     touched = 0
     for r in rows:
@@ -274,9 +287,13 @@ def _apply_meta(rows):
         sym = (r.get("symbol") or "").strip().upper()
         if not date or not sym:
             continue
-        m = exact.get((date, sym, _strike_key(r.get("strike")),
-                       (r.get("side") or "")[:1].upper())) \
-            or loose.get((date, sym))
+        base = (date, sym, _strike_key(r.get("strike")),
+                (r.get("side") or "")[:1].upper(),
+                str(r.get("expiry") or "").strip())
+        caller = str(r.get("caller") or "").strip().lower()
+        m = (exact.get(base + (caller,)) if caller else None) \
+            or contract_unique.get(base) \
+            or symbol_unique.get((date, sym))
         if not m:
             continue
         # F18 (9/11 audit): neither key above names the expiry, so a same

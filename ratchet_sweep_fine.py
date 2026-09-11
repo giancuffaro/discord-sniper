@@ -66,7 +66,7 @@ def sim(trade, born, arm, step, pause_sec=0.0, pause_cents=0.0):
             if lk is not None:
                 stop = max(stop, entry * (1.0 + lk / 100.0))
         if bid <= stop:
-            return (stop - entry) / entry * 100.0, True
+            return (bid - entry) / entry * 100.0, True
     last = trade["quotes"][-1][1]
     return (last - entry) / entry * 100.0, False
 

@@ -1,9 +1,18 @@
 import datetime
+import csv
+import os
+import tempfile
 import unittest
 from unittest import mock
 
 import announcer
+import build_alerts
+import option_tape_pull
 import positions
+import pullback
+import ratchet_backtest
+import ratchet_sweep
+import ratchet_sweep_fine
 from build_ledger import _dedupe_key
 
 
@@ -132,6 +141,82 @@ class AuditRegressionTests(unittest.TestCase):
         self.assertTrue(book.overnight_stops_pending())
         book._pos[key]["no_auto_stop"] = True
         self.assertFalse(book.overnight_stops_pending())
+
+    def test_alert_metadata_does_not_cross_expiries(self):
+        with tempfile.TemporaryDirectory() as td:
+            meta = os.path.join(td, "alert_meta.csv")
+            with open(meta, "w", newline="", encoding="utf-8") as fh:
+                w = csv.DictWriter(fh, fieldnames=[
+                    "date", "symbol", "strike", "side", "expiry", "caller",
+                    "room", "stage"])
+                w.writeheader()
+                w.writerow({"date": "2026-09-11", "symbol": "SPY",
+                            "strike": "700", "side": "C",
+                            "expiry": "2026-09-11", "caller": "alpha",
+                            "room": "zero dte", "stage": "alert"})
+                w.writerow({"date": "2026-09-11", "symbol": "SPY",
+                            "strike": "700", "side": "C",
+                            "expiry": "2026-09-18", "caller": "beta",
+                            "room": "weekly", "stage": "alert"})
+            rows = [{"date": "2026-09-11", "symbol": "SPY",
+                     "strike": "700", "side": "C",
+                     "expiry": "2026-09-18", "caller": "beta", "room": ""},
+                    {"date": "2026-09-11", "symbol": "SPY",
+                     "strike": "700", "side": "C",
+                     "expiry": "2026-09-25", "caller": "", "room": ""}]
+            with mock.patch.object(build_alerts, "META", meta):
+                build_alerts._apply_meta(rows)
+            self.assertEqual(rows[0]["room"], "weekly")
+            self.assertEqual(rows[1]["room"], "")
+
+    def test_incomplete_broker_is_rejected_for_execution(self):
+        import broker
+
+        class DataOnly:
+            pass
+
+        with mock.patch.dict(broker._REGISTRY, {"data": lambda _cfg: DataOnly()}):
+            with self.assertRaises(Exception):
+                broker.get_broker({"execution": {}}, "data",
+                                  require_execution=True)
+
+    def test_pullback_waits_for_fill_and_records_option_price(self):
+        managed = []
+        pb = pullback.Pullback(
+            lambda _sym: 100.0,
+            lambda _order: (True, "bid accepted"),
+            lambda _order, _why: (True, "closed"),
+            lambda _line: None,
+            timeout_seconds=0.1, entry_poll_seconds=0.001,
+            position_fn=lambda _order: {
+                "state": "filled", "qty": 1, "fill": 1.25,
+                "order_id": "entry-1", "sent_at": 10, "occ": "OCC"},
+            fill_wait_seconds=0.1)
+        pb._manage_exit = lambda *args: managed.append(args)
+        order = {"symbol": "SPY", "side": "CALLS", "strike": 700,
+                 "expiry": "2026-09-18", "trader": "room"}
+        with mock.patch.object(pullback, "log_ledger") as ledger:
+            pb._wait_entry(order, "SPY", "CALLS", 100.0, "arm-1")
+
+        self.assertEqual(ledger.call_args_list[0].args[0], "submitted")
+        self.assertEqual(ledger.call_args_list[1].args[0], "filled")
+        self.assertEqual(ledger.call_args_list[1].args[3], 1.25)
+        self.assertEqual(len(managed), 1)
+
+    def test_tape_completion_uses_exact_window_marker(self):
+        with tempfile.TemporaryDirectory() as td:
+            coverage = os.path.join(td, "coverage.json")
+            done = {("SPY260918C00700000", "2026-09-11", 10, 20)}
+            with mock.patch.object(option_tape_pull, "COVERAGE_JSON", coverage):
+                option_tape_pull.save_completed(done)
+                self.assertEqual(option_tape_pull.completed_windows(), done)
+
+    def test_ratchet_replays_gap_at_observed_bid(self):
+        quotes = [(1, 0.50, 0.55)]
+        self.assertEqual(ratchet_backtest.simulate(quotes, 1.00)[0], -50.0)
+        trade = {"entry": 1.00, "quotes": quotes}
+        self.assertEqual(ratchet_sweep.simulate_one(trade, 5, 3)[0], -50.0)
+        self.assertEqual(ratchet_sweep_fine.sim(trade, 5, 3, 5)[0], -50.0)
 
 
 if __name__ == "__main__":

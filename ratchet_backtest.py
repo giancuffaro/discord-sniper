@@ -48,8 +48,7 @@ import tape as _tape
 TAPE_CSV = _tape.path("databento")
 OUT_JSON = os.path.join(HERE, "ratchet_backtest_results.json")
 
-BORN_STOP_PCT = 7.5    # settings.json strategy.stop_loss_pct — the day-one stop
-                       # (moved 10 -> 7.5 on 9/8, see HANDOFF.md that date)
+BORN_STOP_PCT = rt.live_spacing()[0]  # one reader for the live setting
 
 
 def _nan(x):

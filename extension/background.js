@@ -1578,6 +1578,7 @@ async function sendOrder(sig, qty, c, author, postedAt) {
    * firing leg two would be doubling down on a refusal.
    * The recursion is safe because `also` is stripped from the clone. */
   if (Array.isArray(sig.also) && sig.also.length) {
+    const siblingFailures = [];
     for (const leg2 of sig.also) {
       const leg = Object.assign({}, sig, {
         strike: leg2.strike,
@@ -1599,6 +1600,9 @@ async function sendOrder(sig, qty, c, author, postedAt) {
         // went out was its absence from the popup's fills.
         const r2 = await sendOrder(leg, 1, c, author, postedAt);
         if (!r2 || !r2.ok) {
+          siblingFailures.push(sig.symbol + " " + leg2.strike
+            + (leg2.expiry ? " " + leg2.expiry : "") + ": "
+            + ((r2 && (r2.msg || r2.why)) || "no reason given"));
           try {
             await addLog({ kind: "failed", what: "SECOND CONTRACT",
               why: "the second contract (" + sig.symbol + " " + leg2.strike
@@ -1608,6 +1612,9 @@ async function sendOrder(sig, qty, c, author, postedAt) {
           } catch (e2) {}
         }
       } catch (e) {
+        siblingFailures.push(sig.symbol + " " + leg2.strike
+          + (leg2.expiry ? " " + leg2.expiry : "") + ": "
+          + (e && e.message ? e.message : String(e)));
         try {
           await addLog({ kind: "failed", what: "SECOND CONTRACT",
             why: "the second contract (" + sig.symbol + " " + leg2.strike
@@ -1616,6 +1623,11 @@ async function sendOrder(sig, qty, c, author, postedAt) {
                + "did — check the popup before adding it by hand." });
         } catch (e2) {}
       }
+    }
+    if (siblingFailures.length) {
+      return { ok: true, partial: true,
+               msg: "first contract accepted; PARTIAL alert — "
+                  + siblingFailures.join("; ") };
     }
   }
   return { ok: true, msg: "sent in " + ms + " ms — " + (body || "accepted") };
@@ -1800,7 +1812,25 @@ async function syncFillsInner() {
   const st = await guardState();
   let changed = false;
   for (const [sym, p] of Object.entries(data.positions || {})) {
-    const mine = st.positions[sym];
+    let mine = st.positions[sym];
+    if (!mine) {
+      // Migrate the pre-send extension record onto the bridge's canonical
+      // full-contract key. The bridge may canonicalize an expiry (9/18 ->
+      // 2026-09-18), so use the unique caller/symbol/strike/side candidate.
+      const candidates = Object.keys(st.positions).filter(k => {
+        const q = st.positions[k] || {};
+        return keyWho(k) === keyWho(sym) && keySymbol(k) === keySymbol(sym) &&
+          Number(q.strike) === Number(p.strike) &&
+          String(q.side || "").toUpperCase().slice(0, 1) ===
+            String(p.side || "").toUpperCase().slice(0, 1);
+      });
+      if (candidates.length === 1) {
+        mine = st.positions[candidates[0]];
+        st.positions[sym] = mine;
+        delete st.positions[candidates[0]];
+        changed = true;
+      }
+    }
     if (p.state === "filled") {
       if (!mine) {
         // A position the bridge ADOPTED from the real Webull account — one the

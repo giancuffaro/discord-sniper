@@ -108,11 +108,14 @@ class Pullback:
     def __init__(self, quote_fn, enter_fn, close_fn, note,
                  timeout_seconds=300.0, poll_seconds=2.0,
                  manage_seconds=6.5 * 3600, entry_poll_seconds=1.0,
-                 streamed_fn=None, entry_poll_streamed=0.25):
+                 streamed_fn=None, entry_poll_streamed=0.25,
+                 position_fn=None, fill_wait_seconds=120.0):
         self.quote_fn = quote_fn
         self.enter_fn = enter_fn
         self.close_fn = close_fn
         self.note = note or (lambda s: None)
+        self.position_fn = position_fn
+        self.fill_wait = float(fill_wait_seconds)
         self.timeout = float(timeout_seconds)
         # Two speeds on purpose (8/17, his ask): the ENTRY wait polls fast —
         # it lives 5 minutes at most, and a quick wick through the round
@@ -271,9 +274,35 @@ class Pullback:
                               % (sym, target, px))
                     ok, msg = self.enter_fn(order)
                     self.note("PULLBACK %s entry: %s" % (sym, str(msg)[:160]))
-                    log_ledger("filled" if ok else "fill_failed", order, target, px)
+                    # Acceptance is a submitted bid, not a fill, and px is the
+                    # stock price rather than the option premium.
+                    log_ledger("submitted" if ok else "submit_failed",
+                               order, target)
                     if ok:
-                        self._manage_exit(order, sym, side, px)
+                        generation = None
+                        if self.position_fn is not None:
+                            until = time.time() + self.fill_wait
+                            while time.time() < until:
+                                try:
+                                    p = self.position_fn(order) or {}
+                                except Exception:                       # noqa: BLE001
+                                    p = {}
+                                st = str(p.get("state") or "")
+                                if st == "filled" and int(p.get("qty") or 0) > 0:
+                                    generation = (p.get("order_id"),
+                                                  p.get("sent_at"), p.get("occ"))
+                                    log_ledger("filled", order, target,
+                                               p.get("fill"))
+                                    break
+                                if st in ("nofill", "closed", "stopped", "failed"):
+                                    return
+                                time.sleep(min(1.0, self.poll))
+                            if generation is None:
+                                self.note("PULLBACK %s: entry was accepted but "
+                                          "no fill was confirmed; underlying "
+                                          "exit watcher was not started" % sym)
+                                return
+                        self._manage_exit(order, sym, side, px, generation)
                     return
             self.note("PULLBACK %s: never touched $%.0f in %d min — skipped, "
                       "as designed" % (sym, target, int(self.timeout // 60)))
@@ -283,7 +312,7 @@ class Pullback:
                 self._armed.pop(akey, None)
 
     # -- exit -----------------------------------------------------------------
-    def _manage_exit(self, order, sym, side, under_entry):
+    def _manage_exit(self, order, sym, side, under_entry, generation=None):
         """Watch the UNDERLYING from the moment we entered. Long the stock's
         direction on a call, against it on a put — stop/target measured in
         stock dollars from where the stock stood when we bought."""
@@ -301,6 +330,15 @@ class Pullback:
         misses = 0
         while time.time() < end:
             time.sleep(self.poll)
+            if generation is not None and self.position_fn is not None:
+                try:
+                    p = self.position_fn(order) or {}
+                    current = (p.get("order_id"), p.get("sent_at"), p.get("occ"))
+                    if (p.get("state") != "filled" or int(p.get("qty") or 0) <= 0
+                            or current != generation):
+                        return
+                except Exception:                       # noqa: BLE001
+                    continue
             try:
                 px = float(self.quote_fn(sym))
                 misses = 0

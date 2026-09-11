@@ -88,6 +88,7 @@ archive/
 *.log.old
 settings.json.bak
 settings.json.tmp
+state.json.bak
 
 # Health-check trend log (our own measurements, regrows on demand)
 health.csv
@@ -116,6 +117,7 @@ postmortems/
 # 9/9: bought price bars (Databento 1-second stock bars for the pullback
 # backtest) — data, re-buyable for cents, never code
 bars/
+databento_tape.coverage.json
 
 # 9/11 SECURITY: the Webull SDK's own request log prints the live x-app-key in
 # every signed header. "*.log" does NOT match the rotated names (they end in

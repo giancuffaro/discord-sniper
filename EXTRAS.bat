@@ -58,14 +58,16 @@ echo   close - this is how you shut it down. Once it's stopped,
 echo   nothing can reach your broker no matter what Chrome does.
 echo.
 
+> "%~dp0STOP" echo stopped from EXTRAS on %date% %time%
+
 powershell -NoProfile -Command ^
   "$p = Get-CimInstance Win32_Process -Filter \"Name='python.exe' OR Name='pythonw.exe'\" | Where-Object { $_.CommandLine -like '*bridge.py*' };" ^
-  "if (-not $p) { Write-Host '  It wasn''t running. Nothing to stop.'; exit 0 };" ^
+  "if (-not $p) { Write-Host '  It wasn''t running. The STOP brake is now set.'; exit 0 };" ^
   "$p | ForEach-Object { Stop-Process -Id $_.ProcessId -Force };" ^
   "Write-Host ('  Stopped ' + @($p).Count + ' bridge process(es).')"
 
 echo.
-powershell -NoProfile -Command "try { $null = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/build' -TimeoutSec 2 -UseBasicParsing; Write-Host '  Something is STILL answering on port 8787. Restart the PC if it will not go.' } catch { Write-Host '  Confirmed: nothing is listening. The bridge is down.' }"
+powershell -NoProfile -Command "try { $null = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/build' -TimeoutSec 2 -UseBasicParsing; Write-Host '  Something is STILL answering on port 8787. Restart the PC if it will not go.' } catch { Write-Host '  Confirmed: nothing is listening. The STOP brake keeps it down.' }"
 goto back
 
 

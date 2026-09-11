@@ -167,7 +167,9 @@ def simulate_one(trade, born_pct, arm_pct):
             new_stop = entry * (1.0 + lk / 100.0)
             stop = max(stop, new_stop)
         if bid <= stop:
-            realized_pct = (stop - entry) / entry * 100.0
+            # A gap through the trigger fills at the observed bid, not at an
+            # unavailable nominal stop level.
+            realized_pct = (bid - entry) / entry * 100.0
             return realized_pct, True
     last_bid = trade["quotes"][-1][1]
     realized_pct = (last_bid - entry) / entry * 100.0

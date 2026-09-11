@@ -190,7 +190,7 @@ _REGISTRY = {
 }
 
 
-def get_broker(cfg, which=None, **kw):
+def get_broker(cfg, which=None, require_execution=False, **kw):
     """Build the configured broker. Defaults to Webull, so an untouched
     settings.json behaves exactly as it always has."""
     name = str(which or (cfg.get("execution") or {}).get("broker")
@@ -199,7 +199,15 @@ def get_broker(cfg, which=None, **kw):
     if make is None:
         raise Refused("unknown broker %r — known: %s"
                       % (name, ", ".join(sorted(_REGISTRY))))
-    return make(cfg, **kw)
+    client = make(cfg, **kw)
+    if require_execution:
+        required = ("buy", "sell", "order_status", "cancel", "place_stop",
+                    "positions", "ask_bid", "ask_bid_many")
+        missing = [m for m in required if not callable(getattr(client, m, None))]
+        if missing:
+            raise Refused("%s adapter is data-only/incomplete for live execution "
+                          "(missing %s)" % (name, ", ".join(missing)))
+    return client
 
 
 def capabilities(client):
