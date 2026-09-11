@@ -517,6 +517,29 @@ if not defined CHROME (
   echo         Couldn't find Chrome - can't open the Whop browser.
   goto chromedone
 )
+rem  9/11: SAY IT OUT LOUD IF THAT PROFILE HAS NO EXTENSION. This is the real
+rem  reason the Whop rooms read nothing for a month: the launcher happily opened
+rem  4 tabs in a profile where Discord Sniper was never installed, so there was
+rem  no reader in that window at all. A script cannot install an extension — but
+rem  it can refuse to pretend everything is fine. Checked against that profile's
+rem  own Secure Preferences, which names the unpacked extension's folder.
+set "WHOP_EXT="
+if exist "%LocalAppData%\Google\Chrome\User Data\!WHOP_PROFILE!\Secure Preferences" (
+  findstr /i /c:"discord-sniper" "%LocalAppData%\Google\Chrome\User Data\!WHOP_PROFILE!\Secure Preferences" >nul 2>&1 && set "WHOP_EXT=1"
+)
+if not defined WHOP_EXT (
+  echo.
+  echo         ############################################################
+  echo         #  THE WHOP PROFILE HAS NO DISCORD SNIPER EXTENSION.       #
+  echo         #  Its tabs will open and read NOTHING - no alerts at all. #
+  echo         #  Profile folder: !WHOP_PROFILE!
+  echo         #  Open that Chrome window once, go to chrome://extensions,#
+  echo         #  turn on Developer mode, Load unpacked, and pick:        #
+  echo         #    %~dp0extension
+  echo         #  Log into whop.com in it the same time. One-time only.   #
+  echo         ############################################################
+  echo.
+)
 echo         Opening the Whop rooms in the second profile: !WHOP_PROFILE!
 set "WHOP_SEEDED="
 for /f "usebackq eol=# tokens=1,2,5 delims=|" %%A in ("extension\rooms.txt") do (
@@ -592,8 +615,10 @@ set "FOUND="
 for /f "usebackq delims=" %%R in (`powershell -NoProfile -Command ^
   "$p=Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Local State';" ^
   "if(Test-Path $p){try{$j=Get-Content $p -Raw ^| ConvertFrom-Json;" ^
-  "$m=$j.profile.info_cache.PSObject.Properties ^| Where-Object { $_.Value.name -eq '%~1' } ^| Select-Object -First 1;" ^
-  "if($m){$m.Name}}catch{}}" 2^>nul`) do set "FOUND=%%R"
+  "$ic=$j.profile.info_cache;" ^
+  "if($ic.PSObject.Properties.Name -contains '%~1'){$m=$null;'%~1'}else{" ^
+  "$m=$ic.PSObject.Properties ^| Where-Object { $_.Value.name -eq '%~1' } ^| Select-Object -First 1;" ^
+  "if($m){$m.Name}}}catch{}}" 2^>nul`) do set "FOUND=%%R"
 if defined FOUND if not "!FOUND!"=="" (
   endlocal & set "%~2=%FOUND%" & goto :eof
 )
