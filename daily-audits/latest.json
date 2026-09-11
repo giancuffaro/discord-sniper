@@ -2,10 +2,8 @@
   "coverage_warnings": 0,
   "daily_report": "daily-reports\\REPORT-2026-09-11.md",
   "date": "2026-09-11",
-  "failed_checks": [
-    "Python regression suite"
-  ],
-  "generated_at": "2026-09-11T16:39:17.150969-04:00",
+  "failed_checks": [],
+  "generated_at": "2026-09-11T16:40:46.392521-04:00",
   "possible_missed": 1,
   "report": "daily-audits\\AUDIT-2026-09-11.txt",
   "silent_drops": 8,
