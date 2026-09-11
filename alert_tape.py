@@ -162,6 +162,8 @@ class AlertRecorder:
         self._called = {}                # occ -> what the CALL said, kept so
                                          # the later `quote` row joins to the
                                          # same alert on the same key
+        self._alert_ids = set()          # retry dedupe; distinct re-entries
+                                         # still get distinct metadata rows
         self.sweeps = 0
         self.rows = 0
         self.registered = 0
@@ -281,7 +283,8 @@ class AlertRecorder:
             except Exception:                           # noqa: BLE001
                 pass
             # One metadata row per alert, even when the contract is already
-            # tracked. Re-entries need their own timestamp and caller price.
+            # tracked. Re-entries need their own timestamp and caller price;
+            # an exact bridge retry of the same alert does not.
             o = order or {}
             self._called[occ] = {
                 "symbol": str(o.get("symbol") or "").upper(),
@@ -289,7 +292,15 @@ class AlertRecorder:
                 "expiry": o.get("expiry"), "coid": o.get("coid"),
                 "room": o.get("room") or o.get("room_label"),
                 "trader": o.get("trader") or o.get("who")}
-            self._write_meta("alert", occ, order)
+            alert_id = (str(o.get("coid") or "").strip()
+                        or (occ, o.get("alert_at"), o.get("seen_at"),
+                            o.get("limit"), o.get("their_price"),
+                            o.get("trader") or o.get("who")))
+            with self._lock:
+                new_alert = alert_id not in self._alert_ids
+                self._alert_ids.add(alert_id)
+            if new_alert:
+                self._write_meta("alert", occ, order)
             return fresh
         except Exception:                               # noqa: BLE001
             return False
