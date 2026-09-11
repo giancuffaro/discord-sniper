@@ -372,21 +372,21 @@ def _send_projectx(prop, order, note):
     j2, last_rej = None, None
     for _bt in bracket_types:
         if _bt is not None:
-            # ProjectX wants a SIGNED tick offset from entry, not a magnitude
-            # (9/8 autopilot: two MNQ LONGs both refused with "Invalid stop
-            # loss ticks (40). Ticks should be less than zero when longing"
-            # — every long entry with a bracket was dead on arrival). Long:
-            # the stop sits BELOW entry -> negative. Short: the stop sits
-            # ABOVE entry -> positive, which is what this already sent, so
-            # only the long side was broken. Take-profit is unchanged — no
-            # error has ever named it, and guessing its sign without
-            # evidence risks trading a working leg for a broken one.
+            # ProjectX wants a SIGNED tick offset from entry, not a magnitude,
+            # on BOTH bracket legs — the sign is the direction from entry.
+            # 9/8: MNQ LONGs refused "Invalid stop loss ticks (40). Ticks
+            # should be less than zero when longing" (stop below entry ->
+            # negative). 9/11: a SHORT refused "Invalid take profit ticks
+            # (100). Ticks should be less than zero when going short" (target
+            # below entry -> negative). Long: stop -, target +. Short: stop +,
+            # target -.
             _stop_ticks = int(round(PX_BRACKET_PTS["stop"] / tick))
+            _tp_ticks = int(round(PX_BRACKET_PTS["target"] / tick))
             body["stopLossBracket"] = {
                 "ticks": _stop_ticks if is_short else -_stop_ticks,
                 "type": _bt}
             body["takeProfitBracket"] = {
-                "ticks": int(round(PX_BRACKET_PTS["target"] / tick)),
+                "ticks": -_tp_ticks if is_short else _tp_ticks,
                 "type": 1}
         r = req.post(base + "/api/Order/place", headers=hdr, json=body,
                      timeout=8)
