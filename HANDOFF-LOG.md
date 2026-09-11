@@ -92,12 +92,20 @@ reaper this morning: scope destruction to tabs the extension itself opened.
 Confirmed twice, API and his own account screen: status active, MARGIN /
 REG_T, **option level 4**, $250 option buying power, SPXW quoting with a real
 two-sided market. Nothing on Tradier's side blocks SPX.
-BUT: "Pattern Day Trader: No" on a $250 margin account means the PDT rule
-caps it at THREE day trades per rolling five business days. A bot taking SPX
-0DTE calls would spend that in one morning and the fourth trade gets the
-account restricted, typically 90 days cash-only. In the log that would look
-like "the broker refused it". Decide before wiring: SPX swings only (held
-overnight, not day trades), or fund past $25k. G's call.
+I RAISED PDT AS A BLOCKER AND I WAS WRONG — G corrected me and he is right.
+THE PATTERN DAY TRADER RULE IS GONE. The SEC approved FINRA's amendment to
+Rule 4210 on 2026-04-14, eliminating both the $25,000 minimum equity
+requirement and the "pattern day trader" designation itself; effective
+2026-06-04. Day trades are no longer counted — intraday buying power is based
+on real-time intraday margin excess instead. (My knowledge ends May 2026, so
+I was reasoning from the pre-June world and stated it as fact. Search before
+asserting a rule, especially one with a date on it.)
+THE ONE PART STILL WORTH CHECKING: brokers have until 2027-10-20 to implement,
+so it is phased, and G's Tradier screen still RENDERS a "Pattern Day Trader"
+field — which may just be a stale label or may mean Tradier has not retired
+the counter yet. Check Tradier's own implementation status before SPX goes
+live. Do not design around PDT; do confirm Tradier is not still enforcing it.
+Sources: SEC 34-105226 (SR-FINRA-2025-017), FINRA Regulatory Notice 26-10.
 
 ### SPX: NEITHER INDEX BROKER CAN OPEN A TRADE (9/10 night)
 G picked Tradier for SPX and asked that the bracket be proven first. Probing
