@@ -892,6 +892,63 @@ def build_book():
         except Exception as _ge:                        # noqa: BLE001
             GREEKS = None
             note("GREEKS off (%s) — quotes and stops unaffected" % str(_ge)[:90])
+        # ALERT TAPE (9/11, G: "record every alerted contract with real
+        # bid/ask"). In six weeks 326 contracts were called and 37 were
+        # bought; 136 of the refusals were purely BUYING POWER. Every one of
+        # those 289 was thrown away, so scoring them means MODELLING a price
+        # instead of reading one — and Webull keeps no option tick history to
+        # go back for. This is a SECOND, SLOW lane: open positions keep the
+        # fast bus and the whole order reserve, and this one takes a single
+        # batched call every 30s (2/min on top of the fast bus's 57/min,
+        # against a door of 60/min), speeding to 5s only when the fast bus
+        # has nothing open and is therefore spending nothing. It stands down
+        # for five minutes on a 429 and refuses to run at all if batched
+        # quotes stop working.
+        try:
+            import quote_bus as _qbm
+            from alert_tape import AlertRecorder as _AR
+
+            def _batch_proven():
+                """Is ONE call for twenty symbols actually ONE call?
+
+                ask_bid_many falls back to per-contract quotes when the
+                batched shape is refused. That fallback is 20 requests where
+                this lane budgets for 1 — the exact shape that blows the
+                60/min door. So the lane reads the client's own memory of
+                whether batching works and stops dead if it ever does not.
+                """
+                for _c in (WB, getattr(WB, "quote_client", None)):
+                    if _c is not None and getattr(_c, "_warned_no_batch", False):
+                        return False
+                return True
+
+            def _opt_open():
+                try:
+                    from market_hours import is_open as _io
+                    return bool(_io("option"))
+                except Exception:                       # noqa: BLE001
+                    return True     # cannot tell: behave as before, it is 2/min
+
+            ALERT_TAPE = _AR(
+                WB.ask_bid_many, BUDGET, quotes=QUOTES,
+                und_price=getattr(QUOTES, "_und_price", None),
+                greeks=GREEKS, healthy=_batch_proven, is_open=_opt_open,
+                log=print, order_reserve=_qbm.ORDER_RESERVE)
+            ALERT_TAPE.record_to(os.path.join(HERE, "alert_tape.csv"),
+                                 os.path.join(HERE, "alert_meta.csv"))
+            ALERT_TAPE.start()
+            # Hung off the BOOK on purpose rather than kept as a module
+            # global: QUOTES is a LOCAL of this function, and _greeks_sync
+            # already learned that a global reference here raises on every
+            # pass and gets swallowed — a loop that looks alive and does
+            # nothing. BOOK.alert_tape is the handle that actually exists.
+            BOOK.alert_tape = ALERT_TAPE
+            note("ALERT TAPE on — every alerted contract's real bid/ask to "
+                 "alert_tape.csv, one batched call every 30s (5s when nothing "
+                 "is open). Orders and open positions always come first.")
+        except Exception as _ae:                        # noqa: BLE001
+            note("ALERT TAPE off (%s) — refused alerts stay unrecorded, "
+                 "nothing else changes" % str(_ae)[:90])
     except Exception as _qe:                            # noqa: BLE001
         BOOK.quotes = None
         note("QUOTE BUS off (%s) — per-position quotes as before" % str(_qe)[:80])
