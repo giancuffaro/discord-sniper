@@ -12,7 +12,8 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 ## 2026-09-11 (13:40 exhaustive audit repair, ext 3.8.9)
 Implemented the audit in production without placing or cancelling a trade. P1 repairs: durable
 client-order journal; ambiguous bracket submits never resend; broker-read validity retains the
-last good snapshot; full-contract position identity across Python/extension; hard-stop workers
+last good snapshot; full-contract position identity across Python/extension, with a fresh pre-submit
+account quantity so a pre-existing identical holding cannot masquerade as this order's fill; hard-stop workers
 wait for fills, retry quote/close failures, dedupe, and restore after restart; partial/late sell
 fills reduce retry quantity; STOP guards delayed pullbacks; concurrent state writes and duplicate
 bridge startup are safe; failed exits remain held; watchdog generations cannot clear newer guards;
