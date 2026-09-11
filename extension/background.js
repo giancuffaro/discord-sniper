@@ -2865,6 +2865,25 @@ async function whopSelfHeal() {
   } catch (e) {}
 }
 
+let watchBuildBusy = false;
+async function watchBuildSweep() {
+  // Keep one ordered maintenance sweep. Overlapping tab mutations and network
+  // checks were racing whenever a previous 30-second pass ran long.
+  if (watchBuildBusy) return;
+  watchBuildBusy = true;
+  const jobs = [checkBuild, pollRoomsFile, roomSchedule, syncFills,
+    ensureReaders, oneTabPerChannel, closeNonRoomTabs, evictOtherLane,
+    refreshBridgeChannels, checkBridgeHealth, memoryShed, keepRoomsLoaded,
+    honourOpenRoomsRequest, whopSelfHeal];
+  try {
+    for (const job of jobs) {
+      try { await job(); } catch (e) { /* the next repair still runs */ }
+    }
+  } finally {
+    watchBuildBusy = false;
+  }
+}
+
 chrome.alarms.onAlarm.addListener(a => {
   // openMissingRooms() REMOVED from this sweep 9/8 (G: "revert the check the
   // browser and open missing tabs, because if i close one it wont stop opening
@@ -2873,7 +2892,7 @@ chrome.alarms.onAlarm.addListener(a => {
   // once at startup; after that nothing reopens a tab he closed. Function left
   // defined-but-uncalled below in case it's ever wanted back.
   // whopSelfHeal() ADDED BACK 9/10, whop lane only — see its own comment.
-  if (a.name === "watch-build") { checkBuild(); pollRoomsFile(); roomSchedule(); syncFills(); ensureReaders(); oneTabPerChannel(); closeNonRoomTabs(); evictOtherLane(); refreshBridgeChannels(); checkBridgeHealth(); memoryShed(); keepRoomsLoaded(); honourOpenRoomsRequest(); whopSelfHeal(); }
+  if (a.name === "watch-build") watchBuildSweep();
   if (a.name === "whop-watchdog") whopWatchdog();
   if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
@@ -4625,6 +4644,14 @@ async function memoryShed() {
 const READER_BEAT = {};        // channelId -> last heartbeat ts
 const READER_TAB = {};         // channelId -> tabId
 const BEAT_DEAD_MS = 95000;    // 3 missed beats. Reload, don't wonder.
+function readerHealth(cid, now) {
+  const beat = READER_BEAT[cid] || 0;
+  if (beat && now - beat < BEAT_DEAD_MS) {
+    return now - (ROOM_MSG_AT[cid] || 0) < 40 * 60 * 1000
+      ? "receiving (heartbeat current)" : "quiet (heartbeat current)";
+  }
+  return beat ? "heartbeat stale" : "heartbeat not yet verified";
+}
 const REVIVED_AT = {};         // tabId -> last revive, so we don't loop
 const REVIVE_TRIES = {};       // channelId -> reloads in a row with no beat back
 const DETACHED_STRIKE = {};    // tabId -> last "detached" handled (re-inject first, reload on repeat)
