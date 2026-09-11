@@ -194,6 +194,13 @@ def _dedupe_key(r, date):
         str(r.get("symbol") or "").upper(),
         _r2(r.get("strike")),
         str(r.get("side") or "").upper(),
+        # F19 (9/11 audit): without the expiry, a same-day/strike/side
+        # trade on two different expiries (a weekly and the monthly, or
+        # a roll) collided to ONE key and one twin ate the other's row.
+        # Expiry is present and stable on every real row, unlike time,
+        # so it carries none of the "wallet rows have no time" problem
+        # that kept time out of this key in the first place.
+        str(r.get("expiry") or "").strip(),
         price,
     )
 

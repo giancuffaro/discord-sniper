@@ -234,7 +234,7 @@ def _alert_meta():
                     cur = store.setdefault(key, {})
                     quote = (m.get("stage") == "quote")
                     for col in ("room", "caller", "their_price", "alert_at",
-                                "seen_at", "bid", "ask", "delta", "iv"):
+                                "seen_at", "bid", "ask", "delta", "iv", "expiry"):
                         v = (m.get(col) or "").strip()
                         if not v:
                             continue
@@ -278,6 +278,16 @@ def _apply_meta(rows):
                        (r.get("side") or "")[:1].upper())) \
             or loose.get((date, sym))
         if not m:
+            continue
+        # F18 (9/11 audit): neither key above names the expiry, so a same
+        # day/symbol/strike/side call on a DIFFERENT expiry (weeklies vs.
+        # the monthly, a roll) could join another contract's caller/room/
+        # prices onto this row. If both sides know their expiry and they
+        # disagree, this is not the same contract — skip the join rather
+        # than attach someone else's caller to it.
+        _r_exp = str(r.get("expiry") or "").strip()
+        _m_exp = str(m.get("expiry") or "").strip()
+        if _r_exp and _m_exp and _r_exp != _m_exp:
             continue
         got = False
         for col in ("room", "caller", "their_price", "bid", "ask",

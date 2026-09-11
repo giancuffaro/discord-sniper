@@ -109,25 +109,20 @@
   },
   {
     "name": "alert_metadata_cross_contract_join",
-    "reproduced": true,
+    "reproduced": false,
     "detail": [
       {
         "date": "2026-09-11",
         "symbol": "SPY",
         "strike": "600",
         "side": "CALLS",
-        "expiry": "2026-10-16",
-        "room": "room-A",
-        "caller": "A",
-        "bid": "1",
-        "ask": "1.1",
-        "spread_pct": 9.52
+        "expiry": "2026-10-16"
       }
     ]
   },
   {
     "name": "ledger_dedupe_key_omits_expiry",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
       "different_expiries_same_key": true
     }
