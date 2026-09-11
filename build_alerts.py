@@ -829,6 +829,23 @@ def _minutes(hhmm):
 def build():
     lk = _ledger_keys()
     rows = _taken(lk) + _declined()
+    # ORDER MATTERS, AND IT WAS WRONG (9/11). What was written down LIVE goes
+    # first, what has to be INFERRED goes last, so an inference never lands on
+    # a row that had a real answer coming:
+    #   1. alert_meta.csv — the alert tape, written as each call was parsed
+    #   2. trades.log     — the bot's own ORDER IN / AI READ / REFUSED records
+    #   3. the ledger     — the room a fill ended up under, inferred by
+    #                       date+symbol, and only then by caller
+    # The ledger backfill used to run FIRST, which meant the 258 alerts step 2
+    # recovers were added after it had already finished and none of them ever
+    # got a room. Same guesses, run in the right order.
+    _m = _apply_meta(rows)
+    if _m:
+        sys.stderr.write("build_alerts: alert_meta filled %d row(s)\n" % _m)
+    _e, _a = _apply_log(rows)
+    if _e or _a:
+        sys.stderr.write("build_alerts: trades.log enriched %d row(s), "
+                         "added %d alert(s)\n" % (_e, _a))
     by_key, by_caller = _room_index()
     filled = 0
     for r in rows:
@@ -840,17 +857,6 @@ def build():
         if room:
             r["room"] = room
             filled += 1
-    # Live alert metadata FIRST, so the ledger/caller backfills below only
-    # have to guess at what was genuinely never recorded.
-    _m = _apply_meta(rows)
-    if _m:
-        sys.stderr.write("build_alerts: alert_meta filled %d row(s)\n" % _m)
-    # trades.log's own records LAST, so they only ever fill what telemetry and
-    # the live alert tape could not — and add the alerts neither of them saw.
-    _e, _a = _apply_log(rows)
-    if _e or _a:
-        sys.stderr.write("build_alerts: trades.log enriched %d row(s), "
-                         "added %d alert(s)\n" % (_e, _a))
     lab = _labels()
     named = 0
     for r in rows:
