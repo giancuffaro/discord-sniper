@@ -3325,10 +3325,26 @@ class Book:
                 q["stop_order_id"] = new_oid
                 q["ratchet_locked_pct"] = locked
                 q.pop("soft_stop", None)   # a real resting stop supersedes it
-        self._event(key, "stop-set",
-                    "%s — up %.0f%%, ratchet moved your stop to %.2f — locked "
-                    "in +%.0f%%, can't go red from here" % (sym, gain, placed,
-                                                            locked))
+        # Say where the stop REALLY rests (9/11, CPS): the ladder asked for
+        # breakeven 0.65 but place_stop clamped it a tick under the bid to
+        # 0.60, and this line still printed "locked in +0%, can't go red".
+        # Report the percent of the PLACED price; "can't go red" only when
+        # that is at or above the fill.
+        try:
+            _real = (float(placed) - fill) * dirn / fill * 100.0
+        except (TypeError, ValueError, ZeroDivisionError):
+            _real = locked
+        if _real >= -0.01:
+            self._event(key, "stop-set",
+                        "%s — up %.0f%%, ratchet moved your stop to %.2f — "
+                        "locked in +%.0f%%, can't go red from here"
+                        % (sym, gain, placed, _real))
+        else:
+            self._event(key, "stop-set",
+                        "%s — up %.0f%%, ratchet moved your stop to %.2f "
+                        "(wanted +%.0f%% but the bid only allowed %.0f%% — "
+                        "a tick under the market)"
+                        % (sym, gain, placed, locked, _real))
 
     def auto_breakeven(self, key, bid):
         """His secure-the-trade rule, run by the watchdog: once a live position

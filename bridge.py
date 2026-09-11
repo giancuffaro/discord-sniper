@@ -2317,7 +2317,12 @@ _RECENT_CONTRACTS = {}      # "SYM|side|strike|expiry" -> timestamp
 
 
 def _err_count_since(ts):
-    """How many broker errors the SDK logged since ts. Cheap tail read."""
+    """How many broker errors the SDK logged since ts. Cheap tail read.
+    9/11: it used to ignore ts and count every error in the last 200 KB,
+    so POSTCHECK's "N broker errors since the last trade" was a lifetime
+    number, not a window. Each SDK error line carries its own
+    "YYYY-MM-DD HH:MM:SS,mmm" stamp (local time) — count only the ones
+    stamped after ts."""
     if not ts:
         return 0
     try:
@@ -2326,7 +2331,15 @@ def _err_count_since(ts):
         with open(p, "rb") as f:
             f.seek(max(0, size - 200000))
             tail = f.read().decode("utf-8", "replace")
-        return tail.count("get_response exception")
+        since = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(ts)))
+        n = 0
+        for line in tail.splitlines():
+            if "get_response exception" not in line:
+                continue
+            m = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", line)
+            if m is None or m.group(1) >= since:
+                n += 1
+        return n
     except Exception:                                   # noqa: BLE001
         return 0
 _IMG_SEEN = {}              # sha1(images+caption) -> (ts, verdict)  (24h)
@@ -6090,6 +6103,7 @@ def main():
         WATCH = ("filled", "closed", "stopped", "nofill", "trimmed", "failed",
                  "pulled")   # 9/3: a pull is exactly when a real fill hides
         first = [True]
+        _last_sig = [None, 0.0]
         while True:
             try:
                 time.sleep(3)
@@ -6141,6 +6155,15 @@ def main():
                 except Exception:                       # noqa: BLE001
                     pass                      # stale is still better than none
                 what = evs[-1]
+                # ONE LINE PER EXIT (9/11): a stop produces two "stopped"
+                # events seconds apart (trigger, then the fill) and they
+                # land in different 3s polls — CPS 12:41:32 and 12:41:41
+                # printed the same POSTCHECK twice. Same kind+symbol inside
+                # 30s is the same trade; say it once.
+                _sig = (str(what.get("kind")), str(what.get("symbol") or ""))
+                if _sig == _last_sig[0] and time.time() - _last_sig[1] < 30:
+                    continue
+                _last_sig[0], _last_sig[1] = _sig, time.time()
                 bad = []
                 warn = []
 

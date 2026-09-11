@@ -1099,14 +1099,21 @@ class WebullOptions:
                     fn = getattr(h, m, None)
                     if callable(fn):
                         found.append(("%s.%s" % (hname, m), fn))
-        # STOCK FIRST (9/3 12:40 autopilot): dir() hands the holders back
-        # alphabetically — crypto, event, futures, THEN stock — so every
-        # post-restart hunt fired ~34-68 doomed requests (417
-        # UNSUPPORTED_CATEGORY on crypto/event/futures snapshot) before the
-        # stock snapshot answered. Four restarts today = four bursts. Put the
-        # methods that say "stock" at the front; the winner is found in the
-        # first few tries and the burst is gone.
-        found.sort(key=lambda nf: 0 if "stock" in nf[0].lower() else 1)
+        # STOCK FIRST (9/3, fixed 9/11): dir() hands the methods back
+        # alphabetically — get_crypto_snapshot, get_event_snapshot,
+        # get_futures_snapshot, THEN get_snapshot — and the stock one is
+        # plain `get_snapshot`, no "stock" in its name, so the 9/3 "stock
+        # first" sort never moved it. Every first stock_price() after a
+        # restart still fired 17 doomed requests (417 INVALID_SYMBOL /
+        # UNSUPPORTED_CATEGORY on crypto/event/futures) — CPS 9/11: the
+        # fill-watch thread spent 12:40:53-59 in that hunt and booked a
+        # 12:40:52 broker fill at 12:40:59. Methods that name another asset
+        # class go LAST; a bare snapshot/quote or one that says "stock"
+        # goes first.
+        _other = ("crypto", "event", "future", "forex", "bond", "fund", "index")
+        found.sort(key=lambda nf: (1 if any(w in nf[0].lower() for w in _other)
+                                   else 0,
+                                   0 if "stock" in nf[0].lower() else 1))
         self._sfns = found
         return found
 
@@ -2053,6 +2060,16 @@ class WebullOptions:
         cancel-then-place path, so a bad replace can never cost a stop."""
         if getattr(self, "paper", False):
             return str(old_oid), max(0.01, round(float(stop_price), 2))
+        # ONE STRIKE PER SESSION (9/11, CPS): Webull's replace needs the
+        # option leg's `legs[].id`, which this bot never stores, so every
+        # attempt has answered OPENAPI_PARAM_ERR "invalid order_id" — two
+        # doomed calls (~800 ms and two budget tokens) in front of EVERY
+        # ratchet move, right when the stop needs to land. Remember the
+        # refusal and go straight to cancel+place for the rest of the run;
+        # a restart tries once more in case the broker starts taking it.
+        _dead = getattr(self, "_replace_no", None)
+        if _dead:
+            raise Refused("replace skipped — %s" % _dead)
         option_type = "CALL" if str(side).upper().startswith("C") else "PUT"
         expiration = expiry_to_date(expiry)
         stop = max(0.01, float(tick_round(float(stop_price), symbol)))
@@ -2067,9 +2084,14 @@ class WebullOptions:
                                      "replace"],
                                     self.account_id, _orders)
         if body is None:
-            raise Refused("replace not available (%s)" % str(why)[:80])
+            _w = str(why)
+            if "PARAM_ERR" in _w or "invalid order_id" in _w.lower():
+                self._replace_no = "Webull wants legs[].id (%s)" % _w[:60]
+            raise Refused("replace not available (%s)" % _w[:80])
         blob = str(body)
         if "error" in blob.lower() and "code" in blob.lower():
+            if "PARAM_ERR" in blob or "invalid order_id" in blob.lower():
+                self._replace_no = "Webull wants legs[].id (%s)" % blob[:60]
             raise Refused("replace refused: %s" % blob[:120])
         return str(old_oid), stop
 
