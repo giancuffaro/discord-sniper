@@ -51,6 +51,8 @@ px_day.json
 state-*.json
 .~lock.*
 .autopush.alive
+.autopush.pid
+health.csv
 announcer-seen.json
 announcer-scoreboard.json
 .announcer.alive

@@ -24,7 +24,7 @@ type nul > ".autopush.alive"
 
 rem Runtime state/logs stay on this PC. --cached removes old tracked copies
 rem from Git without deleting the local files; .gitignore keeps them out.
-git rm -r --cached --ignore-unmatch state.json.bak "webull_api.log*" telemetry-test.csv shadow_ratchet.csv >nul 2>&1
+git rm -r --cached --ignore-unmatch state.json.bak "webull_api.log*" telemetry-test.csv shadow_ratchet.csv .autopush.pid health.csv >nul 2>&1
 git add -A >nul 2>&1
 git diff --cached --quiet
 if errorlevel 1 (
