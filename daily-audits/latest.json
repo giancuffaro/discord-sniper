@@ -1,10 +1,13 @@
 {
+  "caller_outcomes": "daily-reports\\CALLER-OUTCOMES-2026-09-11.md",
+  "caller_ratchet_comparison": "daily-reports\\CALLER-VS-RATCHET-2026-09-11.md",
   "coverage_warnings": 0,
   "daily_report": "daily-reports\\REPORT-2026-09-11.md",
   "date": "2026-09-11",
   "failed_checks": [],
   "generated_at": "2026-09-11T18:22:49.020841-04:00",
   "possible_missed": 1,
+  "ratchet_comparison": "daily-reports\\RATCHET-COMPARE-2026-09-11.md",
   "report": "daily-audits\\AUDIT-2026-09-11.txt",
   "silent_drops": 8,
   "status": "attention"
