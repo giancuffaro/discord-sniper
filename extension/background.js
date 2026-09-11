@@ -2953,11 +2953,17 @@ async function watchBuildSweep() {
   // checks were racing whenever a previous 30-second pass ran long.
   if (watchBuildBusy) return;
   watchBuildBusy = true;
-  const jobs = [checkBuild, pollRoomsFile, roomSchedule, syncFills,
-    ensureReaders, oneTabPerChannel, closeNonRoomTabs, evictOtherLane,
-    refreshBridgeChannels, checkBridgeHealth, memoryShed, keepRoomsLoaded,
-    honourOpenRoomsRequest, whopSelfHeal];
   try {
+    // Every installed copy must still be able to pick up a source update. After
+    // that, profiles which were never assigned to Discord or Whop stay inert.
+    // This prevents an accidental copy in a personal Chrome profile from
+    // polling, exporting stale data over the live export, or touching tabs.
+    try { await checkBuild(); } catch (e) {}
+    if (!await assignedLane()) return;
+    const jobs = [pollRoomsFile, roomSchedule, syncFills,
+      ensureReaders, oneTabPerChannel, closeNonRoomTabs, evictOtherLane,
+      refreshBridgeChannels, checkBridgeHealth, memoryShed, keepRoomsLoaded,
+      honourOpenRoomsRequest, whopSelfHeal];
     for (const job of jobs) {
       try { await job(); } catch (e) { /* the next repair still runs */ }
     }
