@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-10 (20:15) — ext 3.8.1. Ratchet 5/3/5. CLOSE-OUT 9/10: bot +$46 (7 one-lots), G −$706, account $0.83; post-mortems 4 NOISE CLIP / 2 ARM CLIP / 1 LEFT MONEY — the META +$80 was closed by the PULLBACK STOCK TARGET, not the ratchet, and ran to 8.50 (Watch items). Fixed at the close: post-mortem filename collision on a same-contract second trade; futures-account positions poll capped at 300 s while futures_brokers.webull is off (187 of the day's 256 throttles). Reader: any word order in `bare` rooms, two contracts in one message become two orders, NDTE rolls back off a weekend, no date = 0DTE where a same-day listing exists, optionable.txt now read by parser.js too. 11 rooms added (5 in guild 718624848812834903, 6 in Low Key Stonks). New per-room rule `dotdate` for an expiry written with a dot (Maguro: "$slv 63c 10.16 2.35" = Oct 16 @ $2.35). The dead `spx` rule and all its plumbing (spx_entry_channels / spx_entries, bridge + background) is DELETED, not left beside the new one. Every study of entry timing and contract choice came back inside the noise — at n=119 the minimum detectable edge is $24/trade, so STOP TUNING AND COLLECT. Chika MEASURED on real NQ bars (free, Webull MCP — broker data before Databento wherever it exists): her way +134 pts vs our ratchet +40 over 18 trades across 4 sessions — widening the sample made HER WORSE (+10.7 -> +7.4/trade), and both sides still span zero, but the dominant effect is OUR pullback rule skipping 7 of her 15 (worth +223 pts). Not armed. NEW GATE: run `node parser_gate.js` before EVERY parser change — it replays the 11,372-message corpus and fails on an invented ticker (it caught three separate would-be disasters tonight). PARSER=the code, CORPUS=the messages, GATE=the diff. Also: expiryAnywhere now reads month+year and month+monthly, which corrected SIXTEEN orders that were firing with no expiry; the futures bracket refuses an entry that the 25-pt snap lands on the caller's stop; reference/CONTRACT-NAMING.md documents every broker's symbol format. SPX BROKER DECIDED: Tradier (option level 4, funded, SPXW quoting) — but NEITHER Tradier nor tastytrade has a method that OPENS a position, and execution.index_broker is not referenced in bridge.py, so SPX cannot trade until we write buy() + the index route. PDT IS DEAD — I raised it as a blocker and G corrected me: the SEC killed the pattern-day-trader designation and the $25k minimum on 2026-04-14, effective 2026-06-04 (FINRA Notice 26-10). Do NOT design around it. Brokers have until 2027-10-20 to implement, so just confirm Tradier is not still counting day trades before SPX goes live. The Discord profile no longer CLOSES his hand-opened Whop tabs, it ignores them (WRONG_LANE). Full story in HANDOFF-LOG.md, 9/10.
+Last updated: 2026-09-11 (06:40) — ext 3.8.2. SECURITY: 18 rotated webull_api.log.* files carrying the live x-app-key were TRACKED and pushed to the PUBLIC repo (*.log never matched their dated names); moved to archive/, .gitignore patched — THE KEY IS STILL IN GIT HISTORY AND MUST BE ROTATED AT WEBULL (G's action, Pending). New rules: CONDENSE AND MERGE; DATA-MAP.md read with INDEX.md every session. Alert recovery: build_alerts.py now mines ORDER IN (184) + AI READ (2,222) + per-contract REFUSED + pullback arms (direction match mandatory); 60 noise rows purged and gated; real alert count 331 -> 505, room coverage 156 -> 312, caller 89 -> 259. Expiry reader was silently buying the WRONG expiry when it could not parse a date — 13 real trades hit, now fixed + test_expiry.py. ai_reader.py had NO optionable.txt allowlist (ticker 'WITH') and was matching raw text through a Discord colour escape (MXLU/MMETA/MSPCX). test_positions.py was appending 3,896 fixture rows to production telemetry.csv — now telemetry-test.csv. alert_tape.csv/alert_meta.csv are LIVE but still EMPTY (recorder armed 9/11, collects at the open).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -357,6 +357,24 @@ RESTARTS / SAFETY
   never in the working file. A fallback that must stay is a deliberate
   design decision, written as one — not leftovers. Applies to code,
   settings.json, rooms.txt, every .md, and this file.
+- CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file. Whenever a
+  file, a log line type, a column or a folder duplicates something we already
+  keep, merge it into the existing home and delete the copy — but only when
+  the merge cannot break a reader. The test, in order: (1) name every piece of
+  code that opens it (grep the repo, both halves); (2) if anything reads it,
+  either repoint that reader in the same change or leave the file alone; (3)
+  run the tests AND `node parser_gate.js`; (4) never merge two files whose
+  rows mean different things just because the columns line up. Records that
+  can never be re-derived — the price tapes, telemetry, days/ — are APPENDED
+  to, never rewritten. One-off evidence CSVs from an analysis run get folded
+  into the script that regenerates them and then archived, not left in root.
+  This is REPLACE-DON'T-STACK applied to data instead of code. When in doubt
+  leave it and write the reason in DATA-MAP.md.
+- DATA-MAP.md is the index of what is INSIDE the data files — columns, log
+  line types, row counts, traps, what each file can and cannot answer. Read
+  it WITH INDEX.md at the start of every session. INDEX.md says what a file
+  is; DATA-MAP.md says what is in it. A session that skipped DATA-MAP.md on
+  9/11 concluded only 16 of 331 alerts were recoverable and missed 425.
 - Compile-check everything touched (python3 -m py_compile / node --check).
   Extension changes → bump extension/manifest.json so a reload is provable.
   Never install the streaming SDK family (webullsdkcore) into the bridge's
