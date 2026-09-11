@@ -19,6 +19,7 @@ from zoneinfo import ZoneInfo
 
 import daily_report
 import jsparse
+import occ as occ_symbol
 import replay_check
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -77,6 +78,22 @@ def _decision_entries(day):
                     "caller": source.group(1) if source else "",
                     "room": source.group(2) if source else "",
                     "contract_text": row["contract"], "origin": "decision"})
+    # Forensic entries did not receive a normal decision, but they are still
+    # caller events and can have later trims/exits worth preserving.
+    try:
+        recovered = json.load(open(os.path.join(
+            HERE, "daily-audits", "recovered-%s.json" % day), encoding="utf-8"))
+    except (OSError, ValueError):
+        recovered = {"entries": []}
+    for row in recovered.get("entries") or []:
+        contract = _entry_contract(row.get("alert") or "", day)
+        if contract.get("symbol") in ("", "MNQ", "MGC"):
+            continue
+        clock = (row.get("time") or "00:00") + ":00"
+        out.append({**contract, "time": clock, "ts": _clock(day, clock),
+                    "caller": "", "room": "",
+                    "contract_text": row.get("alert") or "?",
+                    "origin": "recovered"})
     return out
 
 
@@ -127,7 +144,42 @@ def _enrich_entries(day, entries, parsed_messages):
                        key=lambda x: abs(_clock(day, x[0][0]) - entry["ts"]))
             entry["room"] = entry["room"] or m[1]
             entry["entry"] = entry["entry"] or _f(p.get("limit"))
+        if not entry.get("room"):
+            # Contextual fills such as Midas's "1.46 on starters" carry no
+            # symbol. The nearest raw row at the recovered timestamp still
+            # establishes the room without inventing a contract.
+            nearby = [m for m, _text, _p in parsed_messages
+                      if abs(_clock(day, m[0]) - entry["ts"]) <= 45]
+            if nearby:
+                entry["room"] = min(
+                    nearby, key=lambda m: abs(_clock(day, m[0]) - entry["ts"]))[1]
+        if not entry.get("occ") and all(entry.get(k) for k in
+                                            ("symbol", "expiry", "side", "strike")):
+            try:
+                entry["occ"] = occ_symbol.build(entry["symbol"], entry["expiry"],
+                                                 entry["side"], entry["strike"])
+            except ValueError:
+                pass
     return entries
+
+
+def _quote_paths(day):
+    paths = {}
+    path = os.path.join(HERE, "quote_shadow.csv")
+    try:
+        with open(path, encoding="utf-8-sig", newline="") as fh:
+            for row in csv.DictReader(fh):
+                try:
+                    ts = float(row["ts"]); bid = float(row["bid"])
+                    contract = occ_symbol.from_dx(row.get("symbol") or "")
+                except (TypeError, ValueError):
+                    continue
+                if (contract and bid > 0
+                        and dt.datetime.fromtimestamp(ts, ET).date().isoformat() == day):
+                    paths.setdefault(contract, []).append((ts, bid))
+    except OSError:
+        pass
+    return paths
 
 
 def _claim_values(text, action):
@@ -157,14 +209,13 @@ def _claim_values(text, action):
 def build(day):
     parsed_messages = _messages(day)
     entries = _enrich_entries(day, _decision_entries(day), parsed_messages)
+    quote_paths = _quote_paths(day)
     claims = []
     for message, cleaned, parsed in parsed_messages:
         action = parsed.get("action")
         if action not in ("TRIM", "CLOSE"):
             continue
         price, pct, per_contract, partial = _claim_values(cleaned, action)
-        if price is None and pct is None and per_contract is None:
-            continue
         symbol = parsed.get("symbol")
         ts = _clock(day, message[0])
         candidates = [e for e in entries if e["ts"] < ts
@@ -174,11 +225,29 @@ def build(day):
                                            or message[1] in e["room"])]
         if same_room:
             candidates = same_room
+        elif not symbol or len({e.get("room") for e in candidates}) > 1:
+            # A symbol-less percentage or two callers in the same ticker is
+            # not enough identity. Better an explicit gap than a false claim.
+            continue
         if not candidates:
             continue
         entry = max(candidates, key=lambda e: e["ts"])
         if symbol and entry["symbol"] != symbol:
             continue
+        basis = "caller-stated"
+        if price is None and pct is None and per_contract is None:
+            # A timestamped full exit plus a contemporaneous executable bid
+            # is calculable even when the caller omitted the price.
+            if action != "CLOSE" or not entry.get("occ"):
+                continue
+            path = quote_paths.get(entry["occ"]) or []
+            if not path:
+                continue
+            nearest = min(path, key=lambda r: abs(r[0] - ts))
+            if abs(nearest[0] - ts) > 5:
+                continue
+            price = nearest[1]
+            basis = "market bid at caller exit"
         entry_px = entry.get("entry")
         calc_pct = ((price - entry_px) / entry_px * 100.0
                     if price is not None and entry_px else None)
@@ -193,13 +262,15 @@ def build(day):
             "reported_exit": price, "reported_pct": pct,
             "profit_per_contract": per_contract,
             "calculated_pct": calc_pct, "implied_exit": implied,
+            "basis": basis,
             "raw": message[3],
         })
 
     # Exact duplicate accessible rows and relay copies should not double-count.
     unique = {}
     for row in claims:
-        key = (row["entry_time"], row["event_time"], row["symbol"],
+        event_bucket = int(_clock(day, row["event_time"]) // 30)
+        key = (row["entry_time"], event_bucket, row["symbol"],
                row["reported_exit"], row["reported_pct"],
                row["profit_per_contract"], row["event"])
         unique.setdefault(key, row)
@@ -210,6 +281,7 @@ def build(day):
     fields = ["entry_time", "event_time", "room", "caller", "symbol",
               "contract", "entry", "event", "reported_exit", "reported_pct",
               "profit_per_contract", "calculated_pct", "implied_exit", "raw"]
+    fields.insert(-1, "basis")
     with open(csv_path + ".tmp", "w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, fields)
         writer.writeheader(); writer.writerows(claims)
@@ -218,8 +290,8 @@ def build(day):
     md_path = os.path.join(OUT_DIR, "CALLER-OUTCOMES-%s.md" % day)
     lines = ["# Caller outcome evidence — %s" % day, "",
              "Caller claims are separate from broker results and ratchet simulations. Partial trims remain partial; percentages imply a price only when the caller's entry is known.", "",
-             "| Entry | Event | Contract | Entry | Caller event | Exit/claim | Calculated |",
-             "|---|---|---|---:|---|---:|---:|"]
+             "| Entry | Event | Contract | Entry | Caller event | Exit/claim | Calculated | Evidence |",
+             "|---|---|---|---:|---|---:|---:|---|"]
     for r in claims:
         claim = ("$%.2f" % r["reported_exit"] if r["reported_exit"] is not None
                  else ("%+.1f%%" % r["reported_pct"] if r["reported_pct"] is not None
@@ -227,10 +299,10 @@ def build(day):
         calc = ("%+.1f%%" % r["calculated_pct"] if r["calculated_pct"] is not None
                 else ("implied $%.2f" % r["implied_exit"]
                       if r["implied_exit"] is not None else "unavailable"))
-        lines.append("| %s | %s | %s | %s | %s | %s | %s |" % (
+        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s |" % (
             r["entry_time"], r["event_time"], r["contract"].replace("|", "\\|"),
             "$%.2f" % r["entry"] if r["entry"] is not None else "—",
-            r["event"], claim, calc))
+            r["event"], claim, calc, r["basis"]))
     full = [r for r in claims if r["event"] == "full exit"]
     lines += ["", "- Claim events paired: **%d**." % len(claims),
               "- Full exits with calculable results: **%d**." % len(
