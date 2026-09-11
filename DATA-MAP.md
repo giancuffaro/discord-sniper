@@ -535,3 +535,81 @@ a busy day. Dedupe before counting rooms.
   `ALERT-AUDIT.html` (9/7, what we missed ever), `contracts.html` (9/9),
   `MAP.html` (9/2, how the machine works). Rebuild them rather than trusting
   the date on them.
+
+---
+
+# 12. If you are trying to answer X, read Y
+
+| Question | Read | How |
+|---|---|---|
+| **Which rooms make money?** | `master_ledger.csv` | Filter `manual == False` first — 755 of 978 rows are G's hand trades. Only 177 rows have a room at all, so the honest sample is small. Cross-check with `SCOREBOARD.html` / `scoreboard.py`. |
+| **What did a contract cost at a given minute?** | `databento_tape_clean.csv` first (510 contracts, 6/12–9/8), then `option_tape.csv` (31 contracts, 9/2–9/10), then `missed_tape.csv` (3 contracts). | Dedupe `(ts, occ)`. If the contract is in none of them, the price does not exist anywhere — see Known data gaps. |
+| **What did a caller actually post?** | `DS Logs/signal-room-chat *.txt`, RAW MESSAGES block | Full text, untruncated. Dedupe on `(ts, room, text)`. If the room is a `#538…` voice room, the text is a speech transcript. |
+| **…and if the exports don't cover that day?** | `trades.log` `AI READ` lines | 636 of them carry the message, truncated to 50 chars, plus the bot's full reading after the `->`. |
+| **What did the bot do with an alert, and why?** | `DS Logs/*.txt` WHAT THE BOT DID block | `<sent>` = order out, `<failed>` = bridge refused it (reason included), `<skipped>` = the reader never got to it, `<ignored>` = read and deliberately not traded. |
+| **…cross-checked against the bridge?** | `trades.log` | `WORKING` → `ORDER IN` → `FILLED` is the happy path. `REFUSED` / `ERROR` / `BLOCKED` / `NO-OTM` / `SWING-OFF` / `NOFILL` are the unhappy ones, each with its reason in the same line. |
+| **What filled, and at what price?** | `master_broker.csv` (`status == FILLED`, use `avg_price`) | The broker's own record. `trades.log` `FILLED` lines agree but cover the bot only. |
+| **What is open right now?** | **Webull.** Run `WHAT DO I HOLD.bat`. | Never a log file. Logs are past tense; the account is the present. `days/<today>.json` is the bot's belief, not the truth. |
+| **What were the caller's own stop and target?** | `days/*.json` `table[].their_stop` (38 rows), then `master_ledger.csv` `their_stop` (25 rows), then `recovered_alerts_chat.csv` `their_stop`/`their_target`. | `their_target` is blank on 977 of 978 ledger rows. Treat targets as not recorded. |
+| **Why was an alert refused?** | `master_alerts.csv` `outcome` + `reason` + `detail` | 136 buying power · 63 other refusal · 51 pullback never hit · 15 futures prop · 10 test room · 10 swings paused · 3 thin. Then `trades.log` `REFUSED`/`ERROR` for the exact broker text. |
+| **Why did a room go quiet?** | `DS Logs/*.txt` `<skipped>` lines | 1,655 detached watcher, 1,080 tab navigated away, 347 audio blocked, 84 no Whop tab. Then `ALERT-AUDIT.html` / `audit_history.py`. |
+| **Which rooms were switched on, on a given day?** | `DS Logs/signal-room-chat <that day>.txt`, CURRENT STATE block | The LIVE / OFF / SHADOW lists are stamped there. `extension/rooms.txt` only shows today. |
+| **What happened after we sold?** | `postmortems/*.md` | Bid at +30s / +1m / +5m / +10m, plus high and low in that window. 11 trades only, 9/9 onward. |
+| **How fast did we read and fire?** | `telemetry.csv` (`sent_at`, `fill_ms`, `slip_pct`) and the `sent in NNNN ms` text on `<sent>` lines. | Ignore every greek column in telemetry — all zero. |
+| **Was the stop where I think it was?** | `trades.log` `STOP-SET` (362 lines) | Each line has the resting price and whether it was born with the order. |
+| **Did this trade exist at all?** | `master_broker.csv` | If Webull has no row, it never happened, whatever the logs say. |
+
+---
+
+# 13. Known data gaps — do not go hunting for these
+
+1. **Webull has no historical option prices via API.** There is no endpoint to
+   ask "what was this contract worth on August 12". Our own tapes are the whole
+   record, and the Databento backfill is the only way to add to it.
+2. **Contracts with no tape have no price, ever.** `option_tape.csv` covers 31
+   contracts over 6 days; `databento_tape_clean.csv` covers 510 over 49 days;
+   `missed_tape.csv` covers 3. Everything else alerted before or outside those
+   is priceless in the literal sense. `quotes_needed_backfill.txt` lists 413
+   such OCCs; `missing_contracts_for_backfill.txt` the 84 that matter most.
+   They can only be recovered by paying Databento for them.
+3. **`alert_tape.csv` and `alert_meta.csv` are empty.** Recreated 2026-09-11
+   05:08. The "what did the contracts we didn't buy cost" lane starts from zero.
+4. **Voice rooms are speech-to-text and mostly unparseable by design.** The
+   26,475 `[this room #538…]` lines are Deepgram transcripts — "Get an
+   opportunity to add. Let's see." No ticker, no strike, no expiry. They are
+   evidence of what was said, not a source of alerts.
+5. **ZTRADEZ top-flow posts a ticker and a price with no contract.** 28 of its
+   51 recovered entries have no expiry at all. Same for `guru-futures` (33) and
+   `mr-top-hat` (11).
+6. **Platinum Trading `👑│nitro` never writes an expiry.** All **149** of its
+   recovered entries lack one. There is no rule that recovers it — a nitro
+   alert without an expiry is unresolvable, not merely unresolved.
+7. **476 of the 1,018 recovered chat entries have no resolvable OCC** for the
+   same family of reasons ("NEXT WEEK", no expiry, two tickers in one message).
+   `unrecoverable_alerts.csv` (44) and `unrecoverable_chat_messages.csv` (179)
+   are the itemised list. 170 of the 179 are "ticker and a bare number only".
+8. **`delta` and `iv` do not exist in `master_alerts.csv`** (0 on all 331 rows)
+   or in `telemetry.csv` (0 on all 3,654). The only real greeks are the 842 rows
+   of `greeks_tape.csv`, from 2026-09-04 onward, and the `greeks_in`/`greeks_out`
+   fields on 13–17 ledger rows.
+9. **`their_target` is not recorded.** 977 of 978 ledger rows blank, 1 of 274
+   day-file rows populated. Caller targets have to be read out of the raw
+   message text.
+10. **Room attribution is missing on most fills.** Only 177 of 978 ledger rows
+    and 0 `ORDER IN` lines carry a room. Anything older than the `days-json`
+    era (pre 2026-08-05) has no room at all.
+11. **There are no DS Logs exports before 2026-08-18.** Messages from earlier
+    dates do appear inside those files (back to 2019), but they are pinned posts
+    and rules the reader scrolled past, not a real backfill of alerts.
+12. **No weekend or holiday files.** Gaps at 8/22, 8/29–8/30, 9/5, 9/7 are
+    weekends, not missing data.
+13. **`git log` hangs in this repo.** Do not use git history as a data source,
+    and never run a git write command — AUTO PUSH sweeps every 45 s on its own.
+
+---
+
+## Rules for whoever edits this file
+
+Same house rule as everywhere else: **replace, don't stack.** When a count
+changes, edit the number in place and change the date at the top. When a file
+is deleted, delete its row. History goes to `HANDOFF-LOG.md`, never here.

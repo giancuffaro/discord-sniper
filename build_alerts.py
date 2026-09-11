@@ -622,9 +622,15 @@ def _apply_log(rows):
         by_key.setdefault(_akey(r), []).append(i)
 
     enriched, added, new_rows = 0, 0, []
+    minted = {}
     for e in events:
         k = ((e["date"], e["symbol"], _strike_key(e.get("strike")),
               (e.get("side") or "")[:1].upper()))
+        if k in minted:
+            # already recovered this contract on this day from an earlier log
+            # line — one alert, one row. Keep the richest outcome.
+            _keep_richer(minted[k], e)
+            continue
         hit = by_key.get(k)
         if not hit:
             # A row that knows the symbol but never got a contract — the
@@ -673,10 +679,37 @@ def _apply_log(rows):
             "how_recovered": e["how"], "source_line": e["raw"],
             "raw": e["raw"],
         })
-        by_key.setdefault(k, []).append(len(rows) + len(new_rows) - 1)
+        minted[k] = new_rows[-1]
         added += 1
     rows.extend(new_rows)
     return enriched, added
+
+
+# Which of two log records of the SAME contract on the SAME day is the one to
+# keep? The one furthest down the pipeline: an ORDER IN says more than the AI
+# READ that produced it, and a resolved pullback says more than an armed one.
+_OUTCOME_RANK = {"alert read": 0, "PULLBACK armed — no resolution in the log": 1,
+                 "PULLBACK never hit — skipped": 2, "refused": 3,
+                 "PULLBACK touched — entry attempted": 4, "order-sent": 5}
+
+
+def _keep_richer(row, e):
+    """Fold a later log record of the same alert into the row already made for
+    it: fill its blanks, and take the outcome only when it is further along."""
+    for col, val in (("side", e.get("side")), ("expiry", e.get("expiry")),
+                     ("their_price", e.get("their_price")),
+                     ("qty", e.get("qty")), ("caller", e.get("caller")),
+                     ("caller_strike", e.get("caller_strike"))):
+        if val and _blank(row.get(col)):
+            row[col] = val
+    if _OUTCOME_RANK.get(e["outcome"], -1) > _OUTCOME_RANK.get(row.get("outcome"), -1):
+        row["outcome"] = e["outcome"]
+        row["reason"] = e["outcome"]
+        row["tier"] = e["tier"]
+        row["how_recovered"] = e["how"]
+        row["source_line"] = e["raw"]
+        if e["confidence"] == "high":
+            row["confidence"] = "high"
 
 
 def _minutes(hhmm):

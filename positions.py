@@ -2433,7 +2433,7 @@ class Book:
                             or "CAVERED_CALL_STOCK_NO_ENOUGH" in up0
                             or "REVERSE" in up0
                             or "EXCESS OF CURRENT HOLDING" in up0):
-                        if self._clear_orphans(wb, key, sym, strike):
+                        if self._clear_orphans(wb, key, sym, strike, side, expiry):
                             oid, stop_price = wb.place_stop(sym, side, strike,
                                                             expiry, qty, fill,
                                                             stop_price=stop_price)
@@ -2917,7 +2917,7 @@ class Book:
             # orphan from an earlier run (or a stop-out that recorded closed but
             # never filled) blocks every following sell. Ask the broker what's
             # still working on this symbol and pull it, awaiting each cancel.
-            pulled = self._clear_orphans(wb, key, sym, strike)
+            pulled = self._clear_orphans(wb, key, sym, strike, side, expiry)
             if not oid and not pulled:
                 time.sleep(1.0 + attempt)   # nothing to pull — settle, longer each round
             if attempt == 0:
@@ -2935,25 +2935,41 @@ class Book:
         # real failure (and re-arm the stop / stand the watchdog back up).
         raise last if last is not None else RuntimeError("sell blocked")
 
-    def _clear_orphans(self, wb, key, sym, strike=None):
+    def _clear_orphans(self, wb, key, sym, strike=None, side=None, expiry=None):
         """Cancel every WORKING order the broker still has on this contract.
 
         Returns how many were pulled. Silent and safe when the SDK has no
         open-orders endpoint (returns []) — the caller falls back to waiting.
         Only ever cancels SELL-side orders on the exact contract, so a resting
-        BUY entry somewhere else in the account is never touched."""
+        BUY entry somewhere else in the account is never touched.
+
+        F07 (9/11 audit): strike was the only contract field checked — a
+        resting SELL at the SAME strike but a DIFFERENT expiry or side (a
+        real human PUT, say, while this is clearing the way for a CALL)
+        got swept up right along with the actual orphan. side/expiry are
+        now checked too, whenever both this call and the broker's row
+        report them; matching on strike alone only when that's genuinely
+        all either side has to go on."""
         if wb is None or not hasattr(wb, "open_orders"):
             return 0
         try:
             rows = wb.open_orders(sym) or []
         except Exception:                               # noqa: BLE001
             return 0
+        _want_side = str(side or "").upper()
+        _want_expiry = str(expiry or "")
         pulled = 0
         for r in rows:
             try:
                 if strike is not None and r.get("strike") is not None:
                     if abs(float(r["strike"]) - float(strike)) > 0.001:
                         continue
+                _r_side = str(r.get("side") or "").upper()
+                if _want_side and _r_side and _r_side != _want_side:
+                    continue        # a different side's resting order — not ours
+                _r_exp = str(r.get("expiry") or "")
+                if _want_expiry and _r_exp and _r_exp != _want_expiry:
+                    continue        # a different expiry — not ours
                 act = str(r.get("action") or "").upper()
                 if act and not act.startswith("S"):
                     continue        # never pull a buy
