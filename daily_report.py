@@ -66,7 +66,9 @@ def _decision_rows(day):
         for t, kind, text in dids:
             if kind not in rank:
                 continue
-            m = re.match(r"^(OPEN|ADD)\s+(.+?)(?:\s+x\d+(?:\.\d+)?)?\s+—", text)
+            # Swing decisions carry a display tag before OPEN. They are still
+            # entry alerts and must count in the funnel (IBM 9/11).
+            m = re.match(r"^(?:\([^)]*\)\s*)?(OPEN|ADD)\s+(.+?)(?:\s+x\d+(?:\.\d+)?)?\s+—", text)
             if not m:
                 continue
             if _corrected_non_alert(text):
