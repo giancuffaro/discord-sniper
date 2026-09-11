@@ -6241,6 +6241,48 @@ def main():
             time.sleep(20)
     threading.Thread(target=_reconcile_loop, daemon=True, name="reconcile_loop").start()
 
+    # AFTER-CLOSE LEARNING LOOP. The exact room text captured today is replayed
+    # through the production parser, and every accumulated regression example
+    # runs once per weekday after the extension's 4:30 room/export sweep. The
+    # parser never self-modifies from untrusted chat; gaps enter a durable
+    # review queue so the next tested source change fixes a class of messages
+    # and the regression corpus prevents that mistake from returning.
+    def _daily_audit_loop():
+        import subprocess as _subprocess
+        marker = os.path.join(HERE, "daily-audits", ".last-run")
+        while True:
+            try:
+                import eastern
+                now = eastern.now()
+                day = now.date().isoformat()
+                minutes = now.hour * 60 + now.minute
+                prior = ""
+                try:
+                    with open(marker, encoding="utf-8") as fh:
+                        prior = fh.read().strip()
+                except OSError:
+                    pass
+                if now.weekday() < 5 and minutes >= 16 * 60 + 40 and prior != day:
+                    os.makedirs(os.path.dirname(marker), exist_ok=True)
+                    p = _subprocess.run(
+                        [sys.executable, os.path.join(HERE, "daily_audit.py"), day],
+                        cwd=HERE, text=True, encoding="utf-8", errors="replace",
+                        capture_output=True, timeout=600)
+                    last = ((p.stdout or "") + (p.stderr or "")).strip().splitlines()
+                    status = "PASS" if p.returncode == 0 else "ATTENTION"
+                    note("AUDIT    daily parser/ledger review %s — %s%s" %
+                         (day, status, (" · " + last[0]) if last else ""))
+                    tmp = marker + ".tmp"
+                    with open(tmp, "w", encoding="utf-8") as fh:
+                        fh.write(day + "\n")
+                    os.replace(tmp, marker)
+            except Exception as exc:                   # noqa: BLE001
+                note("AUDIT    daily review could not run (%s) — will retry"
+                     % str(exc)[:120])
+            time.sleep(60)
+    threading.Thread(target=_daily_audit_loop, daemon=True,
+                     name="daily_audit_loop").start()
+
     # ---- POSTCHECK (9/3, G: "confirm everything is running after every
     # trade to find errors fast"). Every terminal event — filled, closed,
     # stopped, nofill, trimmed — triggers a self-check 6s later. It asks
