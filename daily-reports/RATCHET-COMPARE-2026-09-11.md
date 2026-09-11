@@ -18,7 +18,7 @@ This replay isolates the exit rule. Both versions buy **one contract** at the fi
 - Ratchet advantage on the covered subset: **+21**.
 - **28 alerts cannot be scored yet** because no exact-contract bid/ask path was recorded. This subset cannot establish the winner for the entire day.
 - Every replayed path reached a stop, so none of the values above is an end-of-tape mark.
-- HOOD is deliberately included because the question asks what happened if every alert were forced through. The live bot refused its 22%% spread; bypassing that filter would have produced the replayed loss.
+- HOOD is deliberately included because the question asks what happened if every alert were forced through. The live bot refused its 22% spread; bypassing that filter would have produced the replayed loss.
 
 ## Actual bot trade
 
