@@ -422,7 +422,14 @@ class TastytradeOptions(BrokerBase):
         oid = (((body or {}).get("data") or {}).get("order") or {}).get("id")
         if not oid:
             raise Refused("tastytrade refused the sell: %s" % str(body)[:140])
-        return str(oid)
+        # F17 (9/11 audit): same fix as tradier.py's sell() — positions.py
+        # drives every broker adapter through the same seller and calls
+        # r.get("order_id") / r.get("limit") on the result. A bare string
+        # here would AttributeError the first time this adapter actually
+        # confirmed an exit.
+        limit = float(ref_price) if ref_price is not None else None
+        return {"ok": True, "state": "sent", "order_id": str(oid),
+                "limit": limit, "symbol": symbol, "qty": qty}
 
     def place_stop(self, symbol, side, strike, expiry, qty, fill_price,
                    stop_price=None):

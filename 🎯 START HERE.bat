@@ -498,9 +498,17 @@ rem  cold path sets them. Opens the 4 Whop rooms into the second profile so
 rem  Whop's weight stays off the Discord browser. ONE-TIME on the very first
 rem  run of this profile: log into Whop and install the Discord Sniper
 rem  extension in it - a script cannot do either. After that it just works.
+rem  9/11 FIX — THE REASON THE WHOP ROOMS NEVER OPENED. This warm path set
+rem  WHOP_PROFILE to the DISPLAY name and handed it straight to Chrome, but
+rem  --profile-directory only takes the FOLDER name. Given a display name
+rem  Chrome silently falls back to Default, so all four Whop rooms opened in
+rem  the DISCORD browser, where evictOtherLane() marks them WRONG_LANE and
+rem  never reads them. The cold path at the top already resolved it; this
+rem  copy was never fixed. Zero "(whop)" export files had ever been written.
 :launch_whop
 set "WHOP_PROFILE=Sniper Whop"
 if exist "whop-profile.txt" set /p WHOP_PROFILE=<"whop-profile.txt"
+call :resolve_profile "!WHOP_PROFILE!" WHOP_PROFILE
 set "CHROME="
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"

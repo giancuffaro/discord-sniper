@@ -268,7 +268,16 @@ class TradierOptions(BrokerBase):
         oid = ((body or {}).get("order") or {}).get("id")
         if not oid:
             raise Refused("Tradier refused the sell: %s" % str(body)[:140])
-        return str(oid)
+        # F17 (9/11 audit): this used to return a bare string. The shared
+        # seller (positions.py's _sell_confirmed) calls r.get("order_id")
+        # and r.get("limit") on whatever comes back — that's exactly the
+        # webull_options.sell() shape, which every broker adapter has to
+        # match since positions.py drives them interchangeably. A string
+        # has no .get() at all: the first live sell on this adapter would
+        # have thrown AttributeError instead of confirming the exit.
+        limit = float(ref_price) if ref_price is not None else None
+        return {"ok": True, "state": "sent", "order_id": str(oid),
+                "occ": occ, "limit": limit, "symbol": symbol, "qty": qty}
 
     def place_stop(self, symbol, side, strike, expiry, qty, fill_price,
                    stop_price=None):

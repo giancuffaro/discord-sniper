@@ -152,10 +152,10 @@
   },
   {
     "name": "alternate_adapter_sell_contract_mismatch",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
-      "returned_type": "str",
-      "consumer_error": "AttributeError"
+      "returned_type": "dict",
+      "consumer_error": null
     }
   },
   {
