@@ -151,6 +151,7 @@ class AlertRecorder:
         self._cursor = 0
         self._tape = None
         self._meta = None
+        self._hdr = {}                   # path -> its header line
         self._stop = threading.Event()
         self._thread = None
         self._cool_until = 0.0
@@ -172,9 +173,9 @@ class AlertRecorder:
         if meta_path:
             self._meta = self._ensure(meta_path, META_HEADER)
 
-    @staticmethod
-    def _ensure(path, header):
+    def _ensure(self, path, header):
         try:
+            self._hdr[path] = header
             if not os.path.exists(path):
                 with open(path, "a", encoding="utf-8") as f:
                     f.write(header)
@@ -186,8 +187,15 @@ class AlertRecorder:
         if not path:
             return
         try:
+            # THE HEADER COMES BACK IF THE FILE WENT AWAY (9/11). record_to
+            # writes the header once at startup, so a tape that is moved,
+            # rotated or backed up mid-session would be recreated by the
+            # next append as a file of bare numbers with no column names —
+            # readable by nothing, and not obviously broken until someone
+            # tries to use a day of it. Cheap to check, so check.
+            head = "" if os.path.exists(path) else self._hdr.get(path, "")
             with open(path, "a", encoding="utf-8") as f:
-                f.write(line)
+                f.write(head + line)
         except Exception:                               # noqa: BLE001
             pass
 
