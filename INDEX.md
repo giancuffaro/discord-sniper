@@ -36,6 +36,7 @@ down until you delete it.
 | `webull_options.py` | Every Webull call: orders, stops, quotes, positions. Rate-limit rules live here. |
 | `ratchet_tiers.py` | The stop ladder: born −7.5%, +5% → breakeven, then +2% locked per +2% (flat, no cheap tier). Futures: arm at ⅔ of the stop distance, rung every ~27%. Anti-clip on 2+ DTE only. |
 | `quote_bus.py` | One batched option-quote call per second for every open contract → `option_tape.csv`. |
+| `alert_tape.py` | The SLOW second lane: real bid/ask for every contract the rooms called, including the ones we never bought → `alert_tape.csv` (+ `alert_meta.csv`, the room/caller/greeks of each alert). One batched call every 30s, 5s when nothing is open. Always yields to orders and to the fast bus. |
 | `stream_bus.py` | Live stock/ETF prices pushed over Webull MQTT. |
 | `pullback.py` | The round-number pullback hunter. |
 | `ai_reader.py` | Hands a messy message to Claude, gets a clean call back. |

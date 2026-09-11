@@ -300,6 +300,83 @@ def test_option_tape_is_not_disturbed():
     print("option_tape.csv and the fast lane that writes it are untouched.")
 
 
+def test_the_bridge_hook_itself():
+    """Run bridge.py's OWN _alert_tape_register, lifted out by AST.
+
+    Importing bridge.py would start a trading program, so the function is
+    read out of the source and executed against stubs. This is the single
+    integration point of the whole feature \u2014 if it registers the wrong
+    things, or refuses the right ones, nothing else here matters.
+    """
+    import ast
+    import occ as _occ_mod
+
+    src = open(os.path.join(HERE, "bridge.py"), encoding="utf-8").read()
+    mod = ast.parse(src)
+    fn = [n for n in mod.body
+          if isinstance(n, ast.FunctionDef) and n.name == "_alert_tape_register"]
+    ok(len(fn) == 1, "bridge.py defines _alert_tape_register exactly once")
+
+    # and place() calls it FIRST, before anything can refuse the order
+    place = [n for n in mod.body
+             if isinstance(n, ast.FunctionDef) and n.name == "place"]
+    ok(len(place) == 1, "bridge.py still has one place()")
+    if place:
+        body = [n for n in place[0].body
+                if not isinstance(n, ast.Expr)
+                or not isinstance(n.value, ast.Constant)]
+        first = ast.dump(body[0]) if body else ""
+        ok("_alert_tape_register" in first,
+           "place() registers the alert on its FIRST statement \u2014 anywhere "
+           "lower and it would only tape the alerts that survived, which is "
+           "the exact hole this closes")
+
+    seen = []
+
+    class _Rec:
+        def register(self, occ, order=None):
+            seen.append(occ)
+            return True
+
+    class _Book:
+        alert_tape = _Rec()
+
+    ns = {"BOOK": _Book(), "occ": _occ_mod}
+    exec(compile(ast.Module([fn[0]], []), "<bridge>", "exec"), ns)
+    reg = ns["_alert_tape_register"]
+
+    base = {"symbol": "SPY", "side": "CALLS", "strike": 767,
+            "expiry": "2026-09-18"}
+
+    reg(dict(base, action="OPEN"));   ok(len(seen) == 1, "an OPEN registers")
+    reg(dict(base, action="ADD"));    ok(len(seen) == 2, "an ADD registers")
+    reg(dict(base, action="CLOSE"))
+    ok(len(seen) == 2, "a CLOSE does NOT \u2014 the fast bus already tapes what "
+                       "we hold")
+    reg(dict(base, action="OPEN", kind="future"))
+    ok(len(seen) == 2, "a FUTURE does NOT \u2014 it has no OCC symbol")
+    reg({"action": "OPEN", "symbol": "SPY"})
+    ok(len(seen) == 2, "an alert with no strike or expiry is skipped, not "
+                       "guessed at \u2014 a price filed under the wrong contract "
+                       "is worse than no price")
+    reg(dict(base, action="OPEN", strike="not a number"))
+    ok(len(seen) == 2, "and so is a strike that is not a number")
+    ok(seen[0] == "SPY260918C00767000",
+       "the registered symbol is the real contract (got %s)" % (seen[0],))
+
+    class _Boom:
+        def register(self, *a, **k):
+            raise RuntimeError("recorder exploded")
+
+    ns["BOOK"] = type("B", (), {"alert_tape": _Boom()})()
+    reg(dict(base, action="OPEN"))          # must not raise
+    ns["BOOK"] = None
+    reg(dict(base, action="OPEN"))          # must not raise
+    print("The bridge hook runs on every entry, before anything can refuse "
+          "it, skips what has no contract, and can never throw into the "
+          "order path.")
+
+
 def test_a_refused_alert_reaches_master_alerts():
     """The whole point, end to end: an alert that was REFUSED still ends up
     with a room, a caller, a real bid/ask, greeks and a read latency on its
@@ -373,6 +450,7 @@ if __name__ == "__main__":
     test_closed_market_costs_nothing()
     test_the_file_shape()
     test_option_tape_is_not_disturbed()
+    test_the_bridge_hook_itself()
     test_a_refused_alert_reaches_master_alerts()
     print()
     if FAILS:
