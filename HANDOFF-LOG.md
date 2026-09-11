@@ -22,7 +22,7 @@ ending “dip buys or trims or stops.” Narrow parser guards plus regressions n
 management reads. The caller ledger now gives MU 980C the $500/contract partial (+166.7% from
 $3.00), keeps MU 990C's price-less first trim, and correctly leaves SPX 7700C outcome unavailable.
 The other unpaired management posts are prior-day positions, relay duplicates, or symbol-free
-updates; none is a missed 9/11 entry. All 13 JS checks and 26 Python tests pass; daily audit has
+updates; none is a missed 9/11 entry. All 13 JS checks and 29 Python tests pass; daily audit has
 no failed checks. Its ATTENTION label is the known eight recovered/silent records plus the already
 recovered contextual Midas AAPL fill, not an unknown regression.
 
@@ -32,6 +32,7 @@ handshake, so no peer certificate exists yet. stream_bus now gives only that MQT
 fully verified stdlib TLS context and leaves system trust active everywhere else; a live TLS probe
 passed. health.py now detects the retry storm passively, with regressions. The REST order/balance
 path, one-second option quote bus, Discord/Whop capture, and Tastytrade DXLink remained available.
+A browser probe closing early no longer dumps a harmless ConnectionAborted traceback.
 A 15-minute Codex heartbeat named “Discord Sniper guard” now checks the lightweight failure lanes
 and stays quiet unless state changes; the bridge's existing 16:40 full daily audit remains the deep
 after-close pass. It never trades, changes toggles, or restarts apps.

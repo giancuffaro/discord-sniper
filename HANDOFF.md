@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (18:15) — 34 entries: 5 priced, 21 unpriced options, 8 futures. Ratchet -$18 vs fixed -$39; caller-entry paths -$19; CPS +$5. Caller ledger: 29 claims. Exit replay clean; tape persists.
+Last updated: 2026-09-11 (18:22) — 34 entries: 5 priced, 21 unpriced options, 8 futures. Ratchet -$18 vs fixed -$39; caller-entry paths -$19; CPS +$5. Caller: 29 claims. Exit replay clean; tape persists.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.

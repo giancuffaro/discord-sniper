@@ -44,3 +44,8 @@ ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err
 1789165103.144,postmarket,tastytrade OAuth,1,1,683.2,683.2,683.2,
 1789165103.144,postmarket,Webull connect+bal,1,1,1343.2,1343.2,1343.2,
 1789165103.144,postmarket,Webull MQTT stream,0,1,,,,24 TLS certificate errors; SDK retrying (8 retry notices)
+1789165287.453,postmarket,Bridge 8787,1,1,22.0,22.0,22.0,
+1789165287.453,postmarket,Tradier REST,1,1,208.1,208.1,208.1,
+1789165287.453,postmarket,tastytrade OAuth,1,1,612.6,612.6,612.6,
+1789165287.453,postmarket,Webull connect+bal,1,1,1350.2,1350.2,1350.2,
+1789165287.453,postmarket,Webull MQTT stream,1,1,0.0,0.0,0.0,

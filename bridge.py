@@ -4090,18 +4090,23 @@ def real_futures_buying_power():
 class Handler(BaseHTTPRequestHandler):
     def _reply(self, code, msg):
         body = msg.encode("utf-8")
-        self.send_response(code)
-        self.send_header("Content-Type", "text/plain; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        # Reflect only extension origins. A normal website must never receive
-        # permission to read or mutate the local trading bridge.
-        origin = str(self.headers.get("Origin") or "")
-        if origin.startswith("chrome-extension://"):
-            self.send_header("Access-Control-Allow-Origin", origin)
-            self.send_header("Vary", "Origin")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Sniper-Token")
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(code)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            # Reflect only extension origins. A normal website must never receive
+            # permission to read or mutate the local trading bridge.
+            origin = str(self.headers.get("Origin") or "")
+            if origin.startswith("chrome-extension://"):
+                self.send_header("Access-Control-Allow-Origin", origin)
+                self.send_header("Vary", "Origin")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Sniper-Token")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            # Browser probes are allowed to time out/close their socket. The
+            # request is already over, so a server traceback adds only noise.
+            return
 
     def _json(self, code, obj):
         self._reply(code, json.dumps(obj))
