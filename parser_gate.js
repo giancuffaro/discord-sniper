@@ -30,6 +30,8 @@
  *              real money silently
  *   EXPIRY     same trade, different date. A silent wrong-date fill is the
  *              worst class of bug this parser can have.
+ *   ACTION     every gained, lost, or changed OPEN/ADD/TRIM/CLOSE/PREPARE,
+ *              so an exit-safety rule is tested as fully as an entry rule.
  *
  * IT DOES NOT PASS OR FAIL ON A COUNT. More entries is not better and fewer
  * is not worse — you have to LOOK at what changed. It exits non-zero only on
@@ -53,20 +55,24 @@ const argOf = (k, d) => {
   return i >= 0 && args[i + 1] ? args[i + 1] : d;
 };
 const SHOW = parseInt(argOf("--show", "12"), 10);
+const RULE_FILES = ["extension/parser.js", "extension/rooms.txt",
+  "extension/optionable.txt"];
+const gitFile = (ref, file) => execFileSync(
+  "git", ["-C", HERE, "show", `${ref}:${file}`],
+  { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 
 // ---- the two parsers -------------------------------------------------------
 const NEW = require(path.join(HERE, "extension", "parser.js"));
 let BASE = argOf("--base", "");
 if (!BASE) {
-  // Auto-push commits quickly. If the working parser already equals HEAD,
-  // compare with the prior commit that actually changed parser.js; if it is
-  // still uncommitted, HEAD is the correct before-image.
-  const atHead = execFileSync(
-    "git", ["-C", HERE, "show", "HEAD:extension/parser.js"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-  if (atHead === fs.readFileSync(path.join(HERE, "extension", "parser.js"), "utf8")) {
+  // Auto-push commits quickly. If every working rule file already equals
+  // HEAD, compare with the prior commit that changed any rule file; otherwise
+  // HEAD is the correct before-image for the uncommitted change.
+  const cleanRules = RULE_FILES.every(file =>
+    gitFile("HEAD", file) === fs.readFileSync(path.join(HERE, file), "utf8"));
+  if (cleanRules) {
     const history = execFileSync(
-      "git", ["-C", HERE, "log", "-2", "--format=%H", "--", "extension/parser.js"],
+      "git", ["-C", HERE, "log", "-2", "--format=%H", "--", ...RULE_FILES],
       { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
       .trim().split(/\s+/);
     BASE = history[1] || "HEAD";
@@ -75,9 +81,7 @@ if (!BASE) {
 const oldPath = path.join(os.tmpdir(),
   `parser_gate_base_${process.pid}_${Date.now()}.js`);
 try {
-  const source = execFileSync(
-    "git", ["-C", HERE, "show", `${BASE}:extension/parser.js`],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  const source = gitFile(BASE, "extension/parser.js");
   fs.writeFileSync(oldPath, source, "utf8");
 } catch (e) {
   console.error("could not read extension/parser.js at " + BASE + " — is it a"
@@ -88,33 +92,39 @@ const OLD = require(oldPath);
 process.on("exit", () => { try { fs.unlinkSync(oldPath); } catch (e) {} });
 
 // ---- the allowlist, so JUNK can be named --------------------------------
-const OPTIONABLE = new Set();
-for (const line of fs.readFileSync(path.join(HERE, "extension", "optionable.txt"), "utf8").split("\n")) {
-  const s = line.trim().toUpperCase();
-  if (s && s[0] !== "#") OPTIONABLE.add(s);
-}
-// Compare code against code under the same production configuration. Giving
-// this list to only one side made byte-identical parsers report differences.
+const optionable = text => new Set(text.split("\n").map(x => x.trim().toUpperCase())
+  .filter(s => s && s[0] !== "#"));
+const OPTIONABLE = optionable(fs.readFileSync(
+  path.join(HERE, "extension", "optionable.txt"), "utf8"));
+let OLD_OPTIONABLE;
+try { OLD_OPTIONABLE = optionable(gitFile(BASE, "extension/optionable.txt")); }
+catch (e) { OLD_OPTIONABLE = OPTIONABLE; }
 if (typeof NEW.setOptionable === "function") NEW.setOptionable(OPTIONABLE);
-if (typeof OLD.setOptionable === "function") OLD.setOptionable(OPTIONABLE);
+if (typeof OLD.setOptionable === "function") OLD.setOptionable(OLD_OPTIONABLE);
 
 // ---- the room rules, so each message is parsed the way its room is -------
-const ROOMS = {};
-for (const line of fs.readFileSync(path.join(HERE, "extension", "rooms.txt"), "utf8").split("\n")) {
-  if (!line || line[0] === "#") continue;
-  const p = line.split("|");
-  if (p.length < 5) continue;
-  const cfg = {};
-  const rules = (p[5] || "");
-  if (/\bbare\b/.test(rules)) cfg.entry_no_verb = true;
-  if (/\bdotdate\b/.test(rules)) cfg.dot_date = true;
-  if (/\breadonly\b/.test(rules)) cfg.read_only = true;
-  const ms = /sym=([A-Z]+)/.exec(rules);
-  if (ms) cfg.default_symbol = ms[1];
-  const mp = /pivot=([A-Z]+)/.exec(rules);
-  if (mp) cfg.pivot_root = mp[1];
-  ROOMS[p[0]] = cfg;
-}
+const roomRules = text => {
+  const out = {};
+  for (const line of text.split("\n")) {
+    if (!line || line[0] === "#") continue;
+    const p = line.split("|");
+    if (p.length < 5) continue;
+    const cfg = {}, rules = p[5] || "";
+    if (/\bbare\b/.test(rules)) cfg.entry_no_verb = true;
+    if (/\bdotdate\b/.test(rules)) cfg.dot_date = true;
+    if (/\breadonly\b/.test(rules)) cfg.read_only = true;
+    const ms = /sym=([A-Z]+)/.exec(rules);
+    if (ms) cfg.default_symbol = ms[1];
+    const mp = /pivot=([A-Z]+)/.exec(rules);
+    if (mp) cfg.pivot_root = mp[1];
+    out[p[0]] = cfg;
+  }
+  return out;
+};
+const ROOMS = roomRules(fs.readFileSync(path.join(HERE, "extension", "rooms.txt"), "utf8"));
+let OLD_ROOMS;
+try { OLD_ROOMS = roomRules(gitFile(BASE, "extension/rooms.txt")); }
+catch (e) { OLD_ROOMS = ROOMS; }
 
 // ---- the corpus ------------------------------------------------------------
 const RE = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+\[(.+?)#(\d+)\]\s+([\s\S]*)$/;
