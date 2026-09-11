@@ -137,7 +137,11 @@ def ticket(wb=None, limit=2.77, qty=1, oid="1"):
 # touching the other. That's the multi-trader test further down.
 ORDER = {"symbol": "SPY", "side": "CALLS", "strike": 745, "expiry": "7/31",
          "limit": 2.80, "trader": "Brett"}
-K = positions.key_of("Brett", "SPY")
+# F03 (9/11 audit): the key now carries the CONTRACT too, not just
+# trader+ticker, so it has to be built the same way entry_sent() builds it —
+# off the same order's strike/side/expiry — or these constants silently stop
+# matching what's actually in the book.
+K = positions.key_of("Brett", "SPY", 745, "CALLS", "7/31")
 
 
 def settle(b, key=K, seconds=3.0):
@@ -283,7 +287,7 @@ ok(all("qty" in e for e in b.snapshot()["events"]),
 wb = FakeWB(fills=True, ask=3.00, bid=3.00)
 b = book(wb)
 b.entry_sent(ORDER, ticket(wb, limit=3.00, qty=5))
-U = positions.key_of("Unraveler", "SPY")
+U = positions.key_of("Unraveler", "SPY", 750, "CALLS", "7/31")
 b.entry_sent(dict(ORDER, trader="Unraveler", strike=750, limit=2.00),
              ticket(wb, limit=2.00, qty=5, oid="2"))
 settle(b, K)
@@ -341,7 +345,7 @@ b.entry_sent(ORDER, ticket(wb, limit=3.00, qty=5))            # $1,500
 settle(b)
 b.entry_sent(dict(ORDER, trader="Mike"), ticket(wb, limit=4.00, qty=5,
                                                 oid="2"))     # +$2,000
-settle(b, positions.key_of("Mike", "SPY"))
+settle(b, positions.key_of("Mike", "SPY", 745, "CALLS", "7/31"))
 w = b.wallet()
 ok(w.get("unlimited") is True, "the wallet says it's unlimited")
 ok(abs(w["peak"] - 3500) < 0.5,
@@ -468,7 +472,7 @@ wb = FakeWB(fills=True, ask=4.50, bid=4.50)
 b = book(wb, unlimited=True)
 TS = {"symbol": "TSLA", "side": "PUTS", "strike": 305, "expiry": "7/31",
       "limit": 4.50, "trader": "Unraveller"}
-TK = positions.key_of("Unraveller", "TSLA")
+TK = positions.key_of("Unraveller", "TSLA", 305, "PUTS", "7/31")
 b.entry_sent(TS, ticket(wb, limit=4.50, qty=5, oid="t1"))
 settle(b, TK)
 b.claim(TK)
@@ -523,7 +527,7 @@ print("A re-entry archives the finished trade instead of eating it, and "
 wb = FakeWB(fills=True, ask=2.77, bid=2.77)
 b = book(wb, unlimited=True, simulated=True)   # dry run WITH quotes, like live
 NP = dict(ORDER, trader="Midas")
-NK = positions.key_of("Midas", "SPY")
+NK = positions.key_of("Midas", "SPY", 745, "CALLS", "7/31")
 b.entry_sent(NP, {"order_id": None, "occ": "SPY   250801C00745000",
                   "limit": None, "bid": None, "ask": None, "qty": 5})
 settle(b, NK)
@@ -556,7 +560,7 @@ wb = FakeWB(fills=True, ask=4.00, bid=4.00)
 b = book(wb)
 LADORD = {"symbol": "SPY", "side": "CALLS", "strike": 745, "expiry": "7/31",
           "limit": 4.00, "trader": "Ladder"}
-LK = positions.key_of("Ladder", "SPY")
+LK = positions.key_of("Ladder", "SPY", 745, "CALLS", "7/31")
 b.ladder_on = True
 b.ladder_keep = 2
 wb.limits["9"] = 4.00
@@ -603,7 +607,7 @@ wb2.qtys["7"] = 4
 b3.entry_sent(dict(LADORD, trader="NoLad"),
               {"order_id": "7", "occ": "SPY   250801C00745000",
                "limit": 4.00, "bid": 4.00, "ask": 4.06, "qty": 4})
-NL = positions.key_of("NoLad", "SPY")
+NL = positions.key_of("NoLad", "SPY", 745, "CALLS", "7/31")
 settle(b3, NL)
 b3.auto_ladder(NL, 6.00)
 ok(b3.qty_of(NL) == 4, "ladder off means it never trims for you, got %s"
@@ -664,7 +668,7 @@ lb.broker_resolver = lambda p: LWB
 LWB.limits["9"] = 2.00; LWB.qtys["9"] = 1
 ltk = ticket(LWB, limit=2.00, oid="9"); ltk["live"] = True
 lb.entry_sent(dict(ORDER, trader="LiveGuy"), ltk)
-LKEY = positions.key_of("LiveGuy", "SPY")
+LKEY = positions.key_of("LiveGuy", "SPY", 745, "CALLS", "7/31")
 settle(lb, LKEY)
 ok(lb.state_of(LKEY) == positions.FILLED, "the live entry fills, got %s" % lb.state_of(LKEY))
 ok(any(c[0] == "stop" for c in LWB.calls),
@@ -679,7 +683,7 @@ pb.broker_resolver = lambda p: PWB
 PWB.limits["8"] = 2.00; PWB.qtys["8"] = 1
 ptk = ticket(PWB, limit=2.00, oid="8"); ptk["paper"] = True
 pb.entry_sent(dict(ORDER, trader="PaperGuy"), ptk)
-PKEY = positions.key_of("PaperGuy", "SPY")
+PKEY = positions.key_of("PaperGuy", "SPY", 745, "CALLS", "7/31")
 settle(pb, PKEY)
 ok(pb.state_of(PKEY) == positions.FILLED, "the paper entry fills, got %s" % pb.state_of(PKEY))
 ok(any(c[0] == "stop" for c in PWB.calls),
@@ -721,7 +725,7 @@ rb.stop_pct = 10.0
 RWB.limits["9"] = 2.00; RWB.qtys["9"] = 1
 rtk = ticket(RWB, limit=2.00, oid="9")
 rb.entry_sent(dict(ORDER, trader="RatchetGuy"), rtk)
-RKEY = positions.key_of("RatchetGuy", "SPY")
+RKEY = positions.key_of("RatchetGuy", "SPY", 745, "CALLS", "7/31")
 settle(rb, RKEY)
 ok(rb.state_of(RKEY) == positions.FILLED, "ratchet test entry fills")
 # fill was 2.00 (RWB always fills at its own ask/bid). Ladder is now arm
@@ -778,7 +782,7 @@ acb = book(ACWB)
 acb.ratchet_on = True        # auto_ratchet returns immediately without it
 acb.anticlip = True
 acb.entry_sent(dict(ORDER, trader="AntiClipGuy"), ticket(ACWB, limit=2.00, oid="91"))
-ACKEY = positions.key_of("AntiClipGuy", "SPY")
+ACKEY = positions.key_of("AntiClipGuy", "SPY", 745, "CALLS", "7/31")
 settle(acb, ACKEY)
 acb.auto_ratchet(ACKEY, 2.40)        # +20%
 acb.auto_ratchet(ACKEY, 2.60)        # +30%
@@ -803,7 +807,7 @@ _today = _dtt.date.today()
 _zorder = dict(ORDER, trader="ZeroDteGuy",
                expiry="%d/%d" % (_today.month, _today.day))
 _zb.entry_sent(_zorder, _ztk)
-_ZKEY = positions.key_of("ZeroDteGuy", "SPY")
+_ZKEY = positions.key_of("ZeroDteGuy", "SPY", 745, "CALLS", _zorder["expiry"])
 settle(_zb, _ZKEY)
 _zb.auto_ratchet(_ZKEY, 2.40)        # +20% -> lock +15% (9/8: k=(20-5)//5=3)
 _zb.auto_ratchet(_ZKEY, 2.60)        # +30% -> lock +25% (the plain ladder, uncapped)
@@ -826,7 +830,7 @@ _fb.stop_pct = 10.0
 _FWB.limits["f0"] = 2.00; _FWB.qtys["f0"] = 1
 _ftk = ticket(_FWB, limit=2.00, oid="f0")
 _fb.entry_sent(dict(ORDER, trader="RefusedGuy"), _ftk)
-_FKEY = positions.key_of("RefusedGuy", "SPY")
+_FKEY = positions.key_of("RefusedGuy", "SPY", 745, "CALLS", "7/31")
 settle(_fb, _FKEY)
 _FWB.refuse_stop_moves = True                 # broker says no from here on
 _fb.auto_ratchet(_FKEY, 2.40)                 # +20% -> wants the stop at +15% (9/8 spacing)
