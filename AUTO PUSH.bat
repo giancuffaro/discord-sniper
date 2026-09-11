@@ -28,6 +28,15 @@ git rm -r --cached --ignore-unmatch state.json.bak "webull_api.log*" telemetry-t
 git add -A >nul 2>&1
 git diff --cached --quiet
 if errorlevel 1 (
+  rem Every parser rule must survive every retained message before it ships.
+  rem The gate compares the staged parser with HEAD under each room's live
+  rem grammar and refuses invented symbols. Its full delta remains reviewable.
+  git diff --cached --name-only | findstr /x /c:"extension/parser.js" >nul 2>&1
+  if not errorlevel 1 (
+    node parser_gate.js --base HEAD --show 80 > "daily-audits\PARSER-HISTORY-LATEST.txt" 2>&1
+    if errorlevel 1 goto gate_failed
+    git add "daily-audits\PARSER-HISTORY-LATEST.txt" >nul 2>&1
+  )
   git commit -m "auto-push %date% %time%" >nul 2>&1
 )
 
@@ -38,5 +47,10 @@ for /f %%N in ('git rev-list --count origin/main..HEAD 2^>nul') do (
   if not "%%N"=="0" git push origin main >nul 2>&1
 )
 
+timeout /t 45 /nobreak >nul
+goto loop
+
+:gate_failed
+rem Leave the change staged and local. The next pass retries after it is fixed.
 timeout /t 45 /nobreak >nul
 goto loop

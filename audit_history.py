@@ -32,6 +32,7 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import jsparse                                          # noqa: E402
+import replay_check                                     # noqa: E402
 
 RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)\]  (.*)$")
 RE_DID = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  <(\w+)>  (.*)$")
@@ -135,17 +136,23 @@ def shape_of(body):
 
 def main():
     files = sorted(glob.glob(os.path.join(HERE, "DS Logs", "signal-room-chat*.txt")))
-    days = [(day_of(f), f) for f in files]
-    days = [(d, f) for d, f in days if d]
-    days.sort()
+    days = sorted({day_of(f) for f in files if day_of(f)})
 
     rooms = defaultdict(lambda: {"days_spoke": set(), "msgs": 0, "traded": 0,
                                  "missed": [], "blind": [], "calls": 0})
     shapes = defaultdict(list)
     per_day = []
 
-    for day, fn in days:
-        msgs, dids = load(fn, day)
+    for day in days:
+        replay_check.DAY = day
+        msg_map, did_map = {}, {}
+        for fn in replay_check.exports_for_day(day):
+            lane_msgs, lane_dids = replay_check.load(fn)
+            for msg in lane_msgs:
+                msg_map[(msg[0], msg[2], msg[3][:160])] = msg
+            for did in lane_dids:
+                did_map[tuple(did)] = did
+        msgs, dids = list(msg_map.values()), list(did_map.values())
         blog = bridge_lines(day)
         keep = [m for m in msgs
                 if not any(m[1].startswith(x) for x in SKIP)
@@ -153,7 +160,10 @@ def main():
         if not keep:
             per_day.append((day, 0, 0, 0))
             continue
-        parsed = jsparse.parse_many([strip_header(k[3]) for k in keep])
+        bodies = [replay_check.strip_header(k[3]) for k in keep]
+        parsed = jsparse.parse_many(
+            bodies, [replay_check.parser_cfg(k[2], body)
+                     for k, body in zip(keep, bodies)])
 
         rows = []
         for (t, room, cid, text), sig in zip(keep, parsed):
@@ -211,7 +221,7 @@ def main():
 
     # ---- console ----------------------------------------------------------
     print("ALERT AUDIT — every export since the bot went live (%s .. %s)"
-          % (days[0][0], days[-1][0]))
+          % (days[0], days[-1]))
     print("\nPER DAY   traded / missed(action) / blind(no action)")
     for day, tr, ms, bl in per_day:
         print("  %s   %4d  %4d  %4d%s" % (day, tr, ms, bl,
@@ -267,7 +277,7 @@ def main():
         H.append("<h1>Alert audit — since the bot went live</h1>")
         H.append("<div class=s>%s .. %s &middot; parsed with the production parser "
                  "(extension/parser.js) &middot; built %s</div>"
-                 % (days[0][0], days[-1][0],
+                 % (days[0], days[-1],
                     datetime.now().strftime("%Y-%m-%d %H:%M")))
         H.append("<h2>By shape — what beat the parser</h2><table><tr><th>Hits</th>"
                  "<th>Shape</th><th>Examples</th></tr>")

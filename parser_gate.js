@@ -56,7 +56,22 @@ const SHOW = parseInt(argOf("--show", "12"), 10);
 
 // ---- the two parsers -------------------------------------------------------
 const NEW = require(path.join(HERE, "extension", "parser.js"));
-let BASE = argOf("--base", "HEAD");
+let BASE = argOf("--base", "");
+if (!BASE) {
+  // Auto-push commits quickly. If the working parser already equals HEAD,
+  // compare with the prior commit that actually changed parser.js; if it is
+  // still uncommitted, HEAD is the correct before-image.
+  const atHead = execFileSync(
+    "git", ["-C", HERE, "show", "HEAD:extension/parser.js"],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  if (atHead === fs.readFileSync(path.join(HERE, "extension", "parser.js"), "utf8")) {
+    const history = execFileSync(
+      "git", ["-C", HERE, "log", "-2", "--format=%H", "--", "extension/parser.js"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+      .trim().split(/\s+/);
+    BASE = history[1] || "HEAD";
+  } else BASE = "HEAD";
+}
 const oldPath = path.join(os.tmpdir(),
   `parser_gate_base_${process.pid}_${Date.now()}.js`);
 try {
@@ -113,21 +128,45 @@ for (const f of fs.readdirSync(LOGS).filter(f => /^signal-room-chat.*\.txt$/.tes
   for (const line of fs.readFileSync(path.join(LOGS, f), "utf8").split("\n")) {
     const m = RE.exec(line);
     if (!m) continue;
-    const key = m[1] + "|" + m[3] + "|" + m[4].slice(0, 120);
+    let txt = m[4];
+    // Scrollback is training evidence, not a message that entered the live
+    // parser. The export adds an author label and sometimes an accessible
+    // timestamp header; production strips both before parseSignal().
+    if (txt.startsWith("<history> ")) continue;
+    const colon = txt.indexOf(": ");
+    if (colon >= 0 && colon < 60) txt = txt.slice(colon + 2);
+    txt = txt.replace(
+      /^(?:.*?)?(?:\[\s*)?\d{1,2}:\d{2}\s*[AP]M(?:\s*\])?\s+[A-Za-z]+,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M\s+/i,
+      "");
+    const key = m[1] + "|" + m[3] + "|" + txt.slice(0, 120);
     if (seen.has(key)) continue;
     seen.add(key);
-    rows.push({ ch: m[3], room: m[2].trim(), txt: m[4] });
+    rows.push({ at: m[1], ch: m[3], room: m[2].trim(), txt });
   }
 }
 
 // ---- run both --------------------------------------------------------------
 const gained = [], lost = [], junk = [], expiry = [];
-let oldFire = 0, newFire = 0;
+const decisionGained = [], decisionLost = [], decisionChanged = [];
+let oldFire = 0, newFire = 0, oldActions = 0, newActions = 0;
 for (const r of rows) {
-  const cfg = ROOMS[r.ch] || {};
+  const cfg = Object.assign({}, ROOMS[r.ch] || {});
+  // Production unwraps the OWLS relay and applies the source room's narrow
+  // grammar. The historical gate must do the same or it tests a different
+  // parser configuration than the live extension.
+  const low = r.txt.toLowerCase();
+  if (r.ch === "1449226651064991806") {
+    if (low.includes("muggzone-options") || low.includes("muggzone message"))
+      cfg.entry_no_verb = true;
+    if (low.includes("shabs-sky-alerts") || low.includes("eli-alerts"))
+      cfg.default_symbol = "SPX";
+  }
   let a = null, b = null;
   try { a = OLD.parseSignal(r.txt, cfg); } catch (e) {}
   try { b = NEW.parseSignal(r.txt, cfg); } catch (e) {}
+  const oa = !!(a && a.action), na = !!(b && b.action);
+  if (oa) oldActions++;
+  if (na) newActions++;
   const of_ = !!(a && a.fire && a.action === "OPEN");
   const nf = !!(b && b.fire && b.action === "OPEN");
   if (of_) oldFire++;
@@ -139,6 +178,16 @@ for (const r of rows) {
   else if (of_ && !nf) lost.push([a.symbol, a.strike, one(r.txt), r.room]);
   else if (of_ && nf && String(a.expiry) !== String(b.expiry))
     expiry.push([b.symbol, b.strike, a.expiry + " -> " + b.expiry, one(r.txt)]);
+  const core = s => s ? [s.action || null, s.symbol || null, s.strike ?? null,
+    s.side || null, s.expiry || null, s.limit ?? null, s.pct ?? null,
+    !!s.fire].join("|") : "";
+  const detail = s => s ? `${s.action || "-"} ${s.symbol || "?"}` +
+    `${s.strike != null ? " " + s.strike : ""}` +
+    `${s.side ? " " + s.side : ""}${s.expiry ? " " + s.expiry : ""}` : "none";
+  if (!oa && na) decisionGained.push([detail(b), r.at, one(r.txt), r.room]);
+  else if (oa && !na) decisionLost.push([detail(a), r.at, one(r.txt), r.room]);
+  else if (oa && na && core(a) !== core(b))
+    decisionChanged.push([detail(a) + " -> " + detail(b), r.at, one(r.txt), r.room]);
 }
 
 // ---- report ----------------------------------------------------------------
@@ -153,6 +202,9 @@ console.log("  entries fired NOW    : %d   (%s%d)", newFire,
             newFire - oldFire >= 0 ? "+" : "", newFire - oldFire);
 console.log("  gained: %d   lost: %d   expiry changed: %d",
             gained.length, lost.length, expiry.length);
+console.log("  all actions BEFORE/NOW: %d / %d", oldActions, newActions);
+console.log("  action gained: %d   lost: %d   changed: %d",
+            decisionGained.length, decisionLost.length, decisionChanged.length);
 console.log("  JUNK TICKERS: %d %s", junk.length,
             junk.length ? "  <-- THIS IS THE ONE THAT MATTERS" : "");
 
@@ -171,6 +223,12 @@ dump("LOST — entries that no longer fire", lost,
      r => (r[0] + "").padEnd(7) + String(r[1]).padEnd(6) + shortRoom(r[3]).padEnd(27) + "| " + r[2]);
 dump("EXPIRY CHANGED — same trade, different date", expiry,
      r => (r[0] + "").padEnd(7) + String(r[1]).padEnd(6) + r[2].padEnd(22) + "| " + r[3]);
+dump("ACTION GAINED — any newly recognized entry/management message", decisionGained,
+     r => r[1] + "  " + r[0].padEnd(34) + shortRoom(r[3]).padEnd(27) + "| " + r[2]);
+dump("ACTION LOST — any message the new rule no longer acts on", decisionLost,
+     r => r[1] + "  " + r[0].padEnd(34) + shortRoom(r[3]).padEnd(27) + "| " + r[2]);
+dump("ACTION CHANGED — action or contract identity changed", decisionChanged,
+     r => r[1] + "  " + r[0].padEnd(48) + shortRoom(r[3]).padEnd(27) + "| " + r[2]);
 
 console.log("\n" + "=".repeat(76));
 if (junk.length) {

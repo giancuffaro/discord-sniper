@@ -103,6 +103,9 @@ def run(day):
     js_files.append(os.path.join(HERE, "test_resolve.js"))
     for path in js_files:
         steps.append(_run("JS " + os.path.basename(path), [node, path], 90))
+    steps.append(_run("Historical parser corpus gate",
+                      [node, os.path.join(HERE, "parser_gate.js"), "--show", "40"],
+                      180))
     steps.append(_run("Python regression suite",
                       [sys.executable, "-m", "unittest", "discover",
                        "-p", "test_*.py", "-v"], 300))
