@@ -1600,6 +1600,20 @@ class Book:
                         continue
                     if p_h.get("strike") is not None and row.get("strike") is not None and abs(float(row["strike"]) - float(p_h["strike"])) > 0.001:
                         continue
+                    # F08 (9/11 audit): symbol+strike alone can match a
+                    # DIFFERENT contract entirely — a cancelled CALL used to
+                    # be declared filled because the account happened to
+                    # hold a PUT at the same strike. Side and expiry now
+                    # have to agree too, whenever both this position and
+                    # the broker's row report them.
+                    _rs = str(row.get("side") or "").upper()
+                    _ps = str(p_h.get("side") or "").upper()
+                    if _ps and _rs and _rs != _ps:
+                        continue
+                    _re = str(row.get("expiry") or "")
+                    _pe = str(p_h.get("expiry") or "")
+                    if _pe and _re and _re != _pe:
+                        continue
                     got = int(row.get("qty") or 0)
                     px = row.get("fill")
                     if got > 0:
@@ -3695,6 +3709,14 @@ class Book:
                             continue
                         _rs = str(_r.get("side") or "").upper()
                         if _rs and p.get("side") and _rs != str(p["side"]).upper():
+                            continue
+                        # F08 (9/11 audit): side was checked but expiry
+                        # wasn't — a same-strike, same-side position in a
+                        # LATER expiry could still be mistaken for this
+                        # one's fill.
+                        _re = str(_r.get("expiry") or "")
+                        _pe = str(p.get("expiry") or "")
+                        if _re and _pe and _re != _pe:
                             continue
                         _q = abs(int(float(_r.get("qty") or 0)))
                         if _q <= 0:

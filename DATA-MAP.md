@@ -208,11 +208,11 @@ were on which day.
 | Tag | n | Example | Good for |
 |---|---|---|---|
 | `<skipped>` | 7,334 | `⚠ reader is running but its message watcher is detached — reloading that room` | Mostly plumbing. 1,655 detached-watcher, 1,080 "tab shows a different page", 347 audio-blocked, 84 "no Whop tab open". **This is why a room went quiet.** |
-| `<update>` | 4,238 | `🎙 auto-listening to (2928) Discord | #🔔︱shoofs-trade-alerts` | Voice listening start/stop, room heartbeats. |
+| `<update>` | 4,238 | `🎙 auto-listening to (2928) Discord / #🔔︱shoofs-trade-alerts` | Voice listening start/stop, room heartbeats. |
 | `<ignored>` | 2,461 | `entries only — the ratchet owns the exit; Midas (Admin)'s exit on MARA noted, not traded` | **The full EXIT-IGNORED record** (trades.log has only 2). Also 1,220 "that's a REPLY quoting an older message". |
 | `<sent>` | 963 | see above | **Only 345 are orders** (197 distinct). The other 618 are `ROOMS` / `ROOM HOURS` tab management. Filter on the text starting with `OPEN` or `(Swing) OPEN`. |
 | `<failed>` | 296 | `OPEN RKLB 75C 10/16 @ 3.10 x5 — cranmer00 · ZTRADEZ … — the bridge refused it: HTTP 502 swing trades are paused` | Alert + room + caller + their price + the exact refusal. |
-| `<voice>` | 206 | `🎙 (2788) Discord | #☀️｜daytrades-scalps | : I'm already even gonna try to` | |
+| `<voice>` | 206 | `🎙 (2788) Discord / #☀️｜daytrades-scalps : I'm already even gonna try to` | |
 | `<stopped>` | 171 | `META · 👑KingBeeAri🐝 — bid hit 3.80, at or under your 3.80 stop. Selling 1.` | Stop-outs **with the caller attached** — trades.log's `STOPPED` has no caller. |
 | `<fired>` | 127 | `META · 👑KingBeeAri🐝 — filled 1.0 at 4.11 · META @ 654.77 — cost $411` | Fills **with caller, room and the underlying price at fill**. |
 
@@ -450,7 +450,7 @@ The `.~lock.*.xlsx#` files mean a workbook is open in LibreOffice — ignore the
 |---|---|---|---|
 | `bridge.log` | 35,507 | from 2026-09-10 09:32 | **LIVE** — console echo of everything, far noisier than `trades.log` |
 | `bridge.log.1` | 343,698 | 2026-08-27 → 2026-09-10 | frozen (27 MB) |
-| `reads.log` | 593 | 2026-09-08 → 2026-09-10 | the **reader tape** — what the ears heard and the eyes saw. Format `ts  🎙/📸 room  speaker | what the parser made of it | what was heard`. 407 voice, 19 screenshot. Read it with `python3 reads.py`. |
+| `reads.log` | 593 | 2026-09-08 → 2026-09-10 | the **reader tape** — what the ears heard and the eyes saw. Format `ts  🎙/📸 room  speaker` then the parser's reading, then what was heard, pipe-separated. 574 voice, 19 screenshot. Read it with `python3 reads.py`. |
 | `deadman.log` | 141 | from 2026-09-07 | **LIVE** — thread deaths |
 | `webull_api.log` + 18 rotated `webull_api.log.<date>_<hh>` | 299 current | 2026-09-09 → 2026-09-11 | **LIVE.** SDK debug. **Contains the Webull app key in plaintext (`x-app-key`). Never paste this file anywhere.** |
 | `webull_data_streaming_sdk.log` | 8,797 | to 2026-09-09 | streaming SDK errors; the SDK is not installed on purpose |
@@ -469,7 +469,7 @@ em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
 | File | What is inside |
 |---|---|
 | `extension/rooms.txt` | **THE room list.** 74 rooms, one per line: `id\|url\|label\|group\|on\|off\|lapsed`. **31 on, 38 off, 5 lapsed** right now, plus comment lines carrying the one-line reason a room is off. Data, not code — editing it does not reload the extension. |
-| `extension/optionable.txt` | 6,386 symbols the bot may trade, regenerated from tastytrade 2026-09-08. A ticker missing here is why an alert was skipped. |
+| `extension/optionable.txt` | 6,370 symbols the bot may trade, regenerated from tastytrade 2026-09-08. A ticker missing here is why an alert was skipped. |
 | `chan_names.json` | 275 `channel id → "Server: #channel"` entries. **Last-write-wins**, so a renamed channel shows only its newest name, and several read `"… : No Access"` because the name was never learned. |
 | `samples.txt` | 481 lines of parser samples, fed to `parser.js` by the JS tests. |
 | `corpus/` | 5 files, `<channelid>-<date>.txt`, 1,976 lines total (nitro 1,322, futures-alerts 391, equity 185, ei-alerts 41, day-trades 37), 2024-12 → 2026-08. Room-language samples for the parser gate. |

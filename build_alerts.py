@@ -131,6 +131,9 @@ def _taken(ledger_keys):
                 "iv": c.get("iv") or "", "live": c.get("live") or "", "coid": coid,
                 "ledger_key": lk, "in_ledger": bool(lk and lk in ledger_keys),
                 "source": "telemetry", "raw": "",
+                "caller_strike": "", "tier": "T-telemetry", "confidence": "high",
+                "how_recovered": "telemetry.csv — the bot's own record of an "
+                                 "order it sent", "source_line": "",
             })
     return rows
 
@@ -366,8 +369,16 @@ def _labels():
 # five are refused here.
 # ---------------------------------------------------------------------------
 LOGFILE = os.path.join(HERE, "trades.log")
-LINK_WINDOW_S = 300          # an arm fires within seconds of its alert
-SAME_ALERT_S = 900           # one room call, all its log lines, is one alert
+# The round-number hunt's own window is 10 minutes, so that is how far back an
+# arm may reach for the call that triggered it. MEASURED on this log: at 600 s
+# the same-direction rule and a direction-blind rule link exactly the same 116
+# arms — no conflict exists that close in. Widen it and the guard starts
+# earning its keep: at 30 minutes a direction-blind match makes FIVE links a
+# same-direction match refuses, and every one of those five would have written
+# a CALL contract onto a PUT alert. That is why the rule is mandatory and not
+# a tiebreak.
+LINK_WINDOW_S = 600
+SAME_ALERT_S = 120           # NO-OTM is printed at order time, beside its alert
 
 RE_ORDER_IN = re.compile(
     r"^ORDER IN\s+(BUY|SELL)\s+(\d+)\s+([A-Z][A-Z.]{0,5})\s+([\d.]+)([CP])\s+"
@@ -387,6 +398,19 @@ RE_REFUSED = re.compile(
 RE_NO_OTM = re.compile(
     r"^NO-OTM\s+([A-Z][A-Z.]{0,5}):\s+their\s+([\d.]+)([CP])\s+was\s+\w+"
     r".*?->\s+nearest qualifying\s+([\d.]+)([CP])")
+
+
+def _miss_label(msg):
+    """The reason bucket misses.py would give this line — ONE vocabulary for
+    both readers, so "BUYING POWER too small" never also exists as "refused"."""
+    try:
+        from misses import CATS
+    except ImportError:
+        return "REFUSED"
+    for label, pat in CATS:
+        if pat.search(msg):
+            return label
+    return "REFUSED"
 
 
 def _ts(line_ts):
@@ -480,7 +504,7 @@ def _log_events():
                                    side="CALLS" if m.group(4) == "C" else "PUTS",
                                    strike=m.group(3), expiry_raw=exp_raw,
                                    expiry=_resolve_expiry(exp_raw, date),
-                                   caller=m.group(2), outcome="refused",
+                                   caller=m.group(2), outcome=_miss_label(msg),
                                    tier="A", confidence="high",
                                    how="the REFUSED line's own contract"))
                 continue
@@ -491,7 +515,7 @@ def _log_events():
                              "symbol": m.group(1).upper(),
                              "side": "CALLS" if m.group(2) == "CALL" else "PUTS",
                              "level": m.group(4), "raw": msg[:300],
-                             "outcome": "PULLBACK armed — no resolution in the log"})
+                             "outcome": "PULLBACK armed (no resolution in the log)"})
                 continue
 
             m = RE_PB_SKIP.match(msg) or RE_PB_HIT.match(msg)
@@ -502,8 +526,8 @@ def _log_events():
                             and a["level"] == m.group(2)
                             and 0 <= ts - a["ts"] <= 3600
                             and a["outcome"].startswith("PULLBACK armed")):
-                        a["outcome"] = ("PULLBACK touched — entry attempted" if hit
-                                        else "PULLBACK never hit — skipped")
+                        a["outcome"] = ("PULLBACK touched" if hit
+                                        else "PULLBACK never hit")
                         break
                 continue
 
@@ -688,9 +712,8 @@ def _apply_log(rows):
 # Which of two log records of the SAME contract on the SAME day is the one to
 # keep? The one furthest down the pipeline: an ORDER IN says more than the AI
 # READ that produced it, and a resolved pullback says more than an armed one.
-_OUTCOME_RANK = {"alert read": 0, "PULLBACK armed — no resolution in the log": 1,
-                 "PULLBACK never hit — skipped": 2, "refused": 3,
-                 "PULLBACK touched — entry attempted": 4, "order-sent": 5}
+_OUTCOME_RANK = {"alert read": 0, "PULLBACK armed (no resolution in the log)": 1,
+                 "PULLBACK never hit": 2, "PULLBACK touched": 4, "order-sent": 5}
 
 
 def _keep_richer(row, e):
