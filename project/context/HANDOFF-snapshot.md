@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (13:50) — ext 3.8.9. Exhaustive audit repair deployed: durable order idempotency, explicit broker-read validity, full-contract position identity with pre-submit quantity attribution, fill-confirmed exits with partial-fill reconciliation, persistent generation-safe stop watchers, bot-owned order cleanup, retrying overnight protection, restart dispatch lock, shared market calendar, corrected reporting/tape/backtests, hardened launchers and loopback Origin checks. Chrome maintenance work is serialized; immediate MutationObserver alert reads remain. Full Python/JavaScript suites pass; parser replay 11,605 messages = 719/719, zero gained/lost/junk. Whop extension is installed and Topstep is disabled. SECURITY: rotated Webull logs and runtime state are no longer tracked; the exposed key remains in public Git history and must still be rotated at Webull by G.
+Last updated: 2026-09-11 (14:58) — extension source 3.8.10; the two assigned Chrome profiles were still running 3.8.4 and waiting on that old build’s close-only reload rule. A recovered full-day replay found four calls from before Chrome started and three later review gaps (shabs SPX, Midas AAPL two-message fill, MuggZone RKLB typo). The parser now covers those formats, rejects shabs price recaps and unusual-flow commentary, serializes verdict writes, batches captures, preserves exact live parser inputs/history markers, and prevents unassigned Chrome profiles from reading rooms or overwriting lane exports. Full Python/JavaScript suites and the 11,605-message parser gate pass. Whop had ten current records and no alert-shaped miss. Topstep remains disabled.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -28,7 +28,7 @@ Last updated: 2026-09-11 (13:50) — ext 3.8.9. Exhaustive audit repair deployed
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension v3.8.9 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
+- The machine: Chrome MV3 extension source v3.8.10 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
 - Accounts (Webull, one app key), read live 9/10 16:45 (close-out): MARGIN
   ENIQGUV4 $0.83, flat (day P&L −$671 net of fees: the BOT was +$46 on 7
   one-lot trades, G's 21 hand round-trips −$706 — HANDOFF-LOG 9/10), CASH MOI680 ($0.55), FUTURES R8IEC
@@ -285,8 +285,11 @@ RESTARTS / SAFETY
   stop arm); gone = closed "at a price I never saw". Mid-market code
   updates self-apply at the first safe window (no bids/hunts/closes in flight);
   a dispatch gate closes the final check-to-restart race;
-  checkBuild defers an extension reload while market is open with
-  positions in flight. Resting stops at Webull guard every gap.
+  checkBuild reloads an extension build as soon as the update is ready; no
+  market-close delay remains in current source. A copy with no explicit
+  Discord/Whop lane only checks for its own build update and otherwise stays
+  inert: it does not read rooms, manage tabs, or export stale data over a live
+  lane. Resting stops at Webull guard every gap.
 - POSTCHECK after every trade: book vs account, stop resting, quote bus
   fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
 - GIT: settings.json holds every key, gitignored, never committed, never
