@@ -2830,13 +2830,19 @@ class Book:
         orphaned order 417-blocked every later exit. Acceptance is not a
         fill. This waits for the real fill, re-prices ONCE at the fresh bid
         if it has to, and tells the truth when it can't get out."""
+        remaining = int(qty)
+        filled_total = 0
+        fill_value = 0.0
         for _attempt in (0, 1):
-            r = self._sell_retry(wb, key, sym, side, strike, expiry, qty,
+            r = self._sell_retry(wb, key, sym, side, strike, expiry, remaining,
                                  ref_price=ref, urgent=True)
             oid = r.get("order_id")
             px_fallback = r.get("limit") or ref
             if not oid:
-                return True, px_fallback        # untrackable — old behavior
+                return False, None       # acceptance without an id is not a fill
+            order_filled = 0
+            order_avg = None
+            terminal = None
             deadline = time.time() + 25
             while time.time() < deadline:
                 time.sleep(3)
@@ -2845,11 +2851,21 @@ class Book:
                 except Exception:               # noqa: BLE001
                     continue
                 s = str(state or "").lower()
-                if s.startswith("fill") or (fq and int(fq) >= int(qty)):
-                    return True, (avg or px_fallback)
+                order_filled = max(order_filled, int(fq or 0))
+                if avg:
+                    order_avg = float(avg)
+                if s.startswith("fill") or order_filled >= remaining:
+                    terminal = "filled"
+                    break
                 if s in ("dead", "cancelled", "canceled", "rejected",
                          "failed", "expired"):
-                    break                       # go again at the fresh bid
+                    terminal = "dead"
+                    break
+            if terminal == "filled":
+                got = min(remaining, max(order_filled, remaining))
+                filled_total += got
+                fill_value += got * float(order_avg or px_fallback)
+                return True, fill_value / filled_total
             try:
                 wb.cancel(oid)
             except Exception:                   # noqa: BLE001
@@ -2863,8 +2879,19 @@ class Book:
             # ORIGINAL qty is exactly how one real fill became two real
             # sells. Read it.
             _cx = self._await_cancel(wb, oid)
-            if _cx and str(_cx[0]) == "filled":
-                return True, (_cx[1] or px_fallback)
+            if not _cx:
+                return False, None       # may still fill; never overlap another sell
+            _state, _fq, _avg = _cx
+            order_filled = max(order_filled, int(_fq or 0))
+            if _avg:
+                order_avg = float(_avg)
+            got = min(remaining, order_filled)
+            if got:
+                filled_total += got
+                fill_value += got * float(order_avg or px_fallback)
+                remaining -= got
+            if str(_state) == "filled" or remaining <= 0:
+                return True, fill_value / max(1, filled_total)
             try:
                 _a, _b, _ = wb.ask_bid(occ)
                 if _b and float(_b) > 0:
@@ -3558,7 +3585,7 @@ class Book:
                 # exactly what killed the 8/12 META and LYFT stops, one second
                 # after the pull. So wait for the broker to actually let go.
                 _r = self._await_cancel(wb, oid)
-                _final, _favg = _r if _r else (None, None)
+                _final, _fq, _favg = _r if _r else (None, 0, None)
                 # THE STOP BEAT THE PULL (9/9, META 655C): the resting stop
                 # triggered on the same bid tick the watchdog saw, and it was
                 # already FILLED by the time the cancel arrived. Before this,
@@ -3601,7 +3628,7 @@ class Book:
 
     def _await_cancel(self, wb, oid, tries=6, pause=0.5):
         """Block until the broker says that order is really gone (dead/filled),
-        up to ~3s. Returns ("dead"|"filled", avg_fill) when confirmed, None
+        up to ~3s. Returns ("dead"|"filled", filled_qty, avg_fill) when confirmed, None
         when not — truthy exactly when confirmed. Every existing caller ignores
         the value; claim() reads it to tell a cancelled stop from a FILLED one
         (9/9). Never raises — an unconfirmed cancel still lets the sell try;
@@ -3614,7 +3641,7 @@ class Book:
             except Exception:                           # noqa: BLE001
                 return None
             if st in ("dead", "filled"):
-                return (st, _avg)
+                return (st, _fq, _avg)
             time.sleep(pause)
         return None
 
