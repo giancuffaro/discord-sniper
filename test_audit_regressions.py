@@ -272,6 +272,35 @@ class AuditRegressionTests(unittest.TestCase):
         self.assertEqual(pulled, 1)
         self.assertEqual(broker.cancelled, ["owned"])
 
+    def test_preexisting_exact_contract_is_not_a_new_fill(self):
+        class Broker:
+            last_read_ok = True
+
+            def cancel(self, _oid):
+                return True
+
+            def order_status(self, _oid):
+                return "dead", 0, None
+
+            def positions(self):
+                return [{"symbol": "SPY", "strike": 700, "side": "C",
+                         "expiry": "2026-09-18", "qty": 1, "fill": 1.10}]
+
+        book = positions.Book(Broker(), lambda _line: None)
+        book.fill_seconds = 0
+        key = positions.key_of("room", "SPY", 700, "C", "2026-09-18")
+        book._pos[key] = {
+            "key": key, "state": positions.WORKING, "order_id": "bid-1",
+            "occ": "SPY260918C00700000", "symbol": "SPY", "strike": 700,
+            "side": "C", "expiry": "2026-09-18", "want_qty": 1,
+            "qty": 0, "limit": 1.00, "live": True, "paper": False,
+            "blind": False, "account_qty_before": 1, "reserved": 100.0,
+        }
+
+        book._watch_fill(key)
+        self.assertEqual(book.state_of(key), positions.NOFILL)
+        self.assertEqual(book.qty_of(key), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

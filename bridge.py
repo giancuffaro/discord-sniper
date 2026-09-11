@@ -3459,8 +3459,10 @@ def _place_impl(order):
                 _account_before = None
                 if live_order and BOOK is not None:
                     try:
-                        _rows_before = broker_positions()
-                        if _POS.get("ok_live"):
+                        # This must be a fresh read immediately before submit;
+                        # an eight-second UI cache can predate another fill.
+                        _rows_before = client.positions() or []
+                        if getattr(client, "last_read_ok", False):
                             _account_before = BOOK.account_contract_position(
                                 _rows_before, order)[0]
                     except Exception:                   # noqa: BLE001
