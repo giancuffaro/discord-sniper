@@ -179,6 +179,17 @@ def _recent_orders(wb, account_id=None):
     win = _RO_WIN.get(acct)
     if win:
         fn, args, kw = win
+        # The winning SDK signature is cached, but its date values cannot be:
+        # this process runs across midnight. Refresh the same positional or
+        # keyword shape before every call so today's fills remain visible.
+        today = dt.date.today()
+        start = (today - dt.timedelta(days=1)).isoformat()
+        end = (today + dt.timedelta(days=1)).isoformat()
+        if len(args) == 3:
+            args = (acct, start, end)
+        if "start_date" in kw or "end_date" in kw:
+            kw = dict(kw, start_date=start, end_date=end)
+        _RO_WIN[acct] = (fn, args, kw)
         try:
             wb._pace()
             res = fn(*args, **kw)

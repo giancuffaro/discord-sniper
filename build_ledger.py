@@ -201,6 +201,9 @@ def _dedupe_key(r, date):
         # so it carries none of the "wallet rows have no time" problem
         # that kept time out of this key in the first place.
         str(r.get("expiry") or "").strip(),
+        # Separate accounts can fill the same contract at the same price.
+        # They are distinct trades even when every contract field matches.
+        str(r.get("account_id") or r.get("account") or r.get("live") or ""),
         price,
     )
 
