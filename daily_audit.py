@@ -26,7 +26,10 @@ OUT_DIR = os.path.join(HERE, "daily-audits")
 def _run(label, command, timeout=240):
     started = time.time()
     try:
-        p = subprocess.run(command, cwd=HERE, text=True, encoding="utf-8",
+        env = dict(os.environ)
+        env["PYTHONIOENCODING"] = "utf-8"
+        p = subprocess.run(command, cwd=HERE, env=env,
+                           text=True, encoding="utf-8",
                            errors="replace", capture_output=True,
                            timeout=timeout)
         output = (p.stdout or "") + (p.stderr or "")

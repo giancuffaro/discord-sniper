@@ -1,0 +1,35 @@
+DISCORD SNIPER DAILY AUDIT — 2026-09-11
+generated: 2026-09-11T15:07:37.196208-04:00
+status: ATTENTION
+silent drops: 0
+possible missed entries: 0
+coverage warnings: 0
+failed checks: daily message replay
+
+MESSAGE REPLAY
+REPLAY CHECK for 2026-09-11 � exports: signal-room-chat Sep-11-2026 (discord).txt, signal-room-chat Sep-11-2026 (whop).txt
+Traceback (most recent call last):
+  File "C:\Users\Hulk\Desktop\discord-sniper\replay_check.py", line 365, in <module>
+    main()
+  File "C:\Users\Hulk\Desktop\discord-sniper\replay_check.py", line 346, in main
+    print("\n%s � %d msgs, %d actionable, %d judged, %d SILENT"
+  File "C:\Users\Hulk\AppData\Local\Programs\Python\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 21-23: character maps to <undefined>
+
+REGRESSION CHECKS
+PASS  JS test_bare_entry.js  0.08s
+PASS  JS test_buy_verb.js  0.09s
+PASS  JS test_dotdate.js  0.09s
+PASS  JS test_elite.js  0.08s
+PASS  JS test_exits.js  0.09s
+PASS  JS test_optionable.js  0.05s
+PASS  JS test_owls_jonkian.js  0.09s
+PASS  JS test_percon.js  0.09s
+PASS  JS test_pivot.js  0.08s
+PASS  JS test_plan_entry.js  0.08s
+PASS  JS test_spreads.js  0.08s
+PASS  JS test_word_order.js  0.09s
+PASS  JS test_resolve.js  0.10s
+PASS  Python regression suite  29.51s

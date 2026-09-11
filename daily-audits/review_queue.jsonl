@@ -1,0 +1,1 @@
+{"coverage_warnings": 0, "created_at": "2026-09-11T15:07:37.200113-04:00", "date": "2026-09-11", "failed_checks": ["daily message replay"], "fingerprint": "4baf3ef01970e8f1", "generated_at": "2026-09-11T15:07:37.196208-04:00", "possible_missed": 0, "report": "daily-audits\\AUDIT-2026-09-11.txt", "silent_drops": 0, "status": "attention"}
