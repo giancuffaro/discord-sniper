@@ -8,11 +8,12 @@ The caller's posted premium is the hypothetical fill when available. Our 5/3/5 r
 | 10:25 TSLA | Platinum nitro | $1.79 | caller posted | full $1.24 (-30.7%) | market bid at caller exit | $1.79 | +0.0% / +0 |
 | 10:37 NVDA | Platinum nitro | $0.97 | caller posted | full $0.98 (+1.0%) | market bid at caller exit | $0.84 | -13.4% / -13 |
 | 12:01 HOOD | Honeydrip daytrades | $0.05 | first recorded ask; caller price absent | full -6.0% | caller-stated | $0.01 | -80.0% / -4 |
-| 12:40 CPS | Demon day-trades | $0.65 | real bot fill | unavailable | no paired caller exit | $0.65 | +0.0% / +0 |
+| 12:40 CPS | Demon day-trades | $0.65 | real fill = caller posted | unavailable | no paired caller exit | $0.65 | +0.0% / +0 |
 
 ## Result
 
 - Comparable ratchet paths: **5 of 34 observed**.
-- Our ratchet from caller-posted/available entry prices: **-28 per one-contract replay**.
+- Our ratchet on the **4 paths with a caller-posted entry**: **-24 per one-contract replay**.
+- Including the one no-price alert at its first recorded ask: **-28 across all 5 paths**.
 - Numeric caller full-exit results on this subset: **3 of 5**; missing caller exit prices prevent an honest aggregate caller P&L.
 - This assumes the caller's posted price filled. It measures trade management from their original entry, not whether that fill was executable for us.

@@ -69,7 +69,10 @@ def build(day):
             continue
         ratchet = policy._simulate(path, entry, event["occ"], True)
         caller, evidence = _caller_result(day, event, claims)
-        basis = ("real bot fill" if event.get("fill") is not None else
+        basis = ("real fill = caller posted" if event.get("fill") is not None
+                 and caller_entry is not None
+                 and abs(event["fill"] - caller_entry) < 0.005 else
+                 "real bot fill" if event.get("fill") is not None else
                  "caller posted" if caller_entry is not None else
                  "first recorded ask; caller price absent")
         compared.append((event, entry, basis, caller, evidence, ratchet))
@@ -84,12 +87,15 @@ def build(day):
             event["label"], event["source"].replace("|", "\\|"), entry,
             basis, caller, evidence, ratchet["exit"], ratchet["pct"], ratchet["pl"]))
     ratchet_sum = sum(row[-1]["pl"] for row in compared)
+    strict = [row for row in compared if row[0].get("caller_entry") is not None]
+    strict_sum = sum(row[-1]["pl"] for row in strict)
     numeric_caller = sum(1 for row in compared
                          if "unavailable" not in row[3])
     lines += ["", "## Result", "",
               "- Comparable ratchet paths: **%d%s**." % (
                   len(compared), " of %d observed" % total if total is not None else ""),
-              "- Our ratchet from caller-posted/available entry prices: **%+.0f per one-contract replay**." % ratchet_sum,
+              "- Our ratchet on the **%d paths with a caller-posted entry**: **%+.0f per one-contract replay**." % (len(strict), strict_sum),
+              "- Including the one no-price alert at its first recorded ask: **%+.0f across all %d paths**." % (ratchet_sum, len(compared)),
               "- Numeric caller full-exit results on this subset: **%d of %d**; missing caller exit prices prevent an honest aggregate caller P&L." % (numeric_caller, len(compared)),
               "- This assumes the caller's posted price filled. It measures trade management from their original entry, not whether that fill was executable for us."]
     out = os.path.join(HERE, "daily-reports",
