@@ -290,7 +290,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
-- THE RATCHET (settled 9/9, flat, no cheap tier): born stop −7.5%
+- THE RATCHET (5/3/5 since G's 9/10 "flip it", flat, no cheap tier): born stop −5%
   (strategy.stop_loss_pct) placed WITH the order as a combo bracket, rebased
   to the FILL if filled better, never at/above the fill, never inside the
   bid/ask. Arm at +3% → stop to BREAKEVEN; then every further +5% locks
