@@ -75,6 +75,45 @@ def export_for_day(day):
     return None
 
 
+def exports_for_day(day):
+    """Every lane export for ``day`` (Discord and Whop), newest per lane.
+
+    The split-profile exporter writes ``(discord)`` and ``(whop)`` files.
+    ``export_for_day`` predates that split and returns on the first filename,
+    which silently excluded the other lane from the daily miss audit.
+    """
+    fs = sorted(glob.glob(os.path.join(HERE, "DS Logs",
+                                       "signal-room-chat*.txt")))
+    matched = []
+    for f in fs:
+        m = re.search(
+            r"signal-room-chat (\w+-\d+-\d+)(?: \(([a-z]+)\))?\.txt$",
+            os.path.basename(f))
+        if not m:
+            continue
+        try:
+            from datetime import datetime
+            file_day = datetime.strptime(m.group(1), "%b-%d-%Y").date().isoformat()
+        except ValueError:
+            continue
+        if file_day == day:
+            matched.append(f)
+    if matched:
+        # If a legacy unsuffixed file and split-lane files coexist, the split
+        # files are the authoritative independent snapshots.
+        split = [f for f in matched if re.search(r" \((discord|whop)\)\.txt$", f)]
+        return split or matched
+    found = []
+    for f in fs:
+        try:
+            with open(f, encoding="utf-8", errors="replace") as fh:
+                if any(ln.startswith(day + " ") for ln in fh):
+                    found.append(f)
+        except OSError:
+            continue
+    return found
+
+
 def load(fn):
     msgs, dids = {}, []
     sec = None
@@ -183,11 +222,20 @@ def find_missed_entries(keep, parsed):
 
 
 def main():
-    fn = export_for_day(DAY) or newest_export()
-    if not fn:
+    fns = exports_for_day(DAY)
+    if not fns:
+        newest = newest_export()
+        fns = [newest] if newest else []
+    if not fns:
         print("no DS Logs export found")
         return
-    msgs, dids = load(fn)
+    msg_map, dids = {}, []
+    for fn in fns:
+        lane_msgs, lane_dids = load(fn)
+        for row in lane_msgs:
+            msg_map[(row[0], row[2], row[3][:100])] = row
+        dids.extend(lane_dids)
+    msgs = list(msg_map.values())
     blog = bridge_lines(DAY)
     per = defaultdict(lambda: {"msgs": 0, "actionable": 0, "judged": 0, "silent": []})
     keep = [(t, room, cid, text) for (t, room, cid, text) in msgs
@@ -223,7 +271,8 @@ def main():
         else:
             p["silent"].append((t, sig.get("action"), sym, body[:150]))
 
-    print("REPLAY CHECK for %s — export: %s" % (DAY, os.path.basename(fn)))
+    print("REPLAY CHECK for %s — exports: %s" %
+          (DAY, ", ".join(os.path.basename(f) for f in fns)))
     total_silent = 0
     for room, p in sorted(per.items(), key=lambda kv: -len(kv[1]["silent"])):
         if not p["actionable"]:
