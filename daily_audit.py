@@ -63,7 +63,12 @@ def _write_atomic(path, text):
 
 def _queue_attention(day, summary, report_path):
     path = os.path.join(OUT_DIR, "review_queue.jsonl")
-    fingerprint = hashlib.sha256(json.dumps(summary, sort_keys=True)
+    # generated_at changes on every manual rerun; fingerprint only the issue
+    # shape so the same day's unchanged evidence is one review item.
+    issue = {k: summary.get(k) for k in
+             ("status", "silent_drops", "possible_missed",
+              "coverage_warnings", "failed_checks")}
+    fingerprint = hashlib.sha256(json.dumps(issue, sort_keys=True)
                                  .encode("utf-8")).hexdigest()[:16]
     existing = set()
     try:

@@ -40,6 +40,20 @@ POSSIBLE MISSED ENTRIES: 3
         self.assertEqual(len(flags), 1)
         self.assertEqual(flags[0][3:6], ("AAPL", 335, "CALLS"))
 
+    def test_production_loaded_fill_shape_is_reported(self):
+        keep = [
+            ("10:00:00", "Midas", "1", "Midas: Loaded AAPL 335c 0days"),
+            ("10:01:00", "Midas", "1", "Midas: 1.46 on starters @here"),
+        ]
+        parsed = [
+            {"action": "PREPARE", "symbol": "AAPL", "strike": 335,
+             "side": "CALLS"},
+            {"action": "OPEN", "symbol": None, "limit": 1.46,
+             "matched": "fill confirmation on a loaded contract"},
+        ]
+        flags = find_missed_entries(keep, parsed, [], [])
+        self.assertEqual(len(flags), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
