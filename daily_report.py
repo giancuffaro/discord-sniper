@@ -244,6 +244,7 @@ def build(day):
 
     lines += ["", "## Detailed benchmarks", "",
               "- [Caller entry, trim, and exit evidence](CALLER-OUTCOMES-%s.md)" % day,
+              "- [Caller original entry versus our ratchet](CALLER-VS-RATCHET-%s.md)" % day,
               "- [Fixed stop versus live ratchet replay](RATCHET-COMPARE-%s.md)" % day]
 
     out = os.path.join(OUT_DIR, "REPORT-%s.md" % day)
