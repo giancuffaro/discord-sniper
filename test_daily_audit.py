@@ -1,10 +1,40 @@
+import os
+import tempfile
 import unittest
 
 from daily_audit import summarize_replay
+import replay_check
 from replay_check import find_missed_entries
 
 
 class DailyAuditTests(unittest.TestCase):
+    def test_load_keeps_raw_messages_when_live_parser_is_partial(self):
+        content = """=== RAW MESSAGES ===
+2026-09-11 09:31:00  [Morning #1]  OPEN AAPL 100C @ 1.00
+2026-09-11 09:32:00  [Second #2]  OPEN MSFT 200C @ 2.00
+=== LIVE PARSER ===
+2026-09-11 09:31:00  [Morning #1]  OPEN AAPL 100C @ 1.00
+=== DECISIONS ===
+2026-09-11 09:31:01  [Morning #1]  SENT AAPL 100C
+"""
+        old_day = replay_check.DAY
+        path = None
+        try:
+            replay_check.DAY = "2026-09-11"
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", delete=False, suffix=".txt"
+            ) as handle:
+                handle.write(content)
+                path = handle.name
+            messages, decisions = replay_check.load(path)
+            self.assertEqual({m[1] for m in messages}, {"Morning", "Second"})
+            self.assertEqual(len(messages), 2)
+            self.assertEqual(len(decisions), 1)
+        finally:
+            replay_check.DAY = old_day
+            if path and os.path.exists(path):
+                os.unlink(path)
+
     def test_summary_counts_failures_and_coverage(self):
         text = """COVERAGE WARNING: discord empty
 TOTAL silent drops: 2  (actionable)

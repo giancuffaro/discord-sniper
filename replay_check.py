@@ -186,7 +186,12 @@ def load(fn):
                 m = RE_DID.match(ln)
                 if m and m.group(1) == DAY:
                     dids.append(m.groups()[1:])
-    return list((parser_msgs or msgs).values()), dids
+    # LIVE PARSER output can restart during the day and then contain only the
+    # latest browser session.  RAW is the durable full-day capture, so keep it
+    # and overlay parser-enriched copies of matching messages when available.
+    combined = dict(msgs)
+    combined.update(parser_msgs)
+    return list(combined.values()), dids
 
 
 def bridge_lines(day=None):
