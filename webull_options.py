@@ -1162,8 +1162,19 @@ class WebullOptions:
                 except TypeError:
                     continue
                 except Exception as e:                  # noqa: BLE001
+                    # THROTTLED = STOP (9/11 14:40 autopilot, the CPS fill):
+                    # a 429 on the remembered winner used to fall into the
+                    # full hunt — crypto/event/futures snapshot × 7 shapes,
+                    # 22 requests in 6s, every one another 429 into a server
+                    # that just said "stop". One 429 ends the hunt.
+                    if "429" in str(e) or "TOO_MANY" in str(e).upper():
+                        raise Refused("429 Webull quote throttle; no stock "
+                                      "price for %s right now" % sym) from e
                     errors.append("%s: %s" % (name, str(e)[:100]))
                     continue
+                if getattr(res, "status_code", 200) == 429:
+                    raise Refused("429 Webull quote throttle; no stock "
+                                  "price for %s right now" % sym)
                 if getattr(res, "status_code", 200) != 200:
                     errors.append("%s: HTTP %s" % (name, getattr(res, "status_code", "?")))
                     continue
