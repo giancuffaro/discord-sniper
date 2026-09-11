@@ -172,7 +172,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum day-trades|Platinum Trading|on
 1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum ei-alerts|Platinum Trading|on
 # CUT 9/7 (Platinum equity) — 203 captured messages, 4 fires, ZERO entries — MrMTrades posting SWING ideas on SHARES, no strike/expiry. Fails the no-swings, options-only, and no-watchlist rules at once.
-983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity|Platinum Trading|off
+983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity|Platinum Trading|on
 
 # DO NOT ADD 911389321993523210 (Platinum "lottos") — it is Demon Alerts
 # mirroring the ZTRADEZ demon room already listed above. Adding it = the
@@ -332,7 +332,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # xephyr-alerts — SPX iron condors ("Sell 7680C Buy 7685C Sell 7595P Sell
 # 7590P Credit - 1.90"). Two reasons off: multi-leg spreads are refused by
 # design, and SPX has no broker connected.
-1315504529898209310|https://discord.com/channels/722872384800948227/1315504529898209310|Xephyr Alerts|Low Key Stonks|off|spreads + SPX
+1315504529898209310|https://discord.com/channels/722872384800948227/1315504529898209310|Xephyr Alerts|Low Key Stonks|on|spreads + SPX
 # CHIKA — ON, READ-ONLY (9/10, G walked me through her whole grammar).
 # She trades ONLY the NASDAQ and writes the last digits of the level:
 #   "short 195 pivot"  = NQ 29,195 short      "got a short 230"  = 29,230
