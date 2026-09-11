@@ -15,8 +15,10 @@ replays 5/3/5 against the recorded Tastytrade bid path and places the caller's s
 exit beside it. On the five taped 9/11 paths: NVDA 2.15 ratchet -$11; TSLA 1.79 flat versus
 caller -30.7%; NVDA 0.97 ratchet -$13 versus caller +1%; HOOD had no caller price, so first ask
 0.05 ratchet -$4 versus stated -6%; CPS real 0.65 fill ratchet replay flat versus actual +$5.
-Four paths with caller-posted entries total -$24; adding HOOD at its first ask (caller price
-absent) makes all five -$28. Only three caller
+CORRECTION 17:40: CPS was actually $0.65->$0.70, +$5. The first report displayed its flat quote
+replay instead of broker truth. Filled trades now always override simulations, with a regression
+test. Four caller-entry paths total -$19; adding HOOD at its first ask (caller price absent) makes
+all five -$23. Only three caller
 full exits have numeric results, so no invented aggregate caller P&L. All regressions pass; audit
 ATTENTION remains only for the known eight silent records and one contextual miss.
 

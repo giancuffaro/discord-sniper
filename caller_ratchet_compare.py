@@ -55,6 +55,16 @@ def _caller_result(day, event, claims):
     return "%s exit posted; price unavailable" % scope, row.get("basis") or "caller-stated"
 
 
+def _our_result(event, entry, replay):
+    """Broker truth wins for a filled trade; otherwise use the simulation."""
+    if event.get("actual") is not None:
+        pl = event["actual"]
+        pct = pl / (entry * 100.0) * 100.0 if entry else None
+        return event.get("actual_exit"), pct, pl, "broker-confirmed actual"
+    return (replay["exit"], replay["pct"], replay["pl"],
+            "quote-path replay")
+
+
 def build(day):
     quotes = policy._quotes(day)
     claims = _claims(day)
@@ -75,17 +85,8 @@ def build(day):
                  "real bot fill" if event.get("fill") is not None else
                  "caller posted" if caller_entry is not None else
                  "first recorded ask; caller price absent")
-        if event.get("actual") is not None:
-            shown_exit = event.get("actual_exit")
-            shown_pl = event["actual"]
-            shown_pct = (shown_pl / (entry * 100.0) * 100.0
-                         if entry and shown_pl is not None else None)
-            ratchet_basis = "broker-confirmed actual"
-        else:
-            shown_exit = ratchet["exit"]
-            shown_pl = ratchet["pl"]
-            shown_pct = ratchet["pct"]
-            ratchet_basis = "quote-path replay"
+        shown_exit, shown_pct, shown_pl, ratchet_basis = _our_result(
+            event, entry, ratchet)
         compared.append((event, entry, basis, caller, evidence, ratchet,
                          shown_exit, shown_pct, shown_pl, ratchet_basis))
 
