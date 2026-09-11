@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (17:40) — 34 entries: 5 priced, 21 unpriced options, 8 futures. Market-entry ratchet -$18 vs fixed -$39; four caller-entry paths -$19 (CPS +$5). Caller ledger: 29 claims; tape persists.
+Last updated: 2026-09-11 (18:15) — 34 entries: 5 priced, 21 unpriced options, 8 futures. Ratchet -$18 vs fixed -$39; caller-entry paths -$19; CPS +$5. Caller ledger: 29 claims. Exit replay clean; tape persists.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -314,10 +314,10 @@ RESTARTS / SAFETY
   `daily-reports/REPORT-<date>.md`: configured and speaking rooms, messages,
   decisions, sent/refused/stale/other skips, recovered unique gaps, real
   fills and P&L, postmortem entry/exit comparison, and room activity. Relay
-  duplicates stay visible in the raw replay but count once in recovered
-  operational totals. This is controlled learning: discoveries become
-  parser fixtures and regression tests after review; Discord text never
-  edits code or trading rules by itself. Exact caller-vs-system P&L is shown
+  duplicates stay raw but count once. The 15-minute Codex heartbeat
+  `Discord Sniper guard` passively checks readers, feeds, retry storms,
+  processes, logs and ledger agreement; it stays quiet unless state changes.
+  Findings become tested fixtures; chat never edits source. Caller-vs-system P&L is shown
   only when caller entry and exit can be paired with contemporaneous option
   quotes; missing exits remain unavailable rather than estimated. RAW capture
   is always retained and session-local LIVE PARSER rows overlay it; a browser

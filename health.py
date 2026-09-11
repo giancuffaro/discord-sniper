@@ -343,9 +343,9 @@ def run_once(trials, quiet=False):
                   % (str(clock.get("state", "?")).upper(),
                      clock.get("description", ""), clock.get("date", "")))
             if str(clock.get("state")) != "open":
-                print("        Quotes below are the PREVIOUS session's last")
-                print("        print. They are not live and must not be read")
-                print("        as live. Latency numbers are still valid.")
+                print("        Regular-session quote freshness is not proven")
+                print("        outside OPEN. Latency numbers are still valid;")
+                print("        do not treat a successful request as a live print.")
         else:
             print("MARKET: unknown — could not reach Tradier's clock")
         print("=" * 66)

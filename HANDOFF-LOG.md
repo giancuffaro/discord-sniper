@@ -9,6 +9,33 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (18:15 full alert/exit rerun + continuous guard)
+Replayed every retained 9/11 parser input and regenerated the operating, caller-outcome,
+caller-vs-ratchet, and fixed-vs-ratchet reports. The inventory still reconciles to 34 entries
+(27 normal decisions + 7 recovered), one real CPS fill/exit at $0.65->$0.70 (+$5), 29 paired
+caller claims, and five exact quote paths. All 34 remain listed; no new entry was lost.
+
+The exit-specific sweep found 50 parsed management messages before correction. Three were false:
+the shortened shabs card read “take the L” as CLOSE SPX; AMZN “possible break out higher” read
+the idiom “out” as CLOSE; and a real SHOP 150C 11/20 $6.80 starter was hijacked by general prose
+ending “dip buys or trims or stops.” Narrow parser guards plus regressions now leave 47 real
+management reads. The caller ledger now gives MU 980C the $500/contract partial (+166.7% from
+$3.00), keeps MU 990C's price-less first trim, and correctly leaves SPX 7700C outcome unavailable.
+The other unpaired management posts are prior-day positions, relay duplicates, or symbol-free
+updates; none is a missed 9/11 entry. All 13 JS checks and 26 Python tests pass; daily audit has
+no failed checks. Its ATTENTION label is the known eight recovered/silent records plus the already
+recovered contextual Midas AAPL fill, not an unknown regression.
+
+A separate service-log sweep found Webull's optional stock/ETF MQTT feed retrying TLS every 10s.
+Root cause: pip_system_certs' truststore wrapper verifies before Paho's intentionally deferred
+handshake, so no peer certificate exists yet. stream_bus now gives only that MQTT client a normal,
+fully verified stdlib TLS context and leaves system trust active everywhere else; a live TLS probe
+passed. health.py now detects the retry storm passively, with regressions. The REST order/balance
+path, one-second option quote bus, Discord/Whop capture, and Tastytrade DXLink remained available.
+A 15-minute Codex heartbeat named “Discord Sniper guard” now checks the lightweight failure lanes
+and stays quiet unless state changes; the bridge's existing 16:40 full daily audit remains the deep
+after-close pass. It never trades, changes toggles, or restarts apps.
+
 ## 2026-09-11 (17:36 caller-original-entry ratchet comparison)
 Added CALLER-VS-RATCHET to the daily audit. It assumes the caller's posted premium filled, then
 replays 5/3/5 against the recorded Tastytrade bid path and places the caller's stated/timestamped
@@ -23,7 +50,8 @@ full exits have numeric results, so no invented aggregate caller P&L. All regres
 ATTENTION remains only for the known eight silent records and one contextual miss.
 The report now inventories all 34 entries: five scored and 29 explicitly awaiting exact tape or
 futures-specific handling. It also preserves caller evidence on those pending rows. Fixed futures
-rows inheriting a neighboring signal's price and restored SPX's $500/contract (+476.2%) display.
+rows inheriting a neighboring signal's price. The initial SPX $500/contract attribution was wrong
+and is corrected to MU 980C in the 18:15 audit above.
 The comparison now starts from the full daily inventory and reads the shared tape registry:
 Databento/OPRA first when backfilled, then the live Tastytrade/Webull tapes. A newly backfilled
 contract automatically moves from pending to scored on the next daily run.
@@ -36,7 +64,7 @@ and records full exits with missing prices instead of dropping them. Fixed decim
 QQQ `.24`, direct/relay dedupe across time-bucket boundaries, recovered room attribution, and
 shabs's narrowly identified `MU 980c at 300 for you rich folks` whole-cent shorthand ($3.00).
 The report now includes Midas AAPL +22%, QQQ $0.15->$0.24 (+60%), IBM $1.70->$2.20 (+29.4%),
-and SPX $500/contract (+476.2% on a $1.05 entry), while avoiding quantity-weighted full P&L when
+and an initial SPX attribution later corrected to MU 980C, while avoiding quantity-weighted full P&L when
 trim sizes/final runner exits are absent. Daily audit integration, 24 Python tests, and 13 JS
 parser checks pass.
 
