@@ -68,6 +68,8 @@ const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
 const RE_MONTH_DAY = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i;
 const RE_DTE_ANY = /\b(\d*dte)s?\b/i;
 const RE_DATE_ANY = /\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/;
+const RE_ISO_DATE = /\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/;
+const RE_YYMMDD = /(?<![\d.$])(2[5-9]|30)(\d{2})(\d{2})(?![\d.%])/;
 
 const RE_PCT = /@\s*(-?\d{1,3}(?:\.\d+)?)\s*%/;
 // A percentage anywhere at all. The second room writes trims as a bare number:
@@ -670,7 +672,16 @@ function expiryAnywhere(text) {
       return thirdFriday(y, parseInt(mo, 10));
     }
   }
-  let m = RE_MONTH_DAY.exec(text);
+  // ISO, YEAR FIRST — "2026-08-07" (9/11). The bot WRITES this shape itself
+  // (the room-default note, the AI reader's resolved dates, Namrood's P/L
+  // lines) and then had to read it back through RE_DATE_ANY, which matched the
+  // "08-07" inside it and threw the year away. It landed on the right contract
+  // only because the next one of those dates is almost always this year; a call
+  // written today for "2027-01-15" resolved to 1/15 and got its year guessed.
+  // Read here, before the loose shape can bite off half of it.
+  m = RE_ISO_DATE.exec(text);
+  if (m) return parseInt(m[2], 10) + "/" + parseInt(m[3], 10) + "/" + m[1];
+  m = RE_MONTH_DAY.exec(text);
   if (m) return MONTHS[m[1].toLowerCase().slice(0, 3)] + "/" + parseInt(m[2], 10);
   m = RE_DTE_ANY.exec(text);
   if (m) return m[1].toUpperCase();
@@ -679,6 +690,20 @@ function expiryAnywhere(text) {
   if (m) return parseInt(m[1], 10) + "DTE";
   m = RE_DATE_ANY.exec(text);
   if (m) return parseInt(m[1], 10) + "/" + parseInt(m[2], 10) + (m[3] ? "/" + m[3] : "");
+  // YYMMDD, the OSI date on its own — "BTO SMCI $39.5C 260814 @ 1.25" (9/11).
+  // The AI reader pulls the contract out of ".SMCI260814C39.5" and hands the
+  // date back in the code's own digits. RE_CONTRACT_OSI only matches the WHOLE
+  // dotted symbol, so this bare form read as NO DATE, and a dateless entry gets
+  // this Friday filled in downstream — 8/13's SMCI is in the log exactly that
+  // way. LAST on purpose, and tight: a real YYMMDD only, year 25-30, and no $
+  // or decimal point touching it, so a price or an account figure can never
+  // become a date.
+  m = RE_YYMMDD.exec(text);
+  if (m) {
+    const mo = parseInt(m[2], 10), dd = parseInt(m[3], 10);
+    if (mo >= 1 && mo <= 12 && dd >= 1 && dd <= 31)
+      return mo + "/" + dd + "/20" + m[1];
+  }
   return null;
 }
 
