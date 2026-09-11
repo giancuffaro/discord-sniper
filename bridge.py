@@ -2481,7 +2481,29 @@ def _pullback_close(order, why):
         "raw": "pullback exit: " + str(why), "source": "pullback"})
 
 
-def _underlying_stop_watch(order):
+_UNDER_STOP_LOCK = threading.Lock()
+_UNDER_STOP_THREADS = {}
+
+
+def _ensure_underlying_stop_watch(order):
+    """Start at most one stock-level stop watcher for this exact position."""
+    key = find_key(order)
+    if not key:
+        return False
+    with _UNDER_STOP_LOCK:
+        old = _UNDER_STOP_THREADS.get(key)
+        if old is not None and old.is_alive():
+            return False
+        th = threading.Thread(
+            target=_underlying_stop_watch, args=(dict(order), key),
+            name="under-stop:%s" % str(order.get("symbol") or "").upper(),
+            daemon=True)
+        _UNDER_STOP_THREADS[key] = th
+        th.start()
+    return True
+
+
+def _underlying_stop_watch(order, _wkey=None):
     """UNDERLYING hard stop for an OPTIONS position (his INTC alert, 8/18):
     'BTO INTC 115C @ 0.77, stop loss under 97 hard stop' — the 97 is INTC
     THE STOCK, not the premium. This watches the stock and closes the
@@ -2493,63 +2515,75 @@ def _underlying_stop_watch(order):
     side = str(order.get("side") or "").upper()
     if not (sym and stop > 0):
         return
-    _wkey = find_key(order)
+    _wkey = _wkey or find_key(order)
     is_call = side.startswith("C")
     note("UNDER-STOP %s: watching the STOCK — the option closes if %s "
          "prints %s %.2f (their hard stop)"
          % (sym, sym, "at/under" if is_call else "at/over", stop))
     misses = 0
-    while True:
-        time.sleep(2.0)
+    try:
+        while True:
+            time.sleep(2.0)
+            # An accepted entry normally spends time WORKING before it fills.
+            # Stay armed through that phase; only a terminal/missing position
+            # ends this watcher. This also lets startup restore the watcher.
+            try:
+                _pp = BOOK.info(_wkey) if BOOK is not None else None
+            except Exception:                           # noqa: BLE001
+                _pp = None
+            if not _pp:
+                return
+            _pst = _pp.get("state")
+            if _pst == positions.WORKING:
+                continue
+            if _pst != positions.FILLED or int(_pp.get("qty") or 0) <= 0:
+                return
+            order.update(side=_pp.get("side"), strike=_pp.get("strike"),
+                         expiry=_pp.get("expiry"), live=bool(_pp.get("live")),
+                         trader=_pp.get("who") or order.get("trader"))
         # LIVE LEVEL (8/29, "351 new stop loss"): the trader moves their
         # stop mid-trade; the book carries the current number and this
         # watcher follows it instead of the level it was born with.
-        try:
-            _pp = BOOK.info(_wkey) if BOOK is not None else None
-            if _pp and _pp.get("their_stop"):
-                _ns = float(_pp["their_stop"])
-                if _ns > 0 and abs(_ns - stop) > 1e-9:
-                    note("UNDER-STOP %s: their stop MOVED %.2f -> %.2f — "
-                         "following it" % (sym, stop, _ns))
-                    stop = _ns
-        except Exception:                               # noqa: BLE001
-            pass
-        try:
-            if BOOK is None or not BOOK.holding(find_key(order)):
-                return          # closed some other way — stand down quietly
-        except Exception:                               # noqa: BLE001
-            return
-        try:
-            px = float(_pullback_quote(sym))
-            misses = 0
-        except Exception as e:                          # noqa: BLE001
-            misses += 1
-            if misses >= 30:    # ~a minute of dead quotes
-                note("UNDER-STOP %s: stock quotes stopped answering (%s) — "
-                     "watcher standing down; the premium bracket still "
-                     "guards the option." % (sym, str(e)[:60]))
-                return
-            continue
-        hit = (px <= stop) if is_call else (px >= stop)
-        if hit:
-            note("UNDER-STOP %s: the stock printed %.2f — through their "
-                 "%.2f hard stop. Closing the option now."
-                 % (sym, px, stop))
             try:
-                _place_impl({"action": "CLOSE", "symbol": sym,
-                             "side": order.get("side"),
-                             "strike": order.get("strike"),
-                             "expiry": order.get("expiry"),
-                             "trader": order.get("trader"),
-                             "kind": order.get("kind") or "option",
-                             "live": bool(order.get("live")),
-                             "raw": "underlying hard stop %.2f hit "
-                                    "(stock at %.2f)" % (stop, px),
-                             "source": "under-stop"})
+                if _pp.get("their_stop"):
+                    _ns = float(_pp["their_stop"])
+                    if _ns > 0 and abs(_ns - stop) > 1e-9:
+                        note("UNDER-STOP %s: their stop MOVED %.2f -> %.2f — "
+                             "following it" % (sym, stop, _ns))
+                        stop = _ns
+            except Exception:                           # noqa: BLE001
+                pass
+            try:
+                px = float(_pullback_quote(sym))
+                misses = 0
             except Exception as e:                      # noqa: BLE001
-                note("UNDER-STOP %s: the close FAILED (%s) — go close it "
-                     "in Webull." % (sym, str(e)[:80]))
-            return
+                misses += 1
+                if misses >= 30:    # report each sustained outage, keep trying
+                    note("UNDER-STOP %s: stock quotes have not answered for "
+                         "about a minute (%s) — watcher is still retrying; "
+                         "the premium bracket also remains in place."
+                         % (sym, str(e)[:60]))
+                    misses = 0
+                continue
+            hit = (px <= stop) if is_call else (px >= stop)
+            if hit:
+                note("UNDER-STOP %s: the stock printed %.2f — through their "
+                     "%.2f hard stop. Closing the option now."
+                     % (sym, px, stop))
+                try:
+                    ok, why = _pullback_close(
+                        order, "underlying hard stop %.2f hit (stock at %.2f)"
+                        % (stop, px))
+                except Exception as e:                  # noqa: BLE001
+                    ok, why = False, str(e)
+                if ok:
+                    return
+                note("UNDER-STOP %s: close not confirmed (%s) — watcher "
+                     "remains armed and will retry." % (sym, str(why)[:80]))
+    finally:
+        with _UNDER_STOP_LOCK:
+            if _UNDER_STOP_THREADS.get(_wkey) is threading.current_thread():
+                _UNDER_STOP_THREADS.pop(_wkey, None)
 
 
 def pullback_manager():
@@ -2690,10 +2724,7 @@ def place(order):
         if (ok0 and order.get("action") == "OPEN"
                 and (order.get("kind") or "option") != "future"
                 and order.get("their_stop")):
-            threading.Thread(
-                target=_underlying_stop_watch, args=(dict(order),),
-                name="under-stop:%s" % str(order.get("symbol") or "").upper(),
-                daemon=True).start()
+            _ensure_underlying_stop_watch(order)
     except Exception:                                   # noqa: BLE001
         pass
     # ALERT DECAY (9/7) — sample this contract's mid at +1s/+5s/+30s/+60s
@@ -2814,14 +2845,9 @@ def _place_impl(order):
                 "the watcher follows it" if _had
                 else "arming a stock watcher on it now"))
         if not _had:
-            threading.Thread(target=_underlying_stop_watch,
-                             args=(dict(order,
-                                        side=_p2.get("side"),
-                                        strike=_p2.get("strike"),
-                                        expiry=_p2.get("expiry"),
-                                        live=bool(_p2.get("live"))),),
-                             name="under-stop:%s" % sym,
-                             daemon=True).start()
+            _ensure_underlying_stop_watch(dict(
+                order, side=_p2.get("side"), strike=_p2.get("strike"),
+                expiry=_p2.get("expiry"), live=bool(_p2.get("live"))))
         return True, ("their stop on %s is now %.2f on the stock — watched "
                       "on this PC" % (sym, float(_lvl)))
 
