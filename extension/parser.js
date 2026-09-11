@@ -1634,6 +1634,14 @@ function parseSignalInner(text, cfg) {
       (all, lead, cents) => lead + (parseInt(cents, 10) / 100).toFixed(2));
   }
 
+  // shabs occasionally drops the explicit "/con" while still quoting in
+  // whole cents: "MU 980c at 300 for you rich folks ..." means $3.00.  Keep
+  // this scoped to his distinctive entry phrase; treating every integer
+  // after "at" as cents would corrupt legitimate option prices elsewhere.
+  t = t.replace(
+    /(\b\$?[A-Za-z]{1,5}\s+\d{1,5}(?:\.\d+)?\s*[cp]\b\s+at\s+)(\d{2,5})(?=\s+for\s+you\s+rich\s+folks\b)/gi,
+    (all, lead, cents) => lead + (parseInt(cents, 10) / 100).toFixed(2));
+
   // THE TICKER HE NEVER TYPES (9/7, shabs / OWLS). He trades ONE underlying
   // and says so in his own recap ("August Recap, SPX only"), so he writes
   // "in 7655p 2.9" and "7760c at 300/con" — a complete call except for the

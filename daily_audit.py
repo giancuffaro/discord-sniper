@@ -163,6 +163,18 @@ def run(day):
         summary["ratchet_comparison"] = os.path.relpath(
             os.path.join(HERE, "daily-reports",
                          "RATCHET-COMPARE-%s.md" % day), HERE)
+    caller_step = _run("caller outcome ledger",
+                       [sys.executable,
+                        os.path.join(HERE, "caller_outcomes.py"), day],
+                       120)
+    if not caller_step["ok"]:
+        attention = True
+        summary["status"] = "attention"
+        summary["failed_checks"].append(caller_step["name"])
+    else:
+        summary["caller_outcomes"] = os.path.relpath(
+            os.path.join(HERE, "daily-reports",
+                         "CALLER-OUTCOMES-%s.md" % day), HERE)
     summary["status"] = "attention" if attention else "pass"
     _write_atomic(os.path.join(OUT_DIR, "latest.json"),
                   json.dumps(summary, indent=2, sort_keys=True) + "\n")

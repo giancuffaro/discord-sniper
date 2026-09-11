@@ -42,6 +42,10 @@ const raw = parseSignal("NVDA 220c at 300/con", {}) || {};
 const rawOk = Math.abs(raw.limit - 3) < 0.005;
 if (!rawOk) bad++;
 console.log(`  ${rawOk ? "PASS" : "FAIL"}  ${"non-index /con".padEnd(22)} limit=${raw.limit} (want 3)`);
+const omitted = parseSignal("MU 980c at 300 for you rich folks with nothing to lose 0dte @here", {}) || {};
+const omittedOk = omitted.symbol === "MU" && Math.abs(omitted.limit - 3) < 0.005;
+if (!omittedOk) bad++;
+console.log(`  ${omittedOk ? "PASS" : "FAIL"}  ${"shabs omitted /con".padEnd(22)} limit=${omitted.limit} (want 3)`);
 
 /* THE TICKER HE NEVER TYPES. shabs trades one underlying and says so in his
  * own recap ("August Recap, SPX only"), so he writes "in 7655p 2.9" with no

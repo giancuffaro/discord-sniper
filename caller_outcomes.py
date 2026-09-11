@@ -144,12 +144,34 @@ def _enrich_entries(day, entries, parsed_messages):
                        key=lambda x: abs(_clock(day, x[0][0]) - entry["ts"]))
             entry["room"] = entry["room"] or m[1]
             entry["entry"] = entry["entry"] or _f(p.get("limit"))
+        if entry.get("origin") == "recovered" and not candidates:
+            # Some forensic entries are visible contract cards that the
+            # parser deliberately did not promote. Their ticker/strike text
+            # can still establish attribution without inventing an order.
+            token = str(int(entry["strike"]) if entry.get("strike") is not None
+                        and float(entry["strike"]).is_integer()
+                        else entry.get("strike") or "")
+            raw_near = [m for m, text, _p in parsed_messages
+                        if abs(_clock(day, m[0]) - entry["ts"]) <= 120
+                        and re.search(r"\b%s\b" % re.escape(entry["symbol"]),
+                                      text, flags=re.I)
+                        and (not token or token in text)]
+            if raw_near:
+                entry["room"] = min(
+                    raw_near,
+                    key=lambda m: abs(_clock(day, m[0]) - entry["ts"]))[1]
         if not entry.get("room"):
             # Contextual fills such as Midas's "1.46 on starters" carry no
             # symbol. The nearest raw row at the recovered timestamp still
             # establishes the room without inventing a contract.
-            nearby = [m for m, _text, _p in parsed_messages
-                      if abs(_clock(day, m[0]) - entry["ts"]) <= 45]
+            contextual = [(m, p) for m, _text, p in parsed_messages
+                          if abs(_clock(day, m[0]) - entry["ts"]) <= 45
+                          and "fill confirmation" in (p.get("matched") or "")]
+            nearby = [m for m, _p in contextual]
+            if not nearby:
+                nearby = [m for m, _text, p in parsed_messages
+                          if abs(_clock(day, m[0]) - entry["ts"]) <= 45
+                          and p.get("kind") != "future"]
             if nearby:
                 entry["room"] = min(
                     nearby, key=lambda m: abs(_clock(day, m[0]) - entry["ts"]))[1]
@@ -160,6 +182,28 @@ def _enrich_entries(day, entries, parsed_messages):
                                                  entry["side"], entry["strike"])
             except ValueError:
                 pass
+        # Repair the one unsafe whole-cent form using its source wording. The
+        # live parser now handles this prospectively; this branch corrects a
+        # decision that was already durably logged as @300.00 before the fix.
+        if (entry.get("entry") and entry["entry"] >= 100
+                and entry.get("strike") is not None):
+            cents_posts = [text for m, text, _p in parsed_messages
+                           if abs(_clock(day, m[0]) - entry["ts"]) <= 120
+                           and re.search(
+                               r"\b%s\s+%s\s*[cp]\b\s+at\s+(\d{2,5})"
+                               r"(?=\s+for\s+you\s+rich\s+folks\b)" % (
+                                   re.escape(entry["symbol"]),
+                                   re.escape(str(int(entry["strike"])))),
+                               text, flags=re.I)]
+            if cents_posts:
+                match = re.search(r"\bat\s+(\d{2,5})\s+for\s+you\s+rich",
+                                  cents_posts[0], flags=re.I)
+                if match:
+                    entry["entry"] = int(match.group(1)) / 100.0
+                    entry["contract_text"] = re.sub(
+                        r"@\s*[0-9]+(?:\.[0-9]+)?",
+                        "@ %.2f" % entry["entry"],
+                        entry["contract_text"])
     return entries
 
 
@@ -186,9 +230,9 @@ def _claim_values(text, action):
     # Work on the visible post after repeated accessible-card headers.
     price = None
     for pattern in (
-        r"\bSTC\b[^\n]*?@\s*\$?([0-9]+(?:\.[0-9]+)?)",
-        r"@\s*\$?([0-9]+(?:\.[0-9]+)?)\s+from\s+\$?[0-9]",
-        r"\bout(?:\s+on\s+(?:most|all))?[^\n]{0,30}?\s([0-9]+(?:\.[0-9]+)?)\b",
+        r"\bSTC\b[^\n]*?@\s*\$?((?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+))",
+        r"@\s*\$?((?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+))\s+from\s+\$?[0-9]",
+        r"\bout(?:\s+on\s+(?:most|all))?[^\n]{0,30}?\s((?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+))\b",
     ):
         m = re.search(pattern, text, flags=re.I)
         if m:
@@ -238,16 +282,18 @@ def build(day):
         if price is None and pct is None and per_contract is None:
             # A timestamped full exit plus a contemporaneous executable bid
             # is calculable even when the caller omitted the price.
-            if action != "CLOSE" or not entry.get("occ"):
+            if action != "CLOSE":
                 continue
-            path = quote_paths.get(entry["occ"]) or []
-            if not path:
-                continue
-            nearest = min(path, key=lambda r: abs(r[0] - ts))
-            if abs(nearest[0] - ts) > 5:
-                continue
-            price = nearest[1]
-            basis = "market bid at caller exit"
+            path = quote_paths.get(entry.get("occ")) or []
+            if path:
+                nearest = min(path, key=lambda r: abs(r[0] - ts))
+                if abs(nearest[0] - ts) <= 5:
+                    price = nearest[1]
+                    basis = "market bid at caller exit"
+                else:
+                    basis = "caller exit; price unavailable"
+            else:
+                basis = "caller exit; price unavailable"
         entry_px = entry.get("entry")
         calc_pct = ((price - entry_px) / entry_px * 100.0
                     if price is not None and entry_px else None)
@@ -266,15 +312,24 @@ def build(day):
             "raw": message[3],
         })
 
-    # Exact duplicate accessible rows and relay copies should not double-count.
-    unique = {}
-    for row in claims:
-        event_bucket = int(_clock(day, row["event_time"]) // 30)
-        key = (row["entry_time"], event_bucket, row["symbol"],
-               row["reported_exit"], row["reported_pct"],
-               row["profit_per_contract"], row["event"])
-        unique.setdefault(key, row)
-    claims = sorted(unique.values(), key=lambda r: r["event_time"])
+    # A direct post and its aggregator relay often land one second apart (and
+    # can straddle a fixed time bucket). Deduplicate on the claim identity and
+    # a rolling 60-second distance instead.
+    unique = []
+    for row in sorted(claims, key=lambda r: r["event_time"]):
+        identity = (row["entry_time"], row["symbol"], row["reported_exit"],
+                    row["reported_pct"], row["profit_per_contract"],
+                    row["event"])
+        duplicate = any(
+            identity == (old["entry_time"], old["symbol"],
+                         old["reported_exit"], old["reported_pct"],
+                         old["profit_per_contract"], old["event"])
+            and abs(_clock(day, row["event_time"])
+                    - _clock(day, old["event_time"])) <= 60
+            for old in unique[-12:])
+        if not duplicate:
+            unique.append(row)
+    claims = unique
 
     os.makedirs(OUT_DIR, exist_ok=True)
     csv_path = os.path.join(OUT_DIR, "CALLER-OUTCOMES-%s.csv" % day)
@@ -295,7 +350,9 @@ def build(day):
     for r in claims:
         claim = ("$%.2f" % r["reported_exit"] if r["reported_exit"] is not None
                  else ("%+.1f%%" % r["reported_pct"] if r["reported_pct"] is not None
-                       else ("$%.0f/contract" % r["profit_per_contract"])))
+                       else ("$%.0f/contract" % r["profit_per_contract"]
+                             if r["profit_per_contract"] is not None
+                             else "price unavailable")))
         calc = ("%+.1f%%" % r["calculated_pct"] if r["calculated_pct"] is not None
                 else ("implied $%.2f" % r["implied_exit"]
                       if r["implied_exit"] is not None else "unavailable"))
