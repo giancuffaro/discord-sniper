@@ -80,8 +80,23 @@ def ambiguous(*a):
     raise TimeoutError('response lost after acceptance')
 w._send_combo = ambiguous
 w._send = lambda *a: submits.append('plain BUY submitted') or {}
-r = w.buy('SPY', 'CALLS', 600, '2026-10-16', 1, bracket_stop_pct=5)
-record('ambiguous_bracket_duplicate_buy', len(submits) == 2 and r['ok'], submits)
+# FIXED (F03/F01, 9/11 same-night patch): an ambiguous failure (timeout
+# after acceptance, indistinguishable from a real rejection) no longer
+# falls straight through to a second plain BUY. buy() now tries to
+# reconcile against the account first (open_orders); when it can't check
+# at all -- as here, where this fake object has no working account plumbing
+# -- it fails CLOSED with webull_options.Refused rather than guessing.
+# Bug behavior was: len(submits)==2 and r['ok'] is True (silent double-buy).
+# Fixed behavior: exactly ONE submit, and a raised Refused instead of a
+# false "ok".
+try:
+    r = w.buy('SPY', 'CALLS', 600, '2026-10-16', 1, bracket_stop_pct=5)
+    reproduced = len(submits) == 2 and r.get('ok')
+    detail = {'submits': submits, 'returned_ok': r.get('ok')}
+except webull_options.Refused as _e:
+    reproduced = False
+    detail = {'submits': submits, 'raised': 'Refused', 'message': str(_e)[:160]}
+record('ambiguous_bracket_duplicate_buy', reproduced, detail)
 
 # 4: 429 is swallowed by request-shape discovery.
 requests = []

@@ -26,11 +26,14 @@
   },
   {
     "name": "ambiguous_bracket_duplicate_buy",
-    "reproduced": true,
-    "detail": [
-      "bracket BUY submitted, response lost",
-      "plain BUY submitted"
-    ]
+    "reproduced": false,
+    "detail": {
+      "submits": [
+        "bracket BUY submitted, response lost"
+      ],
+      "raised": "Refused",
+      "message": "the bracket call for SPY failed ambiguously (response lost after acceptance) and the account could not be checked for a duplicate \u2014 refusing rather than risking"
+    }
   },
   {
     "name": "429_eight_requests_no_backoff_signal",
