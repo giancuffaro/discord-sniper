@@ -2863,7 +2863,17 @@ class Book:
                 wb.cancel(oid)
             except Exception:                   # noqa: BLE001
                 pass
-            self._await_cancel(wb, oid)
+            # F06 (9/11 audit): this return used to be thrown away. Its own
+            # docstring says exactly what it hands back — ("filled", avg) or
+            # ("dead", avg) when the broker confirms, None when it can't say
+            # — and "filled" here means the sell beat the cancel: it went
+            # through in the gap between our last poll and this cancel call.
+            # Ignoring that and looping straight to _sell_retry() for the
+            # ORIGINAL qty is exactly how one real fill became two real
+            # sells. Read it.
+            _cx = self._await_cancel(wb, oid)
+            if _cx and str(_cx[0]) == "filled":
+                return True, (_cx[1] or px_fallback)
             try:
                 _a, _b, _ = wb.ask_bid(occ)
                 if _b and float(_b) > 0:

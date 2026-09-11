@@ -84,12 +84,12 @@
   },
   {
     "name": "sell_retry_ignores_late_fill",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
-      "sell_submissions": 2,
+      "sell_submissions": 1,
       "result": [
-        false,
-        null
+        true,
+        2.0
       ]
     }
   },
