@@ -65,11 +65,15 @@ SOURCES = {
     "databento_clean": ("databento_tape_clean.csv", "occ"),
     # 9/9: OPRA history for the MISSED / nofill calls (scoped_missed_pull.py).
     "missed": ("missed_tape.csv", "occ"),
+    # Slow, rate-budgeted snapshots for every alerted contract, including
+    # calls refused before entry. This is the source used to compare the
+    # caller's exit time with the system on trades the bot never held.
+    "alert": ("alert_tape.csv", "occ"),
 }
 
 # Raw and clean are the same observations; never replay both at once.
 _DEFAULT_SOURCES = ("webull", "tasty_greeks", "tasty_quote", "databento_clean",
-                    "missed")
+                    "missed", "alert")
 BARS_DIR = os.path.join(HERE, "bars")      # Tradier minute bars, <OCC>_<date>.json
 
 
