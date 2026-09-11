@@ -936,6 +936,68 @@ class Book:
             pass
         return None
 
+    def account_contract_position(self, rows, wanted):
+        """Return ``(qty, fill)`` for one fully identified option contract.
+
+        An entry-fill fallback must never guess. If OCC is unavailable,
+        symbol, strike, side, and normalized expiry must all be present and
+        equal. Multiple rows for the same contract are summed.
+        """
+        wanted = wanted or {}
+        want_occ = str(wanted.get("occ") or "").strip().upper()
+        want_sym = str(wanted.get("symbol") or "").strip().upper()
+        want_side = str(wanted.get("side") or "").strip().upper()[:1]
+        want_strike = wanted.get("strike")
+
+        def _expiry(value):
+            if value in (None, ""):
+                return ""
+            try:
+                from webull_options import expiry_to_date
+                return str(expiry_to_date(value))
+            except Exception:                           # noqa: BLE001
+                return str(value).strip()
+
+        want_expiry = _expiry(wanted.get("expiry"))
+        total = 0
+        value = 0.0
+        valued = 0
+        for row in (rows or []):
+            row = row or {}
+            row_occ = str(row.get("occ") or "").strip().upper()
+            if want_occ and row_occ:
+                if row_occ != want_occ:
+                    continue
+            else:
+                row_sym = str(row.get("symbol") or "").strip().upper()
+                row_side = str(row.get("side") or "").strip().upper()[:1]
+                row_expiry = _expiry(row.get("expiry"))
+                row_strike = row.get("strike")
+                if not (want_sym and want_side and want_expiry
+                        and want_strike is not None and row_sym and row_side
+                        and row_expiry and row_strike is not None):
+                    continue
+                try:
+                    same_strike = abs(float(row_strike)
+                                      - float(want_strike)) <= 0.001
+                except (TypeError, ValueError):
+                    same_strike = False
+                if not (row_sym == want_sym and row_side == want_side
+                        and row_expiry == want_expiry and same_strike):
+                    continue
+            qty = abs(int(float(row.get("qty") or 0)))
+            if qty <= 0:
+                continue
+            total += qty
+            try:
+                px = float(row.get("fill") or 0)
+            except (TypeError, ValueError):
+                px = 0.0
+            if px > 0:
+                value += px * qty
+                valued += qty
+        return total, (value / valued if valued else None)
+
     def _fut_mult_for(self, sym):
         """Points-to-dollars for a futures symbol.
 
