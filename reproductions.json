@@ -185,11 +185,11 @@
   },
   {
     "name": "throttle_misreported_as_verified_flat",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
       "adapter_failure": "HTTP 429",
       "positions": [],
-      "trusted_live": true
+      "trusted_live": false
     }
   },
   {
