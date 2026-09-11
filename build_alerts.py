@@ -92,12 +92,27 @@ def _ledger_keys():
 
 def _taken(ledger_keys):
     """telemetry.csv → one row per alert that reached the broker."""
-    rows, seen = [], set()
+    rows, seen, skipped = [], set(), 0
     if not os.path.exists(TELEMETRY):
         return rows
     with open(TELEMETRY, encoding="utf-8-sig", newline="", errors="replace") as fh:
         for c in csv.DictReader(fh):
             coid = (c.get("coid") or "").strip()
+            # NO COID, NO ORDER, NO ALERT (9/11). A telemetry row earns its
+            # place here by being an order the bridge actually sent for a room
+            # call: the coid is the client order id it minted, and a real row
+            # also carries the room, the posted_at stamp and the caller's
+            # price. The fixture rows test_positions.py used to append to this
+            # same file have none of them — no coid, no room, no latency — and
+            # they collapsed into the "42 filled alerts" this file used to
+            # show, every one of them filled in exactly 200 ms on a July 31
+            # expiry in September. telemetry.py now writes the suite's rows to
+            # telemetry-test.csv, and this is the belt to that braces: the
+            # existing 3,896 fixture rows are still in telemetry.csv (deleting
+            # a record is not a fix) and they stop here.
+            if not coid:
+                skipped += 1
+                continue
             iso = c.get("iso") or ""
             date = iso[:10]
             if not date:
@@ -136,6 +151,9 @@ def _taken(ledger_keys):
                 "how_recovered": "telemetry.csv — the bot's own record of an "
                                  "order it sent", "source_line": "",
             })
+    if skipped:
+        sys.stderr.write("build_alerts: %d telemetry row(s) with no order id "
+                         "skipped — test-harness output, not alerts\n" % skipped)
     return rows
 
 

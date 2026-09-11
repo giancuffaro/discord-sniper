@@ -52,12 +52,27 @@ HONEST LIMITS — say these out loud in any analysis built on this
 import csv
 import os
 import queue
+import sys
 import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FILLS = os.path.join(HERE, "telemetry.csv")
-DECAY = os.path.join(HERE, "alert_decay.csv")
+
+# THE TEST SUITE MUST NOT WRITE THE REAL RECORD (9/11).
+# test_positions.py drives a whole Book through entry, fill, ratchet and exit
+# on a fixture contract — SPY 745C, expiry "7/31", their_price 2.80 — and the
+# Book calls record_fill() like it does in production. Nothing separated the
+# two files, so every run of the suite appended to telemetry.csv: 3,896 of its
+# 3,914 rows are the fixture, and only 18 are alerts a room actually posted.
+# Those fixture rows are what made master_alerts show "42 filled alerts", all
+# filled, every fill 200 ms (the fake broker's fixed latency) and ten of them
+# carrying a July 31 expiry on September days.
+# A test that writes the production record is a test that corrupts the thing it
+# is meant to protect. Under a test process both files move aside; nothing else
+# changes, and the suite still proves the whole path end to end.
+_TEST = os.path.basename(str(sys.argv[0] or "")).startswith("test_")
+FILLS = os.path.join(HERE, "telemetry-test.csv" if _TEST else "telemetry.csv")
+DECAY = os.path.join(HERE, "alert_decay-test.csv" if _TEST else "alert_decay.csv")
 
 _LOCK = threading.Lock()
 
