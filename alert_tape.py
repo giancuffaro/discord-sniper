@@ -80,6 +80,14 @@ EXTRA_RESERVE = 60.0
 # 10 minutes in the busy cadence, which is plenty for scoring a call.
 MAX_TRACKED = 400
 
+# How many alerted contracts may be handed to the GREEKS feed. That feed is a
+# websocket, not a request — it costs nothing against Webull's door — but it
+# is still a live subscription per contract and it writes a line of
+# greeks_tape.csv per tick. Sixty is well past a busy morning's alerts and
+# keeps the file and the socket the size they are today. Price recording is
+# NOT capped by this; only the greeks are.
+GREEKS_MAX = 60
+
 TAPE_HEADER = "ts,occ,bid,ask,und\n"
 META_HEADER = ("ts,stage,coid,date,time,room,caller,symbol,side,strike,"
                "expiry,occ,their_price,alert_at,seen_at,bid,ask,und,"
@@ -148,6 +156,7 @@ class AlertRecorder:
         self._cool_until = 0.0
         self._batch = 1                  # proven-shape ramp: see _sweep_once
         self._quoted = set()             # OCCs whose stage=quote row is written
+        self._greeked = set()            # OCCs handed to the greeks websocket
         self.sweeps = 0
         self.rows = 0
         self.registered = 0
@@ -220,7 +229,8 @@ class AlertRecorder:
             # request. Gives delta/iv on refused alerts, which is exactly
             # what master_alerts.csv has never had.
             try:
-                if self._greeks is not None:
+                if self._greeks is not None and len(self._greeked) < GREEKS_MAX:
+                    self._greeked.add(occ)
                     self._greeks.watch(occ)
             except Exception:                           # noqa: BLE001
                 pass

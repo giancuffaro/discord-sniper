@@ -2162,6 +2162,20 @@ class Book:
                     _pf = self._pos.get(key)
                     if _pf is not None:
                         _tele["und_at_fill"] = _pf.get("und_at_fill")
+                        # ENTRY GREEKS, STAMPED BEFORE THE ROW GOES OUT
+                        # (9/11). _arm_stop stamps greeks_in as well — but
+                        # _arm_stop runs on the NEXT line, AFTER this row has
+                        # already been handed to the telemetry writer. So the
+                        # row always read greeks_in as empty: delta and iv
+                        # were blank on all 3,232 rows of telemetry.csv and
+                        # on 0 of 326 rows of master_alerts.csv, which is why
+                        # "was that a 0.15-delta loss or a 0.60-delta loss"
+                        # had no answer. Stamp it HERE, first; _arm_stop's
+                        # own copy then finds it already set and leaves it.
+                        if not _pf.get("greeks_in"):
+                            _g0 = self._greeks_now(_pf)
+                            if _g0:
+                                _pf["greeks_in"] = _g0
                         _tele["greeks_in"] = _pf.get("greeks_in")
                         _tele["assumed"] = bool(_pf.get("assumed"))
                         _tele["blind"] = bool(_pf.get("blind"))
