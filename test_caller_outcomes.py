@@ -5,6 +5,11 @@ import caller_ratchet_compare
 
 
 class CallerOutcomeEvidenceTests(unittest.TestCase):
+    def test_futures_entry_keeps_its_own_price(self):
+        row = caller_outcomes._entry_contract("MNQ @ 29411.75", "2026-09-11")
+        self.assertEqual(row["symbol"], "MNQ")
+        self.assertEqual(row["entry"], 29411.75)
+
     def test_dot_decimal_exit_is_exact_price(self):
         price, pct, per_contract, partial = caller_outcomes._claim_values(
             "STC QQQ 9/11 716c @ .24 taking first trim here PARTIAL", "TRIM")

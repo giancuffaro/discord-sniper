@@ -42,9 +42,10 @@ def _clock(day, hhmmss):
 def _entry_contract(text, day):
     m = re.search(r"\b([A-Z][A-Z0-9.]*)\s+(\d+(?:\.\d+)?)([CP])\b", text)
     if not m:
+        p = re.search(r"@\s*\$?([0-9]+(?:\.[0-9]+)?)", text or "")
         return {"symbol": text.split(None, 1)[0].upper() if text else "",
                 "strike": None, "side": None, "expiry": None,
-                "entry": None}
+                "entry": _f(p.group(1)) if p else None}
     expiry = None
     d = re.search(r"\b(0DTE|\d{1,2}/\d{1,2}(?:/\d{2,4})?)\b", text,
                   flags=re.I)

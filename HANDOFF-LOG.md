@@ -21,6 +21,9 @@ test. Four caller-entry paths total -$19; adding HOOD at its first ask (caller p
 all five -$23. Only three caller
 full exits have numeric results, so no invented aggregate caller P&L. All regressions pass; audit
 ATTENTION remains only for the known eight silent records and one contextual miss.
+The report now inventories all 34 entries: five scored and 29 explicitly awaiting exact tape or
+futures-specific handling. It also preserves caller evidence on those pending rows. Fixed futures
+rows inheriting a neighboring signal's price and restored SPX's $500/contract (+476.2%) display.
 
 ## 2026-09-11 (17:11 caller outcome ledger + all-alert ratchet capture)
 The daily audit now writes CALLER-OUTCOMES markdown/CSV beside the operating and ratchet
