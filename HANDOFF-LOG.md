@@ -9,6 +9,34 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (16:44 full-day rebuild + ratchet counterfactual)
+The first close audit exposed a reporting regression instead of a clean day: after a Chrome
+restart, the export retained 1,247 RAW Discord records but only 14 session-local LIVE PARSER
+records. `replay_check.load()` preferred the partial parser section whenever it existed, which
+collapsed the first report from 24 speaking rooms/274+ messages to 7/27 and falsely passed the
+audit. It now unions durable non-history RAW records with parser records, overlaying matching
+parser copies. Added a regression fixture; all 21 Python tests and every JS parser test pass.
+The rebuilt result is 303 retained parser inputs across 24 speaking rooms, 33 observed entry
+alerts, 26 normal decisions, seven recovered entry gaps, one recovered ADD, eight raw silent
+records plus one contextual Midas miss already represented by that recovery, and no coverage
+warning. Audit stays ATTENTION because those real gaps must remain visible.
+
+Daily report semantics were also corrected. The extension marks a pullback request `sent` when
+the bridge accepts the request, before any broker order exists. QQQ 716C waited for $715 and
+expired ten minutes later; it is now a skip. Today's final funnel is one broker entry order, one
+fill, 25 normally read but not taken, and the seven recovered entries; CPS 25C was the sole bot
+trade and realized +$5.
+
+Added `daily_policy_compare.py` and wired it into the automatic 16:40 audit. It buys one contract
+at the first recorded ask (actual fill for a filled bot trade), then compares the same
+broker-compatible born stop held fixed against the live 5/3/5 ratchet, selling at observed bids.
+Five of today's 33 observed alerts have exact same-day quote paths: NVDA 10:01 (-$11/-$11),
+TSLA 10:25 (-$8/-$3), NVDA 10:37 (-$6/$0), forced-through HOOD 12:01 (-$4/-$4), and CPS 12:40
+(-$10/$0), shown fixed/ratchet. Totals: fixed -$39, ratchet -$18, a +$21 ratchet advantage.
+Actual CPS ratchet execution was +$5 because the market sell filled above the trigger bid.
+Twenty-eight alerts have no exact-contract price path, so today's covered result supports the
+ratchet but cannot establish a whole-day winner; the report states that limit explicitly.
+
 ## 2026-09-11 (16:41 product intent + Databento scope)
 G clarified the north star: read the Discord Sniper history to understand that every close
 must produce the data needed to benchmark/backtest the growing alert sample. Formalized the

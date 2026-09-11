@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (16:41) — product north star formalized in reference/EOD-BENCHMARK-SPEC.md: preserve every alert lifecycle daily, benchmark caller vs bot vs broker truth over an accumulating sample, and change strategies only on tested evidence. Claude's project-linked chat bodies are blank in the export; recovered history remains quarantined. Databento cache is mixed contract market data, not one caller's data.
+Last updated: 2026-09-11 (16:44) — close audit rebuilt from the durable full-day RAW plus session parser records; 303 inputs/24 speaking rooms, 33 observed entries, one broker order/fill, +$5 actual. Daily fixed-stop vs live-ratchet comparison is now automatic; today's price-covered subset was -$39 vs -$18, ratchet +$21, with only 5/33 alerts priceable.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -319,7 +319,13 @@ RESTARTS / SAFETY
   parser fixtures and regression tests after review; Discord text never
   edits code or trading rules by itself. Exact caller-vs-system P&L is shown
   only when caller entry and exit can be paired with contemporaneous option
-  quotes; missing exits remain unavailable rather than estimated.
+  quotes; missing exits remain unavailable rather than estimated. RAW capture
+  is always retained and session-local LIVE PARSER rows overlay it; a browser
+  restart can no longer truncate the day to its final session. Accepted
+  pullback waits that expire are counted as skips, not broker orders. The same
+  close run writes `daily-reports/RATCHET-COMPARE-<date>.md`, replaying every
+  exact-contract quote path under the live 5/3/5 ratchet and a fixed -5% born
+  stop. It reports coverage and never extrapolates uncovered alerts.
 - GIT: settings.json holds every key, gitignored, never committed, never
   pasted back. Never run git write commands from a sandbox (locks). AUTO
   PUSH sweeps commits and retries outstanding pushes every 45 s; it never
