@@ -32,6 +32,49 @@ RE_DID = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  <(\w+)>  (.*)$")
 SKIP_ROOMS = ("Sniper HQ", "this room")           # our own output / voice
 
 
+def room_rules():
+    """rooms.txt is production's source of per-room parser grammar."""
+    out = {}
+    try:
+        with open(os.path.join(HERE, "extension", "rooms.txt"), encoding="utf-8") as f:
+            for line in f:
+                if not line.strip() or line.lstrip().startswith("#"):
+                    continue
+                p = [x.strip() for x in line.split("|")]
+                if len(p) >= 6:
+                    out[p[0]] = [x.strip().lower() for x in p[5].split(",") if x.strip()]
+    except OSError:
+        pass
+    return out
+
+
+ROOM_RULES = room_rules()
+
+
+def parser_cfg(channel_id, text):
+    c = {}
+    for rule in ROOM_RULES.get(str(channel_id), []):
+        if rule == "bare":
+            c["entry_no_verb"] = True
+        elif rule == "dotdate":
+            c["dot_date"] = True
+        elif rule == "readonly":
+            c["read_only"] = True
+        elif rule.startswith("pivot="):
+            c["pivot_root"] = rule.split("=", 1)[1].upper()
+        elif rule.startswith("sym="):
+            c["default_symbol"] = rule.split("=", 1)[1].upper()
+    # OWLS all-alerts carries several callers. Production applies their known
+    # grammar after unwrapping the relay; mirror those narrow rules here.
+    if str(channel_id) == "1449226651064991806":
+        low = text.lower()
+        if "muggzone-options" in low or "muggzone message" in low:
+            c["entry_no_verb"] = True
+        if "shabs-sky-alerts" in low or "eli-alerts" in low:
+            c["default_symbol"] = "SPX"
+    return c
+
+
 def newest_export():
     """9/10: exports are now "<day> (discord).txt" / "<day> (whop).txt" — both
     profiles used to write ONE name and clobber each other's whole day. The
@@ -255,7 +298,9 @@ def main():
     per = defaultdict(lambda: {"msgs": 0, "actionable": 0, "judged": 0, "silent": []})
     keep = [(t, room, cid, text) for (t, room, cid, text) in msgs
             if not any(room.startswith(x) for x in SKIP_ROOMS) and not text.startswith("🎙")]
-    parsed = jsparse.parse_many([strip_header(x[3]) for x in keep])
+    bodies = [strip_header(x[3]) for x in keep]
+    parsed = jsparse.parse_many(
+        bodies, [parser_cfg(x[2], body) for x, body in zip(keep, bodies)])
     for (t, room, cid, text), sig in zip(keep, parsed):
         p = per[room]
         p["msgs"] += 1

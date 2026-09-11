@@ -506,6 +506,10 @@ function cleanText(raw) {
   t = t.replace(/^\s*\d{1,3}\.\s+/, "");
   // A1 - normalize smart quotes so a quoted premium ("2.21") parses.
   t = t.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  // Live OWLS typo (9/11): "RKLB 9/25 $70 clls 1.39". It is a complete
+  // contract in MuggZone's bare-entry grammar; normalize only the standalone
+  // misspelling so it cannot turn part of another word into an option side.
+  t = t.replace(/\bclls?\b/gi, "calls");
   // THE EXPIRY WRITTEN WITH A DOT (9/10, Maguro in Low Key Stonks). His whole
   // grammar is  $TICKER STRIKEc MM.DD PRICE  — and either order:
   //     "$uber 80c 09.18 1.46"     "$tlt 83c 10.16 1.01"

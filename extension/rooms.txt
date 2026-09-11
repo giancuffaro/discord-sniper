@@ -237,7 +237,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # and all. His SL / TP ladder is READ AND RECORDED (their_stop / their_target)
 # but NOT traded: G, 9/10 — "we can ignore that since we have the ratchet."
 # That is the ENTRIES ONLY doctrine, unchanged.
-1503509270526951575|https://discord.com/channels/718624848812834903/1503509270526951575|Mugzone Options|Dallas Capital|on
+1503509270526951575|https://discord.com/channels/718624848812834903/1503509270526951575|Mugzone Options|Dallas Capital|on|bare
 # FloridaManFinance — ADDED 9/10 on G's paste. Same guild again.
 #   "@Florida man alerts entered $CCXI 17.5C 10/16 @ $0.50-0.55/ea."
 #   "@Florida man alerts Lotto Entered $GLD 416C 0DTE @ $0.53/ea"
@@ -427,4 +427,3 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # fill announcer posts there. Reading it would feed the bot its own fills as
 # if they were somebody's calls.
 # ============================================================
-

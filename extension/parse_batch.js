@@ -42,9 +42,14 @@ const lines = process.argv.includes("--json")
   ? JSON.parse(raw || "[]")
   : raw.split("\n").filter(l => l.length);
 
-const out = lines.map(t => {
+const out = lines.map(item => {
   try {
-    const s = parseSignal(String(t), cfg) || {};
+    // Audit callers may supply the effective per-room flags. Plain strings
+    // remain the public/default format used by scoreboard and older tools.
+    const text = item && typeof item === "object" ? item.text : item;
+    const roomCfg = item && typeof item === "object" && item.cfg
+      ? Object.assign({}, cfg, item.cfg) : cfg;
+    const s = parseSignal(String(text || ""), roomCfg) || {};
     return { action: s.action || null, symbol: s.symbol || null, strike: s.strike ?? null,
              side: s.side || null, expiry: s.expiry || null, limit: s.limit ?? null,
              why: s.why || "", matched: s.matched || "", fire: !!s.fire,

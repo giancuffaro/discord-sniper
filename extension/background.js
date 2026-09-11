@@ -4006,7 +4006,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // a mixed feed). This is what lets their dedicated tabs retire into this one.
     if (String(msg.channelId || "") === "1449226651064991806") {
       const _om = String(msg.text || "").match(/from\s*[^\w]*([a-z0-9][a-z0-9\-]{1,30})/i);
-      if (_om) {
+        if (_om) {
         const _slug = _om[1].toLowerCase();
         const _OWLS = {
           "shabs-sky-alerts": "shabs", "shabs": "shabs",
@@ -4016,9 +4016,13 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
           "jon-and-kian": "Jon and Kian", "ab": "AbTrades", "tt": "TT",
           "eva": "Eva", "neal": "Neal",
         };
-        msg.author = _OWLS[_slug] || _slug;
-        msg.relay_source = _slug;
-        if (msg.author === "shabs" || msg.author === "eli") {
+          msg.author = _OWLS[_slug] || _slug;
+          msg.relay_source = _slug;
+          // MuggZone often omits the verb: "RKLB 9/25 $70 clls 1.39". His
+          // dedicated room carries the `bare` rule in rooms.txt; give his
+          // messages the same grammar when the all-alerts bot relays them.
+          if (msg.author === "MuggZone") c.entry_no_verb = true;
+          if (msg.author === "shabs" || msg.author === "eli") {
           // Their bare "7655p" is SPX. The contract is read correctly; it is
           // then HELD by indexGuard until execution.index_broker is set,
           // because the SPX->SPY substitution was deleted 9/10.

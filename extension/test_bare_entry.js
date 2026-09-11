@@ -22,6 +22,7 @@ const FIRE = [
   ["verbless, prose",    "Guys Friday lottos - NBIS 230C @.25",      "NBIS", 230, "CALLS"],
   ["verbless, 0dte",     "AMD 0dte 445p @ .76 grabbing a cheap lotto","AMD", 445, "PUTS"],
   ["BTO still fires",    "BTO SPY 8/17 776c @ .23 risky lotto",       "SPY", 776, "CALLS"],
+  ["OWLS clls typo",     "RKLB 9/25 $70 clls 1.39 @everyone",          "RKLB", 70, "CALLS"],
 ];
 const NEVER = [
   // THE ONE THAT MATTERS: eight contracts on one line, comparison operators

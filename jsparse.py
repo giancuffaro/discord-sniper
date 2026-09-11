@@ -43,12 +43,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 BATCH = os.path.join(HERE, "extension", "parse_batch.js")
 
 
-def parse_many(texts):
+def parse_many(texts, configs=None):
     texts = [str(t or "") for t in texts]
     if not texts:
         return []
     try:
-        r = subprocess.run(["node", BATCH, "--json"], input=json.dumps(texts).encode("utf-8"),
+        payload = texts if configs is None else [
+            {"text": t, "cfg": (configs[i] if i < len(configs) else {}) or {}}
+            for i, t in enumerate(texts)]
+        r = subprocess.run(["node", BATCH, "--json"], input=json.dumps(payload).encode("utf-8"),
                            capture_output=True, timeout=120)
         if r.returncode == 0 and r.stdout:
             out = json.loads(r.stdout.decode("utf-8", "replace"))
