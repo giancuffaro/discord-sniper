@@ -205,6 +205,13 @@ def _alert_meta():
     return exact, loose
 
 
+def _blank(v):
+    """Is this cell empty? Type-safe on purpose: rows read back from the CSV
+    hold strings, but a row built this run can hold a real int or float from
+    telemetry, and `(r.get(c) or "").strip()` throws on those."""
+    return v is None or (isinstance(v, str) and not v.strip()) or v == ""
+
+
 def _strike_key(v):
     try:
         return "%.4f" % float(v)
@@ -232,23 +239,23 @@ def _apply_meta(rows):
         got = False
         for col in ("room", "caller", "their_price", "bid", "ask",
                     "delta", "iv"):
-            if not (r.get(col) or "").strip() and m.get(col):
+            if _blank(r.get(col)) and m.get(col):
                 r[col] = m[col]
                 got = True
-        if not (r.get("posted_at") or "").strip() and m.get("alert_at"):
+        if _blank(r.get("posted_at")) and m.get("alert_at"):
             r["posted_at"] = m["alert_at"]
             got = True
-        if not (r.get("seen_at") or "").strip() and m.get("seen_at"):
+        if _blank(r.get("seen_at")) and m.get("seen_at"):
             r["seen_at"] = m["seen_at"]
             got = True
         # read_ms is alert->seen: the only leg of the latency chain a
         # REFUSED alert has, because it was never sent and never filled.
-        if not (r.get("read_ms") or "").strip():
+        if _blank(r.get("read_ms")):
             a, b = _f(m.get("alert_at")), _f(m.get("seen_at"))
             if a and b and b >= a:
                 r["read_ms"] = int(round((b - a) * 1000))
                 got = True
-        if not (r.get("spread_pct") or "").strip():
+        if _blank(r.get("spread_pct")):
             bid, ask = _f(r.get("bid")), _f(r.get("ask"))
             if bid and ask and (bid + ask) > 0:
                 r["spread_pct"] = round((ask - bid) / ((ask + bid) / 2.0) * 100.0, 2)

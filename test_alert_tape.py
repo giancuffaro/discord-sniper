@@ -293,6 +293,68 @@ def test_option_tape_is_not_disturbed():
     print("option_tape.csv and the fast lane that writes it are untouched.")
 
 
+def test_a_refused_alert_reaches_master_alerts():
+    """The whole point, end to end: an alert that was REFUSED still ends up
+    with a room, a caller, a real bid/ask, greeks and a read latency on its
+    master_alerts.csv row \u2014 all five were blank on all 289 refused rows,
+    because trades.log (their only record) carries none of them."""
+    import build_alerts as ba
+
+    r, tape, meta = _rec(lambda occs: {o: (1.30, 1.20, {}) for o in occs},
+                         healthy=lambda: True, is_open=lambda: True,
+                         und_price=lambda s: 767.42)
+    occ = _future_occ(strike=767.5)
+    order = {"symbol": "SPY", "side": "CALLS", "strike": 767.5,
+             "expiry": "2026-09-18", "room": "Elite Options",
+             "trader": "Brett", "limit": 1.22, "coid": "c9",
+             "alert_at": 2000.000, "seen_at": 2000.350}
+    r.register(occ, order)
+    r._tick()                                   # the first REAL quote lands
+
+    today = time.strftime("%Y-%m-%d")
+    row = {c: "" for c in ba.COLUMNS}
+    row.update({"date": today, "time": "10:31:02", "symbol": "SPY",
+                "side": "CALLS", "strike": "767.5",
+                "outcome": "BUYING POWER too small",
+                "source": "trades.log"})
+
+    old_meta = ba.META
+    ba.META = meta
+    try:
+        touched = ba._apply_meta([row])
+    finally:
+        ba.META = old_meta
+
+    ok(touched == 1, "the refused alert's row was filled in")
+    ok(row["room"] == "Elite Options", "it has a ROOM now (was blank on 170 "
+                                       "of 326 rows)")
+    ok(row["caller"] == "Brett", "it has a CALLER now (was blank on 237)")
+    ok(row["bid"] == "1.2" and row["ask"] == "1.3",
+       "and the REAL bid/ask the contract actually printed, not a model "
+       "(got %r/%r)" % (row["bid"], row["ask"]))
+    ok(row["their_price"] == "1.22", "beside the price the caller claimed \u2014 "
+                                     "which is the whole comparison")
+    ok(row["read_ms"] == 350, "and how long the reader took to see it (%r)"
+                              % row["read_ms"])
+    ok(row["spread_pct"] not in ("", None),
+       "spread_pct comes free once bid and ask are real")
+    ok(row["outcome"] == "BUYING POWER too small",
+       "and none of this changed WHAT HAPPENED to the alert")
+
+    # nothing is ever overwritten
+    row2 = dict(row, room="Somewhere Else", bid="9.99")
+    ba.META = meta
+    try:
+        ba._apply_meta([row2])
+    finally:
+        ba.META = old_meta
+    ok(row2["room"] == "Somewhere Else" and row2["bid"] == "9.99",
+       "a column that already had an answer is never overwritten")
+    print("A refused alert now carries its room, its caller, a real bid/ask, "
+          "and the reader latency \u2014 all of which were blank on every one of "
+          "the 289 refusals.")
+
+
 if __name__ == "__main__":
     test_every_alert_is_registered_once()
     test_expired_is_never_tracked()
@@ -304,6 +366,7 @@ if __name__ == "__main__":
     test_closed_market_costs_nothing()
     test_the_file_shape()
     test_option_tape_is_not_disturbed()
+    test_a_refused_alert_reaches_master_alerts()
     print()
     if FAILS:
         print("FAILED %d check(s):" % len(FAILS))
