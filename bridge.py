@@ -2282,6 +2282,14 @@ def _book_futures(order, key):
 
 
 _RECENT_COIDS = {}          # coid -> (timestamp, (ok, msg)) — retry dedup
+# F10 (9/11 audit): the dict above was read (checked for a prior result) and
+# written (recorded the result) with no lock between the two, and nothing
+# claimed a coid until AFTER _place_impl() returned — so two concurrent
+# requests carrying the same coid both saw "no prior" and both dispatched
+# a real order. _RECENT_LOCK + _INFLIGHT close that: the SECOND caller for
+# a coid now blocks on the first one's own Event instead of racing it.
+_RECENT_LOCK = threading.Lock()
+_INFLIGHT = object()        # sentinel: "claimed, dispatch not finished yet"
 # ONE contract, ONE entry, 20 seconds (8/25, the UBER triple-buy): the same
 # spoken line hit from three relays ~1s apart and the extension's echo-lock
 # set too late while the AI reads were still running — three real buys.
