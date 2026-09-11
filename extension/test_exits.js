@@ -35,14 +35,6 @@ const REAL_EXITS = [
   ["bare out",        "MU 980c 5.00 out here"],
 ];
 
-const SHOP_ENTRY = "SHOP 150c 11/20 6.80 starter @Brick Alerts $SHOP is down almost 15% and I will wait for dip buys or trims or stops";
-{
-  const s = parseSignal(SHOP_ENTRY, {}) || {};
-  const ok = s.action === "OPEN" && s.symbol === "SHOP" && s.strike === 150 &&
-    s.side === "CALLS" && s.expiry === "11/20" && s.limit === 6.80;
-  if (!ok) bad++;
-  console.log(`  ${ok ? "PASS" : "FAIL"}  SHOP starter entry with later trim/stop prose`);
-}
 /* ---- CROSS-ROOM AUDIT, 9/7 ----------------------------------------------
  * Running every room's captured messages through the parser and looking for
  * lines that carry a real contract but produce NOTHING turned up two faults
@@ -72,6 +64,14 @@ const STC = [
   ["bare STC",         "STC SPY 8/31 770c @ 3.13",                                "CLOSE"],
 ];
 let bad = 0;
+const SHOP_ENTRY = "SHOP 150c 11/20 6.80 starter @Brick Alerts $SHOP is down almost 15% and I will wait for dip buys or trims or stops";
+{
+  const s = parseSignal(SHOP_ENTRY, {}) || {};
+  const ok = s.action === "OPEN" && s.symbol === "SHOP" && s.strike === 150 &&
+    s.side === "CALLS" && s.expiry === "11/20" && s.limit === 6.80;
+  if (!ok) bad++;
+  console.log(`  ${ok ? "PASS" : "FAIL"}  SHOP starter entry with later trim/stop prose`);
+}
 console.log("EXPLICIT STC — an order, whatever the caller says next:");
 for (const [n, t, want] of STC) {
   const s = parseSignal(t, {}) || {};
