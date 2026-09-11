@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (16:44) — close audit rebuilt from the durable full-day RAW plus session parser records; 303 inputs/24 speaking rooms, 33 observed entries, one broker order/fill, +$5 actual. Daily fixed-stop vs live-ratchet comparison is now automatic; today's price-covered subset was -$39 vs -$18, ratchet +$21, with only 5/33 alerts priceable.
+Last updated: 2026-09-11 (16:55) — Mode C close-out: master_broker.csv price-blind twin merge (9 stacked rows removed), journal-2026-09-11.xlsx, scoreboard appended; Chrome must be up before 9:15 (9/11 it started 09:49 and four morning calls were never read).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -429,6 +429,12 @@ FILL ANNOUNCER (announcer.py, read-only)
   scratch file (G, 9/9: never dated piles).
   Merge is REPLACE-DON'T-STACK per order (placed-time+contract+side+size+
   limit): a later pull replaces a WORKING snapshot, never duplicates it.
+  PRICE-BLIND TWINS (9/11): a stop leg has no limit, so one pull may write
+  its stop price in "Price" and another nothing; the merge treats a blank-
+  price copy of the same placed-time/contract/side/size/snapshot as the SAME
+  order (keeps the priced copy) and collapses any such twins already in the
+  master on load. 9/10 had 7 (3 FILLED sells the FIFO could mis-pair).
+  Webull_Orders_auto.csv "Price" = limit_price, else stop_price.
   Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
   master_ledger and master_alerts; NO .bak files in the root anymore.
 - BROKER TRUTH: `master_broker.csv` is paged across the full Webull order history; 100-row pages must continue with `last_client_order_id` until a short page. `build_ledger.py` computes P&L from broker fills, collapses carryovers by caller+contract+entry, and matches either end date for overnight trades. Do not quote P&L from book-priced rows when a broker row exists. Current historical split recorded 9/10: 705 completed round trips, −$4,228 total; G’s hand trading −$4,332; bot +$301 by the broad broker attribution.
@@ -612,6 +618,13 @@ FILL ANNOUNCER (announcer.py, read-only)
    that profile's Chrome is already running, the launch reuses the existing
    process and ignores them.)
 5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
+6. CHROME BEFORE 9:15 (9/11): START HERE ran at 09:49, so no room was read
+   9:15–9:49 — QCOM 185C, NVDA 220C, MNQ short and DELL 560C were never seen.
+   Rooms open themselves at 9:15 only if Chrome + the extension are already
+   up; run START HERE (or schedule it) by 9:00 on trading days.
+7. Chrome extension for Claude was NOT connected at the 16:35 close-out, so
+   the /stream check (last_sweep_ms, budget_left) was skipped; re-sign-in
+   the "Claude in Chrome" side panel if you want the autopilot to read it.
 (OWLS all-alerts "no tab" — RESOLVED by ROOM HOURS: the extension opens
 every `on` room at 9:15 by itself; verify OWLS reads on 9/10.)
 (daily-journal-and-fix — DELETED 9/9 evening; Mode C did its first clean
@@ -628,13 +641,6 @@ close-out today.)
 - The 9/10 META row in master_ledger.csv reads exit_by "room call" from
   the old "sold on their call" wording (fixed 9/10 16:33) — it was the
   pullback target, NOT a room exit. Not an ENTRIES ONLY breach.
-- **7-ROOM RE-ENABLE (04:14) — RESOLVED, rooms.txt back at 19 by 04:36.**
-  Something briefly uncommented 7 cut rooms (Options Watchlist, Vero 1,
-  Vero 3, Platinum equity, NGD ngd-trades, shabs, eli), taking the file to 26;
-  it (or G) reverted to 19 (15 Discord + 4 Whop) 22 minutes later, confirmed
-  unchanged since (rooms.txt mtime 04:36, still 19 lines at today's
-  close-out). shabs + eli stay retired in favor of OWLS all-alerts — see the
-  Pending item above, since that relay has had no tab all day.
 - Discord logoff under tab load — 9/9: 27 rooms cut to 8 (ledger-dead rooms,
   then the whole ZTRADEZ server on its sub lapsing), G re-added 11 to land at
   19 (the 04:14 blip above never stuck). Watch whether logoffs stay clear at

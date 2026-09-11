@@ -16,7 +16,10 @@
 #           on its door once a day (off-hours) and tells you when it is
 #           readable again; flipping it on is still your click
 # An optional 6th field holds the room's RULES, comma-separated:
-#   spx       index calls in this room trade as SPY (strike/10, premium dropped)
+#   (the `spx` rule was DELETED 9/10 — index calls are NO LONGER traded as
+#    SPY. The symbol and strike stay exactly as the caller wrote them, and
+#    an index entry is refused unless execution.index_broker names a broker
+#    that can actually take it. See parser.js indexGuard.)
 #   bare      an entry with no verb still counts ("SPY 650c 1.20")
 #   sym=SPX   the symbol to assume when a call names none
 #   always    tab open 24h — the FUTURES rooms. Every other `on` room opens at
@@ -124,7 +127,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # LAPSED: Boka Trading Premium lapsed Aug 7 — and Discord agrees: this channel returns "No Access" (verified 9/7)
 1499190814482632825|https://discord.com/channels/1156381060108664884/1499190814482632825|Boka 2|Boka Trading|lapsed
 # LAPSED: Boka Trading Premium lapsed Aug 7 — and Discord agrees: this channel returns "No Access" (verified 9/7)
-1395159239164432515|https://discord.com/channels/1156381060108664884/1395159239164432515|Boka 3|Boka Trading|lapsed|spx
+1395159239164432515|https://discord.com/channels/1156381060108664884/1395159239164432515|Boka 3|Boka Trading|lapsed
 
 769797179992571914|https://discord.com/channels/769790224921395200/769797179992571914|Option Alerts|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|on
 # CUT 9/7 (Options Watchlist) — 44 unique messages captured, 0 signals, 0 entries — it is a WATCHLIST, and watchlist rows are the exact thing the parser must never fire on ("$150p on watch"). A whole tab of RAM for nothing.
@@ -169,7 +172,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 1086120203009658982|https://discord.com/channels/911385966864896081/1086120203009658982|Platinum day-trades|Platinum Trading|on
 1533885258724937739|https://discord.com/channels/911385966864896081/1533885258724937739|Platinum ei-alerts|Platinum Trading|on
 # CUT 9/7 (Platinum equity) — 203 captured messages, 4 fires, ZERO entries — MrMTrades posting SWING ideas on SHARES, no strike/expiry. Fails the no-swings, options-only, and no-watchlist rules at once.
-983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity|Platinum Trading|off
+983807207625859143|https://discord.com/channels/911385966864896081/983807207625859143|Platinum equity|Platinum Trading|on
 
 # DO NOT ADD 911389321993523210 (Platinum "lottos") — it is Demon Alerts
 # mirroring the ZTRADEZ demon room already listed above. Adding it = the
@@ -199,13 +202,170 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # record scanned) and eli both now flow through the aggregator below via
 # background.js's relay unwrap — nothing lost by keeping only the one tab.
 # RETIRED 9/9 into OWLS all-alerts (G: "remove the rooms covered by all alerts")
-1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital|on|spx,sym=SPX
-1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital|on|spx,sym=SPX
+1513300726141419550|https://discord.com/channels/718624848812834903/1513300726141419550|shabs|OWLS Capital|on|sym=SPX
+1519039282537300209|https://discord.com/channels/718624848812834903/1519039282537300209|eli|OWLS Capital|on|sym=SPX
 # OWLS all-alerts (wired 9/9) — the sole OWLS tab. Aggregates all 11
 # analysts (including shabs/eli above) into one feed; background.js unwraps
 # the relay to the real analyst. Wired yesterday — 0 rows so far is expected
 # at this age, not a reason to cut; carries shabs' proven record through it.
 1449226651064991806|https://discord.com/channels/718624848812834903/1449226651064991806|OWLS all-alerts|OWLS Capital|on
+# TheArchitech / "VIX Insights from Alice Capitals" — ADDED 9/10 on G's paste.
+# Never captured before: 0 messages in the whole corpus, so this is a genuinely
+# new room, not one we were reading badly.
+# GRAMMAR (from his own posts, G walked me through each one 9/10). The tokens
+# are ticker / strike+side / expiry, and they arrive in ANY ORDER — G: "it
+# doesn't matter the order of the expiration or the price or the ticker."
+#   "7730C 0DTE"                          -> SPX 7730 CALLS today (sym=SPX)
+#   "2DTE $765C SPY CALLS"                -> SPY 765 CALLS, 2 days out
+#   "8/24 $255P $AMZN"                    -> AMZN 255 PUTS 8/24
+#   "$AAOI 9/25 $130C SWING small"        -> AAOI 130 CALLS 9/25
+#   "$NVDA $225C/ and $230C NEXT FRI"     -> TWO orders, 1 contract each
+# No price in any of them, so the bot bids the market.
+# SPX ORDERS DO NOT GO OUT. The SPX->SPY substitution was DELETED 9/10 on G's
+# instruction; an SPX call is held with a plain reason until
+# execution.index_broker is set (tastytrade/tradier, a separate account). The
+# non-SPX calls above trade normally.
+# OFF until G has watched it for a day.
+1519715923752128572|https://discord.com/channels/718624848812834903/1519715923752128572|TheArchitech VIX Insights|OWLS Capital|off|sym=SPX,bare
+# Mugzone Options / Dallas Capital — ADDED 9/10 on G's paste. Same guild as the
+# OWLS rooms above. The CLEANEST grammar of any room we read: ticker, expiry,
+# strike, side, price, in that order, every time.
+#   "MU 1020 9/11 CALLS @ 2.2 SL 1.45 TP 2.6 / 3.3 / 4.4 @everyone"
+#   "1. SPCX 9/11 155 calls 1.95 SL 1.45 tp 2.45 / 2.85 / 3.5 @everyone"
+# Needs NO rules — verified against the live parser 9/10, both lines above give
+# the right contract, expiry and limit with a bare config, numbered-list prefix
+# and all. His SL / TP ladder is READ AND RECORDED (their_stop / their_target)
+# but NOT traded: G, 9/10 — "we can ignore that since we have the ratchet."
+# That is the ENTRIES ONLY doctrine, unchanged.
+1503509270526951575|https://discord.com/channels/718624848812834903/1503509270526951575|Mugzone Options|Dallas Capital|on|bare
+# FloridaManFinance — ADDED 9/10 on G's paste. Same guild again.
+#   "@Florida man alerts entered $CCXI 17.5C 10/16 @ $0.50-0.55/ea."
+#   "@Florida man alerts Lotto Entered $GLD 416C 0DTE @ $0.53/ea"
+#   "1. $ABAT 4C 8/21 @ $0.05/ea"
+# The first two carry the verb "entered" and read with no rules at all. The
+# NUMBERED ones do not — they are a bare contract and a price, which is exactly
+# what the `bare` rule is for, so it is on here. Verified 9/10: all three fire
+# with the right contract and limit (a range "@ $0.50-0.55" takes the LOW end,
+# which is the bid we want), and his exits, trims, "up 100%" and "watching"
+# lines all stay silent or land as EXIT-IGNORED.
+# Single-digit strikes are real here ($ABAT 4C) — the reader handles them.
+1319444838826905650|https://discord.com/channels/718624848812834903/1319444838826905650|FloridaManFinance|Florida Man Alerts|on|bare
+# AbTrades Alert Bot — ADDED 9/10 on G's paste. Same guild, fourth room from it
+# in one day; that guild is a hub and the 9/9 scan under-read it. A BOT posts
+# these, so the format never varies: TICKER, expiry, strike+side, price. No
+# verb, no "@" in front of the price — hence `bare`.
+#   "$GOOGL 11/20 370c 8.3"      "$DAL 11/20 90c 1.65"
+#   "$AMZN 11/20 300c 4.8 Starters"
+# TWO CONTRACTS IN ONE MESSAGE, same ticker, different expiry AND price:
+#   "$APLD 10/16 30c 2.75 1/4th size $APLD 9/18 30c .9 Lotto size"
+# Both go out, one contract each, each with its OWN expiry and price. That
+# shape was found here and the reader was taught it here (extraStrikes shape 2).
+# Mostly 30-70 DTE — these are SWINGS, so the wide -25% swing stop runs them,
+# re-armed at 9:31 each morning, not the intraday ratchet.
+1235366372385493074|https://discord.com/channels/718624848812834903/1235366372385493074|AbTrades Alert Bot|AbTrades|on|bare
+# OWLS #jon-and-kian — ADDED 9/10, READ LIVE off G's link (30 messages, 9/1-9/10).
+# Channel topic: "Mainly Swing trades based on unusual options activity" — so
+# these ride the wide swing stop, not the intraday ratchet.
+# Two callers, one alert bot ("OWLS Capital Clanker"), every post labelled:
+#   OPEN:   "RKLB 70C 10/16 Exp. at 3.60"                     (Jon)
+#   OPEN:   "bit of a chase here but FRVO 25C 3/19exp 4.05 premium"  (Kian)
+#   OPEN:   "PURR 15C 1/15exp 2.15 premium"    <- a JANUARY leap, not a weekly
+#   plain:  "T 29C 01/15/2027 Exp. At 0.50 @everyone"         (Jon, no label)
+#   CLOSE:/Update: are exits and running P&L — EXIT-IGNORED, never traded.
+# NO RULES NEEDED. But reading it found three real defects, all fixed 9/10 and
+# held by test_owls_jonkian.js: the date GLUED to "exp" was being dropped
+# (would have bought PURR's January contract as this Friday); a price with no
+# "@" in front of it was ignored, so every entry here bid the market; and the
+# label CLOSE was being read as the ticker.
+# They also trade COMMONS ("CHGG commons at .83") — correctly ignored, this
+# machine trades options and futures.
+728711121128652851|https://discord.com/channels/718624848812834903/728711121128652851|OWLS jon-and-kian|OWLS Capital|on
+
+# ============================================================
+# LOW KEY STONKS (guild 722872384800948227) — scanned live 9/10.
+# G's sub here was ~20 hours for $5 and access has outlasted it. He asked to
+# fish the whole server before it closes. 40 channels; 20 carry alerts.
+# THE SIDEBAR IS VIRTUALISED — the first scrape saw 26 channels and MISSED the
+# entire "Futures Alerts" and "Stock/Option Alerts" sections. Scroll the
+# channel list end to end before believing a server has been scanned. This is
+# almost certainly what the 9/9 full-depth scan got wrong everywhere.
+# Every room below was READ and every format RUN THROUGH THE PARSER first.
+# ---- TAKEN ----
+# demon-day-trades: the cleanest options grammar in the server, no rules.
+#   "BTO $TSLA 380c 09/09 @0.60"   "BTO $QQQ 709p 09/10 @0.78"
+1169216956746969088|https://discord.com/channels/722872384800948227/1169216956746969088|Demon day-trades|Low Key Stonks|on
+# nando-alerts: SWINGS, months out, verb and price every time. No rules.
+#   "Swing Trade: BTO 6 KO 92.5C 1/15/2027 @ 2.59"
+#   "Swing Trade: BTO 4 WMT 110C 12/18 @ 4.05"
+# His trims and "contracts sitting @ $500" updates stay silent / EXIT-IGNORED.
+1315500058573144166|https://discord.com/channels/722872384800948227/1315500058573144166|Nando Alerts|Low Key Stonks|on
+# brick-alerts: needs `bare` — he writes the contract with no verb, either way
+# round:  "DDOG 10/16 290c 4.7"   "MRK 155c 10/16 3.20 Half size"
+# Verified 9/10: both read correctly WITH the rule and his chatter ("Might be
+# out again this week", "HOOD re entered this @ 5.10") stays silent.
+1315498906036994129|https://discord.com/channels/722872384800948227/1315498906036994129|Brick Alerts|Low Key Stonks|on|bare
+# ---- LEFT OFF, WITH THE REASON ----
+# maguro-alerts — ON, and the `dotdate` rule was written FOR this room (9/10).
+# He writes the expiry with a DOT, either side of the strike, price last:
+#   "$uber 80c 09.18 1.46"   "$tlt 83c 10.16 1.01"   "$intc 100c 10.16 4"
+#   "$mrvl 10.16 250c 11.5"  "$amzn 270c 11.20 10.2"
+# Without the rule the reader takes 10.16 as the PRICE and the date as missing
+# — it would have bid $10.16 for a $2.35 contract and bought this Friday
+# instead of October. All 8 of his contract alerts now read EXACTLY (ticker,
+# strike, date, price) and his percent updates stay trims. test_dotdate.js.
+# `dotdate` is per-room on purpose: elsewhere "965c 1.26" is a $1.26 price.
+1315499172425764975|https://discord.com/channels/722872384800948227/1315499172425764975|Maguro Alerts|Low Key Stonks|on|bare,dotdate
+# kaori-alerts — STILL OFF, and for a money reason: "$NOK 20C jan 2028 @1.38"
+# fires with NO expiry, so it would buy this Friday instead of January 2028.
+# She also writes "$RDDT 1dte lotto for ER - 220C @0.96" (strike after a dash)
+# and "$WM 9/18 250C on watch", which is a watchlist line and must stay silent.
+# Needs a month-YEAR expiry rule. Low volume — a handful of calls a quarter.
+1315499776741081138|https://discord.com/channels/722872384800948227/1315499776741081138|Kaori Alerts|Low Key Stonks|off|needs month-year grammar
+# phiccduck-alerts — ON with `bare`. Verified 9/10 against his real posts; the
+# month-name expiry he uses already reads:
+#   "$COIN 200C sep 18 @2.6"      -> COIN 200C 9/18 @2.60
+#   "MSTR SEP 18 150 Call @3.3"   -> MSTR 150C 9/18 @3.30
+#   "$RBLX 55C jul 17 @1.45"      "$GRRR 20C jul 17 @1.7"
+# His "40% already", "360%, we made it" updates stay silent. LOW VOLUME: four
+# calls in two months. Free to carry, do not expect much from it.
+1315499512353128498|https://discord.com/channels/722872384800948227/1315499512353128498|PhiccDuck Alerts|Low Key Stonks|on|bare
+# xephyr-alerts — SPX iron condors ("Sell 7680C Buy 7685C Sell 7595P Sell
+# 7590P Credit - 1.90"). Two reasons off: multi-leg spreads are refused by
+# design, and SPX has no broker connected.
+1315504529898209310|https://discord.com/channels/722872384800948227/1315504529898209310|Xephyr Alerts|Low Key Stonks|on|spreads + SPX
+# CHIKA — ON, READ-ONLY (9/10, G walked me through her whole grammar).
+# She trades ONLY the NASDAQ and writes the last digits of the level:
+#   "short 195 pivot"  = NQ 29,195 short      "got a short 230"  = 29,230
+#   "reshorting 163 pivot, tight"             "565 short tight"
+#   "trying a olong 150 pivot"                "450 pivot short, stop 470"
+# The bridge expands the digits against a live quote, then waits for the next
+# 25 AGAINST the trade (195->200, 230->250, 203->225) — which is exactly what
+# webull_futures._round_entry already did, so no new maths was needed.
+# Her stop is read and KEPT (hers beats our default 25 points). Her
+# invalidation ("null if 160") and her trim sizes are NOT levels.
+#
+# READ-ONLY, and this is the reason: her last 170 messages are 64 entries and
+# 94 EXITS, with 5 flips. Her edge is the trims — she banks +10 to +25 points
+# over and over and flattens constantly. ENTRIES ONLY throws every one of
+# those away, so taking her entries with our ratchet is not her strategy, it
+# is ours started at her price. On 9/2 alone, entries-only would have stacked
+# five shorts and then flipped long inside two hours.
+# So: read her, write down what we WOULD have done, send nothing. When there
+# is a record worth judging, drop `readonly` from the rules below to arm her.
+# (Futures execution is off anyway: webull false, ninjatrader false, topstep
+# enabled but not executing.)
+1315502322985603082|https://discord.com/channels/722872384800948227/1315502322985603082|Chika Alerts|Low Key Stonks|on|pivot=NQ,readonly,always
+# The other three futures scalpers stay OFF — same unusable grammar, and none
+# of them writes a level the way Chika does: "long 218", "Short gc 4461",
+# "+65 trim". No instrument, no level, nothing to trade off.
+1316182395652669510|https://discord.com/channels/722872384800948227/1316182395652669510|Ducci Alerts|Low Key Stonks|on|futures scalps, no contract
+1478913485579489330|https://discord.com/channels/722872384800948227/1478913485579489330|Jon Tran Alerts|Low Key Stonks|on|futures commentary, no calls
+1535565295350194187|https://discord.com/channels/722872384800948227/1535565295350194187|Hog Alerts|Low Key Stonks|on|futures scalps, no contract
+# quantum-alerts — last real call was March 2026. Dead.
+1360350391522426940|https://discord.com/channels/722872384800948227/1360350391522426940|Quantum Alerts|Low Key Stonks|on|dead since March 2026
+# prediction-alerts is SPORTS BETTING. degenken/ascendancy/phiccduck/snakeeyes/
+# ahjummamacita read EMPTY (no access or no posts). longterm-alerts rooms are
+# share positions, not contracts.
 
 # ============================================================
 # FULL-DEPTH SCAN, 9/10/26 (G: "go channel by channel, don't skip any; the
@@ -267,4 +427,3 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # fill announcer posts there. Reading it would feed the bot its own fills as
 # if they were somebody's calls.
 # ============================================================
-

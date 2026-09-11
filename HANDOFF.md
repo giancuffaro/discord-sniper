@@ -641,13 +641,6 @@ close-out today.)
 - The 9/10 META row in master_ledger.csv reads exit_by "room call" from
   the old "sold on their call" wording (fixed 9/10 16:33) — it was the
   pullback target, NOT a room exit. Not an ENTRIES ONLY breach.
-- **7-ROOM RE-ENABLE (04:14) — RESOLVED, rooms.txt back at 19 by 04:36.**
-  Something briefly uncommented 7 cut rooms (Options Watchlist, Vero 1,
-  Vero 3, Platinum equity, NGD ngd-trades, shabs, eli), taking the file to 26;
-  it (or G) reverted to 19 (15 Discord + 4 Whop) 22 minutes later, confirmed
-  unchanged since (rooms.txt mtime 04:36, still 19 lines at today's
-  close-out). shabs + eli stay retired in favor of OWLS all-alerts — see the
-  Pending item above, since that relay has had no tab all day.
 - Discord logoff under tab load — 9/9: 27 rooms cut to 8 (ledger-dead rooms,
   then the whole ZTRADEZ server on its sub lapsing), G re-added 11 to land at
   19 (the 04:14 blip above never stuck). Watch whether logoffs stay clear at

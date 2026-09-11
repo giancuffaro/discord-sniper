@@ -9,6 +9,34 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (16:55 close-out, autopilot Mode C — Friday)
+THE DAY (broker truth, RECONCILIATION 9/11 MATCH +5.00): 4 order legs, 1 round trip. BOT +$5
+(Demon × LKS, CPS 25C 9/18, 0.65 → 0.70, 46 s, GOOD EXIT — after-exit high 0.80). G: no hand
+trades. Flat overnight, nothing to guard; margin BP $114 (G funds Monday). 0 EXIT-IGNORED lines,
+0 room-driven exits. The CPS machine faults (17 doomed 417 stock-quote hunts, 2 PARAM_ERR on
+replace_stop, POSTCHECK "book holds CPS, the account doesn't", double POSTCHECK) were fixed by the
+13:05 session; nothing new from the tape. Post-mortem tally 10: NOISE CLIP 5 (−$63), ARM CLIP 3
+(−$4), LEFT MONEY 1 (+$80), GOOD EXIT 1 (+$5).
+REPLAY: 8 raw silent drops — QCOM 185C .97 / NVDA 220C 3.06 / MNQ short 29462 (and DELL 560C)
+landed before Chrome started at 09:49 (rooms open at 9:15 only if Chrome is up — G's side, now
+Pending 6); MuggZone "clls" and shabs SPX 7700c fixed in ext 3.8.10 at 14:58; Midas "on starters"
+fixed same build; Brick's RKLB ADD 14:15 has no verdict in the old capture schema (would have been
+SWING-OFF, 10/16). NGD's 09:38 MNQ was a <history> paint. None was affordable anyway.
+FIXED TODAY (this run): build_ledger._merge_leg/absorb_exports — price-blind twins. Two pulls of
+the same stop leg (one writing stop_price as "Price", one blank) keyed as two orders; master_broker
+held 9 stacked rows (7 on 9/10, 3 of them FILLED sells). Merge now treats the blank-price copy as
+the same order and collapses existing twins on load: 1672 → 1663 rows, every day's reconciliation
+unchanged. py_compile + test_positions/phantom/architecture/tape + test_resolve + parser_gate green.
+Bridge restart storms: ~60 CODE restarts today (00:51–02:30 and 15:07–15:22), each a real edit
+landing in a safe window — not a loop. 429s after the close (16:22/16:27/16:33, /assets/positions
+while flat) are the FUT-POS 300 s poll still hitting the shared budget — watch, not a fault.
+Journal: journal-2026-09-11.xlsx (Trades + By Trader); trader-scoreboard.xlsx appended (Demon ×
+LKS new, small sample), Scoreboard recomputed from all days, caveats kept. build_alerts, scoreboard.py
+10 → SCOREBOARD.html rerun. Announcer PAUSED (announcer.stop) — checks skipped. Claude-in-Chrome
+was not connected → /stream check skipped (Pending 7). NOTE for G: the sniper-autopilot task text
+still describes the ratchet as 7.5/5/2 "settled"; HANDOFF (5/3/5 since 9/10) is the truth — update
+the task file so the autopilot never re-argues the old numbers.
+
 ## 2026-09-11 (16:44 full-day rebuild + ratchet counterfactual)
 The first close audit exposed a reporting regression instead of a clean day: after a Chrome
 restart, the export retained 1,247 RAW Discord records but only 14 session-local LIVE PARSER
