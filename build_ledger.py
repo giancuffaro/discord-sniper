@@ -467,6 +467,27 @@ def _merge_leg(by_order, leg):
     for prev in bucket:
         if _snap_key(prev) == sk:
             return False
+    # PRICE-BLIND TWIN (9/11): a stop leg has no limit, so one pull wrote its
+    # stop price in "Price" and another wrote nothing — the key differed on
+    # price alone and 9/10 gained 7 twins (3 of them FILLED sells that the
+    # FIFO could pair against the wrong lot). Same placed-time/contract/side/
+    # size AND same snapshot with one side's price blank = the same order;
+    # keep the priced copy, never add the second.
+    if not (leg.get("price") or ""):
+        for k2, b2 in by_order.items():
+            if k2[:4] == _order_key(leg)[:4] and k2[4]:
+                if any(_snap_key(q) == sk for q in b2):
+                    return False
+    else:
+        k_blank = _order_key(leg)[:4] + ("",)
+        b2 = by_order.get(k_blank) or []
+        for i, q in enumerate(b2):
+            if _snap_key(q) == sk:
+                del b2[i]
+                if not b2:
+                    by_order.pop(k_blank, None)
+                bucket.append(leg)
+                return True
     for i, prev in enumerate(bucket):
         if (prev.get("status") or "") not in FINAL_STATUS:
             bucket[i] = leg
@@ -485,8 +506,28 @@ def absorb_exports():
         if not paths:
             return 0, 0
         by_order = {}
+        _twins = 0
         for r in _read_broker():
+            if not (r.get("price") or ""):
+                # collapse blank-price twins already in the master (see
+                # _merge_leg): drop it if a priced copy of the same snapshot
+                # exists, or is still to come (checked on that later row).
+                k4 = _order_key(r)[:4]
+                if any(k2[:4] == k4 and k2[4] and
+                       any(_snap_key(q) == _snap_key(r) for q in b2)
+                       for k2, b2 in by_order.items()):
+                    _twins += 1
+                    continue
+            else:
+                b2 = by_order.get(_order_key(r)[:4] + ("",)) or []
+                for i, q in enumerate(b2):
+                    if _snap_key(q) == _snap_key(r):
+                        del b2[i]
+                        _twins += 1
+                        break
             by_order.setdefault(_order_key(r), []).append(r)
+        if _twins:
+            added += _twins          # force a rewrite without the twins
         for path in paths:
             legs = _export_legs(path)
             if legs is None:
