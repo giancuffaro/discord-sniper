@@ -1,0 +1,34 @@
+============================================================================
+PARSER GATE — extension/parser.js  vs  b3f76f5
+11385 messages, 74 rooms, 6362 on the allowlist
+============================================================================
+  entries fired BEFORE : 850
+  entries fired NOW    : 852   (+2)
+  gained: 2   lost: 0   expiry changed: 0
+  all actions BEFORE/NOW: 3049 / 3041
+  action gained: 0   lost: 8   changed: 2
+  JUNK TICKERS: 0 
+
+--- GAINED — new entries (2) ---
+  XLF    58    CALL 10/16   ✅⏐swing-trades             | XLF 58C 10/16 1.58 5 CONTRACTS - Finance sector breaking out into new all-time highs. I expect a
+  SHOP   150   CALL 11/20   🧱brick-alerts             | SHOP 150c 11/20 6.80 starter @Brick Alerts $SHOP is down almost 15% in the last couple days on A
+
+--- ACTION LOST — any message the new rule no longer acts on (8) ---
+  2026-08-19 10:18:43  CLOSE AAPL                        🚀options-chat🚀           | AAPL flag on 5min breaking out 
+  2026-08-20 19:43:27  CLOSE QQQ                         🔸︱🌗are-swings            | Finally have some time to review some charts, starting with the indexes $QQQ went from preparing
+  2026-08-20 19:46:29  CLOSE XLE                         🔸︱🌗are-swings            | More red flags for the market, $XLE (energy ETF) and oil stocks breaking out. Never a good sign 
+  2026-08-21 11:11:58  CLOSE IWM                         ◽︱🎩mr-top-hat             | @everyone so as i was gone IWM has made a single candle strategy pattern so it's broken under th
+  2026-08-27 08:03:31  CLOSE QCOM                        💡│technical-analysis      | @Premium Member Technical Analysis: $QCOM $QCOM has my attention this morning! Daily range but a
+  2026-09-10 10:43:28  CLOSE GS                          🛎️｜all-alerts             | From ⁠🌟｜eva @Updates Update: VEX chart for GS that 1000 strike for next week still having the h
+  2026-09-11 10:28:07  CLOSE AMZN                        🛎️｜all-alerts             | From ⁠🌟｜eva @Updates Update: AMZN - 4hr; Looking better on the higher timeframe possible break 
+  2026-09-11 11:28:10  CLOSE SPX                         🌟｜shabs-sky-alerts        | 500/con left 1 runner for valhalla cause I gotta run, thanks for the vote of 0 confidence @here,
+
+--- ACTION CHANGED — action or contract identity changed (2) ---
+  2026-09-03 15:55:48  CLOSE XLF 58 CALLS -> OPEN XLF 58 CALLS 10/16   ✅⏐swing-trades             | XLF 58C 10/16 1.58 5 CONTRACTS - Finance sector breaking out into new all-time highs. I expect a
+  2026-09-11 14:06:20  TRIM SHOP 150 CALLS -> OPEN SHOP 150 CALLS 11/20🧱brick-alerts             | SHOP 150c 11/20 6.80 starter @Brick Alerts $SHOP is down almost 15% in the last couple days on A
+
+============================================================================
+PASS — no invented tickers.
+Now READ the gained and lost lists above. A count is not a verdict:
+more entries is not better, fewer is not worse. Ask of each line,
+'is that a real call a room actually made?'

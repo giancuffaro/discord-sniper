@@ -160,20 +160,25 @@ const gained = [], lost = [], junk = [], expiry = [];
 const decisionGained = [], decisionLost = [], decisionChanged = [];
 let oldFire = 0, newFire = 0, oldActions = 0, newActions = 0;
 for (const r of rows) {
-  const cfg = Object.assign({}, ROOMS[r.ch] || {});
+  const cfgOld = Object.assign({}, OLD_ROOMS[r.ch] || {});
+  const cfgNew = Object.assign({}, ROOMS[r.ch] || {});
   // Production unwraps the OWLS relay and applies the source room's narrow
   // grammar. The historical gate must do the same or it tests a different
   // parser configuration than the live extension.
   const low = r.txt.toLowerCase();
   if (r.ch === "1449226651064991806") {
-    if (low.includes("muggzone-options") || low.includes("muggzone message"))
-      cfg.entry_no_verb = true;
-    if (low.includes("shabs-sky-alerts") || low.includes("eli-alerts"))
-      cfg.default_symbol = "SPX";
+    if (low.includes("muggzone-options") || low.includes("muggzone message")) {
+      cfgOld.entry_no_verb = true;
+      cfgNew.entry_no_verb = true;
+    }
+    if (low.includes("shabs-sky-alerts") || low.includes("eli-alerts")) {
+      cfgOld.default_symbol = "SPX";
+      cfgNew.default_symbol = "SPX";
+    }
   }
   let a = null, b = null;
-  try { a = OLD.parseSignal(r.txt, cfg); } catch (e) {}
-  try { b = NEW.parseSignal(r.txt, cfg); } catch (e) {}
+  try { a = OLD.parseSignal(r.txt, cfgOld); } catch (e) {}
+  try { b = NEW.parseSignal(r.txt, cfgNew); } catch (e) {}
   const oa = !!(a && a.action), na = !!(b && b.action);
   if (oa) oldActions++;
   if (na) newActions++;

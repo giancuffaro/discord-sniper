@@ -34,6 +34,11 @@ sys.path.insert(0, HERE)
 import jsparse                                          # noqa: E402
 import replay_check                                     # noqa: E402
 
+# Windows' inherited console encoding is often cp1252. Room names contain
+# emoji, so make the report command reliable from Task Scheduler and cmd.exe.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)\]  (.*)$")
 RE_DID = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  <(\w+)>  (.*)$")
 RE_PRICE = re.compile(r"\b\d{1,4}\.\d{1,2}\b")
@@ -237,6 +242,13 @@ def main():
     print("  — the two are indistinguishable now. The cap is 2500 since 9/3, so")
     print("  from here on 'missed' means missed. BLIND is trustworthy on every day:")
     print("  it is the parser's own verdict on the text, not a logging artifact.")
+
+    if tot_b:
+        print("\nBLIND DETAILS  (loading call armed, then an unparsed price message)")
+        for room, v in rooms.items():
+            for day, t, sym, body in v["blind"]:
+                print("  %s %s  %-6s  %-42s | %s" %
+                      (day, t, sym, room[:42], body))
 
     print("\nBY ROOM  (days spoken / msgs / tradable calls / traded / missed / blind)")
     for room, v in sorted(rooms.items(),

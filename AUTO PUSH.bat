@@ -31,7 +31,7 @@ if errorlevel 1 (
   rem Every parser rule must survive every retained message before it ships.
   rem The gate compares the staged parser with HEAD under each room's live
   rem grammar and refuses invented symbols. Its full delta remains reviewable.
-  git diff --cached --name-only | findstr /x /c:"extension/parser.js" >nul 2>&1
+  git diff --cached --name-only | findstr /x /c:"extension/parser.js" /c:"extension/rooms.txt" /c:"extension/optionable.txt" >nul 2>&1
   if not errorlevel 1 (
     node parser_gate.js --base HEAD --show 80 > "daily-audits\PARSER-HISTORY-LATEST.txt" 2>&1
     if errorlevel 1 goto gate_failed
