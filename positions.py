@@ -131,48 +131,6 @@ def key_of(trader, symbol, strike=None, side=None, expiry=None):
     return "%s|%s|%s|%s|%s" % (who, sym, strike_s, side_s, exp_s)
 
 
-def ratchet_locked_pct(gain_pct, stop_loss_pct, take_profit_pct):
-    """DEAD CODE — KEPT ONLY FOR ITS OWN TEST (flagged 9/9). Nothing live calls
-    this. The LIVE ratchet is ratchet_tiers.ratchet_locked_pct, imported at the
-    top of this file as `tier_locked_pct` and called from auto_ratchet(). The
-    only caller of THIS function is test_positions.py. Editing it changes
-    nothing the bot does — change ratchet_tiers.TIERS instead. It also has a
-    different signature (the live one takes (gain, fill)) and describes the
-    RETIRED 8/15-9/7 rule; the live rule is arm +5% -> BE, then +2% rungs.
-
-    Historical description of the retired rule follows.
-
-    His rule (8/15): the trade runs the normal -stop_loss_pct/+take_profit_pct
-    bracket to start, but once it reaches +take_profit_pct the stop WALKS UP
-    instead of closing the position — locked at +stop_loss_pct profit first,
-    then another +stop_loss_pct locked in for every further step of gain, where
-    a step is (take_profit_pct - stop_loss_pct). 10%/20%: gain 20 -> lock +10,
-    gain 30 -> lock +20, gain 40 -> lock +30, and so on with no ceiling — once a
-    trade reaches the first rung it can never come back red.
-
-    Returns the locked-in profit percentage (a positive number, the new stop
-    is that far ABOVE entry), or None while gain hasn't reached take_profit_pct
-    yet (the original bracket is still what's guarding it) or if the bracket
-    is set up wrong (step <= 0 — take-profit at or below the stop makes no
-    sense to ratchet, so this refuses rather than guess).
-
-    A tiny epsilon absorbs float noise on the boundary: (2.40 - 2.00) / 2.00
-    * 100 comes out 19.999999999999996 in real floating point, not a clean
-    20.0, and a bid landing EXACTLY on the take-profit price must still ratchet
-    — the alternative is silently skipping the very moment this exists for."""
-    # 8/25, his change: the ratchet arms EARLY. At +take_profit_pct the stop
-    # goes to BREAKEVEN (lock 0 — can't go red), and every further
-    # stop_loss_pct of gain locks another stop_loss_pct: 10/10 -> +10% locks
-    # BE, +20% locks +10, +30% locks +20, no ceiling. The old first rung
-    # (+20% -> +10) skipped straight past breakeven and left a +15% winner
-    # free to ride back to -10%.
-    step = stop_loss_pct
-    if step <= 0 or gain_pct is None or gain_pct < take_profit_pct - 1e-9:
-        return None
-    k = int((gain_pct - take_profit_pct + 1e-9) // step)
-    return step * k
-
-
 class Book:
     """Every entry this program has sent today, and what became of it.
 
@@ -763,7 +721,7 @@ class Book:
             held = [p.get("symbol") for p in self._pos.values()
                     if p.get("state") == FILLED]
             working = [p.get("symbol") for p in self._pos.values()
-                       if p.get("state") == WORKING]
+                       if p.get("state") == WORKING or p.get("closing")]
         return held, working
 
     def info(self, key):
@@ -3817,6 +3775,28 @@ class Book:
         (trim() selling the last contracts) and only needs the trade marked
         finished and counted.
         """
+        # A failed sell does not close a broker position. Keep it owned and
+        # eligible for the watchdog/reconciliation path, and restore any stop
+        # that claim() pulled before the failed exit.
+        if state == FAILED:
+            with self._lock:
+                failed = self._pos.get(key)
+                if failed and int(failed.get("qty") or 0) > 0:
+                    failed["state"] = FILLED
+                    failed["closing"] = False
+                    failed["exit_error"] = str(why or "")
+                    sym = failed.get("symbol") or key.split("|")[1]
+                else:
+                    failed = None
+            if failed:
+                try:
+                    self.rearm_stop_after_failed_exit(key)
+                except Exception:                       # noqa: BLE001
+                    pass
+                self._event(key, FAILED, "%s — %s; position retained"
+                            % (sym, why))
+                return
+
         with self._lock:
             p = self._pos.get(key)
             if not p:
