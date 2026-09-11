@@ -56,8 +56,8 @@ COLUMNS = [
     # tier/confidence say how the row was recovered and how much to trust it;
     # source_line is the log line itself, verbatim, so any row can be checked
     # against the log in one grep.
-    "caller_strike", "our_limit", "tier", "confidence", "how_recovered",
-    "source_line",
+    "caller_strike", "caller_expiry", "our_limit", "tier", "confidence",
+    "how_recovered", "source_line",
 ]
 
 
@@ -179,7 +179,12 @@ def _declined():
             "date": m.get("date") or "", "time": m.get("time") or "",
             "caller": caller, "symbol": (m.get("symbol") or "").upper(),
             "side": ("CALLS" if cm2 and cm2.group(2) == "C" else "PUTS" if cm2 else ""),
-            "strike": cm2.group(1) if cm2 else "", "expiry": cm2.group(3) if cm2 else "",
+            "strike": cm2.group(1) if cm2 else "",
+            # through the SAME calendar the bridge uses, anchored to the day
+            # the alert was posted — so "8/21" on an 8/17 row is 2026-08-21 and
+            # every row in this file speaks one date format.
+            "expiry": (_resolve_expiry(cm2.group(3), m.get("date"))
+                       or cm2.group(3)) if cm2 else "",
             "their_price": pm.group(1) if pm else "",
             "outcome": m.get("reason") or "declined",
             "reason": m.get("reason") or "", "detail": m.get("detail") or "",
@@ -710,6 +715,8 @@ def _apply_log(rows):
         if hit:
             r = rows[hit[0]]
             got = False
+            if e["tier"] == "E-order":
+                _take_expiry(r, e)
             for col, val in (("side", e.get("side")), ("strike", e.get("strike")),
                              ("expiry", e.get("expiry")),
                              ("their_price", e.get("their_price")),
@@ -736,7 +743,7 @@ def _apply_log(rows):
             "date": e["date"], "time": e["time"], "caller": e.get("caller") or "",
             "symbol": e["symbol"], "side": e.get("side") or "",
             "strike": e.get("strike") or "", "expiry": e.get("expiry") or "",
-            "caller_strike": e.get("caller_strike") or "",
+            "caller_strike": e.get("caller_strike") or "", "caller_expiry": "",
             "their_price": e.get("their_price") or "",
             "our_limit": e.get("our_limit") or "", "qty": e.get("qty") or "",
             "outcome": e["outcome"], "reason": e["outcome"], "detail": "",
@@ -758,9 +765,42 @@ _OUTCOME_RANK = {"alert read": 0, "PULLBACK armed (no resolution in the log)": 1
                  "PULLBACK never hit": 2, "PULLBACK touched": 4, "order-sent": 5}
 
 
+def _take_expiry(row, e):
+    """The bot's own ORDER IN date wins the `expiry` column, and whatever the
+    row held before it moves to `caller_expiry` — the same separation the
+    strike columns keep, and for the same reason (9/11).
+
+    It is not hypothetical: "MRNA | $110 P 5.60 AUG 28" was ordered as
+    MRNA 110P 2026-08-21, and "SPCX 155 C AUG 21" as SPCX 155C 2026-08-14. The
+    row used to show the CALLER'S date beside the ORDER IN line that bought a
+    different one, which reads as if he called the contract we bought. He did
+    not — that was the expiry parser refusing "AUG 21" and the bridge filling
+    in this Friday, which is the bug fixed in webull_options today. Both dates
+    stay on the row so the gap is visible instead of absorbed."""
+    new = e.get("expiry")
+    if not new:
+        return
+    old = (row.get("expiry") or "").strip()
+    if not old:
+        row["expiry"] = new
+        return
+    # Compare DATES, not spellings. "9/11", "0DTE" and "2026-09-11" can all be
+    # the same Friday; only a genuinely different contract belongs in
+    # caller_expiry, or the column fills up with 11 rows that agree.
+    if (_resolve_expiry(old, row.get("date")) or old) == new:
+        row["expiry"] = new
+        return
+    if _blank(row.get("caller_expiry")):
+        row["caller_expiry"] = old
+    row["expiry"] = new
+    row["source_line"] = e["raw"]
+
+
 def _keep_richer(row, e):
     """Fold a later log record of the same alert into the row already made for
     it: fill its blanks, and take the outcome only when it is further along."""
+    if e["tier"] == "E-order":
+        _take_expiry(row, e)
     for col, val in (("side", e.get("side")), ("expiry", e.get("expiry")),
                      ("their_price", e.get("their_price")),
                      ("our_limit", e.get("our_limit")),
@@ -870,6 +910,9 @@ def summary(rows):
     moved = sum(1 for r in rows if r.get("caller_strike"))
     if moved:
         print(f"  strike moved by the NO-OTM rule (caller's kept separately): {moved}")
+    exp = sum(1 for r in rows if r.get("caller_expiry"))
+    if exp:
+        print(f"  bought a DIFFERENT expiry than the call named: {exp}")
 
 
 if __name__ == "__main__":
