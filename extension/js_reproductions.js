@@ -24,13 +24,21 @@ const results = [];
   results.push({name:'second_contract_refusal_hidden',reproduced:f22reproduced,
     detail:{requests:calls.length,second_http_status:502,reported_success:result.ok,error_logs:logs.length}});
 
-  const gctx={Date,Intl,console,chrome:{storage:{local:{get:async()=>({})}}}};
+  // signalKey lives in parser.js, loaded alongside guards.js in the real
+  // service worker (both importScripts'd into the same global scope) — this
+  // isolated VM only loads guards.js, so it needs its own stub once a fix
+  // lets execution run past the hours gate into the dedupe check below it.
+  const gctx={Date,Intl,console,chrome:{storage:{local:{get:async()=>({})}}},
+    signalKey: s => JSON.stringify([s.action,s.symbol,s.strike,s.side,s.expiry,s.limit])};
   vm.createContext(gctx);vm.runInContext(fs.readFileSync('extension/guards.js','utf8'),gctx);
   vm.runInContext('etNow = () => ({wd:"Fri",h:16,m:5});',gctx);
   const guard = await gctx.guardCheck({action:'OPEN',kind:'option',symbol:'SPY'},
       {postedAt:Date.now(),author:'Caller'},{guards:{regular_hours_only:true}});
-  assert(!guard.allowed && guard.reason.includes('16:00'));
-  results.push({name:'spy_guard_disagrees_with_market_hours',reproduced:true,detail:guard});
+  // F23 (9/11 audit, same-night patch): SPY closes at 16:15 like
+  // market_hours.py always said — at 16:05 that means ALLOWED now.
+  // Reproduced means the old 16:00 cutoff is back (refused, citing 16:00).
+  const f23reproduced = !guard.allowed && guard.reason.includes('16:00');
+  results.push({name:'spy_guard_disagrees_with_market_hours',reproduced:f23reproduced,detail:guard});
   fs.writeFileSync('js-reproductions.json',JSON.stringify(results,null,2));
   results.forEach(r=>console.log('REPRODUCED',r.name));
 })().catch(e=>{console.error(e);process.exitCode=1;});
