@@ -61,6 +61,14 @@ announcer.log.*
 streaming-test.txt
 option_tape.csv
 option_tape.csv.*
+# The alert tape (9/11): real bid/ask for every contract the rooms called,
+# including the 289 in six weeks we never bought. Same class as option_tape
+# — it grows every session, it can never be re-derived (Webull keeps no
+# option tick history), and it must NOT go in git. Back it up like the tape.
+alert_tape.csv
+alert_tape.csv.*
+alert_meta.csv
+alert_meta.csv.*
 # Telemetry (9/6). Our own measurements, same class as option_tape: they can
 # never be re-derived from anywhere, and they must NOT go in git — that is
 # exactly how archive/logs put 68 MB in .git. Back them up like the tape.
