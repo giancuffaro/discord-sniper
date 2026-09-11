@@ -1694,9 +1694,15 @@ def save_day():
 
 
 def tkey(order):
-    """The book's key for the trade this order is about: who called it, plus
-    the ticker. Brett's SPY and Unraveler's SPY are two different trades."""
-    return positions.key_of(order.get("trader"), order.get("symbol"))
+    """The book's key for the trade this order is about: who called it, the
+    ticker, and the CONTRACT (strike/side/expiry) when the order names one.
+    Brett's SPY 225C and Brett's SPY 230C are two different trades now too
+    (F03, 9/11 audit) — a bare close with no contract gets empty fields
+    here on purpose; find_key()'s find_by_symbol() fallback resolves those
+    by symbol alone."""
+    return positions.key_of(order.get("trader"), order.get("symbol"),
+                            order.get("strike"), order.get("side"),
+                            order.get("expiry"))
 
 
 def describe(o):
@@ -1893,7 +1899,9 @@ def find_key(order):
     if len(others) == 1:
         cand = others[0]
         want = str(order.get("trader") or "").strip().lower()
-        owner = cand.rsplit("|", 1)[0]          # key is "who|SYM"
+        # key is "who|SYM|strike|side|expiry" (F03, 9/11) — who is always
+        # the FIRST field now, never rsplit's "everything but the last".
+        owner = cand.split("|", 1)[0]
         if not want or owner in ("", "?") or owner == want:
             return cand
         # a different named trader — don't hijack their trade

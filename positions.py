@@ -334,7 +334,7 @@ class Book:
             self._seq += 1
             self._events.append({"id": self._seq, "t": time.time(),
                                  "key": key, "symbol": p.get("symbol")
-                                 or key.split("|")[-1],
+                                 or key.split("|")[1],
                                  "who": p.get("who") or key.split("|")[0],
                                  "kind": kind, "text": text, "qty": int(qty)})
             # A day of events is plenty and this lives in memory.
@@ -714,7 +714,7 @@ class Book:
         for k in keys:
             try:
                 self.cancel_entry(k, "the trader pulled the call back")
-                pulled.append(k.split("|")[-1])
+                pulled.append(k.split("|")[1])
             except Exception:                           # noqa: BLE001
                 pass
         return pulled
@@ -1534,7 +1534,7 @@ class Book:
             self._event(key, "failed",
                         "%s — lost track of the entry: %s. The bid is treated "
                         "as DEAD — check the Webull app before trusting this "
-                        "line." % (key.split("|")[-1], str(e)[:120]))
+                        "line." % (key.split("|")[1], str(e)[:120]))
             with self._lock:
                 if key in self._pos:
                     self._pos[key]["state"] = FAILED
@@ -1744,7 +1744,7 @@ class Book:
                         q["stop_day"] = today
                 self._event(k, "update",
                             "%s — overnight stop still resting at Webull at %.2f "
-                            "— kept" % (k.split("|")[-1], float(p.get("stop") or 0)))
+                            "— kept" % (k.split("|")[1], float(p.get("stop") or 0)))
                 continue
             try:
                 self._arm_stop(k, p.get("side"), p.get("strike"),
@@ -2276,7 +2276,7 @@ class Book:
             self._event(key, "stop-set",
                         "%s — the exit failed but you still hold it, so the "
                         "resting stop went straight back in."
-                        % key.split("|")[-1])
+                        % key.split("|")[1])
         except Exception:                               # noqa: BLE001
             pass
 
@@ -2284,7 +2284,7 @@ class Book:
         """Both halves of it. The resting order first, because that's the one
         that survives this program dying; the watchdog second, because that's
         the one that works when Webull won't take the resting order."""
-        sym = key.split("|")[-1]
+        sym = key.split("|")[1]
         with self._lock:
             pf = self._pos.get(key)
             if pf and pf.get("kind") == "future":
@@ -3291,7 +3291,7 @@ class Book:
         self._event(key, "update",
                     "%s — up %.0f%%, took %d off and moved the stop to "
                     "breakeven. This trade can't lose now."
-                    % (key.split("|")[-1], self.auto_be_pct, n))
+                    % (key.split("|")[1], self.auto_be_pct, n))
 
     def auto_ladder(self, key, bid):
         """His exit ladder, run by the watchdog on the live bid. For each rung
@@ -3341,7 +3341,7 @@ class Book:
                          else "+%.0f%%" % stop_to)
                 self._event(key, "update",
                             "%s — ladder hit +%.0f%%, stop moved to %s"
-                            % (key.split("|")[-1], at, where))
+                            % (key.split("|")[1], at, where))
 
     # -- selling part of it ---------------------------------------------------
     def trim(self, key, qty, price, why):
@@ -3729,7 +3729,7 @@ class Book:
             mult = float(p.get("mult") or 100)
             dirn = int(p.get("direction") or 1)
             fut = p.get("kind") == "future"
-            sym = p.get("symbol") or key.split("|")[-1]
+            sym = p.get("symbol") or key.split("|")[1]
             who = p.get("who") or key.split("|")[0]
             if price is None:
                 # NEVER GUESS THE EXIT (8/27). This used to fall back to the
