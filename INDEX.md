@@ -55,6 +55,7 @@ down until you delete it.
 | `audit_history.py` | "What have we missed EVER, and why was a room quiet?" → `ALERT-AUDIT.html` |
 | `scoreboard.py` | Per-room signal/trade scoreboard → `SCOREBOARD.html` |
 | `pullback_levels.py` | "Should the beta names wait for $1, $2, $2.50 or $5?" Replays every logged alert on real 1-second stock bars (Databento, cents; cached in `bars/stock/`) → `reference/PULLBACK-LEVELS.md`. Verdict 9/9: $1 stays. |
+| `reference/EOD-BENCHMARK-SPEC.md` | The product contract for daily coverage, alert lifecycle reconciliation, caller-vs-bot counterfactuals, honest backtests, and evidence-gated learning. |
 | `postmortem.py` | One verdict per exited trade (call → ride → after we left → the stop → the machine) → `postmortems/*.md` + `master_postmortems.csv`. Auto-runs after every exit. |
 | `jsparse.py` + `extension/parse_batch.js` | Let the Python tools call the REAL parser, so an audit can never disagree with the bot. |
 | `test_brokers.py` | Runs the Tradier/tastytrade adapters against a FAKE local server — proves the parsing with no credentials needed. |

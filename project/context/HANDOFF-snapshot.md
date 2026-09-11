@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (16:24) — Claude export completed and all nine projects reconstructed under Documents; Discord Sniper history is explicitly quarantined and cannot affect production without verification against current HANDOFF/code/tests/logs/broker truth. Day: 1 bot trade CPS +$5, RECONCILIATION MATCH, no errors in the closing 35 min.
+Last updated: 2026-09-11 (16:41) — product north star formalized in reference/EOD-BENCHMARK-SPEC.md: preserve every alert lifecycle daily, benchmark caller vs bot vs broker truth over an accumulating sample, and change strategies only on tested evidence. Claude's project-linked chat bodies are blank in the export; recovered history remains quarantined. Databento cache is mixed contract market data, not one caller's data.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -55,6 +55,13 @@ Last updated: 2026-09-11 (16:24) — Claude export completed and all nine projec
   2026-09-11 Claude export is under Downloads/Claude Export 2026-09-11;
   its recovered Discord Sniper project prompt and 14 documents are historical
   reference only. Current HANDOFF/code wins wherever an exported copy differs.
+- PRODUCT NORTH STAR (G, 9/11): every day must leave a complete, auditable
+  alert funnel and enough append-only price/event data to benchmark the
+  caller's documented trade, the versioned bot policy on the same alert, and
+  the broker-confirmed actual result. Daily reports are the readable snapshot;
+  the growing dataset is what earns parser/strategy improvements. Exact caller
+  results require real entry+exit evidence; never substitute a later high.
+  Full contract: reference/EOD-BENCHMARK-SPEC.md.
 
 ## Rules of the house (current, in force)
 ENTRIES

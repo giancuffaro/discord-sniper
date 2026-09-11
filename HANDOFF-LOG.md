@@ -9,6 +9,27 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (16:41 product intent + Databento scope)
+G clarified the north star: read the Discord Sniper history to understand that every close
+must produce the data needed to benchmark/backtest the growing alert sample. Formalized the
+requirements in `reference/EOD-BENCHMARK-SPEC.md`: one stable lifecycle per source event,
+complete room/reader coverage, every alert and terminal reason, broker-confirmed actuals,
+exact caller outcomes only when entry+exit evidence exists, versioned bot counterfactuals,
+data-quality coverage, cumulative comparisons, and evidence-gated learning. Current daily
+audit/report implements much of the daily snapshot, but the durable cross-source event ID,
+direct telemetry attribution, complete all-alert quote coverage, cumulative counterfactual
+ledger, caller exit pairing, and valued futures results remain the ordered work.
+
+Claude export limitation verified: 23 conversations are message shells with blank text/content,
+including the 9/11 thread whose timestamps align with the Discord Sniper project. The export
+therefore cannot reproduce that chat verbatim; current conversation, project prompt, and detailed
+HANDOFF history are the available evidence. Databento status checked without making an API call:
+the configured credential exists and the cached clean tape holds 1,022,106 one-second quote rows,
+510 distinct option contracts, 49 trading days (6/12-9/8). It is mixed market data, not a caller
+named Bento: 479 covered contracts overlap G's manual rows and 103 overlap live non-manual bot
+rows (sets overlap). Caller/room identity comes from ledgers and alerts. New pulls can consume
+credit, so cached data remains first choice and no download was started.
+
 ## 2026-09-11 (16:24 recreated Claude projects, historical-source guard)
 Reconstructed all nine projects from the completed Claude export under
 `Documents/Claude Projects Recreated`, each with metadata, exported project instructions,
