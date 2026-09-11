@@ -400,6 +400,18 @@ RE_NO_OTM = re.compile(
     r".*?->\s+nearest qualifying\s+([\d.]+)([CP])")
 
 
+def _ticker(sym):
+    """The ticker the ROOM called, out of what the log wrote down. One reader
+    (symbols.resolve) for both the miss parser and this one, so the alert
+    record can never carry MXLU while trades.log carries XLU."""
+    s = str(sym or "").strip().upper()
+    try:
+        import symbols as _symbols
+        return _symbols.resolve(s) or s
+    except ImportError:
+        return s
+
+
 def _miss_label(msg):
     """The reason bucket misses.py would give this line — ONE vocabulary for
     both readers, so "BUYING POWER too small" never also exists as "refused"."""
@@ -467,7 +479,7 @@ def _log_events():
 
             m = RE_ORDER_IN.match(msg)
             if m and m.group(1) == "BUY":
-                events.append(dict(base, symbol=m.group(3).upper(),
+                events.append(dict(base, symbol=_ticker(m.group(3)),
                                    side="CALLS" if m.group(5) == "C" else "PUTS",
                                    strike=m.group(4), expiry_raw=m.group(6),
                                    expiry=m.group(6), qty=m.group(2),
@@ -485,7 +497,7 @@ def _log_events():
                     continue
                 exp_raw = (c.group(4) or "").strip()
                 exp = _resolve_expiry(exp_raw, date)
-                events.append(dict(base, symbol=c.group(1).upper(),
+                events.append(dict(base, symbol=_ticker(c.group(1)),
                                    side="CALLS" if c.group(3) == "C" else "PUTS",
                                    strike=c.group(2), expiry_raw=exp_raw,
                                    expiry=exp, their_price=c.group(5) or "",
@@ -500,7 +512,7 @@ def _log_events():
             m = RE_REFUSED.match(msg)
             if m:
                 exp_raw = m.group(5)
-                events.append(dict(base, symbol=m.group(1).upper(),
+                events.append(dict(base, symbol=_ticker(m.group(1)),
                                    side="CALLS" if m.group(4) == "C" else "PUTS",
                                    strike=m.group(3), expiry_raw=exp_raw,
                                    expiry=_resolve_expiry(exp_raw, date),
@@ -512,7 +524,7 @@ def _log_events():
             m = RE_PB_ARM.match(msg)
             if m:
                 arms.append({"ts": ts, "date": date, "time": hhmm,
-                             "symbol": m.group(1).upper(),
+                             "symbol": _ticker(m.group(1)),
                              "side": "CALLS" if m.group(2) == "CALL" else "PUTS",
                              "level": m.group(4), "raw": msg[:300],
                              "outcome": "PULLBACK armed (no resolution in the log)"})

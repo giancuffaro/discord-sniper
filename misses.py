@@ -66,9 +66,26 @@ _PROP_MSG = re.compile(r'errorMessage":"([^"]+)"')
 def _sym(msg):
     # Whole all-caps words of 2-6 letters. \b..\b means "REFUSED"(7)/"PULLBACK"(8)
     # etc. never match at all; the shorter tag words are caught by STOP.
+    #
+    # STOP IS A BLACKLIST AND A BLACKLIST NEVER CONVERGES (9/11): "SOLD but
+    # could NOT get back in: that one costs $312..." made the symbol NOT, and
+    # the next one would be some other word. extension/optionable.txt is the
+    # list of things the broker lists options on and it is the answer — the
+    # same rail parser.js, ai_reader and bridge.py already stand on; this
+    # reader was the last one without it. symbols.resolve also un-glues the
+    # ANSI "m" that welded itself to Namrood's tickers (MXLU -> XLU), so the
+    # alert record names the ticker the room actually called. Fails open: no
+    # list, no opinion, and the blacklist still stands underneath.
     for tok in re.findall(r"\b[A-Z]{2,6}\b", msg):
-        if tok not in STOP:
-            return tok
+        if tok in STOP:
+            continue
+        try:
+            import symbols as _symbols
+            got = _symbols.resolve(tok)
+        except ImportError:
+            got = tok
+        if got:
+            return got
     return "?"
 
 
