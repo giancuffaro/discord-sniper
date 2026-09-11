@@ -901,14 +901,14 @@ async function roomSchedule() {
 let _roomsStampSeen = "";
 async function pollRoomsFile() {
   try {
+    const lane = await assignedLane();
+    if (!lane) return;   // extension may also be installed in a personal profile
     const r = await fetch(chrome.runtime.getURL("rooms.txt"), { cache: "no-store" });
     const text = await r.text();
     const stamp = text.length + ":" + [...text].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
     if (_roomsStampSeen && stamp !== _roomsStampSeen) {
       const before = new Set(LIVE_ROOM_IDS);
       await reloadRooms();
-      let lane = "";
-      try { lane = (await chrome.storage.local.get("profile_lane")).profile_lane || ""; } catch (e) {}
       let opened = 0, closed = 0;
       for (const room of ALL_ROOMS) {
         const isWhop = /^whop:/i.test(room.id) || /whop\.com/i.test(room.url);
@@ -2010,6 +2010,7 @@ let OPEN_ROOMS_PENDING = ""; // START HERE's open-rooms token not yet fully hono
 
 async function honourOpenRoomsRequest() {
   if (!OPEN_ROOMS_PENDING) return;
+  if (!await assignedLane()) return;
   const tok = OPEN_ROOMS_PENDING;
   let opened = 0;
   try { opened = (await openMissingRooms()) || 0; } catch (e) { opened = 0; }
@@ -2255,6 +2256,7 @@ async function checkBuild() {
  * so a healthy tab isn't re-scripted every tick. */
 const INJECTED_AT = {};       // tabId -> last inject time
 async function ensureReaders() {
+  if (!await assignedLane()) return;
   let tabs = [];
   try {
     tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
@@ -2441,6 +2443,13 @@ async function stickyLane(haveDiscord, haveWhop) {
   } catch (e) { return ""; }
 }
 
+async function assignedLane() {
+  try {
+    const lane = (await chrome.storage.local.get("profile_lane")).profile_lane;
+    return lane === "discord" || lane === "whop" ? lane : "";
+  } catch (e) { return ""; }
+}
+
 /* EVICT THE OTHER LANE'S TABS (9/8). Once a profile is locked to a lane, close
  * any open ROOM tab of the OTHER surface. This is what removes the 4 Whop tabs
  * that were left in the Discord browser from before the split — and it stops
@@ -2615,6 +2624,7 @@ async function closeNonRoomTabs() {
 }
 
 async function openMissingRooms() {
+  if (!await assignedLane()) return 0;
   let rooms;
   try { rooms = await loadRoomsFile(); } catch (e) { return; }
   // every `on` room that wants a tab RIGHT NOW (9/9: outside 9:15-4:30 ET
@@ -2981,6 +2991,8 @@ async function autoExportForLearning() {
   // for it (his ask, 8/15). Manual buttons (Copy log / Save log now / Export
   // chat) still work any time — this only skips the unattended 30-min pass.
   if (inExportBlackout()) return;
+  const lane = await assignedLane();
+  if (!lane) return;   // never let an unused Chrome profile overwrite a real lane
   let captured = [], log = [];
   try { captured = (await chrome.storage.local.get("captured")).captured || []; } catch (e) {}
   try { log = (await chrome.storage.local.get("log")).log || []; } catch (e) {}
@@ -3117,7 +3129,6 @@ async function autoExportForLearning() {
   // kept 16 Whop and ZERO Discord. Half the corpus was being destroyed daily
   // — and the corpus is the entire point of the export. The lane goes in the
   // NAME so the two can never collide again.
-  const lane = (await chrome.storage.local.get("profile_lane")).profile_lane || "discord";
   const fname = "signal-room-chat " + fileDay + " (" + lane + ").txt";
   try {
     const c2 = await cfg();
@@ -3839,6 +3850,13 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // only place that matters — before the parser, before the bridge.
     if (sender && sender.tab && WRONG_LANE.has(sender.tab.id)) {
       reply({ ok: true, ignored: "other lane" });
+      return;
+    }
+    // This unpacked extension can be present in ordinary Chrome profiles too.
+    // Only the two profiles explicitly locked to Discord/Whop may read rooms;
+    // an unassigned copy must not duplicate alerts or maintain personal tabs.
+    if (!await assignedLane()) {
+      reply({ ok: true, ignored: "unassigned profile" });
       return;
     }
     const c = await cfg();
@@ -4697,6 +4715,7 @@ const SHED_EVERY_MS = 4 * 60 * 60 * 1000;   // 4h (v3.5.0: heartbeat catches
                                             // rotation only fights RAM bloat)
 async function memoryShed() {
   try {
+    if (!await assignedLane()) return;
     const now = new Date();
     const hm = now.getHours() * 60 + now.getMinutes();
     if (hm >= 9 * 60 + 28 && hm <= 9 * 60 + 40) return;   // the open is sacred
@@ -4787,6 +4806,7 @@ chrome.runtime.onMessage.addListener((m, sender) => {
 });
 
 async function keepRoomsLoaded() {
+  if (!await assignedLane()) return;
   let tabs;
   try {
     tabs = await chrome.tabs.query({ url: ["https://discord.com/channels/*",
