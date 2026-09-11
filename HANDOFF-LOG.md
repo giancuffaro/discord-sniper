@@ -9,6 +9,18 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (11:35 sync watch, autopilot Mode B)
+No fills today (margin BP $109 — every call refused on affordability; TSLA/AAPL/NVDA/AMZN/HOOD/SPY/MU
+all "costs $X, you've got $1-109"). BUG FOUND + FIXED (ext 3.8.7): parser.js read shabs' trim
+"MU 980c 500/con left 1 runner for valhalla" as OPEN MU 980C @ 5.00 (the verbless "bullwinkle"
+shape had no sell-word veto; the "bare priced entry" shape's veto said \btrimm\b so "trimmed"
+slipped too). Only the $109 balance stopped a $495 buy of a contract he was selling. Fix: RE_TRIM
+now knows "left/leaving N runner(s)" and "runner(s) left"; both verbless entry shapes turn a
+trim/exit tell into TRIM/CLOSE (fire=false → EXIT-IGNORED at the bridge). 3 cases added to
+test_exits.js; all 12 ext tests + test_resolve + 4 py tests pass. Ledger: no broker legs today,
+9/3-9/10 MATCH, August DRIFT lines are the known book-priced set. 0 detach/reload, 0 ROOM HOURS
+reopen lines today (the 9/10 ZTRADEZ fix held). Whop still unwatched ("no Whop tab open").
+
 ## 2026-09-10 (16:35 close-out, autopilot Mode C)
 THE DAY (broker truth, RECONCILIATION 9/10 MATCH −660.00): 66 order legs,
 28 FIFO round-trips. BOT +$46 on 7 one-lot trades (1 win / 6 clips):
