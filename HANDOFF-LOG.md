@@ -76,6 +76,29 @@ all pass; bridge.py + postmortem.py compile. Bridge restarts itself after
 hours (it did at 16:34 on the other session's edits; will again on mine).
 
 
+### The Discord profile was eating his Whop tabs (9/10 night)
+G: "my chrome profile for discord is closing my whop tabs when i open them."
+That was evictOtherLane(), by design, and the danger it guards is real — the
+same Whop room read by BOTH profiles fires every alert twice. But it closed
+the tab whoever opened it, which takes the browser off him to fix a problem
+that lives in the READER.
+Now: a wrong-lane tab that WE opened is still closed (our mess); a wrong-lane
+tab HE opened is left alone, its id goes in WRONG_LANE, and the MESSAGE
+handler drops anything from it before the parser. Double-fire dies at the only
+place that matters and he keeps his tab. Same mistake and same fix as the tab
+reaper this morning: scope destruction to tabs the extension itself opened.
+
+### TRADIER IS APPROVED — AND PDT IS THE REAL CONSTRAINT (9/10 night)
+Confirmed twice, API and his own account screen: status active, MARGIN /
+REG_T, **option level 4**, $250 option buying power, SPXW quoting with a real
+two-sided market. Nothing on Tradier's side blocks SPX.
+BUT: "Pattern Day Trader: No" on a $250 margin account means the PDT rule
+caps it at THREE day trades per rolling five business days. A bot taking SPX
+0DTE calls would spend that in one morning and the fourth trade gets the
+account restricted, typically 90 days cash-only. In the log that would look
+like "the broker refused it". Decide before wiring: SPX swings only (held
+overnight, not day trades), or fund past $25k. G's call.
+
 ### SPX: NEITHER INDEX BROKER CAN OPEN A TRADE (9/10 night)
 G picked Tradier for SPX and asked that the bracket be proven first. Probing
 it proved something bigger. Both broker classes were introspected, not read

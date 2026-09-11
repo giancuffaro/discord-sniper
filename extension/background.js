@@ -2391,6 +2391,10 @@ async function evictOtherLane() {
        *
        * A tab WE opened in the wrong lane is still closed: that is our mess,
        * not his. */
+      // (_OURS is declared BELOW this function. That is safe and deliberate:
+      // evictOtherLane has exactly one call site, the "watch-build" alarm,
+      // which fires long after module evaluation. Checked 9/10 — do not
+      // "fix" it by moving the declaration and splitting the two tab sets.)
       if (_OURS.has(t.id)) {
         try { await chrome.tabs.remove(t.id); closed++; } catch (e) {}
       } else if (!WRONG_LANE.has(t.id)) {
