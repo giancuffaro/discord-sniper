@@ -116,3 +116,16 @@ postmortems/
 # 9/9: bought price bars (Databento 1-second stock bars for the pullback
 # backtest) — data, re-buyable for cents, never code
 bars/
+
+# 9/11 SECURITY: the Webull SDK's own request log prints the live x-app-key in
+# every signed header. "*.log" does NOT match the rotated names (they end in
+# a date, not ".log"), so 18 of them were TRACKED and PUSHED TO THE PUBLIC REPO.
+# Moved to archive/. The key in git HISTORY cannot be removed by ignoring it —
+# it must be rotated at Webull.
+webull_api.log
+webull_api.log.*
+webull_data_streaming_sdk.log*
+reads.log*
+deadman.log*
+launcher-probe.log*
+whop-loop.log*
