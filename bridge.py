@@ -2503,12 +2503,50 @@ def pullback_manager():
     return _PULLBACK
 
 
+def _alert_tape_register(order):
+    """Put this alert's contract on the slow price recorder. Never raises.
+
+    Only entries (OPEN/ADD) on OPTIONS: a CLOSE is about a contract that is
+    already being taped by the fast bus, and futures have no OCC symbol.
+    An order whose strike/expiry cannot be turned into a real contract is
+    skipped rather than guessed at — a price filed under the wrong contract
+    is worse than no price.
+    """
+    try:
+        if order.get("action") not in ("OPEN", "ADD"):
+            return
+        if (order.get("kind") or "option") == "future":
+            return
+        rec = getattr(BOOK, "alert_tape", None) if BOOK is not None else None
+        if rec is None:
+            return
+        from occ import build as _occ_b
+        try:
+            occ = _occ_b(order.get("symbol"), order.get("expiry"),
+                         order.get("side"), order.get("strike"))
+        except (ValueError, TypeError):
+            return              # not enough of a contract to record
+        rec.register(occ, order)
+    except Exception:                                   # noqa: BLE001
+        pass        # recording is never allowed to touch the order path
+
+
 def place(order):
     """Retry-safe wrapper around the real placement. The extension retries an
     order the socket refused (a bridge restart). If a retry lands after a first
     copy was already handled, return that first result instead of placing the
     same real trade twice. Only OPEN/ADD are deduped — trims/closes are already
     idempotent against the book (nothing to sell twice)."""
+    # ALERT TAPE (9/11) — FIRST LINE, ON PURPOSE. Every parsed entry gets its
+    # contract registered for price recording HERE, before anything has
+    # decided whether it will fill. Filled, refused for buying power, paper,
+    # a pullback that never triggers, a TEST room, a swing that is paused —
+    # all of them come through this function, and all of them get recorded.
+    # Put anywhere below, it would only tape the alerts that survived, which
+    # is exactly the hole this exists to close (289 of 326 alerts had no
+    # price record at all). Registering is a set insert and a line of CSV:
+    # it sends no request, and it cannot change what happens to the order.
+    _alert_tape_register(order)
     coid = str(order.get("coid") or "").strip()
     dedupe = coid and order.get("action") in ("OPEN", "ADD")
     if dedupe:
