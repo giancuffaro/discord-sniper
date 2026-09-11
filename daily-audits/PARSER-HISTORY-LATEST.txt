@@ -1,5 +1,5 @@
 ============================================================================
-PARSER GATE — extension/parser.js  vs  b3f76f5
+PARSER GATE — parser + room + symbol rules  vs  b3f76f5
 11385 messages, 74 rooms, 6362 on the allowlist
 ============================================================================
   entries fired BEFORE : 850

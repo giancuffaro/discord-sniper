@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (18:22) — 34 entries: 5 priced, 21 unpriced options, 8 futures. Ratchet -$18 vs fixed -$39; caller-entry paths -$19; CPS +$5. Caller: 29 claims. Exit replay clean; tape persists.
+Last updated: 2026-09-11 (18:44) — Full-history gate replayed 11,385 live messages since 8/18: six real fills recovered, XLF/SHOP restored, eight false closes removed, zero lost calls/junk/expiry shifts. All tests pass.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -307,17 +307,15 @@ RESTARTS / SAFETY
   fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
 - DAILY AUDIT / REPORT: bridge.py runs `daily_audit.py` once per weekday at
   16:40 ET, after the 16:30 export/tab sweep. It replays that day's exact
-  Discord and Whop parser inputs with each room's production grammar, runs
-  every JS/Python regression test, writes `daily-audits/AUDIT-<date>.txt`
-  plus `latest.json`, and appends unresolved items to
-  `daily-audits/review_queue.jsonl`. It then writes
-  `daily-reports/REPORT-<date>.md`: configured and speaking rooms, messages,
-  decisions, sent/refused/stale/other skips, recovered unique gaps, real
-  fills and P&L, postmortem entry/exit comparison, and room activity. Relay
-  duplicates stay raw but count once. The 15-minute Codex heartbeat
-  `Discord Sniper guard` checks readers, feeds, retry storms,
-  processes, logs and ledger agreement; it stays quiet unless state changes.
-  Findings become tested fixtures; chat never edits source. Caller-vs-system P&L is shown
+  Discord and Whop inputs with each room's production grammar. `parser_gate.js`
+  also compares parser.js, rooms.txt and optionable.txt over every retained
+  live message; AUTO PUSH runs that gate before any such rule ships and blocks
+  invented symbols or expiry shifts. The audit runs every JS/Python test, writes `daily-audits/AUDIT-<date>.txt`
+  plus `latest.json`, queues unresolved items, and writes the daily report:
+  room coverage, decisions, skips, recovered gaps, fills, P&L and postmortems.
+  Relay duplicates stay raw but count once. The 15-minute Codex guard checks
+  readers, feeds, retry storms, processes, logs and ledger agreement; it is
+  quiet unless state changes. Findings become tested fixtures. Caller-vs-system P&L is shown
   only when caller entry and exit can be paired with contemporaneous option
   quotes; missing exits remain unavailable rather than estimated. RAW capture
   is always retained and session-local LIVE PARSER rows overlay it; a browser

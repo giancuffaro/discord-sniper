@@ -311,15 +311,11 @@ RESTARTS / SAFETY
   also compares parser.js, rooms.txt and optionable.txt over every retained
   live message; AUTO PUSH runs that gate before any such rule ships and blocks
   invented symbols or expiry shifts. The audit runs every JS/Python test, writes `daily-audits/AUDIT-<date>.txt`
-  plus `latest.json`, and appends unresolved items to
-  `daily-audits/review_queue.jsonl`. It then writes
-  `daily-reports/REPORT-<date>.md`: configured and speaking rooms, messages,
-  decisions, sent/refused/stale/other skips, recovered unique gaps, real
-  fills and P&L, postmortem entry/exit comparison, and room activity. Relay
-  duplicates stay raw but count once. The 15-minute Codex heartbeat
-  `Discord Sniper guard` checks readers, feeds, retry storms,
-  processes, logs and ledger agreement; it stays quiet unless state changes.
-  Findings become tested fixtures; chat never edits source. Caller-vs-system P&L is shown
+  plus `latest.json`, queues unresolved items, and writes the daily report:
+  room coverage, decisions, skips, recovered gaps, fills, P&L and postmortems.
+  Relay duplicates stay raw but count once. The 15-minute Codex guard checks
+  readers, feeds, retry storms, processes, logs and ledger agreement; it is
+  quiet unless state changes. Findings become tested fixtures. Caller-vs-system P&L is shown
   only when caller entry and exit can be paired with contemporaneous option
   quotes; missing exits remain unavailable rather than estimated. RAW capture
   is always retained and session-local LIVE PARSER rows overlay it; a browser
