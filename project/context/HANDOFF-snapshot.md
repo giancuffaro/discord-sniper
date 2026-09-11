@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (17:36) — 34 entries: 5 option paths priced, 21 option paths missing, 8 futures. Ratchet won market-entry subset -$18 vs fixed -$39; four caller-entry paths were -$24. CPS +$5. Caller ledger paired 29 claims. Tape survives restarts. Historical recovery awaits OPRA.
+Last updated: 2026-09-11 (17:40) — 34 entries: 5 priced, 21 unpriced options, 8 futures. Market-entry ratchet -$18 vs fixed -$39; four caller-entry paths -$19 (CPS +$5). Caller ledger: 29 claims; tape persists.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -331,7 +331,8 @@ RESTARTS / SAFETY
   `CALLER-OUTCOMES-<date>.md/.csv` separately preserves caller entry, every
   supported trim/full exit, exact or implied price and calculated percent;
   partial trims never become full-trade results and absent prices stay absent.
-  `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from the caller's posted entry.
+  `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from the caller's entry and lists every gap/future.
+  Broker-confirmed actuals always override a quote-path simulation.
 - GIT: settings.json holds every key, gitignored, never committed, never
   pasted back. Never run git write commands from a sandbox (locks). AUTO
   PUSH sweeps commits and retries outstanding pushes every 45 s; it never
