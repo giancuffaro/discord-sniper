@@ -58,6 +58,7 @@ const IMPLIED = [
   ["in 7655p 2.9",       "bored, in 7655p 2.9 @here",                 "SPX", 7655, "PUTS"],
   ["in 7730c 4.3",       "in 7730c 4.3 @here",                        "SPX", 7730, "CALLS"],
   ["7760c at 300/con",   "7760c at 300/con @here",                    "SPX", 7760, "CALLS"],
+  ["7700c at 105",       "Yall want an insane lotto? 7700c at 105 @here", "SPX", 7700, "CALLS"],
   ["explicit wins",      "in NVDA 220c 4.3 @here",                    "NVDA", 220, "CALLS"],
   ["explicit wins 2",    "AAPL 322.5c at .30",                        "AAPL", 322.5, "CALLS"],
 ];
@@ -67,6 +68,10 @@ for (const [n, t, sym, k, side] of IMPLIED) {
   if (!ok) bad++;
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${n.padEnd(20)} ${s2.symbol||"-"} ${s2.strike??"-"} ${s2.side||"-"}${s2.assumed_symbol ? "  [assumed " + s2.assumed_symbol + "]" : ""}`);
 }
+const cents = parseSignal("Yall want an insane lotto? 7700c at 105 @here", SPXCFG) || {};
+const centsOk = Math.abs(cents.limit - 1.05) < 0.005;
+if (!centsOk) bad++;
+console.log(`  ${centsOk ? "PASS" : "FAIL"}  ${"integer cents".padEnd(20)} limit=${cents.limit}`);
 // Without the per-channel setting the SAME lines must stay unreadable — this
 // is the guard against a bare strike ever being given a guessed underlying.
 /* THE INDEX GUARD (9/10). With no index_broker configured, an SPX entry must

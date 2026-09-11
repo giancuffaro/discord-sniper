@@ -1445,6 +1445,24 @@ function parseSignalOuter(text, cfg) {
   if (s.action !== "OPEN" || s.kind === "future") return s;
   const low = (s.clean || "").toLowerCase();
   const isOption = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
+  // shabs reports an already-running contract as "Sick 320/con on MU 980c".
+  // The price-before-contract order is a P&L update; his entries always put
+  // the contract first ("MU 980c at 300/con"). Do not turn the recap into a
+  // second buy.
+  if (/^\s*sick\b[\s\S]*\b(?:\d{2,5}(?:\.\d+)?\s*\/\s*cons?|\d{1,3}\.\d{2})\s+on\s+\$?[a-z]{1,5}\s+\d+(?:\.\d+)?\s*[cp]\b/i.test(s.clean || "")) {
+    s.fire = false; s.action = null;
+    s.why = "that's a price update on an earlier call, not a fresh entry";
+    return s;
+  }
+  // An unusual-flow observation can contain a full contract followed by the
+  // underlying's chart level ("ONON 29C ... ~1M on flow ... 27.40"). A generic
+  // contract reader otherwise mistakes that chart level for an option fill.
+  if (/\b~?\s*\d+(?:\.\d+)?\s*[kmb]\s+on\s+flow\b/i.test(s.clean || "")
+      && !/\b(?:bto|buy|bought|buying|enter(?:ed|ing)?|filled|grabbed)\b/i.test(low)) {
+    s.fire = false; s.action = null;
+    s.why = "that's an unusual-flow observation, not a buy order";
+    return s;
+  }
   // A PROGRESS UPDATE wearing an entry's clothes (8/18): "KO ... @$0.62,
   // up more than 90%!, my order filled little earlier, will look to close
   // the remaining" — parses like a fresh call, but it's a victory lap
@@ -1605,6 +1623,16 @@ function parseSignalInner(text, cfg) {
     const v = (parseInt(whole, 10) + (cents ? parseFloat("0." + cents) : 0)) / 100;
     return v.toFixed(2);
   });
+
+  // The same shabs feed sometimes omits "/con" but keeps quoting whole cents:
+  // "7700c at 105" is $1.05, not a $105 option. default_symbol=SPX is the
+  // caller-specific room rule, so this cannot reinterpret integer prices in
+  // other rooms. Decimal premiums are already dollars and stay untouched.
+  if (cfg && String(cfg.default_symbol || "").toUpperCase() === "SPX") {
+    t = t.replace(
+      /(\b(?:\$?[A-Za-z]{1,5}\s+)?\d{2,5}(?:\.\d+)?\s*[cp]\b\s+at\s+)(\d{2,5})\b/gi,
+      (all, lead, cents) => lead + (parseInt(cents, 10) / 100).toFixed(2));
+  }
 
   // THE TICKER HE NEVER TYPES (9/7, shabs / OWLS). He trades ONE underlying
   // and says so in his own recap ("August Recap, SPX only"), so he writes

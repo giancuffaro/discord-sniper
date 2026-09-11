@@ -36,6 +36,8 @@ const NEVER = [
   ["loading",        "loading GOOGL 8/21 345C @ 2.95"],
   ["credit spread",  "AAPL 307.5/305 PCS 8/28 .33"],
   ["a trim",         "STC META 0dte 600c .94 partial make the free"],
+  ["shabs price recap", "Sick 320/con on MU 980c, meh but p is p @here"],
+  ["flow observation", "ONON 29C 9/25 ~ 1M on flow; Need to see if it can close above the 21 ema (27.40)"],
 ];
 let bad = 0;
 console.log("MUST FIRE in a named room:");
