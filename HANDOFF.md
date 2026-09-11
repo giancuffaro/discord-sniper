@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (15:18) — extension source 3.8.10 and Discord Profile 2 proved it self-loaded build 69e03a7a immediately; Whop Profile 6 and the unassigned Default copy were still on the prior close-only build and get the immediate behavior after their one remaining close reload. A recovered full-day replay found four calls from before Chrome started and three later entry review gaps plus one ADD review gap. The parser now covers the new formats and exact parser inputs/history markers are retained. A weekday 16:40 audit replays every captured message through production grammar, runs both regression suites, queues gaps for review, and generates the daily room/decision/trade/comparison report. Today: 23 normal decisions, seven recovered entry gaps, one recovered add gap, one real fill/win for +$5; exact caller-exit P&L is unavailable because the caller posted no exit. Full Python/JavaScript suites and the 11,605-message parser gate pass. Whop had ten current records and no alert-shaped miss. Topstep remains disabled.
+Last updated: 2026-09-11 (16:05) — accounts note corrected: execution.mode=dryrun is by design (master switch retired), rooms fire real orders per popup toggle; do not read status `live:false` as bot-off. Day: 1 bot trade CPS +$5, RECONCILIATION MATCH, no errors in the closing 35 min, 5 bridge restarts 15:07-15:22 all from code edits (not a loop).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.

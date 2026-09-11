@@ -9,6 +9,22 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (16:05 sync watch, autopilot Mode B — closing 35 min)
+Closing window clean: no ERROR/FAILED/PHANTOM/429, 0 room-exit trades, 0 EXIT-IGNORED lines.
+Refusals all by design: IBM/HAL swing-off, QQQ $715 pullback never touched, SPY 772C add
+refused on buying power ($173 vs $114). Five bridge restarts 15:07-15:22 were each a real
+code change landing (daily_audit/replay_check/bridge edits from the 15:18 session), all in
+safe windows — not a loop. Broker: 4 legs today, all CPS 25C 9/18 (buy 0.65, born stop 0.50
+cancelled, ratchet stop placed at 0.55 GTC cancelled, sold 0.70) = +$5; Webull_Orders_auto.csv
+overwritten, build_ledger RECONCILIATION 9/11 MATCH +5.00. NOTE: the broker shows the ratchet
+stop resting at 0.55 while trades.log said "moved your stop to 0.60" — the 13:05 STOP-SET
+wording fix should print the placed price now; verify on the next ratchet move.
+DOC FIX: HANDOFF.md accounts note claimed the bridge was "live:false / dry-run, no orders
+until G flips it" — wrong; execution.mode=dryrun is by design (master switch retired 9/9),
+rooms fire real orders per popup toggle, CPS filled real today. Replaced in place.
+Post-mortem tally unchanged: NOISE CLIP 5, ARM CLIP 3, LEFT MONEY 1, GOOD EXIT 1.
+Buying power $114 — bot can't afford most calls; G funds Monday.
+
 ## 2026-09-11 (15:18 automated daily audit/report)
 Added the weekday 16:40 ET read-only audit and operating report. `daily_audit.py` now replays both lane exports through production room grammar, catches contextual LOADING→price confirmations, runs every JavaScript and Python regression test, writes an atomic audit/latest status, and queues unresolved evidence without altering trading code. `daily_report.py` reconciles extension decisions, forensic recovery, the master ledger, and postmortems into one Markdown report covering room activity, messages, alerts caught/sent/refused/stale, unique missed entries/adds, real win/loss/P&L, and the caller-vs-bot comparison that the evidence can support. Today’s reconciled view is 23 normal decisions (1 sent, 17 refused, 5 stale), seven unique recovered entry gaps, one recovered ADD gap, and one real CPS fill/win for +$5. CPS caller and bot entry were both $0.65; bot exit was $0.70 and graded GOOD EXIT, with a later high of $0.80. The caller did not post an exact exit, so caller P&L and a superiority verdict are unavailable; the report says so instead of inventing one. Current audit status is ATTENTION because the recovered replay still contains eight raw silent records (two relay duplicates) plus the Midas contextual miss; all regression checks pass. Discord Profile 2 proved immediate self-reload on build 69e03a7a. Source remains 3.8.10; Profile 6 and Default still need their one final close-only reload before inheriting immediate reload behavior.
 At 15:16 the still-old Default copy performed one more scheduled stale overwrite. Profile 2 LevelDB was recopied immediately (22,713 durable captures and 2,500 verdicts); the raw recovery JSON is retained under `daily-audits/`, and the Discord export/report were rebuilt before the 16:40 run. This is the last-build transition the new unassigned-profile guard was designed to stop.

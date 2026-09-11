@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (15:18) — extension source 3.8.10 and Discord Profile 2 proved it self-loaded build 69e03a7a immediately; Whop Profile 6 and the unassigned Default copy were still on the prior close-only build and get the immediate behavior after their one remaining close reload. A recovered full-day replay found four calls from before Chrome started and three later entry review gaps plus one ADD review gap. The parser now covers the new formats and exact parser inputs/history markers are retained. A weekday 16:40 audit replays every captured message through production grammar, runs both regression suites, queues gaps for review, and generates the daily room/decision/trade/comparison report. Today: 23 normal decisions, seven recovered entry gaps, one recovered add gap, one real fill/win for +$5; exact caller-exit P&L is unavailable because the caller posted no exit. Full Python/JavaScript suites and the 11,605-message parser gate pass. Whop had ten current records and no alert-shaped miss. Topstep remains disabled.
+Last updated: 2026-09-11 (16:05) — accounts note corrected: execution.mode=dryrun is by design (master switch retired), rooms fire real orders per popup toggle; do not read status `live:false` as bot-off. Day: 1 bot trade CPS +$5, RECONCILIATION MATCH, no errors in the closing 35 min, 5 bridge restarts 15:07-15:22 all from code edits (not a loop).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -30,9 +30,12 @@ Last updated: 2026-09-11 (15:18) — extension source 3.8.10 and Discord Profile
   multiple-choice, recommended option first.
 - The machine: Chrome MV3 extension source v3.8.10 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
 - Accounts (Webull, one app key), read live 9/11 15:20: MARGIN ENIQGUV4
-  connected, $113.71 buying power, flat; the bridge is currently `live:false`
-  / dry-run, so it reviews alerts but sends no new broker orders until G
-  changes that real-money control. CASH MOI680 was $0.55 at the 9/10 close.
+  connected, $113.71 buying power, flat. settings.json `execution.mode` is
+  `dryrun` BY DESIGN (the master switch is retired — bridge.py treats even
+  `webull` as dryrun); real orders are decided per ORDER by each room's own
+  popup toggle, and rooms toggled live DO send real orders (CPS filled real
+  at 12:40 on 9/11). Do not read the status page's `live:false` as "bot off".
+  CASH MOI680 was $0.55 at the 9/10 close.
   FUTURES R8IEC is flat with $0.82 available in the current read and
   `futures_brokers.webull` is false, so the bot will not touch it. Topstep,
   NinjaTrader and Tradovate are also disabled. The 9/10 close was −$671 net
