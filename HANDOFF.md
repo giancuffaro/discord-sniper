@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (18:22) — 34 entries: 5 priced, 21 unpriced options, 8 futures. Ratchet -$18 vs fixed -$39; caller-entry paths -$19; CPS +$5. Caller: 29 claims. Exit replay clean; tape persists.
+Last updated: 2026-09-11 (18:44) — Full-history gate replayed 11,385 live messages since 8/18: six real fills recovered, XLF/SHOP restored, eight false closes removed, zero lost calls/junk/expiry shifts. All tests pass.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -307,8 +307,10 @@ RESTARTS / SAFETY
   fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
 - DAILY AUDIT / REPORT: bridge.py runs `daily_audit.py` once per weekday at
   16:40 ET, after the 16:30 export/tab sweep. It replays that day's exact
-  Discord and Whop parser inputs with each room's production grammar, runs
-  every JS/Python regression test, writes `daily-audits/AUDIT-<date>.txt`
+  Discord and Whop inputs with each room's production grammar. `parser_gate.js`
+  also compares parser.js, rooms.txt and optionable.txt over every retained
+  live message; AUTO PUSH runs that gate before any such rule ships and blocks
+  invented symbols or expiry shifts. The audit runs every JS/Python test, writes `daily-audits/AUDIT-<date>.txt`
   plus `latest.json`, and appends unresolved items to
   `daily-audits/review_queue.jsonl`. It then writes
   `daily-reports/REPORT-<date>.md`: configured and speaking rooms, messages,

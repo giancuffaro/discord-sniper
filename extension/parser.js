@@ -299,11 +299,9 @@ const RE_BARE_FILL = /^(?:just\s+|we\s+|i\s+|i've\s+|ive\s+|we've\s+)*(?:filled|
 // "i took enry .HOOD260904C120 1.83 fill price". The verb match now
 // tolerates the transpositions of "entry" people actually type, and the
 // price may sit either side of the word fill.
-// The gap deliberately EXCLUDES digits. A wider gap was tried on 9/3 and
-// started eating the OSI code's own digits ("META260826C570" -> a limit of
-// 570). A typo'd verb ("i took enry ...") is left to the POSSIBLE MISSED
-// ENTRY net in replay_check instead: a mistyped word should be surfaced
-// for a human, never fuzzy-matched into a real-money order.
+// Decimal prices may also precede "took entry"; the loaded-contract guard
+// supplies the missing identity. A full dotted OSI contract remains stronger
+// evidence and resolves directly, including observed entry-verb typos.
 const RE_TOOK_ENTRY_FILL = /\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[^\d%]{0,40}\$?(\d{1,3}(?:\.\d{1,2})?)\s*fill\b|\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[\s\S]{0,60}?\bfill(?:ed)?\s*[:@]\s*\$?(\d{1,3}(?:\.\d{1,2})?)\b|\btook\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b[\s\S]{0,80}?\s\$?(\d{1,3}\.\d{1,2})\b(?:\s|$)|\b\$?(\d{1,3}\.\d{1,2})\s+(?:fill(?:ed)?\s+)?took\s+(?:entry|entries|enrty|enry|etnry|entrey|enty)\b/i;
 // "added to SPY @everyone new avg is 2.8" — they doubled up and their average
 // moved. Whether that buys you a second contract is a setting, not a parser

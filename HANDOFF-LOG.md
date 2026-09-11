@@ -9,6 +9,21 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (18:44 full-history rule gate)
+The parser, room rules and optionable list now replay against every retained live message before
+they ship and during the daily audit. The corpus covers 11,385 unique messages in 74 rooms from
+8/18 through 9/11. Against the pre-fix parser, current rules recover XLF and SHOP entries, remove
+eight false CLOSE actions from “break out”/“take the L” prose, lose zero entries, change zero
+expiries and invent zero symbols. The sweep also found six real Summit fill-confirmation variants.
+A narrow stateful rule reads them only after the same caller loaded a complete contract; two had
+historically been rescued by AI, while the others were missed or misread. Watch triggers, future
+add levels and target prose remain silent. Version 3.8.11; all 14 JS and 29 Python checks pass.
+
+`audit_history.py` now unions split Discord/Whop exports once per day, applies each room's actual
+grammar, resolves symbol-less fills from the prior PREPARE shelf for reconciliation, and writes
+UTF-8 reliably under Windows. Its 251 historical action/no-verdict rows are diagnostic: exports
+before 9/2 discarded verdicts beyond 400, so that number is not 251 proven missed trades.
+
 ## 2026-09-11 (18:15 full alert/exit rerun + continuous guard)
 Replayed every retained 9/11 parser input and regenerated the operating, caller-outcome,
 caller-vs-ratchet, and fixed-vs-ratchet reports. The inventory still reconciles to 34 entries
