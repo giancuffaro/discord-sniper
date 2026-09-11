@@ -32,7 +32,7 @@ These rows are still part of the comparison. Their caller evidence is retained; 
 | 10:48 MNQ @ 29340.00 | @Futures Alerts | $29340.00 | unavailable | futures path; options 5/3/5 does not apply |
 | 10:50 HOOD 118C 9/18 @ 2.50 | Brett | $2.50 | partial +10.0% | exact bid/ask path unavailable |
 | 10:54 AAPL 335C 0DTE @ 1.46 | Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | $1.46 | partial +22.0% | exact bid/ask path unavailable |
-| 11:13 MU 980C 0DTE @ 3.00 | OWLS Capital: 🛎️｜all-alerts | $3.00 | unavailable | exact bid/ask path unavailable |
+| 11:13 MU 980C 0DTE @ 3.00 | OWLS Capital: 🛎️｜all-alerts | $3.00 | partial $500/contract (+166.7%) | exact bid/ask path unavailable |
 | 11:13 MNQ @ 29411.75 | NGD: ngd-trades | $29411.75 | unavailable | futures path; options 5/3/5 does not apply |
 | 11:16 MNQ @ 29377.50 | NGD: ngd-trades | $29377.50 | unavailable | futures path; options 5/3/5 does not apply |
 | 11:18 MNQ @ 29413.00 | NGD: ngd-trades | $29413.00 | unavailable | futures path; options 5/3/5 does not apply |
