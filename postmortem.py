@@ -200,7 +200,17 @@ def analyze(r):
                     if re.search(r"you closed it yourself|didn't send this sell", ln)), None)
     if stop_ln and fill:
         lvl = float(re.search(stop_lvl_pat, stop_ln[1]).group(1))
-        if abs(lvl - fill) <= 0.011:
+        # THE RATCHET'S OWN WORD BEATS THE PRICE PROXY (9/11, CPS): on a
+        # nickel-grid name the breakeven stop must rest one tick UNDER the
+        # fill (0.65 fill -> 0.60 stop), which the "lvl < fill" proxy read
+        # as a born stop. If a STOP-SET line moved the stop to this exact
+        # level, it was the ratchet: "+0%" = breakeven, anything else a rung.
+        moved = next((ln for ts, ln in lines
+                      if "ratchet moved your stop to %.2f" % lvl in ln), None)
+        if moved:
+            trig = ("breakeven stop (ratchet arm)" if "locked in +0%" in moved
+                    else "ratchet rung (+%.0f%%)" % (max(0.0, (lvl - fill) / fill * 100.0)))
+        elif abs(lvl - fill) <= 0.011:
             trig = "breakeven stop (ratchet arm)"
         elif lvl < fill:
             trig = "born stop"
