@@ -9,6 +9,24 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (13:05 sync watch, autopilot Mode B)
+ONE bot trade: CPS 25C 9/18 (Demon × LKS) 0.65 → 0.70, +$5, held 50 s, post-mortem GOOD EXIT
+(after-exit high 0.80). RECONCILIATION 9/11 MATCH +5.00. Its "The machine" line (POSTCHECK
+PROBLEM x1, "22 broker errors") led to FOUR fixes, all compiled + 4 py tests + test_resolve
+green: (1) webull_options._stock_fns — the stock snapshot is plain `get_snapshot`, so the 9/3
+"stock first" sort never moved it; every first stock_price() after a restart fired 17 doomed
+crypto/event/futures 417s (CPS: fill-watch stuck 12:40:53-59, broker fill 12:40:52 booked
+12:40:59). Other asset classes now sort last. (2) replace_stop — Webull wants legs[].id (never
+stored), so every ratchet move paid two OPENAPI_PARAM_ERR calls before cancel+place; the refusal
+is remembered per session (_replace_no). (3) bridge._err_count_since ignored ts (lifetime count,
+not a window) — now stamps-after-ts only. (4) ratchet STOP-SET line printed "locked in +0%, can't
+go red" when place_stop had clamped 0.65 → 0.60 under the bid; it now reports the placed
+price's real percent. Also: POSTCHECK printed twice per stop (two "stopped" events, two polls) —
+same kind+symbol inside 30 s is now one line. Bridge restarts at the next safe window. Watch:
+"book holds CPS, the account doesn't" 15 s after a real fill — likely the positions read losing
+the 2/2s door to that same storm; re-check on the next fill. Post-mortem tally now 10:
+NOISE CLIP 5 (−$63), ARM CLIP 3 (−$4), LEFT MONEY 1 (+$80), GOOD EXIT 1 (+$5).
+
 ## 2026-09-11 (11:35 sync watch, autopilot Mode B)
 No fills today (margin BP $109 — every call refused on affordability; TSLA/AAPL/NVDA/AMZN/HOOD/SPY/MU
 all "costs $X, you've got $1-109"). BUG FOUND + FIXED (ext 3.8.7): parser.js read shabs' trim
