@@ -106,12 +106,12 @@
   },
   {
     "name": "armed_pullback_bypasses_stop_file",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
       "STOP_present": true,
       "result": [
-        true,
-        "sent"
+        false,
+        "the STOP file is in the folder \u2014 nothing fires"
       ]
     }
   },

@@ -2390,6 +2390,15 @@ def _pullback_quote(sym):
 
 
 def _pullback_enter(order):
+    # F09 (9/11 audit): checked here too, not just in do_POST and inside
+    # _place_impl — this fires from the pullback watcher's OWN thread,
+    # minutes after the alert, with no HTTP request in between. STOP
+    # dropped in the folder while a level was still being waited on used
+    # to do nothing once it finally printed.
+    if _stop_file_set():
+        note("BLOCKED  pullback entry for %s held — the STOP file is here"
+             % order.get("symbol"))
+        return False, "the STOP file is in the folder — nothing fires"
     o = dict(order)
     o.pop("entry_mode", None)     # so it can't loop back into the watcher
     # live flag carries through from the room's own toggle now (8/17) —
@@ -2403,6 +2412,12 @@ def _pullback_enter(order):
 
 
 def _pullback_close(order, why):
+    # F09 (9/11 audit): same STOP guard as _pullback_enter — this also
+    # fires from the watcher's own thread, not through do_POST.
+    if _stop_file_set():
+        note("BLOCKED  pullback exit for %s held — the STOP file is here"
+             % order.get("symbol"))
+        return False, "the STOP file is in the folder — nothing fires"
     # LIVE FLAG CARRIES THROUGH (9/2). This used to hardcode live=False while
     # _pullback_enter passed the room's own toggle — so a REAL entry got a
     # PAPER exit, which fell into the "test room, paper execution is off"

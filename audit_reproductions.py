@@ -168,11 +168,23 @@ watch(b,'caller|SPY')
 record('different_put_mistaken_for_call_fill', bool(fills), fills)
 
 # 11: pullback fill bypasses STOP after the delayed entry has been armed.
-enter = extract('bridge.py', '_pullback_enter', {'_place_impl': lambda o: (True, 'sent')})
+# FIXED (F09, same-night patch): _pullback_enter now checks the kill switch
+# itself, the same way do_POST always did, instead of only reaching
+# _place_impl (which also checks it now, but this test isolates
+# _pullback_enter on its own so it needs its own real _stop_file_set()).
+import os as _os
+_HERE = str(ROOT)
+def _real_stop_file_set():
+    return (_os.path.exists(_os.path.join(_HERE, "STOP"))
+            or _os.path.exists(_os.path.join(_HERE, "STOP.txt")))
+enter = extract('bridge.py', '_pullback_enter',
+                {'_place_impl': lambda o: (True, 'sent'),
+                 '_stop_file_set': _real_stop_file_set,
+                 'note': lambda s: None})
 (ROOT/'STOP').write_text('stop')
-r = enter(dict(action='OPEN', symbol='SPY',entry_mode='pullback'))
-record('armed_pullback_bypasses_stop_file', r[0], {'STOP_present': True, 'result': r})
+r = enter(dict(action='OPEN', symbol='SPY', entry_mode='pullback'))
 (ROOT/'STOP').unlink()
+record('armed_pullback_bypasses_stop_file', r[0], {'STOP_present': True, 'result': r})
 
 # 12: alert metadata joins different expiries and callers.
 meta = ROOT/'audit-meta.csv'
