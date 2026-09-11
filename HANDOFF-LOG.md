@@ -9,6 +9,23 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (17:11 caller outcome ledger + all-alert ratchet capture)
+The daily audit now writes CALLER-OUTCOMES markdown/CSV beside the operating and ratchet
+reports. It paired 29 caller trim/exit claims for 9/11, retains partials as partials, calculates
+exact return from posted entry/exit, derives an explicitly implied price from a stated percent,
+and records full exits with missing prices instead of dropping them. Fixed decimal exits such as
+QQQ `.24`, direct/relay dedupe across time-bucket boundaries, recovered room attribution, and
+shabs's narrowly identified `MU 980c at 300 for you rich folks` whole-cent shorthand ($3.00).
+The report now includes Midas AAPL +22%, QQQ $0.15->$0.24 (+60%), IBM $1.70->$2.20 (+29.4%),
+and SPX $500/contract (+476.2% on a $1.05 entry), while avoiding quantity-weighted full P&L when
+trim sizes/final runner exits are absent. Daily audit integration and 24 Python/JS checks pass.
+
+Corrected day totals after the IBM Swing OPEN prefix fix: 34 observed entries, 27 normal
+decisions, 7 recovered, 1 order/fill, 26 normally read but not taken. Ratchet replay covers 5/34:
+fixed -$39, live 5/3/5 -$18, +$21 ratchet advantage; 29 paths remain unscored (21 options without
+exact tape plus 8 futures). Audit stays ATTENTION for eight real silent records and one contextual
+Midas miss, not for a failed regression.
+
 ## 2026-09-11 (17:02 remaining-alert audit + tape continuity fix)
 The 28 alerts outside the first ratchet replay are 20 options with no complete exact-contract
 path and eight futures, which do not use the options 5/3/5 percentage ratchet. Sixteen unique
