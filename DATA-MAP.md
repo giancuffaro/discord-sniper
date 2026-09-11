@@ -338,3 +338,200 @@ after_high, survive_pct, exit_trigger, arm_after_s, faults, verdict, lesson, fil
 **9 rows · 2026-09-09 → 2026-09-10.** The long-form versions are in
 `postmortems/*.md` — **11 files, so two post-mortems have no CSV row.**
 Auto-written after every exit; only started 9/9, so it covers almost nothing.
+
+---
+
+# 4. The price tapes — what a contract actually cost
+
+Webull's API returns **no historical option prices**. These files are the only
+record we will ever have of what a contract was worth at a given minute.
+
+| File | Columns | Rows | Contracts | Range | State |
+|---|---|---|---|---|---|
+| `databento_tape.csv` | `ts,occ,bid,ask` | 1,022,106 | **510** | 2026-06-12 → 2026-09-08, 49 trading days, 56 underlyings | frozen (backfilled) |
+| `databento_tape_clean.csv` | same | 1,022,106 | 510 | same | frozen — **use this one** |
+| `option_tape.csv` | `ts,occ,bid,ask` | 161,482 | **31** | 2026-09-02 → 2026-09-10, **6 days only** | LIVE in market hours |
+| `missed_tape.csv` | `ts,occ,bid,ask` | 46,394 | **3** | 2026-08-05, 08-11, 09-03 | frozen |
+| `quote_shadow.csv` | `ts,symbol,bid,ask,mid,bid_size,ask_size` | 29,525 | 27 | 2026-09-08 → 2026-09-10 | LIVE (DXLink shadow) |
+| `alert_tape.csv` | `ts,occ,bid,ask,und` | **0** | 0 | — | LIVE, **recreated empty 2026-09-11 05:08** |
+| `alert_meta.csv` | `ts,stage,coid,date,time,room,caller,symbol,side,strike,expiry,occ,their_price,alert_at,seen_at,bid,ask,und,delta,iv` | **0** | 0 | — | LIVE, **recreated empty 2026-09-11 05:08** |
+| `greeks_tape.csv` | `ts,symbol,price,iv,delta,gamma,theta,vega,rho` | 842 | — | 2026-09-04 → 2026-09-10 | LIVE |
+
+### Tape traps
+
+- **`option_tape.csv` is far smaller than it looks.** 161k rows, but only
+  **31 distinct contracts across 6 days** — the fast bus tapes only contracts we
+  actually hold, at ~1/sec, so two long holds (IREN 54k rows, XLF 52k rows)
+  are 66% of the file. It is **not** a market tape.
+- **`databento_tape_clean.csv` is the real historical source** — 510 contracts,
+  49 days. `clean_tape.py` only rounds the timestamp to milliseconds and
+  replaces lone bid/ask spikes with the local median; it does **not** dedupe.
+  Both files carry ~54,940 rows that repeat a `(ts, occ)` pair. Dedupe yourself.
+- **`quote_shadow.csv` uses a different symbol format** — `.MSTR260911P132`
+  (DXLink/tastytrade), not OCC `MSTR260911P00132000`. It will not join to the
+  other tapes without conversion.
+- `alert_tape.csv` / `alert_meta.csv` — the slow "what did the contracts we
+  *didn't* buy cost" lane — **currently hold nothing.** They were recreated
+  empty this morning. Anything they held before is gone unless it is in
+  `backups/` or `archive/`.
+- Timestamps are **Unix epoch seconds, Eastern-facing**. Convert with a fixed
+  −04:00 offset to match `trades.log`.
+- `greeks_tape.csv` is tastytrade DXLink data, options **and** stock symbols
+  mixed, and only exists from 9/4.
+
+---
+
+# 5. Per-trade and per-day records
+
+## days/*.json — the book, one file per trading day
+33 `YYYY-MM-DD.json` + 5 `.bak`. 2026-08-05 → 2026-09-11. Today's file is LIVE.
+
+Shape: `{"date", "mode", "table": [...], "wallet": {...}}`.
+`mode` is `dryrun` or live. `wallet` = `cash, reserved, open_cost, open_worth,
+realised, wins, losses, trades, unlimited, peak, day`.
+
+Each `table` row has 31 fields: `key, who, symbol, side, strike, expiry, state,
+kind, direction, their_stop, their_target, qty, avg, adds, entries, exits, pl,
+their_avg, their_units, live, room, opened, closed, all_out, manual, raw,
+pl_pct, exit_by, swing, hi_pct, lo_pct`.
+
+**274 table rows across all days, covering 27 rooms.** INDEX.md says "not for
+analysis" — that is about *state*, but the rows are still the **only place**
+holding some fields per trade:
+- **119 rows carry `raw`** — the caller's original message.
+- **38 rows carry `their_stop`** (vs 25 in master_ledger).
+- 1 row carries `their_target`. That field is effectively empty everywhere.
+
+## postmortems/*.md — one verdict per exited trade
+11 files, `YYYY-MM-DD_<OCC>.md` (a second trade in the same contract gets `-2`,
+`-3`). Each holds: caller, room, our fill, round-number wait in seconds, exit,
+P&L, hold time, MAE/MFE, and **the bid at +30s / +1m / +5m / +10m after we left,
+plus the high and low in that window**. That "what happened after we sold" data
+exists nowhere else. Started 2026-09-09.
+
+## journal.csv and journal-*.xlsx
+`journal.csv` — 274 rows, 2026-08-05 → 2026-09-10, 28 rooms, UTF-8 **BOM**.
+Columns: `date, room, caller, symbol, side, direction, contract, qty, avg_in,
+exits, P&L, P&L %, max run-up %, max drawdown %, opened, closed, status,
+exit_by, account, signal`. Rebuilt, not appended. `exit_by` is blank on 148 of
+274 rows.
+
+`journal-2026-09-*.xlsx` (7 files, 9/1–9/10, sheets **Trades** + **By Trader**),
+`journal-full-ALL.xlsx` (**All trades** + **Summary**),
+`trader-scoreboard.xlsx` (**Scoreboard** + **Every trade**).
+Older daily journals are in `archive/journals/` (9 files, 8/19–8/31).
+The `.~lock.*.xlsx#` files mean a workbook is open in LibreOffice — ignore them.
+
+---
+
+# 6. Telemetry and diagnostics
+
+| File | Answers | Rows / range | Notes |
+|---|---|---|---|
+| `telemetry.csv` | how many milliseconds from post → read → sent → filled | 3,654 rows, 2026-09-07 17:26 → 2026-09-11 02:05, **LIVE** | 39 columns. **Every greek column is zero** (`underlying, delta, gamma, theta, iv, stop_room_pts, stop_room_pct, theta_per_min, theta_break_min, gamma_read`), and `coid`/`room`/`posted_at`/`seen_at`/`read_ms`/`decide_ms`/`total_ms` are empty on 3,636 of 3,654. The `fill_ms`/`sent_at`/`their_price`/`our_fill`/`slip` columns are the usable part. |
+| `shadow_ratchet.csv` | would a different ratchet have done better on the same fill | 2,047 rows, 2026-09-05 → 2026-09-11, **LIVE** | **NO HEADER ROW.** Columns are `t, entry_hhmm, held_min, occ, symbol, fill, real_pct, shadow_pct, shadow_exited, legs, peak_pct, dte, delta_in, iv_in`. **1,184 rows are a test contract (`SPY   250801C00745000`, note the padding) written by the test suite, and 837 have a blank OCC. Only ~26 rows are real trades.** |
+| `health.csv` | are the Webull endpoints responding | 40 rows, 9/7 → 9/10 | `ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err` |
+| `rn_ledger.csv` | did the round-number pullback help | 33 rows, 9/9 → 9/10 | `caller_price` is empty on all 33. |
+| `ratchet_backtest_results.json` | per-trade ratchet replay | 867 entries from 2026-06-12 | `day, occ, who, room, state, entry, realized_pct, stopped_out, peak_gain_pct`. `who` and `room` are usually blank. |
+| `ratchet_sweep_results.csv` | 50 born-stop / arm combinations | 50 rows | `born_stop_pct, arm_to_be_pct, total_pl_dollars, avg_pl_dollars, win_rate_pct, resolved_of` |
+| `ratchet_fine_results.csv` | 294 fine-grained combinations | 294 rows | `born, arm, step, total, win_pct, n` |
+| `reproductions.json` / `js-reproductions.json` | which known bugs still reproduce | 20 / 2 entries, **LIVE** | `{name, reproduced, detail}` |
+| `liquidity_cache.json` | today's open-interest / spread screen | `{day, map}`, 9/8 | One day only; stale. |
+| `databento_backfill_state.json` | which contract-days are already downloaded | 111 `[occ, date]` pairs | The backfill's to-do list. |
+| `px_day.json` | Topstep daily P&L points | 6 keys | Prop only. |
+| `state.json` / `state.json.bak` | today's date + a small state blob | 2 keys, **LIVE** | |
+| `announcer-scoreboard.json` / `announcer-seen.json` | announcer state | frozen 2026-09-02 | The announcer is paused. |
+
+---
+
+# 7. Logs
+
+| File | Lines | Range | State |
+|---|---|---|---|
+| `bridge.log` | 35,507 | from 2026-09-10 09:32 | **LIVE** — console echo of everything, far noisier than `trades.log` |
+| `bridge.log.1` | 343,698 | 2026-08-27 → 2026-09-10 | frozen (27 MB) |
+| `reads.log` | 593 | 2026-09-08 → 2026-09-10 | the **reader tape** — what the ears heard and the eyes saw. Format `ts  🎙/📸 room  speaker | what the parser made of it | what was heard`. 407 voice, 19 screenshot. Read it with `python3 reads.py`. |
+| `deadman.log` | 141 | from 2026-09-07 | **LIVE** — thread deaths |
+| `webull_api.log` + 18 rotated `webull_api.log.<date>_<hh>` | 299 current | 2026-09-09 → 2026-09-11 | **LIVE.** SDK debug. **Contains the Webull app key in plaintext (`x-app-key`). Never paste this file anywhere.** |
+| `webull_data_streaming_sdk.log` | 8,797 | to 2026-09-09 | streaming SDK errors; the SDK is not installed on purpose |
+| `announcer.log` | 141 | frozen 2026-09-02 | |
+| `whop-loop.log` | 13 | 2026-09-10 | Whop Chrome restarts |
+| `launcher-probe.log` | 26 | from 2026-08-31 | START HERE launches |
+
+`bridge.log` uses `HH:MM  TYPE  message` (no date on most lines, a
+`[Day MM/DD/YYYY HH:MM:SS.ss] starting bridge` banner on restart) and mangles
+em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
+
+---
+
+# 8. Room and symbol configuration
+
+| File | What is inside |
+|---|---|
+| `extension/rooms.txt` | **THE room list.** 74 rooms, one per line: `id\|url\|label\|group\|on\|off\|lapsed`. **31 on, 38 off, 5 lapsed** right now, plus comment lines carrying the one-line reason a room is off. Data, not code — editing it does not reload the extension. |
+| `extension/optionable.txt` | 6,386 symbols the bot may trade, regenerated from tastytrade 2026-09-08. A ticker missing here is why an alert was skipped. |
+| `chan_names.json` | 275 `channel id → "Server: #channel"` entries. **Last-write-wins**, so a renamed channel shows only its newest name, and several read `"… : No Access"` because the name was never learned. |
+| `samples.txt` | 481 lines of parser samples, fed to `parser.js` by the JS tests. |
+| `corpus/` | 5 files, `<channelid>-<date>.txt`, 1,976 lines total (nitro 1,322, futures-alerts 391, equity 185, ei-alerts 41, day-trades 37), 2024-12 → 2026-08. Room-language samples for the parser gate. |
+| `reference/rooms-snapshot.txt` / `project/context/rooms-snapshot.txt` | frozen copies of rooms.txt for the Claude Project. |
+
+---
+
+# 9. Stock and futures bars
+
+- `bars/stock/<SYM>_<YYYY-MM-DD>_1s.csv` — **112 files, 41 symbols, 1,315,559
+  rows, 2026-08-04 → 2026-09-08.** Columns `ts,o,h,l,c` (epoch seconds, cents
+  accurate, Databento). This is what `pullback_levels.py` replays.
+- `bars/NQ_bars.csv` — 2,961 rows, `time,open,high,low,close,volume`, ISO
+  timestamps in **+0000**, from 2026-08-24. Free Webull futures bars.
+- `archive/2026-09-09-cleanup/bars/` holds an older capture — do not mix them.
+
+---
+
+# 10. The 2026-09-11 recovery run (frozen artifacts)
+
+These were produced by the history rebuild. They are snapshots, not live.
+
+| File | Rows | What it is |
+|---|---|---|
+| `recovered_alerts_tradeslog.csv` | **425** | Alerts reconstructed from `trades.log`. 21 columns incl. `tier, confidence, how_recovered, corroborating_lines, source_line_number, source_line_text`. Tiers: 119 `F-airead`, 113 `E-order`, 53 `C-linked(E-order)`, 48 `A`, 44 `C-linked(F-airead)`, 26 `B`. Confidence: 271 high / 149 medium / 5 low. 2026-08-04 → 09-10. |
+| `recovered_alerts_chat.csv` | **2,681** | Alerts reconstructed from the DS Logs exports. 22 columns incl. `their_stop, their_target, msg_type, links_to, confidence, clue, source_message_verbatim`. `msg_type`: 1,018 entry · 577 trim · 504 commentary · 477 exit · 105 add. Confidence: 979 high / 843 medium / 859 low. **Only 340 of the 2,681 were already in master_alerts.csv.** |
+| `unrecoverable_alerts.csv` | 44 | Alerts from trades.log that could not be resolved — 27 because no expiry could be determined, the rest because the originating call is not in the log. |
+| `unrecoverable_chat_messages.csv` | 179 | Chat messages that look like alerts but are not resolvable — **170 are "ticker and a bare number only"**. |
+| `master_alerts_noise_to_purge.csv` | 60 | The non-alert rows sitting in master_alerts.csv. Not yet removed. |
+| `alert_rebuild_2026-09-11.csv` | 29 | A tape-replay of rebuilt alerts. `status`: 16 OK, 7 "NO TAPE that day", 6 skipped for gaps. |
+| `quotes_needed_backfill.txt` | 413 OCCs | Contracts with no price record, wanted from Databento. |
+| `missing_contracts_for_backfill.txt` | 84 OCCs | The shorter, prioritised version. |
+
+**Trap:** `recovered_alerts_chat.csv` is dominated by whichever export files were
+biggest — 1,007 of its 2,681 rows come from one file
+(`signal-room-chat Sep-10-2026 (discord).txt`). That is export duplication, not
+a busy day. Dedupe before counting rooms.
+
+---
+
+# 11. Folders that are not live data
+
+- **`archive/`** — 192 files, 2.6 MB (INDEX.md's "187 MB" is stale; the rotated
+  logs are gone). `archive/broker-exports/` 10 daily Webull exports (8/21–9/03),
+  `archive/journals/` 9 daily journals (8/19–8/31), `archive/one-off/` 13 items
+  incl. `voice-transcript-week-Aug24-28.txt` and `voice-HARD-lines-for-G.txt`,
+  `archive/2026-09-09-cleanup/` 157 retired scripts and docs with a
+  `MANIFEST.txt`. Also three `paper-fills-2026-09-0*.csv` — **4 rows each and
+  near-identical; they are not three days of data.** Nothing in `archive/` is
+  read by the running machine.
+- **`backups/`** — 28 dated copies, last 5–14 of each master file:
+  14 `master_ledger.csv`, 8 `master_broker.csv`, 5 `master_alerts.csv`,
+  1 `_whop_loop.bat`. Named `<file>.bak-YYYYMMDD-HHMMSS`. **Use these to see
+  what a rebuilt master file looked like before the rebuild.**
+- **`handoffs/`** — 3 thin daily status photos (12–20 lines each), 9/9–9/11.
+  Today's is LIVE. They are not the handoff; `HANDOFF.md` is.
+- **`reference/`** — 8 docs, the shelf. `OPTIONS-BROKER-REFERENCE.md` (59 KB)
+  is the broker-fact file to read before any broker test.
+- **`project/context/`** — 10 files, the Claude Project uploads. Snapshots of
+  `HANDOFF.md`, rooms, and the reference docs. **Always stale relative to the
+  live files.**
+- **HTML artifacts** — `SCOREBOARD.html` (9/10, per-room scoreboard),
+  `ALERT-AUDIT.html` (9/7, what we missed ever), `contracts.html` (9/9),
+  `MAP.html` (9/2, how the machine works). Rebuild them rather than trusting
+  the date on them.

@@ -25,9 +25,8 @@ RUN:   python3 build_alerts.py            (rebuild + summary)
        python3 build_alerts.py --quiet
 """
 import csv
-import glob
 import os
-import shutil
+import re
 import sys
 from datetime import datetime
 
@@ -50,6 +49,14 @@ COLUMNS = [
     "read_ms", "decide_ms", "fill_ms", "total_ms",
     "bid", "ask", "spread_pct", "delta", "iv", "live", "coid",
     "ledger_key", "in_ledger", "source", "raw",
+    # PROVENANCE (9/11). A row recovered out of trades.log has to stay
+    # auditable or it is just another number: caller_strike is what the CALLER
+    # posted when the NO-OTM rule moved us to a different one (17 alerts —
+    # without this column the bot's decision reads as the caller's call);
+    # tier/confidence say how the row was recovered and how much to trust it;
+    # source_line is the log line itself, verbatim, so any row can be checked
+    # against the log in one grep.
+    "caller_strike", "tier", "confidence", "how_recovered", "source_line",
 ]
 
 
@@ -134,11 +141,13 @@ def _declined():
         from misses import collect_misses
     except ImportError:
         return []
-    rows = []
+    rows, dropped = [], 0
     for m in collect_misses(all_days=True):
         raw = m.get("raw") or ""
+        if _noise_reason(raw):
+            dropped += 1
+            continue
         caller = ""
-        import re
         cm = re.search(r"\(([^()]{1,40})'s call\)", raw)
         if cm:
             caller = cm.group(1)
@@ -153,7 +162,14 @@ def _declined():
             "outcome": m.get("reason") or "declined",
             "reason": m.get("reason") or "", "detail": m.get("detail") or "",
             "in_ledger": False, "source": "trades.log", "raw": raw[:300],
+            "tier": "A", "confidence": "high",
+            "how_recovered": "the REFUSED line in trades.log",
+            "source_line": raw[:300],
         })
+    if dropped:
+        sys.stderr.write("build_alerts: %d log line(s) dropped as NOT alerts "
+                         "(startup banner / PROP-NO / SWING-OFF / duplicate "
+                         "guard)\n" % dropped)
     return rows
 
 
@@ -322,6 +338,355 @@ def _labels():
     return out
 
 
+# ---------------------------------------------------------------------------
+# TRADES.LOG, THE PART NOBODY WAS READING (9/11)
+#
+# master_alerts was built from two sources: telemetry.csv (the TAKEN side) and
+# misses.py (the REFUSED side). Between them they saw 331 lines of trades.log.
+# The log carries three richer records that never reached this file at all:
+#
+#   ORDER IN   184 lines. The bot's OWN resolved contract, with a real ISO
+#              date and the price it actually bid:
+#                 "ORDER IN BUY 5 SPY 600C 2026-08-06 @ 175.91"
+#              Not one of them was in master_alerts.csv.
+#   AI READ    2,222 lines, 636 of them carrying a reading. These are the
+#              ORIGINATING alerts, in the caller's own words AND translated:
+#                 "AI READ 'BTO $AAPL 312.5c 08/19 @0.74' -> BTO AAPL $312.5C 08/19 @ 0.74"
+#   PULLBACK   152 arm lines. An armed round-number hunt names the symbol and
+#              the DIRECTION but not the contract; the contract is on the line
+#              that triggered it, seconds earlier. Linking the two is what
+#              gives a "never touched — skipped" row a strike and an expiry.
+#
+# THE LINK RULE, AND WHY IT IS NARROW. An arm is matched to the most recent
+# contract event that is (a) the same symbol, (b) within LINK_WINDOW_S, and
+# (c) THE SAME DIRECTION. Direction agreement is not a tiebreak, it is a
+# requirement: a PUT alert sitting next to a CALL arm is a different trade, and
+# matching them writes a contract nobody called onto a row that then gets
+# analysed as if a caller had posted it. Five such pairs exist in this log; all
+# five are refused here.
+# ---------------------------------------------------------------------------
+LOGFILE = os.path.join(HERE, "trades.log")
+LINK_WINDOW_S = 300          # an arm fires within seconds of its alert
+SAME_ALERT_S = 900           # one room call, all its log lines, is one alert
+
+RE_ORDER_IN = re.compile(
+    r"^ORDER IN\s+(BUY|SELL)\s+(\d+)\s+([A-Z][A-Z.]{0,5})\s+([\d.]+)([CP])\s+"
+    r"(\d{4}-\d{2}-\d{2})\s+@\s+([\d.]+)")
+RE_AI_READ = re.compile(r"^AI READ\s+'(.*)'\s+->\s+(.+)$")
+RE_AI_CANON = re.compile(
+    r"^(?:BTO|adding)\s+([A-Z][A-Z.]{0,5})\s+\$([\d.]+)([CP])"
+    r"(?:\s+(?!@)(.+?))?(?:\s+@\s+([\d.]+))?$")
+RE_PB_ARM = re.compile(
+    r"^PULLBACK\s+([A-Z][A-Z.]{0,5})\s+(CALL|PUT):\s+stock at\s+([\d.]+),"
+    r"\s+waiting for a\s+(?:dip|bounce)\s+to\s+\$([\d.]+)")
+RE_PB_SKIP = re.compile(r"^PULLBACK\s+([A-Z][A-Z.]{0,5}):\s+never touched\s+\$([\d.]+)")
+RE_PB_HIT = re.compile(r"^PULLBACK\s+([A-Z][A-Z.]{0,5}):\s+touched\s+\$([\d.]+)")
+RE_REFUSED = re.compile(
+    r"^REFUSED\s+(?:OPEN|ADD)\s+([A-Z][A-Z.]{0,5})\s+\(([^()]{1,40})'s call\)\s+"
+    r"([\d.]+)([CP])\s+(\S+)")
+RE_NO_OTM = re.compile(
+    r"^NO-OTM\s+([A-Z][A-Z.]{0,5}):\s+their\s+([\d.]+)([CP])\s+was\s+\w+"
+    r".*?->\s+nearest qualifying\s+([\d.]+)([CP])")
+
+
+def _ts(line_ts):
+    """'2026-08-06T09:31:02-04:00' -> epoch seconds, or None."""
+    try:
+        return datetime.fromisoformat(line_ts).timestamp()
+    except ValueError:
+        return None
+
+
+def _resolve_expiry(raw, on_date):
+    """The caller's date, in the caller's words, turned into YYYY-MM-DD — using
+    THE SAME calendar the bridge uses (webull_options.expiry_to_date), anchored
+    to the day the alert was posted so "8/21" read on 8/17 is 2026-08-21 and not
+    next year's. Returns "" when it genuinely cannot be resolved ("next week",
+    "swing") rather than guessing: a guessed expiry is a contract nobody named.
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", raw):
+        return raw
+    try:
+        from webull_options import expiry_to_date
+        import datetime as _d
+        anchor = _d.date.fromisoformat(on_date) if on_date else None
+        return expiry_to_date(raw, today=anchor)
+    except Exception:                                       # noqa: BLE001
+        return ""
+
+
+def _log_events():
+    """One pass over trades.log -> the contract events above, in order.
+
+    Each event: ts, date, time, symbol, side (CALLS/PUTS), strike, expiry_raw,
+    expiry, their_price, qty, caller, outcome, tier, confidence, how, raw.
+    """
+    events, arms, no_otm = [], [], []
+    if not os.path.exists(LOGFILE):
+        return events
+    with open(LOGFILE, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            parts = line.split("\t", 1)
+            if len(parts) != 2:
+                continue
+            stamp, msg = parts
+            date, hhmm = stamp[:10], stamp[11:16]
+            ts = _ts(stamp)
+            if ts is None:
+                continue
+            base = {"ts": ts, "date": date, "time": hhmm, "raw": msg[:300],
+                    "caller": "", "qty": "", "their_price": ""}
+
+            m = RE_ORDER_IN.match(msg)
+            if m and m.group(1) == "BUY":
+                events.append(dict(base, symbol=m.group(3).upper(),
+                                   side="CALLS" if m.group(5) == "C" else "PUTS",
+                                   strike=m.group(4), expiry_raw=m.group(6),
+                                   expiry=m.group(6), qty=m.group(2),
+                                   their_price=m.group(7),
+                                   outcome="order-sent", tier="E-order",
+                                   confidence="high",
+                                   how="the bot's own ORDER IN line — "
+                                       "resolved contract, real date"))
+                continue
+
+            m = RE_AI_READ.match(msg)
+            if m:
+                c = RE_AI_CANON.match(m.group(2).strip())
+                if not c:
+                    continue
+                exp_raw = (c.group(4) or "").strip()
+                exp = _resolve_expiry(exp_raw, date)
+                events.append(dict(base, symbol=c.group(1).upper(),
+                                   side="CALLS" if c.group(3) == "C" else "PUTS",
+                                   strike=c.group(2), expiry_raw=exp_raw,
+                                   expiry=exp, their_price=c.group(5) or "",
+                                   outcome="alert read",
+                                   tier="F-airead",
+                                   confidence="high" if exp else "medium",
+                                   how="AI READ of the room's own words"
+                                       + ("" if exp else
+                                          " — expiry not resolvable from the text")))
+                continue
+
+            m = RE_REFUSED.match(msg)
+            if m:
+                exp_raw = m.group(5)
+                events.append(dict(base, symbol=m.group(1).upper(),
+                                   side="CALLS" if m.group(4) == "C" else "PUTS",
+                                   strike=m.group(3), expiry_raw=exp_raw,
+                                   expiry=_resolve_expiry(exp_raw, date),
+                                   caller=m.group(2), outcome="refused",
+                                   tier="A", confidence="high",
+                                   how="the REFUSED line's own contract"))
+                continue
+
+            m = RE_PB_ARM.match(msg)
+            if m:
+                arms.append({"ts": ts, "date": date, "time": hhmm,
+                             "symbol": m.group(1).upper(),
+                             "side": "CALLS" if m.group(2) == "CALL" else "PUTS",
+                             "level": m.group(4), "raw": msg[:300],
+                             "outcome": "PULLBACK armed — no resolution in the log"})
+                continue
+
+            m = RE_PB_SKIP.match(msg) or RE_PB_HIT.match(msg)
+            if m:
+                hit = bool(RE_PB_HIT.match(msg))
+                for a in reversed(arms):
+                    if (a["symbol"] == m.group(1).upper()
+                            and a["level"] == m.group(2)
+                            and 0 <= ts - a["ts"] <= 3600
+                            and a["outcome"].startswith("PULLBACK armed")):
+                        a["outcome"] = ("PULLBACK touched — entry attempted" if hit
+                                        else "PULLBACK never hit — skipped")
+                        break
+                continue
+
+            m = RE_NO_OTM.match(msg)
+            if m:
+                no_otm.append({"ts": ts, "symbol": m.group(1).upper(),
+                               "caller_strike": m.group(2),
+                               "side": "CALLS" if m.group(3) == "C" else "PUTS",
+                               "bot_strike": m.group(4)})
+
+    # ---- the arms, linked to the contract that triggered them --------------
+    linked = 0
+    for a in arms:
+        best = None
+        for e in events:
+            if e["ts"] > a["ts"] or a["ts"] - e["ts"] > LINK_WINDOW_S:
+                continue
+            if e["symbol"] != a["symbol"]:
+                continue
+            # MANDATORY. Not a preference — a PUT alert beside a CALL arm is a
+            # different trade and linking them corrupts the row.
+            if e["side"] != a["side"]:
+                continue
+            if best is None or e["ts"] > best["ts"]:
+                best = e
+        if best is None:
+            continue
+        linked += 1
+        events.append({"ts": a["ts"], "date": a["date"], "time": a["time"],
+                       "symbol": a["symbol"], "side": a["side"],
+                       "strike": best["strike"], "expiry_raw": best["expiry_raw"],
+                       "expiry": best["expiry"], "their_price": best["their_price"],
+                       "qty": best["qty"], "caller": best["caller"],
+                       "outcome": a["outcome"],
+                       "tier": "C-linked(%s)" % best["tier"],
+                       "confidence": "medium",
+                       "how": "pullback arm linked to the %s line %d s earlier, "
+                              "same symbol AND same direction"
+                              % (best["tier"], int(a["ts"] - best["ts"])),
+                       "raw": a["raw"]})
+    if arms and linked < len(arms):
+        sys.stderr.write("build_alerts: %d of %d pullback arms had no same-"
+                         "direction contract within %ds and were left unlinked\n"
+                         % (len(arms) - linked, len(arms), LINK_WINDOW_S))
+
+    # ---- the bot's own strike substitution, kept SEPARATE from the caller's -
+    # 17 alerts in this log were entered on a strike the caller did not post,
+    # because the NO-OTM rule moved it. Writing the bot's strike into the
+    # caller's column blames him for our decision, so both are carried.
+    for e in events:
+        e.setdefault("caller_strike", "")
+        for n in no_otm:
+            if (n["symbol"] == e["symbol"] and n["side"] == e["side"]
+                    and abs(n["ts"] - e["ts"]) <= SAME_ALERT_S):
+                if _f(e.get("strike")) == _f(n["bot_strike"]):
+                    e["caller_strike"] = n["caller_strike"]
+                elif _f(e.get("strike")) == _f(n["caller_strike"]):
+                    e["caller_strike"] = n["caller_strike"]
+                    e["strike"] = n["bot_strike"]
+                break
+
+    events.sort(key=lambda e: e["ts"])
+    return events
+
+
+# ---------------------------------------------------------------------------
+# WHAT IS NOT AN ALERT (9/11)
+#
+# 60 of the 331 rows in master_alerts.csv were never alerts. They reached the
+# file because misses.py matches on words, and these lines contain the words:
+#   30  the startup banner ("test account: unlimited. Nothing is REFUSED for
+#       money...") — a status line printed at boot, matched on "refused"
+#   15  "PROP-NO Topstep: ..." — prop-firm and ProjectX account status
+#    5  "PULLBACK refused  already waiting on a SPY pullback" — the duplicate
+#       guard. The alert it refers to is already a row of its own; counting the
+#       guard too counts one call twice.
+#   10  "SWING-OFF ... swing trades are PAUSED" — the swing switch
+# They inflated the count to 331 when the real number was 271, and every rate
+# computed off the file (fill rate, refusal rate, per-room counts) was wrong by
+# that much. Dropped at the door so a rebuild can never re-ingest them.
+# ---------------------------------------------------------------------------
+NOISE = (
+    ("startup banner, not an alert",
+     re.compile(r"^test account:|^live account:.*most cash that was ever tied up", re.I)),
+    ("prop-firm / ProjectX account status, not an option alert",
+     re.compile(r"^PROP-NO\b")),
+    ("duplicate guard — the alert it refers to is its own row",
+     re.compile(r"^PULLBACK refused\s+already waiting on", re.I)),
+    ("the swing switch, not an alert",
+     re.compile(r"^SWING-OFF\b")),
+)
+
+
+def _noise_reason(raw):
+    for why, pat in NOISE:
+        if pat.search((raw or "").strip()):
+            return why
+    return None
+
+
+def _akey(r):
+    """The identity of ONE alert: day + contract. Strike is rounded so 482.50
+    and 482.5 are the same trade."""
+    return ((r.get("date") or ""), (r.get("symbol") or "").upper(),
+            _strike_key(r.get("strike")), (r.get("side") or "")[:1].upper())
+
+
+def _apply_log(rows):
+    """Fold the trades.log events into the alert rows: enrich the ones that
+    exist, add the ones that do not. Returns (enriched, added)."""
+    events = _log_events()
+    if not events:
+        return 0, 0
+    by_key = {}
+    for i, r in enumerate(rows):
+        by_key.setdefault(_akey(r), []).append(i)
+
+    enriched, added, new_rows = 0, 0, []
+    for e in events:
+        k = ((e["date"], e["symbol"], _strike_key(e.get("strike")),
+              (e.get("side") or "")[:1].upper()))
+        hit = by_key.get(k)
+        if not hit:
+            # A row that knows the symbol but never got a contract — the
+            # PULLBACK and BUYING-POWER refusals are exactly this shape. Same
+            # day, same symbol, no strike of its own, close in time.
+            for i, r in enumerate(rows):
+                if (r.get("date") == e["date"]
+                        and (r.get("symbol") or "").upper() == e["symbol"]
+                        and _blank(r.get("strike"))
+                        and abs(_minutes(r.get("time")) - _minutes(e["time"])) <= 15):
+                    hit = [i]
+                    break
+        if hit:
+            r = rows[hit[0]]
+            got = False
+            for col, val in (("side", e.get("side")), ("strike", e.get("strike")),
+                             ("expiry", e.get("expiry")),
+                             ("their_price", e.get("their_price")),
+                             ("qty", e.get("qty")), ("caller", e.get("caller"))):
+                if val and _blank(r.get(col)):
+                    r[col] = val
+                    got = True
+            if _blank(r.get("caller_strike")) and e.get("caller_strike"):
+                r["caller_strike"] = e["caller_strike"]
+                got = True
+            if _blank(r.get("tier")):
+                r["tier"] = e["tier"]
+                r["confidence"] = e["confidence"]
+                r["how_recovered"] = e["how"]
+                r["source_line"] = e["raw"]
+                got = True
+            enriched += 1 if got else 0
+            continue
+        # genuinely new: an alert no other source ever wrote down
+        if e["confidence"] == "low":
+            continue                    # LOW never enters the main file
+        new_rows.append({c: "" for c in COLUMNS} | {
+            "date": e["date"], "time": e["time"], "caller": e.get("caller") or "",
+            "symbol": e["symbol"], "side": e.get("side") or "",
+            "strike": e.get("strike") or "", "expiry": e.get("expiry") or "",
+            "caller_strike": e.get("caller_strike") or "",
+            "their_price": e.get("their_price") or "", "qty": e.get("qty") or "",
+            "outcome": e["outcome"], "reason": e["outcome"], "detail": "",
+            "in_ledger": False, "source": "trades.log:" + e["tier"],
+            "tier": e["tier"], "confidence": e["confidence"],
+            "how_recovered": e["how"], "source_line": e["raw"],
+            "raw": e["raw"],
+        })
+        by_key.setdefault(k, []).append(len(rows) + len(new_rows) - 1)
+        added += 1
+    rows.extend(new_rows)
+    return enriched, added
+
+
+def _minutes(hhmm):
+    try:
+        h, m = str(hhmm or "")[:5].split(":")
+        return int(h) * 60 + int(m)
+    except (ValueError, AttributeError):
+        return -10 ** 6
+
+
 def build():
     lk = _ledger_keys()
     rows = _taken(lk) + _declined()
@@ -341,6 +706,12 @@ def build():
     _m = _apply_meta(rows)
     if _m:
         sys.stderr.write("build_alerts: alert_meta filled %d row(s)\n" % _m)
+    # trades.log's own records LAST, so they only ever fill what telemetry and
+    # the live alert tape could not — and add the alerts neither of them saw.
+    _e, _a = _apply_log(rows)
+    if _e or _a:
+        sys.stderr.write("build_alerts: trades.log enriched %d row(s), "
+                         "added %d alert(s)\n" % (_e, _a))
     lab = _labels()
     named = 0
     for r in rows:
@@ -392,6 +763,14 @@ def summary(rows):
     filled = [r for r in rows if r["outcome"] == "filled"]
     linked = sum(1 for r in filled if r["in_ledger"])
     print(f"  filled alerts linked to a ledger row: {linked}/{len(filled)}")
+    conf = Counter((r.get("confidence") or "-") for r in rows)
+    print("  confidence: " + ", ".join("%s %d" % (k, n) for k, n in conf.most_common()))
+    full = sum(1 for r in rows if r.get("symbol") and r.get("strike")
+               and r.get("side") and r.get("expiry"))
+    print(f"  rows carrying a whole contract: {full}/{len(rows)}")
+    moved = sum(1 for r in rows if r.get("caller_strike"))
+    if moved:
+        print(f"  strike moved by the NO-OTM rule (caller's kept separately): {moved}")
 
 
 if __name__ == "__main__":
