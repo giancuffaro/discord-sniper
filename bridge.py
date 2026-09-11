@@ -2645,9 +2645,25 @@ def place(order):
     return result
 
 
+def _stop_file_set():
+    """The kill switch. F09 (9/11 audit): this used to be checked ONLY in
+    do_POST, before the request body was even parsed — which stops an
+    order that arrives over HTTP, but a PULLBACK that was already armed
+    before STOP was dropped in the folder calls _place_impl() straight
+    from its own watcher thread, never through do_POST, so creating STOP
+    mid-wait did nothing to it. One function, called at every place an
+    order can actually reach the broker."""
+    return (os.path.exists(os.path.join(HERE, "STOP"))
+            or os.path.exists(os.path.join(HERE, "STOP.txt")))
+
+
 def _place_impl(order):
     """Returns (ok, message). Never raises — a crash here would look to the
     extension exactly like a rejected order, and you'd never know which."""
+    if _stop_file_set():
+        note("BLOCKED  the STOP file is here, so nothing goes out (%s)"
+             % order.get("action"))
+        return False, "the STOP file is in the folder — nothing fires"
     sym = str(order.get("symbol", "")).upper()
     action = order.get("action")
     key = find_key(order) if BOOK is not None else tkey(order)
