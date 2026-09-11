@@ -66,6 +66,18 @@ class _ComboUnsupported(Exception):
     only: the caller falls back to the plain single-order path and says so."""
 
 
+class Ambiguous(Exception):
+    """The combo call raised before we ever saw a broker response — a
+    timeout, a dropped connection, an SDK exception with no status code.
+    UNLIKE Refused, this does NOT mean no order was created: the broker may
+    have accepted the bracket and the confirmation just never arrived (F01,
+    9/11 audit — a fake endpoint that accepts and then raises a response
+    timeout produced two real buys, because the old code caught this the
+    same way it caught a genuine rejection and fell straight through to a
+    second plain BUY). The caller must check the account for a live order
+    before ever sending a second one."""
+
+
 # --- turning the room's shorthand into a real contract -----------------------
 
 # The only roots with a MONDAY-TO-FRIDAY listing. "No date means 0DTE" (G,
