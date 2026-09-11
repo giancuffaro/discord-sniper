@@ -110,9 +110,38 @@ def _recovered(day):
         return {"entries": [], "adds": [], "note": ""}
 
 
+def _finalize_deferred(day, decisions):
+    """Turn accepted pullback waits into their final same-day outcome.
+
+    The extension calls a request ``sent`` once the bridge accepts it.  A
+    pullback request can then wait without submitting a broker order and
+    expire ten minutes later.  Counting that as an order inflated the daily
+    taken count (QQQ on 9/11).  trades.log is the durable final authority.
+    """
+    expired = set()
+    try:
+        with open(os.path.join(HERE, "trades.log"), encoding="utf-8",
+                  errors="replace") as fh:
+            for line in fh:
+                if not line.startswith(day):
+                    continue
+                m = re.search(r"PULLBACK\s+([A-Z][A-Z0-9.]*): never touched", line)
+                if m:
+                    expired.add(m.group(1))
+    except OSError:
+        pass
+    for row in decisions:
+        symbol = row["contract"].split(None, 1)[0].upper()
+        if row["kind"] == "sent" and symbol in expired:
+            row["kind"] = "skipped"
+            row["text"] += " — pullback trigger expired without a broker order"
+    return decisions
+
+
 def build(day):
     os.makedirs(OUT_DIR, exist_ok=True)
     messages, decisions = _decision_rows(day)
+    decisions = _finalize_deferred(day, decisions)
     ledger = [r for r in _read_csv("master_ledger.csv", day)
               if (r.get("account") == "live"
                   and str(r.get("manual") or "").lower() not in ("true", "1"))]
@@ -149,7 +178,7 @@ def build(day):
              "| Measure | Count |", "|---|---:|",
              "| Unique entry alerts observed (normal + recovered) | %d |" % observed_entries,
              "| Entry alerts read and given a decision | %d |" % len(decided_entries),
-             "| Orders sent | %d |" % len(sent),
+             "| Broker entry orders submitted | %d |" % len(sent),
              "| Read but not taken | %d |" % not_taken_after_review,
              "| Broker/risk refusals | %d |" % len(refused),
              "| Stale when first read | %d |" % len(stale),
