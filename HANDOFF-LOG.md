@@ -76,6 +76,26 @@ all pass; bridge.py + postmortem.py compile. Bridge restarts itself after
 hours (it did at 16:34 on the other session's edits; will again on mine).
 
 
+### SPX: NEITHER INDEX BROKER CAN OPEN A TRADE (9/10 night)
+G picked Tradier for SPX and asked that the bracket be proven first. Probing
+it proved something bigger. Both broker classes were introspected, not read
+hopefully:
+    Webull      -> has buy()
+    Tradier     -> NO buy / buy_to_open / place_entry. NONE.
+    tastytrade  -> the same. NONE.
+Both have the whole EXIT side — sell, place_stop, replace_stop, flatten,
+positions, buying_power — and nothing that opens. `place_conditional_entry`
+exists on both and RAISES by design (unverified OTOCO encoding), which is the
+safe way round but is not an entry path either.
+So SPX cannot trade today and no flag makes it. `execution.index_broker` is
+not referenced in bridge.py at all — the routing does not exist either. The
+parser correctly HOLDS every SPX call (indexGuard) and that hold is currently
+the only thing standing between us and an order with nowhere to go.
+Both accounts ARE live and funded ($250 each) and both quote SPXW correctly,
+so the remaining work is ours, not theirs: an entry method on TradierOptions,
+the index route in bridge.py, then prove_tradier_bracket.py --place (G runs
+it, one contract, watching).
+
 ### The GATE, and the reader that can read any word order (9/10 night)
 G asked for two things and named the second one first: "we definitely do need
 a gate, that should be the first thing to measure."

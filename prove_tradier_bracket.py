@@ -2,6 +2,17 @@
 
 G picked Tradier for SPX and said prove the bracket first. This is that proof.
 
+WHAT IT PROVED, 9/10 — AND IT IS BIGGER THAN THE BRACKET
+Run dry, this script found that **TradierOptions has no way to OPEN a
+position at all**, and neither does TastytradeOptions. Both have sell,
+place_stop, replace_stop, flatten, positions, buying_power — the whole EXIT
+side — and nothing that buys. Webull has `buy`; these two do not.
+So "the bracket is unverified" was the small half of the problem. The entry
+side of both index brokers was never written. No flag flip, no setting, and
+no room rule can make an SPX alert trade today.
+Verified by introspection, not by reading the code hopefully:
+    [m for m in dir(TradierOptions)]  ->  no buy / buy_to_open / place_entry
+
 WHY IT IS NEEDED
 `TradierOptions.place_conditional_entry` does not work. It is written, and it
 RAISES rather than sending anything, with the reason in its own docstring:
@@ -81,7 +92,11 @@ def main():
     if not spx:
         print("could not price SPX — check the token's market-data scope.")
         return 2
-    strike = a.strike if a.strike else round((spx * 1.08) / 25.0) * 25.0
+    # 8% out was too far: the first dry run picked an 8200 call quoting
+    # 0.00 x 0.05, where the stop and the limit are the same number and the
+    # test proves nothing. 2% out keeps a real two-sided market and still
+    # costs tens of dollars, not hundreds.
+    strike = a.strike if a.strike else round((spx * 1.02) / 25.0) * 25.0
     expiry = a.expiry or next_friday()
     sym = occ.build("SPXW", expiry, "CALLS", strike)
 
