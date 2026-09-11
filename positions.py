@@ -732,6 +732,13 @@ class Book:
             p = self._pos.get(key)
             return dict(p) if p else None
 
+    def underlying_stop_positions(self):
+        """Open positions that need a process-local stock-price watcher."""
+        with self._lock:
+            return [dict(p) for p in self._pos.values()
+                    if p.get("their_stop")
+                    and p.get("state") in (WORKING, FILLED)]
+
     @staticmethod
     def is_hand_trade(p):
         """HIS OWN position (9/2, G: "how do they manage to close them? they
@@ -1700,7 +1707,8 @@ class Book:
             keys = [k for k, p in self._pos.items()
                     if p.get("state") == FILLED and int(p.get("qty") or 0) > 0
                     and p.get("kind") != "future" and not p.get("closing")
-                    and p.get("swing") and p.get("stop_day") != today]
+                    and p.get("swing") and not p.get("no_auto_stop")
+                    and p.get("stop_day") != today]
         n = 0
         for k in keys:
             with self._lock:
@@ -1749,6 +1757,18 @@ class Book:
             except Exception:                           # noqa: BLE001
                 pass
         return n
+
+    def overnight_stops_pending(self):
+        """Whether an eligible overnight swing still lacks today's guard."""
+        import datetime as _dt
+        today = _dt.date.today().isoformat()
+        with self._lock:
+            return any(
+                p.get("state") == FILLED and int(p.get("qty") or 0) > 0
+                and p.get("kind") != "future" and not p.get("closing")
+                and p.get("swing") and not p.get("no_auto_stop")
+                and p.get("stop_day") != today
+                for p in self._pos.values())
 
     def reconcile_gone(self, broker_rows, note=None, trust_empty_live=False):
         """The inverse of adopt(): the book says you're in it, the ACCOUNT

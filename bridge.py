@@ -6068,6 +6068,7 @@ def main():
     # the book doesn't know about (one it never placed, or lost on a restart) so
     # a room's "all out" can actually flatten it. Runs once now and every 20s.
     _REARM_DAY = [""]
+    _REARM_AT = [0.0]
 
     def _reconcile_loop():
         while True:
@@ -6078,19 +6079,31 @@ def main():
                 _lt = time.localtime()
                 _td = time.strftime("%Y-%m-%d")
                 if (_lt.tm_wday < 5 and _lt.tm_hour * 60 + _lt.tm_min >= 571
-                        and _REARM_DAY[0] != _td and BOOK is not None):
-                    _REARM_DAY[0] = _td
+                        and _REARM_DAY[0] != _td and BOOK is not None
+                        and time.time() - _REARM_AT[0] >= 300):
+                    _REARM_AT[0] = time.time()
                     try:
                         _n = BOOK.rearm_overnight_stops()
                         if _n:
                             note("STOP-SET  %d overnight swing stop(s) "
                                  "re-armed after the open" % _n)
+                        # Mark the day complete only after every eligible swing
+                        # has a guard. A transient broker failure retries in five
+                        # minutes instead of suppressing re-arm for the day.
+                        if not BOOK.overnight_stops_pending():
+                            _REARM_DAY[0] = _td
                     except Exception:                   # noqa: BLE001
                         pass
                 if BOOK is not None and WB is not None:
                     BOOK.drop_corrupt(note)
                     BOOK.purge_expired(note)
                     BOOK.adopt(broker_positions(), note)
+                    # Stock-level hard-stop watchers are process-local threads.
+                    # Restore them after a restart and keep one per position.
+                    for _up in BOOK.underlying_stop_positions():
+                        _ensure_underlying_stop_watch(dict(
+                            _up, trader=_up.get("who"),
+                            their_stop=_up.get("their_stop")))
                     # the other direction: positions HE closed at Webull
                     if BOOK.reconcile_gone(broker_positions(), note,
                                            trust_empty_live=bool(

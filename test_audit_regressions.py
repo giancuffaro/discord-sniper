@@ -117,6 +117,22 @@ class AuditRegressionTests(unittest.TestCase):
         self.assertEqual(book.qty_of(key), 1)
         self.assertFalse(book.info(key).get("closing"))
 
+    def test_failed_overnight_rearm_remains_pending(self):
+        book = positions.Book(None, lambda _line: None)
+        key = positions.key_of("room", "IWM", 300, "P", "2026-09-18")
+        book._pos[key] = {
+            "key": key, "state": positions.FILLED, "closing": False,
+            "symbol": "IWM", "side": "P", "strike": 300,
+            "expiry": "2026-09-18", "qty": 1, "fill": 1.00,
+            "cost": 100.0, "swing": True, "stop_day": "",
+        }
+        book._arm_stop = lambda *_args, **_kwargs: None
+
+        self.assertEqual(book.rearm_overnight_stops(), 0)
+        self.assertTrue(book.overnight_stops_pending())
+        book._pos[key]["no_auto_stop"] = True
+        self.assertFalse(book.overnight_stops_pending())
+
 
 if __name__ == "__main__":
     unittest.main()
