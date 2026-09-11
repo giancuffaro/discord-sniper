@@ -9,6 +9,16 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (17:36 caller-original-entry ratchet comparison)
+Added CALLER-VS-RATCHET to the daily audit. It assumes the caller's posted premium filled, then
+replays 5/3/5 against the recorded Tastytrade bid path and places the caller's stated/timestamped
+exit beside it. On the five taped 9/11 paths: NVDA 2.15 ratchet -$11; TSLA 1.79 flat versus
+caller -30.7%; NVDA 0.97 ratchet -$13 versus caller +1%; HOOD had no caller price, so first ask
+0.05 ratchet -$4 versus stated -6%; CPS real 0.65 fill ratchet replay flat versus actual +$5.
+Total ratchet from caller-posted/available entries: -$28 per one-contract set. Only three caller
+full exits have numeric results, so no invented aggregate caller P&L. All regressions pass; audit
+ATTENTION remains only for the known eight silent records and one contextual miss.
+
 ## 2026-09-11 (17:11 caller outcome ledger + all-alert ratchet capture)
 The daily audit now writes CALLER-OUTCOMES markdown/CSV beside the operating and ratchet
 reports. It paired 29 caller trim/exit claims for 9/11, retains partials as partials, calculates
