@@ -171,10 +171,15 @@ async function guardCheck(sig, ctx, cfg) {
     } else {
       if (t.wd === "Sat" || t.wd === "Sun")
         return { allowed: false, reason: "it's the weekend — the market is shut" };
-      // Equity & ETF options (SPY, QQQ, TSLA, NVDA...) close at 4:00 ET. The
-      // cash-settled broad indices (SPX, NDX, RUT, XSP, VIX) trade to 4:15 ET,
-      // so those get the later bell. Open is the same 9:30 for all.
-      const LATE = /^(SPX|SPXW|XSP|NDX|NDXP|RUT|RUTW|VIX|VIXW|MRUT|XND)$/;
+      // Most single-name equity options (TSLA, NVDA...) close at 4:00 ET.
+      // SPY/QQQ/IWM and the cash-settled broad indices (SPX, NDX, RUT, XSP,
+      // VIX) trade to 4:15 ET, so those get the later bell. Open is the same
+      // 9:30 for all. F23 (9/11 audit): this list used to leave SPY/QQQ/IWM
+      // out — the three names traded most through this bot — so it refused
+      // new entries on them 15 minutes early, disagreeing with
+      // market_hours.py's LATE_CLOSE_SYMBOLS, which has always had them.
+      // Mirrors that set exactly now.
+      const LATE = /^(SPY|QQQ|IWM|SPX|SPXW|XSP|NDX|RUT|VIX)$/;
       const closeStr = LATE.test(String(sig.symbol || "").toUpperCase())
         ? "16:15" : g.close_time;
       if (mins < hm(g.open_time) || mins > hm(closeStr))

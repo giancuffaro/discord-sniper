@@ -17,8 +17,11 @@ const results = [];
   vm.createContext(ctx);vm.runInContext(source.slice(start,end),ctx);
   const result = await ctx.sendOrder({action:'OPEN',symbol:'SPY',side:'CALLS',strike:600,
       expiry:'2026-10-16',also:[{strike:605}]},1,{},'Caller',Date.now());
-  assert(result.ok && calls.length===2 && logs.length===0);
-  results.push({name:'second_contract_refusal_hidden',reproduced:true,
+  // F22 (9/11 audit, same-night patch): a refused second leg is now logged
+  // even though it never threw — reproduced means the old silence (no log
+  // line) is back; fixed means logs.length===1 and it names the refusal.
+  const f22reproduced = !(result.ok && calls.length===2 && logs.length===1);
+  results.push({name:'second_contract_refusal_hidden',reproduced:f22reproduced,
     detail:{requests:calls.length,second_http_status:502,reported_success:result.ok,error_logs:logs.length}});
 
   const gctx={Date,Intl,console,chrome:{storage:{local:{get:async()=>({})}}}};
