@@ -19,6 +19,7 @@ your wifi, not the internet.
 
 import json
 import os
+import shutil
 import sys
 import threading
 import time
@@ -45,6 +46,7 @@ for _s in (sys.stdout, sys.stderr):
 import positions
 import ratchet_tiers as _rt
 import pullback as _pullback
+from request_journal import RequestJournal
 from urllib.parse import urlparse, parse_qs
 
 # Not `from zoneinfo import ZoneInfo` directly: Windows ships no timezone
@@ -1402,6 +1404,7 @@ STATE_PATH = os.path.join(HERE, "state.json")
 # backup-then-publish sequence — see that function's docstring.
 _WRITE_LOCK = threading.Lock()
 _WRITE_SEQ = 0
+_REQUEST_JOURNAL = RequestJournal(os.path.join(HERE, "requests.sqlite3"))
 
 
 def write_json_atomic(path, payload):
@@ -1443,10 +1446,16 @@ def write_json_atomic(path, payload):
         try:
             if os.path.exists(path):
                 _bak = path + ".bak"
+                _bak_tmp = "%s.tmp.%d.%d" % (
+                    _bak, threading.get_ident(), _WRITE_SEQ)
                 try:
-                    os.replace(path, _bak)
+                    shutil.copy2(path, _bak_tmp)
+                    os.replace(_bak_tmp, _bak)
                 except OSError:
-                    pass
+                    try:
+                        os.remove(_bak_tmp)
+                    except OSError:
+                        pass
         except OSError:
             pass
         os.replace(tmp, path)
@@ -2634,6 +2643,9 @@ def place(order):
                      % coid)
                 return prior[1]
             else:
+                owned, previous = _REQUEST_JOURNAL.begin(coid)
+                if not owned:
+                    return previous
                 _wait_ev = None
                 _my_event = threading.Event()
                 _RECENT_COIDS[coid] = (now, _INFLIGHT, _my_event)
@@ -2662,6 +2674,11 @@ def place(order):
         # anyone waiting on this coid. A stuck placeholder would otherwise
         # make every retry of a dead request wait the full 30s for nothing.
         if _my_event is not None:
+            try:
+                _REQUEST_JOURNAL.finish(coid, result)
+            except Exception as journal_error:
+                note("DEDUP    could not persist outcome: %s; reservation retained"
+                     % str(journal_error)[:120])
             with _RECENT_LOCK:
                 _RECENT_COIDS[coid] = (time.time(), result)
             _my_event.set()
@@ -5835,6 +5852,18 @@ def _install_network_failfast():
 
 def main():
     import eastern
+    # Own the socket before brokers or background workers start. A second
+    # bridge must fail before both processes can manage the same account.
+    _listen = str(EXEC.get("bridge_listen") or "127.0.0.1").strip() or "127.0.0.1"
+    if _listen not in ("127.0.0.1", "localhost") and not str(EXEC.get("bridge_token") or ""):
+        print("bridge_listen=%s IGNORED — set execution.bridge_token first. "
+              "Staying on 127.0.0.1." % _listen)
+        _listen = "127.0.0.1"
+    try:
+        server = ThreadingHTTPServer((_listen, PORT), Handler)
+    except OSError as error:
+        print("Bridge socket already owned or unavailable: %s" % error)
+        return
     # DEADMAN FIRST (9/7) — before anything can start a thread. This bot runs
     # 23 of them, none were named, and NOTHING caught one dying: Python
     # prints an unhandled thread exception to stderr and the thread is just
@@ -6346,22 +6375,19 @@ def main():
     # LAN IP) lets PC2's extension reach this bridge. It is honoured ONLY when
     # execution.bridge_token is set — without a secret the bridge stays on
     # loopback no matter what the setting says, and says so.
-    _listen = str(EXEC.get("bridge_listen") or "127.0.0.1").strip() or "127.0.0.1"
-    if _listen not in ("127.0.0.1", "localhost") and not str(EXEC.get("bridge_token") or ""):
-        print("bridge_listen=%s IGNORED — set execution.bridge_token first. "
-              "Staying on 127.0.0.1." % _listen)
-        _listen = "127.0.0.1"
     if _listen != "127.0.0.1":
         print("Listening on %s:%s for a second PC — token required off loopback."
               % (_listen, PORT))
     try:
-        ThreadingHTTPServer((_listen, PORT), Handler).serve_forever()
+        server.serve_forever()
     except OSError as e:
         print("\nCouldn't start: %s" % e)
         print("Usually that means a bridge is already running in another "
               "window. Close it and try again.")
     except KeyboardInterrupt:
         print("\nBridge stopped.")
+    finally:
+        server.server_close()
 
 
 if __name__ == "__main__":

@@ -926,10 +926,7 @@ class WebullOptions:
                   [f for f in fns if f[0] != remembered_fn]
 
         tries = []
-        throttled = False
         for _name, fn in fns:
-            if throttled:
-                break
             for shape in shapes:
                 args, kwargs = shape
                 # F16 (9/11 audit): _pace_batch's answer used to be thrown
@@ -938,14 +935,14 @@ class WebullOptions:
                 # fires, and the whole hunt stops rather than burning the
                 # rest of its tokens on the next shape.
                 if not self._pace_batch():
-                    tries.append("%s: throttled (rate budget denied)" % _name)
-                    throttled = True
-                    break
+                    raise Refused("429 rate budget denied; quote sweep deferred")
                 try:
                     res = fn(*args, **kwargs)
                 except TypeError:
                     continue                    # wrong signature: no HTTP call made
                 except Exception as _e:                 # noqa: BLE001
+                    if "429" in str(_e) or "TOO_MANY" in str(_e).upper():
+                        raise Refused("429 Webull quote throttle; sweep deferred") from _e
                     tries.append("%s: %s" % (_name, str(_e)[:40]))
                     continue
                 # THE BUG (9/2, found by the who-spends tell: 8 tokens per
@@ -965,10 +962,7 @@ class WebullOptions:
                     # the hunt immediately and backs off for a full second
                     # before anything (including the per-contract fallback)
                     # is allowed to fire again.
-                    tries.append("%s: HTTP 429" % _name)
-                    throttled = True
-                    self._last_call = time.time() + 1.0
-                    break
+                    raise Refused("429 Webull quote throttle; sweep deferred")
                 if code != 200:
                     tries.append("%s: HTTP %s" % (_name, code))
                     continue
@@ -1400,6 +1394,8 @@ class WebullOptions:
             except Exception:                           # noqa: BLE001
                 body = {}
             code = getattr(res, "status_code", "?")
+            if not isinstance(code, int) or code >= 500 or code == 408:
+                raise Ambiguous("bracket submission returned HTTP %s" % code)
             if code != 200:
                 blob = str(body)
                 up = blob.upper()
@@ -2252,6 +2248,8 @@ class WebullOptions:
         # ---- linked entry+stop group (his ask, 8/19) ----
         stop_child = stop_born = None
         _orders = None
+        submitted = None
+        submission_uncertain = False
         if bracket_stop_pct and not blind:
             try:
                 # Tick-rounded HERE, not just inside _order(): what gets
@@ -2294,6 +2292,7 @@ class WebullOptions:
                 def _combo_try(child_type):
                     """Fresh ids every attempt — a rejected group may still
                     have consumed its client ids at the broker."""
+                    nonlocal submitted
                     m = self._order(symbol, expiration, option_type, strike,
                                     "BUY", qty, limit)[0]
                     m["combo_type"] = "MASTER"
@@ -2307,6 +2306,7 @@ class WebullOptions:
                         # order_type, value: STOP_LOSS_LIMIT", 4 entries lost)
                         c["order_type"] = "STOP_LOSS"
                         c.pop("limit_price", None)
+                    submitted = (m, c)
                     _b = self._send_combo([m, c], uuid.uuid4().hex[:32],
                                           what + " +stop %.2f (one group)"
                                           % stop_born)
@@ -2337,55 +2337,21 @@ class WebullOptions:
                 # remembered so the caller can say it once, not every trade
                 self._combo_no = str(_cu)[:120]
             except Exception as _cu:                    # noqa: BLE001
-                # AMBIGUOUS (F01, 9/11 audit). This is NOT a proven rejection
-                # — a timeout, a dropped connection, an SDK exception with no
-                # status code all land here, and every one of them can mean
-                # "the broker took it and the confirmation never arrived."
-                # The old code treated this exactly like a definite Refused
-                # and fell straight through to a fresh plain BUY — a lost
-                # response became a real second entry, with the book only
-                # ever hearing about the second one (the audit's repro:
-                # accept-then-timeout produced two submitted buys).
-                # Check the account for a live order on this EXACT contract
-                # before doing anything else. Found -> use it, send nothing
-                # more. Genuinely absent -> the combo really never landed,
-                # safe to fall through same as a proven Refused. Can't even
-                # check -> refuse outright; losing one entry to a manual
-                # look is recoverable, a silent double-buy on real money
-                # is not.
+                # Track the exact submitted IDs. An empty open-order list does
+                # not prove rejection: the entry may have filled already or
+                # the broker snapshot may be delayed. Never send a second BUY.
                 self._combo_no = str(_cu)[:120]
-                try:
-                    _existing = [o for o in (self.open_orders(symbol) or [])
-                                 if str(o.get("action") or "").upper() == "BUY"
-                                 and float(o.get("strike") or 0) == float(strike)
-                                 and str(o.get("side") or "").upper()
-                                     == str(option_type).upper()
-                                 and str(o.get("expiry") or "") == str(expiration)]
-                except Exception:                       # noqa: BLE001
-                    _existing = None
-                if _existing:
-                    _found = _existing[0]
-                    print("[webull] AMBIGUOUS-RECOVERED %s — the bracket call "
-                          "raised (%s) but a live BUY for this exact contract "
-                          "is already at the broker; using it, NOT sending a "
-                          "second order." % (symbol, str(_cu)[:80]), flush=True)
-                    return {"ok": True, "state": "working",
-                            "order_id": str(_found.get("order_id") or "") or None,
-                            "occ": occ, "what": what, "limit": limit,
-                            "bid": bid, "ask": ask, "blind": blind,
-                            "symbol": symbol, "side": side, "strike": strike,
-                            "expiry": expiry, "qty": qty,
-                            "stop_child": None, "stop_born": None,
-                            "reconciled": True}
-                if _existing is None:
-                    raise Refused(
-                        "the bracket call for %s failed ambiguously (%s) and "
-                        "the account could not be checked for a duplicate — "
-                        "refusing rather than risking two real buys. Check "
-                        "Webull by hand before retrying." % (symbol, str(_cu)[:120]))
-                # Confirmed clean absence: the combo really never landed.
-                stop_child = stop_born = None
-                _orders = None
+                if submitted is None:
+                    raise Ambiguous(
+                        "bracket preparation failed before IDs were recorded") from _cu
+                master, child = submitted
+                _orders = [master]
+                stop_child = child.get("client_order_id")
+                body = {}
+                submission_uncertain = True
+                print("[webull] SUBMISSION-UNKNOWN %s — tracking original order %s; "
+                      "no replacement buy sent. Broker confirmation is pending."
+                      % (symbol, master.get("client_order_id")), flush=True)
         if _orders is None:
             _orders = self._order(symbol, expiration, option_type, strike,
                                           "BUY", qty, limit)
@@ -2410,7 +2376,8 @@ class WebullOptions:
                 "occ": occ, "what": what, "limit": limit, "bid": bid, "ask": ask,
                 "blind": blind, "symbol": symbol, "side": side, "strike": strike,
                 "expiry": expiry, "qty": qty,
-                "stop_child": stop_child, "stop_born": stop_born}
+                "stop_child": stop_child, "stop_born": stop_born,
+                "submission_uncertain": submission_uncertain}
 
     def entry_limit(self, bid, ask):
         """The number that goes on the entry.
