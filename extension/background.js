@@ -2351,6 +2351,14 @@ async function stickyLane(haveDiscord, haveWhop) {
  * those Whop tabs too, so every Whop alert fires from BOTH browsers. Only ever
  * closes tabs whose URL is a real room of the wrong surface; never a random
  * tab, never anything if the lane isn't locked. */
+/* Tabs in the wrong lane that a HUMAN opened. They stay open; they are just
+ * never read. Cleared when the tab closes so an id can never be reused
+ * against a different page. */
+const WRONG_LANE = new Set();
+try {
+  chrome.tabs.onRemoved.addListener((id) => WRONG_LANE.delete(id));
+} catch (e) {}
+
 async function evictOtherLane() {
   try {
     const { profile_lane } = await chrome.storage.local.get("profile_lane");
@@ -2366,7 +2374,35 @@ async function evictOtherLane() {
         ? /whop\.com\/(?:joined\/|[^/]+\/exp_)/.test(u)
         : /discord\.com\/channels\/\d+\/\d+/.test(u);
       if (!isRoom) continue;
-      try { await chrome.tabs.remove(t.id); closed++; } catch (e) {}
+      /* DON'T CLOSE HIS TAB — IGNORE IT (9/10, G: "my chrome profile for
+       * discord is closing my whop tabs when i open them").
+       *
+       * The danger this function exists for is real: the same Whop room read
+       * by BOTH profiles fires every alert twice. But closing the tab treats
+       * the symptom by taking the browser off him, and he is entitled to open
+       * a Whop page in whatever window he likes.
+       *
+       * So the tab stays and the READ stops. WRONG_LANE holds its id and the
+       * MESSAGE handler drops anything arriving from it, which kills the
+       * double-fire at the only place that actually matters — before the
+       * parser. Same mistake, same fix as the tab reaper this morning: scope
+       * the destruction to tabs the extension itself opened, and never touch
+       * one a human opened by hand.
+       *
+       * A tab WE opened in the wrong lane is still closed: that is our mess,
+       * not his. */
+      if (_OURS.has(t.id)) {
+        try { await chrome.tabs.remove(t.id); closed++; } catch (e) {}
+      } else if (!WRONG_LANE.has(t.id)) {
+        WRONG_LANE.add(t.id);
+        try {
+          await addLog({ kind: "ignored", what: "OTHER LANE",
+            why: "you opened a " + (wantWhopGone ? "Whop" : "Discord")
+               + " room in the " + profile_lane + " browser — leaving the tab "
+               + "alone, but NOT reading it here. It is read in the other "
+               + "profile, and reading it twice would fire every alert twice." });
+        } catch (e) {}
+      }
     }
     if (closed) await addLog({ kind: "sent", what: "ROOMS",
       why: "closed " + closed + " " + (wantWhopGone ? "Whop" : "Discord")
@@ -3655,6 +3691,14 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type !== "MESSAGE") { reply({ ok: false }); return true; }
 
   (async () => {
+    // THE WRONG-LANE DROP. See evictOtherLane: a room tab the user opened in
+    // the other profile's lane is left alone but never read, because reading
+    // it here AND in its own profile fires every alert twice. This is the
+    // only place that matters — before the parser, before the bridge.
+    if (sender && sender.tab && WRONG_LANE.has(sender.tab.id)) {
+      reply({ ok: true, ignored: "other lane" });
+      return;
+    }
     const c = await cfg();
     noteChannelName(msg.channelId, msg.channelName);   // learn the room's real name
     if (sender && sender.tab && String(msg.platform || "") === "whop") {
