@@ -2232,23 +2232,66 @@ class WebullOptions:
                         raise
                 _orders = [master]
                 stop_child = child.get("client_order_id")
-            except Exception as _cu:                    # noqa: BLE001
-                # ANY failure of the linked group — refused, unsupported, or
-                # an SDK exception shape we've never seen — falls through to
-                # the plain single order below. THE ENTRY IS NEVER LOST TO
-                # THE BRACKET (8/20 and again 8/21, the lesson twice). A real
-                # problem with the order itself resurfaces on the plain
-                # attempt and is reported honestly there.
-                # THE ENTRY IS NEVER LOST TO THE BRACKET (the 8/20 lesson:
-                # NVDA/BABA/TM/BAC all died when a group rejection was allowed
-                # to escape). Whatever the group's problem was, fall through
-                # to the plain single order; a real problem with the ORDER
-                # itself (price, affordability) will resurface there and be
-                # reported honestly.
+            except (_ComboUnsupported, Refused) as _cu:
+                # A DEFINITE answer: the broker/SDK explicitly said this
+                # combo was never created (unsupported shape, or a parsed
+                # rejection body). THE ENTRY IS NEVER LOST TO THE BRACKET
+                # (8/20 and again 8/21, the lesson twice) — safe to fall
+                # through to the plain single order below.
                 stop_child = stop_born = None
                 _orders = None
                 # remembered so the caller can say it once, not every trade
                 self._combo_no = str(_cu)[:120]
+            except Exception as _cu:                    # noqa: BLE001
+                # AMBIGUOUS (F01, 9/11 audit). This is NOT a proven rejection
+                # — a timeout, a dropped connection, an SDK exception with no
+                # status code all land here, and every one of them can mean
+                # "the broker took it and the confirmation never arrived."
+                # The old code treated this exactly like a definite Refused
+                # and fell straight through to a fresh plain BUY — a lost
+                # response became a real second entry, with the book only
+                # ever hearing about the second one (the audit's repro:
+                # accept-then-timeout produced two submitted buys).
+                # Check the account for a live order on this EXACT contract
+                # before doing anything else. Found -> use it, send nothing
+                # more. Genuinely absent -> the combo really never landed,
+                # safe to fall through same as a proven Refused. Can't even
+                # check -> refuse outright; losing one entry to a manual
+                # look is recoverable, a silent double-buy on real money
+                # is not.
+                self._combo_no = str(_cu)[:120]
+                try:
+                    _existing = [o for o in (self.open_orders(symbol) or [])
+                                 if str(o.get("action") or "").upper() == "BUY"
+                                 and float(o.get("strike") or 0) == float(strike)
+                                 and str(o.get("side") or "").upper()
+                                     == str(option_type).upper()
+                                 and str(o.get("expiry") or "") == str(expiration)]
+                except Exception:                       # noqa: BLE001
+                    _existing = None
+                if _existing:
+                    _found = _existing[0]
+                    print("[webull] AMBIGUOUS-RECOVERED %s — the bracket call "
+                          "raised (%s) but a live BUY for this exact contract "
+                          "is already at the broker; using it, NOT sending a "
+                          "second order." % (symbol, str(_cu)[:80]), flush=True)
+                    return {"ok": True, "state": "working",
+                            "order_id": str(_found.get("order_id") or "") or None,
+                            "occ": occ, "what": what, "limit": limit,
+                            "bid": bid, "ask": ask, "blind": blind,
+                            "symbol": symbol, "side": side, "strike": strike,
+                            "expiry": expiry, "qty": qty,
+                            "stop_child": None, "stop_born": None,
+                            "reconciled": True}
+                if _existing is None:
+                    raise Refused(
+                        "the bracket call for %s failed ambiguously (%s) and "
+                        "the account could not be checked for a duplicate — "
+                        "refusing rather than risking two real buys. Check "
+                        "Webull by hand before retrying." % (symbol, str(_cu)[:120]))
+                # Confirmed clean absence: the combo really never landed.
+                stop_child = stop_born = None
+                _orders = None
         if _orders is None:
             _orders = self._order(symbol, expiration, option_type, strike,
                                           "BUY", qty, limit)
