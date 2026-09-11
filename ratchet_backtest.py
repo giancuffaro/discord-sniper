@@ -87,7 +87,16 @@ def simulate(rows_after_entry, entry):
             new_stop = entry * (1.0 + locked / 100.0)
             stop = max(stop, new_stop)
         if bid <= stop:
-            return (stop - entry) / entry * 100.0, True, peak_gain
+            # F20 (9/11 audit): a resting stop is a MARKET order once it
+            # triggers — it fills at whatever the bid actually is right
+            # then, not at the nominal stop price. Crediting `stop` here
+            # made every gap-through look like a clean stop-level exit
+            # (a -50% gap under a -7.5% stop reported as -7.5%), which is
+            # exactly the "worse than the born stop" gap risk main() is
+            # trying to measure. Credit the real bid — it can only be
+            # <= stop in this branch, so this never makes a fill look
+            # BETTER than it was, only ever as bad as it really was.
+            return (bid - entry) / entry * 100.0, True, peak_gain
     last_bid = rows_after_entry[-1][1] if rows_after_entry else entry
     return (last_bid - entry) / entry * 100.0, False, peak_gain
 

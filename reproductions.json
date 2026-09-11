@@ -160,11 +160,11 @@
   },
   {
     "name": "backtest_credits_unavailable_stop_price",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
       "entry": 2,
       "observed_bid": 1,
-      "reported_percent": -5.000000000000004
+      "reported_percent": -50.0
     }
   },
   {
