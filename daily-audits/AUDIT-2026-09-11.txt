@@ -1,70 +1,33 @@
 DISCORD SNIPER DAILY AUDIT — 2026-09-11
-generated: 2026-09-11T15:15:11.049463-04:00
-status: ATTENTION
-silent drops: 8
-possible missed entries: 1
+generated: 2026-09-11T16:37:00.093429-04:00
+status: PASS
+silent drops: 0
+possible missed entries: 0
 coverage warnings: 0
 failed checks: none
 
 MESSAGE REPLAY
 REPLAY CHECK for 2026-09-11 — exports: signal-room-chat Sep-11-2026 (discord).txt, signal-room-chat Sep-11-2026 (whop).txt
 
-Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps — 42 msgs, 29 actionable, 8 judged, 2 SILENT
-   09:42:25  OPEN    NVDA  @Unraveller 🔮 in NVDA 9/16 220C @ 3.06 @everyone
-   09:42:25  OPEN    NVDA  @Unraveller (Admin)🔮 in NVDA 9/16 220C @ 3.06 @everyone
+Low Key Stonks: 😈demon-day-trades — 2 msgs, 2 actionable, 1 judged, 0 SILENT
 
-OWLS Capital: 🛎️｜all-alerts — 43 msgs, 10 actionable, 4 judged, 2 SILENT
-   09:39:44  OPEN    QCOM  From ⁠🌟｜muggzone-options @Updates MuggZone MuggZone Message: QCOM DTE 185 CALLS .97 @everyone Owls Investment Group LLC. Informational purposes only. 
-   13:27:29  OPEN    RKLB  From ⁠🌟｜muggzone-options @Updates MuggZone MuggZone Message: RKLB 9/25 $70 clls 1.39 @everyone Owls Investment Group LLC. Informational purposes only.
+TradingTheTrend: 🚨option-alerts🚨 — 7 msgs, 4 actionable, 3 judged, 0 SILENT
 
-OWLS Capital: 🌟｜shabs-sky-alerts — 13 msgs, 3 actionable, 1 judged, 1 SILENT
-   10:35:54  OPEN    SPX   Yall want an insane lotto? 7700c at 105 @here
-
-NGD: ngd-trades — 25 msgs, 25 actionable, 24 judged, 1 SILENT
-   09:42:38  OPEN    MNQ   MNQ SHORT (5m) @ 29462.375 | TP:29432.375 SL:29482.375 | Prob:60.1% | R:R:1.5 NEW POTENTIAL SIGNAL - MNQ SHORT A setup has been detected on the future
-
-OWLS Capital: 🌟｜muggzone-options — 30 msgs, 8 actionable, 4 judged, 1 SILENT
-   13:27:28  OPEN    RKLB  RKLB 9/25 $70 clls 1.39 @everyone
-
-Low Key Stonks: 🧱brick-alerts — 2 msgs, 2 actionable, 0 judged, 1 SILENT
-   14:15:11  ADD     RKLB  Added more RKLB 70c 10/16 @ 3.3 @Brick Alerts
-
-TradingTheTrend: 🚨option-alerts🚨 — 2 msgs, 1 actionable, 0 judged, 0 SILENT
-
-Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge — 27 msgs, 4 actionable, 1 judged, 0 SILENT
-
-OWLS Capital: 🌟｜ab — 8 msgs, 2 actionable, 0 judged, 0 SILENT
-
-Platinum Trading: 👑│nitro — 16 msgs, 6 actionable, 6 judged, 0 SILENT
-
-ELITE OPTIONS: shoof-alerts — 1 msgs, 1 actionable, 0 judged, 0 SILENT
-
-Honey Drip Network 🍯💰📈: 👑｜aristotle-trades — 15 msgs, 1 actionable, 0 judged, 0 SILENT
-
-Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge — 10 msgs, 5 actionable, 0 judged, 0 SILENT
-
-Platinum Trading: 🟣│futures-alerts — 10 msgs, 1 actionable, 1 judged, 0 SILENT
-
-Low Key Stonks: 😈demon-day-trades — 8 msgs, 4 actionable, 2 judged, 0 SILENT
-
-TOTAL silent drops: 8  (actionable per the parser, no verdict, no bridge line)
-
-POSSIBLE MISSED ENTRIES (heuristic — parser found NO action at all, but the trader had an unconfirmed LOADING call and this message carries a price):
-   10:54:27  Honey Drip Network 🍯 midas (admin)   AAPL 335C — 1.46 on starters @here
-POSSIBLE MISSED ENTRIES: 1
+TOTAL silent drops: 0  (actionable per the parser, no verdict, no bridge line)
+POSSIBLE MISSED ENTRIES: 0
 
 REGRESSION CHECKS
-PASS  JS test_bare_entry.js  0.10s
+PASS  JS test_bare_entry.js  0.08s
 PASS  JS test_buy_verb.js  0.08s
 PASS  JS test_dotdate.js  0.08s
 PASS  JS test_elite.js  0.08s
 PASS  JS test_exits.js  0.08s
 PASS  JS test_optionable.js  0.05s
-PASS  JS test_owls_jonkian.js  0.09s
+PASS  JS test_owls_jonkian.js  0.08s
 PASS  JS test_percon.js  0.08s
-PASS  JS test_pivot.js  0.08s
+PASS  JS test_pivot.js  0.07s
 PASS  JS test_plan_entry.js  0.08s
-PASS  JS test_spreads.js  0.08s
-PASS  JS test_word_order.js  0.10s
+PASS  JS test_spreads.js  0.07s
+PASS  JS test_word_order.js  0.09s
 PASS  JS test_resolve.js  0.09s
-PASS  Python regression suite  29.50s
+PASS  Python regression suite  29.53s
