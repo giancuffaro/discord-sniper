@@ -2354,6 +2354,17 @@ async function stickyLane(haveDiscord, haveWhop) {
     let lane = "";
     if (d >= 3 && d > w) lane = "discord";
     else if (w >= 3 && w > d) lane = "whop";
+    /* BREAK THE BOOTSTRAP DEADLOCK (9/11). whopSelfHeal() is the ONLY thing
+     * that opens missing Whop rooms, and it returns unless the lane is
+     * already "whop" — but the lane only locked at >=3 Whop tabs. The opener
+     * needed the tabs it was supposed to open, so a Whop profile that came up
+     * empty could never recover, never pinged /whopalive, and _whop_loop.bat
+     * struck out and parked. Zero "(whop)" export files were ever written.
+     * A profile holding a Whop room tab and NOT ONE Discord room tab cannot
+     * be the Discord lane, so one tab is enough to decide it. Deliberately
+     * one-directional: the Discord threshold is untouched, and this can only
+     * fire when d === 0, so evictOtherLane() has nothing of his to close. */
+    if (!lane && w >= 1 && d === 0) lane = "whop";
     if (lane) await chrome.storage.local.set({ profile_lane: lane });
     return lane;
   } catch (e) { return ""; }
