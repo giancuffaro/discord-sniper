@@ -1126,31 +1126,74 @@ async function cfg() {
   return c;
 }
 
-async function addLog(entry) {
-  const { log } = await chrome.storage.local.get("log");
-  const l = log || [];
-  l.unshift(Object.assign({ t: Date.now() }, entry));
-  await chrome.storage.local.set({ log: l.slice(0, LOG_MAX) });
+// chrome.storage.local has no atomic append. Several room tabs can finish a
+// read at the same time, and the old read/modify/write functions allowed the
+// last writer to erase the other tabs' capture or verdict. Keep each key's
+// writes ordered. The catch keeps one failed write from poisoning the queue.
+let LOG_WRITE_TAIL = Promise.resolve();
+function addLog(entry) {
+  const run = LOG_WRITE_TAIL.then(async () => {
+    const { log } = await chrome.storage.local.get("log");
+    const l = log || [];
+    l.unshift(Object.assign({ t: Date.now() }, entry));
+    await chrome.storage.local.set({ log: l.slice(0, LOG_MAX) });
+  });
+  LOG_WRITE_TAIL = run.catch(() => {});
+  return run;
 }
 
-async function capture(text, author, channel, at) {
-  const { captured } = await chrome.storage.local.get("captured");
-  const c = captured || [];
-  // Discord repaints its message nodes and the first capture day came out
-  // double-spaced — every line twice. Same author, same words, same minute,
-  // in the last few entries = the same message.
-  const t0 = at || Date.now();
-  if (c.slice(-8).some(e => e.text === text && e.author === author &&
-                            Math.abs((e.t || 0) - t0) < 60000)) return;
-  // The channel rides along so a capture day across three rooms exports as
-  // three distinguishable lexicons — tuning Midas's grammar on Aristotle's
-  // sentences would be worse than not tuning at all. The timestamp is the
-  // message's own, not the moment it was scraped — scrolled-in history
-  // should read as the day it happened. 8000 lines is a couple of weeks of
-  // three rooms; older ones fall off the back. Raised to 25k so a couple of
-  // MONTHS of one room (grabbed with the auto-scroll history button) fits.
-  c.push({ t: at || Date.now(), author, text, channel: String(channel || "") });
-  await chrome.storage.local.set({ captured: c.slice(-50000) });
+// History grabs can deliver hundreds of messages in one burst. Writing the
+// entire multi-megabyte capture array for every message both wastes CPU and
+// creates a large race window. Coalesce each burst into one ordered write.
+let CAPTURE_PENDING = [];
+let CAPTURE_TIMER = null;
+let CAPTURE_FLUSHING = false;
+function capture(text, author, channel, at, history) {
+  return new Promise(resolve => {
+    CAPTURE_PENDING.push({
+      entry: { t: at || Date.now(), author, text, channel: String(channel || ""),
+               history: !!history },
+      resolve
+    });
+    if (!CAPTURE_TIMER && !CAPTURE_FLUSHING) {
+      CAPTURE_TIMER = setTimeout(flushCaptures, 75);
+    }
+  });
+}
+
+async function flushCaptures() {
+  CAPTURE_TIMER = null;
+  if (CAPTURE_FLUSHING || !CAPTURE_PENDING.length) return;
+  CAPTURE_FLUSHING = true;
+  const batch = CAPTURE_PENDING.splice(0);
+  try {
+    const { captured } = await chrome.storage.local.get("captured");
+    const c = captured || [];
+    for (const item of batch) {
+      const e = item.entry;
+      // Discord repaints nodes. Same author, words and minute in the most
+      // recent entries is the same post, not a second alert.
+      if (!c.slice(-8).some(old => old.text === e.text && old.author === e.author &&
+                                  Math.abs((old.t || 0) - e.t) < 60000)) {
+        c.push(e);
+      }
+    }
+    // A long backfill arrives after today's live messages. Keep the newest
+    // message timestamps when the cap is reached so history cannot evict the
+    // current day merely because it was scraped later.
+    const keep = c.length > 50000
+      ? c.slice().sort((a, b) => (a.t || 0) - (b.t || 0)).slice(-50000)
+      : c;
+    await chrome.storage.local.set({ captured: keep });
+    for (const item of batch) item.resolve(true);
+  } catch (e) {
+    for (const item of batch) item.resolve(false);
+  } finally {
+    CAPTURE_FLUSHING = false;
+    if (CAPTURE_PENDING.length && !CAPTURE_TIMER) {
+      CAPTURE_TIMER = setTimeout(flushCaptures, 75);
+    }
+  }
 }
 
 /* Save one room's captured messages straight to Downloads — called the moment a
@@ -2964,7 +3007,8 @@ async function autoExportForLearning() {
     // With the id here it's exact.
     stamp(c.t) + "  [" + (roomName(c.channel) || "?") +
     (c.channel ? " #" + c.channel : "") + "]  " +
-    (c.author || "?") + ": " + String(c.text || "").replace(/\s+/g, " ").trim());
+    (c.history ? "<history> " : "") + (c.author || "?") + ": " +
+    String(c.text || "").replace(/\s+/g, " ").trim());
   const acts = log.slice().reverse().map(e =>
     stamp(e.t) + "  <" + (e.kind || "?") + ">  " +
     (e.what ? e.what + " — " : "") + String(e.why || "").replace(/\s+/g, " ").trim() +
@@ -3832,7 +3876,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     }
     // Grabber export stores the FULL row text (embeds and all); trading still
     // reads the clean msg.text below.
-    if (c.capture) capture(msg.full || msg.text, msg.author, msg.channelId, msg.postedAt);
+    if (c.capture) capture(msg.full || msg.text, msg.author, msg.channelId,
+                           msg.postedAt, msg.history);
     ROOM_MSG_AT[String(msg.channelId || "")] = Date.now();
     notePost(String(msg.channelId || ""), msg.postedAt);
 

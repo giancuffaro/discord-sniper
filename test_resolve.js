@@ -10,6 +10,7 @@
  */
 const fs = require("fs");
 const path = require("path");
+const { parseSignal } = require(path.join(__dirname, "extension", "parser.js"));
 
 // guards.js is written for a service worker, so it expects chrome.* to exist.
 // This is just enough of it to run: one key, in memory.
@@ -84,6 +85,14 @@ function ok(cond, label) { if (!cond) { bad++; console.log("  - " + label); } }
   const fill = () => ({ action: "OPEN", needs_loaded: true, symbol: null,
                         side: null, strike: null, expiry: null, limit: 3.95,
                         fire: false, caller: "Unraveller" });
+
+  // Today's real Midas confirmation: "Loaded $AAPL 335c 0days", then
+  // "1.46 on starters". The price phrase must enter the same guarded
+  // loaded-contract resolver instead of falling into the review-only net.
+  const starters = parseSignal("1.46 on starters @here", LCFG);
+  ok(starters.action === "OPEN" && starters.needs_loaded && starters.limit === 1.46,
+     "price-on-starters must resolve the preceding loaded contract, got " +
+     JSON.stringify(starters));
 
   store = {};
   await G.rememberLoading(loading, "Unraveller");

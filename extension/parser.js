@@ -213,7 +213,7 @@ const RE_IN_PRICE = /(?:\bat|@)\s*\$?(\d{1,2}\.\d{1,2})\b/i;
 // Midas's two-step entry (missed 8/11): "Loaded $PLTR 175p 8/14" then
 // "4.10 entry @here" / "Full sized 3.80 avg" — price-only lines that pin to
 // the loaded contract. Mirrors signals.RE_FILL_CONF exactly.
-const RE_FILL_CONF = /^(?:filled)\b(?:\s+(?:light\s+size|lightly|starters?))*[\s.!]*$|^(?:full\s+siz(?:e|ed)\s+)?\$?(\d{1,2}\.\d{1,2})\s+(?:is\s+my\s+)?(?:final\s+)?(?:fill|avg|entry)\b[\s.!]*(?:@\w+[\s.!]*)?$|^avg\s+\$?(\d{1,2}\.\d{1,2})\b[\s.!]*$|^tak(?:e|ing)\s+(?:first|more|some)?\s*(?:size|cons?)\b/i;
+const RE_FILL_CONF = /^(?:filled)\b(?:\s+(?:light\s+size|lightly|starters?))*[\s.!]*$|^(?:full\s+siz(?:e|ed)\s+)?\$?(\d{1,2}\.\d{1,2})\s+(?:is\s+my\s+)?(?:final\s+)?(?:fill|avg|entry)\b[\s.!]*(?:@\w+[\s.!]*)?$|^avg\s+\$?(\d{1,2}\.\d{1,2})\b[\s.!]*$|^\$?(\d{1,2}\.\d{1,2})\s+on\s+starters?\b(?:\s+@\w+)?[\s.!]*$|^tak(?:e|ing)\s+(?:first|more|some)?\s*(?:size|cons?)\b/i;
 const RE_CLOSE_ALL = /\ball\s+positions?\s+(?:are\s+)?closed\b|\bclos(?:ed|ing)\s+all\s+positions?\b|\bout\s+of\s+all\s+trades\b|\bsold\s+everything\b/i;
 const RE_HALF = /\b(?:out\s+of|sold)\s+half\b/i;
 // "Stopped out of half my position" / "Stopping out of 2nd entry" — their
@@ -2487,7 +2487,7 @@ function parseSignalInner(text, cfg) {
   if (mfc) {
     s.action = "OPEN"; s.matched = "fill confirmation on a loaded contract";
     s.needs_loaded = true;
-    const p0 = mfc[1] || mfc[2];
+    const p0 = mfc[1] || mfc[2] || mfc[3];
     if (p0) s.limit = parseFloat(p0);
     else {
       const mp0 = RE_IN_PRICE.exec(t);

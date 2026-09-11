@@ -130,6 +130,10 @@ def load(fn):
                 m = RE_MSG.match(ln)
                 if m and m.group(1) == DAY:
                     d, t, room, cid, text = m.groups()
+                    # A scroll/backfill is useful parser corpus, but it never
+                    # entered the live path and cannot be a silent live drop.
+                    if text.startswith("<history> "):
+                        continue
                     msgs[(t, cid, text[:100])] = (t, room, cid, text)
             elif sec == "d":
                 m = RE_DID.match(ln)
