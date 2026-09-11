@@ -29,15 +29,15 @@ Last updated: 2026-09-11 (15:18) — extension source 3.8.10 and Discord Profile
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
 - The machine: Chrome MV3 extension source v3.8.10 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
-- Accounts (Webull, one app key), read live 9/10 16:45 (close-out): MARGIN
-  ENIQGUV4 $0.83, flat (day P&L −$671 net of fees: the BOT was +$46 on 7
-  one-lot trades, G's 21 hand round-trips −$706 — HANDOFF-LOG 9/10), CASH MOI680 ($0.55), FUTURES R8IEC
-  $211.95 funded but flat and `futures_brokers.webull` is still false so
-  the bot will not touch it. At $0.83 of option buying power the bot
-  CANNOT ENTER ANYTHING — the median bot entry costs $167; AAPL/MU/AMD
-  calls were refused for money on 9/10 afternoon. G said 9/10 he is
-  depositing and leaving the account to the bot alone.
-  Rate budget is SHARED with Market Sniper.
+- Accounts (Webull, one app key), read live 9/11 15:20: MARGIN ENIQGUV4
+  connected, $113.71 buying power, flat; the bridge is currently `live:false`
+  / dry-run, so it reviews alerts but sends no new broker orders until G
+  changes that real-money control. CASH MOI680 was $0.55 at the 9/10 close.
+  FUTURES R8IEC is flat with $0.82 available in the current read and
+  `futures_brokers.webull` is false, so the bot will not touch it. Topstep,
+  NinjaTrader and Tradovate are also disabled. The 9/10 close was −$671 net
+  of fees: the bot +$46 on seven one-lot trades and G's 21 hand round-trips
+  −$706 (HANDOFF-LOG 9/10). Rate budget is SHARED with Market Sniper.
 - SEPARATE tool: Market Sniper (his own build, 127.0.0.1:8000) trades HIS
   manual scalps on the SAME Webull account. Coexistence rule: positions the
   bot didn't originate are HIS — visible, never stop-managed, never sold,
