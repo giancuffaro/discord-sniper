@@ -188,7 +188,7 @@ def _enrich_entries(day, entries, parsed_messages):
         # decision that was already durably logged as @300.00 before the fix.
         if (entry.get("entry") and entry["entry"] >= 100
                 and entry.get("strike") is not None):
-            cents_posts = [text for m, text, _p in parsed_messages
+            cents_posts = [(m, text) for m, text, _p in parsed_messages
                            if abs(_clock(day, m[0]) - entry["ts"]) <= 120
                            and re.search(
                                r"\b%s\s+%s\s*[cp]\b\s+at\s+(\d{2,5})"
@@ -198,9 +198,10 @@ def _enrich_entries(day, entries, parsed_messages):
                                text, flags=re.I)]
             if cents_posts:
                 match = re.search(r"\bat\s+(\d{2,5})\s+for\s+you\s+rich",
-                                  cents_posts[0], flags=re.I)
+                                  cents_posts[0][1], flags=re.I)
                 if match:
                     entry["entry"] = int(match.group(1)) / 100.0
+                    entry["room"] = cents_posts[0][0][1]
                     entry["contract_text"] = re.sub(
                         r"@\s*[0-9]+(?:\.[0-9]+)?",
                         "@ %.2f" % entry["entry"],
@@ -257,6 +258,14 @@ def build(day):
     quote_paths = _quote_paths(day)
     claims = []
     for message, cleaned, parsed in parsed_messages:
+        # Prefer a richer same-second original over its shortened accessible
+        # card. Otherwise a ticker mentioned at the end can steal the event
+        # from the contract named at the beginning of the original.
+        if any(other[0][0] == message[0] and other[0][1] == message[1]
+               and len(other_clean) > len(cleaned) + 8
+               and cleaned in other_clean
+               for other, other_clean, _p in parsed_messages):
+            continue
         action = parsed.get("action")
         if action not in ("TRIM", "CLOSE"):
             continue
@@ -284,17 +293,18 @@ def build(day):
             # A timestamped full exit plus a contemporaneous executable bid
             # is calculable even when the caller omitted the price.
             if action != "CLOSE":
-                continue
-            path = quote_paths.get(entry.get("occ")) or []
-            if path:
-                nearest = min(path, key=lambda r: abs(r[0] - ts))
-                if abs(nearest[0] - ts) <= 5:
-                    price = nearest[1]
-                    basis = "market bid at caller exit"
+                basis = "caller trim; price unavailable"
+            else:
+                path = quote_paths.get(entry.get("occ")) or []
+                if path:
+                    nearest = min(path, key=lambda r: abs(r[0] - ts))
+                    if abs(nearest[0] - ts) <= 5:
+                        price = nearest[1]
+                        basis = "market bid at caller exit"
+                    else:
+                        basis = "caller exit; price unavailable"
                 else:
                     basis = "caller exit; price unavailable"
-            else:
-                basis = "caller exit; price unavailable"
         entry_px = entry.get("entry")
         calc_pct = ((price - entry_px) / entry_px * 100.0
                     if price is not None and entry_px else None)
