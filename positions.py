@@ -3035,6 +3035,7 @@ class Book:
                 return False
             sym, side = p["symbol"], p.get("side")
             strike, expiry = p.get("strike"), p.get("expiry")
+            occ = p.get("occ")
             wb = self._wbfor(p)
         if not self.claim(key):
             return False        # their exit or the stop got there first
@@ -3052,11 +3053,18 @@ class Book:
                         price=float(bid))
             return True
         try:
-            self._sell_retry(wb, key, sym, side, strike, expiry, held,
-                             ref_price=float(bid))
+            _okf, _px = self._sell_confirmed(
+                wb, key, occ, sym, side, strike, expiry, held, float(bid))
+            if not _okf:
+                self.release(key, rearm=True)
+                self._event(key, "stop-warn",
+                            "%s — take-profit order did not confirm a fill. "
+                            "Still HOLDING; protection restored and it will retry."
+                            % sym)
+                return False
             self.finish(key, CLOSED,
-                        "take-profit sold at %.2f (+%.0f%%)" % (float(bid), gain),
-                        price=float(bid))
+                        "take-profit sold at %.2f (+%.0f%%)" % (float(_px), gain),
+                        price=float(_px))
         except Exception as e:                              # noqa: BLE001
             # FIRST: anything left to sell? (8/18) — same race as the stop:
             # a resting order can fill a beat ahead of the watchdog, and

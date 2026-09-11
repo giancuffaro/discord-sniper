@@ -82,6 +82,41 @@ class AuditRegressionTests(unittest.TestCase):
         self.assertEqual(book.qty_of(key), 2)
         self.assertEqual(book.info(key)["exits"][0]["qty"], 1)
 
+    def test_take_profit_does_not_close_on_unfilled_acceptance(self):
+        class Broker:
+            def __init__(self):
+                self.sent = 0
+
+            def sell(self, *_args, **_kwargs):
+                self.sent += 1
+                return {"order_id": "sell-%d" % self.sent, "limit": 1.20}
+
+            def order_status(self, _oid):
+                return "dead", 0, None
+
+            def cancel(self, _oid):
+                return True
+
+            def ask_bid(self, _occ):
+                return 1.21, 1.20, {}
+
+        broker = Broker()
+        book = positions.Book(broker, lambda _line: None)
+        book.take_profit_on = True
+        book.take_profit_pct = 15
+        key = positions.key_of("room", "QQQ", 600, "C", "2026-09-18")
+        book._pos[key] = {
+            "key": key, "state": positions.FILLED, "closing": False,
+            "symbol": "QQQ", "side": "C", "strike": 600,
+            "expiry": "2026-09-18", "qty": 1, "fill": 1.00,
+            "cost": 100.0, "live": True, "stop_order_id": None,
+        }
+
+        self.assertFalse(book.auto_take_profit(key, 1.20))
+        self.assertEqual(book.state_of(key), positions.FILLED)
+        self.assertEqual(book.qty_of(key), 1)
+        self.assertFalse(book.info(key).get("closing"))
+
 
 if __name__ == "__main__":
     unittest.main()
