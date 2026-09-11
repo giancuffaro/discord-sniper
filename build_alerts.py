@@ -419,6 +419,13 @@ RE_PB_HIT = re.compile(r"^PULLBACK\s+([A-Z][A-Z.]{0,5}):\s+touched\s+\$([\d.]+)"
 RE_REFUSED = re.compile(
     r"^REFUSED\s+(?:OPEN|ADD)\s+([A-Z][A-Z.]{0,5})\s+\(([^()]{1,40})'s call\)\s+"
     r"([\d.]+)([CP])\s+(\S+)")
+# "WORKING  AMZN — Bullwinkle's call, bid is in at 0.69 ..." — the line the
+# bridge prints right after ORDER IN. It is the ONLY place the caller's name
+# appears for an order the bot sent; ORDER IN and AI READ both name the
+# contract and nobody. build_ledger.load_fill_callers() reads it the same way
+# for the ledger's fills, and that is what attributed all 41 rows that used to
+# sit at room "?" with no name.
+RE_WORKING = re.compile(r"^WORKING\s+([A-Z][A-Z.]{0,5})\s+—\s+([^,]{1,40}?)'s call")
 RE_NO_OTM = re.compile(
     r"^NO-OTM\s+([A-Z][A-Z.]{0,5}):\s+their\s+([\d.]+)([CP])\s+was\s+\w+"
     r".*?->\s+nearest qualifying\s+([\d.]+)([CP])")
@@ -565,6 +572,16 @@ def _log_events():
                         a["outcome"] = ("PULLBACK touched" if hit
                                         else "PULLBACK never hit")
                         break
+                continue
+
+            m = RE_WORKING.match(msg)
+            if m:
+                sym, who = m.group(1).upper(), m.group(2).strip()
+                for ev in reversed(events):
+                    if ev["ts"] < ts - 120:
+                        break
+                    if ev["symbol"] == sym and not ev.get("caller"):
+                        ev["caller"] = who
                 continue
 
             m = RE_NO_OTM.match(msg)
