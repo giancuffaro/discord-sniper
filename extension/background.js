@@ -1591,7 +1591,22 @@ async function sendOrder(sig, qty, c, author, postedAt) {
         also: null
       });
       try {
-        await sendOrder(leg, 1, c, author, postedAt);
+        // F22 (9/11 audit): a refused second leg (HTTP non-2xx, e.g. the
+        // bridge 417'd it) returns normally as {ok:false,...} — it never
+        // throws — so this used to only catch a THROWN failure and the
+        // refusal fell straight through unlogged. The whole alert still
+        // reported ok:true, and the only sign the second contract never
+        // went out was its absence from the popup's fills.
+        const r2 = await sendOrder(leg, 1, c, author, postedAt);
+        if (!r2 || !r2.ok) {
+          try {
+            await addLog({ kind: "failed", what: "SECOND CONTRACT",
+              why: "the second contract (" + sig.symbol + " " + leg2.strike
+                 + (leg2.expiry ? " " + leg2.expiry : "") + ") was refused: "
+                 + ((r2 && (r2.msg || r2.why)) || "no reason given") + ". The "
+                 + "first one did — check the popup before adding it by hand." });
+          } catch (e2) {}
+        }
       } catch (e) {
         try {
           await addLog({ kind: "failed", what: "SECOND CONTRACT",
