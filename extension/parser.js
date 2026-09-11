@@ -2436,6 +2436,15 @@ function parseSignalInner(text, cfg) {
   //     Resolved by whose position it is, exactly like a bare trim. The
   //     anchored regex is what keeps "Damn it actually worked out" from
   //     reading as an exit — a bare out IS the whole message, or it's chatter.
+  // "please just take the L ... both green I shared" is aimed at a critic,
+  // not an instruction that the caller closed the later-mentioned ticker.
+  // A shortened Discord card once fired CLOSE SPX from this exact wording.
+  if (RE_PAPERCUT.test(low)
+      && /\bplease\s+just\s+take\s+the\s+l\s+and\s+move\s+on\b/.test(low)
+      && /\bboth\s+green\b/.test(low)) {
+    s.why = "that's commentary directed at another person, not a trade exit";
+    return s;
+  }
   if (RE_STOPPED_OUT.test(low) || RE_STOP_HIT.test(t) || RE_PAPERCUT.test(low)) {
     if (RE_NOT_ROOM_TRADE.test(low)) {
       // "stopped out of my personal trade, room trade still on" — his OTHER

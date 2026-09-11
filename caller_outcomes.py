@@ -274,6 +274,13 @@ def build(day):
         ts = _clock(day, message[0])
         candidates = [e for e in entries if e["ts"] < ts
                       and (not symbol or e["symbol"] == symbol)]
+        parsed_strike = _f(parsed.get("strike"))
+        if parsed_strike is not None:
+            exact_strike = [e for e in candidates
+                            if e.get("strike") is not None
+                            and abs(float(e["strike"]) - parsed_strike) < 0.001]
+            if exact_strike:
+                candidates = exact_strike
         same_room = [e for e in candidates
                      if e.get("room") and (e["room"] in message[1]
                                            or message[1] in e["room"])]

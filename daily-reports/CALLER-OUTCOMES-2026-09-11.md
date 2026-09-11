@@ -13,6 +13,7 @@ Caller claims are separate from broker results and ratchet simulations. Partial 
 | 09:42:00 | 09:56:17 | ☀️｜daytrades-scalps | NVDA 220C 9/16 @ 3.06 | $3.06 | partial trim | +32.0% | implied $4.04 | caller-stated |
 | 09:50:39 | 09:59:45 | 🌟｜muggzone-options | HPE 62C 0DTE | — | partial trim | +92.0% | unavailable | caller-stated |
 | 09:42:00 | 10:00:11 | ☀️｜daytrades-scalps | NVDA 220C 9/16 @ 3.06 | $3.06 | partial trim | +35.0% | implied $4.13 | caller-stated |
+| 10:00:14 | 10:01:16 | MuggZone | MU 990C 0DTE @ 2.86 | $2.86 | partial trim | price unavailable | unavailable | caller trim; price unavailable |
 | 10:00:14 | 10:04:40 | MuggZone | MU 990C 0DTE @ 2.86 | $2.86 | partial trim | $2.40 | -16.1% | caller-stated |
 | 09:42:00 | 10:05:11 | ☀️｜daytrades-scalps | NVDA 220C 9/16 @ 3.06 | $3.06 | partial trim | +50.0% | implied $4.59 | caller-stated |
 | 10:01:47 | 10:06:49 | @Owner Alerts | NVDA 220C @ 2.15 | $2.15 | full exit | price unavailable | unavailable | caller exit; price unavailable |
@@ -28,12 +29,10 @@ Caller claims are separate from broker results and ratchet simulations. Partial 
 | 10:39:56 | 10:49:02 | Mike | AMZN 255C 9/14 @ 2.05 | $2.05 | full exit | price unavailable | unavailable | caller exit; price unavailable |
 | 10:50:04 | 11:03:21 | Brett | HOOD 118C 9/18 @ 2.50 | $2.50 | partial trim | +10.0% | implied $2.75 | caller-stated |
 | 10:54:00 | 11:12:46 | 🇳🇬｜midas-small-account-challenge | AAPL 335C 0DTE @ 1.46 | $1.46 | partial trim | +22.0% | implied $1.78 | caller-stated |
-| 11:13:20 | 11:13:36 | 👑｜aristotle-trades | MU 980C 0DTE @ 3.00 | $3.00 | partial trim | +40.0% | implied $4.20 | caller-stated |
-| 10:35:00 | 11:28:10 | 🌟｜shabs-sky-alerts | SPX 7700C @ 1.05 | $1.05 | partial trim | $500/contract | +476.2% | caller-stated |
 | 12:01:49 | 12:31:05 | Brett (Admin) | HOOD 118C | — | full exit | -6.0% | unavailable | caller-stated |
 | 15:40:12 | 15:46:18 | TradingTheTrend | QQQ 716C 9/11 @ 0.15 | $0.15 | partial trim | $0.24 | +60.0% | caller-stated |
 | 15:22:16 | 15:59:59 | Demon × LKS | IBM 250C 9/18 @ 1.70 | $1.70 | partial trim | $2.20 | +29.4% | caller-stated |
 
-- Claim events paired: **29**.
+- Claim events paired: **28**.
 - Full exits recorded: **7**; calculable: **3**; price/percent unavailable: **4**.
 - Quantity-weighted caller P&L stays unavailable when trim size or the final runner exit is missing.

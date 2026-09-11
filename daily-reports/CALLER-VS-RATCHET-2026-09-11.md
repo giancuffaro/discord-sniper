@@ -26,13 +26,13 @@ These rows are still part of the comparison. Their caller evidence is retained; 
 | 10:05 HIMS 29C 9/18 | MuggZone | $0.42 | unavailable | exact bid/ask path unavailable |
 | 10:12 TSLA 360P 9/16 @ 5.15 | Unraveller | $5.15 | full exit posted; price unavailable | exact bid/ask path unavailable |
 | 10:23 AAPL 335C 9/11 @ 0.65 | Demon × LKS | $0.65 | partial $1.05 (+61.5%) | exact bid/ask path unavailable |
-| 10:35 SPX 7700C @ 1.05 | OWLS Capital: 🌟｜shabs-sky-alerts | $1.05 | partial $500/contract (+476.2%) | expiry missing; exact contract unresolved |
+| 10:35 SPX 7700C @ 1.05 | OWLS Capital: 🌟｜shabs-sky-alerts | $1.05 | unavailable | expiry missing; exact contract unresolved |
 | 10:38 MGC @ 4422.60 | Ninjago Futures Radar | $4422.60 | unavailable | futures path; options 5/3/5 does not apply |
 | 10:39 AMZN 255C 9/14 @ 2.05 | Mike | $2.05 | full exit posted; price unavailable | exact bid/ask path unavailable |
 | 10:48 MNQ @ 29340.00 | @Futures Alerts | $29340.00 | unavailable | futures path; options 5/3/5 does not apply |
 | 10:50 HOOD 118C 9/18 @ 2.50 | Brett | $2.50 | partial +10.0% | exact bid/ask path unavailable |
 | 10:54 AAPL 335C 0DTE @ 1.46 | Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | $1.46 | partial +22.0% | exact bid/ask path unavailable |
-| 11:13 MU 980C 0DTE @ 3.00 | Honey Drip Network 🍯💰📈: 👑｜aristotle-trades | $3.00 | partial +40.0% | exact bid/ask path unavailable |
+| 11:13 MU 980C 0DTE @ 3.00 | OWLS Capital: 🛎️｜all-alerts | $3.00 | unavailable | exact bid/ask path unavailable |
 | 11:13 MNQ @ 29411.75 | NGD: ngd-trades | $29411.75 | unavailable | futures path; options 5/3/5 does not apply |
 | 11:16 MNQ @ 29377.50 | NGD: ngd-trades | $29377.50 | unavailable | futures path; options 5/3/5 does not apply |
 | 11:18 MNQ @ 29413.00 | NGD: ngd-trades | $29413.00 | unavailable | futures path; options 5/3/5 does not apply |

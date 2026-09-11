@@ -18,6 +18,7 @@ const NOT_EXITS = [
   ["ride it out",     "just going to ride out the chop on QQQ"],
   ["watch out",       "watch out for the MNQ reversal here"],
   ["out the gates",   "AAPL OUT THE GATES"],
+  ["critic take L",   "500/con left 1 runner, please just take the L and move on from the 2 plays both green I shared, SPX 7700cs"],
 ];
 const REAL_EXITS = [
   ["out of",          "out of NBIS"],
