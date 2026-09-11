@@ -726,27 +726,7 @@ print("Live-exit: live AND paper positions both get real resting stops and real 
       "management on their own accounts; only a pure dry-run book simulates.")
 
 
-# --- the ratchet (8/15, re-tuned 8/25): ---------------------------------------
-# starts at -stop_pct like any other stop; once gain reaches take_profit_pct
-# the stop arms EARLY at BREAKEVEN (lock 0 — the trade can't go red any more),
-# and every further stop_pct of gain locks another stop_pct. Never sells
-# outright on the way up, never loosens once it's locked. (The old first rung
-# jumped straight to +stop_pct and left a +15%% winner free to ride back red.)
-ok(positions.ratchet_locked_pct(19.9, 10, 20) is None,
-   "below the first rung, nothing is locked yet")
-ok(positions.ratchet_locked_pct(20.0, 10, 20) == 0,
-   "right at +20%%, the stop goes to BREAKEVEN (locks +0%%)")
-ok(positions.ratchet_locked_pct(25.0, 10, 20) == 0,
-   "between rungs (+25%%) still at the last rung crossed — breakeven")
-ok(positions.ratchet_locked_pct(30.0, 10, 20) == 10,
-   "at +30%%, locked climbs to +10%%")
-ok(positions.ratchet_locked_pct(30.0, 10, 20) == 10,
-   "at +30%%, locked climbs to +10%% (same answer asked twice — no drift)")
-ok(positions.ratchet_locked_pct(95.0, 10, 20) == 70,
-   "no ceiling: a +95%% runner locks +70%% (rungs 20,30,...,90)")
-ok(positions.ratchet_locked_pct(15.0, 20, 20) is None,
-   "a broken bracket (take-profit <= stop) never ratchets, refuses instead")
-
+# --- the live ratchet from ratchet_tiers.py: ---------------------------------
 RWB = FakeWB(fills=True, ask=2.00, bid=2.00)
 rb = book(RWB)
 rb.ratchet_on = True
