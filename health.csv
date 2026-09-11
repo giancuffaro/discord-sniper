@@ -54,3 +54,8 @@ ts,market,endpoint,ok,trials,p50_ms,p90_ms,max_ms,err
 1789165388.006,postmarket,tastytrade OAuth,1,1,593.0,593.0,593.0,
 1789165388.006,postmarket,Webull connect+bal,1,1,1486.6,1486.6,1486.6,
 1789165388.006,postmarket,Webull MQTT stream,1,1,0.0,0.0,0.0,
+1789167624.076,postmarket,Bridge 8787,1,1,21.0,21.0,21.0,
+1789167624.076,postmarket,Tradier REST,1,1,196.6,196.6,196.6,
+1789167624.076,postmarket,tastytrade OAuth,1,1,677.2,677.2,677.2,
+1789167624.076,postmarket,Webull connect+bal,1,1,1383.0,1383.0,1383.0,
+1789167624.076,postmarket,Webull MQTT stream,1,1,0.0,0.0,0.0,
