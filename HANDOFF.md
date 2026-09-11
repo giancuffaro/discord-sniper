@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (16:55) — Mode C close-out: master_broker.csv price-blind twin merge (9 stacked rows removed), journal-2026-09-11.xlsx, scoreboard appended; Chrome must be up before 9:15 (9/11 it started 09:49 and four morning calls were never read).
+Last updated: 2026-09-11 (17:02) — 33 entries: 5 option paths priced, 20 option paths missing, 8 futures. Ratchet won priced subset -$18 vs fixed -$39; actual CPS +$5. Alert tape now survives bridge restarts, resolves shorthand expiries, and records re-entries. Today's historical recovery is delayed by OPRA's live-license cutoff.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -325,7 +325,9 @@ RESTARTS / SAFETY
   pullback waits that expire are counted as skips, not broker orders. The same
   close run writes `daily-reports/RATCHET-COMPARE-<date>.md`, replaying every
   exact-contract quote path under the live 5/3/5 ratchet and a fixed -5% born
-  stop. It reports coverage and never extrapolates uncovered alerts.
+  stop. It reports coverage and never extrapolates uncovered alerts. Alert
+  tape restores today's contracts from `alert_meta.csv` after bridge/code
+  restarts, resolves shorthand expiries, and records distinct re-entries.
 - GIT: settings.json holds every key, gitignored, never committed, never
   pasted back. Never run git write commands from a sandbox (locks). AUTO
   PUSH sweeps commits and retries outstanding pushes every 45 s; it never

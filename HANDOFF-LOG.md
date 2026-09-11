@@ -9,6 +9,21 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (17:02 remaining-alert audit + tape continuity fix)
+The 28 alerts outside the first ratchet replay are 20 options with no complete exact-contract
+path and eight futures, which do not use the options 5/3/5 percentage ratchet. Sixteen unique
+missing option contracts are exact. Databento quoted $0.0403 for their CBBO paths, but the fetch
+correctly returned no data and spent nothing because the account requires a live OPRA license
+for data after 13:30 UTC on 9/11; retry after the historical-delay window. QCOM 185C, DELL 560C,
+and SPX 7700C remain unpriced because their source alerts omitted expiry; never guess it.
+
+The live recorder kept its contract set only in memory, so safe code restarts forgot all earlier
+alerts. It also ran before execution normalized shorthand expiries and wrote metadata only when
+an OCC was new, losing some 0DTE calls and same-contract re-entries. Fixed: restore today's OCCs
+from alert_meta.csv at startup, normalize shorthand expiry in the bridge hook, log identity gaps,
+and dedupe metadata by alert identity. Alert-tape tests, 21 Python regressions, and a direct
+restart-restore check pass.
+
 ## 2026-09-11 (16:55 close-out, autopilot Mode C — Friday)
 THE DAY (broker truth, RECONCILIATION 9/11 MATCH +5.00): 4 order legs, 1 round trip. BOT +$5
 (Demon × LKS, CPS 25C 9/18, 0.65 → 0.70, 46 s, GOOD EXIT — after-exit high 0.80). G: no hand
