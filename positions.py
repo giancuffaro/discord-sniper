@@ -1764,11 +1764,30 @@ class Book:
                 self._arm_stop(k, p.get("side"), p.get("strike"),
                                p.get("expiry"), int(p.get("qty") or 1),
                                float(p.get("fill") or 0) or None)
+                # F13 (9/11 audit): _arm_stop can return normally having
+                # placed NO guard at all — no_auto_stop/broker_blocked
+                # both early-return on purpose, leaving the position
+                # naked. This used to be invisible: n counted it and
+                # stop_day was stamped either way, so the log said
+                # "re-armed" over a position with nothing watching it.
+                # Now it only counts if a real guard exists afterward:
+                # a resting stop, a live watchdog, or a swing running on
+                # their own stock-level stop.
                 with self._lock:
                     q = self._pos.get(k)
-                    if q is not None:
+                    guarded = bool(q) and (
+                        q.get("stop_order_id")
+                        or q.get("watching")
+                        or (q.get("swing") and q.get("their_stop")))
+                    if guarded:
                         q["stop_day"] = today
-                n += 1
+                if guarded:
+                    n += 1
+                else:
+                    self._event(k, "stop-warn",
+                                "%s — overnight re-arm ran but left no guard "
+                                "(no resting stop, no watchdog) — will retry"
+                                % k.split("|")[1])
             except Exception:                           # noqa: BLE001
                 pass
         return n
