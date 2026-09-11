@@ -52,6 +52,7 @@ alert_meta.csv   one row per alert at the moment it is logged: room, caller,
                  the only record of a refusal is a line of trades.log.
 """
 
+import csv
 import os
 import threading
 import time
@@ -173,6 +174,40 @@ class AlertRecorder:
         if meta_path:
             self._meta = self._ensure(meta_path, META_HEADER)
 
+    def restore_today(self):
+        """Restore today's tracked contracts after a bridge/code restart."""
+        if not self._meta or not os.path.exists(self._meta):
+            return 0
+        today = time.strftime("%Y-%m-%d", time.localtime())
+        restored = 0
+        try:
+            with open(self._meta, encoding="utf-8-sig", newline="") as fh:
+                for row in csv.DictReader(fh):
+                    contract = str(row.get("occ") or "").strip().upper()
+                    if row.get("date") != today or not contract:
+                        continue
+                    with self._lock:
+                        if contract in self._seen or len(self._occs) >= MAX_TRACKED:
+                            continue
+                        self._seen.add(contract)
+                        self._occs.append(contract)
+                        restored += 1
+                    self._called[contract] = {
+                        "symbol": row.get("symbol"), "side": row.get("side"),
+                        "strike": row.get("strike"), "expiry": row.get("expiry"),
+                        "coid": row.get("coid"), "room": row.get("room"),
+                        "trader": row.get("caller"),
+                    }
+                    try:
+                        if self._greeks is not None and len(self._greeked) < GREEKS_MAX:
+                            self._greeked.add(contract)
+                            self._greeks.watch(contract)
+                    except Exception:                       # noqa: BLE001
+                        pass
+        except (OSError, ValueError):
+            return restored
+        return restored
+
     def _ensure(self, path, header):
         try:
             self._hdr[path] = header
@@ -245,15 +280,16 @@ class AlertRecorder:
                     self._greeks.watch(occ)
             except Exception:                           # noqa: BLE001
                 pass
-            if fresh:
-                o = order or {}
-                self._called[occ] = {
-                    "symbol": str(o.get("symbol") or "").upper(),
-                    "side": o.get("side"), "strike": o.get("strike"),
-                    "expiry": o.get("expiry"), "coid": o.get("coid"),
-                    "room": o.get("room") or o.get("room_label"),
-                    "trader": o.get("trader") or o.get("who")}
-                self._write_meta("alert", occ, order)
+            # One metadata row per alert, even when the contract is already
+            # tracked. Re-entries need their own timestamp and caller price.
+            o = order or {}
+            self._called[occ] = {
+                "symbol": str(o.get("symbol") or "").upper(),
+                "side": o.get("side"), "strike": o.get("strike"),
+                "expiry": o.get("expiry"), "coid": o.get("coid"),
+                "room": o.get("room") or o.get("room_label"),
+                "trader": o.get("trader") or o.get("who")}
+            self._write_meta("alert", occ, order)
             return fresh
         except Exception:                               # noqa: BLE001
             return False

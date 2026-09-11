@@ -938,6 +938,7 @@ def build_book():
                 log=print, order_reserve=_qbm.ORDER_RESERVE)
             ALERT_TAPE.record_to(os.path.join(HERE, "alert_tape.csv"),
                                  os.path.join(HERE, "alert_meta.csv"))
+            _restored_alerts = ALERT_TAPE.restore_today()
             ALERT_TAPE.start()
             # Hung off the BOOK on purpose rather than kept as a module
             # global: QUOTES is a LOCAL of this function, and _greeks_sync
@@ -947,7 +948,9 @@ def build_book():
             BOOK.alert_tape = ALERT_TAPE
             note("ALERT TAPE on — every alerted contract's real bid/ask to "
                  "alert_tape.csv, one batched call every 30s (5s when nothing "
-                 "is open). Orders and open positions always come first.")
+                 "is open). Orders and open positions always come first%s."
+                 % (("; restored %d contract(s) after restart" % _restored_alerts)
+                    if _restored_alerts else ""))
         except Exception as _ae:                        # noqa: BLE001
             note("ALERT TAPE off (%s) — refused alerts stay unrecorded, "
                  "nothing else changes" % str(_ae)[:90])
@@ -2635,7 +2638,20 @@ def _alert_tape_register(order):
             occ = _occ_b(order.get("symbol"), order.get("expiry"),
                          order.get("side"), order.get("strike"))
         except (ValueError, TypeError):
-            return              # not enough of a contract to record
+            try:
+                # Execution resolves 0DTE and short dates later. The recorder
+                # runs first, so resolve the same shorthand here or it loses
+                # those alerts before the order path has normalized them.
+                from webull_options import expiry_to_date as _expiry_date
+                occ = _occ_b(order.get("symbol"),
+                             _expiry_date(order.get("expiry")),
+                             order.get("side"), order.get("strike"))
+            except (ValueError, TypeError):
+                note("ALERT-TAPE GAP %s — exact contract unavailable "
+                     "(side=%s strike=%s expiry=%s)"
+                     % (order.get("symbol") or "?", order.get("side"),
+                        order.get("strike"), order.get("expiry")))
+                return
         rec.register(occ, order)
     except Exception:                                   # noqa: BLE001
         pass        # recording is never allowed to touch the order path
