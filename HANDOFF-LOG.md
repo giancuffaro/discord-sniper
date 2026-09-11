@@ -15,7 +15,8 @@ client-order journal; ambiguous bracket submits never resend; broker-read validi
 last good snapshot; full-contract position identity across Python/extension; hard-stop workers
 wait for fills, retry quote/close failures, dedupe, and restore after restart; partial/late sell
 fills reduce retry quantity; STOP guards delayed pullbacks; concurrent state writes and duplicate
-bridge startup are safe; failed exits remain held; overnight stops retry; final dispatch is locked
+bridge startup are safe; failed exits remain held; watchdog generations cannot clear newer guards;
+orphan cleanup only touches bot-owned order IDs; overnight stops retry; final dispatch is locked
 against restart. P2/operations: throttles and budget denial fail fast; incomplete alternate brokers
 cannot execute; alert/ledger joins include contract/account identity; backtests price gaps at the
 observed bid and read live settings; expired greeks release; sibling refusal reports PARTIAL;
