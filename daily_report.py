@@ -133,6 +133,10 @@ def build(day):
     pnl = sum(float(r.get("pl") or 0) for r in ledger)
     recovered_entries = recovered.get("entries") or []
     recovered_adds = recovered.get("adds") or []
+    decided_entries = [r for r in decisions if r["action"] == "OPEN"]
+    observed_entries = len(decided_entries) + len(recovered_entries)
+    not_taken_after_review = len([r for r in decided_entries
+                                  if r["kind"] != "sent"])
 
     lines = ["# Discord Sniper daily report — %s" % day, "",
              "Generated %s." % dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z"), "",
@@ -143,8 +147,10 @@ def build(day):
              "- Rooms with no message are quiet or unverified; the report does not call them healthy solely from silence.", "",
              "## Alert flow", "",
              "| Measure | Count |", "|---|---:|",
-             "| Recognized with a decision | %d |" % len(decisions),
+             "| Unique entry alerts observed (normal + recovered) | %d |" % observed_entries,
+             "| Entry alerts read and given a decision | %d |" % len(decided_entries),
              "| Orders sent | %d |" % len(sent),
+             "| Read but not taken | %d |" % not_taken_after_review,
              "| Broker/risk refusals | %d |" % len(refused),
              "| Stale when first read | %d |" % len(stale),
              "| Duplicate or other skips | %d |" % len(other_skips),
@@ -175,7 +181,13 @@ def build(day):
     else:
         lines.append("- No filled trade has enough tape for a comparison yet.")
     lines.append("- Exact caller-entry/caller-exit P&L is reported only when both messages and a contemporaneous contract quote exist. Missing exits remain **unavailable**; they are never estimated from a later high or a stale quote.")
-    lines.append("- A system-versus-caller verdict needs matched trades on both sides. One trade is displayed, but is not enough evidence to call either method better.")
+    lines.append("- Refused or missed alerts stay outcome-pending until a caller exit can be paired to the recorded contract tape; a later high alone is not labeled a win.")
+    if post:
+        lines.append("- A system-versus-caller verdict needs matched trades on both sides. %d bot trade%s displayed, but %s not enough evidence to call either method better." %
+                     (len(post), " is" if len(post) == 1 else "s are",
+                      "it is" if len(post) == 1 else "they are"))
+    else:
+        lines.append("- No matched trade is available for a system-versus-caller verdict.")
 
     lines += ["", "## Every recognized decision", "",
               "| Time | Alert | Result | Reason |", "|---|---|---|---|"]

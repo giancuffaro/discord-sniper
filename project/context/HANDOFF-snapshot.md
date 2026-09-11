@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (14:58) — extension source 3.8.10; the two assigned Chrome profiles were still running 3.8.4 and waiting on that old build’s close-only reload rule. A recovered full-day replay found four calls from before Chrome started and three later review gaps (shabs SPX, Midas AAPL two-message fill, MuggZone RKLB typo). The parser now covers those formats, rejects shabs price recaps and unusual-flow commentary, serializes verdict writes, batches captures, preserves exact live parser inputs/history markers, and prevents unassigned Chrome profiles from reading rooms or overwriting lane exports. Full Python/JavaScript suites and the 11,605-message parser gate pass. Whop had ten current records and no alert-shaped miss. Topstep remains disabled.
+Last updated: 2026-09-11 (15:18) — extension source 3.8.10 and Discord Profile 2 proved it self-loaded build 69e03a7a immediately; Whop Profile 6 and the unassigned Default copy were still on the prior close-only build and get the immediate behavior after their one remaining close reload. A recovered full-day replay found four calls from before Chrome started and three later entry review gaps plus one ADD review gap. The parser now covers the new formats and exact parser inputs/history markers are retained. A weekday 16:40 audit replays every captured message through production grammar, runs both regression suites, queues gaps for review, and generates the daily room/decision/trade/comparison report. Today: 23 normal decisions, seven recovered entry gaps, one recovered add gap, one real fill/win for +$5; exact caller-exit P&L is unavailable because the caller posted no exit. Full Python/JavaScript suites and the 11,605-message parser gate pass. Whop had ten current records and no alert-shaped miss. Topstep remains disabled.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -292,6 +292,21 @@ RESTARTS / SAFETY
   lane. Resting stops at Webull guard every gap.
 - POSTCHECK after every trade: book vs account, stop resting, quote bus
   fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
+- DAILY AUDIT / REPORT: bridge.py runs `daily_audit.py` once per weekday at
+  16:40 ET, after the 16:30 export/tab sweep. It replays that day's exact
+  Discord and Whop parser inputs with each room's production grammar, runs
+  every JS/Python regression test, writes `daily-audits/AUDIT-<date>.txt`
+  plus `latest.json`, and appends unresolved items to
+  `daily-audits/review_queue.jsonl`. It then writes
+  `daily-reports/REPORT-<date>.md`: configured and speaking rooms, messages,
+  decisions, sent/refused/stale/other skips, recovered unique gaps, real
+  fills and P&L, postmortem entry/exit comparison, and room activity. Relay
+  duplicates stay visible in the raw replay but count once in recovered
+  operational totals. This is controlled learning: discoveries become
+  parser fixtures and regression tests after review; Discord text never
+  edits code or trading rules by itself. Exact caller-vs-system P&L is shown
+  only when caller entry and exit can be paired with contemporaneous option
+  quotes; missing exits remain unavailable rather than estimated.
 - GIT: settings.json holds every key, gitignored, never committed, never
   pasted back. Never run git write commands from a sandbox (locks). AUTO
   PUSH sweeps commits and retries outstanding pushes every 45 s; it never
