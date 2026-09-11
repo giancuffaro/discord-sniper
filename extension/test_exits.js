@@ -18,6 +18,7 @@ const NOT_EXITS = [
   ["ride it out",     "just going to ride out the chop on QQQ"],
   ["watch out",       "watch out for the MNQ reversal here"],
   ["out the gates",   "AAPL OUT THE GATES"],
+  ["break out",       "AMZN - 4hr; Looking better on the higher timeframe possible break out higher next week; can see 270 if 250 holds"],
   ["critic take L",   "500/con left 1 runner, please just take the L and move on from the 2 plays both green I shared, SPX 7700cs"],
 ];
 const REAL_EXITS = [
@@ -33,6 +34,15 @@ const REAL_EXITS = [
   ["trimmed verbless","trimmed MU 980c at 500/con"],
   ["bare out",        "MU 980c 5.00 out here"],
 ];
+
+const SHOP_ENTRY = "SHOP 150c 11/20 6.80 starter @Brick Alerts $SHOP is down almost 15% and I will wait for dip buys or trims or stops";
+{
+  const s = parseSignal(SHOP_ENTRY, {}) || {};
+  const ok = s.action === "OPEN" && s.symbol === "SHOP" && s.strike === 150 &&
+    s.side === "CALLS" && s.expiry === "11/20" && s.limit === 6.80;
+  if (!ok) bad++;
+  console.log(`  ${ok ? "PASS" : "FAIL"}  SHOP starter entry with later trim/stop prose`);
+}
 /* ---- CROSS-ROOM AUDIT, 9/7 ----------------------------------------------
  * Running every room's captured messages through the parser and looking for
  * lines that carry a real contract but produce NOTHING turned up two faults

@@ -274,7 +274,7 @@ const IDIOM_OUT = "(?<!\\b(?:play|plays|played|playing|pan|pans|panned|panning" 
   "|figure|figures|figured|figuring|watch|watches|watched|watching|check|checks" +
   "|checked|checking|find|finds|found|finding|reach|reaches|reached|reaching" +
   "|help|helps|helped|helping|hang|hangs|hung|hanging|start|starts|started" +
-  "|starting|shake|shakes|shook|shaking|stretch|stretches|stretched|max|maxed" +
+  "|starting|break|breaks|broke|breaking|shake|shakes|shook|shaking|stretch|stretches|stretched|max|maxed" +
   "|miss|missed|missing|wait|waited|waiting|inside|way)\\s)";
 const RE_EXIT = new RegExp(
   "\\b(?:exited|exiting|closed|closing|stc|sold|selling|" + IDIOM_OUT + "out|cutting)\\b", "i");
@@ -1968,11 +1968,16 @@ function parseSignalInner(text, cfg) {
     s.symbol = bw[1].toUpperCase();
     s.strike = parseFloat(bw[4]);
     s.side = bw[5].toUpperCase() === "C" ? "CALLS" : "PUTS";
+    // A clear entry can carry a long explanation after it. Keep a leading
+    // "starter" decisive: SHOP's real entry ended with general advice to
+    // "wait for dip buys or trims or stops", which is not management of this
+    // newly opened contract.
+    const explicitStarterEntry = /\bstarters?\b/i.test(rest.slice(0, 80));
     // 9/11: this verbless shape never looked for a SELL word, so "MU 980c
     // 500/con left 1 runner" and "trimmed MU 980c at 500/con" both read as a
     // fresh $5.00 entry. A trim or exit tell anywhere in the line makes it
     // the caller's exit — recorded, never traded (entries only).
-    if (RE_TRIM.test(low) || RE_EXIT.test(low)) {
+    if (!explicitStarterEntry && (RE_TRIM.test(low) || RE_EXIT.test(low))) {
       s.action = RE_TRIM.test(low) ? "TRIM" : "CLOSE"; s.fire = false;
       s.matched = "bullwinkle " + s.action.toLowerCase();
       s.why = "their " + s.action.toLowerCase() + " on " + s.symbol +
