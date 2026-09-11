@@ -18,7 +18,8 @@ QQQ `.24`, direct/relay dedupe across time-bucket boundaries, recovered room att
 shabs's narrowly identified `MU 980c at 300 for you rich folks` whole-cent shorthand ($3.00).
 The report now includes Midas AAPL +22%, QQQ $0.15->$0.24 (+60%), IBM $1.70->$2.20 (+29.4%),
 and SPX $500/contract (+476.2% on a $1.05 entry), while avoiding quantity-weighted full P&L when
-trim sizes/final runner exits are absent. Daily audit integration and 24 Python/JS checks pass.
+trim sizes/final runner exits are absent. Daily audit integration, 24 Python tests, and 13 JS
+parser checks pass.
 
 Corrected day totals after the IBM Swing OPEN prefix fix: 34 observed entries, 27 normal
 decisions, 7 recovered, 1 order/fill, 26 normally read but not taken. Ratchet replay covers 5/34:
