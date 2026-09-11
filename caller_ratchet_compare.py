@@ -107,7 +107,23 @@ def build(day):
     claims = _claims(day)
     all_entries = _all_entries(day)
     compared = []
-    for event in policy._events(day):
+    tracked = policy._events(day)
+    for source_entry in all_entries:
+        if not source_entry.get("side") or not source_entry.get("occ"):
+            continue
+        matches = [event for event in tracked
+                   if event["occ"] == source_entry["occ"]
+                   and abs(event["ts"] - source_entry["ts"]) <= 3]
+        if matches:
+            event = min(matches, key=lambda e: abs(e["ts"] - source_entry["ts"]))
+        else:
+            event = {"ts": source_entry["ts"], "occ": source_entry["occ"],
+                     "label": "%s %s" % (source_entry["time"][:5],
+                                           source_entry["symbol"]),
+                     "source": source_entry.get("caller") or
+                               source_entry.get("room") or "alert",
+                     "fill": None, "actual": None, "actual_exit": None,
+                     "caller_entry": source_entry.get("entry")}
         path = [r for r in quotes.get(event["occ"], []) if r[0] >= event["ts"]]
         if not path:
             continue
@@ -131,7 +147,7 @@ def build(day):
 
     total = len(all_entries)
     lines = ["# Caller entry versus our ratchet — %s" % day, "",
-             "The caller's posted premium is the hypothetical fill when available. Our 5/3/5 ratchet is replayed against the recorded Tastytrade bid path. Caller exits use their posted price/percentage, or the contemporaneous bid when they posted only the exit time.", "",
+             "The caller's posted premium is the hypothetical fill when available. Our 5/3/5 ratchet is replayed against the best available exact-contract bid path: historical OPRA when present, otherwise the live Tastytrade/Webull tapes. Caller exits use their posted price/percentage, or the contemporaneous bid when they posted only the exit time.", "",
              "| Alert | Source | Hypothetical entry | Entry basis | Caller result | Caller evidence | Our ratchet exit | Our ratchet result |",
              "|---|---|---:|---|---|---|---:|---:|"]
     for (event, entry, basis, caller, evidence, _ratchet, shown_exit,

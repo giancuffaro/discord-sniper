@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 
 import occ
 import ratchet_tiers as rt
+import tape
 from webull_options import stop_below, tick_round, tick_step
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -34,17 +35,20 @@ def _f(value):
 def _quotes(day):
     start = dt.datetime.fromisoformat(day).replace(tzinfo=EASTERN).timestamp()
     end = start + 86400
-    out = defaultdict(list)
-    path = os.path.join(HERE, "quote_shadow.csv")
-    with open(path, encoding="utf-8-sig", newline="") as fh:
-        for row in csv.DictReader(fh):
-            ts, bid, ask = _f(row.get("ts")), _f(row.get("bid")), _f(row.get("ask"))
-            contract = occ.from_dx(row.get("symbol") or "")
-            if (contract and ts is not None and start <= ts < end
-                    and bid and ask and bid > 0 and ask > 0):
-                out[contract].append((ts, bid, ask))
-    for rows in out.values():
-        rows.sort()
+    out = {}
+    # One feed per contract path. Historical OPRA is preferred when present;
+    # otherwise use the live shadow/all-alert/open-position tapes. Never
+    # interleave vendors—the resulting artificial price jumps can trigger a
+    # stop that existed on neither feed.
+    for source in ("databento_clean", "databento", "missed",
+                   "tasty_quote", "alert", "webull"):
+        grouped = defaultdict(list)
+        for row in tape.rows(since=start, until=end, sources=[source]):
+            if row.bid and row.ask and row.bid > 0 and row.ask > 0:
+                grouped[row.occ].append((row.ts, row.bid, row.ask))
+        for contract, rows in grouped.items():
+            if contract not in out:
+                out[contract] = sorted(rows)
     return out
 
 

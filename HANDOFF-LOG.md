@@ -24,6 +24,9 @@ ATTENTION remains only for the known eight silent records and one contextual mis
 The report now inventories all 34 entries: five scored and 29 explicitly awaiting exact tape or
 futures-specific handling. It also preserves caller evidence on those pending rows. Fixed futures
 rows inheriting a neighboring signal's price and restored SPX's $500/contract (+476.2%) display.
+The comparison now starts from the full daily inventory and reads the shared tape registry:
+Databento/OPRA first when backfilled, then the live Tastytrade/Webull tapes. A newly backfilled
+contract automatically moves from pending to scored on the next daily run.
 
 ## 2026-09-11 (17:11 caller outcome ledger + all-alert ratchet capture)
 The daily audit now writes CALLER-OUTCOMES markdown/CSV beside the operating and ratchet
