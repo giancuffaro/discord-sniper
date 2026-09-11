@@ -93,6 +93,39 @@ def check(sym):
             "and CLOSE EXIT). Nothing was sent." % s)
 
 
+def resolve(sym):
+    """The usable ticker behind what a READER wrote down, or "" if there is
+    none. For the audit tools, never for the trading path — the trading path
+    refuses an unknown symbol outright (check()) and must keep doing so.
+
+    Two things happen here:
+      * a symbol the broker lists options on comes back unchanged;
+      * a symbol that is one glued character away from one comes back repaired.
+    The second exists because of a MEASURED failure, not a hunch: Namrood-BOT
+    posts its alerts inside an ANSI-coloured code block, and the escape's
+    trailing "m" ended up welded to the ticker — trades.log carries MXLU,
+    MMETA and MSPCX where the rooms said XLU, META and SPCX (8/12-8/18). The
+    reader is fixed (parser.js cleanText and ai_reader both strip the codes
+    now), but the log is history and the alert record should name the ticker
+    the room actually called. Deliberately narrow: the written symbol must be
+    unknown, the tail must be known, and only the one leading character comes
+    off. Fails open like everything else here — an unusable list means every
+    symbol resolves to itself."""
+    s = str(sym or "").strip().upper()
+    if not s:
+        return ""
+    with _LOCK:
+        if _OK is None and not _WHY:
+            _load()
+        if _OK is None:
+            return s                      # no list, no opinion
+    if s in _OK:
+        return s
+    if len(s) > 1 and s[0] == "M" and s[1:] in _OK:
+        return s[1:]
+    return ""
+
+
 def reload_list():
     """Pick up a fresh optionable.txt without a restart."""
     global _OK, _WHY

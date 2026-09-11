@@ -77,10 +77,8 @@
   },
   {
     "name": "orphan_cleaner_cancels_unowned_contract",
-    "reproduced": true,
-    "detail": [
-      "human-put-later-expiry"
-    ]
+    "reproduced": false,
+    "detail": []
   },
   {
     "name": "sell_retry_ignores_late_fill",
@@ -95,14 +93,8 @@
   },
   {
     "name": "different_put_mistaken_for_call_fill",
-    "reproduced": true,
-    "detail": [
-      [
-        "caller|SPY",
-        1,
-        5.0
-      ]
-    ]
+    "reproduced": false,
+    "detail": []
   },
   {
     "name": "armed_pullback_bypasses_stop_file",

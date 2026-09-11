@@ -132,12 +132,16 @@ record('failed_stop_rearm_marked_done', r == 1 and b._pos['caller|SPY']['stop_da
        {'reported_rearmed': r, 'stop_order_id': b._pos['caller|SPY'].get('stop_order_id')})
 
 # 8: orphan cleaner cancels a different expiry/side and has no ownership check.
+# FIXED (F07, same-night patch): _clear_orphans takes side/expiry now (both
+# call sites pass their own local side/expiry) and skips a row whose side
+# or expiry is known and different. The caller here is a real "protect my
+# CALL" cleanup, so it passes its own contract explicitly.
 b = positions.Book.__new__(positions.Book)
 b._event = lambda *a: None; b._await_cancel = lambda *a: None
 cancelled = []
 w = types.SimpleNamespace(open_orders=lambda sym: [dict(order_id='human-put-later-expiry',
     action='SELL', strike=600, side='PUTS', expiry='2027-01-15')], cancel=cancelled.append)
-b._clear_orphans(w, 'caller|SPY', 'SPY', 600)
+b._clear_orphans(w, 'caller|SPY', 'SPY', 600, 'CALLS', '2026-10-16')
 record('orphan_cleaner_cancels_unowned_contract', cancelled == ['human-put-later-expiry'], cancelled)
 
 # 9: seller ignores cancellation discovering that the FIRST sell filled.
@@ -159,11 +163,17 @@ watch = extract('positions.py', '_watch_fill', {'time': types.SimpleNamespace(ti
                                              'WORKING': positions.WORKING, 'FILLED': positions.FILLED, 'FAILED': positions.FAILED})
 fills = []
 w = types.SimpleNamespace(cancel=lambda oid: True, positions=lambda: [dict(symbol='SPY',strike=600,side='PUTS',expiry='2027-01-15',qty=1,fill=5)])
+# FIXED (F08, same-night patch): the row's side/expiry now have to agree
+# too, so the mismatched PUT gets skipped and execution runs one line
+# further than it used to (down to the honest "nobody sold" path) —
+# _wait_label needs a mock now for the same reason F09's test needed
+# _stop_file_set once its own fix let the function run further.
 b = types.SimpleNamespace(_lock=threading.RLock(), fill_seconds=0,
     _pos={'caller|SPY':dict(state=positions.WORKING, symbol='SPY', side='CALLS', strike=600,
                           expiry='2026-10-16',order_id='bid',occ='OCC',limit=2,want_qty=1,live=True)},
     _wbfor=lambda p:w, _probe=lambda *a,**kw:('dead',0,None),
-    _became_filled=lambda *a:fills.append(a), _became_nofill=lambda *a:None)
+    _became_filled=lambda *a:fills.append(a), _became_nofill=lambda *a:None,
+    _wait_label=lambda:'0s')
 watch(b,'caller|SPY')
 record('different_put_mistaken_for_call_fill', bool(fills), fills)
 
