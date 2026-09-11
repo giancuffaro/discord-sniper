@@ -9,6 +9,15 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (19:06 duplicate AUTO PUSH repaired)
+The lightweight guard found two AUTO PUSH loops, started ten minutes apart. The old two-minute
+heartbeat lock allowed a second owner whenever Git or the network blocked longer than its lease.
+AUTO PUSH now records its owning cmd PID, refuses a second live owner, and replaces only a dead
+owner. The newer duplicate was stopped; one bridge, one pusher and one Chrome root remain. A
+focused health regression passes, and every heartbeat now reports local owner counts. The PID and
+health history are local runtime files, not repository data. Bridge, Whop, Webull REST/MQTT and
+current DXLink status are healthy; two DXLink re-auth refusals self-recovered without socket loss.
+
 ## 2026-09-11 (18:44 full-history rule gate)
 The parser, room rules and optionable list now replay against every retained live message before
 they ship and during the daily audit. The corpus covers 11,385 unique messages in 74 rooms from

@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (18:44) — Full-history gate replayed 11,385 live messages since 8/18: six real fills recovered, XLF/SHOP restored, eight false closes removed, zero lost calls/junk/expiry shifts. All tests pass.
+Last updated: 2026-09-11 (19:06) — History gate clean across 11,385 messages. AUTO PUSH duplicate fixed with PID ownership; health verifies one bridge, one pusher and Chrome.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -331,12 +331,10 @@ RESTARTS / SAFETY
   partial trims never become full-trade results and absent prices stay absent.
   `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from caller entry over `tape.py` and lists gaps/futures.
   Broker-confirmed actuals always override a quote-path simulation.
-- GIT: settings.json holds every key, gitignored, never committed, never
-  pasted back. Never run git write commands from a sandbox (locks). AUTO
-  PUSH sweeps commits and retries outstanding pushes every 45 s; it never
-  deletes Git locks or rebases automatically. Runtime state/log/test files
-  are untracked and remain local. After ANY suspicious file loss check
-  `git reflog` for a "reset:" line before rebuilding by hand.
+- GIT: settings.json holds every key and is never committed. AUTO PUSH uses
+  a live-owner PID lock, commits every 45 s and retries pushes; it never deletes
+  Git locks or rebases. Runtime files remain local. After suspicious loss check
+  `git reflog` for a "reset:" before rebuilding.
 - REPLACE, DON'T STACK (G, 9/9). When something changes — a rule, a value,
   a function, a setting, a room line, a doc — the new version takes the old
   one's place. Never leave the old beside the new: not commented out, not
