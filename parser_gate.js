@@ -208,7 +208,7 @@ for (const r of rows) {
 // ---- report ----------------------------------------------------------------
 const shortRoom = s => String(s).replace(/^.*?:\s*/, "").slice(0, 26);
 console.log("=".repeat(76));
-console.log("PARSER GATE — extension/parser.js  vs  " + BASE);
+console.log("PARSER GATE — parser + room + symbol rules  vs  " + BASE);
 console.log("%d messages, %d rooms, %d on the allowlist",
             rows.length, Object.keys(ROOMS).length, OPTIONABLE.size);
 console.log("=".repeat(76));
@@ -246,10 +246,10 @@ dump("ACTION CHANGED — action or contract identity changed", decisionChanged,
      r => r[1] + "  " + r[0].padEnd(48) + shortRoom(r[3]).padEnd(27) + "| " + r[2]);
 
 console.log("\n" + "=".repeat(76));
-if (junk.length) {
-  console.log("FAIL — %d invented tickers. A well-formed wrong symbol looks",
-              junk.length);
-  console.log("exactly like a right one and buys a contract nobody named.");
+if (junk.length || expiry.length) {
+  console.log("FAIL — %d invented tickers and %d silent expiry changes.",
+              junk.length, expiry.length);
+  console.log("Either can buy a contract nobody actually named.");
   process.exit(1);
 }
 console.log("PASS — no invented tickers.");
