@@ -331,7 +331,7 @@ RESTARTS / SAFETY
   `CALLER-OUTCOMES-<date>.md/.csv` separately preserves caller entry, every
   supported trim/full exit, exact or implied price and calculated percent;
   partial trims never become full-trade results and absent prices stay absent.
-  `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from caller entry over `tape.py` and lists all gaps/futures.
+  `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from caller entry over `tape.py` and lists gaps/futures.
   Broker-confirmed actuals always override a quote-path simulation.
 - GIT: settings.json holds every key, gitignored, never committed, never
   pasted back. Never run git write commands from a sandbox (locks). AUTO
