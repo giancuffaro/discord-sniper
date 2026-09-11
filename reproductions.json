@@ -37,9 +37,9 @@
   },
   {
     "name": "429_eight_requests_no_backoff_signal",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
-      "requests": 8,
+      "requests": 0,
       "returned": {
         "SPY261016C00600000": [
           null,
@@ -51,7 +51,7 @@
   },
   {
     "name": "budget_denial_ignored",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
       "denied": true,
       "returned_without_error": true

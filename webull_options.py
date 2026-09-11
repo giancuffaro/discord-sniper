@@ -926,11 +926,22 @@ class WebullOptions:
                   [f for f in fns if f[0] != remembered_fn]
 
         tries = []
+        throttled = False
         for _name, fn in fns:
+            if throttled:
+                break
             for shape in shapes:
                 args, kwargs = shape
+                # F16 (9/11 audit): _pace_batch's answer used to be thrown
+                # away — a budget denial ("no tokens, don't call") still let
+                # the HTTP call go out. Now a denial is honored: no request
+                # fires, and the whole hunt stops rather than burning the
+                # rest of its tokens on the next shape.
+                if not self._pace_batch():
+                    tries.append("%s: throttled (rate budget denied)" % _name)
+                    throttled = True
+                    break
                 try:
-                    self._pace_batch()
                     res = fn(*args, **kwargs)
                 except TypeError:
                     continue                    # wrong signature: no HTTP call made
@@ -947,6 +958,17 @@ class WebullOptions:
                 if code == 403:
                     raise Refused("Webull returned 403 for market data - the OPRA "
                                   "options-data subscription isn't active on the API.")
+                if code == 429:
+                    # F15 (9/11 audit): a 429 used to just get logged and the
+                    # hunt kept walking the other 7 shapes — 8 real requests
+                    # into a server that just said "stop". One 429 now ends
+                    # the hunt immediately and backs off for a full second
+                    # before anything (including the per-contract fallback)
+                    # is allowed to fire again.
+                    tries.append("%s: HTTP 429" % _name)
+                    throttled = True
+                    self._last_call = time.time() + 1.0
+                    break
                 if code != 200:
                     tries.append("%s: HTTP %s" % (_name, code))
                     continue
@@ -990,13 +1012,17 @@ class WebullOptions:
         """
         b = getattr(self, "budget", None)
         if b is not None:
-            b.take(1, priority=False, timeout=5.0)
-            return
+            # F16 (9/11 audit): the return value used to be thrown away, so
+            # a denied/timed-out token still let the caller fire the HTTP
+            # call anyway — the whole point of a budget, ignored. False
+            # here means "no token, don't call"; callers must check it.
+            return b.take(1, priority=False, timeout=5.0) is not False
         now = time.time()
         wait = 0.20 - (now - getattr(self, "_last_call", 0.0))
         if wait > 0:
             time.sleep(wait)
         self._last_call = time.time()
+        return True
 
     def _parse_batch(self, body, occs):
         """Pull {occ: (ask, bid, row)} out of whatever shape came back.
