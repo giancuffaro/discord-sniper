@@ -35,6 +35,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TELEMETRY = os.path.join(HERE, "telemetry.csv")
 LEDGER = os.path.join(HERE, "master_ledger.csv")
 OUT = os.path.join(HERE, "master_alerts.csv")
+# Written live by alert_tape.py at the moment each alert is parsed — the only
+# record that carries a room, a caller, the latency stamps and greeks for an
+# alert that was REFUSED. trades.log (the source for 289 of 326 rows) carries
+# none of those, which is why they were blank.
+META = os.path.join(HERE, "alert_meta.csv")
 KEEP_BAKS = 5
 
 COLUMNS = [
@@ -152,6 +157,106 @@ def _declined():
     return rows
 
 
+def _alert_meta():
+    """alert_meta.csv -> {join key: fields}, for the DECLINED side.
+
+    WHY (9/11): master_alerts had delta and iv on 0 of 326 rows, a room on
+    156 and a caller on 89. 289 of those rows are refusals, and the only
+    record of a refusal is a line of trades.log — which names the caller in
+    prose and carries no room, no greeks, no bid/ask and no timing at all.
+    So none of it was lost: it was never written down. alert_tape.py now
+    writes one row per alert AS IT IS PARSED, before anything knows whether
+    it will fill, and this joins that row back in.
+
+    Two stages per contract: `alert` (what the call itself said, written
+    instantly) and `quote` (the first REAL bid/ask the slow recorder got
+    back, seconds later). The quote stage wins on prices and greeks; the
+    alert stage wins on everything the call said. Only BLANK fields on the
+    master row are ever filled — telemetry stays the authority wherever it
+    has an answer.
+    """
+    if not os.path.exists(META):
+        return {}, {}
+    exact, loose = {}, {}
+    try:
+        with open(META, encoding="utf-8-sig", newline="", errors="replace") as fh:
+            for m in csv.DictReader(fh):
+                date = (m.get("date") or "").strip()
+                sym = (m.get("symbol") or "").strip().upper()
+                if not date or not sym:
+                    continue
+                k = (date, sym, _strike_key(m.get("strike")),
+                     (m.get("side") or "")[:1].upper())
+                for store, key in ((exact, k), (loose, (date, sym))):
+                    cur = store.setdefault(key, {})
+                    quote = (m.get("stage") == "quote")
+                    for col in ("room", "caller", "their_price", "alert_at",
+                                "seen_at", "bid", "ask", "delta", "iv"):
+                        v = (m.get(col) or "").strip()
+                        if not v:
+                            continue
+                        # a real quote overrides a cached one; the call's own
+                        # words are never overwritten by a later sweep
+                        if col not in cur or (quote and col in
+                                              ("bid", "ask", "delta", "iv")):
+                            cur[col] = v
+    except OSError:
+        return {}, {}
+    return exact, loose
+
+
+def _strike_key(v):
+    try:
+        return "%.4f" % float(v)
+    except (TypeError, ValueError):
+        return ""
+
+
+def _apply_meta(rows):
+    """Fill BLANK columns on each alert row from alert_meta.csv. Returns the
+    number of rows that gained something."""
+    exact, loose = _alert_meta()
+    if not exact and not loose:
+        return 0
+    touched = 0
+    for r in rows:
+        date = (r.get("date") or "").strip()
+        sym = (r.get("symbol") or "").strip().upper()
+        if not date or not sym:
+            continue
+        m = exact.get((date, sym, _strike_key(r.get("strike")),
+                       (r.get("side") or "")[:1].upper())) \
+            or loose.get((date, sym))
+        if not m:
+            continue
+        got = False
+        for col in ("room", "caller", "their_price", "bid", "ask",
+                    "delta", "iv"):
+            if not (r.get(col) or "").strip() and m.get(col):
+                r[col] = m[col]
+                got = True
+        if not (r.get("posted_at") or "").strip() and m.get("alert_at"):
+            r["posted_at"] = m["alert_at"]
+            got = True
+        if not (r.get("seen_at") or "").strip() and m.get("seen_at"):
+            r["seen_at"] = m["seen_at"]
+            got = True
+        # read_ms is alert->seen: the only leg of the latency chain a
+        # REFUSED alert has, because it was never sent and never filled.
+        if not (r.get("read_ms") or "").strip():
+            a, b = _f(m.get("alert_at")), _f(m.get("seen_at"))
+            if a and b and b >= a:
+                r["read_ms"] = int(round((b - a) * 1000))
+                got = True
+        if not (r.get("spread_pct") or "").strip():
+            bid, ask = _f(r.get("bid")), _f(r.get("ask"))
+            if bid and ask and (bid + ask) > 0:
+                r["spread_pct"] = round((ask - bid) / ((ask + bid) / 2.0) * 100.0, 2)
+                got = True
+        touched += 1 if got else 0
+    return touched
+
+
 def _room_index():
     """(date, SYMBOL) -> room, and caller -> room, both read from the LEDGER.
 
@@ -224,6 +329,11 @@ def build():
         if room:
             r["room"] = room
             filled += 1
+    # Live alert metadata FIRST, so the ledger/caller backfills below only
+    # have to guess at what was genuinely never recorded.
+    _m = _apply_meta(rows)
+    if _m:
+        sys.stderr.write("build_alerts: alert_meta filled %d row(s)\n" % _m)
     lab = _labels()
     named = 0
     for r in rows:

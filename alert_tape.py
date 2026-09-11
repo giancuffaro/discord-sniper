@@ -157,6 +157,9 @@ class AlertRecorder:
         self._batch = 1                  # proven-shape ramp: see _sweep_once
         self._quoted = set()             # OCCs whose stage=quote row is written
         self._greeked = set()            # OCCs handed to the greeks websocket
+        self._called = {}                # occ -> what the CALL said, kept so
+                                         # the later `quote` row joins to the
+                                         # same alert on the same key
         self.sweeps = 0
         self.rows = 0
         self.registered = 0
@@ -235,6 +238,13 @@ class AlertRecorder:
             except Exception:                           # noqa: BLE001
                 pass
             if fresh:
+                o = order or {}
+                self._called[occ] = {
+                    "symbol": str(o.get("symbol") or "").upper(),
+                    "side": o.get("side"), "strike": o.get("strike"),
+                    "expiry": o.get("expiry"), "coid": o.get("coid"),
+                    "room": o.get("room") or o.get("room_label"),
+                    "trader": o.get("trader") or o.get("who")}
                 self._write_meta("alert", occ, order)
             return fresh
         except Exception:                               # noqa: BLE001
@@ -249,6 +259,7 @@ class AlertRecorder:
             if ymd and ymd < today:
                 self._seen.discard(o)
                 self._quoted.discard(o)
+                self._called.pop(o, None)
                 continue
             keep.append(o)
         self._occs = keep
@@ -404,7 +415,13 @@ class AlertRecorder:
             if occ not in self._quoted:
                 self._quoted.add(occ)
                 d, iv = self._free_greeks(occ)
-                self._write_meta("quote", occ, {"symbol": _underlying_of(occ)},
+                # The call's OWN strike/side/expiry, not a guess from the
+                # symbol — build_alerts joins on those, so a quote row that
+                # dropped them would file real prices under a row nobody
+                # could match back to the alert.
+                self._write_meta("quote", occ,
+                                 self._called.get(occ)
+                                 or {"symbol": _underlying_of(occ)},
                                  bid=bid, ask=ask, und=und, delta=d, iv=iv)
         if rows:
             self.rows += len(rows)
