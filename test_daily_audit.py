@@ -12,10 +12,10 @@ class DailyAuditTests(unittest.TestCase):
         content = """=== RAW MESSAGES ===
 2026-09-11 09:31:00  [Morning #1]  OPEN AAPL 100C @ 1.00
 2026-09-11 09:32:00  [Second #2]  OPEN MSFT 200C @ 2.00
-=== LIVE PARSER ===
+=== LIVE PARSER INPUTS ===
 2026-09-11 09:31:00  [Morning #1]  OPEN AAPL 100C @ 1.00
-=== DECISIONS ===
-2026-09-11 09:31:01  [Morning #1]  SENT AAPL 100C
+=== WHAT THE BOT DID ===
+2026-09-11 09:31:01  <sent>  ORDER IN AAPL 100C
 """
         old_day = replay_check.DAY
         path = None
@@ -87,3 +87,5 @@ POSSIBLE MISSED ENTRIES: 3
 
 if __name__ == "__main__":
     unittest.main()
+
+
