@@ -2010,7 +2010,6 @@ let OPEN_ROOMS_PENDING = ""; // START HERE's open-rooms token not yet fully hono
 
 async function honourOpenRoomsRequest() {
   if (!OPEN_ROOMS_PENDING) return;
-  if (!await assignedLane()) return;
   const tok = OPEN_ROOMS_PENDING;
   let opened = 0;
   try { opened = (await openMissingRooms()) || 0; } catch (e) { opened = 0; }
@@ -2624,7 +2623,6 @@ async function closeNonRoomTabs() {
 }
 
 async function openMissingRooms() {
-  if (!await assignedLane()) return 0;
   let rooms;
   try { rooms = await loadRoomsFile(); } catch (e) { return; }
   // every `on` room that wants a tab RIGHT NOW (9/9: outside 9:15-4:30 ET
