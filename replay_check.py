@@ -236,7 +236,7 @@ def near(t1, t2, secs):
 RE_PRICE = re.compile(r"\b\d{1,4}\.\d{1,2}\b")
 
 
-def find_missed_entries(keep, parsed):
+def find_missed_entries(keep, parsed, dids=None, blog=None):
     """Second pass, separate from the action-based silent-drop check above
     (which is structurally blind to this — 9/3, G: "we need to be catching
     these" after 3 real entries this exact shape were missed in one day).
@@ -258,12 +258,35 @@ def find_missed_entries(keep, parsed):
         author = text.split(": ", 1)[0] if ": " in text[:60] else "?"
         rows.append((t, room, author.strip().lower(), text, sig))
     rows.sort(key=lambda r: r[0])
+    dids, blog = dids or [], blog or []
     shelf = {}                                    # trader -> (sym, strike, side, t)
     flags = []
     for t, room, author, text, sig in rows:
         act = sig.get("action") if sig else None
         if act == "PREPARE" and sig.get("symbol"):
             shelf[author] = (sig.get("symbol"), sig.get("strike"), sig.get("side"), t)
+            continue
+        # A price-only confirmation is actionable only after guards.js joins
+        # it to the caller's PREPARE shelf. A parser replay that stops at
+        # needs_loaded would otherwise count the old heuristic "POSSIBLE
+        # MISSED" warning as a verdict and hide the fact that no OPEN was ever
+        # produced. Require a concrete OPEN/bridge record for the loaded symbol.
+        if act == "OPEN" and sig.get("needs_loaded"):
+            cand = shelf.get(author)
+            if not cand:
+                continue
+            concrete = any(near(vt, t, 180) and ("OPEN " + cand[0]) in vtext
+                           for vt, _kind, vtext in dids)
+            if not concrete:
+                concrete = any(near(bl[:8], t, 180) and
+                               re.search(r"\b(?:OPEN|ORDER IN)\s+%s\b" %
+                                         re.escape(cand[0]), bl)
+                               for bl in blog)
+            if not concrete:
+                body = strip_header(text)
+                flags.append((t, room, author, cand[0], cand[1], cand[2],
+                              body[:150]))
+            shelf.pop(author, None)
             continue
         if act:
             shelf.pop(author, None)               # confirmed some other way, or moved on
@@ -349,7 +372,7 @@ def main():
             print("   %s  %-7s %-5s %s" % (t, act, sym, body))
     print("\nTOTAL silent drops: %d  (actionable per the parser, no verdict, no bridge line)" % total_silent)
 
-    missed = find_missed_entries(keep, parsed)
+    missed = find_missed_entries(keep, parsed, dids, blog)
     if missed:
         print("\nPOSSIBLE MISSED ENTRIES (heuristic — parser found NO action at "
               "all, but the trader had an unconfirmed LOADING call and this "
