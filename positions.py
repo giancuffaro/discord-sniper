@@ -2619,6 +2619,11 @@ class Book:
                 continue
             if not self.claim(key):
                 return          # the resting stop or their trim got there first
+            # claim() can discover that the resting stop partially filled as
+            # its cancel landed. Sell only the contracts that remain.
+            qty = self.qty_of(key)
+            if qty <= 0:
+                return
             self._event(key, "stopped",
                         "%s — bid hit %.2f, at or under your %.2f stop. Selling "
                         "%d." % (sym, float(bid), float(stop), qty))
@@ -3033,6 +3038,11 @@ class Book:
             wb = self._wbfor(p)
         if not self.claim(key):
             return False        # their exit or the stop got there first
+        # A stop can partially fill during the cancel. claim() records that
+        # broker fill and reduces the book before this second exit is sent.
+        held = self.qty_of(key)
+        if held <= 0:
+            return True
         self._event(key, "update",
                     "%s — up %.0f%%, hitting your +%.0f%% take-profit. Closing "
                     "all %d." % (sym, gain, self.take_profit_pct, held))
@@ -3590,7 +3600,11 @@ class Book:
                 # LAST fallback noticed the stop had filled. If the stop's own
                 # order says FILLED, that fill IS the exit — record it here and
                 # hand back False: there is nothing left to close.
-                if str(_final or "").lower() == "filled":
+                with self._lock:
+                    _held = int((self._pos.get(key) or {}).get("qty") or 0)
+                _sold = min(_held, max(0, int(_fq or 0)))
+                if (str(_final or "").lower() == "filled"
+                        and (_fq is None or _sold >= _held)):
                     _fpx = float(_favg) if _favg else None
                     with self._lock:
                         p2 = self._pos.get(key)
@@ -3604,6 +3618,34 @@ class Book:
                                 "the resting stop filled before it could be "
                                 "pulled", price=_fpx)
                     return False
+                if _sold:
+                    # The cancel can return DEAD after part of the stop filled.
+                    # Account for that execution now so the caller sends its
+                    # close for the remainder instead of the original size.
+                    _fpx = float(_favg or p.get("stop") or p.get("last_bid")
+                                 or p.get("fill") or 0)
+                    with self._lock:
+                        p2 = self._pos.get(key)
+                        if p2 is not None:
+                            _before = int(p2.get("qty") or 0)
+                            _n = min(_sold, _before)
+                            _entry = float(p2.get("fill") or _fpx)
+                            _mult = float(p2.get("mult") or 100)
+                            _dirn = int(p2.get("direction") or 1)
+                            _pl = (_fpx - _entry) * _mult * _n * _dirn
+                            _chunk_cost = (0.0 if p2.get("kind") == "future"
+                                           else _entry * _mult * _n)
+                            p2["qty"] = _before - _n
+                            p2["cost"] = max(
+                                0.0, float(p2.get("cost") or 0) - _chunk_cost)
+                            p2.setdefault("exits", []).append({
+                                "t": time.time(), "qty": _n,
+                                "price": round(_fpx, 4), "pl": round(_pl, 2)})
+                            p2["trade_pl"] = float(p2.get("trade_pl") or 0) + _pl
+                    self._event(key, "trimmed",
+                                "%s — resting stop filled %d during its cancel "
+                                "at %.2f; closing only the remaining %d"
+                                % (sym, _sold, _fpx, max(0, _held - _sold)))
                 # Remembered so release() can put it BACK if the sell never
                 # goes out (9/2: SPY 766C sat naked five minutes after a
                 # pull-then-refuse).

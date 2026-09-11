@@ -3,6 +3,7 @@ import unittest
 from unittest import mock
 
 import announcer
+import positions
 from build_ledger import _dedupe_key
 
 
@@ -57,6 +58,29 @@ class AuditRegressionTests(unittest.TestCase):
         paper = dict(common, account_id="paper-account")
         self.assertNotEqual(_dedupe_key(live, "2026-09-11"),
                             _dedupe_key(paper, "2026-09-11"))
+
+    def test_claim_reduces_qty_when_stop_partially_filled(self):
+        class Broker:
+            def cancel(self, _oid):
+                return True
+
+            def order_status(self, _oid):
+                return "dead", 1, 0.80
+
+        broker = Broker()
+        book = positions.Book(broker, lambda _line: None)
+        key = positions.key_of("room", "SPY", 700, "C", "2026-09-18")
+        book._pos[key] = {
+            "key": key, "state": positions.FILLED, "closing": False,
+            "symbol": "SPY", "side": "C", "strike": 700,
+            "expiry": "2026-09-18", "qty": 3, "fill": 1.00,
+            "cost": 300.0, "stop": 0.80, "stop_order_id": "stop-1",
+            "live": True,
+        }
+
+        self.assertTrue(book.claim(key))
+        self.assertEqual(book.qty_of(key), 2)
+        self.assertEqual(book.info(key)["exits"][0]["qty"], 1)
 
 
 if __name__ == "__main__":
