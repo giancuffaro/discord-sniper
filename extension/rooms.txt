@@ -358,11 +358,11 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # The other three futures scalpers stay OFF — same unusable grammar, and none
 # of them writes a level the way Chika does: "long 218", "Short gc 4461",
 # "+65 trim". No instrument, no level, nothing to trade off.
-1316182395652669510|https://discord.com/channels/722872384800948227/1316182395652669510|Ducci Alerts|Low Key Stonks|off|futures scalps, no contract
-1478913485579489330|https://discord.com/channels/722872384800948227/1478913485579489330|Jon Tran Alerts|Low Key Stonks|off|futures commentary, no calls
-1535565295350194187|https://discord.com/channels/722872384800948227/1535565295350194187|Hog Alerts|Low Key Stonks|off|futures scalps, no contract
+1316182395652669510|https://discord.com/channels/722872384800948227/1316182395652669510|Ducci Alerts|Low Key Stonks|on|futures scalps, no contract
+1478913485579489330|https://discord.com/channels/722872384800948227/1478913485579489330|Jon Tran Alerts|Low Key Stonks|on|futures commentary, no calls
+1535565295350194187|https://discord.com/channels/722872384800948227/1535565295350194187|Hog Alerts|Low Key Stonks|on|futures scalps, no contract
 # quantum-alerts — last real call was March 2026. Dead.
-1360350391522426940|https://discord.com/channels/722872384800948227/1360350391522426940|Quantum Alerts|Low Key Stonks|off|dead since March 2026
+1360350391522426940|https://discord.com/channels/722872384800948227/1360350391522426940|Quantum Alerts|Low Key Stonks|on|dead since March 2026
 # prediction-alerts is SPORTS BETTING. degenken/ascendancy/phiccduck/snakeeyes/
 # ahjummamacita read EMPTY (no access or no posts). longterm-alerts rooms are
 # share positions, not contracts.
