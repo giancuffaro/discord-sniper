@@ -1327,7 +1327,12 @@ class WebullOptions:
                 # 'invalid order_type' killed five entries on 8/21 with the
                 # fallback never engaging. Wrap it so the caller's retry and
                 # fall-back logic actually get to run.
-                raise Refused(str(e)[:220])
+                # AMBIGUOUS, not Refused (F01, 9/11 audit): a bare exception
+                # here carries no proof the broker rejected anything — it can
+                # just as easily be a timeout AFTER acceptance. buy() now
+                # reconciles this against the account before ever sending a
+                # second order, so it is safe to be honest about not knowing.
+                raise Ambiguous(str(e)[:220])
             try:
                 body = res.json()
             except Exception:                           # noqa: BLE001
