@@ -17,6 +17,38 @@ try/except and the fallback is exactly yesterday's behaviour.
 import threading
 import time
 
+
+_TLS_CONTEXT_LOCK = threading.Lock()
+
+
+def paho_compatible_tls_context():
+    """Return a verified TLS context that supports Paho's deferred handshake.
+
+    ``pip_system_certs`` replaces :class:`ssl.SSLContext` process-wide on this
+    Windows host. Its truststore wrapper verifies certificates inside
+    ``wrap_socket`` even when Paho requests ``do_handshake_on_connect=False``;
+    there is no peer certificate yet, so every Webull MQTT attempt fails with
+    "Peer sent no certificates to verify". Build one standard-library context
+    during a tightly locked, temporary extraction, then restore truststore for
+    every HTTP client in the process. Verification and hostname checks remain
+    enabled.
+    """
+    import ssl
+    try:
+        from pip._vendor import truststore
+    except ImportError:
+        return ssl.create_default_context()
+    if not str(getattr(ssl.SSLContext, "__module__", "")).endswith(
+            "truststore._api"):
+        return ssl.create_default_context()
+    with _TLS_CONTEXT_LOCK:
+        truststore.extract_from_ssl()
+        try:
+            context = ssl.create_default_context()
+        finally:
+            truststore.inject_into_ssl()
+    return context
+
 STALE_S = 3.0                      # a pushed price older than this is ignored
 ETFS = {"SPY", "QQQ", "IWM", "DIA", "GLD", "SLV", "TLT", "XLF", "XLE", "XLK",
         "XLV", "XLI", "XLP", "XLY", "XLU", "XLB", "XLC", "XLRE", "SMH", "SOXX",
@@ -179,6 +211,11 @@ class StockStream:
                 except TypeError:
                     cli = DataStreamingClient(self.app_key, self.app_secret,
                                               self.region, self.session)
+                # Paho performs the handshake after wrap_socket(). The host's
+                # system-certificate shim cannot support that sequence; give
+                # this MQTT client a normal verified context while leaving the
+                # shim active for the rest of the bridge.
+                cli.tls_set_context(paho_compatible_tls_context())
                 cli.on_connect_success = self._on_connect
                 cli.on_quotes_message = self._on_message
                 cli.on_subscribe_success = lambda c, a, s: None
