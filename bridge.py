@@ -3688,7 +3688,8 @@ def broker_positions():
                     continue
                 seen.add(id(wb))
                 try:
-                    for p in (wb.positions() or []):
+                    _pr = wb.positions() or []
+                    for p in _pr:
                         d = dict(p)
                         d["live"] = is_live  # which Webull account it's in
                         rows.append(d)
@@ -3697,8 +3698,22 @@ def broker_positions():
                     # unreachable looked identical and reconcile_gone refused
                     # to clear ghosts while he held nothing (8/31: the adopted
                     # SPY he'd sold at 11:20 haunted the book until 14:42).
+                    #
+                    # F02 (9/11 audit): positions() NEVER raises — it returns
+                    # [] on a throttle exactly the same as it returns [] on a
+                    # genuinely flat account, so this except branch could
+                    # never fire and every read, throttled or not, was
+                    # recorded as "verified flat". Read wb.last_read_ok
+                    # instead of trusting the absence of an exception — it is
+                    # set fresh inside positions() every call, True only when
+                    # a broker response actually came back.
                     if is_live:
-                        _POS["ok_live"] = True
+                        _POS["ok_live"] = bool(getattr(wb, "last_read_ok", True))
+                        if not _POS["ok_live"]:
+                            note("POS-READ live positions() got no broker "
+                                 "response (throttled/unreachable) — NOT "
+                                 "treated as a confirmed-flat account; the "
+                                 "book keeps its last known state.")
                 except Exception:                       # noqa: BLE001
                     if is_live:
                         _POS["ok_live"] = False

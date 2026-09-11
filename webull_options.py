@@ -1752,13 +1752,25 @@ class WebullOptions:
         """The account's REAL open positions, straight from Webull, normalised to
         the shape the popup and book use — so the popup can mirror the broker
         instead of only what the bot itself placed. Never raises: on any trouble
-        it returns an empty list and the caller keeps its own view."""
+        it returns an empty list and the caller keeps its own view.
+
+        F02 (9/11 audit): a throttled/unreachable read used to look IDENTICAL
+        to "asked, and the account is flat" — both came back as this same []
+        — and bridge.py's broker_positions() wrapped this call in a
+        try/except that could never fire (this never raises), so it recorded
+        every throttle as a VERIFIED-flat read and let the reconciler close
+        real book positions after three of them. last_read_ok now says
+        which one actually happened: True only when a broker response was
+        actually parsed, False when every attempt came back empty-handed
+        (body is None) — set BEFORE the return so a caller reads it off the
+        same object no matter which branch answered."""
         body, _why = self._try_calls(
             ["position_v2", "position", "account_v2", "trade"],
             ["position"], self.account_id)
         if body is None:
             body, _why = self._try_calls(
                 ["position_v2", "position", "account_v2", "trade"], ["position"])
+        self.last_read_ok = body is not None
         items = body if isinstance(body, list) else \
             ((body or {}).get("positions") or (body or {}).get("data") or [])
         rows = []
