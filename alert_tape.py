@@ -268,6 +268,20 @@ class AlertRecorder:
                 self._seen.discard(o)
                 self._quoted.discard(o)
                 self._called.pop(o, None)
+                # F21 (9/11 audit): an expired contract used to keep its
+                # greeks websocket slot forever — _greeked only ever grew,
+                # so GREEKS_MAX filled up with dead contracts and every
+                # alert after that ran with no delta/iv, silently, with
+                # nothing in the log to say why. Release the slot AND
+                # actually unsubscribe, the same moment everything else
+                # about this contract is dropped.
+                if o in self._greeked:
+                    self._greeked.discard(o)
+                    if self._greeks is not None:
+                        try:
+                            self._greeks.unwatch(o)
+                        except Exception:                   # noqa: BLE001
+                            pass
                 continue
             keep.append(o)
         self._occs = keep

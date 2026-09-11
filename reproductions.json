@@ -129,9 +129,9 @@
   },
   {
     "name": "expired_greek_slots_leak",
-    "reproduced": true,
+    "reproduced": false,
     "detail": {
-      "remaining_greek_slots": 1
+      "remaining_greek_slots": 0
     }
   },
   {
