@@ -68,7 +68,12 @@ def call_sites(kwarg, value_is_true=True):
     comments cannot vote."""
     out = []
     for f in os.listdir(HERE):
-        if not f.endswith(".py") or f == os.path.basename(__file__):
+        # Production callers only. A test that PROVES the priority lane still
+        # serves an order instantly is not a caller of it — it is the thing
+        # that checks it works, and counting it here would mean the guard
+        # could only pass while the behaviour was untested. (9/11)
+        if not f.endswith(".py") or f.startswith("test_") \
+                or f == os.path.basename(__file__):
             continue
         try:
             t = tree(f)

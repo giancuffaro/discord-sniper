@@ -51,14 +51,21 @@ def ok(cond, msg):
         print("  FAIL  " + msg)
 
 
-def _future_occ(sym="SPY", strike=767, cp="C", days=7):
+def _occ(sym, strike, cp, days):
+    """Through occ.build, never hand-rolled — test_architecture enforces that
+    there is exactly one OCC builder in this repo, and a test fixture that
+    quietly grew a second one is how the two drift apart."""
+    from occ import build
     ymd = time.strftime("%y%m%d", time.localtime(time.time() + days * 86400))
-    return "%s%s%s%08d" % (sym, ymd, cp, int(strike * 1000))
+    return build(sym, ymd, cp, strike)
+
+
+def _future_occ(sym="SPY", strike=767, cp="C", days=7):
+    return _occ(sym, strike, cp, days)
 
 
 def _past_occ(sym="SPY", strike=700, cp="C", days=7):
-    ymd = time.strftime("%y%m%d", time.localtime(time.time() - days * 86400))
-    return "%s%s%s%08d" % (sym, ymd, cp, int(strike * 1000))
+    return _occ(sym, strike, cp, -days)
 
 
 def _rec(fetch, **kw):
