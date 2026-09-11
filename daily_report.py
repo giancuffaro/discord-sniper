@@ -242,6 +242,10 @@ def build(day):
     for room, count in speaking.most_common():
         lines.append("| %s | %d |" % (room.replace("|", "\\|"), count))
 
+    lines += ["", "## Detailed benchmarks", "",
+              "- [Caller entry, trim, and exit evidence](CALLER-OUTCOMES-%s.md)" % day,
+              "- [Fixed stop versus live ratchet replay](RATCHET-COMPARE-%s.md)" % day]
+
     out = os.path.join(OUT_DIR, "REPORT-%s.md" % day)
     tmp = out + ".tmp"
     with open(tmp, "w", encoding="utf-8", newline="\n") as fh:

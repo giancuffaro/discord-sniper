@@ -299,6 +299,12 @@ def build(day):
                     if price is not None and entry_px else None)
         implied = (entry_px * (1.0 + pct / 100.0)
                    if price is None and pct is not None and entry_px else None)
+        if (price is None and pct is None and per_contract is not None
+                and entry_px):
+            # Listed equity/index options use the standard 100 multiplier.
+            # "$500/con" therefore adds $5.00 to the quoted premium.
+            implied = entry_px + per_contract / 100.0
+            calc_pct = per_contract / entry_px
         claims.append({
             "entry_time": entry["time"], "event_time": message[0],
             "room": entry.get("room") or message[1],
@@ -345,8 +351,8 @@ def build(day):
     md_path = os.path.join(OUT_DIR, "CALLER-OUTCOMES-%s.md" % day)
     lines = ["# Caller outcome evidence — %s" % day, "",
              "Caller claims are separate from broker results and ratchet simulations. Partial trims remain partial; percentages imply a price only when the caller's entry is known.", "",
-             "| Entry | Event | Contract | Entry | Caller event | Exit/claim | Calculated | Evidence |",
-             "|---|---|---|---:|---|---:|---:|---|"]
+             "| Entry | Event | Trader / room | Contract | Caller entry | Caller event | Exit/claim | Calculated | Evidence |",
+             "|---|---|---|---|---:|---|---:|---:|---|"]
     for r in claims:
         claim = ("$%.2f" % r["reported_exit"] if r["reported_exit"] is not None
                  else ("%+.1f%%" % r["reported_pct"] if r["reported_pct"] is not None
@@ -356,8 +362,10 @@ def build(day):
         calc = ("%+.1f%%" % r["calculated_pct"] if r["calculated_pct"] is not None
                 else ("implied $%.2f" % r["implied_exit"]
                       if r["implied_exit"] is not None else "unavailable"))
-        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s |" % (
-            r["entry_time"], r["event_time"], r["contract"].replace("|", "\\|"),
+        source = (r["caller"] or r["room"].split(": ")[-1] or "unknown")
+        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
+            r["entry_time"], r["event_time"], source.replace("|", "\\|"),
+            r["contract"].replace("|", "\\|"),
             "$%.2f" % r["entry"] if r["entry"] is not None else "—",
             r["event"], claim, calc, r["basis"]))
     full = [r for r in claims if r["event"] == "full exit"]
