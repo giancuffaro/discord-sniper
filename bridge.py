@@ -1398,6 +1398,10 @@ def roll_day():
 
 
 STATE_PATH = os.path.join(HERE, "state.json")
+# F11 (9/11 audit): guards write_json_atomic's temp-file naming and the
+# backup-then-publish sequence — see that function's docstring.
+_WRITE_LOCK = threading.Lock()
+_WRITE_SEQ = 0
 
 
 def write_json_atomic(path, payload):
@@ -1417,22 +1421,35 @@ def write_json_atomic(path, payload):
 
     Keeps ONE backup. A file that fails to parse is worth more as evidence
     than as a blank slate.
+
+    F11 (9/11 audit): the temp file used to be one fixed name, path+".tmp",
+    shared by EVERY writer of that path with no lock between them. Two
+    concurrent writers (save_state and save_day both fire off the same
+    events) could both finish writing to that one shared temp file, then
+    the first to reach the final rename consumed it — and the SECOND
+    writer's own os.replace(tmp, path) then raised FileNotFoundError,
+    because the file it thought it still owned was already gone. A unique
+    temp name per call removes the sharing; the lock removes the race in
+    which order the backup-then-publish steps land.
     """
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(payload, f)
-        f.flush()
-        os.fsync(f.fileno())        # the rename is only atomic if it landed
-    try:
-        if os.path.exists(path):
-            _bak = path + ".bak"
-            try:
-                os.replace(path, _bak)
-            except OSError:
-                pass
-    except OSError:
-        pass
-    os.replace(tmp, path)
+    global _WRITE_SEQ
+    with _WRITE_LOCK:
+        _WRITE_SEQ += 1
+        tmp = "%s.tmp.%d.%d" % (path, threading.get_ident(), _WRITE_SEQ)
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f)
+            f.flush()
+            os.fsync(f.fileno())    # the rename is only atomic if it landed
+        try:
+            if os.path.exists(path):
+                _bak = path + ".bak"
+                try:
+                    os.replace(path, _bak)
+                except OSError:
+                    pass
+        except OSError:
+            pass
+        os.replace(tmp, path)
 
 
 def save_state():
