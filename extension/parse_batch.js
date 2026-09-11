@@ -12,7 +12,25 @@
  */
 const fs = require("fs");
 const path = require("path");
-const { parseSignal } = require(path.join(__dirname, "parser.js"));
+const PARSER = require(path.join(__dirname, "parser.js"));
+const { parseSignal } = PARSER;
+
+/* THE ALLOWLIST, SAME AS PRODUCTION (9/11). background.js hands
+ * optionable.txt to the parser at startup, so the bot never mints a ticker out
+ * of an English word. This file did not, so every Python tool that reads
+ * through it — replay_check, audit_history, scoreboard, jsparse — was running a
+ * parser one guard weaker than the one that trades, and reported entries the
+ * bot would have refused ("OPEN WITH 773C"). The whole point of this file is
+ * that an audit can never disagree with the bot. Fails open exactly as
+ * production does: setOptionable ignores a list under 1,000 names. */
+try {
+  const set = new Set();
+  for (const line of fs.readFileSync(path.join(__dirname, "optionable.txt"), "utf8").split("\n")) {
+    const s = line.trim().toUpperCase();
+    if (s && s[0] !== "#") set.add(s);
+  }
+  if (typeof PARSER.setOptionable === "function") PARSER.setOptionable(set);
+} catch (e) { /* missing list = no gate, never a silent halt */ }
 
 let cfg = {};
 try {

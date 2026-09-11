@@ -373,11 +373,28 @@ def read_image(images, caption, allowed_symbols, cfg, timeout=15):
 
 # ---- the guard: the model's read is DATA, checked against the text ----------
 
+# ANSI COLOUR CODES ARE NOT PART OF THE MESSAGE (9/11). Namrood-BOT posts its
+# alerts inside a coloured Discord code block, so the raw text the reader
+# scrapes carries "\x1b[1;30;47m" right in front of the ticker. The escape byte
+# is invisible, the "m" is not: every literal check below then saw "47mMETA"
+# and refused a real call as "the reader named META but it isn't in the
+# message" — three times live, 8/12-8/18 (MXLU / MMETA / MSPCX in trades.log,
+# where the same glued "m" reached the log as the symbol). parser.js strips
+# these in cleanText; this is the same strip for the AI path's guard, so the
+# two readers judge the same string.
+RE_ANSI = re.compile(r"\x1b?\[[0-9;]{1,16}m")
+
+
+def _plain(text):
+    return RE_ANSI.sub(" ", str(text or ""))
+
+
 def _num_in_text(n, text):
     """Does this number literally appear in the message? 155 matches '155',
     '$155', '155c'; 2.42 matches '2.42'. Anti-hallucination for strike/price."""
     if n is None:
         return True
+    text = _plain(text)
     s = ("%g" % float(n))
     # whole numbers: match as a token not glued inside a longer number
     if "." not in s:
@@ -402,7 +419,7 @@ def validate(read, text, allowed_symbols):
     if action not in ("OPEN", "ADD", "TRIM", "CLOSE"):
         return False, "the reader returned an action I don't run (%s)" % action, None
 
-    up = text.upper()
+    up = _plain(text).upper()
     ticker = str(read.get("ticker") or "").upper().lstrip("$").strip()
     allow = {str(s).upper() for s in (allowed_symbols or [])}
 
@@ -419,6 +436,25 @@ def validate(read, text, allowed_symbols):
         # hallucinated symbol — that one stays.
         if not re.search(r"(?<![A-Za-z])%s(?![A-Za-z])" % re.escape(ticker), up):
             return False, "the reader named %s but it isn't in the message" % ticker, None
+        # IS THAT A TICKER, OR A WORD FROM THE MESSAGE? (9/11)
+        # Being present in the text is not enough when the "ticker" is an
+        # English word that was in the sentence all along:
+        #     "...has to hold and then can go with 773c."  ->  OPEN WITH 773C
+        # (Midas, 9/3, in trades.log). The literal-match guard above passes
+        # that one happily, because WITH really is in the message. parser.js
+        # and bridge.py both check extension/optionable.txt; this reader was
+        # the one side that did not, so a word-as-ticker could still be minted
+        # here and only got stopped three layers later, after it was in the log
+        # and in the room's attribution. FAILS OPEN exactly as the other two
+        # do: symbols.known() returns True when the file is missing or short,
+        # because a text file that failed to load must never halt trading.
+        try:
+            import symbols as _symbols
+            if not _symbols.known(ticker):
+                return False, ("%s isn't a ticker anyone lists options on — "
+                               "that's a word from the message" % ticker), None
+        except ImportError:
+            pass
     elif action in ("OPEN", "ADD"):
         return False, "the reader found an entry with no ticker in the message", None
 
