@@ -9,6 +9,24 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-11 (13:40 exhaustive audit repair, ext 3.8.9)
+Implemented the audit in production without placing or cancelling a trade. P1 repairs: durable
+client-order journal; ambiguous bracket submits never resend; broker-read validity retains the
+last good snapshot; full-contract position identity across Python/extension; hard-stop workers
+wait for fills, retry quote/close failures, dedupe, and restore after restart; partial/late sell
+fills reduce retry quantity; STOP guards delayed pullbacks; concurrent state writes and duplicate
+bridge startup are safe; failed exits remain held; overnight stops retry; final dispatch is locked
+against restart. P2/operations: throttles and budget denial fail fast; incomplete alternate brokers
+cannot execute; alert/ledger joins include contract/account identity; backtests price gaps at the
+observed bid and read live settings; expired greeks release; sibling refusal reports PARTIAL;
+bridge enforces the shared calendar; parser gate is portable/equivalent; tape completion uses exact
+durable windows; pullback acceptance is SUBMITTED until fill; announcer dates refresh; Git launchers
+never delete locks and retry pushes; restart/STOP/Whop/profile launchers fixed; loopback web Origins
+refused. Chrome load reduced by serializing extension maintenance and slowing only the fallback scan;
+normal MutationObserver alert reads remain immediate. Full Python and JavaScript suites pass;
+parser corpus 11,605 messages: 719 before/719 after, 0 gained/lost/junk. Live bridge reloaded safely,
+connected, flat, no in-flight work. Claude export context saved under Downloads/Claude Export 2026-09-11.
+
 ## 2026-09-11 (13:05 sync watch, autopilot Mode B)
 ONE bot trade: CPS 25C 9/18 (Demon × LKS) 0.65 → 0.70, +$5, held 50 s, post-mortem GOOD EXIT
 (after-exit high 0.80). RECONCILIATION 9/11 MATCH +5.00. Its "The machine" line (POSTCHECK

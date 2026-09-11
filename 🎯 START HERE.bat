@@ -147,7 +147,7 @@ rem  SAVE LOCAL WORK FIRST (8/23): clicking this between auto-pushes used to
 rem  hard-reset away anything Claude changed in the last half hour. Now the
 rem  folder pushes ITSELF before the mirror step - and if the push fails
 rem  (offline), the reset is SKIPPED so nothing local is ever thrown away.
-git rm -r --cached --ignore-unmatch state.json.bak "webull_api.log*" >nul 2>&1
+git rm -r --cached --ignore-unmatch state.json.bak "webull_api.log*" telemetry-test.csv shadow_ratchet.csv >nul 2>&1
 git add -A >nul 2>&1
 git commit -m "pre-start save" >nul 2>&1
 set "PUSHOK=1"

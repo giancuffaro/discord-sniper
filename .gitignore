@@ -74,6 +74,8 @@ alert_meta.csv.*
 # exactly how archive/logs put 68 MB in .git. Back them up like the tape.
 telemetry.csv
 telemetry.csv.*
+telemetry-test.csv
+shadow_ratchet.csv
 alert_decay.csv
 alert_decay.csv.*
 quote_shadow.csv

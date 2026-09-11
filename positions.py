@@ -1865,12 +1865,7 @@ class Book:
                             _kept = True
                             with self._lock:
                                 q = self._pos.get(key)
-                                if q is not None and not q.get("watching"):
-                                    q["watching"] = True
-                                    threading.Thread(
-                                        target=self._watchdog, args=(key,),
-                                        name="watchdog:%s" % key,
-                                        daemon=True).start()
+                                self._start_watchdog_locked(key, q)
                             self._event(key, "update",
                                         "%s — the broker confirms the restored "
                                         "position; stop still resting at Webull "
@@ -2403,11 +2398,7 @@ class Book:
                     p["stop"] = _bs
                     p["stop_order_id"] = str(born)
                     p["bracket_stop_id"] = None
-                    if not p.get("watching"):
-                        p["watching"] = True
-                        threading.Thread(
-                            target=self._watchdog, args=(key,),
-                            name="watchdog:%s" % key, daemon=True).start()
+                    self._start_watchdog_locked(key, p)
                     self._event(key, "stop-set",
                                 "%s — stop was born WITH the order and is resting "
                                 "at Webull at %.2f (one group, no naked moment)"
@@ -2482,11 +2473,7 @@ class Book:
             if p:
                 p["stop"] = stop_price
                 p["stop_order_id"] = oid
-                if not p.get("watching"):
-                    p["watching"] = True
-                    threading.Thread(
-                        target=self._watchdog, args=(key,),
-                        name="watchdog:%s" % key, daemon=True).start()
+                self._start_watchdog_locked(key, p)
         # SUBSCRIBE AT ARM TIME, not only from inside the watchdog loop
         # (9/4). The watchdog is one thread that can return early — no occ,
         # no stop, a broker that won't resolve — and when it does, the
@@ -2528,7 +2515,33 @@ class Book:
                         "%s — pretend stop at %.2f (-%.0f%% from %.2f)"
                         % (sym, stop_price, _pa, fill))
 
-    def _watchdog(self, key):
+    def _start_watchdog_locked(self, key, p=None):
+        """Start exactly one watchdog generation for ``key``.
+
+        Callers already hold ``self._lock``.  The lock is re-entrant, so keeping
+        this tiny operation here makes every arm path use the same generation
+        rule.  A retiring thread may only clear its own generation's flag.
+        """
+        p = p if p is not None else self._pos.get(key)
+        if p is None or p.get("watching"):
+            return False
+        generation = int(p.get("watch_generation") or 0) + 1
+        p["watch_generation"] = generation
+        p["watching"] = True
+        threading.Thread(
+            target=self._watchdog, args=(key, generation),
+            name="watchdog:%s" % key, daemon=True).start()
+        return True
+
+    def _retire_watchdog(self, key, generation):
+        """Clear the flag only when the retiring worker is still current."""
+        with self._lock:
+            p = self._pos.get(key)
+            if (p is not None
+                    and int(p.get("watch_generation") or 0) == generation):
+                p["watching"] = False
+
+    def _watchdog(self, key, generation=None):
         """Checks the bid. If it's at or under the stop, sells what's left.
 
         This is the half that works when the resting stop was refused, and the
@@ -2537,12 +2550,17 @@ class Book:
         _occ_watched = None
         _bus = getattr(self, "quotes", None)
         _last_direct = 0.0
+        with self._lock:
+            _initial = self._pos.get(key)
+            if generation is None and _initial is not None:
+                generation = int(_initial.get("watch_generation") or 0)
         try:
           while True:
             time.sleep(self.poll_seconds)
             with self._lock:
                 p = self._pos.get(key)
-                if not p or p["state"] != FILLED or p.get("closing"):
+                if (not p or p["state"] != FILLED or p.get("closing")
+                        or int(p.get("watch_generation") or 0) != generation):
                     return
                 occ, stop, qty = p["occ"], p["stop"], p["qty"]
                 sym = p["symbol"]
@@ -2780,10 +2798,7 @@ class Book:
             # exits the same way and blocks the position's real one from
             # ever re-arming. One place, on every exit from this function
             # for any reason, is safer than chasing each return site by hand.
-            with self._lock:
-                _wp = self._pos.get(key)
-                if _wp is not None:
-                    _wp["watching"] = False
+            self._retire_watchdog(key, generation)
 
 
     def _gone_at_broker(self, wb, sym, side, strike):
@@ -2989,6 +3004,13 @@ class Book:
         all either side has to go on."""
         if wb is None or not hasattr(wb, "open_orders"):
             return 0
+        with self._lock:
+            p0 = dict(self._pos.get(key) or {})
+        owned = {str(x) for x in (
+            p0.get("stop_order_id"), p0.get("bracket_stop_id"),
+            (p0.get("pulled_stop") or {}).get("oid")) if x}
+        if not owned:
+            return 0
         try:
             rows = wb.open_orders(sym) or []
         except Exception:                               # noqa: BLE001
@@ -3011,7 +3033,7 @@ class Book:
                 if act and not act.startswith("S"):
                     continue        # never pull a buy
                 oid = r.get("order_id")
-                if not oid:
+                if not oid or str(oid) not in owned:
                     continue
                 wb.cancel(oid)
                 self._await_cancel(wb, oid)
@@ -4145,6 +4167,7 @@ class Book:
                     continue
                 p["closing"] = False
                 p["watching"] = False
+                p["watch_generation"] = 0
                 p["qty"] = 0
                 p["state"] = CLOSED
                 p["closed_at"] = time.time()
@@ -4248,6 +4271,7 @@ class Book:
                 # Always false on load; the first broker sweep below arms
                 # the real one.
                 p["watching"] = False
+                p["watch_generation"] = 0
                 # VERIFY-BEFORE-TRUST (8/27): a restored position arms no
                 # watchdog and no ratchet until the first broker sweep
                 # confirms Webull actually still holds it. The photo is for

@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (06:40) — ext 3.8.2. SECURITY: 18 rotated webull_api.log.* files carrying the live x-app-key were TRACKED and pushed to the PUBLIC repo (*.log never matched their dated names); moved to archive/, .gitignore patched — THE KEY IS STILL IN GIT HISTORY AND MUST BE ROTATED AT WEBULL (G's action, Pending). New rules: CONDENSE AND MERGE; DATA-MAP.md read with INDEX.md every session. Alert recovery: build_alerts.py now mines ORDER IN (184) + AI READ (2,222) + per-contract REFUSED + pullback arms (direction match mandatory); 60 noise rows purged and gated; real alert count 331 -> 505, room coverage 156 -> 312, caller 89 -> 259. Expiry reader was silently buying the WRONG expiry when it could not parse a date — 13 real trades hit, now fixed + test_expiry.py. ai_reader.py had NO optionable.txt allowlist (ticker 'WITH') and was matching raw text through a Discord colour escape (MXLU/MMETA/MSPCX). test_positions.py was appending 3,896 fixture rows to production telemetry.csv — now telemetry-test.csv. alert_tape.csv/alert_meta.csv are LIVE but still EMPTY (recorder armed 9/11, collects at the open). WHOP ROOMS — REAL ROOT CAUSE 9/11, and my first two answers were WRONG (both corrected here, not stacked): THE WHOP PROFILE HAS NO EXTENSION. Discord Sniper is installed in folders `Default` and `Profile 2` ONLY — verified in each profile's Secure Preferences, which names the unpacked path C:\Users\Hulk\Desktop\discord-sniper\extension. The launcher opened 4 Whop tabs in a window with no reader in it, so they read nothing. That is the month Day Trades caught 1 alert, and why ZERO "(whop)" export files have ever been written against 2 "(discord)". A script cannot install an extension — START HERE now checks and prints a loud banner instead of pretending it worked. G's one-time step: open that Chrome window, chrome://extensions, Developer mode, Load unpacked -> extension folder, and log into whop.com in it. SECOND FACT, also wrong before: Chrome's profile FOLDERS here are Default='Your Chrome', 'Profile 2'='Discord Profile', 'Profile 6'='Whop Profile', 'Sniper Whop'='Person 1'. The launcher's default --profile-directory="Sniper Whop" is a REAL folder but it is the junk 'Person 1' profile, not the Whop one. whop-profile.txt now pins `Profile 6`. :resolve_profile also fixed: an exact FOLDER name now wins over the display-name lookup (it used to find nothing for "Sniper Whop" and pass it through). My earlier claim that Chrome was silently falling back to Default was wrong — it was opening a real but empty profile. ext 3.8.4; all 20 tests + parser_gate PASS.
+Last updated: 2026-09-11 (13:40) — ext 3.8.9. Exhaustive audit repair deployed: durable order idempotency, explicit broker-read validity, full-contract position identity, fill-confirmed exits with partial-fill reconciliation, persistent stop watchers, retrying overnight protection, restart dispatch lock, shared market calendar, corrected reporting/tape/backtests, hardened launchers and loopback Origin checks. Chrome maintenance work is serialized; immediate MutationObserver alert reads remain. Full Python/JavaScript suites pass; parser replay 11,605 messages = 719/719, zero gained/lost/junk. Whop extension is installed. SECURITY: rotated Webull logs and runtime state are no longer tracked; the exposed key remains in public Git history and must still be rotated at Webull by G.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -28,39 +28,7 @@ Last updated: 2026-09-11 (06:40) — ext 3.8.2. SECURITY: 18 rotated webull_api.
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension (Profile 2; v3.5.95) reads 22 rooms —
-  18 Discord + 4 Whop (Whop tabs are in the separate "Sniper Whop" profile.
-  NEVER ASK WHICH BROWSER IS WHICH AGAIN — Claude-in-Chrome's "Browser 1 /
-  Browser 2" labels are POSITIONAL and renumber as browsers connect and drop
-  (the same physical Chrome was "Browser 2" at 17:30 on 9/9 and "Browser 1"
-  at 18:05). The deviceId is stable; use it, and select_browser by ID:
-      9adbdf77-9822-45d1-81ad-ab0195271160  = DISCORD profile (Profile 2)
-      17c68ff9-4600-468e-afcb-076e2e6edfa5  = the OTHER profile (presumed
-        "Sniper Whop"; unconfirmed — it disconnected 9/9 evening before it
-        could be checked, so verify once it is back and correct this line)
-  Confirm a lane the cheap way rather than by asking: open a whop.com room
-  URL in it — the Discord profile's evictOtherLane() kills any whop.com
-  /exp_ tab within one 30 s watch-build sweep, the Whop profile keeps it.
-  Not part of the Profile 2 tab count). ZTRADEZ: the whole server was cut
-  9/9 (sub lapsing — incl. Demon Alerts and MR.TOPHAT, same guild) but the
-  ZT all-trades-mashup line is STILL `on` in rooms.txt, counted 9/10 02:22.
-  Either the cut missed it or it was left deliberately; flipping a room is
-  G's click, so it stays on until he says. The sub was "1 day" from 9/9, so
-  it is dead or dying either way. G
-  brought every non-ZT room back 9/9 once the reload storm was fixed (the
-  "silent" verdicts were measured during the storm, so they re-measure on
-  clean ledger data from here). extension/rooms.txt is THE list of EVERY
-  room we have been to (57: 19 on, 33 off, 5 lapsed), one line each with a
-  5th field on|off|lapsed — see ROOMS below. rooms.txt is data, not code:
-  editing it does NOT reload the extension (build stamp skips it); the
-  extension re-reads it within 30 s —
-  typed alerts, voice
-  (Deepgram, diarized), images (vision) → Python bridge (bridge.py,
-  127.0.0.1:8787) places real Webull option orders. Futures: micros via
-  NinjaTrader OIF files (Webull futures account $0 by choice; Topstep not
-  executing; Tradovate removed 9/x). Whop reads happen in the "Sniper Whop"
-  Chrome profile; the Whop API path is DELETED (walled + it was dropping tab
-  reads).
+- The machine: Chrome MV3 extension v3.8.9 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
 - Accounts (Webull, one app key), read live 9/10 16:45 (close-out): MARGIN
   ENIQGUV4 $0.83, flat (day P&L −$671 net of fees: the BOT was +$46 on 7
   one-lot trades, G's 21 hand round-trips −$706 — HANDOFF-LOG 9/10), CASH MOI680 ($0.55), FUTURES R8IEC
@@ -270,6 +238,9 @@ ENTRIES
 - DEDUPE LADDER: extension in-flight lock → bridge echo-lock (same contract
   OPEN within 20 s refused) → per-trader "already in" claim → one
   average-down ADD if the same trader re-posts ≥1% under what was PAID.
+  Position identity is caller+symbol+strike+side+expiry in both extension
+  and Python; sibling strikes/expiries remain separate. Client order IDs are
+  reserved durably in request_journal.sqlite before broker dispatch.
 - RETRACTION ("not ready / scratch that / cancel / disregard / hold off /
   nevermind") pulls that trader's resting bids and armed pullback hunts.
 - FUTURES: micros only (NQ→MNQ, ES→MES ...). Entry snaps to the 25-pt grid
@@ -290,36 +261,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
-- THE RATCHET (5/3/5 since G's 9/10 "flip it", flat, no cheap tier): born stop −5%
-  (strategy.stop_loss_pct) placed WITH the order as a combo bracket, rebased
-  to the FILL if filled better, never at/above the fill, never inside the
-  bid/ask. Arm at +3% → stop to BREAKEVEN; then every further +5% locks
-  another +5% (ratchet_tiers.py TIERS = (None,(3.0,0.0,5.0))). A rung must
-  clear 4 ticks (MIN_RUNG_TICKS). Ratchet tries REPLACE, falls back to
-  cancel+place and says so. Anti-clip is OFF ENTIRELY (verified 9/9:
-  Book.anticlip=False, no strategy.anticlip key) — turn it on with
-  strategy.anticlip=true and it caps locked ≤60% of gain, at 2+ DTE only.
-  WHY 5/3/5 — CHANGED 9/10 ON G'S CALL, and it is the first ratchet number
-  here that clears its own error bar. The OPRA tape was bought (537
-  contract-days, 1.02M per-second quotes), so ratchet_sweep_fine.py re-swept
-  its 294 combos on REAL price paths, on 115 trades not 80 — the sweep was
-  also scoring 707 rows whose caller was "?" (G's hand trades and adopted
-  positions) as room calls; EXCLUDE_WHO now drops "" and "?" with "gian".
-      old 7.5/5/2   $158   rank #82 of 294
-      NEW 5.0/3/5   $504   rank #1
-  Paired bootstrap, same trades, 2000 resamples: +$3.01 a trade, 95% band
-  +$0.72..+$4.91 — outside zero, so an edge, not the luckiest of 294 cells.
-  Win rate FALLS 35% → 25% while dollars rise: more small scratches, far
-  fewer big losers. The 9/9 "small rungs win" finding was an artifact of
-  backfilled minute data that never showed the intraday retraces a 2% rung
-  keeps stopping into. Cheap (<$1) still loses under every spacing, so no
-  cheap tier. Re-run `python3 ratchet_sweep_fine.py` as trades accumulate.
-  ONE READER FOR "WHAT IS LIVE" (9/10): ratchet_tiers.live_spacing()
-  returns (born, arm, step) read from settings.json + TIERS. Every backtest
-  and report now calls it — ratchet_sweep_fine, chart_contracts,
-  entry_compare, missed_dollarize, pullback_levels. They used to TYPE the
-  live numbers into their own headers and had been comparing against
-  7.5/5/5, a rule nobody was running, for two days.
+- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. The setting won the 115-trade OPRA replay ($504, rank 1/294; paired improvement +$3.01/trade, 95% band +$0.72..+$4.91). Re-run `ratchet_sweep_fine.py` as the sample grows.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
@@ -330,7 +272,8 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   excluded on purpose.
 - CLOSE path (9/9 phantom-exit fix): every bot sell waits for FILLED
   (_sell_confirmed) — an ACCEPTED sell is never booked as filled; a
-  never-filled sell releases the key and logs EXIT-RETRY.
+  never-filled sell releases the key and logs EXIT-RETRY. Late/partial fills
+  found during cancel reduce the remaining quantity before any retry.
 - A CLOSE for a contract the book does not hold is REFUSED, never sent
   (his 12-lot scalps live in the same account).
 - 0DTE: ETF options trade to 16:15; auto-exercise at $0.01 ITM — flatten
@@ -340,14 +283,17 @@ RESTARTS / SAFETY
 - State photo on every event. On boot: expired options = dead paper;
   everything else UNVERIFIED until the broker confirms (then watchdog +
   stop arm); gone = closed "at a price I never saw". Mid-market code
-  updates self-apply at the first safe window (no bids/hunts in flight);
+  updates self-apply at the first safe window (no bids/hunts/closes in flight);
+  a dispatch gate closes the final check-to-restart race;
   checkBuild defers an extension reload while market is open with
   positions in flight. Resting stops at Webull guard every gap.
 - POSTCHECK after every trade: book vs account, stop resting, quote bus
   fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
 - GIT: settings.json holds every key, gitignored, never committed, never
   pasted back. Never run git write commands from a sandbox (locks). AUTO
-  PUSH sweeps commits every 45 s. After ANY suspicious file loss check
+  PUSH sweeps commits and retries outstanding pushes every 45 s; it never
+  deletes Git locks or rebases automatically. Runtime state/log/test files
+  are untracked and remain local. After ANY suspicious file loss check
   `git reflog` for a "reset:" line before rebuilding by hand.
 - REPLACE, DON'T STACK (G, 9/9). When something changes — a rule, a value,
   a function, a setting, a room line, a doc — the new version takes the old
@@ -411,67 +357,8 @@ ROOMS / TABS / READERS
   shabs + eli direct rooms retired 9/9 (covered by OWLS all-alerts).
 - EMBED RACE: bots post the call in an embed that hydrates after the row
   paints; content.js keys SEEN on id+length so the hydrated read re-emits.
-- TAB RELOADS (root cause FOUND 9/9, v3.5.68 — G: "it's something in
-  code, I know it"): the DS Logs export showed 662 "watcher is detached —
-  reloading that room" reloads in ~29 h at a median gap of EXACTLY 60 s
-  (the handler's own throttle). Cause: a re-injected content.js stopped the
-  old copy's observer but NOT its heartbeat interval, so the dead copy kept
-  reporting "observing:false" every 30 s and the background reloaded the
-  tab; ensureReaders() re-injected every tab every 5 min, so every room
-  grew a zombie and reloaded ~once a minute all evening. THAT reload storm
-  — hundreds of page loads an hour — is what made Discord log the profile
-  out (the 603 "tab now shows a different page" drops), not the tab count.
-  FIXED: content.js/whop.js clear their beat/pulse on __SNIPER_STOP__ and
-  carry a `stopped` flag; background re-INJECTS on a detached report and
-  reloads only on a repeat within 5 min; ensureReaders injects only into a
-  tab that is not heartbeating; memory shed and both Whop reloads now LOG
-  a line (they were silent); Whop's no-message backstop 5 → 30 min.
-  RULE: a page reload is the LAST resort — re-attach first, and every
-  reload path must write a log line, so a storm can never be invisible.
-  DISCORD'S OWN LIMITS FOR A USER ACCOUNT (docs.discord.food, 9/9): ONE
-  gateway session start per 5 s (max_concurrency 1; more = Invalid Session),
-  max 50 ACTIVE sessions — a reloaded tab's old session lingers minutes, so
-  a reload storm stacks ghosts past the cap — and "suspicious sessions may
-  be flagged … account locked, requiring a password reset." There is NO
-  identify-per-day budget for user accounts (that is bots only). So: START
-  HERE opens ONE tab per 6 s, the one-shot opener sleeps 6 s between opens,
-  and an INSTANT logout after a good login means a lock — his email from
-  Discord + password reset clears it, not code.
-  MEMORY: memory shed reloads ≤1 room tab per tick, 4 h cadence (never
-  active/voice tab, never 9:28-9:40); tabs pinned autoDiscardable=false;
-  a room silent 90 s is reloaded with 1/2/4/8/15-min back-off.
-  --process-per-site is OFF (one renderer per tab). Chrome hardware
-  acceleration OFF.
-  ROOM CUTS: any cut is G's call on TAGGED ledger numbers only — the 9/9
-  "7 dead rooms" list was WITHDRAWN (it was built on a broken count;
-  Aristotle had a live AMD 515C that day). 154 fills still carry room "?".
-- WHOP: rooms live at whop.com/<business>/exp_<id>/app/ (the old /joined/
-  URLs redirect to a lobby and read nothing). Tabs are the ONLY Whop source
-  (API reader deleted 9/9 — its dead "api mode" gate had been dropping every
-  tab read since the morning; the official API stays WALLED for member reads
-  until Felony installs G's Whop app with chat:read — unlocks itself, no code
-  change, if that ever happens). FOUND 9/10: tabs being the only source also
-  meant Day Trades caught exactly 1 alert in the whole month since 8/13 —
-  openMissingRooms() only fills a missing tab on START HERE's one-shot token
-  (9/8, so a DISCORD tab he closes by hand stays closed, his rule), and
-  nothing ever noticed if the whole "Sniper Whop" Chrome profile wasn't even
-  running. FIXED 9/10, two parts, Discord's 9/8 behavior untouched: (1)
-  whopSelfHeal() in background.js calls openMissingRooms() every watch-build
-  tick, but ONLY in the whop lane — he doesn't hand-close Whop tabs, they die
-  from crashes/memory/eviction, so self-healing them doesn't fight his rule.
-  (2) _whop_loop.bat + _whop_hidden.vbs (same pattern as the bridge's own
-  _run_hidden.vbs) watch whether the Sniper Whop Chrome window is running at
-  all and relaunch it if not; installed by START HERE.bat as a Startup entry
-  + 30-min revive task, same durability model as the Fill Announcer. Felony posts QQQ/SPY contracts when he trades
-  NQ/ES. Felony goes live on ZOOM mornings (~9:15, event on FST's "Zoom
-  Links & Events" page; recurring meeting 89312529658 on us02web) — join the
-  WEB client `us02web.zoom.us/wc/join/<id>` in the WHOP Chrome profile so
-  tabCapture hears it; the desktop app is invisible. Exact recipe:
-  reference/FELONY-ZOOM-JOIN.md. Scheduled task felony-live-whop-check does
-  it at 9:12 weekdays (first proven live 9/9). EARS RULE: tab audio needs
-  ONE Sniper-icon click on that tab (Chrome's tabCapture grant); a scripted
-  join logs the refusal and retries on front/click (v3.5.74). Never join a
-  second time if reads.log already shows 🎙 lines — it bumps the first.
+- TAB HEALTH: content/Whop reinjection clears the old observer and heartbeat; background reinjects before any reload and logs every reload. Room opening is paced, memory shedding touches at most one inactive room per cycle, and active/voice tabs are protected. Extension maintenance jobs run in one ordered sweep; normal message delivery stays event-driven. Chrome uses Profile 2 for Discord and Profile 6 for Whop; `whop-profile.txt` pins the folder.
+- WHOP: four `whop.com/<business>/exp_<id>/app/` tabs are read only from Profile 6. The extension is installed there. `whopSelfHeal()` and `_whop_loop.bat` restore missing Whop tabs/profile with bounded strikes; Discord tabs still reopen only from START HERE’s one-shot token. Felony’s Zoom uses the web client in that profile; one manual Sniper-icon click grants tab audio capture.
 - VOICE: ears transcribe always (Deepgram, diarized S0/S1). Voice ENTRIES
   ON (9/2); voice EXITS irrelevant under entries-only. Two-stage: "loading
   X" = staged (4-min shelf, per speaker); fires on that speaker's "I'm in /
@@ -507,102 +394,8 @@ FILL ANNOUNCER (announcer.py, read-only)
   limit): a later pull replaces a WORKING snapshot, never duplicates it.
   Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
   master_ledger and master_alerts; NO .bak files in the root anymore.
-- THE RECORD IS THE BROKER'S, THREE MONTHS DEEP (9/10, G: "I feel I'm still
-  missing losing trades — no way I've won and not lost that much"). He was
-  right, and the cause was an accounting bug: 26 of 74 closed August option
-  positions had the SALE PROCEEDS written into `pl` (sold at 5.90 → "+590"
-  on a trade that lost $11). It overstated the record by +$5,137 and made
-  26 losses the board's biggest wins. Two fixes: build_ledger now COMPUTES
-  P&L from the fill and exit prices (the book's claim is kept in store_pl,
-  the broker's export still outranks both), and the whole broker history
-  6/12→9/09 was pulled from Webull (1,186 orders, MCP get_order_history in
-  ≤100-order windows → Webull_Orders_2026-history_auto.csv → absorbed).
-  THE PULL MUST BE PAGED OR IT LIES QUIETLY (9/10). get_order_history caps
-  at 100 orders per call and returns the newest first — a wide window drops
-  the REST WITHOUT SAYING SO. The first sweep looked complete and was
-  missing a third of August; that is why IBM/BAC/ZETA looked like trades
-  the broker had never heard of (G: "those tickers were allowed before" —
-  he was right, they were real). RULE: after every window, if it returned
-  exactly 100 orders there IS another page — re-request with
-  last_client_order_id = the last combo's client_order_id and keep going
-  until a page returns fewer than 100. August took 4 pages.
-  THE REAL NUMBERS, from the properly paged broker record: 705 completed
-  round-trips, −$4,228 all in; 32% win rate, avg win +$79, avg loss −$47.
-  Split: G's OWN hand trading −$4,332 over 665 closed trades; THE BOT is
-  +$301 over 143. By month: June −70, July −335 (both 100% G, the bot did
-  not exist until 8/06), Aug −4,544, Sep +721. Worst days 8/24 −1,325 and
-  8/17 −1,048. Do not quote a P&L from anything but broker-priced rows.
-  COVERAGE TODAY: 728 of 905 real fills (80%) are broker-settled.
-- THE BOT ON ITS OWN (9/10, G: "let's not take my own trades, the app is
-  for this"). A BOT trade = a row with a REAL caller — caller "?" means
-  unknown, NOT a caller, and treating it as one put 36 of G's/adopted rows
-  on the bot's record (−$373 of them) — AND not manual/adopted AND not
-  export-only. By that rule: 134 entries, 73 closed, NET −$309, 33% win
-  rate. Of those 73, only 27 are broker-verified (+$9); the other 46 are
-  book-priced (−$318). THEN PRICED STRAIGHT OFF THE BROKER instead (each
-  bot row matched to a completed round-trip by contract + entry price, the
-  book bypassed entirely): 74 matched, NET −$301, 34% win rate, avg win
-  +$46, avg loss −$30, Aug −321, Sep +20. TWO INDEPENDENT METHODS AGREE
-  (−$309 from the book, −$301 from the broker), so it is real: THE BOT
-  LOSES ABOUT $300 OVER 5 WEEKS, roughly −$4 a trade. Why, in one line:
-  34% × $46 = $15.6 won per trade against 66% × $30 = $19.8 lost. The stop
-  is NOT the problem — the losses are already small, which is the ratchet
-  doing its job. The gap is hit rate and winner size: WHICH CALLERS get
-  followed and WHERE it takes profit. Best: SKHY +249 (The Pawn), NVDA
-  +120 (Bullwinkle), GOOGL +119 (Unraveller). Worst: TSLA −112 and META
-  −106 (both Unraveller), MP −96 (EvaPanda). THEN THE LAST CONTRACTS WERE RECOVERED
-  (the gap rows had strike/side/expiry read back but the symbol was never
-  assembled — the build ran in the day-row loop while those rows are made
-  later; one-line ordering fix). 124 of 134 bot rows now carry a contract;
-  the last 10 are futures, which have none by nature. Broker-matched bot
-  trades 74 -> 107: NET -$545, -$5.1 a trade, 34% win rate.
-  DID THEY FOLLOW THE ROUND NUMBER? Each entry tagged by whether a
-  "PULLBACK ...: touched $N - buying now" line sits within 4 min of it:
-      big name, WAITED for the round number   37 trades   +$25   +0.7/trade  39% win
-      big name, entered INSTANTLY             30 trades  -$301  -10.0/trade  37% win
-      everything else (no pullback available) 40 trades  -$269   -6.7/trade  26% win
-  Like-for-like (same symbol class, only the wait differs) waiting is
-  +$10.7 a trade better - but that is 1.1x its own noise on 37 vs 30
-  trades: SUGGESTIVE, NOT PROVEN. It agrees in direction with the 9/9
-  one-second-bar study (+$8/contract), which is a reason to KEEP the $1
-  rule, not to widen it. The louder, cleaner line: the 40 trades in names
-  too small to qualify for a pullback (INTC, SPCX, WMT, RIOT, ZETA, SKHY,
-  LYFT, SMCI) lose -$6.7 a trade at a 26% hit rate - a FILTER question,
-  and where the bot's money actually goes.
-  RATCHET SCENARIOS: UNBLOCKED 9/10. The OPRA tape was bought and now holds
-  537 contract-days / 1.02M per-second quotes (databento_tape.csv, despiked
-  into databento_tape_clean.csv). option_tape_pull.py buys cbbo-1s, one
-  pull per contract-window, four at a time, `--minutes N` to stop and
-  resume; the full-book cmbp-1 schema it used first was ~100x the rows for
-  the same answer. Only 9/9 itself is missing — OPRA history stops at
-  13:30 UTC that day and the rest needs a live licence. Verdict is in THE
-  RATCHET above.
-  8/07's seven "missing" trades were ADOPTED at 08:12:13 pre-open — G's own
-  positions from before, never bot trades, and no broker BUY exists that
-  day because they were bought earlier.
-  TWO RECOVERIES that made the bot's rows checkable at all:
-  load_fill_contracts() reads the contract back off the ORDER IN line for
-  trades.log-only rows (39 recovered — they had no strike/side/expiry, so
-  they could never be matched to anything), and _resolve_expiry() gives a
-  short expiry its year from the trade's own date ("8/21" on a trade dated
-  8/17 → 2026-08-21; NDTE → date+N). Bot option rows with a full contract:
-  85 of 124, of which 81 match the broker on both legs, 2 have no BUY, 2 no
-  SELL. Ledger option rows with a full contract: 879 of 950.
-  TWO MORE BUGS THE SAME NIGHT, both found by G spot-checking one trade
-  ("SKHY actually made me like 300"): (a) THE BROKER DATES A TRADE BY ITS
-  ENTRY, THE BOOK BY ITS EXIT — SKHY was bought 8/11 and sold 8/12, so an
-  entry-date-only trip match failed and the book's row kept its own WRONG
-  exit (5.90 vs the broker's real 8.50: −$11 booked instead of +$249).
-  _find_trip now matches either end of the round-trip. (b) ONE ROW PER
-  POSITION — days/*.json re-lists an open position every day until it
-  closes, so SKHY existed twice and the wrong copy was the one read last.
-  _collapse_carryover() keys on caller+contract+ENTRY TIME and keeps the
-  most trustworthy copy (broker-confirmed > knows its exit > earliest); it
-  only touches days-json rows, because the export's FIFO round-trips and
-  the log's FILLED lines are already one row per event. 849 → 763 rows.
-  STILL OPEN: 15 days where a book-priced row disagrees with the broker
-  (the book's exit price is wrong and no trip matched). The broker total is
-  unaffected — it is read straight from the export.
+- BROKER TRUTH: `master_broker.csv` is paged across the full Webull order history; 100-row pages must continue with `last_client_order_id` until a short page. `build_ledger.py` computes P&L from broker fills, collapses carryovers by caller+contract+entry, and matches either end date for overnight trades. Do not quote P&L from book-priced rows when a broker row exists. Current historical split recorded 9/10: 705 completed round trips, −$4,228 total; G’s hand trading −$4,332; bot +$301 by the broad broker attribution.
+- BOT ATTRIBUTION: a bot row needs a real caller and cannot be manual, adopted, or export-only. Caller `?` is unknown. The stricter contract-matched sample was 107 bot trades, net −$545 (−$5.1/trade, 34% win). Round-number waits were better than instant entries in the small sample; keep the $1 rule and keep measuring. OPRA tape holds 537 contract-days / 1.02M one-second quotes; `option_tape_pull.py` records exact durable coverage windows before skipping downloads.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
   don't want any more confusions"). build_ledger keeps account="paper" rows
   OUT of master_ledger.csv, so the board, journal, scoreboard, announcer and
@@ -740,7 +533,9 @@ FILL ANNOUNCER (announcer.py, read-only)
 - SECURITY (in the code now): settings execution.bridge_listen (default
   127.0.0.1) + execution.bridge_token (default ""). The bridge refuses to
   bind off loopback without a token. Off-loopback callers must send
-  X-Sniper-Token (constant-time compare); loopback callers are untouched.
+  X-Sniper-Token (constant-time compare). Loopback accepts the Chrome
+  extension or local no-Origin utilities; ordinary web-page Origins are
+  refused and CORS is limited to chrome-extension:// origins.
   Extension: an optional, gitignored extension/bridge.txt —
   `http://<PC1-LAN-IP>:8787|<secret>` — makes every bridge call carry the
   token (fetch is wrapped once; the popup's askBridge adds it too).

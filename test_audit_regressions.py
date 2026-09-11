@@ -218,6 +218,60 @@ class AuditRegressionTests(unittest.TestCase):
         self.assertEqual(ratchet_sweep.simulate_one(trade, 5, 3)[0], -50.0)
         self.assertEqual(ratchet_sweep_fine.sim(trade, 5, 3, 5)[0], -50.0)
 
+    def test_old_watchdog_cannot_clear_new_generation(self):
+        book = positions.Book(None, lambda _line: None)
+        key = positions.key_of("room", "SPY", 700, "C", "2026-09-18")
+        p = {"key": key, "state": positions.FILLED, "watching": False}
+        book._pos[key] = p
+
+        class Thread:
+            def __init__(self, **kwargs):
+                self.args = kwargs["args"]
+
+            def start(self):
+                return None
+
+        with mock.patch.object(positions.threading, "Thread", Thread):
+            self.assertTrue(book._start_watchdog_locked(key, p))
+            self.assertEqual(p["watch_generation"], 1)
+            p["watching"] = False
+            self.assertTrue(book._start_watchdog_locked(key, p))
+            self.assertEqual(p["watch_generation"], 2)
+
+        book._retire_watchdog(key, 1)
+        self.assertTrue(p["watching"])
+        book._retire_watchdog(key, 2)
+        self.assertFalse(p["watching"])
+
+    def test_orphan_cleanup_only_cancels_bot_owned_order(self):
+        class Broker:
+            def __init__(self):
+                self.cancelled = []
+
+            def open_orders(self, _sym):
+                return [
+                    {"order_id": "owned", "action": "SELL",
+                     "strike": 700, "side": "C", "expiry": "2026-09-18"},
+                    {"order_id": "human", "action": "SELL",
+                     "strike": 700, "side": "C", "expiry": "2026-09-18"},
+                ]
+
+            def cancel(self, oid):
+                self.cancelled.append(oid)
+
+            def order_status(self, _oid):
+                return "dead", 0, None
+
+        broker = Broker()
+        book = positions.Book(broker, lambda _line: None)
+        key = positions.key_of("room", "SPY", 700, "C", "2026-09-18")
+        book._pos[key] = {"stop_order_id": "owned"}
+
+        pulled = book._clear_orphans(
+            broker, key, "SPY", 700, "C", "2026-09-18")
+        self.assertEqual(pulled, 1)
+        self.assertEqual(broker.cancelled, ["owned"])
+
 
 if __name__ == "__main__":
     unittest.main()
