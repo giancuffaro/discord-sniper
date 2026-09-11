@@ -2575,7 +2575,8 @@ def place(order):
                 and order.get("their_stop")):
             threading.Thread(
                 target=_underlying_stop_watch, args=(dict(order),),
-                name="under-stop:%s" % sym, daemon=True).start()
+                name="under-stop:%s" % str(order.get("symbol") or "").upper(),
+                daemon=True).start()
     except Exception:                                   # noqa: BLE001
         pass
     # ALERT DECAY (9/7) — sample this contract's mid at +1s/+5s/+30s/+60s
