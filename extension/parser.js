@@ -1714,7 +1714,8 @@ function parseSignalInner(text, cfg) {
   }
   // BE STOPS (8/29, G): "you can use breakeven stops" = move the stop to
   // the ENTRY price. Zero loss allowed from here. Ticker optional.
-  if (/\b(break\s*-?even|b\/?e)\s+stops?\b|\bstops?\s+(?:to|at)\s+break\s*-?even\b/i.test(low)) {
+  const negatedStop = /\b(?:not|never|don't|dont|do\s+not)\s+(?:moving|move|raising|raise|lowering|lower|adjusting|adjust)\s+(?:my\s+|the\s+)?stops?\b/i.test(low);
+  if (!negatedStop && /\b(break\s*-?even|b\/?e)\s+stops?\b|\bstops?\s+(?:to|at)\s+break\s*-?even\b/i.test(low)) {
     s.action = "STOPMOVE";
     s.be = true;
     s.fire = true;
@@ -1732,14 +1733,16 @@ function parseSignalInner(text, cfg) {
   {
     const sm = /\b(?:new stop(?:\s*loss)?(?:\s+is)?|(?:lower|rais|mov|adjust)(?:ing|ed)?\s+(?:my\s+)?stop(?:\s*loss)?(?:\s+(?:to|at))?)\b/i.test(low)
       && /\b(\d{2,5}(?:\.\d+)?)\b/.test(t);
-    if (sm && !/\b(call|put)s?\b/i.test(low)) {
+    if (sm && !negatedStop && !/\b(call|put)s?\b/i.test(low)) {
       const _scan = t.toUpperCase().replace(/\bSTOP\b|\bLOSS\b|\bNEW\b/g, " ");
       let tkSym = null, _m2;
       const _re2 = /\b([A-Z]{1,5})\b/g;
       while ((_m2 = _re2.exec(_scan)) !== null) {
         if (!NOT_TICKERS.has(_m2[1]) && !/^(MOVIN|GUYS|LOWER|RAIS|MY)$/.test(_m2[1])) { tkSym = _m2[1]; break; }
       }
-      const lv = /\b(\d{2,5}(?:\.\d+)?)\b/.exec(t);
+      // A gain, quantity or earlier quote is not the new stop price.
+      const lv = /\b(?:new\s+stop(?:\s+loss)?(?:\s+is)?|(?:moving|moved|lowering|lowered|raising|raised|adjusting|adjusted)\s+(?:my\s+|the\s+)?stop(?:\s+loss)?)(?:\s+(?:to|at))?\s*[:@]?\s*\$?(\d{2,5}(?:\.\d+)?)\b/i.exec(t)
+        || /\b(\d{2,5}(?:\.\d+)?)\s+(?:is\s+(?:my\s+|the\s+)?)?new\s+stop\b/i.exec(t);
       if (lv) {
         s.action = "STOPMOVE";
         s.their_stop = parseFloat(lv[1]);
@@ -1894,7 +1897,7 @@ function parseSignalInner(text, cfg) {
   //      on a readable contract so a stray "close the door" does nothing.
   // A short lead-in before the label is allowed: are-alerts writes "For my
   // small fries : OPEN $HPE $30 call 5/15 @ 0.50 (swing)".
-  const jm = /^(?:[^:\n]{1,40}:\s+)?(open|update|closed|close)\b\s*([\s\S]*)$/i.exec(t);
+  const jm = /^(?:[^:\n]{1,40}:\s+)?(?:full\s+(?=close\b))?(open|update|closed|close)\b\s*([\s\S]*)$/i.exec(t);
   if (jm && findContract((jm[2] || "").trim())) {
     const label = jm[1].toLowerCase();
     const rest = (jm[2] || "").trim();
@@ -2248,6 +2251,10 @@ function parseSignalInner(text, cfg) {
   // sizing") must not be vetoed by "watch". Hard "don't/do not" still fire, and
   // the sell-guard downstream still catches a genuine SELL. Mirrors signals.py.
   const _explicitBuy = /\b(?:bto|bought)\b/i.test(low) && !!findContract(t);
+  // Only an executed entry at the start with a stated contract and premium.
+  // Preserve all other vetoes; trailing market-session commentary is harmless.
+  const enteredLead = /^entered\s+(.{1,100}?\s*@\s*\$?\d+(?:\.\d+)?)\b/i.exec(t);
+  const enteredContract = enteredLead && findContract(enteredLead[1]);
   /* AN EXPLICIT STC IS AN ORDER TOO (9/7). The carve-out above existed only for
    * BUYS, so Option Alerts' real exits were being silenced by whatever the
    * caller happened to say next:
@@ -2279,6 +2286,9 @@ function parseSignalInner(text, cfg) {
   for (const w of veto) {
     if (low.includes(String(w).toLowerCase()) && !RE_PAPERCUT.test(low)) {
       const wl = String(w).toLowerCase();
+      if (wl === "session" && enteredContract) continue;
+      if (wl === "yesterday" && enteredContract &&
+          !low.replace(/\byesterday['’]?s\s+session\b/g, "").includes("yesterday")) continue;
       if (_explicitSell) continue;
       if (_statedEntry) continue;
       if (_explicitBuy && wl !== "do not" && wl !== "don't" && wl !== "dont ") continue;
