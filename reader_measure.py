@@ -54,6 +54,8 @@ def corpus():
 
 def prepare(include_history=False, since=None, until=None):
     os.makedirs(OUT, exist_ok=True)
+    if os.path.exists(AI_OUT) and os.path.getsize(AI_OUT):
+        raise RuntimeError('This corpus already has AI results; use a new output directory for changed inputs')
     coverage = None
     if include_history:
         import reader_history
@@ -341,7 +343,7 @@ if __name__ == "__main__":
         SUMMARY = os.path.join(OUT, 'summary.json')
     if args.include_history and not args.output_dir:
         ap.error('--include-history requires --output-dir to preserve the original replay')
-    if args.include_history and os.path.exists(PREPARED):
+    if args.include_history and os.path.exists(AI_OUT) and os.path.getsize(AI_OUT):
         ap.error('Use a new output directory for a refreshed historical corpus')
     if args.prepare or not (args.ai_all or args.ai_limit is not None
                            or args.ai_sample is not None or args.report):

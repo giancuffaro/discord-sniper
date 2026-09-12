@@ -1,9 +1,12 @@
 """Regressions for importing history without fabricating alert coverage."""
 import tempfile
 import unittest
+import json
+from unittest.mock import patch
 from pathlib import Path
 
 import reader_history
+import reader_measure
 
 
 class HistoryTests(unittest.TestCase):
@@ -65,6 +68,24 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(rows[0]['at'], '2026-07-01 10:02:33')
         self.assertEqual(len(rows[0]['sources']), 2)
         self.assertEqual(coverage['import_counts']['matched_minute_export'], 1)
+
+    def test_reuse_requires_identical_context_and_remaps_evidence(self):
+        olddir = self.root/'old'
+        olddir.mkdir()
+        prior = {'id': 'old-prior', 'author': 'Alice', 'text': 'SPY 500C', 'postedAt': 1000}
+        old = {'id': 'old', 'channelId': '123', 'author': 'Alice', 'text': 'watching', 'postedAt': 2000, 'prior': [prior]}
+        new = dict(old, id='new', prior=[dict(prior, id='new-prior')])
+        changed = dict(new, id='changed', prior=[dict(prior, text='QQQ 400P')])
+        (olddir/'corpus.jsonl').write_text(json.dumps(old)+'\n')
+        (olddir/'ai-context.jsonl').write_text(json.dumps({'id':'old', 'ai_raw': {
+            '_model':'claude-sonnet-5', 'action':'NONE', 'supporting_ids':['old-prior']}, 'model_ms':10})+'\n')
+        prepared=self.root/'new-corpus.jsonl'; output=self.root/'new-ai.jsonl'
+        prepared.write_text(json.dumps(new)+'\n'+json.dumps(changed)+'\n')
+        with patch.object(reader_measure, 'PREPARED', str(prepared)), patch.object(reader_measure, 'AI_OUT', str(output)):
+            self.assertEqual(reader_measure.reuse_results(str(olddir), {}, []), 1)
+        result=json.loads(output.read_text())
+        self.assertEqual(result['id'], 'new')
+        self.assertEqual(result['ai_raw']['supporting_ids'], ['new-prior'])
 
 
 if __name__ == '__main__':
