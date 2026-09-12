@@ -89,6 +89,8 @@ def read(current, prior, allowed_symbols, cfg, timeout=12):
         result = ai_reader._extract_json(raw)
         if not isinstance(result, dict):
             result = {"_error": "unparseable_reply"}
+        if isinstance(data.get("usage"), dict):
+            result["_usage"] = data["usage"]
     except urllib.error.HTTPError as exc:
         result = {"_error": "HTTP_%s" % exc.code}
     except Exception:

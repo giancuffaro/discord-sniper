@@ -8,6 +8,7 @@ import argparse
 import csv
 import json
 import os
+import random
 import subprocess
 import time
 from collections import defaultdict, deque
@@ -89,7 +90,7 @@ def _one(r, cfg, allowed):
             "model_ms": ms, "finishedAt": datetime.now().isoformat()}
 
 
-def ai_all(limit=None, workers=2):
+def ai_all(limit=None, workers=2, sample=False):
     if not os.path.exists(PREPARED):
         prepare()
     with open(os.path.join(HERE, "settings.json"), encoding="utf-8") as f:
@@ -99,7 +100,25 @@ def ai_all(limit=None, workers=2):
     allowed = cfg.get("allowed_symbols", []) or []
     done = {r["id"] for r in jsonl(AI_OUT)}
     todo = [r for r in jsonl(PREPARED) if r["id"] not in done]
-    if limit is not None:
+    if sample:
+        # A reproducible pilot across recent parser actions, plausible misses,
+        # and ordinary chatter. This is not a substitute for --ai-all.
+        pool = [r for r in todo if r["at"] >= "2026-08-18"]
+        actions = [r for r in pool if (r.get("parser") or {}).get("action")]
+        candidates = [r for r in pool if not (r.get("parser") or {}).get("action")
+                      and any(w in r["text"].lower() for w in
+                              ("fill", "entry", "bought", "calls", "puts", " in "))
+                      and any(ch.isdigit() for ch in r["text"])]
+        candidate_ids = {r["id"] for r in candidates}
+        chatter = [r for r in pool if not (r.get("parser") or {}).get("action")
+                   and r["id"] not in candidate_ids]
+        rng = random.Random(20260912)
+        n = limit or 60
+        todo = []
+        for group, quota in ((actions, n // 3), (candidates, n // 3),
+                             (chatter, n - 2 * (n // 3))):
+            todo.extend(rng.sample(group, min(quota, len(group))))
+    elif limit is not None:
         todo = todo[:limit]
     print(json.dumps({"total": sum(1 for _ in jsonl(PREPARED)),
                       "already_done": len(done), "this_run": len(todo),
@@ -124,6 +143,7 @@ def report():
     counts = defaultdict(int)
     latencies = []
     review = []
+    input_tokens = output_tokens = 0
     prior_labels = {}
     if os.path.exists(QUEUE):
         with open(QUEUE, encoding="utf-8", newline="") as f:
@@ -152,6 +172,9 @@ def report():
         if (a.get("ai_raw") or {}).get("_error"):
             counts["ai_error"] += 1
             continue
+        usage = (a.get("ai_raw") or {}).get("_usage") or {}
+        input_tokens += int(usage.get("input_tokens") or 0)
+        output_tokens += int(usage.get("output_tokens") or 0)
         latencies.append(a.get("model_ms") or 0)
         ag = a.get("ai") or {}
         ar = ag.get("read") or {}
@@ -191,6 +214,7 @@ def report():
     latencies.sort()
     summary = {"corpus": len(base), "ai_processed": len(ai),
                "counts": dict(counts), "review_rows": len(review),
+               "input_tokens": input_tokens, "output_tokens": output_tokens,
                "model_latency_ms_p50": latencies[len(latencies)//2] if latencies else None,
                "model_latency_ms_p95": latencies[int(len(latencies)*.95)] if latencies else None,
                "note": "Disagreements are candidates, not labeled errors or trades."}
@@ -204,12 +228,15 @@ if __name__ == "__main__":
     ap.add_argument("--prepare", action="store_true")
     ap.add_argument("--ai-all", action="store_true")
     ap.add_argument("--ai-limit", type=int)
+    ap.add_argument("--ai-sample", type=int)
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--report", action="store_true")
     args = ap.parse_args()
-    if args.prepare or not (args.ai_all or args.ai_limit is not None or args.report):
+    if args.prepare or not (args.ai_all or args.ai_limit is not None
+                           or args.ai_sample is not None or args.report):
         prepare()
-    if args.ai_all or args.ai_limit is not None:
-        ai_all(args.ai_limit, max(1, min(4, args.workers)))
+    if args.ai_all or args.ai_limit is not None or args.ai_sample is not None:
+        ai_all(args.ai_sample if args.ai_sample is not None else args.ai_limit,
+               max(1, min(4, args.workers)), args.ai_sample is not None)
     if args.report:
         report()
