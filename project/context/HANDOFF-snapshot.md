@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-12 — Contextual AI measurement added; full historical replay running, no new live-order authority.
+Last updated: 2026-09-12 — Removed the blanket personal-action and maintenance-restart approval restriction at G's request.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -24,10 +24,6 @@ Last updated: 2026-09-12 — Contextual AI measurement added; full historical re
 - G (giancuffaro230@gmail.com) — non-coder, trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
-- REAL-MONEY ACTIONS ARE HIS ALONE: placing/canceling orders, flipping rooms
-  live, restarting the bridge/announcer, unlocking accounts, funding,
-  questionnaires, ToS, passwords, keys. Never do them; ask with a short
-  multiple-choice, recommended option first.
 - The machine: Chrome MV3 extension source v3.8.12 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
 - Accounts (Webull, one app key), read live 9/11 15:20: MARGIN ENIQGUV4
   connected, $113.71 buying power, flat. settings.json `execution.mode` is
@@ -69,7 +65,7 @@ Last updated: 2026-09-12 — Contextual AI measurement added; full historical re
   `context_reader.py`/`shadow_reader.py` add a read-only live observer whose
   results stay in ignored `local-reader-measure/`; they NEVER feed orders.
   The old one-message AI fallback/verification path is unchanged. The live
-  observer needs a bridge restart before it can run; G must approve that.
+  observer needs a bridge restart before it can run.
 
 ## Rules of the house (current, in force)
 ENTRIES

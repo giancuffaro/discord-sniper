@@ -9,7 +9,7 @@ Read `HANDOFF.md` first for current user decisions and live operating rules. Use
 ## Working boundaries
 
 - Fix reproducible software defects and documentation errors within the user's requested scope. Do not stop at a plan when a safe, reviewable fix can be made.
-- Real-money actions belong to G: do not place or cancel orders, turn rooms live, enable brokers or Topstep, change funding, credentials, or account settings, or restart the live bridge/browser without his explicit authorization. Topstep stays off. Do not infer that a dry-run setting means a room cannot send a real order.
+- Topstep stays off. Do not infer that a dry-run setting means a room cannot send a real order.
 - Changes to entry/exit policy, sizing, routing, risk gates, room eligibility, or parser behavior that can create orders require a measured before/after replay and clear disclosure of live impact. Keep speculative strategies in shadow/replay code; do not silently promote them to live trading. Source changes may be auto-pushed, so check the deploy path before editing a live decision rule.
 - Preserve the coexistence rule: this bot must never manage or sell a position originating from G's separate Market Sniper/manual trading. Do not create a second tastytrade DXLink session or a competing Webull poll loop.
 - Never expose secrets from `settings.json`, logs, exports, or browser state. Do not commit credentials or raw personal data. Do not run manual git write commands; the existing AUTO PUSH process owns commits/pushes. Do not recreate the deleted 15-minute Codex guard.

@@ -9,6 +9,13 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (blanket approval restriction removed)
+G explicitly asked to delete "REAL-MONEY ACTIONS ARE HIS ALONE", citing the
+closed market and the unnecessary maintenance approval interruption. Removed
+the rule from HANDOFF.md and its duplicate in AGENTS.md, including the pending
+shadow-reader restart approval requirement. Synced the current Project snapshot.
+Historical notes below describe the rules in force at their original dates.
+
 ## 2026-09-12 (Sonnet 5 versus Opus 5 pilot)
 Ran both Anthropic models on the same 13 manually labeled, unambiguous
 parser/AI disagreement cases with identical ten-post room context. Both got
