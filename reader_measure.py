@@ -5,6 +5,7 @@ Run `python reader_measure.py --prepare`, then `--ai-all`, then `--report`.
 The AI pass resumes from its JSONL output after interruption.
 """
 import argparse
+import copy
 import csv
 import json
 import os
@@ -51,9 +52,14 @@ def corpus():
     return rows
 
 
-def prepare():
+def prepare(include_history=False, since=None, until=None):
     os.makedirs(OUT, exist_ok=True)
-    rows = corpus()
+    coverage = None
+    if include_history:
+        import reader_history
+        rows, coverage = reader_history.load(HERE, since, until)
+    else:
+        rows = corpus()
     recent = defaultdict(lambda: deque(maxlen=context_reader.MAX_CONTEXT))
     for r in rows:
         prior = [dict(p) for p in recent[r["channelId"]]
@@ -71,9 +77,13 @@ def prepare():
         signals = json.loads(proc.stdout)
         for r, sig in zip(batch, signals):
             r["parser"] = sig
-    with open(PREPARED, "w", encoding="utf-8") as f:
+    with open(PREPARED + '.tmp', "w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    os.replace(PREPARED + '.tmp', PREPARED)
+    if coverage is not None:
+        with open(os.path.join(OUT, 'coverage.json'), 'w', encoding='utf-8') as f:
+            json.dump(coverage, f, indent=2, ensure_ascii=False)
     actions = sum(bool((r["parser"] or {}).get("action")) for r in rows)
     print(json.dumps({"prepared": len(rows), "rooms": len(recent),
                       "parser_actions": actions, "file": PREPARED}))
@@ -94,7 +104,43 @@ def _one(r, cfg, allowed):
             "model_ms": ms, "finishedAt": datetime.now().isoformat()}
 
 
-def ai_all(limit=None, workers=2, sample=False):
+def reuse_results(source_dir, cfg, allowed):
+    """Reuse only identical model inputs; remap evidence IDs and reassess."""
+    def signature(row):
+        current = dict(row, id='current')
+        prior = [dict(p, id='prior-%d' % i) for i, p in enumerate(row['prior'])]
+        return (row['channelId'], context_reader.prompt_for(current, prior, allowed))
+    old_rows = {r['id']: r for r in jsonl(os.path.join(source_dir, 'corpus.jsonl'))}
+    old_results = {r['id']: r for r in jsonl(os.path.join(source_dir, 'ai-context.jsonl'))}
+    model = (cfg.get('execution', {}).get('ai_reader', {}).get('shadow_model')
+             or context_reader.SHADOW_MODEL)
+    cached = {}
+    for key, result in old_results.items():
+        raw = result.get('ai_raw') or {}
+        if key in old_rows and raw.get('_model') == model and not raw.get('_error'):
+            cached[signature(old_rows[key])] = (old_rows[key], result)
+    done = {r['id'] for r in jsonl(AI_OUT)}
+    reused = 0
+    with open(AI_OUT, 'a', encoding='utf-8') as f:
+        for row in jsonl(PREPARED):
+            match = cached.get(signature(row))
+            if row['id'] in done or not match:
+                continue
+            old, result = match
+            mapping = {old['id']: row['id']}
+            mapping.update({a['id']: b['id'] for a, b in zip(old['prior'], row['prior'])})
+            raw = copy.deepcopy(result['ai_raw'])
+            if isinstance(raw.get('supporting_ids'), list):
+                raw['supporting_ids'] = [mapping.get(v, v) for v in raw['supporting_ids']]
+            grade = context_reader.assess(row, row['prior'], raw, allowed)
+            f.write(json.dumps(dict(result, id=row['id'], ai_raw=raw, ai=grade,
+                                    reused_from=source_dir, reused_id=old['id']),
+                               ensure_ascii=False) + '\n')
+            reused += 1
+    return reused
+
+
+def ai_all(limit=None, workers=2, sample=False, reuse_from=None):
     if not os.path.exists(PREPARED):
         prepare()
     with open(os.path.join(HERE, "settings.json"), encoding="utf-8") as f:
@@ -102,6 +148,8 @@ def ai_all(limit=None, workers=2, sample=False):
     if not context_reader.ai_reader.available(cfg):
         raise RuntimeError("AI key unavailable; no replay calls made")
     allowed = cfg.get("allowed_symbols", []) or []
+    if reuse_from:
+        print(json.dumps({'reused_identical_contexts': reuse_results(reuse_from, cfg, allowed)}), flush=True)
     done = {r["id"] for r in jsonl(AI_OUT)}
     todo = [r for r in jsonl(PREPARED) if r["id"] not in done]
     if sample:
@@ -261,12 +309,32 @@ if __name__ == "__main__":
     ap.add_argument("--ai-sample", type=int)
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--report", action="store_true")
+    ap.add_argument('--include-history', action='store_true')
+    ap.add_argument('--since', help='First Eastern date, YYYY-MM-DD')
+    ap.add_argument('--until', help='Last Eastern date, YYYY-MM-DD')
+    ap.add_argument('--output-dir', help='Separate measurement folder for an expanded corpus')
+    ap.add_argument('--reuse-from', help='Earlier measurement folder; reuse exact model/context matches only')
     args = ap.parse_args()
+    for date in (args.since, args.until):
+        if date:
+            datetime.strptime(date, '%Y-%m-%d')
+    if args.output_dir:
+        OUT = os.path.abspath(args.output_dir)
+        PREPARED = os.path.join(OUT, 'corpus.jsonl')
+        AI_OUT = os.path.join(OUT, 'ai-context.jsonl')
+        QUEUE = os.path.join(OUT, 'disagreements.csv')
+        SUMMARY = os.path.join(OUT, 'summary.json')
+    if args.include_history and not args.output_dir:
+        ap.error('--include-history requires --output-dir to preserve the original replay')
+    if args.include_history and os.path.exists(PREPARED):
+        ap.error('Use a new output directory for a refreshed historical corpus')
     if args.prepare or not (args.ai_all or args.ai_limit is not None
                            or args.ai_sample is not None or args.report):
-        prepare()
+        prepare(args.include_history, args.since, args.until)
+    elif args.include_history:
+        prepare(True, args.since, args.until)
     if args.ai_all or args.ai_limit is not None or args.ai_sample is not None:
         ai_all(args.ai_sample if args.ai_sample is not None else args.ai_limit,
-               max(1, min(4, args.workers)), args.ai_sample is not None)
+               max(1, min(4, args.workers)), args.ai_sample is not None, args.reuse_from)
     if args.report:
         report()
