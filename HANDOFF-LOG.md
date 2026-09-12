@@ -9,6 +9,18 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (Sonnet 5 versus Opus 5 pilot)
+Ran both Anthropic models on the same 13 manually labeled, unambiguous
+parser/AI disagreement cases with identical ten-post room context. Both got
+10/13 actions right and made zero false entry actions. Sonnet caught a caller
+trim that Opus missed, but its context reference was flagged unsupported;
+Opus caught a caller close that Sonnet missed. Sonnet median model latency was
+2.234 s (p95 5.015 s), Opus 3.282 s (p95 6.282 s). This small pilot does not
+establish an accuracy winner. Sonnet 5 remains the read-only full-replay and
+live-shadow model; the existing live-order AI path is unchanged. The temporary
+comparison script and local result files were removed after recording these
+findings. The labeled pilot source remains for the ongoing reader audit.
+
 ## 2026-09-12 (contextual AI reader measurement)
 Added a read-only ten-recent-post observer for typed Discord/Whop messages, a
 resumable full-corpus AI replay, a local disagreement queue, and model/queue

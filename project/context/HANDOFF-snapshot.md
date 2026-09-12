@@ -65,7 +65,7 @@ Last updated: 2026-09-12 — Contextual AI measurement added; full historical re
   results require real entry+exit evidence; never substitute a later high.
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
 - AI MEASUREMENT (9/12): `reader_measure.py` replays the exact 11,385-message
-  parser corpus against Claude with up to 10 recent room posts as context.
+  parser corpus against Claude Sonnet 5 with up to 10 recent room posts as context.
   `context_reader.py`/`shadow_reader.py` add a read-only live observer whose
   results stay in ignored `local-reader-measure/`; they NEVER feed orders.
   The old one-message AI fallback/verification path is unchanged. The live
