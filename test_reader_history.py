@@ -55,6 +55,17 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(len(rows), 2)
         self.assertNotEqual(rows[0]['id'], rows[1]['id'])
 
+    def test_grab_overlap_uses_precise_time_without_duplicate_alert(self):
+        (self.root/'DS Logs/signal-room-chat A.txt').write_text(
+            '2026-07-01 10:02:33  [Example #123]  Alice: SPY 500C\n', encoding='utf-8')
+        (self.root/'DS Logs/grab 123 Example.txt').write_text(
+            'channel_id: 123\nroom: Example\n2026-07-01 14:02  Alice: SPY 500C\n', encoding='utf-8')
+        rows, coverage = reader_history.load(self.root)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['at'], '2026-07-01 10:02:33')
+        self.assertEqual(len(rows[0]['sources']), 2)
+        self.assertEqual(coverage['import_counts']['matched_minute_export'], 1)
+
 
 if __name__ == '__main__':
     unittest.main()

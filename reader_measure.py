@@ -84,6 +84,19 @@ def prepare(include_history=False, since=None, until=None):
     if coverage is not None:
         with open(os.path.join(OUT, 'coverage.json'), 'w', encoding='utf-8') as f:
             json.dump(coverage, f, indent=2, ensure_ascii=False)
+        lines = ['# Channel history coverage', '',
+                 'Requested dates: %s through %s (Eastern).' % (since or 'all', until or 'latest'),
+                 'All configured channels are included regardless of their trading switch.',
+                 'These are local exports only. Remote retrieval and continuous date coverage are unverified.',
+                 'Message counts are source records, not confirmed alerts or broker trades.', '',
+                 '| Channel | Trading setting | Retained messages | First retained | Last retained |',
+                 '|---|---|---:|---|---|']
+        for c in sorted(coverage['channels'], key=lambda c: (c['state']=='historical_only', c['room'])):
+            label = c['room'].replace('|', '/') + ' (' + c['channelId'] + ')'
+            lines.append('| %s | %s | %s | %s | %s |' %
+                         (label, c['state'], c['messages'], c['first'] or 'missing', c['last'] or 'missing'))
+        with open(os.path.join(OUT, 'coverage.md'), 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines) + '\n')
     actions = sum(bool((r["parser"] or {}).get("action")) for r in rows)
     print(json.dumps({"prepared": len(rows), "rooms": len(recent),
                       "parser_actions": actions, "file": PREPARED}))
@@ -236,9 +249,10 @@ def report():
             counts["ai_error"] += 1
             continue
         usage = (a.get("ai_raw") or {}).get("_usage") or {}
-        input_tokens += int(usage.get("input_tokens") or 0)
-        output_tokens += int(usage.get("output_tokens") or 0)
-        latencies.append(a.get("model_ms") or 0)
+        if not a.get('reused_from'):
+            input_tokens += int(usage.get("input_tokens") or 0)
+            output_tokens += int(usage.get("output_tokens") or 0)
+            latencies.append(a.get("model_ms") or 0)
         ag = a.get("ai") or {}
         flags = context_reader.safety_flags(r, r["prior"], a.get("ai_raw") or {})
         for flag in flags:
@@ -289,6 +303,7 @@ def report():
         writer.writerows(review)
     latencies.sort()
     summary = {"corpus": len(base), "ai_processed": len(ai),
+               "reused_identical_contexts": sum(bool(a.get('reused_from')) for a in ai.values()),
                "counts": dict(counts), "review_rows": len(review),
                "ai_safety_flags": dict(safety_counts),
                "manually_labeled": sum(bool(r["manual_label"]) for r in review),

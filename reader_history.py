@@ -2,7 +2,7 @@
 import hashlib
 import json
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -103,6 +103,27 @@ def load(root, since=None, until=None):
         if pending:
             add(pending[0], cid[1], room[1] if room else cid[1], pending[1], file, pending[2], True, timezone.utc, 'minute')
 
+    precise = defaultdict(list)
+    def minute_key(r):
+        return (r['channelId'], r['postedAt']//60000, r['author'], r['text'])
+    for row in rows:
+        if row['timestamp_precision'] == 'second':
+            precise[minute_key(row)].append(row)
+    merged = []
+    for row in rows:
+        matches = precise.get(minute_key(row), []) if row['timestamp_precision']=='minute' else []
+        if len(matches) == 1:
+            matches[0]['sources'].extend(row['sources'])
+            counts['matched_minute_export'] += 1
+            continue
+        if len(matches) > 1:
+            # Preserve uncertain evidence but do not turn it into an extra alert.
+            for match in matches:
+                match.setdefault('ambiguous_minute_sources', []).extend(row['sources'])
+            counts['ambiguous_minute_overlap'] += 1
+            continue
+        merged.append(row)
+    rows = merged
     rows.sort(key=lambda r: (r['postedAt'], r['channelId'], r['seq']))
     coverage = {cid: dict(room, messages=0, history_messages=0, first=None, last=None,
                           retrieval_status='not_retrieved', coverage='unverified')
