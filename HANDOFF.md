@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-12 — Removed the blanket personal-action and maintenance-restart approval restriction at G's request.
+Last updated: 2026-09-12 — Consolidated handoffs; this is the only current operating-state document.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -14,11 +14,11 @@ Last updated: 2026-09-12 — Removed the blanket personal-action and maintenance
   HANDOFF-LOG.md under "SESSION NOTES", newest first, dated. That file may
   grow forever; this one may not. Hard ceiling: 50 KB. If you are about to
   push it past that, you are writing history, not state — move it.
-- The bridge's own daily handoffs/HANDOFF-<date>.md is a thin status photo.
-- Then sync the Project: copy this file over project/context/HANDOFF-snapshot.md
-  (fixed name — a re-upload replaces) and END THE REPLY with
-  "📌 Update the Project: re-upload project/context/HANDOFF-snapshot.md".
-  The live file here ALWAYS wins over the Project copy.
+- Do not create handoff copies, dated handoffs, or upload snapshots. Daily
+  performance belongs in `daily-reports/`; operating rules belong here.
+- `HANDOFF-LOG.md` is historical evidence, never current instructions. Retired
+  handoffs are preserved in `archive/retired-handoff-documents-2026-09-12.zip`
+  for explicit historical investigation only; do not apply their rules/code.
 
 ## Who and what
 - G (giancuffaro230@gmail.com) — non-coder, trades options + futures live,
@@ -45,9 +45,9 @@ Last updated: 2026-09-12 — Removed the blanket personal-action and maintenance
   spacing this bot ran until 9/10 — so the two tools now manage stops
   DIFFERENTLY on the SAME account. Port 5/3/5 across, or switch it off:
   G's call, still open 9/10.
-- The Claude Project (claude.ai): project/PROJECT-INSTRUCTIONS.md is its
-  Instructions; project/context/ holds its uploads (HANDOFF-snapshot.md,
-  rooms-snapshot.txt, OPTIONS-BROKER-REFERENCE.md ...). The complete
+- The Claude Project (claude.ai): project/PROJECT-INSTRUCTIONS.md points to
+  this live file and AGENTS.md instead of copying their rules. Files remaining
+  in project/context/ are reference material, not operating instructions. The complete
   2026-09-11 Claude export is under Downloads/Claude Export 2026-09-11;
   its recovered Discord Sniper project prompt and 14 documents are historical
   reference only. Current HANDOFF/code wins wherever an exported copy differs.
@@ -607,10 +607,10 @@ FILL ANNOUNCER (announcer.py, read-only)
   accounts can see stay protected by the bridge's 20 s echo-lock. Do this
   BEFORE PC2 goes live.
 
-## Pending — G's side (real-money / restart actions only he takes)
-1. The Claude Project: paste project/PROJECT-INSTRUCTIONS.md into the
-   Instructions box; re-upload project/context/HANDOFF-snapshot.md and
-   rooms-snapshot.txt; delete the six 9/2 files listed in project/README.txt.
+## Pending external setup and decisions
+1. If continuing in Claude: replace its Project instructions with
+   project/PROJECT-INSTRUCTIONS.md and remove its old uploaded handoffs.
+   Local cleanup does not remove files already uploaded to Claude.
 2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung,
    futures decouple) — G's call whether Claude does it or he does.
 3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50
@@ -685,4 +685,4 @@ HANDOFF-LOG.md (all history) · INDEX.md (folder map) · ARCHITECTURE.md ·
 MARKET-HOURS.md · reference/ (broker reference, anti-clip study, ratchet
 notes) · extension/rooms.txt · settings.json (keys, gitignored) ·
 master_ledger.csv / master_alerts.csv (truth) · days/ (per-day state) ·
-handoffs/ (bridge's daily photos) · project/ (Claude Project files).
+daily-reports/ (daily performance reports) · project/ (Claude reference setup).

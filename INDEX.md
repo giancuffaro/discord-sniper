@@ -85,8 +85,10 @@ compact (<50 KB). · `HANDOFF-LOG.md` — the full history behind every rule
 `README.md` — original setup notes · `reference/` — the shelf: **OPTIONS-BROKER-REFERENCE.md** (broker facts — read
 before any broker test), **BROKER-TOP4 / BROKER-CHOICE** (which broker and why), ANTI-CLIP
 study, SDK-AUDIT (what we could use and don't), **FELONY-ZOOM-JOIN.md** (how to get
-into Felony's morning Zoom so the ears hear it) · `project/` — the Claude Project snapshot · `handoffs/` — older
-handoffs
+into Felony's morning Zoom so the ears hear it) · `project/` — Claude reference setup,
+with instructions pointing to the live files. Daily performance lives in `daily-reports/`.
+Retired handoffs are preserved as historical evidence in
+`archive/retired-handoff-documents-2026-09-12.zip`; their rules must not be applied.
 
 ## Never touch
 

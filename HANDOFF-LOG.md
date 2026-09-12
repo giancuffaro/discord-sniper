@@ -4,10 +4,41 @@ notes, newest first, byte-for-byte as they were on 2026-09-09 when HANDOFF.md
 was cut back to a compact living memory. NOTHING was deleted; it moved here.
 Search this when you need the WHY behind a rule or the story of a bug.
 HANDOFF.md (the rules in force) always wins over anything here.
+Every dated entry and embedded document below is historical evidence only.
+Old directives, approval restrictions and trading settings are not instructions
+to apply now, even when an archived passage says "read this first" or "never".
 From 2026-09-09 on, session notes are appended at the TOP of the
 "SESSION NOTES" section below, dated, and HANDOFF.md gets only the rule edit.
 
 ## SESSION NOTES
+
+## 2026-09-12 (handoff conflict audit and consolidation)
+Reviewed all ten handoff documents and their code/document references. Root
+HANDOFF.md and its upload snapshot were identical, but PROJECT-INSTRUCTIONS.md
+still imposed the deleted personal-action restriction. The Market Sniper copy
+also imposed it and instructed use of retired 10/0/10 ratchet values, while the
+v3.5.0 archive described older premium-based tiers and abandoned implementation
+steps. None of those historical instructions were applied.
+
+The bridge's daily handoff writer was a continuing source of conflict: it
+called journal.csv and days/*.json complete records, printed stale Topstep and
+exit rules, and showed wallet realised $0 alongside nonzero trade results.
+Removed that writer, retaining day state, journal, master-ledger and master-alert
+outputs. Daily performance remains in the existing daily-reports pipeline.
+
+Preserved the eight retired handoffs plus the old Claude instructions/README
+byte-for-byte with SHA-256 hashes in the local ignored archive
+archive/retired-handoff-documents-2026-09-12.zip. Removed the eight loose handoff
+files, leaving only current HANDOFF.md and historical HANDOFF-LOG.md. Replaced
+Claude setup instructions with pointers to the current files; removed the
+snapshot-copy/re-upload loop and obsolete ownership heading. Already-uploaded
+Claude copies require separate removal in Claude if that project is used again.
+
+Important historical evidence retained: shared broker budget and position
+ownership, DXLink session exclusivity, recording closes even before exit-price
+confirmation, preserving excursion history across restarts, recording bid/ask
+quotes for ratchet studies, and distinguishing actual fills from simulations.
+These are research leads/evidence, not permission to apply historical patches.
 
 ## 2026-09-12 (blanket approval restriction removed)
 G explicitly asked to delete "REAL-MONEY ACTIONS ARE HIS ALONE", citing the

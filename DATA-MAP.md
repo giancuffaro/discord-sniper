@@ -23,7 +23,7 @@ files move; the shape does not.
 **LIVE files change under you.** The bridge is running. These are being written
 right now: `trades.log`, `bridge.log`, `deadman.log`, `webull_api.log`,
 `telemetry.csv`, `shadow_ratchet.csv`, `state.json`, `days/<today>.json`,
-`handoffs/HANDOFF-<today>.md`, and — during market hours — `option_tape.csv`,
+and — during market hours — `option_tape.csv`,
 `alert_tape.csv`, `alert_meta.csv`, `quote_shadow.csv`, `greeks_tape.csv`.
 `master_ledger.csv`, `master_alerts.csv` and `journal.csv` are **rebuilt from
 scratch** by `build_ledger.py`, not appended — a row can vanish between two
@@ -524,13 +524,15 @@ a busy day. Dedupe before counting rooms.
   14 `master_ledger.csv`, 8 `master_broker.csv`, 5 `master_alerts.csv`,
   1 `_whop_loop.bat`. Named `<file>.bak-YYYYMMDD-HHMMSS`. **Use these to see
   what a rebuilt master file looked like before the rebuild.**
-- **`handoffs/`** — 3 thin daily status photos (12–20 lines each), 9/9–9/11.
-  Today's is LIVE. They are not the handoff; `HANDOFF.md` is.
+- **Handoff history (consolidated 9/12)** — retired handoff documents are in
+  `archive/retired-handoff-documents-2026-09-12.zip`, with source paths and SHA-256
+  hashes. Historical evidence only. The bridge no longer generates daily
+  handoffs; use `daily-reports/` and broker-reconciled master files for performance.
 - **`reference/`** — 8 docs, the shelf. `OPTIONS-BROKER-REFERENCE.md` (59 KB)
   is the broker-fact file to read before any broker test.
-- **`project/context/`** — 10 files, the Claude Project uploads. Snapshots of
-  `HANDOFF.md`, rooms, and the reference docs. **Always stale relative to the
-  live files.**
+- **`project/context/`** — Claude reference uploads, potentially stale. Handoff
+  copies were removed 9/12; only root `HANDOFF.md` defines current operating
+  state. `project/PROJECT-INSTRUCTIONS.md` points to the live files.
 - **HTML artifacts** — `SCOREBOARD.html` (9/10, per-room scoreboard),
   `ALERT-AUDIT.html` (9/7, what we missed ever), `contracts.html` (9/9),
   `MAP.html` (9/2, how the machine works). Rebuild them rather than trusting
