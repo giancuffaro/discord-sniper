@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import time
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -18,8 +19,6 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import context_reader
-import jsparse
-import replay_check
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "local-reader-measure")
@@ -28,6 +27,10 @@ AI_OUT = os.path.join(OUT, "ai-context.jsonl")
 QUEUE = os.path.join(OUT, "disagreements.csv")
 SUMMARY = os.path.join(OUT, "summary.json")
 LINE = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+\[(.+?)#(\d+)\]\s+([\s\S]*)$")
+HEADER = re.compile(
+    r"^(?:.*?)?(?:\[\s*)?\d{1,2}:\d{2}\s*[AP]M(?:\s*\])?\s+"
+    r"[A-Za-z]+,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+"
+    r"\d{1,2}:\d{2}\s*[AP]M\s+", re.I)
 
 
 def jsonl(path):
@@ -57,15 +60,18 @@ def corpus():
                 author = text[:colon].strip() if 0 <= colon < 60 else "?"
                 if 0 <= colon < 60:
                     text = text[colon + 2:]
-                text = replay_check.strip_header(text)
-                key = (m[1], m[3], text[:120])
+                text = HEADER.sub("", text)
+                # JS slice(0, 120) counts UTF-16 code units, including emoji.
+                # Python's [:120] counts code points and admitted one duplicate.
+                key = (m[1], m[3], text.encode("utf-16-le")[:240])
                 if key in seen:
                     continue
                 seen.add(key)
                 dt = datetime.strptime(m[1], "%Y-%m-%d %H:%M:%S")
                 posted = int(dt.replace(tzinfo=ZoneInfo("America/New_York"))
                              .timestamp() * 1000)
-                rows.append({"id": hashlib.sha256("|".join(key).encode("utf-8"))
+                identity = (m[1] + "|" + m[3] + "|").encode("utf-8") + key[2]
+                rows.append({"id": hashlib.sha256(identity)
                              .hexdigest()[:20], "at": m[1], "postedAt": posted,
                              "room": m[2].strip(), "channelId": m[3],
                              "author": author, "text": text})
@@ -85,9 +91,12 @@ def prepare():
                                        ("id", "author", "postedAt", "text")})
     for start in range(0, len(rows), 500):
         batch = rows[start:start + 500]
-        signals = jsparse.parse_many([r["text"] for r in batch],
-                                     [replay_check.parser_cfg(r["channelId"], r["text"])
-                                      for r in batch])
+        proc = subprocess.run(["node", os.path.join(HERE, "reader_parse.js")],
+                              input=json.dumps([{"text": r["text"],
+                                                 "channelId": r["channelId"]}
+                                                for r in batch]).encode("utf-8"),
+                              capture_output=True, timeout=120, check=True)
+        signals = json.loads(proc.stdout)
         for r, sig in zip(batch, signals):
             r["parser"] = sig
     with open(PREPARED, "w", encoding="utf-8") as f:
