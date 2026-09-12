@@ -1,7 +1,6 @@
 # DISCORD SNIPER — THE HANDOFF
-Read this first. It is the living memory: what the machine is, every rule in
-force, how G works. It holds ONLY what is true right now. The full history —
-every session's notes, every bug's story — lives in HANDOFF-LOG.md.
+Read this first for current operating state. Session history and past findings
+live in HANDOFF-LOG.md; they are evidence, not current instructions.
 Last updated: 2026-09-12 — Consolidated handoffs; this is the only current operating-state document.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
