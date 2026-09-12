@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-11 (19:06) — History gate clean across 11,385 messages. AUTO PUSH duplicate fixed with PID ownership; health verifies one bridge, one pusher and Chrome.
+Last updated: 2026-09-12 — Codex repository instructions added; deleted Codex guard removed from current state.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -28,7 +28,7 @@ Last updated: 2026-09-11 (19:06) — History gate clean across 11,385 messages. 
   live, restarting the bridge/announcer, unlocking accounts, funding,
   questionnaires, ToS, passwords, keys. Never do them; ask with a short
   multiple-choice, recommended option first.
-- The machine: Chrome MV3 extension source v3.8.10 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
+- The machine: Chrome MV3 extension source v3.8.11 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
 - Accounts (Webull, one app key), read live 9/11 15:20: MARGIN ENIQGUV4
   connected, $113.71 buying power, flat. settings.json `execution.mode` is
   `dryrun` BY DESIGN (the master switch is retired — bridge.py treats even
@@ -55,6 +55,8 @@ Last updated: 2026-09-11 (19:06) — History gate clean across 11,385 messages. 
   2026-09-11 Claude export is under Downloads/Claude Export 2026-09-11;
   its recovered Discord Sniper project prompt and 14 documents are historical
   reference only. Current HANDOFF/code wins wherever an exported copy differs.
+- Codex reads root `AGENTS.md` for the repository improvement workflow; this
+  HANDOFF remains the current operating state and `HANDOFF-LOG.md` its history.
 - PRODUCT NORTH STAR (G, 9/11): every day must leave a complete, auditable
   alert funnel and enough append-only price/event data to benchmark the
   caller's documented trade, the versioned bot policy on the same alert, and
@@ -313,9 +315,8 @@ RESTARTS / SAFETY
   invented symbols or expiry shifts. The audit runs every JS/Python test, writes `daily-audits/AUDIT-<date>.txt`
   plus `latest.json`, queues unresolved items, and writes the daily report:
   room coverage, decisions, skips, recovered gaps, fills, P&L and postmortems.
-  Relay duplicates stay raw but count once. The 15-minute Codex guard checks
-  readers, feeds, retry storms, processes, logs and ledger agreement; it is
-  quiet unless state changes. Findings become tested fixtures. Caller-vs-system P&L is shown
+  Relay duplicates stay raw but count once. The 15-minute Codex guard was
+  deleted at G's request; do not recreate it. Findings become tested fixtures. Caller-vs-system P&L is shown
   only when caller entry and exit can be paired with contemporaneous option
   quotes; missing exits remain unavailable rather than estimated. RAW capture
   is always retained and session-local LIVE PARSER rows overlay it; a browser

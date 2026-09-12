@@ -9,6 +9,13 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (Codex project instructions)
+Added root AGENTS.md for future Codex work: preserve the current trading boundaries,
+trace alert-to-broker evidence before fixes, use measured parser/AI changes, keep
+actual/caller/simulated results separate, simplify duplicate readers and browser
+work, and run focused verification. Corrected the HANDOFF extension version to
+3.8.11 and removed its stale statement that the deleted 15-minute guard runs.
+
 ## 2026-09-11 (19:06 duplicate AUTO PUSH repaired)
 The lightweight guard found two AUTO PUSH loops, started ten minutes apart. The old two-minute
 heartbeat lock allowed a second owner whenever Git or the network blocked longer than its lease.
