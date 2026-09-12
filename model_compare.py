@@ -41,7 +41,7 @@ def run(models):
     results = []
     for model in models:
         model_cfg = json.loads(json.dumps(cfg))
-        model_cfg.setdefault("execution", {}).setdefault("ai_reader", {})["model"] = model
+        model_cfg.setdefault("execution", {}).setdefault("ai_reader", {})["shadow_model"] = model
         for item in labels:
             current = rows[item["id"]]
             raw, ms = context_reader.read(current, current["prior"],

@@ -13,6 +13,7 @@ import ai_reader
 MAX_CONTEXT = 10
 CONTEXT_MS = 15 * 60 * 1000
 SAME_AUTHOR_MS = 5 * 60 * 1000
+SHADOW_MODEL = "claude-sonnet-5"
 
 SYSTEM = (
     "You audit trading-room messages. Decide whether the CURRENT post alone "
@@ -86,8 +87,9 @@ def read(current, prior, allowed_symbols, cfg, timeout=12):
     key = a.get("api_key")
     if not key:
         return {"_error": "no_key"}, 0
+    model = a.get("shadow_model") or SHADOW_MODEL
     body = json.dumps({
-        "model": a.get("model") or ai_reader.DEFAULT_MODEL,
+        "model": model,
         "max_tokens": 360,
         "system": SYSTEM,
         "messages": [{"role": "user", "content":
@@ -107,6 +109,7 @@ def read(current, prior, allowed_symbols, cfg, timeout=12):
         result = ai_reader._extract_json(raw)
         if not isinstance(result, dict):
             result = {"_error": "unparseable_reply"}
+        result["_model"] = model
         if isinstance(data.get("usage"), dict):
             result["_usage"] = data["usage"]
     except urllib.error.HTTPError as exc:
