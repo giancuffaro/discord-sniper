@@ -42,6 +42,8 @@ def _worker():
             _write({"kind": "read", "current": current, "prior": prior,
                     "parser": parser, "ai_raw": raw, "ai": grade,
                     "model_ms": latency, "finishedAt": int(time.time() * 1000),
+                    "queue_wait_ms": int(time.time() * 1000)
+                    - current["enqueuedAt"] - latency,
                     "queue_remaining": _jobs.qsize()})
         except Exception as exc:
             _write({"kind": "error", "current": current,
@@ -72,6 +74,7 @@ def enqueue(body, cfg):
                "reply": bool(body.get("reply")),
                "history": bool(body.get("history")),
                "platform": str(body.get("platform") or "discord")[:20]}
+    current["enqueuedAt"] = now
     key = (room, current["id"] or (current["author"], posted, text))
     with _lock:
         if key in _seen and _seen[key] == text:
@@ -83,7 +86,13 @@ def enqueue(body, cfg):
         ring = _recent.setdefault(room, deque(maxlen=context_reader.MAX_CONTEXT + 1))
         prior = [dict(p) for p in ring if p["postedAt"] <= posted
                  and posted - p["postedAt"] <= context_reader.CONTEXT_MS]
+        if current["id"]:
+            prior = [p for p in prior if p["id"] != current["id"]]
         prior = prior[-context_reader.MAX_CONTEXT:]
+        if current["id"]:
+            for prior_row in list(ring):
+                if prior_row["id"] == current["id"]:
+                    ring.remove(prior_row)
         ring.append(current)
         if len(_recent) > 200:
             oldest = next(iter(_recent))

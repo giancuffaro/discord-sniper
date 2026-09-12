@@ -6,11 +6,8 @@ The AI pass resumes from its JSONL output after interruption.
 """
 import argparse
 import csv
-import glob
-import hashlib
 import json
 import os
-import re
 import subprocess
 import time
 from collections import defaultdict, deque
@@ -19,6 +16,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import context_reader
+import ai_reader
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "local-reader-measure")
@@ -26,11 +24,6 @@ PREPARED = os.path.join(OUT, "corpus.jsonl")
 AI_OUT = os.path.join(OUT, "ai-context.jsonl")
 QUEUE = os.path.join(OUT, "disagreements.csv")
 SUMMARY = os.path.join(OUT, "summary.json")
-LINE = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+\[(.+?)#(\d+)\]\s+([\s\S]*)$")
-HEADER = re.compile(
-    r"^(?:.*?)?(?:\[\s*)?\d{1,2}:\d{2}\s*[AP]M(?:\s*\])?\s+"
-    r"[A-Za-z]+,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+"
-    r"\d{1,2}:\d{2}\s*[AP]M\s+", re.I)
 
 
 def jsonl(path):
@@ -46,35 +39,13 @@ def jsonl(path):
 
 def corpus():
     """Match parser_gate.js's retained, non-history corpus and dedup key."""
-    seen = set()
-    rows = []
-    for path in sorted(glob.glob(os.path.join(HERE, "DS Logs",
-                                              "signal-room-chat*.txt"))):
-        with open(path, encoding="utf-8", errors="replace") as f:
-            for line in f:
-                m = LINE.match(line.rstrip("\n"))
-                if not m or m[4].startswith("<history> "):
-                    continue
-                text = m[4]
-                colon = text.find(": ")
-                author = text[:colon].strip() if 0 <= colon < 60 else "?"
-                if 0 <= colon < 60:
-                    text = text[colon + 2:]
-                text = HEADER.sub("", text)
-                # JS slice(0, 120) counts UTF-16 code units, including emoji.
-                # Python's [:120] counts code points and admitted one duplicate.
-                key = (m[1], m[3], text.encode("utf-16-le")[:240])
-                if key in seen:
-                    continue
-                seen.add(key)
-                dt = datetime.strptime(m[1], "%Y-%m-%d %H:%M:%S")
-                posted = int(dt.replace(tzinfo=ZoneInfo("America/New_York"))
-                             .timestamp() * 1000)
-                identity = (m[1] + "|" + m[3] + "|").encode("utf-8") + key[2]
-                rows.append({"id": hashlib.sha256(identity)
-                             .hexdigest()[:20], "at": m[1], "postedAt": posted,
-                             "room": m[2].strip(), "channelId": m[3],
-                             "author": author, "text": text})
+    proc = subprocess.run(["node", os.path.join(HERE, "reader_corpus.js")],
+                          capture_output=True, timeout=120, check=True)
+    rows = json.loads(proc.stdout)
+    for r in rows:
+        dt = datetime.strptime(r["at"], "%Y-%m-%d %H:%M:%S")
+        r["postedAt"] = int(dt.replace(tzinfo=ZoneInfo("America/New_York"))
+                            .timestamp() * 1000)
     rows.sort(key=lambda r: (r["postedAt"], r["channelId"], r["id"]))
     return rows
 
@@ -153,6 +124,25 @@ def report():
     counts = defaultdict(int)
     latencies = []
     review = []
+    prior_labels = {}
+    if os.path.exists(QUEUE):
+        with open(QUEUE, encoding="utf-8", newline="") as f:
+            prior_labels = {r["id"]: r.get("manual_label", "")
+                            for r in csv.DictReader(f)}
+    eligible = [(key, r, (ai[key].get("ai") or {}).get("read"))
+                for key, r in base.items() if key in ai
+                and (ai[key].get("ai") or {}).get("read")]
+    normalized = {}
+    for start in range(0, len(eligible), 500):
+        batch = eligible[start:start + 500]
+        payload = [{"text": ai_reader.canonical(read),
+                    "channelId": row["channelId"]}
+                   for _, row, read in batch]
+        proc = subprocess.run(["node", os.path.join(HERE, "reader_parse.js")],
+                              input=json.dumps(payload).encode("utf-8"),
+                              capture_output=True, timeout=120, check=True)
+        for (key, _, _), parsed in zip(batch, json.loads(proc.stdout)):
+            normalized[key] = parsed
     for key, r in base.items():
         p = r.get("parser") or {}
         a = ai.get(key)
@@ -165,7 +155,8 @@ def report():
         latencies.append(a.get("model_ms") or 0)
         ag = a.get("ai") or {}
         ar = ag.get("read") or {}
-        pa, aa = p.get("action") or "NONE", ar.get("action") or "NONE"
+        an = normalized.get(key) or {}
+        pa, aa = p.get("action") or "NONE", an.get("action") or "NONE"
         if pa == "NONE" and aa != "NONE":
             category = "potential_missed_alert"
         elif pa != "NONE" and aa == "NONE":
@@ -173,8 +164,8 @@ def report():
         elif pa != "NONE" and aa != "NONE" and (
                 str(p.get("symbol") or "").upper(), str(p.get("strike") or ""),
                 str(p.get("side") or "").upper(), str(p.get("expiry") or "")) != (
-                str(ar.get("ticker") or "").upper(), str(ar.get("strike") or ""),
-                str(ar.get("side") or "").upper(), str(ar.get("expiry") or "")):
+                str(an.get("symbol") or "").upper(), str(an.get("strike") or ""),
+                str(an.get("side") or "").upper(), str(an.get("expiry") or "")):
             category = "potential_wrong_contract"
         elif pa != aa:
             category = "potential_wrong_action"
@@ -182,12 +173,14 @@ def report():
             category = "agreement"
         counts[category] += 1
         if category != "agreement":
-            review.append({"id": key, "category": category, "manual_label": "",
+            review.append({"id": key, "category": category,
+                           "manual_label": prior_labels.get(key, ""),
                            "room": r["room"], "at": r["at"],
                            "author": r["author"], "text": r["text"],
                            "context": json.dumps(r["prior"], ensure_ascii=False),
                            "parser": json.dumps(p, ensure_ascii=False),
-                           "ai": json.dumps(ar, ensure_ascii=False)})
+                           "ai": json.dumps({"read": ar, "parsed": an},
+                                            ensure_ascii=False)})
     os.makedirs(OUT, exist_ok=True)
     with open(QUEUE, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "category", "manual_label",
