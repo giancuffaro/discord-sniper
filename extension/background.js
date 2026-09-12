@@ -2080,6 +2080,8 @@ async function aiRead(text, c) {
 function shadowRead(msg, c) {
   const text = String(msg.text || "").trim();
   if (!text) return;
+  if (msg.history && Number.isFinite(Number(msg.postedAt)) &&
+      Date.now() - Number(msg.postedAt) > 15 * 60 * 1000) return;
   let parser = {};
   if (!msg.history) {
     try {
