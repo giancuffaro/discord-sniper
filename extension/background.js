@@ -2073,6 +2073,31 @@ async function aiRead(text, c) {
   } catch (e) { return null; }
 }
 
+/* Read-only contextual observer. It sends each fresh typed post and recent
+ * history to a separate bridge queue. The response is never used by the order
+ * path, and this request is deliberately not awaited: AI cannot delay an order
+ * or change an action while we measure it against the parser. */
+function shadowRead(msg, c) {
+  const text = String(msg.text || "").trim();
+  if (!text) return;
+  let parser = {};
+  if (!msg.history) {
+    try {
+      const s = parseSignal(text, c) || {};
+      parser = { action: s.action || null, symbol: s.symbol || null,
+                 strike: s.strike ?? null, side: s.side || null,
+                 expiry: s.expiry || null, fire: !!s.fire };
+    } catch (e) { parser = { error: "parser_threw" }; }
+  }
+  fetch(bridgeBaseFrom(c.bridge_url) + "/shadow-read", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: msg.mid || "", channelId: msg.channelId,
+      platform: msg.platform || "discord", author: msg.author || "?",
+      text, postedAt: msg.postedAt, history: !!msg.history,
+      reply: !!msg.reply, parser }), cache: "no-store"
+  }).catch(() => {});
+}
+
 /* SCREENSHOT reading (his ask, 8/19): a room posts the call as a picture. The
  * uploaded image URLs go to the bridge, which has Claude read them into a clean
  * call the SAME way text is read — then it runs back through this parser and
@@ -4052,6 +4077,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         }
       }
     }
+
+    // Keep up to ten recent posts per room for the independent AI measurement.
+    // History seeds context only; no AI request or trading can result from it.
+    // This observer never supplies a signal to the code below.
+    shadowRead(msg, c);
 
     // VERO posts every call as a reply on his own alert bot, so the reply
     // gate below was killing ALL of them (his 717C entry read as "a reply,

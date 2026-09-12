@@ -4777,6 +4777,19 @@ class Handler(BaseHTTPRequestHandler):
         except OSError as e:
             return self._json(200, {"ok": False, "why": str(e)[:120]})
 
+    def _shadow_read(self):
+        """Queue a contextual AI measurement; never return a trading signal."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            if n < 1 or n > 16384:
+                return self._json(400, {"ok": False, "why": "bad_size"})
+            body = json.loads(self.rfile.read(n))
+            import shadow_reader
+            result = shadow_reader.enqueue(body, CFG)
+            return self._json(200, result)
+        except Exception as exc:  # noqa: BLE001
+            return self._json(200, {"ok": False, "why": str(exc)[:100]})
+
     def _ai_read(self):
         """READING intelligence for a message the regex parser gave up on.
         The extension only calls this on a miss. We hand the one message to
@@ -5413,6 +5426,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._set_props()
         if self.path.startswith("/update"):
             return self._self_update()
+        if self.path.startswith("/shadow-read"):
+            return self._shadow_read()
         if self.path.startswith("/readimage"):
             return self._ai_read_image()
         if self.path.startswith("/read"):
