@@ -85,7 +85,11 @@ def _one(r, cfg, allowed):
         if raw.get("_error") not in ("HTTP_429", "HTTP_500", "HTTP_503"):
             break
         time.sleep(2 ** (attempt + 1))
-    grade = context_reader.assess(r, r["prior"], raw, allowed)
+    try:
+        grade = context_reader.assess(r, r["prior"], raw, allowed)
+    except Exception as exc:
+        grade = {"ok": False, "why": "assessment failed: %s" % str(exc)[:100],
+                 "read": None, "eligible_prior_ids": []}
     return {"id": r["id"], "ai_raw": raw, "ai": grade,
             "model_ms": ms, "finishedAt": datetime.now().isoformat()}
 
@@ -126,10 +130,18 @@ def ai_all(limit=None, workers=2, sample=False):
     if not todo:
         return
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = [pool.submit(_one, r, cfg, allowed) for r in todo]
+        futures = {pool.submit(_one, r, cfg, allowed): r["id"] for r in todo}
         with open(AI_OUT, "a", encoding="utf-8") as f:
             for i, future in enumerate(as_completed(futures), 1):
-                result = future.result()
+                try:
+                    result = future.result()
+                except Exception as exc:
+                    # The replay is resumable: one malformed model reply never
+                    # discards every other result already in flight.
+                    result = {"id": futures[future],
+                              "ai_raw": {"_error": "worker_exception"},
+                              "ai": {"ok": False, "why": str(exc)[:100]},
+                              "model_ms": 0}
                 f.write(json.dumps(result, ensure_ascii=False) + "\n")
                 f.flush()
                 if i % 50 == 0 or i == len(todo):

@@ -53,7 +53,8 @@ def prompt_for(current, prior, allowed_symbols):
         + "\nCURRENT post to classify:\n" + json.dumps(target, ensure_ascii=False)
         + "\nReturn exactly JSON with action OPEN|ADD|TRIM|CLOSE|NONE, "
           "instrument option|future|equity, ticker, side, strike, expiry, "
-          "price, qty, confidence, and supporting_ids (prior post IDs used). "
+          "price, qty, confidence (a NUMBER from 0.0 to 1.0, never a word), "
+          "and supporting_ids (prior post IDs used). "
           "Use NONE if the current post does not establish that the action "
           "happened now. Borrow fields only from the SAME author within five "
           "minutes, never from another author or an older post. Do not copy "
@@ -103,6 +104,10 @@ def assess(current, prior, read_result, allowed_symbols):
     support = eligible_prior(current, prior)
     evidence = "\n".join([str(p.get("text") or "") for p in support]
                          + [str(current.get("text") or "")])
-    ok, why, cleaned = ai_reader.validate(read_result, evidence, allowed_symbols)
+    try:
+        ok, why, cleaned = ai_reader.validate(read_result, evidence,
+                                              allowed_symbols)
+    except (TypeError, ValueError, OverflowError) as exc:
+        ok, why, cleaned = False, "invalid model field: %s" % str(exc)[:100], None
     return {"ok": ok, "why": why, "read": cleaned,
             "eligible_prior_ids": [p.get("id") for p in support]}
