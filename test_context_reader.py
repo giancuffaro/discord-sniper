@@ -32,6 +32,16 @@ class ContextReaderTests(unittest.TestCase):
         result = context_reader.assess(self.current, prior, self.raw, [])
         self.assertFalse(result["ok"])
 
+    def test_shared_scribe_does_not_mix_admins(self):
+        current = dict(self.current, author="HoneyDrip (Scribe)",
+                       text="@Brett (Admin) filled at 1.25")
+        prior = [{"id": "other", "author": "HoneyDrip (Scribe)",
+                  "postedAt": 240000,
+                  "text": "@Unraveller (Admin) loading SPY 500C"}]
+        result = context_reader.assess(current, prior, self.raw, [])
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["eligible_prior_ids"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

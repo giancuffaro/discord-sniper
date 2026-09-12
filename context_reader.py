@@ -3,6 +3,7 @@
 This module never sends an order. The live parser/AI order path does not import it.
 """
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -23,12 +24,21 @@ SYSTEM = (
 )
 
 
+def caller_key(post):
+    """Separate named speakers when one scribe/bot posts for several people."""
+    text = str(post.get("text") or "").strip()
+    mention = re.match(r"^@([A-Za-z][\w.\-]{1,32})\b", text)
+    if mention and mention.group(1).lower() not in ("everyone", "here", "owner"):
+        return "mention:" + mention.group(1).casefold()
+    return "author:" + str(post.get("author") or "").strip().casefold()
+
+
 def eligible_prior(current, prior):
     """Only same-author, preceding, recent posts can supply trade fields."""
     now = int(current.get("postedAt") or 0)
-    author = str(current.get("author") or "").strip().casefold()
+    author = caller_key(current)
     return [p for p in prior[-MAX_CONTEXT:]
-            if str(p.get("author") or "").strip().casefold() == author
+            if caller_key(p) == author
             and 0 <= now - int(p.get("postedAt") or 0) <= SAME_AUTHOR_MS]
 
 
@@ -38,11 +48,13 @@ def prompt_for(current, prior, allowed_symbols):
         lines.append(json.dumps({
             "id": str(p.get("id") or "")[:100],
             "author": str(p.get("author") or "")[:80],
+            "caller_key": caller_key(p),
             "postedAt": p.get("postedAt"),
             "text": str(p.get("text") or "")[:500],
         }, ensure_ascii=False))
     target = {"id": str(current.get("id") or "")[:100],
               "author": str(current.get("author") or "")[:80],
+              "caller_key": caller_key(current),
               "postedAt": current.get("postedAt"),
               "reply": bool(current.get("reply")),
               "text": str(current.get("text") or "")[:1500]}
@@ -56,8 +68,11 @@ def prompt_for(current, prior, allowed_symbols):
           "price, qty, confidence (a NUMBER from 0.0 to 1.0, never a word), "
           "and supporting_ids (prior post IDs used). "
           "Use NONE if the current post does not establish that the action "
-          "happened now. Borrow fields only from the SAME author within five "
-          "minutes, never from another author or an older post. Do not copy "
+          "happened now. For options, side must be CALL or PUT based on the "
+          "contract's C/P suffix; never answer LONG or SHORT for an option. "
+          "Copy expiry exactly as written, without adding a year. Borrow fields "
+          "only from the SAME caller_key within five minutes, never from another "
+          "caller, another scribe's mention, or an older post. Do not copy "
           "an earlier action to the current line. A reply quotation is not a "
           "fresh call. Symbols for spelling only: " + (known or "(none)")
     )

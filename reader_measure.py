@@ -159,7 +159,8 @@ def report():
     prior_labels = {}
     if os.path.exists(QUEUE):
         with open(QUEUE, encoding="utf-8", newline="") as f:
-            prior_labels = {r["id"]: r.get("manual_label", "")
+            prior_labels = {r["id"]: (r.get("manual_label", ""),
+                                      r.get("manual_note", ""))
                             for r in csv.DictReader(f)}
     eligible = [(key, r, (ai[key].get("ai") or {}).get("read"))
                 for key, r in base.items() if key in ai
@@ -208,8 +209,9 @@ def report():
             category = "agreement"
         counts[category] += 1
         if category != "agreement":
+            label, note = prior_labels.get(key, ("", ""))
             review.append({"id": key, "category": category,
-                           "manual_label": prior_labels.get(key, ""),
+                           "manual_label": label, "manual_note": note,
                            "room": r["room"], "at": r["at"],
                            "author": r["author"], "text": r["text"],
                            "context": json.dumps(r["prior"], ensure_ascii=False),
@@ -219,6 +221,7 @@ def report():
     os.makedirs(OUT, exist_ok=True)
     with open(QUEUE, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "category", "manual_label",
+                                               "manual_note",
                                                "room", "at", "author", "text",
                                                "context", "parser", "ai"])
         writer.writeheader()
