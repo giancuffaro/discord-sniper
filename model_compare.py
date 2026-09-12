@@ -85,4 +85,4 @@ def run(models):
 
 
 if __name__ == "__main__":
-    run(["claude-haiku-4-5-20251001", "claude-sonnet-5"])
+    run(["claude-sonnet-5", "claude-opus-5"])
