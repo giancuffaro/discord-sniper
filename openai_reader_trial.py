@@ -164,6 +164,17 @@ def retry_one(rows, allowed, key, db):
     return result
 
 
+def unresolved_failure(prior):
+    """An explicit successful retry resolves its source's earlier failed attempt."""
+    latest = {}
+    for (serialized,) in prior:
+        if serialized is None:
+            return True
+        result = json.loads(serialized)
+        latest[result['id']] = result
+    return any((r.get('ai_raw') or {}).get('_error') for r in latest.values())
+
+
 def _run(key, notify, stop, retry_once=False):
     OUT.mkdir(parents=True, exist_ok=True)
     db = connect(OUT / 'budget.sqlite3')
@@ -178,8 +189,8 @@ def _run(key, notify, stop, retry_once=False):
         cfg = json.loads((HERE / 'settings.json').read_text(encoding='utf-8'))
         allowed = cfg.get('allowed_symbols', []) or []
         # Uncertain and failed calls require inspection, not an automatic rerun.
-        prior = db.execute('SELECT result FROM attempts').fetchall()
-        if not retry_once and any(r is None or (json.loads(r).get('ai_raw') or {}).get('_error') for (r,) in prior):
+        prior = db.execute('SELECT result FROM attempts ORDER BY rowid').fetchall()
+        if not retry_once and unresolved_failure(prior):
             notify('Stopped: previous error or interrupted request needs review.')
             return
         final_status = 'Test stopped. Results saved; full historical scan remains paused.'

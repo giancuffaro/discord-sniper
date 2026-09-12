@@ -35,6 +35,14 @@ class TrialTests(unittest.TestCase):
             self.assertTrue(trial.reserve(self.db, str(i), 1))
         self.assertFalse(trial.reserve(self.db, '101', 1))
 
+    def test_only_successful_retry_resolves_previous_error(self):
+        failed = (json.dumps({'id':'a','ai_raw':{'_error':'HTTP_429'}}),)
+        success = (json.dumps({'id':'a','ai_raw':{'action':'NONE'}}),)
+        self.assertTrue(trial.unresolved_failure([failed]))
+        self.assertFalse(trial.unresolved_failure([failed,success]))
+        self.assertTrue(trial.unresolved_failure([success,failed]))
+        self.assertTrue(trial.unresolved_failure([(None,),success]))
+
     def test_explicit_retry_preserves_budget_and_cannot_repeat_success(self):
         trial.reserve(self.db, 'a', 100)
         with self.db:
