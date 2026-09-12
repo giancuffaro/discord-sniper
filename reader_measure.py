@@ -13,7 +13,7 @@ import random
 import subprocess
 import time
 from collections import defaultdict, deque
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -155,7 +155,9 @@ def reuse_results(source_dir, cfg, allowed):
     return reused
 
 
-def ai_all(limit=None, workers=2, sample=False, reuse_from=None):
+def ai_all(limit=None, workers=2, sample=False, reuse_from=None, max_requests=100):
+    if os.path.exists(os.path.join(HERE, "local-reader-measure", "AI-PAUSED")):
+        raise RuntimeError("Contextual AI is paused; no requests made")
     if not os.path.exists(PREPARED):
         prepare()
     with open(os.path.join(HERE, "settings.json"), encoding="utf-8") as f:
@@ -165,7 +167,7 @@ def ai_all(limit=None, workers=2, sample=False, reuse_from=None):
     allowed = cfg.get("allowed_symbols", []) or []
     if reuse_from:
         print(json.dumps({'reused_identical_contexts': reuse_results(reuse_from, cfg, allowed)}), flush=True)
-    done = {r["id"] for r in jsonl(AI_OUT)}
+    done = {r["id"] for r in jsonl(AI_OUT) if not (r.get("ai_raw") or {}).get("_error")}
     todo = [r for r in jsonl(PREPARED) if r["id"] not in done]
     if sample:
         # A reproducible pilot across recent parser actions, plausible misses,
@@ -187,29 +189,44 @@ def ai_all(limit=None, workers=2, sample=False, reuse_from=None):
             todo.extend(rng.sample(group, min(quota, len(group))))
     elif limit is not None:
         todo = todo[:limit]
+    todo = todo[:max_requests]
     print(json.dumps({"total": sum(1 for _ in jsonl(PREPARED)),
                       "already_done": len(done), "this_run": len(todo),
                       "workers": workers}), flush=True)
     if not todo:
         return
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(_one, r, cfg, allowed): r["id"] for r in todo}
+        pending = {}
+        remaining = iter(todo)
+        stopped = False
+        completed = 0
         with open(AI_OUT, "a", encoding="utf-8") as f:
-            for i, future in enumerate(as_completed(futures), 1):
-                try:
-                    result = future.result()
-                except Exception as exc:
-                    # The replay is resumable: one malformed model reply never
-                    # discards every other result already in flight.
-                    result = {"id": futures[future],
-                              "ai_raw": {"_error": "worker_exception"},
-                              "ai": {"ok": False, "why": str(exc)[:100]},
-                              "model_ms": 0}
-                f.write(json.dumps(result, ensure_ascii=False) + "\n")
-                f.flush()
-                if i % 50 == 0 or i == len(todo):
-                    print(json.dumps({"completed_this_run": i,
-                                      "remaining": len(todo) - i}), flush=True)
+            while True:
+                while not stopped and len(pending) < workers:
+                    row = next(remaining, None)
+                    if row is None:
+                        break
+                    pending[pool.submit(_one, row, cfg, allowed)] = row['id']
+                if not pending:
+                    break
+                ready, _ = wait(pending, return_when=FIRST_COMPLETED)
+                for future in ready:
+                    key = pending.pop(future)
+                    try:
+                        result = future.result()
+                    except Exception:
+                        result = {'id': key, 'ai_raw': {'_error': 'worker_exception'}, 'ai': {}, 'model_ms': 0}
+                    f.write(json.dumps(result, ensure_ascii=False) + "\n")
+                    f.flush()
+                    completed += 1
+                    error = (result.get('ai_raw') or {}).get('_error')
+                    if error:
+                        stopped = True
+                        print(json.dumps({'stopped_on_error': error, 'completed_this_run': completed}), flush=True)
+                    if completed % 50 == 0:
+                        print(json.dumps({'completed_this_run': completed}), flush=True)
+        print(json.dumps({'completed_this_run': completed, 'stopped_on_error': stopped,
+                          'request_cap': max_requests}), flush=True)
 
 
 def report():
@@ -305,6 +322,7 @@ def report():
         writer.writerows(review)
     latencies.sort()
     summary = {"corpus": len(base), "ai_processed": len(ai),
+               "ai_successful": sum(not (a.get("ai_raw") or {}).get("_error") for a in ai.values()),
                "reused_identical_contexts": sum(bool(a.get('reused_from')) for a in ai.values()),
                "counts": dict(counts), "review_rows": len(review),
                "ai_safety_flags": dict(safety_counts),
@@ -326,6 +344,7 @@ if __name__ == "__main__":
     ap.add_argument("--ai-sample", type=int)
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--max-requests", type=int, default=100, help="Maximum messages per run (default 100); retries may make up to 3 requests per message")
     ap.add_argument('--include-history', action='store_true')
     ap.add_argument('--since', help='First Eastern date, YYYY-MM-DD')
     ap.add_argument('--until', help='Last Eastern date, YYYY-MM-DD')
@@ -352,6 +371,6 @@ if __name__ == "__main__":
         prepare(True, args.since, args.until)
     if args.ai_all or args.ai_limit is not None or args.ai_sample is not None:
         ai_all(args.ai_sample if args.ai_sample is not None else args.ai_limit,
-               max(1, min(4, args.workers)), args.ai_sample is not None, args.reuse_from)
+               max(1, min(4, args.workers)), args.ai_sample is not None, args.reuse_from, max(1, args.max_requests))
     if args.report:
         report()

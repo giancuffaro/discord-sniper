@@ -3,6 +3,7 @@
 This module never sends an order. The live parser/AI order path does not import it.
 """
 import json
+import os
 import re
 import time
 import urllib.error
@@ -83,6 +84,8 @@ def prompt_for(current, prior, allowed_symbols):
 
 def read(current, prior, allowed_symbols, cfg, timeout=12):
     """Return (model_json, latency_ms); errors are data, never exceptions."""
+    if os.path.exists(os.path.join(os.path.dirname(__file__), 'local-reader-measure', 'AI-PAUSED')):
+        return {'_error': 'paused'}, 0
     a = ai_reader._cfg(cfg)
     key = a.get("api_key")
     if not key:
