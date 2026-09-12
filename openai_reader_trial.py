@@ -118,6 +118,27 @@ def sample(rows):
 
 
 def run(key, notify, stop):
+    import msvcrt
+    OUT.mkdir(parents=True, exist_ok=True)
+    with open(OUT / 'trial.lock', 'a+b') as lock:
+        lock.seek(0)
+        if not lock.read(1):
+            lock.write(b'0')
+            lock.flush()
+        lock.seek(0)
+        try:
+            msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            notify('Another test window is already running.')
+            return
+        try:
+            _run(key, notify, stop)
+        finally:
+            lock.seek(0)
+            msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+
+
+def _run(key, notify, stop):
     OUT.mkdir(parents=True, exist_ok=True)
     db = connect(OUT / 'budget.sqlite3')
     try:

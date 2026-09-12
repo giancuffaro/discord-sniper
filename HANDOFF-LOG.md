@@ -12,6 +12,27 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (OpenAI capped offline trial)
+G obtained an OpenAI key and authorized $5 for the initial test. Added
+openai_reader_trial.py with a masked local Tk key field; key stays in memory,
+is not written to settings, browser storage, reports or git. Uses pinned
+gpt-4.1-2025-04-14 Responses API, same context_reader prompt/assessment (10
+prior messages), no live-order connection. Source is the expanded June12
+corpus; deterministic 100-message stratified sample (34 parser actions,
+33 possible misses, 33 chatter). Results and persistent SQLite budget under
+ignored local-reader-measure/openai-trial-2026-09-12. Pricing verified from
+official GPT-4.1 page: $2/M input, $8/M output. Before each request reserves
+UTF8 prompt bytes +4096 framing tokens and all600 output tokens. No refund
+on failure/timeout; any error or uncertain previous request requires review.
+Database transactions enforce $5 and100 attempts across restarts; file lock
+prevents concurrent trial windows. This is a conservative token-cost cap for
+this trial, not account-wide billing/taxes. Do not delete budget DB to reset.
+All17 local tests passed; Python compile and diff checks passed. No paid
+request has run during setup. User must enter key in the local window and
+start. Full historical and live contextual Anthropic pause remain in place.
+No parser rules or order path changed. Sample needs manual source labeling;
+model agreement alone is not proof of accuracy.
+
 ## 2026-09-12 (Anthropic exhaustion and replay stop safeguards)
 Chrome history collection saved 130 Shoof posts from July 10 through September
 11 to DS Logs/browser-history-shoof-2026-09-12.jsonl, with an importer-compatible
