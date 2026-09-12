@@ -13,6 +13,13 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 ## SESSION NOTES
 
 ## 2026-09-12 (Anthropic exhaustion and replay stop safeguards)
+Chrome history collection saved 130 Shoof posts from July 10 through September
+11 to DS Logs/browser-history-shoof-2026-09-12.jsonl, with an importer-compatible
+signal-room-chat browser-history-shoof-2026-09-12.txt companion. Coverage is
+partial: scrolling older posts timed out twice despite a refreshed visible DOM.
+All-channel June 12 onward backfill remains incomplete. No paid API was used
+for this browser capture; no live room eligibility was changed.
+
 G reported the Anthropic key deactivated after consuming its available tokens.
 The expanded replay process had already exited: 769 non-error results (including
 4 reused), 11,334 HTTP_400 errors and 59 unparseable replies. The API error bodies
