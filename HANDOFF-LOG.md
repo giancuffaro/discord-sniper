@@ -12,6 +12,32 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (Anthropic exhaustion and replay stop safeguards)
+G reported the Anthropic key deactivated after consuming its available tokens.
+The expanded replay process had already exited: 769 non-error results (including
+4 reused), 11,334 HTTP_400 errors and 59 unparseable replies. The API error bodies
+were not retained, so the exact account-side explanation is G's report, not an
+independent billing verification. The apparent 12,162 processed count did NOT
+mean the AI successfully reviewed every message. Added an explicit successful
+count to summary.json. 147 disagreement candidates remain unlabeled; no new
+parser rules were promoted from them. Earlier pilot/original replay costs are
+additional to the token usage reported for this expanded run.
+
+Acknowledged missing bulk cost/error safeguards. Created local-reader-measure/
+AI-PAUSED; contextual read and live shadow enqueue now honor it without network
+calls. Do not remove until G authorizes paid usage again. Bulk scheduling now
+keeps only the worker-count requests in flight, stops submission on any error,
+does not auto-retry, defaults to 100 requests per run, and leaves failed records
+retryable. This caps request count, not a guaranteed dollar amount. Thirteen
+mocked/local tests passed, including no network under pause, first-error stop,
+request cap, and retry eligibility. Existing live AI fallback is unchanged:
+its verification returns no opinion on failure, and AI-only text/image readings
+are unavailable without a working key. Deterministic parsing remains available.
+
+Chrome connection now works; verified Discord signed in and Shoof posts readable.
+Remote history retrieval can proceed without Anthropic calls. Whop connection
+and complete all-channel three-month retrieval are still unverified/incomplete.
+
 ## 2026-09-12 (all-channel three-month contextual replay)
 G requested every channel, including newly added ones, with several months of
 history. Target dates: June 12 through September 12. Audited live observer

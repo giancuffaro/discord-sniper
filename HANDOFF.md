@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-12 — All-channel history replay added; remote backfill awaits browser access.
+Last updated: 2026-09-12 — Contextual AI paused after credit exhaustion; Chrome connected.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -59,11 +59,12 @@ Last updated: 2026-09-12 — All-channel history replay added; remote backfill a
   the growing dataset is what earns parser/strategy improvements. Exact caller
   results require real entry+exit evidence; never substitute a later high.
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
-- AI MEASUREMENT: Sonnet 5 reviews up to ten prior room posts, read-only.
-  `reader_measure.py --include-history` imports all channels via reader_history.py;
-  current run: `local-reader-measure/all-channels-2026-06-12/` (12,162 local posts).
-  Its coverage report includes all 74 listed rooms. Remote backfill awaits browser
-  access. Old live-order AI is unchanged; live shadow delivery remains unverified.
+- AI MEASUREMENT: contextual Sonnet is PAUSED by local-reader-measure/AI-PAUSED
+  after credit exhaustion; do not resume paid calls without G's authorization.
+  Expanded replay: 769 successful / 12,162 attempted, saved under
+  local-reader-measure/all-channels-2026-06-12/. Failed rows remain retryable.
+  Bulk runs default to 100 requests and stop on errors. Chrome Discord connects;
+  history retrieval is incomplete. Old AI fallback also needs a working key.
 
 ## Rules of the house (current, in force)
 ENTRIES
