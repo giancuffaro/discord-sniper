@@ -12,6 +12,28 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (Three source-confirmed parser fixes, extension 3.8.13)
+G authorized specific fixes from contextual replay findings. Added narrowly
+scoped handling for leading Entered + contract + @premium with session or
+yesterday's-session market commentary; historical entry yesterday, plans,
+paper trades and no-fill vetoes remain. Leading Full close now uses existing
+Close-label interpretation and its existing fire=false policy; it no longer
+becomes a buy. Negated stop movement cannot trigger STOPMOVE. Numeric stop
+changes require a price next to stop language, not the first number anywhere.
+New test_parser_specific_rules.js passes positive cases and counterexamples.
+Original 11,385-message gate versus 0a8392fe22a2a737c55fd95d3b7cee24085940c2:
+two incorrect QQQ buys become CLOSE; no new entries, no junk symbols or expiry
+changes. Expanded 12,162-message replay additionally recovers SLV OPEN, NQ
+TRIM instead of stop70, suppresses repeated ES stop750 misreads (BE wording
+still unresolved), and reads explicitly stated new stop496 instead of old
+entry491.80. Existing OUR symbol issue in that last stop post is unresolved;
+not claimed as a fully correct signal. Before/after retained in ignored
+local-reader-measure/rule-fixes. Live impact: explicit SLV-style entries may
+now pass parser; erroneous full-close buys and numeric stop updates blocked.
+No broker orders or manual browser reload performed. AI scan keeps its frozen
+pre-change corpus decisions for a consistent baseline; do not interpret those
+as the updated parser's behavior. JS syntax and diff checks passed.
+
 ## 2026-09-12 (Full OpenAI replay authorized)
 G authorized $40 additional to the $5 test ($45 total), then requested completion.
 openai_reader_trial.py --full now reads the retained 12,162-message corpus,
