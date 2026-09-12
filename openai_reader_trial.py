@@ -231,7 +231,8 @@ def main():
     from tkinter import ttk
     retry_once = '--retry-once' in sys.argv
     root = tk.Tk()
-    root.title('Discord Sniper - OpenAI retry' if retry_once else 'Discord Sniper - OpenAI test')
+    root.title('Discord Sniper - OpenAI retry' if retry_once else
+               'Resume OpenAI sample' if '--resume' in sys.argv else 'Discord Sniper - OpenAI test')
     root.geometry('620x250')
     ttk.Label(root, text=('One OpenAI retry / existing $5 budget preserved' if retry_once else
                          'OpenAI offline test: up to 100 messages / $5 maximum'), font=('',12)).pack(pady=12)
