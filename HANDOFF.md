@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-12 — Consolidated handoffs; this is the only current operating-state document.
+Last updated: 2026-09-12 — All-channel history replay added; remote backfill awaits browser access.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -59,12 +59,11 @@ Last updated: 2026-09-12 — Consolidated handoffs; this is the only current ope
   the growing dataset is what earns parser/strategy improvements. Exact caller
   results require real entry+exit evidence; never substitute a later high.
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
-- AI MEASUREMENT (9/12): `reader_measure.py` replays the exact 11,385-message
-  parser corpus against Claude Sonnet 5 with up to 10 recent room posts as context.
-  `context_reader.py`/`shadow_reader.py` add a read-only live observer whose
-  results stay in ignored `local-reader-measure/`; they NEVER feed orders.
-  The old one-message AI fallback/verification path is unchanged. The bridge
-  loaded the observer on its automatic reload; live post delivery is unverified.
+- AI MEASUREMENT: Sonnet 5 reviews up to ten prior room posts, read-only.
+  `reader_measure.py --include-history` imports all channels via reader_history.py;
+  current run: `local-reader-measure/all-channels-2026-06-12/` (12,162 local posts).
+  Its coverage report includes all 74 listed rooms. Remote backfill awaits browser
+  access. Old live-order AI is unchanged; live shadow delivery remains unverified.
 
 ## Rules of the house (current, in force)
 ENTRIES

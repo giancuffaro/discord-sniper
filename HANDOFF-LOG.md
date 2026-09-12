@@ -12,6 +12,41 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (all-channel three-month contextual replay)
+G requested every channel, including newly added ones, with several months of
+history. Target dates: June 12 through September 12. Audited live observer
+routing: it uses enabled channel configuration dynamically; disabled rooms are
+not enabled for trading by this history request.
+
+Found that reader_corpus.js deliberately excluded <history> posts and numeric-only
+channel IDs excluded Whop. Left that original parser-gate baseline unchanged.
+Added reader_history.py and an explicit --include-history / --output-dir mode
+to reader_measure.py. Imports raw export sections and existing grab files,
+normalizes Whop experience paths using rooms.txt, preserves provenance, respects
+UTC grab vs Eastern daily-export timestamps, and deduplicates repeated exports
+without mixing callers. Historical raw data remains read-only. Separate corpus
+directories prevent completed AI decisions being reused after inputs change.
+Exact matching model/context inputs may be reused with evidence IDs remapped;
+changed context is rescanned. Reused calls do not count as new token consumption.
+
+Prepared 12,162 records across 211 recorded channel IDs for the requested period.
+73/74 configured rooms have some local data; Quantum Alerts has none in range.
+291 records were marked history-only. These counts are NOT proof of continuous
+three-month coverage, confirmed alerts, or trades. coverage.json / coverage.md
+show every configured room including zero-message rooms and historical-only IDs.
+Stopped the original replay process after preserving its results; launched the
+expanded Sonnet run (PID 14448 at launch) with four workers and --report, reusing
+four identical completed contexts. Output and errors are in run.out / run.err
+under local-reader-measure/all-channels-2026-06-12/.
+
+Remote history is not retrieved yet: in-app Discord shows login; only the in-app
+browser is connected. Bundled Chrome diagnostics found Chrome running but no
+ChatGPT browser extension/desktop native-host connection. Asked G to complete
+Browser setup in Codex and install the ChatGPT extension in the Discord/Whop
+profiles; no credentials were extracted or room switches changed. Resume remote
+retrieval after connection is available. Ten focused importer/context/cache
+tests and Python compilation passed. No trading parser was changed.
+
 ## 2026-09-12 (handoff conflict audit and consolidation)
 Reviewed all ten handoff documents and their code/document references. Root
 HANDOFF.md and its upload snapshot were identical, but PROJECT-INSTRUCTIONS.md
