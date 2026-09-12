@@ -74,6 +74,11 @@ def enqueue(body, cfg):
                "reply": bool(body.get("reply")),
                "history": bool(body.get("history")),
                "platform": str(body.get("platform") or "discord")[:20]}
+    try:
+        current["observerCpuMs"] = max(0.0, min(10000.0,
+            float(body.get("observerCpuMs") or 0)))
+    except (TypeError, ValueError):
+        current["observerCpuMs"] = 0.0
     current["enqueuedAt"] = now
     key = (room, current["id"] or (current["author"], posted, text))
     with _lock:

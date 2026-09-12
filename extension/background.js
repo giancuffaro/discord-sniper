@@ -2077,11 +2077,14 @@ async function aiRead(text, c) {
  * history to a separate bridge queue. The response is never used by the order
  * path, and this request is deliberately not awaited: AI cannot delay an order
  * or change an action while we measure it against the parser. */
+let SHADOW_RETRY_AT = 0;
 function shadowRead(msg, c) {
+  if (Date.now() < SHADOW_RETRY_AT) return;
   const text = String(msg.text || "").trim();
   if (!text) return;
   if (msg.history && Number.isFinite(Number(msg.postedAt)) &&
       Date.now() - Number(msg.postedAt) > 15 * 60 * 1000) return;
+  const started = performance.now();
   let parser = {};
   if (!msg.history) {
     try {
@@ -2096,8 +2099,11 @@ function shadowRead(msg, c) {
     body: JSON.stringify({ id: msg.mid || "", channelId: msg.channelId,
       platform: msg.platform || "discord", author: msg.author || "?",
       text, postedAt: msg.postedAt, history: !!msg.history,
-      reply: !!msg.reply, parser }), cache: "no-store"
-  }).catch(() => {});
+      reply: !!msg.reply, parser,
+      observerCpuMs: Math.round((performance.now() - started) * 100) / 100 }),
+    cache: "no-store"
+  }).then(r => { if (!r.ok) SHADOW_RETRY_AT = Date.now() + 5 * 60 * 1000; })
+    .catch(() => { SHADOW_RETRY_AT = Date.now() + 30 * 1000; });
 }
 
 /* SCREENSHOT reading (his ask, 8/19): a room posts the call as a picture. The
