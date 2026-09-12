@@ -22,7 +22,7 @@ import jsparse
 import replay_check
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "reader-measure")
+OUT = os.path.join(HERE, "local-reader-measure")
 PREPARED = os.path.join(OUT, "corpus.jsonl")
 AI_OUT = os.path.join(OUT, "ai-context.jsonl")
 QUEUE = os.path.join(OUT, "disagreements.csv")

@@ -15,7 +15,7 @@ import ai_reader
 import context_reader
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "reader-measure")
+OUT = os.path.join(HERE, "local-reader-measure")
 _lock = threading.Lock()
 _recent = {}
 _seen = {}

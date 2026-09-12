@@ -1,4 +1,6 @@
 settings.json
+reader-measure/
+local-reader-measure/
 STOP
 STOP.txt
 __pycache__/
