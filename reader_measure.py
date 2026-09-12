@@ -105,11 +105,7 @@ def prepare(include_history=False, since=None, until=None):
 
 
 def _one(r, cfg, allowed):
-    for attempt in range(3):
-        raw, ms = context_reader.read(r, r["prior"], allowed, cfg)
-        if raw.get("_error") not in ("HTTP_429", "HTTP_500", "HTTP_503"):
-            break
-        time.sleep(2 ** (attempt + 1))
+    raw, ms = context_reader.read(r, r["prior"], allowed, cfg)
     try:
         grade = context_reader.assess(r, r["prior"], raw, allowed)
     except Exception as exc:
@@ -344,7 +340,7 @@ if __name__ == "__main__":
     ap.add_argument("--ai-sample", type=int)
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--report", action="store_true")
-    ap.add_argument("--max-requests", type=int, default=100, help="Maximum messages per run (default 100); retries may make up to 3 requests per message")
+    ap.add_argument("--max-requests", type=int, default=100, help="Maximum API requests per run (default 100); no automatic retries")
     ap.add_argument('--include-history', action='store_true')
     ap.add_argument('--since', help='First Eastern date, YYYY-MM-DD')
     ap.add_argument('--until', help='Last Eastern date, YYYY-MM-DD')

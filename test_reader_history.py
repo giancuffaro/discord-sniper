@@ -87,6 +87,24 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(result['id'], 'new')
         self.assertEqual(result['ai_raw']['supporting_ids'], ['new-prior'])
 
+    def test_bulk_scan_stops_on_first_error_and_failed_rows_are_retryable(self):
+        self._batch_check(error='HTTP_400', cap=100, expected=1)
+
+    def test_bulk_scan_respects_request_cap(self):
+        self._batch_check(error=None, cap=3, expected=3)
+
+    def _batch_check(self, error, cap, expected):
+        prepared=self.root/'batch-corpus.jsonl'; output=self.root/'batch-ai.jsonl'
+        prepared.write_text(''.join(json.dumps({'id':str(i)})+'\n' for i in range(20)))
+        output.write_text(json.dumps({'id':'0','ai_raw':{'_error':'HTTP_400'}})+'\n')
+        (self.root/'settings.json').write_text(json.dumps({'execution':{'ai_reader':{'api_key':'fake-test-key'}}}))
+        def read(row, cfg, allowed):
+            return {'id':row['id'], 'ai_raw':{'_error':error} if error else {'action':'NONE'}}
+        with patch.object(reader_measure,'HERE',str(self.root)), patch.object(reader_measure,'PREPARED',str(prepared)), patch.object(reader_measure,'AI_OUT',str(output)), patch.object(reader_measure,'_one',side_effect=read) as call:
+            reader_measure.ai_all(workers=1,max_requests=cap)
+        self.assertEqual(call.call_count,expected)
+        self.assertEqual(call.call_args_list[0].args[0]['id'],'0')
+
 
 if __name__ == '__main__':
     unittest.main()

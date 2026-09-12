@@ -1,10 +1,18 @@
 """Context must never borrow contract details from another room participant."""
 import unittest
+from unittest.mock import patch
 
 import context_reader
 
 
 class ContextReaderTests(unittest.TestCase):
+    def test_pause_prevents_network_request(self):
+        with patch('context_reader.os.path.exists',return_value=True), patch('context_reader.urllib.request.urlopen') as network:
+            raw, ms=context_reader.read({},[],[],{})
+        self.assertEqual(raw,{'_error':'paused'})
+        self.assertEqual(ms,0)
+        network.assert_not_called()
+
     def setUp(self):
         self.current = {"id": "now", "author": "Alice", "postedAt": 300000,
                         "text": "Filled at 1.25"}

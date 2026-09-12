@@ -106,6 +106,8 @@ def enqueue(body, cfg):
                 del _recent[oldest]
     if current["history"]:
         return {"ok": True, "status": "context_only"}
+    if os.path.exists(os.path.join(OUT, 'AI-PAUSED')):
+        return {"ok": True, "status": "paused"}
     if not ai_reader.available(cfg):
         return {"ok": True, "status": "ai_off"}
     parser = body.get("parser") if isinstance(body.get("parser"), dict) else {}
