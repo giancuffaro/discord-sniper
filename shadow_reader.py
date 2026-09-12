@@ -77,12 +77,13 @@ def enqueue(body, cfg):
     current["enqueuedAt"] = now
     key = (room, current["id"] or (current["author"], posted, text))
     with _lock:
-        if key in _seen and _seen[key] == text:
+        signature = (text, current["history"])
+        if key in _seen and _seen[key] == signature:
             return {"ok": True, "status": "duplicate"}
-        _seen[key] = text
+        _seen[key] = signature
         if len(_seen) > 6000:
             _seen.clear()
-            _seen[key] = text
+            _seen[key] = signature
         ring = _recent.setdefault(room, deque(maxlen=context_reader.MAX_CONTEXT + 1))
         prior = [dict(p) for p in ring if p["postedAt"] <= posted
                  and posted - p["postedAt"] <= context_reader.CONTEXT_MS]

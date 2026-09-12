@@ -27,7 +27,7 @@ class ContextReaderTests(unittest.TestCase):
         self.assertEqual(result["eligible_prior_ids"], [])
 
     def test_old_contract_cannot_supply_fields(self):
-        prior = [{"id": "one", "author": "Alice", "postedAt": 0,
+        prior = [{"id": "one", "author": "Alice", "postedAt": -1000,
                   "text": "Loading SPY 500C"}]
         result = context_reader.assess(self.current, prior, self.raw, [])
         self.assertFalse(result["ok"])
