@@ -127,4 +127,30 @@ def assess(current, prior, read_result, allowed_symbols):
     except (TypeError, ValueError, OverflowError) as exc:
         ok, why, cleaned = False, "invalid model field: %s" % str(exc)[:100], None
     return {"ok": ok, "why": why, "read": cleaned,
-            "eligible_prior_ids": [p.get("id") for p in support]}
+            "eligible_prior_ids": [p.get("id") for p in support],
+            "safety_flags": safety_flags(current, prior, read_result)}
+
+
+def safety_flags(current, prior, read_result):
+    """Expose model field/provenance risks even if its action matches parser."""
+    if not isinstance(read_result, dict):
+        return []
+    if str(read_result.get("action") or "NONE").upper() == "NONE":
+        return []
+    flags = []
+    if (str(read_result.get("instrument") or "option").lower() == "option"
+            and str(read_result.get("action") or "").upper() in ("OPEN", "ADD")
+            and str(read_result.get("side") or "").upper()
+            not in ("CALL", "CALLS", "PUT", "PUTS")):
+        flags.append("option_side_not_call_or_put")
+    eligible = eligible_prior(current, prior)
+    evidence = "\n".join([str(p.get("text") or "") for p in eligible]
+                         + [str(current.get("text") or "")]).casefold()
+    expiry = str(read_result.get("expiry") or "").strip().casefold()
+    if expiry and expiry not in evidence:
+        flags.append("expiry_not_literal")
+    allowed_ids = {str(p.get("id") or "") for p in eligible}
+    claimed = read_result.get("supporting_ids") or []
+    if isinstance(claimed, list) and any(str(v) not in allowed_ids for v in claimed):
+        flags.append("unsupported_context_id")
+    return flags

@@ -42,6 +42,12 @@ class ContextReaderTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["eligible_prior_ids"], [])
 
+    def test_flags_invented_year_and_option_side(self):
+        current = dict(self.current, text="in SPY 500C 9/18 @ 1.25")
+        raw = dict(self.raw, side="LONG", expiry="2025-09-18")
+        self.assertEqual(context_reader.safety_flags(current, [], raw),
+                         ["option_side_not_call_or_put", "expiry_not_literal"])
+
 
 if __name__ == "__main__":
     unittest.main()

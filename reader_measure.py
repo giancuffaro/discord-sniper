@@ -153,6 +153,7 @@ def report():
     base = {r["id"]: r for r in jsonl(PREPARED)}
     ai = {r["id"]: r for r in jsonl(AI_OUT)}
     counts = defaultdict(int)
+    safety_counts = defaultdict(int)
     latencies = []
     review = []
     input_tokens = output_tokens = 0
@@ -191,6 +192,9 @@ def report():
         output_tokens += int(usage.get("output_tokens") or 0)
         latencies.append(a.get("model_ms") or 0)
         ag = a.get("ai") or {}
+        flags = context_reader.safety_flags(r, r["prior"], a.get("ai_raw") or {})
+        for flag in flags:
+            safety_counts[flag] += 1
         ar = ag.get("read") or {}
         an = normalized.get(key) or {}
         pa, aa = p.get("action") or "NONE", an.get("action") or "NONE"
@@ -213,11 +217,14 @@ def report():
             category = "potential_wrong_action"
         else:
             category = "agreement"
+        if category == "agreement" and flags:
+            category = "ai_field_review"
         counts[category] += 1
         if category != "agreement":
             label, note = prior_labels.get(key, ("", ""))
             review.append({"id": key, "category": category,
                            "manual_label": label, "manual_note": note,
+                           "ai_safety_flags": ";".join(flags),
                            "room": r["room"], "at": r["at"],
                            "author": r["author"], "text": r["text"],
                            "context": json.dumps(r["prior"], ensure_ascii=False),
@@ -227,7 +234,7 @@ def report():
     os.makedirs(OUT, exist_ok=True)
     with open(QUEUE, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "category", "manual_label",
-                                               "manual_note",
+                                               "manual_note", "ai_safety_flags",
                                                "room", "at", "author", "text",
                                                "context", "parser", "ai"])
         writer.writeheader()
@@ -235,6 +242,7 @@ def report():
     latencies.sort()
     summary = {"corpus": len(base), "ai_processed": len(ai),
                "counts": dict(counts), "review_rows": len(review),
+               "ai_safety_flags": dict(safety_counts),
                "manually_labeled": sum(bool(r["manual_label"]) for r in review),
                "input_tokens": input_tokens, "output_tokens": output_tokens,
                "model_latency_ms_p50": latencies[len(latencies)//2] if latencies else None,
