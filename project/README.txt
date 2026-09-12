@@ -1,24 +1,18 @@
-HOW TO FILL THE CLAUDE PROJECT (2 minutes) — current as of 9/9/26
-==================================================================
-1. INSTRUCTIONS box  -> paste the whole of PROJECT-INSTRUCTIONS.md
-                        (replace what's there; it changed 9/9)
-2. CONTEXT           -> the Project should hold EXACTLY the files in
-                        context/ — nothing else:
-                          HANDOFF-snapshot.md          (re-upload after every rule change)
-                          rooms-snapshot.txt           (the 19 live rooms)
-                          OPTIONS-BROKER-REFERENCE.md  (broker facts)
-                          SDK-AUDIT.md
-                          MARKET-SNIPER-HANDOFF.md
-                          FELONY-ZOOM-JOIN.md          (new 9/9)
-                          ADMIN PITCH.txt · ADMIN SEND LIST.txt · ANNOUNCER PITCH.txt
-                        DELETE from the Project (9/2 plans, all superseded and
-                        archived): HANDOFF-snapshot-2026-09-02.md,
-                        rooms-snapshot-2026-09-02.txt, RATCHET-AND-SPEED-v3.5.0.md,
-                        METHODOLOGY.md, CHROME-TABS.md, HANDOFF-OPTION-DATA.md.
-3. SCHEDULED         -> sniper-autopilot already runs in Cowork (*/30 weekdays;
-                        close-out 4:30 PM). Nothing to add here.
-4. MEMORY            -> fills itself after a few chats.
+CLAUDE PROJECT REFERENCE SETUP — 2026-09-12
 
-Keep in mind: the HANDOFF snapshot goes stale the moment a rule changes.
-The Instructions tell Claude the live file in the folder always wins.
-Re-upload the snapshot whenever a reply ends with the 📌 reminder.
+The local root HANDOFF.md is the only current operating-state document.
+AGENTS.md contains the repository workflow. HANDOFF-LOG.md is history only.
+PROJECT-INSTRUCTIONS.md points to these files without duplicating their rules.
+
+If using the existing Claude Project again:
+1. Replace its Instructions with PROJECT-INSTRUCTIONS.md.
+2. Remove previously uploaded handoffs, including HANDOFF-snapshot.md,
+   dated handoff snapshots and MARKET-SNIPER-HANDOFF.md. Local deletion does
+   not remove documents already uploaded to Claude.
+3. Treat remaining context/ files as references whose facts must be checked
+   against current sources. Do not bulk-upload them as operating instructions.
+
+Retired local handoffs and the former setup documents are preserved in
+archive/retired-handoff-documents-2026-09-12.zip, with hashes and source paths.
+This archive is historical evidence, not an instruction bundle.
+Daily performance reports remain in daily-reports/.
