@@ -47,7 +47,7 @@ def corpus():
         dt = datetime.strptime(r["at"], "%Y-%m-%d %H:%M:%S")
         r["postedAt"] = int(dt.replace(tzinfo=ZoneInfo("America/New_York"))
                             .timestamp() * 1000)
-    rows.sort(key=lambda r: (r["postedAt"], r["channelId"], r["id"]))
+    rows.sort(key=lambda r: (r["postedAt"], r["channelId"], r["seq"]))
     return rows
 
 

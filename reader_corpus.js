@@ -21,6 +21,7 @@ for (const file of fs.readdirSync(dir).filter(f =>
     if (seen.has(key)) continue;
     seen.add(key);
     rows.push({ id: crypto.createHash("sha256").update(key).digest("hex").slice(0,20),
+      seq: rows.length,
       at: m[1], room: m[2].trim(), channelId: m[3], author, text });
   }
 }

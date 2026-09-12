@@ -37,6 +37,8 @@ def eligible_prior(current, prior):
     """Only same-author, preceding, recent posts can supply trade fields."""
     now = int(current.get("postedAt") or 0)
     author = caller_key(current)
+    if author in ("author:?", "author:"):
+        return []
     return [p for p in prior[-MAX_CONTEXT:]
             if caller_key(p) == author
             and 0 <= now - int(p.get("postedAt") or 0) <= SAME_AUTHOR_MS]
