@@ -40,6 +40,15 @@ confirmation, preserving excursion history across restarts, recording bid/ask
 quotes for ratchet studies, and distinguishing actual fills from simulations.
 These are research leads/evidence, not permission to apply historical patches.
 
+Validation: Python compilation passed; an isolated save_day check preserved
+day state, journal, ledger refresh and alert refresh without creating handoffs.
+The full 11,385-message parser gate was unchanged (3,047 actions, 853 entries).
+The existing code watcher automatically loaded the updated bridge at 12:25:45
+ET; /mode answered with no held positions, working bids or armed pullbacks.
+This also corrects the earlier claim that the observer still needed a restart:
+the existing automatic watcher had already reloaded source changes. End-to-end
+live shadow delivery remains unverified during the closed-market interval.
+
 ## 2026-09-12 (blanket approval restriction removed)
 G explicitly asked to delete "REAL-MONEY ACTIONS ARE HIS ALONE", citing the
 closed market and the unnecessary maintenance approval interruption. Removed

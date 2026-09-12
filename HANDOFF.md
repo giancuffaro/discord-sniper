@@ -64,8 +64,8 @@ Last updated: 2026-09-12 — Consolidated handoffs; this is the only current ope
   parser corpus against Claude Sonnet 5 with up to 10 recent room posts as context.
   `context_reader.py`/`shadow_reader.py` add a read-only live observer whose
   results stay in ignored `local-reader-measure/`; they NEVER feed orders.
-  The old one-message AI fallback/verification path is unchanged. The live
-  observer needs a bridge restart before it can run.
+  The old one-message AI fallback/verification path is unchanged. The bridge
+  loaded the observer on its automatic reload; live post delivery is unverified.
 
 ## Rules of the house (current, in force)
 ENTRIES
