@@ -11,6 +11,8 @@ import random
 import sqlite3
 import threading
 import time
+import sys
+import uuid
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -91,6 +93,12 @@ def read_one(row, allowed, key, db, opener=urllib.request.urlopen):
             raw['_error'] = 'usage_exceeds_reservation'
     except urllib.error.HTTPError as exc:
         raw = {'_error': 'HTTP_%s' % exc.code}
+        try:
+            code = json.loads(exc.read(16384)).get('error', {}).get('code')
+            if code in ('insufficient_quota', 'rate_limit_exceeded', 'invalid_api_key', 'model_not_found'):
+                raw['_error_code'] = code
+        except Exception:
+            pass
     except Exception:
         # Never expose response bodies, request headers, or exception text.
         raw = {'_error': 'request_or_response_failed'}
@@ -117,7 +125,7 @@ def sample(rows):
     return selected
 
 
-def run(key, notify, stop):
+def run(key, notify, stop, retry_once=False):
     import msvcrt
     OUT.mkdir(parents=True, exist_ok=True)
     with open(OUT / 'trial.lock', 'a+b') as lock:
@@ -132,13 +140,31 @@ def run(key, notify, stop):
             notify('Another test window is already running.')
             return
         try:
-            _run(key, notify, stop)
+            _run(key, notify, stop, retry_once)
         finally:
             lock.seek(0)
             msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
 
 
-def _run(key, notify, stop):
+def retry_one(rows, allowed, key, db):
+    """Explicit single retry; retain every old reservation and result."""
+    latest = db.execute('SELECT result FROM attempts ORDER BY rowid DESC LIMIT 1').fetchone()
+    if not latest or latest[0] is None:
+        raise ValueError('No completed failed request to retry')
+    previous = json.loads(latest[0])
+    if previous.get('ai_raw', {}).get('_error') != 'HTTP_429':
+        raise ValueError('Latest request is not a reviewed 429')
+    source = next(r for r in rows if r['id'] == previous['id'])
+    attempt = dict(source, id=source['id'] + ':retry:' + uuid.uuid4().hex)
+    result = read_one(attempt, allowed, key, db)
+    if result is not None:
+        result['id'] = source['id']
+        with db:
+            db.execute('UPDATE attempts SET result=? WHERE id=?', (json.dumps(result), attempt['id']))
+    return result
+
+
+def _run(key, notify, stop, retry_once=False):
     OUT.mkdir(parents=True, exist_ok=True)
     db = connect(OUT / 'budget.sqlite3')
     try:
@@ -153,10 +179,18 @@ def _run(key, notify, stop):
         allowed = cfg.get('allowed_symbols', []) or []
         # Uncertain and failed calls require inspection, not an automatic rerun.
         prior = db.execute('SELECT result FROM attempts').fetchall()
-        if any(r is None or (json.loads(r).get('ai_raw') or {}).get('_error') for (r,) in prior):
+        if not retry_once and any(r is None or (json.loads(r).get('ai_raw') or {}).get('_error') for (r,) in prior):
             notify('Stopped: previous error or interrupted request needs review.')
             return
-        for row in rows:
+        final_status = 'Test stopped. Results saved; full historical scan remains paused.'
+        if retry_once:
+            result = retry_one(rows, allowed, key, db)
+            raw = (result or {}).get('ai_raw', {})
+            final_status = ('Single retry succeeded. Saved for review; bulk scan stays paused.'
+                            if result and not raw.get('_error') else
+                            'Retry stopped: %s. Bulk scan stays paused.' %
+                            (raw.get('_error_code') or raw.get('_error') or 'budget limit'))
+        for row in ([] if retry_once else rows):
             if stop.is_set():
                 break
             result = read_one(row, allowed, key, db)
@@ -165,9 +199,10 @@ def _run(key, notify, stop):
             count, reserved = db.execute('SELECT COUNT(*), SUM(reserved) FROM attempts').fetchone()
             notify('Reviewed %s / 100; conservative budget used $%.2f / $5.' % (count, reserved/1_000_000))
             if (result.get('ai_raw') or {}).get('_error'):
-                notify('Stopped on %s. No automatic retry.' % result['ai_raw']['_error'])
+                final_status = 'Stopped on %s. No automatic retry.' % result['ai_raw']['_error']
+                notify(final_status)
                 break
-        results = [json.loads(r) for (r,) in db.execute('SELECT result FROM attempts WHERE result IS NOT NULL')]
+        results = [json.loads(r) for (r,) in db.execute('SELECT result FROM attempts WHERE result IS NOT NULL ORDER BY rowid')]
         (OUT / 'ai-context.jsonl').write_text(''.join(json.dumps(r)+'\n' for r in results), encoding='utf-8')
         reader_measure.OUT = str(OUT)
         reader_measure.PREPARED = str(prepared)
@@ -175,7 +210,7 @@ def _run(key, notify, stop):
         reader_measure.QUEUE = str(OUT / 'disagreements.csv')
         reader_measure.SUMMARY = str(OUT / 'summary.json')
         reader_measure.report()
-        notify('Test stopped. Results saved; full historical scan remains paused.')
+        notify(final_status)
     finally:
         db.close()
 
@@ -183,10 +218,12 @@ def _run(key, notify, stop):
 def main():
     import tkinter as tk
     from tkinter import ttk
+    retry_once = '--retry-once' in sys.argv
     root = tk.Tk()
-    root.title('Discord Sniper - OpenAI test')
+    root.title('Discord Sniper - OpenAI retry' if retry_once else 'Discord Sniper - OpenAI test')
     root.geometry('620x250')
-    ttk.Label(root, text='OpenAI offline test: up to 100 messages / $5 maximum', font=('',12)).pack(pady=12)
+    ttk.Label(root, text=('One OpenAI retry / existing $5 budget preserved' if retry_once else
+                         'OpenAI offline test: up to 100 messages / $5 maximum'), font=('',12)).pack(pady=12)
     ttk.Label(root, text='GPT-4.1 | previous 10 messages | no live orders\nKey stays in memory and is cleared from this field when you start.').pack()
     entry = ttk.Entry(root, show='*', width=65)
     entry.pack(pady=10)
@@ -202,11 +239,11 @@ def main():
         button.config(state='disabled')
         def worker():
             try:
-                run(key, messages.put, stop)
+                run(key, messages.put, stop, retry_once)
             except Exception:
                 messages.put('Test stopped due to a local error. No automatic retry.')
         threading.Thread(target=worker, daemon=True).start()
-    button = ttk.Button(root, text='Start capped test', command=start)
+    button = ttk.Button(root, text='Retry once' if retry_once else 'Start capped test', command=start)
     button.pack()
     ttk.Button(root, text='Stop after current request', command=stop.set).pack(pady=5)
     ttk.Label(root, textvariable=status, wraplength=590).pack()

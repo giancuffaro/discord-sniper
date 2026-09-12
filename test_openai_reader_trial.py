@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import openai_reader_trial as trial
 
@@ -34,6 +34,23 @@ class TrialTests(unittest.TestCase):
         for i in range(1,100):
             self.assertTrue(trial.reserve(self.db, str(i), 1))
         self.assertFalse(trial.reserve(self.db, '101', 1))
+
+    def test_explicit_retry_preserves_budget_and_cannot_repeat_success(self):
+        trial.reserve(self.db, 'a', 100)
+        with self.db:
+            self.db.execute('UPDATE attempts SET result=? WHERE id=?',
+                (json.dumps({'id':'a','ai_raw':{'_error':'HTTP_429'}}), 'a'))
+        def fake_read(row, allowed, key, db):
+            self.assertTrue(trial.reserve(db, row['id'], 200))
+            return {'id':row['id'], 'ai_raw':{'action':'NONE'}}
+        with patch.object(trial, 'read_one', side_effect=fake_read) as reader:
+            result = trial.retry_one([{'id':'a'}], [], 'secret', self.db)
+            self.assertEqual(result['id'], 'a')
+            self.assertEqual(reader.call_count, 1)
+            self.assertEqual(self.db.execute('SELECT SUM(reserved) FROM attempts').fetchone()[0],300)
+            with self.assertRaises(ValueError):
+                trial.retry_one([{'id':'a'}], [], 'secret', self.db)
+            self.assertEqual(reader.call_count, 1)
 
     def test_failed_request_not_refunded_or_retried(self):
         row = {'id':'a','text':'hello','prior':[], 'author':'x', 'postedAt':1}
