@@ -28,6 +28,19 @@ MODEL = 'gpt-4.1-2025-04-14'
 LIMIT_MICRO = 5_000_000
 MAX_REQUESTS = 100
 MAX_OUTPUT = 600
+FULL_SCAN = False
+
+
+def budget_used(db):
+    total = 0
+    for reserved, serialized in db.execute('SELECT reserved,result FROM attempts'):
+        raw = (json.loads(serialized).get('ai_raw') or {}) if serialized else {}
+        usage = raw.get('_usage') or {}
+        if FULL_SCAN and not raw.get('_error') and type(usage.get('input_tokens')) is int and type(usage.get('output_tokens')) is int:
+            total += max(0, usage['input_tokens']) * 2 + max(0, usage['output_tokens']) * 8
+        else:
+            total += reserved
+    return total
 
 
 def connect(path):
@@ -44,7 +57,8 @@ def reserve(db, key, micro):
         raise ValueError('Invalid reservation')
     with db:
         db.execute('BEGIN IMMEDIATE')
-        count, spent = db.execute('SELECT COUNT(*), COALESCE(SUM(reserved),0) FROM attempts').fetchone()
+        count = db.execute('SELECT COUNT(*) FROM attempts').fetchone()[0]
+        spent = budget_used(db)
         if count >= MAX_REQUESTS or spent + micro > LIMIT_MICRO:
             return False
         if db.execute('SELECT 1 FROM attempts WHERE id=?', (key,)).fetchone():
@@ -64,9 +78,10 @@ def request_body(row, allowed):
     return body, maximum_input * 2 + MAX_OUTPUT * 8
 
 
-def read_one(row, allowed, key, db, opener=urllib.request.urlopen):
+def read_one(row, allowed, key, db, opener=urllib.request.urlopen, attempt_id=None):
     body, maximum = request_body(row, allowed)
-    if not reserve(db, row['id'], maximum):
+    attempt_id = attempt_id or row['id']
+    if not reserve(db, attempt_id, maximum):
         return None
     started = time.monotonic()
     try:
@@ -106,7 +121,7 @@ def read_one(row, allowed, key, db, opener=urllib.request.urlopen):
               'ai': context_reader.assess(row, row['prior'], raw, allowed),
               'model_ms': round((time.monotonic()-started)*1000)}
     with db:
-        db.execute('UPDATE attempts SET result=? WHERE id=?', (json.dumps(result), row['id']))
+        db.execute('UPDATE attempts SET result=? WHERE id=?', (json.dumps(result), attempt_id))
     return result
 
 
@@ -179,9 +194,11 @@ def _run(key, notify, stop, retry_once=False):
     OUT.mkdir(parents=True, exist_ok=True)
     db = connect(OUT / 'budget.sqlite3')
     try:
-        prepared = OUT / 'corpus.jsonl'
+        prepared = OUT / ('full-corpus.jsonl' if FULL_SCAN else 'corpus.jsonl')
         if not prepared.exists():
-            rows = sample(list(reader_measure.jsonl(str(SOURCE))))
+            rows = list(reader_measure.jsonl(str(SOURCE)))
+            if not FULL_SCAN:
+                rows = sample(rows)
             temp = prepared.with_suffix('.tmp')
             temp.write_text(''.join(json.dumps(r, ensure_ascii=False)+'\n' for r in rows), encoding='utf-8')
             temp.replace(prepared)
@@ -190,10 +207,12 @@ def _run(key, notify, stop, retry_once=False):
         allowed = cfg.get('allowed_symbols', []) or []
         # Uncertain and failed calls require inspection, not an automatic rerun.
         prior = db.execute('SELECT result FROM attempts ORDER BY rowid').fetchall()
-        if not retry_once and unresolved_failure(prior):
+        if not retry_once and not FULL_SCAN and unresolved_failure(prior):
             notify('Stopped: previous error or interrupted request needs review.')
             return
         final_status = 'Test stopped. Results saved; full historical scan remains paused.'
+        if FULL_SCAN:
+            final_status = full_replay(rows, allowed, key, db, stop, notify)
         if retry_once:
             result = retry_one(rows, allowed, key, db)
             raw = (result or {}).get('ai_raw', {})
@@ -201,7 +220,7 @@ def _run(key, notify, stop, retry_once=False):
                             if result and not raw.get('_error') else
                             'Retry stopped: %s. Bulk scan stays paused.' %
                             (raw.get('_error_code') or raw.get('_error') or 'budget limit'))
-        for row in ([] if retry_once else rows):
+        for row in ([] if retry_once or FULL_SCAN else rows):
             if stop.is_set():
                 break
             result = read_one(row, allowed, key, db)
@@ -214,27 +233,70 @@ def _run(key, notify, stop, retry_once=False):
                 notify(final_status)
                 break
         results = [json.loads(r) for (r,) in db.execute('SELECT result FROM attempts WHERE result IS NOT NULL ORDER BY rowid')]
-        (OUT / 'ai-context.jsonl').write_text(''.join(json.dumps(r)+'\n' for r in results), encoding='utf-8')
+        prefix = 'full-' if FULL_SCAN else ''
+        (OUT / (prefix + 'ai-context.jsonl')).write_text(''.join(json.dumps(r)+'\n' for r in results), encoding='utf-8')
         reader_measure.OUT = str(OUT)
         reader_measure.PREPARED = str(prepared)
-        reader_measure.AI_OUT = str(OUT / 'ai-context.jsonl')
-        reader_measure.QUEUE = str(OUT / 'disagreements.csv')
-        reader_measure.SUMMARY = str(OUT / 'summary.json')
+        reader_measure.AI_OUT = str(OUT / (prefix + 'ai-context.jsonl'))
+        reader_measure.QUEUE = str(OUT / (prefix + 'disagreements.csv'))
+        reader_measure.SUMMARY = str(OUT / (prefix + 'summary.json'))
         reader_measure.report()
         notify(final_status)
     finally:
         db.close()
 
 
+def full_replay(rows, allowed, key, db, stop, notify):
+    latest = {}
+    for (serialized,) in db.execute('SELECT result FROM attempts ORDER BY rowid'):
+        if serialized is None:
+            return 'Stopped: an interrupted request needs review; budget preserved.'
+        result = json.loads(serialized)
+        latest[result['id']] = result
+    for result in latest.values():
+        raw = result.get('ai_raw') or {}
+        if raw.get('_error') and raw.get('_error_code') != 'rate_limit_exceeded':
+            return 'Stopped: unresolved API error needs review.'
+    done = {i for i,r in latest.items() if not r.get('ai_raw',{}).get('_error')}
+    completed = len(done)
+    for row in rows:
+        if row['id'] in done:
+            continue
+        for retry in range(5):
+            delay = 4 if retry == 0 else min(60 * 2**(retry-1), 480)
+            if retry:
+                notify('Rate limit: waiting %ss before retry. Budget and progress saved.' % delay)
+            if stop.wait(delay):
+                return 'Stopped by you. Progress and remaining budget saved.'
+            result = read_one(row, allowed, key, db, attempt_id=row['id']+':full:'+uuid.uuid4().hex)
+            if result is None:
+                return 'Budget limit reached. Progress saved.'
+            raw = result.get('ai_raw') or {}
+            if raw.get('_error_code') == 'rate_limit_exceeded':
+                continue
+            if raw.get('_error'):
+                return 'Stopped: %s. Progress saved.' % (raw.get('_error_code') or raw['_error'])
+            completed += 1
+            notify('Reviewed %s / %s | accounted $%.2f / $45' % (completed,len(rows),budget_used(db)/1e6))
+            break
+        else:
+            return 'Stopped after five rate-limit responses. Progress saved.'
+    return 'Retained scan complete. Results saved for source review; no live rules changed.'
+
+
 def main():
+    global FULL_SCAN, LIMIT_MICRO, MAX_REQUESTS
     import tkinter as tk
     from tkinter import ttk
     retry_once = '--retry-once' in sys.argv
+    FULL_SCAN = '--full' in sys.argv
+    if FULL_SCAN:
+        LIMIT_MICRO, MAX_REQUESTS = 45_000_000, 20000
     root = tk.Tk()
-    root.title('Discord Sniper - OpenAI retry' if retry_once else
+    root.title('Discord Sniper - Full history scan' if FULL_SCAN else 'Discord Sniper - OpenAI retry' if retry_once else
                'Resume OpenAI sample' if '--resume' in sys.argv else 'Discord Sniper - OpenAI test')
     root.geometry('620x250')
-    ttk.Label(root, text=('One OpenAI retry / existing $5 budget preserved' if retry_once else
+    ttk.Label(root, text=('Full retained history / $45 total budget' if FULL_SCAN else 'One OpenAI retry / existing $5 budget preserved' if retry_once else
                          'OpenAI offline test: up to 100 messages / $5 maximum'), font=('',12)).pack(pady=12)
     ttk.Label(root, text='GPT-4.1 | previous 10 messages | no live orders\nKey stays in memory and is cleared from this field when you start.').pack()
     entry = ttk.Entry(root, show='*', width=65)
@@ -255,7 +317,7 @@ def main():
             except Exception:
                 messages.put('Test stopped due to a local error. No automatic retry.')
         threading.Thread(target=worker, daemon=True).start()
-    button = ttk.Button(root, text='Retry once' if retry_once else 'Start capped test', command=start)
+    button = ttk.Button(root, text='Start full scan' if FULL_SCAN else 'Retry once' if retry_once else 'Start capped test', command=start)
     button.pack()
     ttk.Button(root, text='Stop after current request', command=stop.set).pack(pady=5)
     ttk.Label(root, textvariable=status, wraplength=590).pack()

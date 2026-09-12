@@ -12,6 +12,22 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (Full OpenAI replay authorized)
+G authorized $40 additional to the $5 test ($45 total), then requested completion.
+openai_reader_trial.py --full now reads the retained 12,162-message corpus,
+preserves the shared SQLite budget and19 completed reviews, and writes separate
+full-corpus/full-ai-context/full-summary/full-disagreements files. Full mode
+accounts known successful token cost at verified $2/$8 per million; uncertain
+or failed requests retain their conservative reservation. Reservations happen
+before network under transaction; no budget reset. Four-second spacing plus
+60/120/240/480-second cancellable waits for explicit rate_limit_exceeded only;
+five consecutive throttles stop. Quota/auth/unknown errors stop without retry.
+22 local tests passed including shared accounting, resume, rate backoff, and
+quota stop. New full-scan window requires memory-only key entry; no paid call
+was made during this update. Live AI/parser/order behavior unchanged. Full scan
+does not mean remote all-channel history collection is complete. Findings still
+need source labeling before parser changes.
+
 ## 2026-09-12 (OpenAI capped offline trial)
 G obtained an OpenAI key and authorized $5 for the initial test. Added
 openai_reader_trial.py with a masked local Tk key field; key stays in memory,

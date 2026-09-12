@@ -63,8 +63,8 @@ Last updated: 2026-09-12 — OpenAI $5 offline trial authorized; bulk AI paused.
   after credit exhaustion; do not resume paid calls without G's authorization.
   Expanded replay: 769 successful / 12,162 attempted, saved under
   local-reader-measure/all-channels-2026-06-12/. Failed rows remain retryable.
-  G authorized openai_reader_trial.py: $5 / 100 posts, memory-only key entry.
-  Bulk/live contextual AI stays paused. Chrome history retrieval is incomplete.
+  G authorized openai_reader_trial.py --full: $45 total, memory-only key entry.
+  Live contextual AI stays paused. Chrome history retrieval is incomplete.
 
 ## Rules of the house (current, in force)
 ENTRIES

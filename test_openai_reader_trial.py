@@ -43,6 +43,38 @@ class TrialTests(unittest.TestCase):
         self.assertTrue(trial.unresolved_failure([success,failed]))
         self.assertTrue(trial.unresolved_failure([(None,),success]))
 
+    def test_full_budget_uses_known_cost_but_retains_uncertain_reservations(self):
+        trial.reserve(self.db, 'a', 10000)
+        trial.reserve(self.db, 'b', 20000)
+        with self.db:
+            self.db.execute('UPDATE attempts SET result=? WHERE id=?',
+                (json.dumps({'ai_raw':{'_usage':{'input_tokens':100,'output_tokens':10}}}), 'a'))
+        with patch.object(trial, 'FULL_SCAN', True):
+            self.assertEqual(trial.budget_used(self.db),20280)
+
+    def test_full_replay_rate_limit_backoff_and_skip_success(self):
+        trial.reserve(self.db,'a',100)
+        with self.db:
+            self.db.execute('UPDATE attempts SET result=? WHERE id=?',
+                (json.dumps({'id':'a','ai_raw':{'action':'NONE'}}),'a'))
+        stop = Mock()
+        stop.wait.return_value = False
+        responses = [{'ai_raw':{'_error':'HTTP_429','_error_code':'rate_limit_exceeded'}},
+                     {'ai_raw':{'action':'NONE'}}]
+        with patch.object(trial,'read_one',side_effect=responses) as reader:
+            status = trial.full_replay([{'id':'a'},{'id':'b'}], [], 'secret', self.db,stop,Mock())
+        self.assertIn('complete',status)
+        self.assertEqual(reader.call_count,2)
+        self.assertEqual([c.args[0] for c in stop.wait.call_args_list],[4,60])
+
+    def test_full_replay_quota_does_not_retry(self):
+        stop = Mock()
+        stop.wait.return_value = False
+        with patch.object(trial,'read_one',return_value={'ai_raw':{'_error':'HTTP_429','_error_code':'insufficient_quota'}}) as reader:
+            status = trial.full_replay([{'id':'b'}], [], 'secret', self.db,stop,Mock())
+        self.assertIn('insufficient_quota',status)
+        self.assertEqual(reader.call_count,1)
+
     def test_explicit_retry_preserves_budget_and_cannot_repeat_success(self):
         trial.reserve(self.db, 'a', 100)
         with self.db:
