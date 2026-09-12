@@ -2,7 +2,7 @@
 Read this first. It is the living memory: what the machine is, every rule in
 force, how G works. It holds ONLY what is true right now. The full history —
 every session's notes, every bug's story — lives in HANDOFF-LOG.md.
-Last updated: 2026-09-12 — Codex repository instructions added; deleted Codex guard removed from current state.
+Last updated: 2026-09-12 — Contextual AI measurement added; full historical replay running, no new live-order authority.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -64,6 +64,12 @@ Last updated: 2026-09-12 — Codex repository instructions added; deleted Codex 
   the growing dataset is what earns parser/strategy improvements. Exact caller
   results require real entry+exit evidence; never substitute a later high.
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
+- AI MEASUREMENT (9/12): `reader_measure.py` replays the exact 11,385-message
+  parser corpus against Claude with up to 10 recent room posts as context.
+  `context_reader.py`/`shadow_reader.py` add a read-only live observer whose
+  results stay in ignored `local-reader-measure/`; they NEVER feed orders.
+  The old one-message AI fallback/verification path is unchanged. The live
+  observer needs a bridge restart before it can run; G must approve that.
 
 ## Rules of the house (current, in force)
 ENTRIES

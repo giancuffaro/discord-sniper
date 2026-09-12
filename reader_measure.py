@@ -157,11 +157,12 @@ def report():
     review = []
     input_tokens = output_tokens = 0
     prior_labels = {}
-    if os.path.exists(QUEUE):
-        with open(QUEUE, encoding="utf-8", newline="") as f:
-            prior_labels = {r["id"]: (r.get("manual_label", ""),
-                                      r.get("manual_note", ""))
-                            for r in csv.DictReader(f)}
+    for label_path in (os.path.join(OUT, "pilot-v1-disagreements.csv"), QUEUE):
+        if os.path.exists(label_path):
+            with open(label_path, encoding="utf-8", newline="") as f:
+                prior_labels.update({r["id"]: (r.get("manual_label", ""),
+                                               r.get("manual_note", ""))
+                                     for r in csv.DictReader(f)})
     eligible = [(key, r, (ai[key].get("ai") or {}).get("read"))
                 for key, r in base.items() if key in ai
                 and (ai[key].get("ai") or {}).get("read")]
@@ -193,7 +194,12 @@ def report():
         ar = ag.get("read") or {}
         an = normalized.get(key) or {}
         pa, aa = p.get("action") or "NONE", an.get("action") or "NONE"
-        if pa == "NONE" and aa != "NONE":
+        raw_action = str((a.get("ai_raw") or {}).get("action") or "NONE").upper()
+        if not ag.get("ok") and raw_action != "NONE":
+            category = "ai_invalid_candidate"
+        elif ag.get("ok") and aa == "NONE":
+            category = "ai_unparsed_candidate"
+        elif pa == "NONE" and aa != "NONE":
             category = "potential_missed_alert"
         elif pa != "NONE" and aa == "NONE":
             category = "potential_false_alert"
@@ -229,6 +235,7 @@ def report():
     latencies.sort()
     summary = {"corpus": len(base), "ai_processed": len(ai),
                "counts": dict(counts), "review_rows": len(review),
+               "manually_labeled": sum(bool(r["manual_label"]) for r in review),
                "input_tokens": input_tokens, "output_tokens": output_tokens,
                "model_latency_ms_p50": latencies[len(latencies)//2] if latencies else None,
                "model_latency_ms_p95": latencies[int(len(latencies)*.95)] if latencies else None,

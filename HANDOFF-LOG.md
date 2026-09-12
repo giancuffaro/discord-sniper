@@ -9,6 +9,24 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (contextual AI reader measurement)
+Added a read-only ten-recent-post observer for typed Discord/Whop messages, a
+resumable full-corpus AI replay, a local disagreement queue, and model/queue
+latency measurements. The existing AI fallback and verification path still has
+its old live behavior; the new contextual result never reaches an order. The
+historical parser pass matches parser_gate.js exactly: 11,385 retained messages,
+3,047 parser actions. A 63-message pilot produced 16 disagreements; all 16
+were manually labeled. It exposed a clear missed PURR entry, a missed caller
+trim, several non-actionable posts read as actions, and two AI replies that
+invented a 2025 expiry year for 2026 posts. This pilot is diagnostic, not a
+performance claim. The full contextual replay is running in resumable local
+files; live observation requires a user-approved bridge restart.
+
+The first generated corpus path briefly appeared as an empty placeholder in
+the AUTO PUSH commit. No room-message content was committed. Measurements now
+write only under ignored local-reader-measure/, and the empty tracked file was
+removed by the normal pusher.
+
 ## 2026-09-12 (Codex project instructions)
 Added root AGENTS.md for future Codex work: preserve the current trading boundaries,
 trace alert-to-broker evidence before fixes, use measured parser/AI changes, keep
