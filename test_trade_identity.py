@@ -14,10 +14,10 @@ class IdentityTests(unittest.TestCase):
             db.executescript('''CREATE TABLE ledger_records(record_id TEXT,kind TEXT,caller TEXT,room TEXT,channel_id TEXT,payload TEXT,current INTEGER);
             CREATE TABLE account_sightings(discord_user_id TEXT,channel_id TEXT,display_name TEXT);
             CREATE TABLE confirmed_accounts(discord_user_id TEXT,caller_name TEXT,evidence_json TEXT);
-            CREATE TABLE channels(channel_id TEXT,label TEXT);''')
+            CREATE TABLE channels(channel_id TEXT,label TEXT,server_id TEXT);''')
             db.execute("INSERT INTO confirmed_accounts VALUES('123','Brett','{}')")
             db.execute("INSERT INTO account_sightings VALUES('123','honey','Brett')")
-            db.execute("INSERT INTO channels VALUES('honey','Honey')")
+            db.execute("INSERT INTO channels VALUES('honey','Honey','server')")
             for rid,payload in [('candidate',{'author_id':'123'}),('manual',{'manual':True}),('explicit',{'trader_id':'123'})]:
                 db.execute('INSERT INTO ledger_records VALUES(?,?,?,?,?,?,1)',(rid,'reconciled_trade','Brett','Honey',None,json.dumps(payload)))
             db.commit()
@@ -25,6 +25,7 @@ class IdentityTests(unittest.TestCase):
             self.assertEqual(first,reconcile(out))
             actual=dict(db.execute('SELECT record_id,trader_id FROM trade_identity_links'))
             self.assertEqual(actual,{'candidate':None,'manual':None,'explicit':'123'})
+            self.assertEqual(db.execute("SELECT attribution_name,display_room,display_server_id,display_trader_id FROM trade_attribution WHERE record_id='manual'").fetchone(),('Gian','N/A','N/A','N/A'))
             merged=db.execute("SELECT recorded_caller,attribution_name,candidate_trader_id,verified_trader_id FROM trade_attribution WHERE record_id='candidate'").fetchone()
             self.assertEqual(merged,('Brett','Brett','123',None))
             db.execute("UPDATE ledger_records SET caller='?' WHERE record_id='candidate'")
