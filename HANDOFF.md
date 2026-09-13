@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.18 reload unverified.
+Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.19 reload unverified.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -23,7 +23,7 @@ Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.18 
 - G (giancuffaro230@gmail.com) — non-coder, trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
-- The machine: Chrome MV3 extension source v3.8.18 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
+- The machine: Chrome MV3 extension source v3.8.19 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
 - Accounts (Webull, one app key), read live 9/11 15:20: MARGIN ENIQGUV4
   connected, $113.71 buying power, flat. settings.json `execution.mode` is
   `dryrun` BY DESIGN (the master switch is retired — bridge.py treats even
@@ -59,6 +59,7 @@ Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.18 
   the growing dataset is what earns parser/strategy improvements. Exact caller
   results require real entry+exit evidence; never substitute a later high.
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
+- ANTHROPIC STATUS: saved-key presence is separate from probe result. Billing, rate limits, authentication, access and connection failures have distinct labels; do not interpret every failed check as a missing key.
 - PROVIDER KEYS: Keys pane saves OpenAI, Gemini, Perplexity and DeepSeek credentials under settings.json ai_provider_keys. Saved provider fields are hidden with an explicit Replace key option. Storage only; no validation requests or activation. Status returns presence flags only; inputs are not included in browser draft persistence.
 - READER/UI: observer retains 50 prior messages within 24 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer remains paused pending working provider credentials; no live activation verified. Needs You pane/buttons/polling removed. Caller controls now appear under matching Channels, preserving global caller switches and aggregate performance. Grabber repair remains unfinished.
 - AI MEASUREMENT: OpenAI retained scan COMPLETE: 12,162 successful; $28.37

@@ -1214,18 +1214,16 @@ def _connect_extras():
     WB_EXTRA = fresh
 
 
-AI_KEY_OK = None      # None = never probed; True/False = the last real answer
+AI_KEY_OK = None
+AI_KEY_STATUS = "unverified"
 
 
 def probe_ai_key():
-    """Actually ASK Anthropic whether the saved AI key works (his confusion,
-    8/17: the popup showed AI ✅ for a key the API rejects — a checkmark that
-    only meant "something is pasted in the box"). One tiny request, cached
-    until the key changes; the status line now tells the truth."""
-    global AI_KEY_OK
+    """Check provider availability without confusing a failure with a missing key."""
+    global AI_KEY_OK, AI_KEY_STATUS
     key = ((EXEC.get("ai_reader") or {}).get("api_key") or "").strip()
     if not key:
-        AI_KEY_OK = None
+        AI_KEY_OK, AI_KEY_STATUS = None, "missing"
         return
     try:
         import requests
@@ -1238,17 +1236,30 @@ def probe_ai_key():
                                 "messages": [{"role": "user", "content": "hi"}]},
                           timeout=(4, 8))
         AI_KEY_OK = bool(200 <= r.status_code < 300)
+        # Inspect error text only to classify it; never log or return provider bodies.
+        try:
+            error = r.json().get("error", {})
+            detail = str(error.get("message", "")).lower() if isinstance(error, dict) else ""
+        except Exception:
+            detail = ""
         if AI_KEY_OK:
-            note("AI READ  key verified — reading is ON")
+            AI_KEY_STATUS = "verified"
+        elif r.status_code == 401:
+            AI_KEY_STATUS = "authentication_failed"
+        elif any(term in detail for term in ("credit balance", "insufficient credit", "billing", "purchase credits")):
+            AI_KEY_STATUS = "billing"
+        elif r.status_code == 429:
+            AI_KEY_STATUS = "rate_limited"
+        elif r.status_code == 403:
+            AI_KEY_STATUS = "access_denied"
+        elif r.status_code >= 500:
+            AI_KEY_STATUS = "service_unavailable"
         else:
-            note("AI READ  key INVALID (HTTP %s) — that's a pasted token, not "
-                 "an API key? Get one at console.anthropic.com -> API Keys "
-                 "(starts sk-ant-api03) and paste it in the popup."
-                 % r.status_code)
-    except Exception as e:                              # noqa: BLE001
-        AI_KEY_OK = None      # network blip — unknown, not "broken"
-        note("AI READ  couldn't verify the key (%s) — will act as if it "
-             "works until proven otherwise" % str(e)[:80])
+            AI_KEY_STATUS = "request_failed"
+        note("AI READ  saved key check: %s (HTTP %s)" % (AI_KEY_STATUS, r.status_code))
+    except Exception:
+        AI_KEY_OK, AI_KEY_STATUS = None, "connection_failed"
+        note("AI READ  saved key could not be checked — connection unavailable")
 
 
 TS_KEY_OK = None      # None = never probed; True/False = Topstep's last answer
@@ -4144,6 +4155,8 @@ class Handler(BaseHTTPRequestHandler):
                 # says 401, whatever is pasted.
                 "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key"))
                               and AI_KEY_OK is not False,
+                "ai_key_saved": bool((EXEC.get("ai_reader") or {}).get("api_key")),
+                "ai_key_status": AI_KEY_STATUS,
                 "ai_provider_keys_saved": {
                     provider: bool((CFG.get("ai_provider_keys") or {}).get(provider))
                     for provider in ("openai", "gemini", "perplexity", "deepseek")},

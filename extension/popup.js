@@ -993,11 +993,23 @@ document.querySelectorAll("[data-save-provider]").forEach(button => {
 });
 function paintAi(st) {
   paintProviderKeys(st);
-  const on = !!(st && st.ai_enabled);
   const el = $("aiState");
   if (el) {
-    el.textContent = on ? "always ON" : "needs a key";
-    el.style.color = on ? "#34d399" : "#fbbf24";
+    const labels = {
+      missing: "needs a key", verified: "key verified",
+      authentication_failed: "saved key rejected — replace key",
+      billing: "key saved — check Anthropic credits",
+      rate_limited: "key saved — rate limited",
+      access_denied: "key saved — access denied",
+      service_unavailable: "key saved — Anthropic unavailable",
+      request_failed: "key saved — request failed",
+      connection_failed: "key saved — connection unavailable",
+      unverified: "key saved — not verified"
+    };
+    const state = st && st.ai_key_status;
+    el.textContent = st && st.ai_key_saved === false ? "needs a key"
+      : labels[state] || (st && st.ai_key_saved ? "key saved — not verified" : "checking key status");
+    el.style.color = state === "verified" ? "#34d399" : "#fbbf24";
   }
 }
 if ($("saveaikey")) $("saveaikey").onclick = async () => {
@@ -1010,7 +1022,7 @@ if ($("saveaikey")) $("saveaikey").onclick = async () => {
     modeStatus = r;
     el.textContent = r.ai_enabled ? "AI reading is ON — every call goes through it." :
                      (r.message || "saved");
-    if (r.ai_enabled) { $("aiKey").value = ""; clearDrafts(["aiKey"]); }
+    if (r.ok && r.ai_key_saved) { $("aiKey").value = ""; clearDrafts(["aiKey"]); }
     paintAi(r);
   } catch (e) {
     el.textContent = "Couldn't reach the bridge — double-click START HERE first.";
