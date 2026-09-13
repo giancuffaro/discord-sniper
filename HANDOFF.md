@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-12 — OpenAI $5 offline trial authorized; bulk AI paused.
+Last updated: 2026-09-13 — Replay complete; 3.8.14 tested, reload unverified.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -23,7 +23,7 @@ Last updated: 2026-09-12 — OpenAI $5 offline trial authorized; bulk AI paused.
 - G (giancuffaro230@gmail.com) — non-coder, trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
-- The machine: Chrome MV3 extension source v3.8.12 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
+- The machine: Chrome MV3 extension source v3.8.14 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
 - Accounts (Webull, one app key), read live 9/11 15:20: MARGIN ENIQGUV4
   connected, $113.71 buying power, flat. settings.json `execution.mode` is
   `dryrun` BY DESIGN (the master switch is retired — bridge.py treats even
@@ -59,12 +59,12 @@ Last updated: 2026-09-12 — OpenAI $5 offline trial authorized; bulk AI paused.
   the growing dataset is what earns parser/strategy improvements. Exact caller
   results require real entry+exit evidence; never substitute a later high.
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
-- AI MEASUREMENT: contextual Sonnet is PAUSED by local-reader-measure/AI-PAUSED
-  after credit exhaustion; do not resume paid calls without G's authorization.
-  Expanded replay: 769 successful / 12,162 attempted, saved under
-  local-reader-measure/all-channels-2026-06-12/. Failed rows remain retryable.
-  G authorized openai_reader_trial.py --full: $45 total, memory-only key entry.
-  Live contextual AI stays paused. Chrome history retrieval is incomplete.
+- AI MEASUREMENT: OpenAI retained scan COMPLETE: 12,162 successful; $28.37
+  estimated API cost of $45 authorized. Results: local-reader-measure/
+  openai-trial-2026-09-12/final-release-3.8.14/. No new paid scan needed.
+  Contextual live AI remains paused; Anthropic key was exhausted. Chrome
+  remote history remains incomplete. Source3.8.14 tested; Chrome load needs
+  user confirmation because browser policy blocks the extensions page.
 
 ## Rules of the house (current, in force)
 ENTRIES

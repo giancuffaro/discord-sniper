@@ -12,6 +12,18 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-13 (3.8.14 finishing release)
+Implemented the two reviewed parser fixes, removed AI unknown-side/direction
+defaults and improved comparison categories/price/direction checks.27 Python
+tests, JS parser regressions, compile/syntax/diff checks passed. Original gate
+versus4e65cb5077fc1d541827ed12da696d83da60fb06 shows exactly one SPY entry gained
+and two MU original/relay CLOSE->TRIM changes; no junk or expiry changes.
+Final12,162-row reparse and AI revalidation saved to ignored local-reader-measure/
+openai-trial-2026-09-12/final-release-3.8.14/ with FINAL-REPORT.md. No paid calls.
+Source manifest3.8.14; browser policy rejected chrome://extensions and explicitly
+forbids workarounds, so user reload confirmation is outstanding. Do not claim
+deployed/loaded verification. Remaining findings and replay GUI cleanup deferred.
+
 ## 2026-09-13 (OpenAI full retained scan completed and reviewed)
 Verified all12,162 unique source records have successful AI results;12,164
 attempts include two historical429s, zero unresolved errors/pending requests.
