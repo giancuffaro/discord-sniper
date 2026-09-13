@@ -1443,6 +1443,16 @@ function parseSignalOuter(text, cfg) {
   if (s.action !== "OPEN" || s.kind === "future") return s;
   const low = (s.clean || "").toLowerCase();
   const isOption = s.side === "CALLS" || s.side === "PUTS" || s.strike !== null;
+  // Optionality: an explicitly labelled stock quote is not an option premium.
+  // Hold the entry rather than removing its price and accidentally buying market.
+  if (isOption && s.limit !== null) {
+    const stockQuotes = [...String(s.clean || "").matchAll(/\$[A-Z]{1,6}\s+currently\s+(?:at\s*|@\s*)\$?(\d+(?:\.\d+)?)/gi)];
+    if (stockQuotes.some(m => Number(m[1]) === Number(s.limit))) {
+      s.fire = false; s.action = null;
+      s.why = "entry price matched an explicitly labelled stock quote — option premium unresolved";
+      return s;
+    }
+  }
   // shabs reports an already-running contract as "Sick 320/con on MU 980c".
   // The price-before-contract order is a P&L update; his entries always put
   // the contract first ("MU 980c at 300/con"). Do not turn the recap into a
@@ -1495,7 +1505,8 @@ function parseSignalOuter(text, cfg) {
     if (mu) s.their_stop = parseFloat(mu[1].replace(/,/g, ""));
   }
   if (isOption && /\b(sell|selling|sold|sto)\b/.test(low)
-      && !/\b(bto|buy|buying|bought)\b/.test(low)) {
+      && (!/\b(bto|buy|buying|bought)\b/.test(low)
+          || /\bthis is option selling not traditional contract buying\b/.test(low))) {
     s.fire = false; s.action = null;
     s.why = "they're SELLING that option — this bot only ever buys, so " +
             "nothing was sent";

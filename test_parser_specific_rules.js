@@ -40,3 +40,7 @@ assert.equal(read('out on most MU calls 2.4').action,'TRIM');
 assert.equal(read('out on half MU calls 2.4').action,'TRIM');
 assert.equal(read('out on all MU calls 2.4').action,'CLOSE');
 assert.equal(read('out of most MU calls 2.4').action,'TRIM');
+assert.notEqual(read('Entered $BMNR via $BMNU 3/20/26 $7 Call $BMNR currently @ $31.30 @everyone').action,'OPEN');
+assert.notEqual(read('Sold $NEBX $45 Calls 1/16 (this is option selling not traditional contract buying) @here').action,'OPEN');
+assert.equal(read('entering $PLTR via leveraged etf $PLTU $32 C 10/16 filled @ 7.5 starter size pltr currently at $129.81, pltu at $32.06').limit,7.5);
+assert.equal(read('Bought NEBX 45C 1/16 @ 2.50').action,'OPEN');
