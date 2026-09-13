@@ -4719,11 +4719,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "why": "unreadable"})
         name = str(body.get("name") or "").strip()
         text = str(body.get("text") or "")
-        # filename hygiene: whatever arrives, it stays a plain .txt inside
+        # Filename hygiene: text/structured history stays .txt/.json inside
         # DS Logs — no path parts on ANY separator style, no surprises.
         name = name.replace("\\", "/").rsplit("/", 1)[-1]
         name = name.replace("..", "").strip() or "export.txt"
-        if not name.lower().endswith(".txt"):
+        if not name.lower().endswith((".txt", ".json")):
             name += ".txt"
         if not text:
             return self._json(400, {"ok": False, "why": "empty"})

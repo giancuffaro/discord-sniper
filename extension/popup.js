@@ -1400,34 +1400,34 @@ function renderCallers() {
 }
 function renderRoomCallers() {
   const normalize = value => String(value || "").trim().toLowerCase();
-  const matched = new Set();
+  // User-verified rosters override contaminated legacy ledger room labels.
+  const rosters = {
+    "829754942817828884": ["mike", "brett", "unraveller"],
+    "1144369893760831489": ["midas"]
+  };
+  const verifiedCallerRooms = {brett:"829754942817828884", midas:"1144369893760831489"};
   document.querySelectorAll("[data-room-callers]").forEach(slot => {
     const room = (ALL_ROOMS || []).find(r => String(r.id) === slot.dataset.roomCallers);
     if (!room) return;
     const names = new Set([room.id, room.name, chanLabel(room.id)].map(normalize));
-    const callers = CALLERS.filter(c => (c.rooms || []).some(name => names.has(normalize(name))));
-    callers.forEach(c => matched.add(c.key));
+    const callers = CALLERS.filter(c => {
+      if (verifiedCallerRooms[c.key]) return verifiedCallerRooms[c.key] === String(room.id);
+      if (rosters[room.id]) return rosters[room.id].includes(c.key);
+      return (c.rooms || []).some(name => names.has(normalize(name)));
+    });
     if (callers.length) renderCallerList(slot, callers);
     else slot.innerHTML = "";
   });
   const other = $("callers");
-  const unmatched = CALLERS.filter(c => !matched.has(c.key));
   if (other) {
-    if (unmatched.length) {
-      renderCallerList(other, unmatched);
-      other.insertAdjacentHTML("afterbegin", '<div class="note">Other recorded callers — channel association not matched</div>');
-    } else other.innerHTML = "";
+    // Unmatched legacy records are not evidence of membership in any room.
+    other.innerHTML = "";
   }
 }
 function renderCallerList(box, callers) {
   if (!box) return;
   if (!callers.length) { box.innerHTML = '<div class="note">No callers on record yet (or the bridge is down).</div>'; return; }
-  const onN = callers.filter(c => c.state === "on").length;
-  box.innerHTML =
-    '<div class="row" style="margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #2a303c">' +
-    '<span class="grow" style="font-size:12px;font-weight:600">Callers <span style="color:#7d8697;font-weight:400">(' +
-    onN + ' of ' + callers.length + ' on)</span></span></div>' +
-    callers.map(c => {
+  box.innerHTML = callers.map(c => {
       const isOn = c.state === "on";
       const rec = c.win_pct != null
         ? esc(String(c.win_pct)) + "% win"

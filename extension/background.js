@@ -1244,6 +1244,16 @@ async function downloadRoom(channelId, roomLabel) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: fname, text: body }) });
     if (r.ok) {
+      const saved = await r.json();
+      if (!saved.ok) throw new Error("Project export failed");
+      const structured = await fetch(bridgeBaseFrom(c.bridge_url) + "/exportlog", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name:fname.replace(/\.txt$/, ".json"),
+          text:JSON.stringify({schema_version:2,channel_id:String(channelId),
+            exported_at:new Date().toISOString(),messages:rows},null,2)})
+      });
+      if (!structured.ok || !(await structured.json()).ok)
+        await addLog({kind:"failed",why:"Readable history saved, but structured message-ID export failed."});
       await addLog({ kind: "update", why: "💾 saved " + rows.length + " message(s) to "
         + "DS Logs\\" + fname + " — in the project folder, named by channel id." });
       return rows.length;
