@@ -68,6 +68,44 @@ def expiry_key(value):
     return ('date',year,month,day)
 
 
+def comparison_category(p, an, raw, grade):
+    """Keep schema gaps and conversion losses out of parser-bug categories."""
+    pa, aa = p.get('action') or 'NONE', an.get('action') or 'NONE'
+    ra = str(raw.get('action') or 'NONE').upper()
+    if pa in ('PREPARE', 'STOPMOVE', 'RETRACT'):
+        return 'action_schema_review'
+    if 'resting order' in p.get('why', ''):
+        return 'execution_policy_review'
+    if not grade.get('ok') and ra != 'NONE':
+        return 'ai_invalid_candidate'
+    if grade.get('ok') and aa == 'NONE':
+        return 'ai_unparsed_candidate'
+    if pa == 'NONE' and aa != 'NONE':
+        return 'potential_missed_alert'
+    if pa != 'NONE' and aa == 'NONE':
+        return 'potential_false_alert'
+    if pa != aa:
+        return 'potential_wrong_action'
+    if pa == 'NONE':
+        return 'agreement'
+    # Exit canonicalization deliberately drops contract/price fields. Report
+    # that loss instead of alleging a different contract without evidence.
+    for field in ('strike','side','expiry'):
+        if pa in ('TRIM','CLOSE') and p.get(field) and not an.get(field):
+            return 'conversion_field_loss'
+    identity = lambda s: (str(s.get('symbol') or '').upper(), s.get('strike'),
+                          str(s.get('side') or '').upper(), expiry_key(s.get('expiry')))
+    if identity(p) != identity(an):
+        return 'potential_wrong_contract'
+    if p.get('direction') != an.get('direction'):
+        return 'potential_wrong_direction'
+    if pa in ('OPEN','ADD') and p.get('limit') != an.get('limit'):
+        return 'price_field_review'  # average/trigger/fill semantics need source review
+    if p.get('qty') is not None and raw.get('qty') is not None and p['qty'] != raw['qty']:
+        return 'quantity_field_review'
+    return 'agreement'
+
+
 def jsonl(path):
     if not os.path.exists(path):
         return
@@ -316,24 +354,7 @@ def report():
         an = normalized.get(key) or {}
         pa, aa = p.get("action") or "NONE", an.get("action") or "NONE"
         raw_action = str((a.get("ai_raw") or {}).get("action") or "NONE").upper()
-        if not ag.get("ok") and raw_action != "NONE":
-            category = "ai_invalid_candidate"
-        elif ag.get("ok") and aa == "NONE":
-            category = "ai_unparsed_candidate"
-        elif pa == "NONE" and aa != "NONE":
-            category = "potential_missed_alert"
-        elif pa != "NONE" and aa == "NONE":
-            category = "potential_false_alert"
-        elif pa != "NONE" and aa != "NONE" and (
-                str(p.get("symbol") or "").upper(), str(p.get("strike") or ""),
-                str(p.get("side") or "").upper(), expiry_key(p.get("expiry"))) != (
-                str(an.get("symbol") or "").upper(), str(an.get("strike") or ""),
-                str(an.get("side") or "").upper(), expiry_key(an.get("expiry"))):
-            category = "potential_wrong_contract"
-        elif pa != aa:
-            category = "potential_wrong_action"
-        else:
-            category = "agreement"
+        category = comparison_category(p, an, a.get('ai_raw') or {}, ag)
         if category == "agreement" and flags:
             category = "ai_field_review"
         counts[category] += 1

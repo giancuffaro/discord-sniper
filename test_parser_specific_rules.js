@@ -31,3 +31,12 @@ assert.equal(read('lowering my stop loss on Tesla, 351 new stop loss').their_sto
 assert.equal(read('NQ stop to breakeven').be,true);
 assert.notEqual(read('$750 a contract on ES short. Moving stop BE').their_stop,750);
 console.log('Specific parser rule regressions passed.');
+
+assert.equal(read('1.29 entry on $SPY 766p 0dtes no adds').action,'OPEN');
+assert.notEqual(read('1.29 entry on $SPY 766p 0dtes no adds no fill').action,'OPEN');
+assert.notEqual(read('1.29 entry on $SPY 766p 0dtes no adds yesterday').action,'OPEN');
+assert.notEqual(read('If 1.29 entry on $SPY 766p 0dtes no adds').action,'OPEN');
+assert.equal(read('out on most MU calls 2.4').action,'TRIM');
+assert.equal(read('out on half MU calls 2.4').action,'TRIM');
+assert.equal(read('out on all MU calls 2.4').action,'CLOSE');
+assert.equal(read('out of most MU calls 2.4').action,'TRIM');
