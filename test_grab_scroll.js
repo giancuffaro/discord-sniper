@@ -2,7 +2,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const source=fs.readFileSync('extension/content.js','utf8').replace(/\r\n/g,'\n');
 const block=source.slice(source.indexOf('let grabbing = false;'),source.indexOf('\ntry {\n  /* CTRL+SHIFT+X'));
 async function scenario(mode) {
-  let tick=0, oldest=Date.parse('2026-09-13'), current, captures=0, room='123';
+  let tick=0, oldest=mode==='default'?Date.now()-130*86400000:Date.parse('2026-09-13'), current, captures=0, room='123';
   const reports=[], panes=[];
   function pane() {
     const scroll={parentElement:null,scrollHeight:2000,clientHeight:500,scrollTop:0};
@@ -15,15 +15,18 @@ async function scenario(mode) {
     getComputedStyle:()=>({overflowY:'auto'}),channelId:()=>room,
     chrome:{runtime:{sendMessage:async x=>reports.push(x)}},
     handle:()=>{captures++; if(mode==='error'&&captures===2)throw Error('bad row');},
-    setTimeout:fn=>{tick++;if(tick>100)throw Error('loop did not terminate');
+    setTimeout:fn=>{tick++;if(tick>500)throw Error('loop did not terminate');
       if(mode==='navigation')room='456';
-      if(mode==='replace'||mode==='virtual') {oldest-=86400000;if(mode==='replace')current=pane();else current.querySelector=()=>({id:'chat-messages-'+oldest});}
+      if(mode==='replace'||mode==='virtual'||mode==='default') {oldest-=86400000;if(mode==='replace')current=pane();else current.querySelector=()=>({id:'chat-messages-'+oldest});}
       fn();}};
   vm.createContext(ctx);vm.runInContext(block,ctx);
-  await ctx.grabHistory(Date.parse('2026-09-01'));
+  await ctx.grabHistory(mode==='default'?0:Date.parse('2026-09-01'));
   return {reports,panes,tick,captures,ctx};
 }
 (async()=>{
+  const extended=await scenario('default');
+  assert(extended.tick>200,'default must continue past four-month-old loaded messages');
+  assert(extended.reports.some(x=>x.reached==='date'));
   for(const mode of ['replace','virtual']){
     const r=await scenario(mode);
     assert(r.reports.some(x=>x.reached==='date'),mode+' must reach requested date');

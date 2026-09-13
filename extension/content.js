@@ -300,8 +300,8 @@ function grabReport(obj) {
 
 async function grabHistory(untilTs) {
   if (grabbing) return;
-  // Target at least four calendar months; overflow can only extend coverage.
-  if (!untilTs) { const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 4); untilTs = cutoff.getTime() - 3 * 86400000; }
+  // Restore the original one-year target (the user requested at least four months).
+  if (!untilTs) untilTs = Date.now() - 365 * 86400000;
   let list = document.querySelector('[data-list-id="chat-messages"]');
   let scroller = list && findScroller(list);
   if (!scroller) { grabReport({ done: true, why: "couldn't find the message pane — open the room first" }); return; }

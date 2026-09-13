@@ -1353,7 +1353,7 @@ async function enqueueGrab(tab) {
   }
   q.push({tabId:tab.id, channelId, url:tab.url});
   await setQueue(q);
-  await addLog({kind:"update", why:"Queued " + roomName(channelId) + " — four months of history; your tab stays open."});
+  await addLog({kind:"update", why:"Queued " + roomName(channelId) + " — one year of history; your tab stays open."});
   pumpGrabQueue();
 }
 async function pumpGrabQueue() {
@@ -3851,7 +3851,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       if (msg.started) await addLog({ kind: "update", why: "⏳ grabbing " + room + "'s history — scrolling it up, sit tight" });
       else if (msg.done) {
         const how = msg.why ? msg.why
-          : (msg.reached === "date" ? "reached four months back" :
+          : (msg.reached === "date" ? "reached the history target; oldest loaded message " + new Date(msg.oldest).toLocaleDateString() :
              msg.reached === "top" ? "stopped loading older messages — coverage may be partial" :
              msg.reached === "limit" ? "hit the safety limit" : "stopped");
         // Auto-download THIS room's messages the instant it's done — no button.
