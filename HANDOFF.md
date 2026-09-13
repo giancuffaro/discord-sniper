@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-13 — popup 3.8.27: Webull paper test-engine block DELETED from the popup (row, key fields, handlers; bridge-side paper_trading/WB_PAPER untouched, sandbox already retired 9/9) and the 12 static gray description notes removed (G: 'it clogs the bot with information, I'll ask'). Status lines that show live state stayed. Departments enabled and smoke-tested; Discord/Whop heartbeats confirmed.
+Last updated: 2026-09-13 — v3.8.27, both reader lanes healthy; departments enabled. Popup paper controls and 12 static notes removed. Ledger reconciliation repaired.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -25,37 +25,18 @@ Last updated: 2026-09-13 — popup 3.8.27: Webull paper test-engine block DELETE
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
 - The machine: Chrome MV3 extension source v3.8.27 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
-- Accounts (Webull, one app key), read live 9/11 15:20: MARGIN ENIQGUV4
-  connected, $113.71 buying power, flat. settings.json `execution.mode` is
-  `dryrun` BY DESIGN (the master switch is retired — bridge.py treats even
-  `webull` as dryrun); real orders are decided per ORDER by each room's own
-  popup toggle, and rooms toggled live DO send real orders (CPS filled real
-  at 12:40 on 9/11). Do not read the status page's `live:false` as "bot off".
-  CASH MOI680 was $0.55 at the 9/10 close.
-  FUTURES R8IEC is flat with $0.82 available in the current read and
-  `futures_brokers.webull` is false, so the bot will not touch it. Topstep
-  and Tradovate are disabled. NINJATRADER PAUSED 9/13 (G: "pain in the ass,
-  put it on pause, don't execute anything") — futures_brokers.ninjatrader.enabled
-  = false in settings.json; account 1114140 stays configured, nothing is sent.
-  NT is order-out only; the bot reads no bars or quotes from it. The 9/10 close was −$671 net
-  of fees: the bot +$46 on seven one-lot trades and G's 21 hand round-trips
-  −$706 (HANDOFF-LOG 9/10). Rate budget is SHARED with Market Sniper.
-- SEPARATE tool: Market Sniper (his own build, 127.0.0.1:8000) trades HIS
-  manual scalps on the SAME Webull account. Coexistence rule: positions the
-  bot didn't originate are HIS — visible, never stop-managed, never sold,
-  never blocking a room call in the same symbol (Book.is_hand_trade, every
-  exit door). Market Sniper's ratchet_tiers.py is (5.0, 0.0, 2.0), i.e. the
-  spacing this bot ran until 9/10 — so the two tools now manage stops
-  DIFFERENTLY on the SAME account. Port 5/3/5 across, or switch it off:
-  G's call, still open 9/10.
-- The Claude Project (claude.ai): project/PROJECT-INSTRUCTIONS.md points to
-  this live file and AGENTS.md instead of copying their rules. Files remaining
-  in project/context/ are reference material, not operating instructions. The complete
-  2026-09-11 Claude export is under Downloads/Claude Export 2026-09-11;
-  its recovered Discord Sniper project prompt and 14 documents are historical
-  reference only. Current HANDOFF/code wins wherever an exported copy differs.
-- Codex reads root `AGENTS.md` for the repository improvement workflow; this
-  HANDOFF remains the current operating state and `HANDOFF-LOG.md` its history.
+- Accounts: `execution.mode=dryrun` does not disable per-room live Webull
+  orders. Verify current buying power and positions at the broker before
+  making claims. Webull options share one API budget with Market Sniper;
+  `futures_brokers.webull` and Topstep/Tradovate remain off. NinjaTrader
+  execution was paused 9/13; its configured account remains untouched.
+- Market Sniper on port 8000 is G's separate tool on the same account. Its
+  positions are visible but never stop-managed or sold by Discord Sniper;
+  Book.is_hand_trade enforces that boundary. The two apps' ratchet spacing
+  differs; changing either is a separate trading-policy decision.
+- The Claude export under Downloads/Claude Export 2026-09-11 and
+  project/context/ are historical reference only. Root AGENTS.md and this
+  operating state govern the local project; HANDOFF-LOG.md holds history.
 - PRODUCT NORTH STAR (G, 9/11): every day must leave a complete, auditable
   alert funnel and enough append-only price/event data to benchmark the
   caller's documented trade, the versioned bot policy on the same alert, and
@@ -155,74 +136,19 @@ ENTRIES
   whatever the room's state (shabs/eli are off but relayed via OWLS).
   Set from the popup: the pills on each Channels row (SPY-proxy / bare /
   SPX / 24h).
-- ROOM HOURS (9/9 evening, G: "open the rooms at 9:15 and close them at
-  4:30 PM — we can't follow any alert then, don't bomb Discord with pings;
-  keep the futures channels always open"). An `on` room has a tab only
-  9:15–4:30 PM ET on weekdays (no market holidays) UNLESS its rules carry
-  `always` (the futures rooms: Platinum futures-alerts, Whop Futures; ZT
-  fut-1/2 and NGD carry it too for when they're on). background.js
-  ROOM_HOURS + roomSchedule() on the 30 s alarm: inside the window it opens
-  any missing `on` room of its lane (3 per pass, 6 s apart); at the 4:30
-  boundary (and once at startup if already outside) it closes the day's
-  room tabs; a room opened by hand at night is left alone until the next
-  4:30. Never closes a window's last tab — the dashboard page takes its
-  place. START HERE now only SEEDS each browser (main Discord room, first
-  ON Whop room) and hands the rest to the extension via the request token,
-  cold or warm — so a 7 AM start opens the futures rooms and the rest come
-  up at 9:15 by themselves. Switching a room ON at night says "its tab
-  opens at 9:15". Each Channels row shows "last msg HH:MM" — the newest
-  message that room POSTED (its own timestamp, survives reloads).
-- SELF-SERVE PANELS — TEST BUILD (9/9 evening, G: "what else can we apply
-  this methodology to so I don't have to bother you?" — "make them just to
-  test, I might want to remove"). Four panels, each one bridge endpoint
-  pair + one popup block, marked "SELF-SERVE" in bridge.py / popup.js /
-  popup.html / background.js so removal is deleting the marked blocks:
-  · CALLERS tab — THE TRADER SCOREBOARD. Ranked by net $, and the board's
-    total RECONCILES: ledger +4770 = G's named +36 + G's hand trades +1150
-    + callers +3584. Rules learned 9/9-9/10 from G's spot-checks:
-    (a) ONE ROW PER POSITION — days/*.json re-lists an open position every
-    day until it closes, so a 3-day hold read as 3 fills (299 rows for 247
-    positions; Stormzy's 5 futures positions read as 13). Keyed on
-    caller+contract+entry time, richest copy wins. (b) PAPER IS NOT MONEY —
-    counted as a call taken, shown greyed, never in the net ("are alerts"
-    read −$732 when the real number was −$62 live; the rest was one paper
-    HPE trade). (c) FUTURES fills are counted, not valued — the NinjaTrader
-    path records no P&L, so a futures caller shows "$0 · N futures", never
-    a fake zero. (d) A FILL WITH NO BOOK ROW IS STILL SOMEBODY'S CALL —
-    build_ledger.load_fill_callers() reads the caller back from the WORKING
-    line above each trades.log FILLED ("WORKING QQQ — Demon Alerts's call"),
-    same symbol, 60 lines of reach. That attributed all 41 rows that used to
-    sit at room "?" with no name. (e) G'S OWN HAND TRADES ARE NOT A CALLER'S
-    RECORD — export-only/manual rows are skipped, not bucketed (+$1150 of
-    his Market Sniper scalps was inflating the board). What is left in the
-    bucket is 30 fills / −$194 from Aug 7-20, before the book recorded a
-    caller at all; the log has no WORKING lines that far back, so it stays.
-    WHEN FUTURES EXECUTION WORKS, PULL ITS RECORDS THE SAME WAY
-    THE OPTIONS ONES ARE PULLED (broker export → master_broker.csv →
-    ledger), or the board keeps lying about the futures callers.
-    Every trader ever followed (ledger + alerts; key =
-    lowercase alphanumerics of the name), record inline, one switch. OFF =
-    settings.json callers_off gets the key; the bridge refuses that
-    trader's OPEN/ADD at the door ("switched OFF in the popup's Callers
-    tab"); exits never gated; the room keeps reading. GET/POST /callers.
-  · NEEDS YOU tab — what's waiting on G: bridge side (STOP file, announcer
-    paused, Webull not connected, buying power < $150, lapsed rooms, queued
-    restart) + extension side (ON room with no tab in this lane, "No
-    Access" title, reader silent > 3 min in market hours, extension update
-    waiting). Buttons = the old .bat files / F5: reload dead readers,
-    open missing tabs, announcer on/off (announcer.stop), restart bridge
-    (bridge.restart), reload extension. GET /needs, POST /fix, messages
-    NEEDS? / FIX.
-  · STRATEGY NUMBERS (Strategies tab, bottom) — born stop %, take-profit %
-    (hard-close mode only), ratchet arm %, ratchet rung %, round-number
-    wait minutes; each with its backtest note; ranges enforced (stop 2-30,
-    arm 1-30, rung 0.5-20, wait 1-30); two taps to save; written to
-    settings.json (strategy.ratchet_arm_pct / ratchet_rung_pct are NEW
-    keys, applied to ratchet_tiers.TIERS live; pullback.timeout_seconds
-    applied to the live Pullback). GET/POST /numbers. Changing them is
-    G's call by house rule — the panel is him making it.
-  · ROOM RULES — the pills above.
-  None of these places, cancels or sizes an order by itself.
+- ROOM HOURS: `on` rooms use tabs 9:15–16:30 ET on weekdays unless
+  marked `always` (futures rooms). roomSchedule closes daytime tabs after
+  hours; it does not reopen them at 9:15. START HERE once in the morning
+  creates a one-shot, lane-aware open-rooms request, up to three tabs per
+  pass with six-second spacing. Whop alone self-heals missing tabs. Closing
+  a Discord tab by hand leaves it closed until the next START HERE request
+  or a room-switch change. The last browser tab is protected from closure.
+- CHANNELS / CONTROLS: Callers are shown within their verified room, with
+  win rate unavailable unless backed by evidence. The separate Callers and
+  Needs You tabs/buttons were removed at G's request. Existing Honey Drip
+  caller switches retain their specific room keys; other observed accounts
+  are identity rows only. Strategy Numbers and Room Rules remain in the UI.
+  GET/POST /callers and /rooms still provide their existing bridge functions.
 - STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung
   (quote-verified). 3-ITM translation for SPY/QQQ/Mag7 0DTE. ADD buys the
   held strike.
