@@ -12,6 +12,24 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-13 (Gemini-first observer and index-mirror verification)
+
+Gemini 3.1 Flash Lite now leads the 50-message contextual observer; OpenAI
+gpt-5.4 remains its fallback. A real JSON-only Gemini probe answered correctly,
+and the restarted bridge reports that provider order. The separate legacy
+Anthropic single-message reader still reports billing-blocked.
+
+The index mirror remains OFF. Review found that the futures route records
+25/50 levels after a market fill but does not place a broker stop/target or
+feed quotes into its ratchet. The bridge now refuses mirror activation and any
+manually enabled mirror order until protective exits exist; the popup shows
+the switch unavailable. Replays are labeled hypothetical. Historical market
+cumulative was cleaned from 151 mixed rows to 149 market rows, preserving
+the -$721 gross baseline; September 11 rerun added zero duplicates. The
+11,385-message parser gate stayed at 852 entries/3,048 actions with no gain,
+loss, or junk symbols. Both reader lanes reported v3.8.29 and fresh after
+the bridge reload. Monday live capture remains to verify.
+
 ## 2026-09-13 (index mirror built, switched off)
 Built the SPY/QQQ → MES/MNQ index mirror. G's idea: a SPY call is a direction on
 the S&P and a QQQ put a direction on the Nasdaq, so trade the micro future and
