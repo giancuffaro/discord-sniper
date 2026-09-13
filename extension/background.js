@@ -1148,12 +1148,13 @@ function addLog(entry) {
 let CAPTURE_PENDING = [];
 let CAPTURE_TIMER = null;
 let CAPTURE_FLUSHING = false;
-function capture(text, author, channel, at, history, parseText) {
+function capture(text, author, channel, at, history, parseText, messageId) {
   return new Promise(resolve => {
     CAPTURE_PENDING.push({
       entry: { t: at || Date.now(), author, text,
                parse_text: String(parseText || text || ""),
-               channel: String(channel || ""), history: !!history },
+               channel: String(channel || ""), history: !!history,
+               message_id: String(messageId || ""), captured_at: Date.now() },
       resolve
     });
     if (!CAPTURE_TIMER && !CAPTURE_FLUSHING) {
@@ -1170,11 +1171,24 @@ async function flushCaptures() {
   try {
     const { captured } = await chrome.storage.local.get("captured");
     const c = captured || [];
+    const byId = new Map(c.filter(e => e.message_id).map(e => [e.channel + "|" + e.message_id, e]));
     for (const item of batch) {
       const e = item.entry;
+      if (e.message_id) {
+        const key = e.channel + "|" + e.message_id;
+        const old = byId.get(key);
+        if (old) {
+          if (old.text !== e.text || old.parse_text !== e.parse_text) {
+            const revisions = old.revisions || [];
+            revisions.push({text:old.text,parse_text:old.parse_text,captured_at:old.captured_at});
+            Object.assign(old,e,{revisions});
+          }
+        } else { c.push(e); byId.set(key,e); }
+        continue;
+      }
       // Discord repaints nodes. Same author, words and minute in the most
       // recent entries is the same post, not a second alert.
-      if (!c.slice(-8).some(old => old.text === e.text && old.author === e.author &&
+      if (!c.slice(-8).some(old => old.channel === e.channel && old.text === e.text && old.author === e.author &&
                                   Math.abs((old.t || 0) - e.t) < 60000)) {
         c.push(e);
       }
@@ -1206,7 +1220,7 @@ async function downloadRoom(channelId, roomLabel) {
                        .sort((a, b) => (a.t || 0) - (b.t || 0));
   if (!rows.length) return 0;
   const lines = rows.map(e => new Date(e.t).toISOString().slice(0, 16).replace("T", " ")
-    + "  " + (e.author || "?") + ": " + e.text);
+    + "  [message_id=" + (e.message_id || "legacy-unknown") + "] " + (e.author || "?") + ": " + e.text);
   // WHERE IT LANDS, AND WHAT IT IS CALLED (9/10, G: "make sure the log goes
   // somewhere you know where it is, and save it with the name or the ID of
   // the channel"). It used to go to the Downloads folder as "<label>-<date>"
@@ -3943,7 +3957,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // Grabber export stores the FULL row text (embeds and all); trading still
     // reads the clean msg.text below.
     if (c.capture) capture(msg.full || msg.text, msg.author, msg.channelId,
-                           msg.postedAt, msg.history, msg.text);
+                           msg.postedAt, msg.history, msg.text, msg.mid);
     ROOM_MSG_AT[String(msg.channelId || "")] = Date.now();
     notePost(String(msg.channelId || ""), msg.postedAt);
 
