@@ -20,7 +20,7 @@ def request(provider, model, key, system, prompt, output_limit=1600, reasoning="
     if provider == 'openai':
         url = 'https://api.openai.com/v1/responses'
         headers = {'Authorization': 'Bearer ' + key}
-        body = {'model': model, 'instructions': system, 'input': prompt,
+        body = {'model': model, 'instructions': system, 'input': 'Return JSON.\n' + prompt,
                 'max_output_tokens': output_limit, 'reasoning': {'effort': reasoning},
                 'text': {'format': {'type': 'json_object'}}, 'store': False}
     else:
