@@ -58,7 +58,7 @@ def integrate(root=ROOT, out=OUT):
             rid = digest(rel,n,row)
             db.execute('INSERT INTO ledger_records VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(record_id) DO UPDATE SET current=1',
                        (rid,kind,rel,n,1,row.get('date'),cid,uid,row.get('caller') or row.get('who'),
-                        row.get('room'),row.get('symbol'),row.get('occ'),
+                        row.get('room'),row.get('symbol'),row.get('occ') or row.get('contract'),
                         row.get('ledger_key') if kind=='alert_decision' else row.get('key'),
                         json.dumps(row,ensure_ascii=False)))
         db.execute('INSERT OR REPLACE INTO research_imports VALUES(?,?,?,?)',

@@ -1,5 +1,26 @@
 # Caller research data
 
+## Integrated trading research database
+
+`python research_ledger.py refresh` refreshes the catalog and imports master alerts,
+broker records, reconciled trades, postmortems, and daily caller-outcome CSVs into
+the same SQLite file. `python research_ledger.py search CPS` searches imported
+records and original messages; `python research_ledger.py gaps` lists missing
+identities. Search/gap output is capped at 100 rows; use SQL for full extraction.
+
+`ledger_records` contains typed records with every source field in `payload`.
+Blank source values become SQL NULL / JSON null, never zero or a guessed identity.
+`source_path` and `source_row` identify CSV records (header is row 1; multiline CSV
+records are logical rows). Previous versions remain with `current=0` when a source
+is rebuilt. `research_imports` records content hashes and import times.
+`research_links` accepts only unambiguous explicit ledger keys on the same date.
+No contract/name/time similarity joins are promoted into confirmed relationships.
+Missing files retain their last imported snapshot; consult import timestamps.
+
+This integrates search and source evidence; historical records without common IDs
+remain unlinked. Quote tapes and simulation engines are not imported by this version.
+Refresh is manual, not a live background process. Original ledgers remain authoritative.
+
 Run `python caller_ledger.py` from the project to refresh the additive SQLite catalog.
 Local outputs live under `local-reader-measure/caller-identity/`:
 
