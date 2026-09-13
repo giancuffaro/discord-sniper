@@ -358,7 +358,11 @@ CAVEATS = [
     "- 1-minute bars, so a bar that touched the stop AND the target is scored as",
     "  a stop. Conservative, but it is a guess about which came first.",
     "- Commission is an assumption: $%.2f round turn per contract, shown net." % RT_FEE,
-    "- The mirror is OFF. Nothing here was traded; no money moved.",
+    "- The mirror is OFF. This is hypothetical: the current live futures route",
+    "  records stop/target levels but does not enforce those exits at the broker.",
+    "  Activation is blocked until protective exits are operational and tested.",
+    "- New-day alert coverage is limited to bridge shadow rows and master_alerts;",
+    "  a post missed before those stages is absent from this report.",
 ]
 
 
@@ -395,7 +399,7 @@ def main(day):
             results.append(r)
 
     existing = load_cumulative()
-    fresh = append_cumulative(existing, results)
+    fresh = append_cumulative(existing, [r for r in results if r["mode"] == "market"])
     allrows = existing + fresh
 
     mkt = [r for r in results if r["mode"] == "market"]

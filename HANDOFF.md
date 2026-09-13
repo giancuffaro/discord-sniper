@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-13 — v3.8.28, index mirror (SPY/QQQ → MES/MNQ) built and shipped OFF; its shadow record and daily replay run every evening.
+Last updated: 2026-09-13 — v3.8.29, Gemini-first contextual reader; index mirror stays OFF and activation is blocked until futures exits work.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -34,9 +34,7 @@ Last updated: 2026-09-13 — v3.8.28, index mirror (SPY/QQQ → MES/MNQ) built a
   positions are visible but never stop-managed or sold by Discord Sniper;
   Book.is_hand_trade enforces that boundary. The two apps' ratchet spacing
   differs; changing either is a separate trading-policy decision.
-- The Claude export under Downloads/Claude Export 2026-09-11 and
-  project/context/ are historical reference only. Root AGENTS.md and this
-  operating state govern the local project; HANDOFF-LOG.md holds history.
+- Claude exports and project/context/ are historical reference only.
 - PRODUCT NORTH STAR (G, 9/11): every day must leave a complete, auditable
   alert funnel and enough append-only price/event data to benchmark the
   caller's documented trade, the versioned bot policy on the same alert, and
@@ -48,11 +46,11 @@ Last updated: 2026-09-13 — v3.8.28, index mirror (SPY/QQQ → MES/MNQ) built a
 - KEY CHECK (9/13): OpenAI, Gemini and Perplexity probes passed; Anthropic billing blocked, DeepSeek removed. See sanitized local-reader-measure/provider-key-check.json.
 - PROVIDER KEYS: Keys pane saves OpenAI, Gemini and Perplexity credentials under settings.json ai_provider_keys. Saved provider fields are hidden with an explicit Replace key option. OpenAI/Gemini connected to context observer; Perplexity stored inactive. DeepSeek credential and fields removed by user request; Anthropic retained billing-blocked. Status returns presence flags only; inputs are not included in browser draft persistence.
 - DEPARTMENTS: enabled. Existing bridge audit loop calls health_tick every five minutes; extension maintenance publishes Discord/Whop lane heartbeat and reader issues. GPT-5.4 mini analyzes changed issues (12/day), Astra escalates multi-issue incidents (2/day), reviews selected reader disagreements (20/day), and analyzes existing daily reports after the 16:40 audit (1/day). Results are advisory files in department-reports, never executed as code/orders. Astra and Mini live probes passed; first Astra report for Friday 9/11 and Mini preflight generated. Context snapshots persist at most once/minute (up to one minute may be lost on abrupt exit).
-- READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer enabled: OpenAI gpt-5.4 primary, Gemini gemini-3.1-flash-lite fallback; same prompt, bounded requests and cooldowns; observation only. Needs You pane/buttons/polling removed. Caller controls appear under matching Channels; v3.8.27 shows verified account sightings by channel ID and an unavailable win rate until evidence supports one. Existing Honey Drip controls remain limited to their specific room IDs; newly observed accounts have no execution keys. Historical identity attribution is candidate-only unless the original source supports an account link. Grabber v3.8.22 re-resolves replaced message panes each step, tracks oldest-message progress instead of page height, allows 30 seconds for stalled loads, and clears failed runs; stale-ID recovery and queue advancement fixed; v3.8.23 restores the original one-year target (exceeds requested four months); the Optionality tab already had May 6 loaded and was correctly stopping at the shorter cutoff. Retains tabs and labels stalled history partial. v3.8.25 capture retains message_id, captured_at and observed revisions, dedupes by channel+ID, and exports structured .json beside readable .txt. Legacy ID-less rows remain explicit legacy-unknown; re-grab is needed to obtain IDs, not infer them. Browser full-history completeness remains unverified.
+- READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer enabled: Gemini gemini-3.1-flash-lite primary, OpenAI gpt-5.4 fallback; same prompt, bounded requests and cooldowns; observation only. Needs You pane/buttons/polling removed. Caller controls appear under matching Channels; v3.8.27 shows verified account sightings by channel ID and an unavailable win rate until evidence supports one. Existing Honey Drip controls remain limited to their specific room IDs; newly observed accounts have no execution keys. Historical identity attribution is candidate-only unless the original source supports an account link. Grabber v3.8.22 re-resolves replaced message panes each step, tracks oldest-message progress instead of page height, allows 30 seconds for stalled loads, and clears failed runs; stale-ID recovery and queue advancement fixed; v3.8.23 restores the original one-year target (exceeds requested four months); the Optionality tab already had May 6 loaded and was correctly stopping at the shorter cutoff. Retains tabs and labels stalled history partial. v3.8.25 capture retains message_id, captured_at and observed revisions, dedupes by channel+ID, and exports structured .json beside readable .txt. Legacy ID-less rows remain explicit legacy-unknown; re-grab is needed to obtain IDs, not infer them. Browser full-history completeness remains unverified.
 - AI MEASUREMENT: OpenAI retained scan COMPLETE: 12,162 successful; $28.37
   estimated API cost of $45 authorized. Results: local-reader-measure/
   openai-trial-2026-09-12/final-release-3.8.14/. No new paid scan needed.
-  Contextual AI now uses OpenAI with Gemini fallback; Anthropic helper remains billing-blocked. Chrome
+  Contextual AI now uses Gemini with OpenAI fallback; legacy Anthropic one-message reader remains billing-blocked. Chrome
   remote history remains incomplete. Both Chrome lanes reported v3.8.27 on 9/13 after the Whop watchdog repair. G closed Platinum futures-alerts, NGD ngd-trades and Chika Alerts, then authorized a one-shot reopen; all three tabs were verified open. START HERE once Monday morning still opens enabled rooms; roomSchedule closes them after hours and does not reopen them automatically. Market-hours capture remains to verify.
 
 ## Rules of the house (current, in force)
@@ -204,19 +202,8 @@ ENTRIES
 - FUTURES: micros only (NQ→MNQ, ES→MES ...). Entry snaps to the 25-pt grid
   in his favour. Their stop/target wins; 25/50 fills the gaps. A MARKET entry
   (no price in the alert) gets that bracket off the FILL instead — positions.
-  _arm_stop; no futures position runs without a stop.
-- INDEX MIRROR (9/13) — **OFF**. On, a SPY/QQQ option ENTRY buys the index
-  future instead of the option: SPY CALL→long MES, SPY PUT→short MES, QQQ
-  CALL→long MNQ, QQQ PUT→short MNQ, one contract, RTH 09:30–15:45 only, market
-  entry, the normal 25/50 bracket and futures ratchet. The option is NOT
-  bought. Switch: popup Keys tab, under the futures brokers,
-  "SPY/QQQ → MES/MNQ mirror" (settings execution.index_mirror.enabled).
-  Shadow record `futures_mirror_shadow.csv` is written whether the switch is on
-  or off; `futures_mirror_daily.py` (run by daily_audit after the 16:40 audit)
-  scores it into `daily-reports/FUTURES-MIRROR-<date>.md` and the cumulative
-  `reference/FUTURES-MIRROR-REPLAY.csv`. WHY IT IS OFF: 149 real alerts 8/3–9/11
-  on real ES/NQ 1-min bars lost **−$721 gross**, and −$703 of that was ONE room
-  (ZT all-trades mashup). Re-measured daily; flip it only if that line turns up.
+  _arm_stop, but these are recorded levels, not broker-enforced exits. No automatic futures stop/target or quote-driven ratchet is operational yet.
+- INDEX MIRROR (9/13) — **OFF and activation blocked** until a broker-confirmed futures protective exit path exists. The shadow records SPY/QQQ option entries, and `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the daily audit. Reports land in `daily-reports/FUTURES-MIRROR-<date>.md`; the cumulative history is `reference/FUTURES-MIRROR-REPLAY.csv`. The original 149-alert 8/3–9/11 replay lost $721 gross (ZT mashup accounted for $703). The replay's 25/50 stop, target and ratchet are simulated, not current live futures exits. New-day coverage is only bridge shadow rows plus `master_alerts.csv`; posts missed upstream are absent. The popup switch stays disabled until live exits are built and verified.
 - THE POCKET (hidden from the UI on purpose): a :43-:51 scalp-entry clock
   gate exists behind settings flag pocket_scalps_only, default OFF. The
   decision comes from HIS fill data (ledger minute-of-hour), not the QQQ study.

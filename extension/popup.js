@@ -552,6 +552,13 @@ function _fbPaintToggles() {
   // bridge is its only truth and the button shows what the bridge reports. A
   // popup that can't reach the bridge shows off, which is the safe answer.
   _fbBtn("fbMirror", !!(((modeStatus || {}).index_mirror || {}).enabled));
+  const mirror = (modeStatus || {}).index_mirror || {};
+  if ($("fbMirror")) {
+    $("fbMirror").disabled = mirror.available === false;
+    $("fbMirror").title = mirror.available === false
+      ? "Shadow replay only: futures protective exits are not operational"
+      : "";
+  }
 }
 
 function paintFuturesBrokers() {
@@ -617,6 +624,11 @@ function _wireFb(id, key, fieldsId) {
   const b = $(id);
   if (!b) return;
   b.onclick = async () => {
+    if (((modeStatus || {}).index_mirror || {}).available === false) {
+      if ($("fbState")) $("fbState").textContent =
+        "mirror stays off — futures protective exits are not operational";
+      return;
+    }
     _fbLocal[key] = !_fbLocal[key];
     _fbSeeded = true;
     _fbBtn(id, _fbLocal[key]);
