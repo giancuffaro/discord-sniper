@@ -1,0 +1,114 @@
+"""Build the research caller catalog from retained exports; never changes live trading.
+
+Run: python caller_ledger.py
+IDs are strings. Legacy author names are channel-scoped observations, not identities.
+The database is additive and keeps source rows for audit/replay.
+"""
+import hashlib
+import json
+from pathlib import Path
+import re
+import sqlite3
+
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / 'local-reader-measure' / 'caller-identity'
+
+
+def digest(*parts):
+    return hashlib.sha256(json.dumps(parts, ensure_ascii=False).encode()).hexdigest()
+
+
+def build(root=ROOT, out=OUT):
+    out.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(out / 'callers.sqlite3')
+    db.execute('PRAGMA foreign_keys=ON')
+    db.executescript('''
+    CREATE TABLE IF NOT EXISTS channels(channel_id TEXT PRIMARY KEY, server_id TEXT,
+      label TEXT, configured_state TEXT);
+    CREATE TABLE IF NOT EXISTS author_observations(observation_id TEXT PRIMARY KEY,
+      channel_id TEXT REFERENCES channels, display_name TEXT,
+      identity_status TEXT NOT NULL DEFAULT 'unverified');
+    CREATE TABLE IF NOT EXISTS messages(record_id TEXT PRIMARY KEY,
+      observation_id TEXT REFERENCES author_observations, message_id TEXT,
+      posted_at TEXT, raw_text TEXT, dedup_basis TEXT);
+    CREATE TABLE IF NOT EXISTS source_rows(source_path TEXT, line_number INTEGER,
+      content_hash TEXT, record_id TEXT REFERENCES messages,
+      PRIMARY KEY(source_path,line_number,content_hash));
+    CREATE TABLE IF NOT EXISTS confirmed_accounts(discord_user_id TEXT PRIMARY KEY,
+      caller_name TEXT, evidence_json TEXT);
+    CREATE TABLE IF NOT EXISTS feed_evidence(evidence_id TEXT PRIMARY KEY, evidence_json TEXT);
+    CREATE INDEX IF NOT EXISTS message_author ON messages(observation_id);
+    CREATE VIEW IF NOT EXISTS caller_coverage AS
+      SELECT a.observation_id,a.display_name,c.channel_id,c.server_id,c.label,
+      c.configured_state,a.identity_status,COUNT(m.record_id) retained_records,
+      MIN(m.posted_at) first_seen,MAX(m.posted_at) last_seen
+      FROM author_observations a JOIN channels c USING(channel_id)
+      LEFT JOIN messages m USING(observation_id) GROUP BY a.observation_id;
+    ''')
+    for line in (root / 'extension/rooms.txt').read_text(encoding='utf-8-sig').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        p = line.split('|')
+        if len(p) < 5:
+            continue
+        guild = re.search(r'discord.com/channels/(\d+)/', p[1])
+        db.execute('INSERT INTO channels VALUES(?,?,?,?) ON CONFLICT(channel_id) DO UPDATE SET server_id=excluded.server_id,label=excluded.label,configured_state=excluded.configured_state',
+                   (p[0], guild[1] if guild else None, p[2], p[4]))
+    row_re = re.compile(r'^(\d{4}-\d\d-\d\d \d\d:\d\d(?::\d\d)?)\s+(?:\[(.*?) #([^\]]+)\]\s+)?(?:\[message_id=([^\]]+)\]\s+)?([^:]+):\s*(.*)$')
+    files = sorted(set((root / 'DS Logs').glob('signal-room-chat*.txt')) | set((root / 'DS Logs').glob('grab *.txt')))
+    for path in files:
+        channel = label = None
+        for n, line in enumerate(path.read_text(encoding='utf-8-sig', errors='replace').splitlines(), 1):
+            if line.startswith('channel_id: '):
+                channel = line[12:].strip()
+            if line.startswith('room: '):
+                label = line[6:].strip()
+            match = row_re.match(line)
+            if not match:
+                continue
+            at, room, cid, mid, author, body = match.groups()
+            cid = cid or channel
+            if not cid:
+                continue
+            db.execute('INSERT OR IGNORE INTO channels VALUES(?,?,?,?)', (cid, None, room or label, None))
+            author = author.strip()
+            obs = digest(cid, author)
+            db.execute('INSERT OR IGNORE INTO author_observations(observation_id,channel_id,display_name) VALUES(?,?,?)', (obs,cid,author))
+            mid = mid if mid and mid.isdigit() else None
+            # Preserve edited variants; never collapse separate channel feeds.
+            rid = digest(cid, mid, body) if mid else digest(cid, at, author, body)
+            db.execute('INSERT OR IGNORE INTO messages VALUES(?,?,?,?,?,?)',
+                       (rid,obs,mid,at,body,'message_id_and_content' if mid else 'legacy_exact_timestamp_author_text'))
+            db.execute('INSERT OR IGNORE INTO source_rows VALUES(?,?,?,?)',
+                       (str(path.relative_to(root)),n,digest(line),rid))
+    registry_path = out / 'registry.json'
+    if registry_path.exists():
+        registry = json.loads(registry_path.read_text(encoding='utf-8-sig'))
+        for account in registry.get('accounts', []):
+            db.execute('INSERT OR REPLACE INTO confirmed_accounts VALUES(?,?,?)',
+                       (account['discord_user_id'],account.get('caller_name'),json.dumps(account,ensure_ascii=False)))
+        for item in registry.get('verified_feed_matches', []):
+            db.execute('INSERT OR REPLACE INTO feed_evidence VALUES(?,?)', (digest(item),json.dumps(item)))
+    db.commit()
+    counts = {t:db.execute('SELECT COUNT(*) FROM '+t).fetchone()[0] for t in
+              ('channels','author_observations','messages','source_rows','confirmed_accounts')}
+    rows = db.execute('SELECT display_name,label,channel_id,retained_records,first_seen,last_seen FROM caller_coverage ORDER BY label,display_name').fetchall()
+    report = ['# Caller research ledger', '',
+              'All retained author observations, including chat participants and bots. These are not all confirmed traders.',
+              'Names stay separate by channel until identity evidence confirms a link. Confirmed accounts are stored separately; name matching never assigns an account ID.',
+              'Record counts are not alert counts or trade counts. Legacy exact duplicates are grouped, original file/line references remain. Timestamps retain export formatting and are not assumed to be UTC.',
+              'No win-rate ranking is available from this catalog alone: paired caller exits, quote coverage, and broker evidence must be joined before ranking. Missing evidence must remain unavailable.',
+              '', 'Counts: '+json.dumps(counts), '',
+              '| Observed author | Room | Channel ID | Records | First | Last |',
+              '|---|---|---|---:|---|---|']
+    for row in rows:
+        report.append('| '+' | '.join(str(x or '').replace('|','/').replace('\n',' ') for x in row)+' |')
+    (out / 'CALLER-LEDGER.md').write_text('\n'.join(report)+'\n',encoding='utf-8')
+    assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
+    assert not db.execute('PRAGMA foreign_key_check').fetchall()
+    db.close()
+    return counts
+
+
+if __name__ == '__main__':
+    print(json.dumps(build(), indent=2))
