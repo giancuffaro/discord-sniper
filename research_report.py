@@ -26,7 +26,7 @@ def render(out=OUT):
     coverage=[list(r) for r in db.execute('SELECT label,channel_id,display_name,retained_records,first_seen,last_seen FROM caller_coverage ORDER BY label,display_name')]
     imports=[list(r) for r in db.execute('SELECT source_path,row_count,imported_at FROM research_imports ORDER BY source_path')]
     db.close()
-    sections=[('Trades', ['Date','Recorded / recovered entry caller','Room','Symbol','Strike','Expiry','Entry','Exit','Ledger P/L','Entry evidence','Exit method','Legacy ID status','Resolved ID','Candidate ID','Name basis','Origin','Entry log lines','Source','Row'],trades),
+    sections=[('Trades', ['Date','Recorded / recovered entry caller','Room','Symbol','Strike','Expiry','Entry','Exit','Ledger P/L','Entry evidence','Exit method','Identity status','Resolved ID','Candidate ID','Name basis','Origin','Entry log lines','Source','Row'],trades),
               ('Accounts',['Observed name','Account ID','Channel ID','Server ID'],accounts),
               ('Message coverage',['Room','Channel ID','Observed author','Records','First','Last'],coverage),
               ('Import dates',['Source','Records','Last imported (UTC)'],imports)]
@@ -40,7 +40,7 @@ button[aria-pressed=true]{background:#163b5c;color:white}input{width:min(600px,9
 td,th{padding:10px;border-bottom:1px solid #dce3eb;text-align:left;vertical-align:top}th{background:#e8eef5;white-space:nowrap}td{min-width:85px;max-width:310px;overflow-wrap:anywhere}
 [hidden]{display:none!important}.muted{color:#536579}#count{padding:10px 0}</style>
 <h1>Your research SQL</h1><p class="muted">Reading copy generated '''+timestamp+''' · Opens locally; no upload.</p>
-<p>Search trades by name, ticker, room or account ID. Blank cells mean missing information. Candidate IDs are unverified; manual trades stay separate. Ledger P/L is the existing recorded value, not a verified caller backtest. Different tabs show different record types and must not be added together as trade counts.</p>
+<p>Search trades by name, ticker, room or account ID. Blank cells mean missing information. Candidate IDs are unverified. A manual exit does not identify who entered the trade; entry and exit evidence are separate. Ledger P/L is the existing recorded value, not a verified caller backtest. Different tabs show different record types and must not be added together as trade counts.</p>
 <p>The master database is <b>callers.sqlite3</b> in this folder. This page is a snapshot: new logs appear after a research refresh, not automatically. Message coverage includes chat participants and posting bots, not only traders.</p>
 <nav>'''+''.join('<button data-tab="'+str(i)+'" aria-pressed="'+str(i==0).lower()+'">'+name+'</button>' for i,(name,_,__) in enumerate(sections))+'''</nav>
 <label for="search">Search the selected table</label><br><input id="search" type="search" placeholder="Brett, SPY, Honeydrip, account ID…"><div id="count" aria-live="polite"></div>
