@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-13 — v3.8.27, both reader lanes healthy; departments enabled. Popup paper controls and 12 static notes removed. Ledger reconciliation repaired.
+Last updated: 2026-09-13 — v3.8.27, Whop lane healthy; G closed three Discord tabs intentionally. Departments enabled; ledger fix awaits bridge reload.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -53,7 +53,7 @@ Last updated: 2026-09-13 — v3.8.27, both reader lanes healthy; departments ena
   estimated API cost of $45 authorized. Results: local-reader-measure/
   openai-trial-2026-09-12/final-release-3.8.14/. No new paid scan needed.
   Contextual AI now uses OpenAI with Gemini fallback; Anthropic helper remains billing-blocked. Chrome
-  remote history remains incomplete. Both Chrome lanes reported v3.8.27 on 9/13 with fresh heartbeats and empty missing-tab lists after the Whop watchdog batch-file repair and a one-shot open-rooms request. Daytime Discord tabs still require START HERE once Monday morning; roomSchedule closes them after hours and does not reopen them automatically. Market-hours capture remains to verify.
+  remote history remains incomplete. Both Chrome lanes reported v3.8.27 on 9/13 after the Whop watchdog repair. G then intentionally closed Platinum futures-alerts, NGD ngd-trades and Chika Alerts, so their Discord missing-tab notices are expected. START HERE once Monday morning reopens enabled rooms; roomSchedule closes them after hours and does not reopen them automatically. Market-hours capture remains to verify.
 
 ## Rules of the house (current, in force)
 OPTIONALITY REVIEW 9/13: Channel is ON by user choice. v3.8.24 blocks OPEN when its chosen premium equals an explicitly dollar-ticker-labelled stock quote, and fixes the sell-option guard for the observed "this is option selling not traditional contract buying" negation. Three bad OPEN classifications removed in the distinct grabbed-text screen; 11,385-message gate unchanged (852 entries, 3,048 actions). Multi-contract extraction, export duplication and conditional exit wording remain unresolved; no claim that all findings are fixed.
