@@ -1,1 +1,1 @@
-{"lane": "discord", "received_at": 1789324951.29824, "version": "3.8.24", "issues": [], "rooms_expected": 38}
+{"lane": "discord", "received_at": 1789325104.7354748, "version": "3.8.25", "issues": ["Platinum futures-alerts is ON but has no tab in this browser", "NGD ngd-trades (Ninjago Futures Radar) is ON but has no tab in this browser"], "rooms_expected": 38}
