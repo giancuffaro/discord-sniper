@@ -7,8 +7,8 @@ bleeds theta, and it needs a strike guess. So trade the index itself instead:
     SPY CALLS -> LONG  MES        QQQ CALLS -> LONG  MNQ
     SPY PUTS  -> SHORT MES        QQQ PUTS  -> SHORT MNQ
 
-One contract, the existing futures route, the existing 25/50 bracket, the
-existing futures ratchet. Nothing here places an order or talks to a broker.
+One contract, the existing futures route. Conversion is blocked by the bridge
+until that route can enforce protective exits. Nothing here places an order.
 
 Two halves, and only one of them can ever spend money:
 
@@ -28,10 +28,9 @@ Two halves, and only one of them can ever spend money:
              rows against real ES/NQ bars every evening, so the idea is
              measured every day whether or not it is switched on.
 
-WHY IT SHIPS OFF (9/13): replaying 149 real SPY/QQQ alerts from 8/3-9/11 on
-real ES/NQ 1-minute bars, at market with the live 25/50 bracket, lost $721
-gross. One room (ZT's all-trades mashup) was -$703 of it. Off until the daily
-report says otherwise.
+WHY IT SHIPS OFF (9/13): a hypothetical 25/50 replay of 149 alerts lost $721
+gross, and live futures stops/ratchets are not yet enforced by a broker order
+or quote watcher. The bridge refuses activation until that is fixed.
 
 RTH ONLY (09:30-15:45 ET), same window the replay measured. Futures trade
 nearly around the clock and the option market does not, so without this a

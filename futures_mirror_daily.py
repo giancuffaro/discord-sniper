@@ -4,7 +4,7 @@ today, scored on real ES/NQ bars.
     python futures_mirror_daily.py             # today
     python futures_mirror_daily.py 2026-09-11  # one day
 
-The mirror ships OFF (see index_mirror.py). This is how it earns its way on:
+The mirror ships OFF (see index_mirror.py). This measures a hypothetical route:
 every evening, after the audit, the day's SPY/QQQ entries are replayed against
 real 1-minute index futures bars with the SAME rules the live route would use —
 market entry, the house 25/50 bracket, the futures ratchet — and the running
@@ -23,10 +23,9 @@ The bars come from bars/ first (already bought), then Databento GLBX.MDP3
 no cache the report says "bars: unavailable" and stops. It never invents a
 price.
 
-THE REPLAY RULES ARE NOT NEW. They are copied line for line from
-reference/futures_mirror_replay.py, the 9/13 study that measured -$721 over 149
-alerts. Live behaviour and this report have to describe the same trade or
-neither number means anything.
+THE REPLAY RULES are copied from reference/futures_mirror_replay.py, the 9/13
+study that measured -$721 over 149 alerts. The current live futures route does
+not enforce the simulated exits, so the switch cannot be activated yet.
 """
 
 import csv

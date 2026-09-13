@@ -4221,7 +4221,8 @@ class Handler(BaseHTTPRequestHandler):
                 "context_observer": {
                     "enabled": bool((CFG.get("context_observer") or {}).get("enabled")),
                     "paused": os.path.exists(os.path.join(HERE, "local-reader-measure", "AI-PAUSED")),
-                    "models": (CFG.get("context_observer") or {}).get("models", {})},
+                    "models": (CFG.get("context_observer") or {}).get("models", {}),
+                    "provider_order": (CFG.get("context_observer") or {}).get("provider_order", ["openai", "gemini"])},
                 "ai_key_saved": bool((EXEC.get("ai_reader") or {}).get("api_key")),
                 "ai_key_status": AI_KEY_STATUS,
                 "ai_provider_keys_saved": {
