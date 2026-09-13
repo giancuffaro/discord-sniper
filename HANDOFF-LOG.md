@@ -12,6 +12,22 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-13 (Monday reader and ledger preflight)
+Whop watchdog had LF-only batch lines and an unescaped parenthesis in a CMD
+block: the scheduled task exited without reviving Profile 6. Converted to CRLF,
+fixed the syntax, and made the hidden launcher single-instance. A one-shot
+open-rooms request restored three missing always-on Discord tabs. Both lanes
+reported extension 3.8.27, fresh heartbeats and no room-tab issues Sunday.
+Daytime Discord tabs still require START HERE Monday morning, and live
+market-hours capture remains to verify. Ledger reconciliation now uses stored
+entry legs when a closed book row has zero remaining qty, requiring a unique
+same-OCC/size/price broker trip within five minutes of entry. KO 8/18 became
+one King Maker Bot trade at .54 to .59, +$5 gross. Forty-eight broker-only
+duplicate rows were absorbed; rebuilt ledger and research SQL have 931 current
+trades. New day snapshots retain original entry_qty, coid and entry_order_id.
+Manual close no longer implies a manual entry in identity research. Twenty
+focused tests passed; no broker-connected test was run.
+
 ## 2026-09-13 (popup declutter, 3.8.27)
 G: delete "Webull paper — test engine" if safe; remove the gray description
 text under every control ("clogs the bot, I'll ask"). Removed from popup.html:
