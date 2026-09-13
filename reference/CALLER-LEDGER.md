@@ -1,5 +1,16 @@
 # Caller research data
 
+## Start here
+
+Open `local-reader-measure/caller-identity/MASTER-RESEARCH.html` for a local,
+searchable reading copy of trades, account sightings, author coverage and import
+dates. `python research_report.py` regenerates it from SQL without reimporting;
+`python research_ledger.py refresh` refreshes sources and rebuilds the report.
+The authoritative integrated query file is `callers.sqlite3`, not the HTML.
+Original logs, registry and reviewed evidence remain necessary provenance.
+The HTML consolidates existing report views; it does not merge unrelated
+accounts, alter fills, or import quote tapes and live extension storage.
+
 ## Unified attribution
 
 `trade_attribution` combines the original ledger record, recorded caller name,
