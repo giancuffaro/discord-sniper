@@ -1,0 +1,62 @@
+{
+  "role": "daily",
+  "day": "2026-09-11",
+  "checked_at": 1789321000.129045,
+  "model": "gpt-6-astra",
+  "evidence_truncated": false,
+  "result": {
+    "summary": "The daily evidence reports 34 observed entries, 27 decisions, and one broker-confirmed CPS trade realizing +5.00. Only 5 of 34 entries have scored ratchet comparisons, so no full-day performance winner is established. Proposed reviews concern premium normalization, recovered gaps, outcome attribution, and benchmark labeling; none establishes a confirmed parser bug.",
+    "findings": [
+      {
+        "evidence": "REPORT-2026-09-11.md lists the 11:13:20 MU 980C entry at 300.00, while both caller evidence files list the entry at 3.00. CALLER-OUTCOMES reports a $500/contract claim calculated as +166.7%.",
+        "recommendation": "Verify the original alert, premium units, and normalization records before proposing a correction. Confirm whether $500/contract denotes profit or proceeds before relying on the supplied percentage calculation."
+      },
+      {
+        "evidence": "The report attributes four recovered entries to Chrome not running. It separately describes the 10:54 AAPL split loading/fill sequence and 13:27 RKLB 'clls' wording as parser gaps, while the 10:35 SPX entry lacks a normal verdict.",
+        "recommendation": "Verify source messages, reader availability, ingestion timestamps, and decision logs for each event. Review reader outages, possible recognition gaps, and unexplained missing verdicts separately rather than treating all recovered entries as parser failures."
+      },
+      {
+        "evidence": "The recovered 14:15 RKLB add specifies 70C 10/16, whereas the 13:27 RKLB entry specifies 70C 9/25. The report says the older capture cannot establish whether the add was live or backfilled.",
+        "recommendation": "Verify the add's exact contract, parent trade, and live/history provenance before linking it to an entry or counting it as a missed live action. Keep it separate from the seven recovered entry gaps."
+      },
+      {
+        "evidence": "Coverage lists 33 Discord rooms and 4 Whop rooms configured on, with parser inputs from 24 rooms/channels and 303 retained messages. Silence is explicitly classified as quiet or unverified.",
+        "recommendation": "Verify room identity mappings, source activity, and reader health before assessing coverage. Do not infer either an outage or healthy monitoring solely from absent messages."
+      },
+      {
+        "evidence": "CALLER-VS-RATCHET reports -19 on four caller-posted-entry paths and -23 across five paths, but includes CPS at broker-confirmed +5. RATCHET-COMPARE instead uses CPS replay P&L of +0 and reports fixed-stop -39 versus ratchet -18, an advantage of +21.",
+        "recommendation": "Verify calculation inputs and label the caller-entry totals as combining quote-path simulations with a broker-confirmed result. Preserve the different entry bases and keep actual CPS +5 distinct from replay CPS +0; these benchmarks are not interchangeable."
+      },
+      {
+        "evidence": "CALLER-OUTCOMES records 29 paired claim events and seven full exits, with three numeric exit results and four unavailable. Two numeric full exits use market bids rather than confirmed fills; HOOD supplies only a caller-stated -6.0% without an entry price. Partial trim sizes and final runner exits are not consistently available.",
+        "recommendation": "Verify original exit messages and quote timestamps, retaining separate labels for caller claims, implied prices, and market-bid proxies. Keep missing values unavailable rather than zero, and do not derive quantity-weighted caller P&L or imply broker-confirmed caller execution."
+      },
+      {
+        "evidence": "Only 5 of 34 observed entries are scored. Remaining rows include missing expiries, unavailable exact-contract paths, and futures for which the options 5/3/5 rule does not apply. The HOOD replay forces an entry that the live bot refused for a 22% spread.",
+        "recommendation": "Verify the eligibility and source tape for each comparison. Separate unresolved contracts, missing quote paths, and futures requiring different handling. Present HOOD as a filter-bypass counterfactual, not an actual trade, and restrict the supplied +21 ratchet advantage to the covered replay subset."
+      }
+    ],
+    "limitations": [
+      "The supplied evidence is not marked truncated, but underlying alerts, broker records, parser logs, and quote tapes were not provided for independent verification.",
+      "One broker-confirmed trade and limited replay coverage cannot establish full-day superiority of the bot, caller management, or ratchet rule.",
+      "Missing caller entries, exit prices, trim quantities, and exact-contract paths prevent a reliable aggregate caller P&L.",
+      "Recovered historical captures do not consistently establish live versus backfill provenance.",
+      "All recommendations are proposals requiring source verification; no orders, settings changes, code execution, or fixes were performed."
+    ],
+    "_provider": "openai",
+    "_model": "gpt-6-astra",
+    "_usage": {
+      "input_tokens": 6600,
+      "input_tokens_details": {
+        "cache_write_tokens": 6597,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1183,
+      "output_tokens_details": {
+        "reasoning_tokens": 144
+      },
+      "total_tokens": 7783
+    }
+  },
+  "fingerprint": "d33fb6b789ee7b71f7fc"
+}

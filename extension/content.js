@@ -319,7 +319,7 @@ async function grabHistory(untilTs) {
                                               // yank to the very top.
   grabReport({ started: true });
   while (grabbing && rounds < 20000) {
-    if (channelId() !== grabRoom) { grabbing = false; grabReport({done:true,why:"channel changed — partial history"}); break; }
+    if (channelId() !== grabRoom) { grabbing = false; grabReport({done:true,channelId:grabRoom,why:"channel changed — partial history"}); break; }
     rounds++;
     // Chrome slows hidden tabs to a crawl AND Discord stops loading older
     // messages when its tab isn't on screen. If we kept scrolling we'd see no

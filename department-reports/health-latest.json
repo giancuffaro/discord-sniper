@@ -1,0 +1,26 @@
+{
+  "in_session": false,
+  "issues": [],
+  "lanes": [
+    {
+      "lane": "discord",
+      "fresh": false,
+      "version": null
+    },
+    {
+      "lane": "whop",
+      "fresh": false,
+      "version": null
+    }
+  ],
+  "observer": {
+    "queue_remaining": 0,
+    "worker_started": false,
+    "last_finished": 0,
+    "last_error": "",
+    "last_provider": "",
+    "context_hours": 72,
+    "context_messages": 50
+  },
+  "checked_at": 1789320986.4415288
+}
