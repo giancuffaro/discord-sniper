@@ -113,6 +113,8 @@ if __name__=='__main__':
     if args.action=='refresh':
         build()
         result=integrate()
+        from trade_identity import reconcile
+        result['trader_identity']=reconcile()
     elif args.action=='search':
         if not args.text:
             parser.error('search requires text')
