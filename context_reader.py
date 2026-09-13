@@ -12,7 +12,7 @@ import urllib.request
 import ai_reader
 
 MAX_CONTEXT = 50
-CONTEXT_MS = 24 * 60 * 60 * 1000
+CONTEXT_MS = 72 * 60 * 60 * 1000
 FRESH_POST_MS = 15 * 60 * 1000
 SAME_AUTHOR_MS = 5 * 60 * 1000
 SHADOW_MODEL = "claude-sonnet-5"
