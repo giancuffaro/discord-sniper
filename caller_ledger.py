@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+from contextlib import closing
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / 'local-reader-measure' / 'caller-identity'
@@ -24,7 +25,7 @@ def channel_accounts(out=OUT):
     if not path.exists():
         return {'available': False, 'accounts': []}
     try:
-        with sqlite3.connect(path.resolve().as_uri()+'?mode=ro', uri=True, timeout=2) as db:
+        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro', uri=True, timeout=2)) as db:
             rows = db.execute('''SELECT channel_id,discord_user_id,display_name,server_id
                 FROM account_sightings ORDER BY channel_id,discord_user_id,display_name''').fetchall()
         accounts = {}

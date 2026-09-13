@@ -17,6 +17,7 @@ class ChannelAccountTests(unittest.TestCase):
                     ('futures','222','Nitro Trades','server'),
                     ('honey','333','Brett','honey-server'),
                     ('honey','333','Brett (Admin)','honey-server')])
+            db.close()
             result=channel_accounts(out)
             self.assertTrue(result['available'])
             self.assertEqual(len(result['accounts']),3)

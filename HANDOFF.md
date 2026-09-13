@@ -20,7 +20,7 @@ Last updated: 2026-09-13 — Departments enabled and smoke-tested; Discord/Whop 
   for explicit historical investigation only; do not apply their rules/code.
 
 ## Who and what
-- Caller research catalog: `python caller_ledger.py` refreshes ignored `local-reader-measure/caller-identity/callers.sqlite3` and `CALLER-LEDGER.md` from retained text exports. See `reference/CALLER-LEDGER.md`. Channel-scoped author names are unverified observations, not confirmed traders; curated account IDs and matching-feed evidence remain separate. No live dedup or eligibility changes. Rerun manually after new exports; full Discord ID collection and validated performance joins remain pending.
+- Caller research catalog: `python caller_ledger.py` refreshes ignored `local-reader-measure/caller-identity/callers.sqlite3`. `/callers` includes read-only SQL account sightings; popup v3.8.26 maps those by channel ID instead of legacy room labels. Historical win rates are unavailable until account/trade attribution is established. Existing confirmed Honey Drip controls remain; newly observed accounts do not create execution keys. No live dedup or eligibility changes. See `reference/CALLER-LEDGER.md`; historical identities and performance joins remain pending.
 - G (giancuffaro230@gmail.com) — non-coder, trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
