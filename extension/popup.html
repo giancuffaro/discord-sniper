@@ -261,14 +261,6 @@
     <label>Rooms — every room we've been to, one switch each</label>
     <div id="roomtoggles"></div>
     <div id="callers"></div>
-    <div class="note">ON = the tab is open, the room is read, and its calls
-      trade LIVE on your Webull account. OFF = no tab, nothing read, nothing
-      traded. One click flips it: the list (extension/rooms.txt) is rewritten,
-      the tab opens or closes, and it stays that way across restarts and
-      START HERE. Closing a tab by hand is not a bench any more — START HERE
-      reopens every ON room; use the switch. A room marked <b>lapsed</b> is
-      off because its subscription ran out; the extension knocks on its door
-      once a day and tells you when it's readable again.</div>
   </div>
 
   <!-- ===== STRATEGIES ===== -->
@@ -283,13 +275,13 @@
       Scalps keep trading normally. Positions you already hold are untouched
       and keep their stops.</div>
 
-    <label style="margin-top:10px">One-click bracket — <span style="color:#fbbf24">real money, live &amp; paper</span></label>
+    <label style="margin-top:10px">One-click bracket — <span style="color:#fbbf24">real money</span></label>
     <div class="row" style="margin-bottom:4px">
       <span class="grow" style="font-size:12px">Bracket: 1 contract, -10% stop to start</span>
       <button id="bracketstrat" class="tgl safe">off</button>
     </div>
     <div class="note" id="bracketstate">On: every entry is exactly ONE contract no
-      matter what the alert says, with a -10% stop. Works on live and paper.
+      matter what the alert says, with a -10% stop.
       Overrides sizing while it's on.</div>
 
     <div class="row" style="margin-top:8px;margin-bottom:2px">
@@ -314,12 +306,6 @@
       <button id="rnAll" class="tgl safe">off</button>
     </div>
 
-    <div class="note">ON = every entry waits for the stock to touch the next
-      round number before buying (watched every second, bought at the ask on
-      the touch, skipped if it never pulls back within 10 minutes). Applies to
-      the big names the watcher knows (SPY, QQQ, AAPL, NVDA, TSLA...); anything
-      else enters instantly as normal. Level = the next $1, window = the
-      minutes set below (settled on real bars 9/9: $1 and 10 min).</div>
 
     <!-- ===== SELF-SERVE: STRATEGY NUMBERS (test build 9/9) — delete this block
          and the numbers code in popup.js to remove ===== -->
@@ -341,7 +327,6 @@
   <!-- ===== KEYS ===== -->
   <div class="tabpane" data-tab="keys" data-title="Keys">
     <label>Trade futures from — connect your accounts</label>
-    <div class="note" style="margin-top:2px">Flip a switch to arm it. Tap the pencil to enter or replace that account's key.</div>
 
     <div class="row" style="margin-top:6px;margin-bottom:2px">
       <span class="grow" style="font-size:12px">Webull</span>
@@ -362,26 +347,6 @@
       <div class="note" id="keystate">&nbsp;</div>
     </div>
 
-    <div class="row" style="margin-bottom:2px">
-      <span class="grow" style="font-size:12px">Webull paper — test engine</span>
-      <button class="edit" data-edit="paperFields" title="Enter Webull paper key">✏️</button>
-      <button id="paperbtn" class="tgl safe">off</button>
-    </div>
-    <div id="paperKeySaved" class="okbox" style="display:none"></div>
-    <div id="paperFields" style="display:none;margin-bottom:6px">
-      <div id="paperKeyEntry">
-        <label>Webull PAPER (sandbox) App Key</label>
-        <input id="wbpkey" type="password" autocomplete="off" placeholder="paste your Sandbox App Key">
-        <label>Webull PAPER (sandbox) App Secret</label>
-        <input id="wbpsecret" type="password" autocomplete="off" placeholder="paste your Sandbox App Secret">
-        <div class="row" style="margin-top:8px">
-          <button id="savepaperkeys" class="grow">Save paper keys to this PC</button>
-        </div>
-      </div>
-      <div class="note">Webull's paper account is separate — apply for a SANDBOX API key at developer.webull.com (auto-approved in minutes). Fills your $1M paper books when this is ON.</div>
-      <div class="note" id="paperstate">&nbsp;</div>
-      <div class="note" id="paperkeystate">&nbsp;</div>
-    </div>
 
     <div class="row" style="margin-bottom:2px">
       <span class="grow" style="font-size:12px">NinjaTrader</span>
@@ -392,7 +357,6 @@
       <input id="ninjaAccount" placeholder="NinjaTrader account (e.g. Sim101)" autocomplete="off" style="margin-top:4px">
       <input id="ninjaDir" placeholder="Incoming folder (blank = default NT8 path)" autocomplete="off" style="margin-top:6px">
       <input id="ninjaAtm" placeholder="ATM template name (blank = no NT stop)" autocomplete="off" style="margin-top:6px">
-      <div class="note">Blank folder uses Documents/NinjaTrader 8/incoming. In NinjaTrader: Tools &gt; Options &gt; General &gt; make sure the ATI is on. Use a Sim account to paper-test.</div>
     </div>
 
     <!-- Tradovate removed 9/4/26 — never carried an order. See props.py. -->
@@ -407,7 +371,6 @@
       <input id="tsUser" placeholder="TopstepX username" autocomplete="off" style="margin-top:4px">
       <input id="tsKey" type="password" placeholder="TopstepX API key" autocomplete="off" style="margin-top:6px">
       <input id="tsUrl" placeholder="https://api.topstepx.com" value="https://api.topstepx.com" autocomplete="off" style="margin-top:6px">
-      <div class="note">Generate the key in TopstepX &rarr; Settings (gear) &rarr; API. Needs the TopstepX API add-on ($14.50/mo with code topstep). Leave the URL as-is.</div>
     </div>
 
     <div class="row" style="margin-top:6px">
@@ -416,11 +379,6 @@
     <div class="note" id="fbState">&nbsp;</div>
 
     <label style="margin-top:12px">More Webull accounts — same bot, more accounts</label>
-    <div class="note">Every account here fires the exact same LIVE trades as
-      your main Webull — options and futures — and each one runs its own
-      resting stop, ratchet and trims. Test rooms never touch these accounts.
-      Each needs its own API key from developer.webull.com (log in AS that
-      account to make it).</div>
     <div id="extraList"></div>
     <input id="exName" placeholder="a name for this account (shows in the journal)" autocomplete="off" style="margin-top:6px">
     <input id="exKey" type="password" placeholder="that account's Webull App Key" autocomplete="off" style="margin-top:6px">
@@ -439,24 +397,13 @@
       <button id="saveaikey" class="grow">Save AI key (reading is always ON once a key is in)</button>
       <button id="aioff" style="max-width:90px">Off</button>
     </div>
-    <div class="note">Reading intelligence for the calls the normal reader can't
-      crack. It ONLY runs on a message that was missed, hands that one line to
-      Claude to read into a clean call, and that call still goes through every
-      guard — a made-up ticker is refused. It never decides to trade, only
-      reads. Key from console.anthropic.com; pennies since it only runs on
-      misses. Saved to this PC, never the browser.</div>
     <div class="note" id="aikeystate">&nbsp;</div>
     <div class="row" style="margin-top:6px;margin-bottom:2px">
       <span class="grow" style="font-size:12px">Double-check entries (AI verifies ticker/strike)</span>
       <button id="aiVerifyBtn" class="tgl safe">off</button>
     </div>
-    <div class="note">On: before any BUY, the AI reads the same message and must
-      agree with what was pulled out — a mismatch is held for review, not bought.
-      Safest, but adds ~1–2s to each entry and uses a little more credit. Needs
-      the Claude key above. Exits are never blocked.</div>
 
     <label style="margin-top:12px">Additional AI provider keys</label>
-    <div class="note">Saved on this PC for future use. OpenAI is the primary context observer and Gemini is its backup when enabled. Saving a key alone does not activate a provider.</div>
     <label>OpenAI — <span id="provider-openai-state">checking saved status</span></label>
     <button data-replace-provider="openai" style="display:none;font-size:11px">Replace key</button>
     <input style="display:none" id="provider-openai-key" type="password" autocomplete="off" placeholder="Paste OpenAI API key">
@@ -489,18 +436,6 @@
       <div class="grow">Voice ENTRIES — fire spoken buys</div>
       <button id="voiceEntries" class="tgl money safe">off</button>
     </div>
-    <div class="note">EXITS is the proven edge: "I'm stopping out" fires 6-249
-      seconds before the scribe types it, and can only ever protect you.
-      ENTRIES stitches 25s of speech ("loading the meta" + "five sixty calls")
-      into one call — needs a strike and an 85%+ read to spend money. The
-      typed copy is always skipped as a repeat. Both OFF = ears only.</div>
-    <div class="note">Listens to a VOICE room — Discord or a Zoom web tab
-      (zoom.us in the browser) — in the tab you're on, and writes every word
-      down fast; any spoken call is normalized into the same clean format as a
-      typed one. Several rooms at once: open each in its own tab (a second
-      account/profile) and press Listen on each. Needs a Deepgram key
-      (console.deepgram.com). Saved to this PC. The desktop Zoom app can't be
-      captured this way. It never trades — it writes down.</div>
     <div class="note" id="dgstate">&nbsp;</div>
   </div>
 
@@ -520,12 +455,6 @@
       <input id="exportEvery" type="number" min="1" max="240" step="1"
              style="width:56px"> <span class="note">minutes — remembered.</span>
     </div>
-    <div class="note">Saves today's log to your Drive folder — the whole day's
-      raw messages, what the bot did, and its current state — overwriting the
-      same file each pass so it always reads current. Hit the button any time
-      you want a fresh save right now; otherwise it saves itself on the timer
-      above. Skips itself Friday 5pm–Sunday 7pm ET and market holidays —
-      nothing happens those hours, so there's nothing worth saving.</div>
 
     <label style="margin-top:14px">Grab this room's history (for tuning)</label>
     <div class="row" style="margin-top:8px">

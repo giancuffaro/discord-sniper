@@ -190,8 +190,6 @@ function _toggleKeyGroup(entryId, savedId, saved, summaryHtml) {
 function paintKeys() {
   const has = !!(modeStatus && modeStatus.has_keys);
   _okbox("keySaved", has, "Webull connected");
-  _okbox("paperKeySaved", !!(modeStatus && modeStatus.paper_keys_in),
-         "Webull paper keys saved");
   // Topstep's green box (his ask, 8/17) — and it tells the TRUTH: the
   // bridge logs in with the saved key, so "connected" means TopstepX
   // said yes, "saved" alone means it hasn't answered yet.
@@ -458,7 +456,7 @@ async function refreshMode() {
   paintStrat();
   paintFuturesBrokers();
   paintExtras();
-  paintPaper();
+  paintSwingPause();
   paintAi(modeStatus);
   paintStatus();
   paintBridgeDown();
@@ -700,29 +698,6 @@ if ($("swingpause")) {
   };
 }
 
-let paperOn = false;
-function paintPaper() {
-  paintSwingPause();
-  const s = modeStatus || {};
-  paperOn = !!s.paper;
-  const btn = $("paperbtn");
-  if (!btn) return;
-  btn.textContent = paperOn ? "ON" : "off";
-  btn.className = "tgl " + (paperOn ? "live" : "safe");
-  if ($("paperstate")) {
-    $("paperstate").textContent = !s.paper_keys_in
-      ? "This is your test engine. Paste your Webull SANDBOX key in the PAPER "
-        + "boxes below — a separate key from your live one — and every test "
-        + "trade fills in your $1M Webull paper books. Until then, the built-in "
-        + "honest-fill sim stands in."
-      : (s.paper_available
-         ? "ON — every test trade fills in your $1M Webull paper account, scored per room."
-         : (s.paper_warning
-            || "Sandbox key saved but not connected yet — tap Update (or restart), "
-               + "then it switches on by itself. In-house sim meanwhile."));
-  }
-}
-
 /* The "Paper-only tactics" panel (bid-under, auto-secure, auto-trim ladder)
  * is DELETED from the UI (his call, 8/17: "i dont think we need this") —
  * they were knobs on the old in-house paper simulator. paintSim stays as a
@@ -733,19 +708,6 @@ function paintSim() {}
 /* The keys go to the bridge and nowhere else. Nothing is written to
  * chrome.storage — the browser forgets them the moment they're sent, which is
  * the whole reason the bridge exists in the first place. */
-$("paperbtn").onclick = async () => {
-  paperOn = !paperOn;
-  const btn = $("paperbtn");
-  btn.textContent = paperOn ? "ON" : "off";
-  btn.className = "tgl " + (paperOn ? "live" : "safe");
-  try {
-    modeStatus = await askBridge("/config", { paper_trading: paperOn });
-  } catch (e) {
-    $("paperstate").textContent = "couldn't reach the bridge — START HERE first";
-  }
-  paintPaper();
-};
-
 // (the sim-tactics handlers — honest-fills, ladder, bid-under, auto-secure,
 // save — left with the panel, 8/17)
 
@@ -866,15 +828,6 @@ $("savekeys").onclick = async () => {
   const secret = $("wbsecret").value.trim();
   const el = $("keystate");
   if (!key || !secret) {
-    // The recurring trap: keys pasted into the PAPER boxes below, but this
-    // (LIVE) button pressed. Point them at the right button instead of the
-    // baffling "both boxes are empty" when they clearly typed something.
-    const pk = ($("wbpkey") || {}).value, ps = ($("wbpsecret") || {}).value;
-    if ((pk && pk.trim()) || (ps && ps.trim())) {
-      el.textContent = "Those are your SANDBOX keys — hit \"Save paper keys to " +
-        "this PC\" just below, not this one. (This top button is for LIVE keys.)";
-      return;
-    }
     el.textContent = "Both boxes need something in them — the key and the secret.";
     return;
   }
@@ -895,35 +848,6 @@ $("savekeys").onclick = async () => {
       "START HERE first, then try again.";
   }
   $("savekeys").textContent = "Save keys to this PC";
-};
-
-$("savepaperkeys").onclick = async () => {
-  const key = $("wbpkey").value.trim();
-  const secret = $("wbpsecret").value.trim();
-  const el = $("paperkeystate");
-  if (!key || !secret) {
-    el.textContent = "Both boxes need something — the sandbox key and secret.";
-    return;
-  }
-  $("savepaperkeys").textContent = "Saving and checking…";
-  try {
-    const r = await askBridge("/keys",
-      { paper_app_key: key, paper_app_secret: secret });
-    modeStatus = r;
-    el.textContent = r.message || "saved";
-    if (r.ok) {
-      $("wbpkey").value = ""; $("wbpsecret").value = "";
-      clearDrafts(["wbpkey", "wbpsecret"]);
-      const pe = $("paperKeyEntry"); if (pe) delete pe.dataset.forceOpen;
-    }
-    paintMode();
-    paintPaper();
-    paintKeys();     // collapse the paper key group back to its summary
-  } catch (e) {
-    el.textContent = "Couldn't reach the bridge on your PC — double-click " +
-      "START HERE first, then try again.";
-  }
-  $("savepaperkeys").textContent = "Save paper keys to this PC";
 };
 
 /* ---- AI reader — ALWAYS ON when keyed (his call, 8/17) -------------------
@@ -2304,7 +2228,7 @@ $("dayspick").onchange = async () => {
  * local storage and is restored when the popup reopens. A successful save
  * CLEARS its fields' drafts, so secrets don't linger once they've reached
  * settings.json on the PC. */
-const DRAFT_IDS = ["wbkey", "wbsecret", "wbpkey", "wbpsecret",
+const DRAFT_IDS = ["wbkey", "wbsecret",
                    "tsUser", "tsKey", "tsUrl",
                    "ninjaAccount", "ninjaDir", "ninjaAtm",
                    "exName", "exKey", "exSecret", "exAcctId", "aiKey", "dgKey"];
