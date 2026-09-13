@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-13 — Departments enabled and smoke-tested; Discord/Whop v3.8.21 heartbeats confirmed.
+Last updated: 2026-09-13 — popup 3.8.27: Webull paper test-engine block DELETED from the popup (row, key fields, handlers; bridge-side paper_trading/WB_PAPER untouched, sandbox already retired 9/9) and the 12 static gray description notes removed (G: 'it clogs the bot with information, I'll ask'). Status lines that show live state stayed. Departments enabled and smoke-tested; Discord/Whop heartbeats confirmed.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.

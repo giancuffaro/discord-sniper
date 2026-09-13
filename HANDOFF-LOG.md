@@ -12,6 +12,21 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-13 (popup declutter, 3.8.27)
+G: delete "Webull paper — test engine" if safe; remove the gray description
+text under every control ("clogs the bot, I'll ask"). Removed from popup.html:
+the paper row/pencil/toggle, #paperFields (sandbox key inputs, save button,
+three notes), and 12 static <div class="note"> descriptions (rooms, RN
+pullback, accounts, NinjaTrader, Topstep, multi-account, AI reader x2,
+provider keys, exits, voice, drive export). Kept: every note with an id
+(live status text), the two inline "Auto-save every / minutes" labels, and
+JS-generated status notes. popup.js: paintPaper, paperbtn and savepaperkeys
+handlers, the paper okbox, the sandbox-keys-in-live-boxes trap, and
+wbpkey/wbpsecret draft ids removed; the one caller now calls paintSwingPause
+directly. Bridge untouched: settings.webull.paper_trading, WB_PAPER and
+/config paper_trading still exist server-side. node --check clean, 18 JS
+tests pass. Backups: backups/popup.{html,js}.pre-declutter-*.
+
 ## 2026-09-13 (Optionality free-trades added disabled)
 User supplied Discord799082461538943046/1439358275047915660. Chrome read
 Optionality free-trades visible July14/23 and August19 posts. Two entry forms

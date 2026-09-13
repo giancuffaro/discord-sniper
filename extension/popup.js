@@ -633,7 +633,6 @@ async function paintStatus() {
   const st = modeStatus;
   const bridge = !!st;
   const paperKeys = !!(st && st.paper_keys_in);
-  const paper = !!(st && st.paper);
   const ai = !!(st && st.ai_enabled);
   let voiceN = 0;
   try { const r = await chrome.runtime.sendMessage({ type: "VOICE_STATE" });
@@ -659,10 +658,8 @@ async function paintStatus() {
   const steps = [];
   if (!bridge) steps.push("① Start the bridge — double-click 🎯 START HERE on your PC.");
   else {
-    if (!paperKeys) steps.push("② Paper trading — add your Webull SANDBOX key in the Keys tab.");
-    else if (!paper) steps.push("② Sandbox key saved but not connected — hit Update, or reconnect it.");
-    if (!ai) steps.push("③ Smarter reads (optional) — add your Claude key in the Keys tab.");
-    if (!dgKey) steps.push("④ Voice rooms (optional) — add your Deepgram key in the Keys tab.");
+    if (!ai) steps.push("② Smarter reads (optional) — add your AI key in the Keys tab.");
+    if (!dgKey) steps.push("③ Voice rooms (optional) — add your Deepgram key in the Keys tab.");
   }
   fix.innerHTML = steps.length
     ? "<b style='color:#e6edf6'>Set up:</b><br>" + steps.join("<br>")
