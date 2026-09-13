@@ -9,8 +9,8 @@
     },
     {
       "lane": "whop",
-      "fresh": false,
-      "version": "3.8.25"
+      "fresh": true,
+      "version": "3.8.26"
     }
   ],
   "observer": {
@@ -22,5 +22,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789335979.0165665
+  "checked_at": 1789336279.0222902
 }

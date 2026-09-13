@@ -617,7 +617,8 @@ def build():
     trip_used = [False] * len(trips)
     out = []
 
-    def _find_trip(date, sym, strike, cp, fill, qty=None):
+    def _find_trip(date, sym, strike, cp, fill, qty=None, occ=None,
+                   zero_qty_entry_ts=None):
         """First unused export round-trip for this contract at this fill.
 
         BUG FOUND 9/9: with no qty check, a store row carrying a stale/blended
@@ -631,6 +632,7 @@ def build():
         qty match closes the gap: it's exact for every real case (both sides
         are real contract counts) and only rejects a mismatch like this one.
         """
+        candidates = []
         for i, t in enumerate(trips):
             # THE BROKER DATES A TRADE BY ITS ENTRY, THE BOOK BY ITS EXIT
             # (9/10, found from G's "SKHY actually made me like 300"). SKHY
@@ -648,10 +650,24 @@ def build():
                 continue
             if cp and t["cp"] != cp:
                 continue
+            if occ and t["occ"] != occ:
+                continue
             if fill is not None and t["buy"] is not None and abs(t["buy"] - fill) > 0.011:
                 continue
             if qty is not None and t.get("qty") is not None and abs(t["qty"] - float(qty)) > 0.001:
                 continue
+            if zero_qty_entry_ts is not None:
+                if not t.get("buy_ts") or abs(t["buy_ts"] - zero_qty_entry_ts) > 300:
+                    continue
+            candidates.append((i, t))
+        # A closed store position may have zero *remaining* contracts. Recover
+        # its original size from the entry legs, but only when one exact OCC,
+        # size and near-time broker trip exists. Never relax the size guard for
+        # a stale nonzero quantity (the QQQ 2-vs-10 regression).
+        if zero_qty_entry_ts is not None and len(candidates) != 1:
+            return None
+        if candidates:
+            i, t = candidates[0]
             trip_used[i] = True
             return t
         return None
@@ -710,11 +726,22 @@ def build():
                 pass
 
         # --- the broker's own export: confirm, and fill a missing exit ---
-        trip = _find_trip(date, sym, _r2(r.get("strike")), _side_letter(r.get("side")), fill, qty)
+        zero_qty_entry_ts = None
+        match_qty = qty
+        if _f(qty) == 0 and entries:
+            original_qty = sum(_f(e.get("qty")) or 0 for e in entries)
+            entry_ts = opened_ts or min((_f(e.get("t")) or float("inf") for e in entries), default=float("inf"))
+            if original_qty > 0 and entry_ts != float("inf") and r.get("occ"):
+                match_qty = original_qty
+                zero_qty_entry_ts = entry_ts
+        trip = _find_trip(date, sym, _r2(r.get("strike")), _side_letter(r.get("side")),
+                          fill, match_qty, r.get("occ"), zero_qty_entry_ts)
         export_confirmed = trip is not None
         exit_from = "store"
         store_pl = _r2(r.get("pl"))
         if trip:
+            if zero_qty_entry_ts is not None:
+                qty = trip["qty"]  # original position size, not remaining size
             if opened_ts is None and trip.get("buy_ts"):
                 opened_ts, opened_from = trip["buy_ts"], "webull-export"
             if trip.get("sell") is not None:
