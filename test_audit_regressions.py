@@ -7,6 +7,7 @@ from unittest import mock
 
 import announcer
 import build_alerts
+import build_ledger
 import option_tape_pull
 import positions
 import pullback
@@ -34,6 +35,76 @@ class _Broker:
 class AuditRegressionTests(unittest.TestCase):
     def tearDown(self):
         announcer._RO_WIN.clear()
+
+    def test_closed_zero_remaining_qty_uses_entry_size_to_match_broker_exit(self):
+        ts = datetime.datetime(2026, 8, 18, 12, 1, 30).timestamp()
+        row = {
+            "_day": "2026-08-18", "_file": "2026-08-18.json",
+            "_in_table": True, "_in_wallet": True,
+            "symbol": "KO", "side": "CALLS", "strike": 89,
+            "expiry": "2026-08-21", "occ": "KO260821C00089000",
+            "who": "King Maker Bot", "room": "ZT swing-3", "state": "closed",
+            "qty": 0, "opened": ts, "closed": ts + 7200,
+            "fill": 0.54, "avg": 0.54, "exit": 0.53, "pl": -1,
+            "entries": [{"t": ts + 90, "qty": 1, "price": 0.54}],
+            "exits": [{"t": ts + 7200, "qty": 1, "price": 0.53, "pl": -1}],
+            "live": True, "manual": True,
+        }
+        trip = {
+            "date": "2026-08-18", "sell_date": "2026-08-18",
+            "symbol": "KO", "cp": "C", "strike": 89,
+            "expiry": "2026-08-21", "occ": "KO260821C00089000",
+            "qty": 1, "buy": 0.54, "buy_ts": ts - 1,
+            "sell": 0.59, "sell_ts": ts + 1550, "pl": 5,
+        }
+        with mock.patch.object(build_ledger, "load_days", return_value={"ko": row}), \
+             mock.patch.object(build_ledger, "load_fill_contracts", return_value={}), \
+             mock.patch.object(build_ledger, "load_broker_fills", return_value={}), \
+             mock.patch.object(build_ledger, "load_broker_exports", return_value=[trip]), \
+             mock.patch.object(build_ledger, "load_fill_callers", return_value={}), \
+             mock.patch.object(build_ledger, "_collapse_carryover", side_effect=lambda rows: rows), \
+             mock.patch.object(build_ledger, "_drop_paper", side_effect=lambda rows: (rows, [])), \
+             mock.patch.object(build_ledger, "_archive_paper"):
+            rows, _ = build_ledger.build()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["caller"], "King Maker Bot")
+        self.assertEqual(rows[0]["qty"], 1)
+        self.assertEqual(rows[0]["exit_avg"], 0.59)
+        self.assertEqual(rows[0]["pl"], 5)
+        self.assertEqual(rows[0]["store_pl"], -1)
+        self.assertTrue(rows[0]["export_confirmed"])
+
+    def test_nonzero_store_size_does_not_match_different_broker_lot(self):
+        ts = datetime.datetime(2026, 9, 9, 10, 0).timestamp()
+        row = {
+            "_day": "2026-09-09", "_file": "2026-09-09.json",
+            "_in_table": True, "_in_wallet": True,
+            "symbol": "QQQ", "side": "CALLS", "strike": 716,
+            "expiry": "2026-09-09", "occ": "QQQ260909C00716000",
+            "who": "caller", "room": "room", "state": "closed",
+            "qty": 2, "opened": ts, "fill": 0.47, "avg": 0.47,
+            "entries": [{"t": ts, "qty": 2, "price": 0.47}],
+            "live": True,
+        }
+        trip = {
+            "date": "2026-09-09", "sell_date": "2026-09-09",
+            "symbol": "QQQ", "cp": "C", "strike": 716,
+            "expiry": "2026-09-09", "occ": "QQQ260909C00716000",
+            "qty": 10, "buy": 0.48, "buy_ts": ts,
+            "sell": 0.62, "sell_ts": ts + 600, "pl": 140,
+        }
+        with mock.patch.object(build_ledger, "load_days", return_value={"qqq": row}), \
+             mock.patch.object(build_ledger, "load_fill_contracts", return_value={}), \
+             mock.patch.object(build_ledger, "load_broker_fills", return_value={}), \
+             mock.patch.object(build_ledger, "load_broker_exports", return_value=[trip]), \
+             mock.patch.object(build_ledger, "load_fill_callers", return_value={}), \
+             mock.patch.object(build_ledger, "_collapse_carryover", side_effect=lambda rows: rows), \
+             mock.patch.object(build_ledger, "_drop_paper", side_effect=lambda rows: (rows, [])), \
+             mock.patch.object(build_ledger, "_archive_paper"):
+            rows, _ = build_ledger.build()
+        store = next(r for r in rows if r["source"] == "days-json")
+        self.assertFalse(store["export_confirmed"])
+        self.assertEqual(store["qty"], 2)
 
     def test_cached_recent_orders_refreshes_date_window(self):
         calls = []
