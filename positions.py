@@ -561,6 +561,8 @@ class Book:
     def _row(self, p):
         return {
             "key": p.get("key"),
+            "coid": p.get("coid"),
+            "entry_order_id": p.get("entry_order_id"),
             "who": p.get("who") or "?",
             "symbol": p.get("symbol"),
             "side": p.get("side"),
@@ -572,6 +574,7 @@ class Book:
             "their_stop": p.get("their_stop"),
             "their_target": p.get("their_target"),
             "qty": int(p.get("qty") or 0),
+            "entry_qty": sum(int(e.get("qty") or 0) for e in (p.get("entries") or [])),
             "avg": p.get("fill"),
             "adds": int(p.get("adds") or 0),
             "entries": list(p.get("entries") or []),
@@ -841,6 +844,8 @@ class Book:
                                  else order.get("their_target")),
                 "state": WORKING,
                 "order_id": ticket.get("order_id"),
+                "entry_order_id": (prev.get("entry_order_id") or prev.get("order_id"))
+                                  if adding else ticket.get("order_id"),
                 "occ": ticket.get("occ"),
                 "side": order.get("side"),
                 "strike": order.get("strike"),
