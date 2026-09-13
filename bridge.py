@@ -4195,6 +4195,12 @@ class Handler(BaseHTTPRequestHandler):
                 # popup toggles show their true state after a reload. Passwords
                 # are stripped — never send a credential back to a browser.
                 "futures_brokers": _futures_brokers_safe(),
+                # The SPY/QQQ -> MES/MNQ mirror switch, so the popup toggle
+                # shows its true state after a reload. On/off and the map only.
+                "index_mirror": {
+                    "enabled": index_mirror.enabled(CFG),
+                    "map": index_mirror.symbol_map(CFG),
+                },
                 "paper": paper_on(),
                 "paper_available": (WB is not None and getattr(WB, "paper", False)),
                 # Why paper isn't running, in plain words (missing sandbox key).
@@ -4996,7 +5002,7 @@ class Handler(BaseHTTPRequestHandler):
         _known = ("futures_enabled", "simulation", "paper_trading",
                   "ai_enabled", "ai_api_key", "ai_model", "ai_provider_keys", "strategy",
                   "futures_brokers", "webull_extra_accounts", "deepgram_key", "pocket_scalps_only",
-                  "swings_paused")
+                  "swings_paused", "index_mirror")
         if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
@@ -5159,6 +5165,27 @@ class Handler(BaseHTTPRequestHandler):
                 _connect_extras()
             except Exception as _e:                     # noqa: BLE001
                 note("ACCT     connect failed: %s" % str(_e)[:120])
+
+        # INDEX MIRROR (9/13): the popup's "SPY/QQQ -> MES/MNQ mirror" switch.
+        # Only the on/off travels — the map and the size live in settings.json
+        # and are never sent by a browser.
+        if "index_mirror" in body:
+            _im = body["index_mirror"]
+            _want = bool(_im.get("enabled") if isinstance(_im, dict) else _im)
+            _cur = dict((data.setdefault("execution", {})
+                         .get("index_mirror") or {}))
+            _cur.setdefault("map", {"SPY": "MES", "QQQ": "MNQ"})
+            _cur.setdefault("qty", 1)
+            _cur["enabled"] = _want
+            data["execution"]["index_mirror"] = _cur
+            CFG.setdefault("execution", {})["index_mirror"] = _cur
+            EXEC["index_mirror"] = _cur
+            note("MIRROR   %s" % ("ON — a SPY/QQQ entry now buys MES/MNQ "
+                                  "instead of the option, one contract, "
+                                  "25/50 bracket"
+                                  if _want else
+                                  "off — SPY/QQQ entries buy the option as "
+                                  "usual (the shadow record keeps scoring it)"))
 
         if "swings_paused" in body:
             data["swings_paused"] = bool(body["swings_paused"])

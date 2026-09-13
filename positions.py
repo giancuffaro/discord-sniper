@@ -2355,6 +2355,18 @@ class Book:
                 # the futures data subscription exists, no quote feed for a
                 # watchdog to poll — so the book says plainly what's guarding
                 # it: his level, acted on when the room says so.
+                #
+                # A MARKET entry has no price at order time, so webull_futures
+                # cannot build the 25/50 bracket there and this position would
+                # otherwise run with no stop at all. Born here instead, off the
+                # actual fill, with the same house numbers a room that posts no
+                # stop already gets. (9/13, found building the index mirror.)
+                if pf.get("their_stop") is None and fill:
+                    from webull_futures import FUT_STOP_PTS, FUT_TARGET_PTS
+                    _d = 1 if int(pf.get("direction") or 1) >= 0 else -1
+                    pf["their_stop"] = float(fill) - _d * FUT_STOP_PTS
+                    if pf.get("their_target") is None:
+                        pf["their_target"] = float(fill) + _d * FUT_TARGET_PTS
                 pf["stop"] = pf.get("their_stop")
                 self._event(key, "stop-set",
                             "%s — running their stop%s; exits fire on their "

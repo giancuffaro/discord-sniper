@@ -547,6 +547,11 @@ function _fbPaintToggles() {
   _fbBtn("fbWebull", _fbLocal.webull);
   _fbBtn("fbNinja", _fbLocal.ninja);
   _fbBtn("fbTopstep", _fbLocal.topstep);
+  // SPY/QQQ -> MES/MNQ mirror. Unlike the broker toggles this one is NOT kept
+  // in the browser: it decides what gets bought, so settings.json on the
+  // bridge is its only truth and the button shows what the bridge reports. A
+  // popup that can't reach the bridge shows off, which is the safe answer.
+  _fbBtn("fbMirror", !!(((modeStatus || {}).index_mirror || {}).enabled));
 }
 
 function paintFuturesBrokers() {
@@ -619,6 +624,27 @@ function _wireFb(id, key, fieldsId) {
     await saveFuturesBrokers();   // persist to the bridge immediately
   };
 }
+// The mirror writes straight to the bridge through the same /config door the
+// broker toggles use, then repaints from what came back — never from what was
+// clicked, so a refused or unreachable save shows the real state.
+(function wireMirror() {
+  const b = $("fbMirror");
+  if (!b) return;
+  b.onclick = async () => {
+    const want = !(((modeStatus || {}).index_mirror || {}).enabled);
+    try {
+      modeStatus = await askBridge("/config", { index_mirror: { enabled: want } });
+      if ($("fbState"))
+        $("fbState").textContent = want
+          ? "mirror ON — SPY/QQQ entries buy MES/MNQ instead of the option"
+          : "mirror off — SPY/QQQ entries buy the option";
+    } catch (e) {
+      if ($("fbState")) $("fbState").textContent = "couldn't reach the bridge — the mirror is unchanged";
+    }
+    _fbPaintToggles();
+  };
+})();
+
 _wireFb("fbWebull", "webull", null);
 _wireFb("fbNinja", "ninja", "ninjaFields");
 _wireFb("fbTopstep", "topstep", "topstepFields");

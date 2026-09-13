@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-13 — v3.8.27, Whop lane healthy; G reopened three Discord tabs by request. Departments enabled; ledger fix awaits bridge reload.
+Last updated: 2026-09-13 — v3.8.27, Whop lane healthy; G reopened three Discord tabs by request. Departments enabled; bridge reloaded with ledger fix.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
