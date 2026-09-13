@@ -43,9 +43,9 @@ KEEP_BAKS = 5
 
 COLUMNS = [
     "date", "opened", "closed", "opened_ts", "closed_ts", "t",
-    "room", "caller", "key",
+    "room", "caller", "key", "coid", "entry_order_id",
     "symbol", "side", "direction", "strike", "expiry", "dte", "occ", "kind",
-    "qty", "avg_in", "fill", "entries", "exits", "exit_avg", "pl", "pl_pct",
+    "qty", "entry_qty", "avg_in", "fill", "entries", "exits", "exit_avg", "pl", "pl_pct",
     "max_runup_pct", "max_drawdown_pct", "hi_pct", "lo_pct",
     "state", "exit_by", "all_out", "account", "manual", "swing",
     "their_avg", "their_stop", "their_target", "their_units", "stop_at_exit",
@@ -809,6 +809,8 @@ def build():
             "room": (r.get("room") or "?").strip() or "?",
             "caller": (r.get("who") or "").strip(),
             "key": r.get("key") or "",
+            "coid": r.get("coid") or "",
+            "entry_order_id": r.get("entry_order_id") or "",
             "symbol": sym,
             "side": (r.get("side") or "").upper(),
             "direction": r.get("direction") if r.get("direction") is not None else "",
@@ -818,6 +820,8 @@ def build():
             "occ": r.get("occ") or "",
             "kind": _kind(r),
             "qty": qty if qty is not None else "",
+            "entry_qty": (sum(_f(e.get("qty")) or 0 for e in entries)
+                          if entries else (_f(r.get("entry_qty")) or "")),
             "avg_in": avg if avg is not None else "",
             "fill": fill if fill is not None else "",
             "entries": _json(entries),

@@ -59,15 +59,17 @@ def integrate(root=ROOT, out=OUT):
             db.execute('INSERT INTO ledger_records VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(record_id) DO UPDATE SET current=1',
                        (rid,kind,rel,n,1,row.get('date'),cid,uid,row.get('caller') or row.get('who'),
                         row.get('room'),row.get('symbol'),row.get('occ') or row.get('contract'),
-                        row.get('ledger_key') if kind=='alert_decision' else row.get('key'),
+                        (row.get('coid') or row.get('ledger_key')) if kind=='alert_decision'
+                        else (row.get('coid') or row.get('key')),
                         json.dumps(row,ensure_ascii=False)))
         db.execute('INSERT OR REPLACE INTO research_imports VALUES(?,?,?,?)',
                    (rel,digest(raw.hex()),datetime.now(timezone.utc).isoformat(),len(rows)))
-    # Only link an explicit ledger key to one current trade on the same date.
+    # Only link a shared coid (or legacy ledger key) to one current trade on
+    # the same date; a caller name/contract resemblance is never enough.
     # These are ledger-provided links, not proof of broker fills or caller identity.
-    db.execute('DELETE FROM research_links WHERE basis=?',('explicit_ledger_key_same_date',))
+    db.execute("DELETE FROM research_links WHERE basis IN ('explicit_ledger_key_same_date','explicit_event_key_same_date')")
     db.execute('''INSERT OR IGNORE INTO research_links
-      SELECT a.record_id,MIN(t.record_id),'explicit_ledger_key_same_date'
+      SELECT a.record_id,MIN(t.record_id),'explicit_event_key_same_date'
       FROM ledger_records a JOIN ledger_records t ON a.event_key=t.event_key AND a.date=t.date
       WHERE a.current=1 AND t.current=1 AND a.kind='alert_decision'
       AND t.kind='reconciled_trade' AND a.event_key IS NOT NULL

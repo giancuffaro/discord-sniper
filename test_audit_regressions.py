@@ -36,6 +36,20 @@ class AuditRegressionTests(unittest.TestCase):
     def tearDown(self):
         announcer._RO_WIN.clear()
 
+    def test_day_row_preserves_entry_size_and_order_provenance_after_close(self):
+        book=positions.Book(None,lambda _line:None)
+        row=book._row({
+            'key':'room|KO','who':'King Maker Bot','symbol':'KO',
+            'qty':0,'entries':[{'qty':1,'price':0.54}],
+            'coid':'client-call-1','entry_order_id':'broker-order-1',
+            'manual_close':True,
+        })
+        self.assertEqual(row['qty'],0)
+        self.assertEqual(row['entry_qty'],1)
+        self.assertEqual(row['coid'],'client-call-1')
+        self.assertEqual(row['entry_order_id'],'broker-order-1')
+        self.assertTrue(row['manual'])
+
     def test_closed_zero_remaining_qty_uses_entry_size_to_match_broker_exit(self):
         ts = datetime.datetime(2026, 8, 18, 12, 1, 30).timestamp()
         row = {

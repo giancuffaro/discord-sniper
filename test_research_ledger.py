@@ -7,6 +7,17 @@ from research_ledger import integrate
 
 
 class IntegrationTests(unittest.TestCase):
+    def test_trade_and_alert_share_explicit_client_order_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            with (root/'master_alerts.csv').open('w',newline='',encoding='utf-8') as f:
+                w=csv.writer(f); w.writerow(['date','coid','ledger_key','symbol'])
+                w.writerow(['2026-09-11','order-123','','CPS'])
+            with (root/'master_ledger.csv').open('w',newline='',encoding='utf-8') as f:
+                w=csv.writer(f); w.writerow(['date','coid','key','symbol'])
+                w.writerow(['2026-09-11','order-123','room|CPS','CPS'])
+            self.assertEqual(integrate(root,root)['explicit_links'],1)
+
     def test_explicit_links_blanks_revisions_and_repeated_import(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
