@@ -135,6 +135,8 @@ if __name__=='__main__':
         result['log_recovery']=recover()
         from trade_identity import reconcile
         result['trader_identity']=reconcile()
+        from research_report import render
+        result['reading_copy']=render()
     elif args.action=='trades':
         result=trades(args.text)
     elif args.action=='search':
