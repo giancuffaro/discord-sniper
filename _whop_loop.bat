@@ -79,7 +79,7 @@ if "!ALIVE!"=="1" (
   set /a STRIKES+=1
   > "%~dp0whop-loop-strikes.txt" echo !STRIKES!
   if !STRIKES! GEQ 4 (
-    echo [%date% %time%] GIVING UP: /whopalive has never returned a number after !STRIKES! tries. The Whop profile's extension is old or not installed - reload it there (chrome://extensions) and delete whop-loop-strikes.txt to re-arm. No more relaunches. >> "%~dp0whop-loop.log"
+    echo [%date% %time%] GIVING UP: /whopalive has never returned a number after !STRIKES! tries. The Whop profile's extension is old or not installed - reload it there at chrome://extensions and delete whop-loop-strikes.txt to re-arm. No more relaunches. >> "%~dp0whop-loop.log"
     timeout /t 300 /nobreak >nul
     goto loop
   )
