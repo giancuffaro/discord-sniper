@@ -274,33 +274,30 @@ were on which day.
 - `Webull_Orders_auto.csv` in the repo root (111 rows) is the **not-yet-absorbed**
   daily export. Older ones are in `archive/broker-exports/` (10 files).
 
-## master_ledger.csv — one row per trade, reconciled
+## master_ledger.csv — one row per reconciled position
 **Question:** what did we hold, what did it cost, what did it make?
 
-54 columns: `date, opened, closed, opened_ts, closed_ts, t, room, caller, key,
-symbol, side, direction, strike, expiry, dte, occ, kind, qty, avg_in, fill,
-entries, exits, exit_avg, pl, pl_pct, max_runup_pct, max_drawdown_pct, hi_pct,
-lo_pct, state, exit_by, all_out, account, manual, swing, their_avg, their_stop,
-their_target, their_units, stop_at_exit, greeks_in, greeks_out,
-broker_confirmed, export_confirmed, store_pl, source, in_table, in_wallet,
-opened_f` (+ trailing fields).
+57 columns as of 2026-09-13; full order and source fields are defined by
+`build_ledger.COLUMNS`. `coid` is the client order ID shared with alert
+telemetry when available, `entry_order_id` is the broker entry order ID in
+new day snapshots, and `entry_qty` is the sum of retained entry legs. Older
+rows leave IDs blank rather than inventing them. `qty` in old closed day
+rows may be zero remaining; a unique exact OCC/entry size/price broker
+round-trip within five minutes restores original size and broker exit/P&L.
+`store_pl` preserves the book's old value for comparison.
 
-**978 rows · 2026-06-12 → 2026-09-10 (52 days) · REBUILT by `build_ledger.py`, not appended.**
+The file is rebuilt, not appended. The 2026-09-13 corrected rebuild had
+931 rows: 654 Webull-export-only, 227 days-json, 41 trades.log-only, and
+9 broker-FIFO-rebuild. Forty-eight zero-remaining-quantity day rows were
+reconciled to broker trips instead of appearing twice. The running bridge
+must load the new code before future rebuilds use this rule.
 
-- **The biggest trap in the repo: 755 of the 978 rows are `manual=True`** —
-  G's own hand trades on the same account, not the bot's. Only **182** are
-  `manual=False`. **Only 177 rows have a room at all.** Any "which room makes
-  money" answer that does not filter `manual=False` is wrong.
-- `source`: 702 `webull-export-only` · 226 `days-json` · 41 `trades.log-only` ·
-  9 `broker-FIFO-rebuild`. Only the `days-json` rows carry room/caller.
-- `broker_confirmed` is True on **140 of 978**. Everything else is inferred.
-- Mostly-empty columns: `t` (943/978), `dte` (976/978 zero), `max_runup_pct`
-  and `max_drawdown_pct` (~922/978), `hi_pct`/`lo_pct`, `their_stop` (953 blank),
-  `their_target` (**977 of 978 blank — effectively unusable**),
-  `stop_at_exit` (959), `greeks_in`/`greeks_out` (~962), `raw` (881).
-- 2 exact duplicate rows.
-- `state`: 807 closed · 97 filled · 32 nofill · 29 stopped · 13 failed.
-- Read it through `ledger.py`, not by hand.
+`manual` means a **manual exit** in a day row; it does not establish that
+G entered the trade. Conversely a Webull-export-only row has no book
+provenance and cannot automatically be called a manual entry. For caller
+performance require actual entry source, exact contract, and broker fill;
+room/name fields alone are candidate evidence. `broker_confirmed` is a
+trades.log fill; `export_confirmed` means a Webull order export matched.
 
 ## master_alerts.csv — every alert and what happened to it
 **Question:** which alerts did we see, and why did each one trade or not?
@@ -544,7 +541,7 @@ a busy day. Dedupe before counting rooms.
 
 | Question | Read | How |
 |---|---|---|
-| **Which rooms make money?** | `master_ledger.csv` | Filter `manual == False` first — 755 of 978 rows are G's hand trades. Only 177 rows have a room at all, so the honest sample is small. Cross-check with `SCOREBOARD.html` / `scoreboard.py`. |
+| **Which rooms make money?** | `master_ledger.csv` | Use source-linked entry attribution and broker-confirmed fills. `manual` is a manual exit flag, not an entry-owner filter; export-only records need provenance before assigning a caller. Cross-check with the research SQL and SCOREBOARD.html. |
 | **What did a contract cost at a given minute?** | `databento_tape_clean.csv` first (510 contracts, 6/12–9/8), then `option_tape.csv` (31 contracts, 9/2–9/10), then `missed_tape.csv` (3 contracts). | Dedupe `(ts, occ)`. If the contract is in none of them, the price does not exist anywhere — see Known data gaps. |
 | **What did a caller actually post?** | `DS Logs/signal-room-chat *.txt`, RAW MESSAGES block | Full text, untruncated. Dedupe on `(ts, room, text)`. If the room is a `#538…` voice room, the text is a speech transcript. |
 | **…and if the exports don't cover that day?** | `trades.log` `AI READ` lines | 636 of them carry the message, truncated to 50 chars, plus the bot's full reading after the `->`. |
