@@ -1422,31 +1422,20 @@ function renderRoomCallers() {
 function renderCallerList(box, callers) {
   if (!box) return;
   if (!callers.length) { box.innerHTML = '<div class="note">No callers on record yet (or the bridge is down).</div>'; return; }
-  const money = n => (n < 0 ? "-$" : "+$") + Math.abs(Math.round(n));
   const onN = callers.filter(c => c.state === "on").length;
   box.innerHTML =
     '<div class="row" style="margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #2a303c">' +
     '<span class="grow" style="font-size:12px;font-weight:600">Callers <span style="color:#7d8697;font-weight:400">(' +
-    onN + ' of ' + callers.length + ' on · ranked by net $ — real money only, no paper anywhere in the app · ' +
-    'one row per position · futures counted, not valued · P&amp;L broker-verified from 9/4, ' +
-    'the bot\u2019s own count before that · "flat" = no exit on record)</span></span></div>' +
+    onN + ' of ' + callers.length + ' on)</span></span></div>' +
     callers.map(c => {
       const isOn = c.state === "on";
-      const extra =
-        (c.futures ? ' · <span style="color:#7dd3fc" title="futures fills — P&L is not recorded on this path yet (NinjaTrader), so they are in the count, not the money">' + c.futures + " futures</span>" : "");
-      const rec = c.trades
-        ? '<span class="' + (c.net >= 0 ? "up" : "down") + '" style="font-weight:700">' + money(c.net) + "</span> · " +
-          c.wins + "-" + c.losses + (c.flat ? "-" + c.flat + " flat" : "") +
-          (c.win_pct != null ? " · " + c.win_pct + "% win" : "") +
-          (c.per_trade != null ? " · " + money(c.per_trade) + "/trade" : "") +
-          " · " + c.trades + " fill" + (c.trades === 1 ? "" : "s") +
-          (c.verified ? ' · <span title="exit and P&L are the broker\u2019s own record">' + c.verified + " broker-verified</span>" : "") + extra
-        : c.alerts + " call" + (c.alerts === 1 ? "" : "s") + " seen, none filled";
+      const rec = c.win_pct != null
+        ? esc(String(c.win_pct)) + "% win"
+        : "Win rate unavailable";
       const busy = !!_callerBusy[c.key];
       return '<div class="row" style="margin-bottom:4px' + (isOn ? "" : ";opacity:.6") + '">' +
         '<span class="grow" style="font-size:12px"><b>' + esc(c.name || c.key) + '</b> ' +
-        '<span class="sub" style="font-size:10px">' + rec + (c.last ? " · last " + esc(c.last) : "") +
-        (c.rooms && c.rooms.length ? " · " + esc(c.rooms.slice(0, 2).join(", ")) : "") + '</span></span>' +
+        '<span class="sub" style="font-size:10px">' + rec + '</span></span>' +
         '<span style="font-size:11px;width:40px;text-align:right;color:' + (isOn ? "#f87171" : "#7d8697") + '">' +
         (busy ? "…" : (isOn ? "ON" : "off")) + '</span>' +
         '<button data-caller="' + esc(c.key) + '" data-on="' + (isOn ? "1" : "0") + '" class="tgl money ' +
