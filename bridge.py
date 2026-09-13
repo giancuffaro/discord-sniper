@@ -45,6 +45,7 @@ for _s in (sys.stdout, sys.stderr):
 # out" and "you own it" are two different events, and only this file knows which
 # one has happened. Everything that closes a position asks it first.
 import positions
+import index_mirror
 import ratchet_tiers as _rt
 import pullback as _pullback
 from request_journal import RequestJournal
@@ -2779,6 +2780,16 @@ def place(order):
                 _tm.watch_decay(_d, _decay_quote)
     except Exception:                                   # noqa: BLE001
         pass
+    # INDEX MIRROR SHADOW (9/13) — ALWAYS ON, switch or no switch. One row per
+    # SPY/QQQ entry with whatever the option order actually did, so
+    # futures_mirror_daily.py can score the idea tonight without waiting for
+    # master_alerts.csv to be rebuilt. Writing a line of CSV, after the order
+    # has already been decided: it cannot change anything.
+    try:
+        index_mirror.record(order, (result[1] if isinstance(result, tuple)
+                                    else result), note)
+    except Exception:                                   # noqa: BLE001
+        pass
     return result
 
 
@@ -2803,6 +2814,20 @@ def _place_impl(order):
         return False, "the STOP file is in the folder — nothing fires"
     sym = str(order.get("symbol", "")).upper()
     action = order.get("action")
+    # INDEX MIRROR (9/13) — OFF by default. When the switch is on, a SPY/QQQ
+    # option ENTRY is REPLACED here by a one-contract MES/MNQ futures order
+    # (calls long, puts short) and then runs the ordinary futures route: the
+    # hours guard, the book, _entry_clears_stop, the hand-trade rule, the echo
+    # lock and the room's own LIVE/TESTING toggle all still apply, because from
+    # this line down it is indistinguishable from a futures call a room posted.
+    # While the switch is off index_mirror.convert() returns before it reads
+    # anything and the order is untouched. See index_mirror.py.
+    try:
+        if index_mirror.convert(order, CFG, note):
+            sym = str(order.get("symbol", "")).upper()
+    except Exception as _mie:                           # noqa: BLE001
+        note("MIRROR   conversion failed (%s) — the option order stands"
+             % str(_mie)[:90])
     key = find_key(order) if BOOK is not None else tkey(order)
 
     # Final session policy lives on the bridge too, at the dispatch boundary.
