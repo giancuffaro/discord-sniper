@@ -220,6 +220,14 @@ if not errorlevel 1 set RUNNING=1
 
 set "NEEDSTART=0"
 if "!RUNNING!"=="0" set "NEEDSTART=1"
+rem A local auto-push can leave new Python on disk even when the bridge's
+rem Windows execv restart failed. A later START HERE may find no new Git
+rem revision, so compare process start with local module times as well.
+rem Only this explicit launcher run may replace the already-live bridge.
+if "!RUNNING!"=="1" if "!UPDATED!"=="0" (
+  powershell -NoProfile -Command "$p=Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -like '*discord-sniper*bridge.py*' } | Select-Object -First 1; if ($p -and (Get-ChildItem -LiteralPath . -Filter '*.py' -File | Where-Object { $_.LastWriteTime -gt $p.CreationDate } | Select-Object -First 1)) { exit 1 } else { exit 0 }" >nul 2>&1
+  if errorlevel 1 set "UPDATED=1"
+)
 if "!RUNNING!"=="1" if "!UPDATED!"=="1" (
   echo   [4/5] New build - moving the bridge onto it...
   powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='python.exe' OR Name='pythonw.exe'\" | Where-Object { $_.CommandLine -like '*bridge.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
