@@ -12,6 +12,46 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-13 (index mirror built, switched off)
+Built the SPY/QQQ → MES/MNQ index mirror. G's idea: a SPY call is a direction on
+the S&P and a QQQ put a direction on the Nasdaq, so trade the micro future and
+skip the option's spread, theta and strike guess. SPY CALL → long MES, SPY PUT →
+short MES, QQQ CALL → long MNQ, QQQ PUT → short MNQ, one contract. It reuses the
+existing futures route end to end — webull_futures for the order, the 25/50
+bracket, the futures ratchet for the exit — and converts the order in
+_place_impl before the book key is built, so the hours guard, _entry_clears_stop,
+the hand-trade rule, the echo lock and the room's own LIVE/TESTING toggle all
+still apply. The option is replaced, not added to.
+
+IT SHIPS OFF. Replaying 149 real SPY/QQQ alerts from 8/3–9/11 on real ES/NQ
+1-minute bars (Databento GLBX.MDP3), market entry with the live 25/50 bracket,
+lost $721 gross — 43% winners — and ZT's all-trades mashup was −$703 of it. The
+25-pt-snap entry variant looks better but only trades the alerts whose level
+happened to print inside ten minutes, which is a filter nobody can apply live;
+it is reported as a labelled second column, never as the headline.
+
+New: index_mirror.py (the switch and the shadow writer), futures_mirror_daily.py
+(the evening replay), test_index_mirror.py (19 tests, the first three of which
+prove a SPY CALLS order is byte-for-byte unchanged while the switch is off),
+futures_mirror_shadow.csv (gitignored, append-only, written for every SPY/QQQ
+entry whether the switch is on or off), reference/FUTURES-MIRROR-REPLAY.csv
+(cumulative, seeded with the 149-alert history, deduped on mode+ts+sym+dirn so
+a re-run cannot inflate the running total) and daily-reports/
+FUTURES-MIRROR-<date>.md. daily_audit.py calls the replay after the audit,
+wrapped so a failure can never fail the audit. Extension 3.8.27 → 3.8.28.
+
+Found while building it: a futures MARKET entry had no bracket at all.
+webull_futures builds the 25/50 off the ENTRY PRICE, and a market order has
+none, so _bracket returned (None, None) and positions._arm_stop then wrote
+stop = None. Fixed in place — when a futures fill lands with no their_stop, the
+house 25/50 is born off the fill. A live futures position can no longer run
+naked, mirror or no mirror.
+
+Moved out of HANDOFF.md into the record below, all three settled: the 9/10 META
+exit_by wording (fixed 9/10 16:33, never an ENTRIES ONLY breach), the 9/9
+Discord logoff/tab-count narrative, and the 141 ledger fills at room "?" (only
+30 lack a caller; the rest is cosmetic).
+
 ## 2026-09-13 (Monday reader and ledger preflight)
 Whop watchdog had LF-only batch lines and an unescaped parenthesis in a CMD
 block: the scheduled task exited without reviving Profile 6. Converted to CRLF,

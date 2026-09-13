@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-13 — v3.8.27, Whop lane healthy; G reopened three Discord tabs by request. Departments enabled; bridge reloaded with ledger fix.
+Last updated: 2026-09-13 — v3.8.28, index mirror (SPY/QQQ → MES/MNQ) built and shipped OFF; its shadow record and daily replay run every evening.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -202,7 +202,21 @@ ENTRIES
 - RETRACTION ("not ready / scratch that / cancel / disregard / hold off /
   nevermind") pulls that trader's resting bids and armed pullback hunts.
 - FUTURES: micros only (NQ→MNQ, ES→MES ...). Entry snaps to the 25-pt grid
-  in his favour. Their stop/target wins; 25/50 fills the gaps.
+  in his favour. Their stop/target wins; 25/50 fills the gaps. A MARKET entry
+  (no price in the alert) gets that bracket off the FILL instead — positions.
+  _arm_stop; no futures position runs without a stop.
+- INDEX MIRROR (9/13) — **OFF**. On, a SPY/QQQ option ENTRY buys the index
+  future instead of the option: SPY CALL→long MES, SPY PUT→short MES, QQQ
+  CALL→long MNQ, QQQ PUT→short MNQ, one contract, RTH 09:30–15:45 only, market
+  entry, the normal 25/50 bracket and futures ratchet. The option is NOT
+  bought. Switch: popup Keys tab, under the futures brokers,
+  "SPY/QQQ → MES/MNQ mirror" (settings execution.index_mirror.enabled).
+  Shadow record `futures_mirror_shadow.csv` is written whether the switch is on
+  or off; `futures_mirror_daily.py` (run by daily_audit after the 16:40 audit)
+  scores it into `daily-reports/FUTURES-MIRROR-<date>.md` and the cumulative
+  `reference/FUTURES-MIRROR-REPLAY.csv`. WHY IT IS OFF: 149 real alerts 8/3–9/11
+  on real ES/NQ 1-min bars lost **−$721 gross**, and −$703 of that was ONE room
+  (ZT all-trades mashup). Re-measured daily; flip it only if that line turns up.
 - THE POCKET (hidden from the UI on purpose): a :43-:51 scalp-entry clock
   gate exists behind settings flag pocket_scalps_only, default OFF. The
   decision comes from HIS fill data (ledger minute-of-hour), not the QQQ study.
@@ -594,17 +608,6 @@ close-out today.)
   to 8.50 inside 10 min (+$307). Doctrine says the ratchet is the ONLY
   exit; the stock TARGET is a second, earlier one. (a) delete the target,
   keep the pullback stock-STOP; (b) keep it. Nothing changes until G says.
-- The 9/10 META row in master_ledger.csv reads exit_by "room call" from
-  the old "sold on their call" wording (fixed 9/10 16:33) — it was the
-  pullback target, NOT a room exit. Not an ENTRIES ONLY breach.
-- Discord logoff under tab load — 9/9: 27 rooms cut to 8 (ledger-dead rooms,
-  then the whole ZTRADEZ server on its sub lapsing), G re-added 11 to land at
-  19 (the 04:14 blip above never stuck). Watch whether logoffs stay clear at
-  this count; if not, the next lever is moving rooms across more Chrome
-  profiles, not further cuts.
-- 141 ledger fills still at room "?" — but only 30 have no CALLER now
-  (Aug 7-20, before the book recorded one). Room "?" on the rest is
-  cosmetic: the caller is known, the room name was never written.
 - FUTURES RECORDS (G, 9/9): the moment futures execution works, its fills
   need pulling into the ledger the way options fills are (a broker export
   into master_broker.csv). Until then every futures caller — Stormzy 5
