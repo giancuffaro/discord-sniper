@@ -20,6 +20,7 @@ Last updated: 2026-09-13 — Departments enabled and smoke-tested; Discord/Whop 
   for explicit historical investigation only; do not apply their rules/code.
 
 ## Who and what
+- Caller research catalog: `python caller_ledger.py` refreshes ignored `local-reader-measure/caller-identity/callers.sqlite3` and `CALLER-LEDGER.md` from retained text exports. See `reference/CALLER-LEDGER.md`. Channel-scoped author names are unverified observations, not confirmed traders; curated account IDs and matching-feed evidence remain separate. No live dedup or eligibility changes. Rerun manually after new exports; full Discord ID collection and validated performance joins remain pending.
 - G (giancuffaro230@gmail.com) — non-coder, trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
