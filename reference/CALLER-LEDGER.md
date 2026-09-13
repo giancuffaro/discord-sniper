@@ -17,6 +17,14 @@ is rebuilt. `research_imports` records content hashes and import times.
 No contract/name/time similarity joins are promoted into confirmed relationships.
 Missing files retain their last imported snapshot; consult import timestamps.
 
+`account_sightings` stores verified Discord account ID, channel ID, server ID,
+observed name and evidence source. `caller_ledger.py` imports local
+`browser-collection*.json` evidence plus curated registry observations. This does
+not retroactively assign identities to old messages based only on matching names.
+`VERIFIED-ACCOUNTS.md` and `MISSING-INFORMATION.md` in the local identity folder
+record the browser collection pass and outstanding gaps. Current visible-author
+coverage is distinct from a complete historical membership/caller census.
+
 This integrates search and source evidence; historical records without common IDs
 remain unlinked. Quote tapes and simulation engines are not imported by this version.
 Refresh is manual, not a live background process. Original ledgers remain authoritative.
