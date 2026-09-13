@@ -193,6 +193,21 @@ def run(day):
     summary["status"] = "attention" if attention else "pass"
     _write_atomic(os.path.join(OUT_DIR, "latest.json"),
                   json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    # INDEX MIRROR (9/13) — score the SPY/QQQ -> MES/MNQ idea on today's real
+    # ES/NQ bars and update the running total. It runs AFTER the audit and can
+    # never fail it: the mirror is a measurement of a switch that is off, and
+    # the audit is the day's books.
+    try:
+        import futures_mirror_daily
+        futures_mirror_daily.main(day)
+        summary["index_mirror"] = os.path.relpath(
+            os.path.join(HERE, "daily-reports",
+                         "FUTURES-MIRROR-%s.md" % day), HERE)
+    except Exception as _mirror_error:                  # noqa: BLE001
+        summary["index_mirror"] = {"status": "failed",
+                                   "why": str(_mirror_error)[:200]}
+        print("INDEX MIRROR replay failed: %s" % str(_mirror_error)[:200])
+
     try:
         import departments
         summary["daily_analyst"] = departments.daily(day)

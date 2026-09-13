@@ -21,7 +21,7 @@ The switch is OFF: this is a measurement, not a trade.
 |---|---|---|---|---|
 | Today (market) | 2 | +$19 | +$16 | 50% |
 | Today (snap*) | 2 | +$80 | +$77 | 50% |
-| **Since 2026-08-03 (market)** | 151 | **-$702** | -$929 | 43% |
+| **Since 2026-08-03 (market)** | 149 | **-$721** | -$944 | 43% |
 
 The running total is the market column only — the snap column has no seeded history and is biased anyway.
 

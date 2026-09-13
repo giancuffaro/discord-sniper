@@ -288,8 +288,16 @@ def run(a, mode, bars):
 
 # ---------------------------------------------------------------- cumulative
 
+def _norm_ts(ts):
+    """One spelling for a timestamp. The 9/13 seed was written by pandas with a
+    space ("2026-09-11 11:21:00-04:00") and datetime.isoformat() writes a "T".
+    Left alone, the same alert lands in the file twice and the running total
+    counts the six-week history twice over."""
+    return str(ts).replace("T", " ").strip()
+
+
 def _key(r):
-    return (r.get("mode"), str(r.get("ts")), r.get("sym"), r.get("dirn"))
+    return (r.get("mode"), _norm_ts(r.get("ts")), r.get("sym"), r.get("dirn"))
 
 
 def load_cumulative():
@@ -378,7 +386,7 @@ def main(day):
     for mode in ("market", "snap"):
         for a in alerts:
             r = run(a, mode, bars)
-            r.update(mode=mode, ts=a["ts"].isoformat(), sym=a["sym"],
+            r.update(mode=mode, ts=_norm_ts(a["ts"].isoformat()), sym=a["sym"],
                      dirn=a["dirn"], room=a["room"], caller=a["caller"],
                      src=a["src"])
             r.setdefault("lvl", "")
