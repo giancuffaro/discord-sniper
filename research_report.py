@@ -17,14 +17,14 @@ def render(out=OUT):
     trades=[]
     for r in db.execute("SELECT * FROM trade_attribution WHERE kind='reconciled_trade' ORDER BY date DESC,record_id"):
         p=json.loads(r['payload'])
-        trades.append([r['date'],r['attribution_name'],r['display_room'],r['display_server_id'],r['symbol'],p.get('strike'),p.get('expiry'),
-            p.get('fill'),p.get('exit_avg'),p.get('pl'),r['identity_status'],r['display_trader_id'],
-            'N/A' if r['identity_status']=='manual' else r['candidate_trader_id'],r['name_basis'],r['origin_classification'],r['source_path'],r['source_row']])
+        trades.append([r['date'],r['attribution_name'],r['room'],r['symbol'],p.get('strike'),p.get('expiry'),
+            p.get('fill'),p.get('exit_avg'),p.get('pl'),r['identity_status'],r['resolved_trader_id'],
+            r['candidate_trader_id'],r['name_basis'],r['origin_classification'],r['source_path'],r['source_row']])
     accounts=[list(r) for r in db.execute('SELECT display_name,discord_user_id,channel_id,server_id FROM account_sightings ORDER BY server_id,channel_id,display_name')]
     coverage=[list(r) for r in db.execute('SELECT label,channel_id,display_name,retained_records,first_seen,last_seen FROM caller_coverage ORDER BY label,display_name')]
     imports=[list(r) for r in db.execute('SELECT source_path,row_count,imported_at FROM research_imports ORDER BY source_path')]
     db.close()
-    sections=[('Trades', ['Date','Recorded / recovered name','Room','Server ID','Symbol','Strike','Expiry','Entry','Exit','Ledger P/L','ID status','Resolved ID','Candidate ID','Name basis','Origin','Source','Row'],trades),
+    sections=[('Trades', ['Date','Recorded / recovered name','Room','Symbol','Strike','Expiry','Entry','Exit','Ledger P/L','ID status','Resolved ID','Candidate ID','Name basis','Origin','Source','Row'],trades),
               ('Accounts',['Observed name','Account ID','Channel ID','Server ID'],accounts),
               ('Message coverage',['Room','Channel ID','Observed author','Records','First','Last'],coverage),
               ('Import dates',['Source','Records','Last imported (UTC)'],imports)]

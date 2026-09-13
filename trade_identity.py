@@ -23,22 +23,15 @@ def reconcile(out=OUT):
         CASE WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
           THEN a.caller END AS recorded_caller,
         s.recovered_caller AS recovered_posting_name,
-        CASE WHEN a.identity_status='manual' THEN 'Gian'
-          WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
+        CASE WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
           THEN a.caller ELSE s.recovered_caller END AS attribution_name,
-        CASE WHEN a.identity_status='manual' THEN 'user_confirmed_manual'
-          WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
+        CASE WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
           THEN 'recorded_caller' WHEN s.recovered_caller IS NOT NULL
           THEN 'log_candidate' ELSE 'missing' END AS name_basis,
         s.classification AS origin_classification,s.evidence_json AS origin_evidence,
         s.limitation AS origin_limitation,
         CASE WHEN a.identity_status='candidate' AND json_array_length(a.candidates_json)=1
-          THEN json_extract(a.candidates_json,'$[0]') END AS candidate_trader_id,
-        CASE WHEN a.identity_status='manual' THEN 'N/A' ELSE a.room END AS display_room,
-        CASE WHEN a.identity_status='manual' THEN 'N/A' ELSE a.channel_id END AS display_channel_id,
-        CASE WHEN a.identity_status='manual' THEN 'N/A' ELSE
-          (SELECT c.server_id FROM channels c WHERE c.channel_id=a.channel_id) END AS display_server_id,
-        CASE WHEN a.identity_status='manual' THEN 'N/A' ELSE a.resolved_trader_id END AS display_trader_id
+          THEN json_extract(a.candidates_json,'$[0]') END AS candidate_trader_id
         FROM attributed_research a LEFT JOIN trade_source_recovery s USING(record_id);
     ''')
     names=defaultdict(set)
@@ -97,7 +90,7 @@ def reconcile(out=OUT):
     report={'statuses':dict(totals),'by_kind':{k:dict(v) for k,v in by_kind.items()},
             'note':'Candidates are not verified trader links. Original ledgers unchanged. Broker rows, alerts, and positions are different record types.'}
     (out/'TRADE-IDENTITY-COVERAGE.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
-    rows=db.execute("SELECT kind,caller,room,identity_status,COUNT(*) FROM attributed_research WHERE identity_status NOT IN ('source_trader_id','manual') GROUP BY kind,caller,room,identity_status ORDER BY kind,COUNT(*) DESC").fetchall()
+    rows=db.execute('SELECT kind,caller,room,identity_status,COUNT(*) FROM attributed_research WHERE identity_status!=? GROUP BY kind,caller,room,identity_status ORDER BY kind,COUNT(*) DESC',('source_trader_id',)).fetchall()
     lines=['# Trade identity gaps','',report['note'],'',
            'To confirm a link, supply an original message link/account ID tied to the trade, or a broker order ID tied to that alert. For relay posts, identify the named trader separately from the posting account.','',
            '| Record type | Caller | Room | Status | Records |','|---|---|---|---|---:|']

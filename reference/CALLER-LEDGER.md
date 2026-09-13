@@ -2,11 +2,6 @@
 
 ## Start here
 
-User-confirmed convention: manual trades belong to Gian. `trade_attribution`
-sets their attribution name to Gian and exposes N/A in display room, channel,
-server and trader-ID fields. Raw source values and nullable identity fields stay
-unchanged. Manual trades are excluded from the trader-identity gap report.
-
 Open `local-reader-measure/caller-identity/MASTER-RESEARCH.html` for a local,
 searchable reading copy of trades, account sightings, author coverage and import
 dates. `python research_report.py` regenerates it from SQL without reimporting;
