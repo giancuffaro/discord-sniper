@@ -6,6 +6,22 @@ import context_reader
 
 
 class ContextReaderTests(unittest.TestCase):
+    def test_fifty_message_window_keeps_recent_evidence(self):
+        prior = [{"id": str(i), "author": "Alice", "postedAt": 240000,
+                  "text": "message-%s" % i} for i in range(60)]
+        prompt = context_reader.prompt_for(self.current, prior, [])
+        self.assertNotIn('"id": "9"', prompt)
+        self.assertIn('"id": "10"', prompt)
+        self.assertIn('"id": "59"', prompt)
+        self.assertEqual(len(context_reader.eligible_prior(self.current, prior)), 50)
+
+    def test_expanded_memory_does_not_make_old_posts_fresh(self):
+        import shadow_reader
+        with patch('shadow_reader.time.time', return_value=100000):
+            result = shadow_reader.enqueue({"channelId": "test", "text": "in SPY",
+                                           "postedAt": 98000000}, {})
+        self.assertEqual(result['status'], 'old_or_future')
+
     def test_pause_prevents_network_request(self):
         with patch('context_reader.os.path.exists',return_value=True), patch('context_reader.urllib.request.urlopen') as network:
             raw, ms=context_reader.read({},[],[],{})

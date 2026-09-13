@@ -66,7 +66,7 @@ def enqueue(body, cfg):
         posted = int(body.get("postedAt") or now)
     except (TypeError, ValueError):
         posted = now
-    if posted < now - context_reader.CONTEXT_MS or posted > now + 60000:
+    if posted < now - context_reader.FRESH_POST_MS or posted > now + 60000:
         return {"ok": True, "status": "old_or_future"}
     current = {"id": str(body.get("id") or "")[:160], "channelId": room,
                "author": str(body.get("author") or "?")[:100],

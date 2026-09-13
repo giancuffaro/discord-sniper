@@ -1243,6 +1243,13 @@ function renderRoomToggles() {
         '" class="tgl money ' + (isOn ? "live" : "safe") + '"' + (busy ? " disabled" : "") + '></button></div>';
     }).join("")).join("");
   box.querySelectorAll("button[data-room]").forEach(btn => {
+    const slot = document.createElement("div");
+    slot.dataset.roomCallers = btn.dataset.room;
+    slot.style.marginLeft = "18px";
+    btn.parentElement.after(slot);
+  });
+  renderRoomCallers();
+  box.querySelectorAll("button[data-room]").forEach(btn => {
     btn.onclick = async () => {
       const id = btn.dataset.room;
       const turnOn = btn.dataset.on !== "1";
@@ -1311,18 +1318,41 @@ async function loadCallers() {
   catch (e) { /* bridge down: keep the last list */ }
 }
 function renderCallers() {
-  const box = $("callers");
+  renderRoomCallers();
+}
+function renderRoomCallers() {
+  const normalize = value => String(value || "").trim().toLowerCase();
+  const matched = new Set();
+  document.querySelectorAll("[data-room-callers]").forEach(slot => {
+    const room = (ALL_ROOMS || []).find(r => String(r.id) === slot.dataset.roomCallers);
+    if (!room) return;
+    const names = new Set([room.id, room.name, chanLabel(room.id)].map(normalize));
+    const callers = CALLERS.filter(c => (c.rooms || []).some(name => names.has(normalize(name))));
+    callers.forEach(c => matched.add(c.key));
+    if (callers.length) renderCallerList(slot, callers);
+    else slot.innerHTML = "";
+  });
+  const other = $("callers");
+  const unmatched = CALLERS.filter(c => !matched.has(c.key));
+  if (other) {
+    if (unmatched.length) {
+      renderCallerList(other, unmatched);
+      other.insertAdjacentHTML("afterbegin", '<div class="note">Other recorded callers — channel association not matched</div>');
+    } else other.innerHTML = "";
+  }
+}
+function renderCallerList(box, callers) {
   if (!box) return;
-  if (!CALLERS.length) { box.innerHTML = '<div class="note">No callers on record yet (or the bridge is down).</div>'; return; }
+  if (!callers.length) { box.innerHTML = '<div class="note">No callers on record yet (or the bridge is down).</div>'; return; }
   const money = n => (n < 0 ? "-$" : "+$") + Math.abs(Math.round(n));
-  const onN = CALLERS.filter(c => c.state === "on").length;
+  const onN = callers.filter(c => c.state === "on").length;
   box.innerHTML =
     '<div class="row" style="margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #2a303c">' +
     '<span class="grow" style="font-size:12px;font-weight:600">Callers <span style="color:#7d8697;font-weight:400">(' +
-    onN + ' of ' + CALLERS.length + ' on · ranked by net $ — real money only, no paper anywhere in the app · ' +
+    onN + ' of ' + callers.length + ' on · ranked by net $ — real money only, no paper anywhere in the app · ' +
     'one row per position · futures counted, not valued · P&amp;L broker-verified from 9/4, ' +
     'the bot\u2019s own count before that · "flat" = no exit on record)</span></span></div>' +
-    CALLERS.map(c => {
+    callers.map(c => {
       const isOn = c.state === "on";
       const extra =
         (c.futures ? ' · <span style="color:#7dd3fc" title="futures fills — P&L is not recorded on this path yet (NinjaTrader), so they are in the count, not the money">' + c.futures + " futures</span>" : "");
@@ -1360,53 +1390,6 @@ function renderCallers() {
       box.appendChild(note); setTimeout(() => { if (note.isConnected) note.remove(); }, 6000);
     };
   });
-}
-
-/* ===== SELF-SERVE: NEEDS YOU (test build 9/9) ===== */
-let NEEDS = [];
-async function loadNeeds() {
-  let a = [], b = [];
-  try { const j = await askBridge("/needs"); if (j && j.ok) a = j.items || []; } catch (e) { a = [{ what: "the bridge isn't reachable — START HERE starts it", fix: null }]; }
-  try { const r = await chrome.runtime.sendMessage({ type: "NEEDS?" }); if (r && r.ok) b = r.items || []; } catch (e) {}
-  NEEDS = a.concat(b);
-  const tab = $("needsTab");
-  if (tab) tab.textContent = NEEDS.length ? "Needs you (" + NEEDS.length + ")" : "Needs you";
-}
-async function doFix(what) {
-  const bridgeFixes = new Set(["announcer_on", "announcer_off", "restart_bridge"]);
-  try {
-    if (bridgeFixes.has(what)) return await askBridge("/fix", { do: what });
-    return await chrome.runtime.sendMessage({ type: "FIX", do: what });
-  } catch (e) { return { ok: false, why: String(e).slice(0, 120) }; }
-}
-function renderNeeds() {
-  const box = $("needs");
-  if (!box) return;
-  const labels = { announcer_on: "announcer on", announcer_off: "pause announcer", restart_bridge: "restart bridge",
-                   open_missing: "open tabs", reload_readers: "reload readers", reload_extension: "reload now" };
-  box.innerHTML = NEEDS.length
-    ? NEEDS.map((it, i) => '<div class="row" style="margin-bottom:5px;align-items:flex-start">' +
-        '<span class="grow" style="font-size:12px">' + esc(it.what) + '</span>' +
-        (it.fix ? '<button data-fix="' + esc(it.fix) + '" style="font-size:10px;padding:1px 8px;border-radius:9px;' +
-                  'cursor:pointer;border:1px solid #7dd3fc;background:transparent;color:#7dd3fc;margin-left:6px">' +
-                  esc(labels[it.fix] || it.fix) + '</button>' : "") + '</div>').join("")
-    : '<div class="note" style="color:#4ade80">Nothing waiting on you.</div>';
-  const ann = $("fixAnnouncer");
-  if (ann && modeStatus) ann.textContent = modeStatus.announcer_stopped ? "📣 Announcer: paused — switch ON" : "📣 Announcer: on — pause it";
-  const wire = (el, what) => { if (el) el.onclick = async () => {
-    el.disabled = true;
-    const res = await doFix(what);
-    el.disabled = false;
-    const st = $("fixState");
-    if (st) { st.textContent = (res && res.why) || "no answer"; st.style.color = res && res.ok ? "#4ade80" : "#f87171"; }
-    await loadNeeds(); renderNeeds();
-  }; };
-  box.querySelectorAll("button[data-fix]").forEach(b => wire(b, b.dataset.fix));
-  wire($("fixReaders"), "reload_readers");
-  wire($("fixOpen"), "open_missing");
-  wire($("fixAnnouncer"), (modeStatus && modeStatus.announcer_stopped) ? "announcer_on" : "announcer_off");
-  wire($("fixBridge"), "restart_bridge");
-  wire($("fixExt"), "reload_extension");
 }
 
 /* ===== SELF-SERVE: STRATEGY NUMBERS (test build 9/9) ===== */
@@ -2307,9 +2290,8 @@ setInterval(render, 2000);
 })();
 // self-serve panels (test build 9/9): slow refresh, they read the records
 (async function selfServe() {
-  await Promise.all([loadCallers(), loadNeeds(), loadNumbers()]);
-  renderCallers(); renderNeeds(); renderNumbers();
-  setInterval(async () => { await loadNeeds(); renderNeeds(); }, 15000);
+  await Promise.all([loadCallers(), loadNumbers()]);
+  renderCallers(); renderNumbers();
   setInterval(async () => { await loadCallers(); renderCallers(); await loadNumbers(); renderNumbers(); }, 60000);
 })();
 refreshMode();

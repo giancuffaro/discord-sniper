@@ -1,4 +1,4 @@
-"""Read a current room post with up to ten prior posts, for measurement only.
+"""Read a current room post with up to fifty prior posts, for measurement only.
 
 This module never sends an order. The live parser/AI order path does not import it.
 """
@@ -11,8 +11,9 @@ import urllib.request
 
 import ai_reader
 
-MAX_CONTEXT = 10
-CONTEXT_MS = 15 * 60 * 1000
+MAX_CONTEXT = 50
+CONTEXT_MS = 24 * 60 * 60 * 1000
+FRESH_POST_MS = 15 * 60 * 1000
 SAME_AUTHOR_MS = 5 * 60 * 1000
 SHADOW_MODEL = "claude-sonnet-5"
 
