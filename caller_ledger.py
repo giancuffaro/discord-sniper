@@ -18,6 +18,26 @@ def digest(*parts):
     return hashlib.sha256(json.dumps(parts, ensure_ascii=False).encode()).hexdigest()
 
 
+def channel_accounts(out=OUT):
+    """Read verified sightings for presentation only; never infer trade attribution."""
+    path = out / 'callers.sqlite3'
+    if not path.exists():
+        return {'available': False, 'accounts': []}
+    try:
+        with sqlite3.connect(path.resolve().as_uri()+'?mode=ro', uri=True, timeout=2) as db:
+            rows = db.execute('''SELECT channel_id,discord_user_id,display_name,server_id
+                FROM account_sightings ORDER BY channel_id,discord_user_id,display_name''').fetchall()
+        accounts = {}
+        for cid,uid,name,gid in rows:
+            item = accounts.setdefault((cid,uid), {'channel_id':cid,'user_id':uid,
+                'name':name,'server_id':gid,'observed_names':[],'win_pct':None})
+            if name not in item['observed_names']:
+                item['observed_names'].append(name)
+        return {'available':True,'accounts':list(accounts.values())}
+    except sqlite3.Error:
+        return {'available':False,'accounts':[]}
+
+
 def build(root=ROOT, out=OUT):
     out.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(out / 'callers.sqlite3')

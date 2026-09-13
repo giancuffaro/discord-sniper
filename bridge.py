@@ -4323,7 +4323,9 @@ class Handler(BaseHTTPRequestHandler):
                                     "total": len(rooms), "rooms": rooms})
         # ===== SELF-SERVE reads (test build 9/9) =====
         if self.path.startswith("/callers"):
+            from caller_ledger import channel_accounts
             return self._json(200, {"ok": True, "callers": caller_stats(),
+                                    "identities": channel_accounts(),
                                     "off": sorted(callers_off())})
         if self.path.startswith("/numbers"):
             return self._json(200, {"ok": True, "numbers": strategy_numbers()})

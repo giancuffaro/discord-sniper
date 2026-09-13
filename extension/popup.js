@@ -1390,33 +1390,44 @@ function rulePills(r) {
 
 /* ===== SELF-SERVE: CALLERS (test build 9/9) ===== */
 let CALLERS = [];
+let CHANNEL_IDENTITIES = null;
 let _callerBusy = {};
 async function loadCallers() {
-  try { const j = await askBridge("/callers"); if (j && j.ok) CALLERS = j.callers || []; }
+  try { const j = await askBridge("/callers"); if (j && j.ok) {
+    CALLERS = j.callers || [];
+    CHANNEL_IDENTITIES = j.identities && j.identities.available ? j.identities.accounts : null;
+  } }
   catch (e) { /* bridge down: keep the last list */ }
 }
 function renderCallers() {
   renderRoomCallers();
 }
 function renderRoomCallers() {
-  const normalize = value => String(value || "").trim().toLowerCase();
-  // User-verified rosters override contaminated legacy ledger room labels.
-  const rosters = {
-    "829754942817828884": ["mike", "brett", "unraveller"],
-    "1144369893760831489": ["midas"]
+  // Existing user-confirmed controls only. Observation of an account never
+  // creates a new execution key or transfers legacy performance to that account.
+  const controlKeys = {
+    "369592888293851148":"brett", "491771582805573643":"mike",
+    "493537866039689217":"unraveller", "723635480733941850":"midas"
   };
-  const verifiedCallerRooms = {brett:"829754942817828884", midas:"1144369893760831489"};
   document.querySelectorAll("[data-room-callers]").forEach(slot => {
     const room = (ALL_ROOMS || []).find(r => String(r.id) === slot.dataset.roomCallers);
     if (!room) return;
-    const names = new Set([room.id, room.name, chanLabel(room.id)].map(normalize));
-    const callers = CALLERS.filter(c => {
-      if (verifiedCallerRooms[c.key]) return verifiedCallerRooms[c.key] === String(room.id);
-      if (rosters[room.id]) return rosters[room.id].includes(c.key);
-      return (c.rooms || []).some(name => names.has(normalize(name)));
+    if (CHANNEL_IDENTITIES === null) {
+      slot.innerHTML = '<div class="note">Verified account records unavailable</div>';
+      return;
+    }
+    const accounts = CHANNEL_IDENTITIES.filter(a => String(a.channel_id) === String(room.id));
+    slot.innerHTML = "";
+    accounts.forEach(a => {
+      const row = document.createElement("div");
+      row.title = 'Discord account ' + a.user_id + ' · observed in this channel';
+      const control = CALLERS.find(c => c.key === controlKeys[a.user_id]);
+      if (control) renderCallerList(row, [{...control, name:a.name, win_pct:null}]);
+      else row.innerHTML = '<div class="row"><span class="grow" style="font-size:12px"><b>' +
+        esc(a.name) + '</b> <span class="sub" style="font-size:10px">Win rate unavailable</span></span></div>';
+      slot.appendChild(row);
     });
-    if (callers.length) renderCallerList(slot, callers);
-    else slot.innerHTML = "";
+    if (!accounts.length) slot.innerHTML = '<div class="note">Account identity not verified yet</div>';
   });
   const other = $("callers");
   if (other) {
