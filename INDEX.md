@@ -42,6 +42,7 @@ down until you delete it.
 | `ai_reader.py` | Hands a messy message to Claude, gets a clean call back. |
 | `announcer.py` | Posts fills / milestones / scoreboard to Discord. |
 | `webull_futures.py`, `props.py`, `eastern.py` | Futures accounts, prop accounts, market clock. |
+| `index_mirror.py` | The SPY/QQQ → MES/MNQ mirror: one switch (`execution.index_mirror.enabled`, **OFF**) that replaces a SPY/QQQ option entry with a one-contract micro-futures order, plus the always-on shadow record. Measured, not believed — `futures_mirror_daily.py`. |
 | `broker.py` | The broker CONTRACT — 16 methods + capability flags. `get_broker(cfg)` picks one; **defaults to Webull**, so untouched settings behave exactly as before. |
 | `tradier.py` · `tastytrade.py` | Second and third brokers. **Neither has touched a live server yet** — run their `verify()` the day a key exists. |
 | `extension/` | The Chrome extension. `parser.js` is **the** parser — one grammar for every room. `rooms.txt` is the one room list: EVERY room we've been to, `id\|url\|label\|group\|on/off/lapsed`; the popup's switch rewrites it through the bridge (POST /rooms). |
@@ -60,7 +61,8 @@ down until you delete it.
 | `jsparse.py` + `extension/parse_batch.js` | Let the Python tools call the REAL parser, so an audit can never disagree with the bot. |
 | `test_brokers.py` | Runs the Tradier/tastytrade adapters against a FAKE local server — proves the parsing with no credentials needed. |
 | `test_tape.py` | "Did this trade leave a price record?" Proves a managed contract still gets taped when the batched sweep is completely blind, and that the bus says so out loud. |
-| `test_positions.py`, `test_architecture.py`, `test_brokers.py`, `test_phantom_exit.py`, `test_tape.py`, `test_alert_tape.py`, `test_expiry.py`, `test_resolve.js`, `extension/test_*.js` | The suite. `test_expiry.py` holds every date shape the rooms actually write — a date this reader can't take is not a skipped trade, it's this Friday bought silently. |
+| `futures_mirror_daily.py` | Every evening (called by `daily_audit.py` after the audit): replays the day's SPY/QQQ entries as MES/MNQ on real ES/NQ 1-min bars (bars/ cache, else Databento) → `daily-reports/FUTURES-MIRROR-<date>.md` + cumulative `reference/FUTURES-MIRROR-REPLAY.csv`. 9/13 baseline: −$721 over 149 alerts. |
+| `test_positions.py`, `test_architecture.py`, `test_brokers.py`, `test_phantom_exit.py`, `test_tape.py`, `test_alert_tape.py`, `test_expiry.py`, `test_index_mirror.py`, `test_resolve.js`, `extension/test_*.js` | The suite. `test_expiry.py` holds every date shape the rooms actually write — a date this reader can't take is not a skipped trade, it's this Friday bought silently. |
 | `samples.txt` | Parser samples (fed to `extension/parser.js` by the JS tests). |
 
 ## Records (written by the machine)
@@ -74,7 +76,8 @@ it; `ledger.alerts()`) · `backups/` (dated copies of the master files, last 5 e
 · `days/*.json` (per-day book state — not for analysis) · `journal.csv` (legacy export) ·
 `option_tape.csv` / `databento_tape_clean.csv` / `missed_tape.csv` (price tapes — `tape.py`
 is the one reader) · `journal-*.xlsx` (built 4:45pm weekdays) · `DS Logs/` (extension
-exports — every message the reader saw) · `corpus/` (room language samples)
+exports — every message the reader saw) · `corpus/` (room language samples) · `futures_mirror_shadow.csv` (one row per SPY/QQQ
+entry the bridge saw, written switch-on or switch-off; the index mirror's input)
 
 ## Documentation
 

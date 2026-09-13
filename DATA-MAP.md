@@ -481,7 +481,21 @@ em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
   accurate, Databento). This is what `pullback_levels.py` replays.
 - `bars/NQ_bars.csv` — 2,961 rows, `time,open,high,low,close,volume`, ISO
   timestamps in **+0000**, from 2026-08-24. Free Webull futures bars.
+- `bars/ES_1m_<start>_<end>.csv` · `bars/NQ_1m_<start>_<end>.csv` · `bars/<root>_1m_<date>.csv`
+  — index futures 1-minute OHLCV, `ts_event,symbol,open,high,low,close,volume`,
+  **UTC**, Databento GLBX.MDP3 continuous front month (`ES.c.0`/`NQ.c.0`). The
+  range files cover 2026-08-03 → 09-12; `futures_mirror_daily.py` reads these
+  first and caches any day it has to buy as a single-date file (~1¢/day).
 - `archive/2026-09-09-cleanup/bars/` holds an older capture — do not mix them.
+
+## The index mirror (9/13)
+
+| File | Columns | What it is |
+|---|---|---|
+| `futures_mirror_shadow.csv` | `ts_iso, date, time_et, sym, dirn, micro, room, caller, their_price, outcome` | **Append-only, gitignored, written live by the bridge** for EVERY SPY/QQQ option entry it sees — filled, refused, pullback-armed, TEST room — whether the mirror switch is on or off. The daily replay's input, so it never waits on a master_alerts rebuild. |
+| `reference/FUTURES-MIRROR-REPLAY.csv` | `status, entry, exit, why, pts, usd, mfe, mae, bars, mode, ts, sym, dirn, room, caller, src, lvl, ref` | **The cumulative record**, one row per alert per entry mode (`market` = the headline, `snap` = the 25-pt-limit variant, selection-biased). Seeded with the 149 market rows of the 9/13 study; appended daily, deduped on `mode+ts+sym+dirn` so a re-run cannot inflate the running total. |
+| `reference/FUTURES-MIRROR-REPLAY-2026-09-13.csv` | same | Frozen — the original 8/3–9/11 study (298 rows, both modes). The seed. Do not append to it. |
+| `daily-reports/FUTURES-MIRROR-<date>.md` | — | One day's trades, day total, running total since 2026-08-03, win rate, by room, by sym×direction, exits, and what the number is not. |
 
 ---
 
