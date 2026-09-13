@@ -427,3 +427,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # fill announcer posts there. Reading it would feed the bot its own fills as
 # if they were somebody's calls.
 # ============================================================
+
+# Optionality added 9/13: entry formats recognized; forwarded/tickerless management
+# and percent-only updates need validation before enabling. Index routing unchanged.
+1439358275047915660|https://discord.com/channels/799082461538943046/1439358275047915660|Optionality free-trades|Optionality|off

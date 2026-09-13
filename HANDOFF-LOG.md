@@ -12,6 +12,18 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-13 (Optionality free-trades added disabled)
+User supplied Discord799082461538943046/1439358275047915660. Chrome read
+Optionality free-trades visible July14/23 and August19 posts. Two entry forms
+SPXW7380P-2.5 and spx7750C1.8 parse correctly without bare rules; expiration
+not stated. Standalone parser holds index entries for missing configured index
+route; actual live broker connectivity not tested. Explicit trim1/1st trim
+recognized but ticker/price linkage unresolved. Bare30% becomes TRIM despite
+possible P&L-only meaning; risk free please and price-only updates unresolved.
+Most entry/management posts are forwarded; extraction needs end-to-end check.
+Added room OFF pending compatibility work; no live eligibility enabled. Source
+manifest3.8.15. Original parser gate unchanged. No paid API requests or orders.
+
 ## 2026-09-13 (3.8.14 finishing release)
 Implemented the two reviewed parser fixes, removed AI unknown-side/direction
 defaults and improved comparison categories/price/direction checks.27 Python
