@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.20 reload unverified.
+Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.21 reload unverified.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -23,7 +23,7 @@ Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.20 
 - G (giancuffaro230@gmail.com) — non-coder, trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
-- The machine: Chrome MV3 extension source v3.8.20 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
+- The machine: Chrome MV3 extension source v3.8.21 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
 - Accounts (Webull, one app key), read live 9/11 15:20: MARGIN ENIQGUV4
   connected, $113.71 buying power, flat. settings.json `execution.mode` is
   `dryrun` BY DESIGN (the master switch is retired — bridge.py treats even
@@ -62,7 +62,8 @@ Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.20 
 - ANTHROPIC STATUS: saved-key presence is separate from probe result. Billing, rate limits, authentication, access and connection failures have distinct labels; do not interpret every failed check as a missing key.
 - KEY CHECK (2026-09-13): live tiny-generation probes passed OpenAI gpt-4.1-2025-04-14, Gemini gemini-3.1-flash-lite, and Perplexity sonar at /v1/sonar. Anthropic returned HTTP400 billing; DeepSeek HTTP402 billing. Harness provider_key_check.py; sanitized results local-reader-measure/provider-key-check.json. Successful probes are not live reader/failover activation.
 - PROVIDER KEYS: Keys pane saves OpenAI, Gemini and Perplexity credentials under settings.json ai_provider_keys. Saved provider fields are hidden with an explicit Replace key option. OpenAI/Gemini connected to context observer; Perplexity stored inactive. DeepSeek credential and fields removed by user request; Anthropic retained billing-blocked. Status returns presence flags only; inputs are not included in browser draft persistence.
-- READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer enabled: OpenAI gpt-5.4 primary, Gemini gemini-3.1-flash-lite fallback; same prompt, bounded requests and cooldowns; observation only. Needs You pane/buttons/polling removed. Caller controls now appear under matching Channels, preserving global caller switches and aggregate performance. Grabber repair remains unfinished.
+- DEPARTMENTS: enabled. Existing bridge audit loop calls health_tick every five minutes; extension maintenance publishes Discord/Whop lane heartbeat and reader issues. GPT-5.4 mini analyzes changed issues (12/day), Astra escalates multi-issue incidents (2/day), reviews selected reader disagreements (20/day), and analyzes existing daily reports after the 16:40 audit (1/day). Results are advisory files in department-reports, never executed as code/orders. Astra and Mini live probes passed; first Astra report for Friday 9/11 and Mini preflight generated. Context snapshots persist at most once/minute (up to one minute may be lost on abrupt exit).
+- READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer enabled: OpenAI gpt-5.4 primary, Gemini gemini-3.1-flash-lite fallback; same prompt, bounded requests and cooldowns; observation only. Needs You pane/buttons/polling removed. Caller controls now appear under matching Channels, preserving global caller switches and aggregate performance. Grabber stale-ID recovery and queue advancement fixed; requests at least four months, retains tabs and labels stalled history partial. Browser full-history completion remains unverified.
 - AI MEASUREMENT: OpenAI retained scan COMPLETE: 12,162 successful; $28.37
   estimated API cost of $45 authorized. Results: local-reader-measure/
   openai-trial-2026-09-12/final-release-3.8.14/. No new paid scan needed.

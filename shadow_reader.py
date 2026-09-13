@@ -22,6 +22,8 @@ _recent = {}
 _seen = {}
 _jobs = queue.Queue(maxsize=256)
 _worker_started = False
+_context_restored = False
+_context_saved_at = 0
 _last_finished = 0
 _last_error = ""
 _last_provider = ""
@@ -71,6 +73,34 @@ def _worker():
             _jobs.task_done()
 
 
+def _restore_context(now):
+    global _context_restored
+    if _context_restored:return
+    _context_restored=True
+    try:
+        with open(os.path.join(OUT,'context-cache.json'),encoding='utf-8') as fh:
+            data=json.load(fh)
+        for room, rows in list(data.items())[:200]:
+            valid=[p for p in rows if isinstance(p,dict) and 0 <= now-int(p.get('postedAt',0)) <= context_reader.CONTEXT_MS]
+            _recent[room]=deque(valid[-context_reader.MAX_CONTEXT:],maxlen=context_reader.MAX_CONTEXT+1)
+    except (OSError,ValueError,TypeError,AttributeError):
+        pass
+
+
+def _persist_context(now):
+    global _context_saved_at
+    if now-_context_saved_at<60000:return
+    os.makedirs(OUT,exist_ok=True)
+    target=os.path.join(OUT,'context-cache.json')
+    try:
+        with open(target+'.tmp','w',encoding='utf-8') as fh:
+            json.dump({room:list(rows)[-context_reader.MAX_CONTEXT:] for room,rows in _recent.items()},fh)
+        os.replace(target+'.tmp',target)
+        _context_saved_at=now
+    except OSError:
+        pass
+
+
 def enqueue(body, cfg):
     """Remember a line and queue one fresh read; never block on the model."""
     global _worker_started
@@ -85,7 +115,8 @@ def enqueue(body, cfg):
         posted = int(body.get("postedAt") or now)
     except (TypeError, ValueError):
         posted = now
-    if posted < now - context_reader.FRESH_POST_MS or posted > now + 60000:
+    max_age = context_reader.CONTEXT_MS if body.get("history") else context_reader.FRESH_POST_MS
+    if posted < now - max_age or posted > now + 60000:
         return {"ok": True, "status": "old_or_future"}
     current = {"id": str(body.get("id") or "")[:160], "channelId": room,
                "author": str(body.get("author") or "?")[:100],
@@ -101,6 +132,7 @@ def enqueue(body, cfg):
     current["enqueuedAt"] = now
     key = (room, current["id"] or (current["author"], posted, text))
     with _lock:
+        _restore_context(now)
         signature = (text, current["history"])
         if key in _seen and _seen[key] == signature:
             return {"ok": True, "status": "duplicate"}
@@ -124,6 +156,7 @@ def enqueue(body, cfg):
             oldest = next(iter(_recent))
             if oldest != room:
                 del _recent[oldest]
+        _persist_context(now)
     if current["history"]:
         return {"ok": True, "status": "context_only"}
     if os.path.exists(os.path.join(OUT, 'AI-PAUSED')):

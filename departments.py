@@ -8,6 +8,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from contextlib import contextmanager
 import eastern
 import observer_providers
 
@@ -26,11 +27,16 @@ def config():
     return json.loads((HERE/'settings.json').read_text(encoding='utf-8'))
 
 
+@contextmanager
 def db():
     OUT.mkdir(exist_ok=True)
     conn=sqlite3.connect(OUT/'runs.sqlite3',timeout=10)
     conn.execute('CREATE TABLE IF NOT EXISTS runs(day TEXT, role TEXT, fingerprint TEXT, status TEXT, PRIMARY KEY(day,role,fingerprint))')
-    return conn
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def reserve(role, fingerprint, day):
@@ -59,6 +65,10 @@ def run(role, evidence, report_day=None):
                                       output_limit=6000,reasoning='medium',timeout_seconds=60)
     row={'role':role,'day':report_day or day,'checked_at':time.time(),'model':MODELS[role],
          'evidence_truncated':truncated,'result':result,'fingerprint':fingerprint}
+    if not result.get('_error') and (not isinstance(result.get('summary'),str)
+            or not isinstance(result.get('findings'),list) or not isinstance(result.get('limitations'),list)):
+        result={'_error':'invalid_department_schema'}
+        row['result']=result
     status='failed' if result.get('_error') else 'completed'
     target=OUT/(role+'-'+(report_day or day)+'-'+fingerprint+'.json')
     target.write_text(json.dumps(row,indent=2,ensure_ascii=False),encoding='utf-8')
@@ -81,7 +91,11 @@ def submit(role,evidence,report_day=None):
     def job():
         global _pending
         try:run(role,evidence,report_day)
-        except Exception:pass
+        except Exception:
+            OUT.mkdir(exist_ok=True)
+            with _lock:
+                with (OUT/'worker-errors.jsonl').open('a',encoding='utf-8') as fh:
+                    fh.write(json.dumps({'role':role,'at':time.time(),'error':'review_worker_failed'})+'\n')
         finally:
             with _lock:_pending-=1
     _pool.submit(job)
