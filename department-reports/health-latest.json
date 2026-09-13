@@ -4,13 +4,13 @@
   "lanes": [
     {
       "lane": "discord",
-      "fresh": false,
-      "version": null
+      "fresh": true,
+      "version": "3.8.21"
     },
     {
       "lane": "whop",
-      "fresh": false,
-      "version": null
+      "fresh": true,
+      "version": "3.8.21"
     }
   ],
   "observer": {
@@ -22,5 +22,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789320986.4415288
+  "checked_at": 1789321053.0520306
 }
