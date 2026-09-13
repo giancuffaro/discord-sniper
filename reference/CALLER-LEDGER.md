@@ -1,5 +1,14 @@
 # Caller research data
 
+`python trade_identity.py` reconciles current research records into
+`trade_identity_links`; refresh also runs it. Query `attributed_research` for
+source fields, candidate account IDs, status and explanation together.
+Exact alias/channel matches are candidates only, not verified attribution.
+An explicit source `trader_id` may establish a source-provided link; `author_id`
+alone cannot identify the trader behind a relay. Manual trades stay separate.
+Local `TRADE-IDENTITY-COVERAGE.json` and `TRADE-IDENTITY-GAPS.md` show outstanding
+work. This does not alter source ledgers, live routing, or performance statistics.
+
 ## Integrated trading research database
 
 `python research_ledger.py refresh` refreshes the catalog and imports master alerts,
