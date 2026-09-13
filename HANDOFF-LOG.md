@@ -12,6 +12,11 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (User confirms extension loaded)
+G explicitly confirmed version 3.8.13 loaded. OpenAI replay progress check:
+3,461/12,162 successful (28.5%), estimated successful API cost $7.303;
+budget accounted $7.339 including conservative failed-request reservations.
+
 ## 2026-09-12 (Three source-confirmed parser fixes, extension 3.8.13)
 G authorized specific fixes from contextual replay findings. Added narrowly
 scoped handling for leading Entered + contract + @premium with session or
