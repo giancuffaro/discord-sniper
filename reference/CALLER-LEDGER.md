@@ -1,5 +1,13 @@
 # Caller research data
 
+`python recover_trade_sources.py` records timestamp-matched `trades.log` evidence
+in `trade_source_recovery` and local `LOG-RECOVERY.md`. Broker adoption timestamps
+are not treated as original entry times, nor as proof of manual ownership.
+Reviewed historical identity links live in local `reviewed-trade-identities.json`;
+`source_supported` populates `resolved_trader_id`, while `verified_trader_id` is
+reserved for explicit source trader IDs. Supporting raw-message record IDs remain
+attached to each reviewed link. All of these are research-only attributions.
+
 `python trade_identity.py` reconciles current research records into
 `trade_identity_links`; refresh also runs it. Query `attributed_research` for
 source fields, candidate account IDs, status and explanation together.

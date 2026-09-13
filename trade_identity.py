@@ -11,7 +11,8 @@ def reconcile(out=OUT):
       CREATE TABLE IF NOT EXISTS trade_identity_links(record_id TEXT PRIMARY KEY,
         trader_id TEXT, status TEXT NOT NULL, candidates_json TEXT, reason TEXT NOT NULL);
       DROP VIEW IF EXISTS attributed_research;
-      CREATE VIEW attributed_research AS SELECT r.*, i.trader_id AS verified_trader_id,
+      CREATE VIEW attributed_research AS SELECT r.*, i.trader_id AS resolved_trader_id,
+        CASE WHEN i.status='source_trader_id' THEN i.trader_id END AS verified_trader_id,
         i.status AS identity_status,i.candidates_json,i.reason AS identity_reason
         FROM ledger_records r LEFT JOIN trade_identity_links i USING(record_id)
         WHERE r.current=1;
@@ -31,6 +32,8 @@ def reconcile(out=OUT):
         if label:
             labels[label.strip().casefold()].add(cid)
     known={row[0] for row in db.execute('SELECT discord_user_id FROM confirmed_accounts')}
+    reviewed_path=out/'reviewed-trade-identities.json'
+    reviewed={item['record_id']:item for item in json.loads(reviewed_path.read_text(encoding='utf-8'))} if reviewed_path.exists() else {}
     totals=Counter()
     by_kind=defaultdict(Counter)
     for rid,kind,caller,room,cid,payload in db.execute('SELECT record_id,kind,caller,room,channel_id,payload FROM ledger_records WHERE current=1').fetchall():
@@ -39,6 +42,11 @@ def reconcile(out=OUT):
         candidates=[]
         if str(data.get('manual','')).casefold() in ('true','1','yes'):
             status,reason='manual','Manual position; not assigned to a signal caller'
+        elif rid in reviewed and reviewed[rid]['trader_id'] in known:
+            item=reviewed[rid]
+            trader=item['trader_id']
+            status,reason='source_supported',item['reason']
+            candidates=[trader]
         elif data.get('trader_id') in known:
             trader=data['trader_id']
             status,reason='source_trader_id','Explicit trader_id in source; source attribution retained'
