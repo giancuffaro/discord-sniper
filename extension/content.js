@@ -290,11 +290,11 @@ function findScroller(el) {
         n.scrollHeight > n.clientHeight + 40) return n;
     n = n.parentElement;
   }
-  return document.querySelector('div[class*="scroller"]') || null;
+  return null; // Never scroll an unrelated sidebar when the message pane is absent.
 }
 
 function grabReport(obj) {
-  try { chrome.runtime.sendMessage(Object.assign({ type: "GRAB_PROGRESS", channelId: channelId() }, obj)); }
+  try { chrome.runtime.sendMessage(Object.assign({ type: "GRAB_PROGRESS", channelId: channelId() }, obj)).catch(() => {}); }
   catch (e) {}
 }
 
@@ -302,12 +302,12 @@ async function grabHistory(untilTs) {
   if (grabbing) return;
   // Target at least four calendar months; overflow can only extend coverage.
   if (!untilTs) { const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 4); untilTs = cutoff.getTime() - 3 * 86400000; }
-  const list = document.querySelector('[data-list-id="chat-messages"]');
-  const scroller = list && findScroller(list);
+  let list = document.querySelector('[data-list-id="chat-messages"]');
+  let scroller = list && findScroller(list);
   if (!scroller) { grabReport({ done: true, why: "couldn't find the message pane — open the room first" }); return; }
   grabbing = true;
   const grabRoom = channelId();
-  let stagnant = 0, lastH = -1, rounds = 0, parked = false, lastOldest = null;
+  let stagnant = 0, lastEdge = "", missingPane = 0, rounds = 0, parked = false, lastOldest = null;
   // GENTLE by design. Yanking straight to scrollTop=0 makes Discord fetch
   // batches faster than it can render them, which spikes CPU and crashes the
   // tab on a long pull. Instead we nudge up about one screenful at a time and
@@ -318,6 +318,7 @@ async function grabHistory(untilTs) {
                                               // gently (a screen at a time), not
                                               // yank to the very top.
   grabReport({ started: true });
+  try {
   while (grabbing && rounds < 20000) {
     if (channelId() !== grabRoom) { grabbing = false; grabReport({done:true,channelId:grabRoom,why:"channel changed — partial history"}); break; }
     rounds++;
@@ -334,10 +335,26 @@ async function grabHistory(untilTs) {
       continue;
     }
     if (parked) { grabReport({ resumed: true }); parked = false; }
+    // Discord can replace these nodes while loading a virtualized message page.
+    // Resolve the live pane on every step rather than scrolling a detached node.
+    list = document.querySelector('[data-list-id="chat-messages"]');
+    scroller = list && findScroller(list);
+    if (!scroller) {
+      if (++missingPane >= 40) { grabReport({done:true,why:"message pane unavailable — partial history"}); break; }
+      await new Promise(r => setTimeout(r, WAIT));
+      continue;
+    }
+    missingPane = 0;
+    list.querySelectorAll('li[id^="chat-messages-"]').forEach(handle);
     // Nudge up ~80% of a screen rather than jumping to the very top.
     const step = Math.max(200, Math.floor(scroller.clientHeight * 0.8));
     scroller.scrollTop = Math.max(0, scroller.scrollTop - step);
     await new Promise(r => setTimeout(r, WAIT));
+    if (!grabbing) break;
+    if (channelId() !== grabRoom) continue;
+    list = document.querySelector('[data-list-id="chat-messages"]');
+    scroller = list && findScroller(list);
+    if (!scroller) continue;
     // SWEEP every message currently on screen, don't wait for Discord's
     // "new message" event — during a fast scroll those events skip rows, which
     // is how whole embed calls went missing. handle() dedupes via SEEN, so
@@ -347,7 +364,8 @@ async function grabHistory(untilTs) {
     const oldestEl = times[0];
     const oldest = oldestEl ? Date.parse(oldestEl.getAttribute("datetime")) : null;
     if (oldest) lastOldest = oldest;
-    const h = scroller.scrollHeight;
+    const firstRow = list.querySelector('li[id^="chat-messages-"]');
+    const edge = String(oldest || "") + ":" + (firstRow ? firstRow.id : "");
     const atTop = scroller.scrollTop <= 4;   // pinned at the top of what's loaded
     if (rounds % 4 === 0 || (untilTs && oldest && oldest <= untilTs)) {
       grabReport({ oldest: oldest || null, rounds });
@@ -356,12 +374,18 @@ async function grabHistory(untilTs) {
     // Only call it "the top" when we're pinned at the top AND nothing new has
     // loaded for several waits. While we're still scrolling down through
     // already-loaded messages (not at top), that's not stagnation.
-    if (atTop && h === lastH) { if (++stagnant >= 8) { grabReport({ done: true, reached: "top" }); break; } }
+    // A virtualized list may keep identical height while older messages arrive.
+    // Give a slow history fetch 30 seconds with an unchanged oldest message.
+    if (atTop && edge === lastEdge) { if (++stagnant >= 40) { grabReport({ done: true, reached: "top", oldest:lastOldest }); break; } }
     else { stagnant = 0; }
-    lastH = h;
+    lastEdge = edge;
   }
-  grabbing = false;
   if (rounds >= 20000) grabReport({ done: true, reached: "limit" });
+  } catch (e) {
+    grabReport({done:true,channelId:grabRoom,why:"history capture interrupted — partial history; retry Grab"});
+  } finally {
+    grabbing = false;
+  }
 }
 
 try {
