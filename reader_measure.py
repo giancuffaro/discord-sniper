@@ -10,6 +10,7 @@ import csv
 import json
 import os
 import random
+import re
 import subprocess
 import time
 from collections import defaultdict, deque
@@ -26,6 +27,45 @@ PREPARED = os.path.join(OUT, "corpus.jsonl")
 AI_OUT = os.path.join(OUT, "ai-context.jsonl")
 QUEUE = os.path.join(OUT, "disagreements.csv")
 SUMMARY = os.path.join(OUT, "summary.json")
+
+
+def expiry_key(value):
+    """Comparison only: equivalent explicit dates, without inventing a year.
+
+    Numeric room dates use the existing US month/day convention. Unknown and
+    relative expressions remain literal; absent dates never match known ones.
+    """
+    raw = str(value or '').strip().casefold()
+    text = re.sub(r'(?<=\d)(?:st|nd|rd|th)\b', '', raw)
+    text = re.sub(r'[,\s]+', ' ', text).strip()
+    months = {name: i for i, names in enumerate([
+        ('jan','january'),('feb','february'),('mar','march'),('apr','april'),
+        ('may',),('jun','june'),('jul','july'),('aug','august'),
+        ('sep','sept','september'),('oct','october'),('nov','november'),
+        ('dec','december')], 1) for name in names}
+    numeric = re.fullmatch(r'(\d{1,2})/(\d{1,2})(?:/(\d{2}|\d{4}))?',text)
+    iso = re.fullmatch(r'(\d{4})-(\d{2})-(\d{2})',text)
+    named = re.fullmatch(r'([a-z]+)\.? (\d{1,2})(?: (\d{2}|\d{4}))?',text)
+    reversed_name = re.fullmatch(r'(\d{1,2}) ([a-z]+)\.?(?: (\d{2}|\d{4}))?',text)
+    if iso:
+        year, month, day = map(int,iso.groups())
+    elif numeric:
+        month,day = map(int,numeric.groups()[:2]);year = numeric[3]
+    elif named and named[1] in months:
+        month,day,year = months[named[1]],int(named[2]),named[3]
+    elif reversed_name and reversed_name[2] in months:
+        month,day,year = months[reversed_name[2]],int(reversed_name[1]),reversed_name[3]
+    else:
+        return ('literal', raw)
+    if year is not None:
+        year = int(year)
+        if year < 100:
+            year += 2000
+    try:
+        datetime(year or 2000,month,day)
+    except ValueError:
+        return ('literal',raw)
+    return ('date',year,month,day)
 
 
 def jsonl(path):
@@ -286,9 +326,9 @@ def report():
             category = "potential_false_alert"
         elif pa != "NONE" and aa != "NONE" and (
                 str(p.get("symbol") or "").upper(), str(p.get("strike") or ""),
-                str(p.get("side") or "").upper(), str(p.get("expiry") or "")) != (
+                str(p.get("side") or "").upper(), expiry_key(p.get("expiry"))) != (
                 str(an.get("symbol") or "").upper(), str(an.get("strike") or ""),
-                str(an.get("side") or "").upper(), str(an.get("expiry") or "")):
+                str(an.get("side") or "").upper(), expiry_key(an.get("expiry"))):
             category = "potential_wrong_contract"
         elif pa != aa:
             category = "potential_wrong_action"

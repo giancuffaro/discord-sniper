@@ -12,6 +12,17 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-12 (Equivalent expiry comparison)
+G authorized equivalent expiration spellings. reader_measure.expiry_key now
+compares US month/day, month names/ordinals, explicit two/four-digit years
+(two-digit years use2000+), and ISO dates semantically. Original source strings
+are preserved. Missing years are not inferred; different years/dates, invalid
+dates, missing values and relative expressions stay distinct. Ten tests pass.
+Regenerated progress-review-latest from its same saved4918-success snapshot
+without new API requests. Live parser and running AI process not restarted.
+Running process already imported old report code: regenerate its final report
+with current reader_measure after completion to apply this normalization.
+
 ## 2026-09-12 (User confirms extension loaded)
 G explicitly confirmed version 3.8.13 loaded. OpenAI replay progress check:
 3,461/12,162 successful (28.5%), estimated successful API cost $7.303;
