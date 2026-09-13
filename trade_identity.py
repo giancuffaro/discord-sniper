@@ -57,10 +57,28 @@ def reconcile(out=OUT):
             labels[label.strip().casefold()].add(cid)
     known={row[0] for row in db.execute('SELECT discord_user_id FROM confirmed_accounts')}
     reviewed_path=out/'reviewed-trade-identities.json'
-    reviewed={item['record_id']:item for item in json.loads(reviewed_path.read_text(encoding='utf-8'))} if reviewed_path.exists() else {}
+    reviewed_items=json.loads(reviewed_path.read_text(encoding='utf-8')) if reviewed_path.exists() else []
+    current=db.execute('SELECT record_id,kind,caller,room,channel_id,payload FROM ledger_records WHERE current=1').fetchall()
+    reviewed={item['record_id']:item for item in reviewed_items
+              if item.get('record_id') and not item.get('match')}
+    # Rebuilt CSV row numbers and reconciled fields change record_id. A reviewed
+    # source link may follow a unique, fully specified source trade only while
+    # its original message evidence remains in this research database.
+    for item in reviewed_items:
+        match=item.get('match')
+        if not match:
+            continue
+        hits=[rid for rid,kind,caller,room,cid,payload in current
+              if kind==match.get('kind') and
+              all(json.loads(payload).get(k)==v for k,v in match.items() if k!='kind')]
+        evidence=item.get('evidence_message_ids') or []
+        if len(hits)==1 and evidence and all(
+                db.execute('SELECT 1 FROM messages WHERE record_id=?',(mid,)).fetchone()
+                for mid in evidence):
+            reviewed[hits[0]]=item
     totals=Counter()
     by_kind=defaultdict(Counter)
-    for rid,kind,caller,room,cid,payload in db.execute('SELECT record_id,kind,caller,room,channel_id,payload FROM ledger_records WHERE current=1').fetchall():
+    for rid,kind,caller,room,cid,payload in current:
         data=json.loads(payload)
         trader=None
         candidates=[]
