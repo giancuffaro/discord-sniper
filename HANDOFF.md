@@ -71,6 +71,12 @@ Last updated: 2026-09-13 — Departments enabled and smoke-tested; Discord/Whop 
   remote history remains incomplete. Both Chrome lanes reported v3.8.21 on 9/13; configured missing tabs restored and current extension issue lists empty. Market-hours capture remains to verify.
 
 ## Rules of the house (current, in force)
+PREMIUM REVIEW: Department AI distinguishes per-share quotes, cents, per-contract
+cost, position totals and profit. No arbitrary premium range and no automatic
+factor-of-100 correction. Equivalent amounts with verified units are not bugs;
+missing units remain unresolved pending original-source evidence. User confirmed
+Discord Chrome Profile 2 and Whop Chrome Profile 6 on 2026-09-13.
+
 ENTRIES
 - Bid the caller's price or better; pullback entries cross the ask at the
   touch. RN (round-number) pullback is global and ON (waits for the next
