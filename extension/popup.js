@@ -930,7 +930,38 @@ $("savepaperkeys").onclick = async () => {
  * "make it always on, i need every trade to go through AI reading." No off
  * button any more — the only states are "on" (a working key is saved) and
  * "needs a key". The bridge ignores the old enabled flag to match. */
+function paintProviderKeys(st) {
+  for (const provider of ["openai", "gemini", "perplexity", "deepseek"]) {
+    const label = $("provider-" + provider + "-state");
+    if (label && label.dataset.busy !== "1") label.textContent =
+      st && st.ai_provider_keys_saved && st.ai_provider_keys_saved[provider]
+        ? "saved · not activated or tested" : "no saved key";
+  }
+}
+document.querySelectorAll("[data-save-provider]").forEach(button => {
+  button.onclick = async () => {
+    const provider = button.dataset.saveProvider;
+    const input = $("provider-" + provider + "-key");
+    const label = $("provider-" + provider + "-state");
+    if (!input.value.trim()) { label.textContent = "Paste a key first"; return; }
+    button.disabled = true;
+    label.dataset.busy = "1";
+    label.textContent = "Saving…";
+    try {
+      const result = await askBridge("/config", {ai_provider_keys: {[provider]: input.value.trim()}});
+      if (!result || !result.ok) throw new Error("save_failed");
+      input.value = "";
+      label.textContent = "saved · not activated or tested";
+    } catch (_) {
+      label.textContent = "Could not save — check the bridge connection";
+    } finally {
+      button.disabled = false;
+      delete label.dataset.busy;
+    }
+  };
+});
 function paintAi(st) {
+  paintProviderKeys(st);
   const on = !!(st && st.ai_enabled);
   const el = $("aiState");
   if (el) {

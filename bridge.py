@@ -4144,6 +4144,9 @@ class Handler(BaseHTTPRequestHandler):
                 # says 401, whatever is pasted.
                 "ai_enabled": bool((EXEC.get("ai_reader") or {}).get("api_key"))
                               and AI_KEY_OK is not False,
+                "ai_provider_keys_saved": {
+                    provider: bool((CFG.get("ai_provider_keys") or {}).get(provider))
+                    for provider in ("openai", "gemini", "perplexity", "deepseek")},
                 "pocket_scalps_only": bool(CFG.get("pocket_scalps_only")),
                 # Swings paused (9/4). Shown in the popup so the state is
                 # never a guess — a silent gate that refuses trades is the
@@ -4918,7 +4921,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:                                   # noqa: BLE001
             return self._json(400, {"ok": False, "message": "unreadable"})
         _known = ("futures_enabled", "simulation", "paper_trading",
-                  "ai_enabled", "ai_api_key", "ai_model", "strategy",
+                  "ai_enabled", "ai_api_key", "ai_model", "ai_provider_keys", "strategy",
                   "futures_brokers", "webull_extra_accounts", "deepgram_key", "pocket_scalps_only",
                   "swings_paused")
         if not any(k in body for k in _known):
@@ -4929,6 +4932,18 @@ class Handler(BaseHTTPRequestHandler):
                 data = json.load(f)
         except (OSError, ValueError):
             data = {}
+        if "ai_provider_keys" in body:
+            incoming = body["ai_provider_keys"]
+            providers = {"openai", "gemini", "perplexity", "deepseek"}
+            if (not isinstance(incoming, dict) or not incoming
+                    or any(k not in providers or not isinstance(v, str)
+                           or not v.strip() or len(v) > 4096
+                           for k, v in incoming.items())):
+                return self._json(400, {"ok": False, "message": "Invalid provider key fields"})
+            # Storage only: saving credentials does not enable a provider or call it.
+            saved = data.setdefault("ai_provider_keys", {})
+            for provider, key in incoming.items():
+                saved[provider] = key.strip()
         want = None
         if "futures_enabled" in body:
             want = bool(body["futures_enabled"])
