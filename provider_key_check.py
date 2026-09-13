@@ -11,7 +11,7 @@ HERE = Path(__file__).resolve().parent
 
 def probe(provider, key, model_override=None):
     models = {'openai':'gpt-4.1-2025-04-14','anthropic':'claude-haiku-4-5-20251001',
-              'gemini':'gemini-2.5-flash-lite','perplexity':'sonar','deepseek':'deepseek-chat'}
+              'gemini':'gemini-3.1-flash-lite','perplexity':'sonar','deepseek':'deepseek-chat'}
     model = model_override or models[provider]
     result = {'provider':provider,'model':model,'checked_at':datetime.now(timezone.utc).isoformat()}
     if not key:
