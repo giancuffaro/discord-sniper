@@ -2258,14 +2258,14 @@ function channelOf(tab) {
 // Grab ADDS this room to the queue. The background works the line one room at a
 // time — brings each to the front, scrolls its history, saves to Downloads,
 // closes the tab, next. Queue several with the button or Ctrl+Shift+X and walk
-// away. Each goes 1 year back.
+// away. Each requests at least four months.
 $("grabHistory").onclick = async () => {
   const el = $("grabState");
   const tab = await activeTab();
   if (!tab || !/discord\.com\/channels\//.test(tab.url || "")) {
     el.textContent = "Open the Discord room's tab first, then hit Grab."; return;
   }
-  el.textContent = "added to the queue — the extension will bring it to the front, grab it, save it, close the tab, and move to the next. Watch the Logs tab.";
+  el.textContent = "added to the queue — the extension will bring it to the front, grab four months, save it, keep the tab open, and move to the next. Watch the Logs tab.";
   try { await chrome.runtime.sendMessage({ type: "ENQUEUE_GRAB", tabId: tab.id }); }
   catch (e) { el.textContent = "couldn't reach the extension — reopen the popup and try again."; }
 };

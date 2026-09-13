@@ -300,12 +300,13 @@ function grabReport(obj) {
 
 async function grabHistory(untilTs) {
   if (grabbing) return;
-  // No date given -> go ONE YEAR back from the real date, right now.
-  if (!untilTs) untilTs = Date.now() - 1 * 365 * 24 * 60 * 60 * 1000;
+  // Target at least four calendar months; overflow can only extend coverage.
+  if (!untilTs) { const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 4); untilTs = cutoff.getTime() - 3 * 86400000; }
   const list = document.querySelector('[data-list-id="chat-messages"]');
   const scroller = list && findScroller(list);
   if (!scroller) { grabReport({ done: true, why: "couldn't find the message pane — open the room first" }); return; }
   grabbing = true;
+  const grabRoom = channelId();
   let stagnant = 0, lastH = -1, rounds = 0, parked = false, lastOldest = null;
   // GENTLE by design. Yanking straight to scrollTop=0 makes Discord fetch
   // batches faster than it can render them, which spikes CPU and crashes the
@@ -318,6 +319,7 @@ async function grabHistory(untilTs) {
                                               // yank to the very top.
   grabReport({ started: true });
   while (grabbing && rounds < 20000) {
+    if (channelId() !== grabRoom) { grabbing = false; grabReport({done:true,why:"channel changed — partial history"}); break; }
     rounds++;
     // Chrome slows hidden tabs to a crawl AND Discord stops loading older
     // messages when its tab isn't on screen. If we kept scrolling we'd see no
@@ -396,7 +398,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     // renders none. Same number _readerHealth() already reports every 30s,
     // so the probe cannot be wrong in a new way.
     if (msg.type === "HEALTH?") { reply && reply(_readerHealth()); return; }
-    if (msg.type === "GRAB_HISTORY") { grabHistory(msg.untilTs || 0); reply && reply({ ok: true }); }
+    if (msg.type === "GRAB_HISTORY") { if (msg.channelId && msg.channelId !== channelId()) { reply && reply({ok:false}); return; } grabHistory(msg.untilTs || 0); reply && reply({ ok: true }); }
     else if (msg.type === "STOP_GRAB") { grabbing = false; reply && reply({ ok: true }); }
     else if (msg.type === "JOIN_VOICE") { joinLiveVoice().then(r => reply && reply(r)); return true; }
   });

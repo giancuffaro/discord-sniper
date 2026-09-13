@@ -1318,122 +1318,110 @@ function roomName(channelId) {
   return (id && (CHAN_NAMES[id] || ROOM_LABELS[id])) || "this room";
 }
 
+function grabChannel(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname !== "discord.com" && !u.hostname.endsWith(".discord.com")) return "";
+    return (u.pathname.match(/^\/channels\/[^/]+\/(\d+)/) || [])[1] || "";
+  } catch (_) { return ""; }
+}
+let grabGeneration = 0;
+async function resolveGrabTab(item) {
+  try {
+    const tab = await chrome.tabs.get(item.tabId);
+    if (grabChannel(tab.url) === item.channelId) return tab;
+  } catch (_) {}
+  const tabs = await chrome.tabs.query({url:["https://discord.com/channels/*", "https://*.discord.com/channels/*"]});
+  return tabs.find(t => grabChannel(t.url) === item.channelId) || null;
+}
 async function enqueueGrab(tab) {
-  if (!tab || !/discord\.com\/channels\//.test(tab.url || "")) {
-    await addLog({ kind: "update", why: "Grab ignored — that's not a Discord room tab. Open the room first." });
+  const channelId = grabChannel(tab && tab.url);
+  if (!channelId) {
+    await addLog({kind:"failed", what:"GRAB", why:"Open the Discord room tab first, then press Grab."});
     return;
   }
-  const cm = ((tab.url) || "").match(/channels\/[^/]+\/(\d+)/);
-  const channelId = cm ? cm[1] : "";
   const running = await getRunning();
   const q = await getQueue();
-  if ((running && running.tabId === tab.id) || q.some(x => x.tabId === tab.id)) {
-    await addLog({ kind: "ignored", why: roomName(channelId) + " is already in line — no need to press it twice." });
+  if ((running && running.channelId === channelId) || q.some(x => x.channelId === channelId)) {
+    // A persisted running item may refer to a tab from an earlier browser session.
+    if (running) {
+      try { await chrome.tabs.get(running.tabId); }
+      catch (_) { await setRunning(null); }
+    }
+    pumpGrabQueue();
     return;
   }
-  q.push({ tabId: tab.id, channelId: channelId });
+  q.push({tabId:tab.id, channelId, url:tab.url});
   await setQueue(q);
-  await addLog({ kind: "update", why: "➕ queued " + roomName(channelId) + " (#" + q.length + " in line) — it'll grab, save, close, then move on." });
+  await addLog({kind:"update", why:"Queued " + roomName(channelId) + " — four months of history; your tab stays open."});
   pumpGrabQueue();
 }
-
 async function pumpGrabQueue() {
   if (pumping) return;
-  if (await getRunning()) return;          // one already in progress
   pumping = true;
+  let retry = false;
+  const generation = grabGeneration;
   try {
+    if (await getRunning()) return;
     const q = await getQueue();
     if (!q.length) return;
     const next = q[0];
-    await setRunning(next);
-    // Bring it to the front so Chrome keeps it awake, then start the scroll.
     try {
-      const t = await chrome.tabs.get(next.tabId);
-      try { await chrome.windows.update(t.windowId, { focused: true }); } catch (e) {}
-      await chrome.tabs.update(next.tabId, { active: true });
-      await new Promise(r => setTimeout(r, 400));   // let it paint before scrolling
-      // WAKE THE READER FIRST, DON'T GIVE UP ON IT (9/10, G: "I'm pressing
-      // the button, it doesn't work"). Reloading the extension orphans the
-      // content script in every tab that was already open: the tab looks
-      // perfectly fine, but sendMessage throws "Receiving end does not
-      // exist" and the old code took that as "tab gone" and silently
-      // dropped the grab. Nothing on screen, nothing in the log he was
-      // looking at. Re-inject and retry once — that is the whole fix, and
-      // ensureReaders already does exactly this for the live readers.
-      try {
-        await chrome.tabs.sendMessage(next.tabId, { type: "GRAB_HISTORY" });
-      } catch (e1) {
-        const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
-        await chrome.scripting.executeScript({ target: { tabId: next.tabId },
-          files: [isWhop ? "whop.js" : "content.js"] });
-        await new Promise(r => setTimeout(r, 600));
-        await chrome.tabs.sendMessage(next.tabId, { type: "GRAB_HISTORY" });
-        await addLog({ kind: "update", why: "the reader in that tab was stale "
-          + "(an extension reload orphans it) — put a fresh one in and started "
-          + "the grab. Nothing lost." });
+      const t = await resolveGrabTab(next);
+      if (!t) throw new Error("Room tab is no longer open. Open this channel and press Grab again.");
+      if (generation !== grabGeneration) return;
+      next.tabId = t.id;
+      await setQueue(q);
+      await setRunning(next);
+      await chrome.tabs.update(t.id,{active:true});
+      try { await chrome.windows.update(t.windowId,{focused:true}); } catch (_) {}
+      await new Promise(r => setTimeout(r,400));
+      if (generation !== grabGeneration) return;
+      const current = await chrome.tabs.get(t.id);
+      if (grabChannel(current.url) !== next.channelId) throw new Error("Tab changed channels before the grab started.");
+      try { await chrome.tabs.sendMessage(t.id,{type:"GRAB_HISTORY", channelId:next.channelId}); }
+      catch (_) {
+        await chrome.scripting.executeScript({target:{tabId:t.id},files:["content.js"]});
+        if (generation !== grabGeneration) return;
+        await chrome.tabs.sendMessage(t.id,{type:"GRAB_HISTORY", channelId:next.channelId});
       }
-      await addLog({ kind: "update", why: "⏳ grabbing " + roomName(next.channelId) + " — brought it to the front. Leave it; it closes itself when done." });
+      await addLog({kind:"update",why:"Grabbing " + roomName(next.channelId) + " — keep this tab visible. It will remain open."});
     } catch (e) {
-      // Still no. Say WHY, instead of the old catch-all that blamed the tab.
-      await addLog({ kind: "failed", what: "GRAB",
-        why: "couldn't start the grab on " + roomName(next.channelId) + " — "
-           + String((e && e.message) || e).slice(0, 120)
-           + ". If the tab is open and this keeps happening, refresh that tab "
-           + "(F5) and press Grab again." });
-      await advanceQueue(next.tabId, false);
+      await addLog({kind:"failed",what:"GRAB",why:roomName(next.channelId)+": "+String(e.message || e).slice(0,200)});
+      await advanceQueue(next.tabId,false);
+      retry = true;
     }
   } finally {
     pumping = false;
+    if (retry && generation === grabGeneration) pumpGrabQueue();
   }
 }
-
-/* Called when a grab finishes (or its tab vanishes): drop the front item, close
- * its tab if asked, and kick off the next one. */
 async function advanceQueue(tabId, closeTab) {
   const q = await getQueue();
-  if (q.length && q[0].tabId === tabId) q.shift();
-  else { const i = q.findIndex(x => x.tabId === tabId); if (i >= 0) q.splice(i, 1); }
-  await setQueue(q);
-  await setRunning(null);
-  if (closeTab) { try { await chrome.tabs.remove(tabId); } catch (e) {} }
+  const running = await getRunning();
+  await setQueue(q.filter(x => x.tabId !== tabId));
+  if (running && running.tabId === tabId) await setRunning(null);
+  // Manual history grabs always retain the user's room tab.
   pumpGrabQueue();
 }
-
-/* If you close a queued/running tab yourself, take it out of the line and,
- * if it was the one grabbing, SAVE whatever it caught so far, then move on to
- * the next. (Normal completion sets running=null before closing the tab, so
- * that path doesn't re-download here.) */
-chrome.tabs.onRemoved.addListener(async (tabId) => {
+chrome.tabs.onRemoved.addListener(async tabId => {
   const running = await getRunning();
-  const q = await getQueue();
-  const wasRunning = running && running.tabId === tabId;
-  if (wasRunning) {
-    const room = roomName(running.channelId);
-    const n = await downloadRoom(running.channelId, room);
-    await addLog({ kind: "update", why: "💾 " + room + " tab closed mid-grab — saved " +
-      (n ? n + " messages caught so far to your Downloads." : "nothing (nothing captured yet).") });
+  if (running && running.tabId === tabId) {
+    await downloadRoom(running.channelId,roomName(running.channelId));
+    await addLog({kind:"update",why:"Grab interrupted by tab closure; saved the partial history."});
   }
-  if (wasRunning || q.some(x => x.tabId === tabId)) {
-    await advanceQueue(tabId, false);
-  }
+  await advanceQueue(tabId,false);
 });
-
-/* Stop everything: halt the running grab, save what it caught, and empty the
- * queue so it doesn't advance. Leaves the tab open (a manual stop isn't a
- * finish). */
 async function stopAllGrabs() {
+  grabGeneration++;
   const running = await getRunning();
-  if (running) {
-    try { await chrome.tabs.sendMessage(running.tabId, { type: "STOP_GRAB" }); } catch (e) {}
-    const room = roomName(running.channelId);
-    const n = await downloadRoom(running.channelId, room);
-    await addLog({ kind: "update", why: "⏹️ stopped " + room + " — saved " +
-      (n ? n + " messages caught so far to your Downloads." : "nothing (nothing captured yet).") });
-  }
-  const left = (await getQueue()).length;
   await setQueue([]);
   await setRunning(null);
-  if (left > 1) await addLog({ kind: "update", why: "cleared the rest of the queue (" + (left - 1) + " room" + (left - 1 === 1 ? "" : "s") + " removed)." });
+  if (running) {
+    try { await chrome.tabs.sendMessage(running.tabId,{type:"STOP_GRAB"}); } catch (_) {}
+    await downloadRoom(running.channelId,roomName(running.channelId));
+  }
+  await addLog({kind:"update",why:"History grab stopped; partial history saved and queue cleared."});
 }
 
 /* Ctrl+Shift+X — queue whatever room tab is in front. */
@@ -3863,8 +3851,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       if (msg.started) await addLog({ kind: "update", why: "⏳ grabbing " + room + "'s history — scrolling it up, sit tight" });
       else if (msg.done) {
         const how = msg.why ? msg.why
-          : (msg.reached === "date" ? "reached 1 year back" :
-             msg.reached === "top" ? "reached the top of the channel" :
+          : (msg.reached === "date" ? "reached four months back" :
+             msg.reached === "top" ? "stopped loading older messages — coverage may be partial" :
              msg.reached === "limit" ? "hit the safety limit" : "stopped");
         // Auto-download THIS room's messages the instant it's done — no button.
         const n = await downloadRoom(msg.channelId, room);
@@ -3872,11 +3860,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
           (n ? ". Downloaded " + n + " messages to your Downloads." : ". Nothing captured.") });
         // If this room was in the queue, close its tab and start the next one.
         const running = await getRunning();
-        if (running && String(running.channelId) === String(msg.channelId)) {
+        if (running && sender.tab && sender.tab.id === running.tabId && String(running.channelId) === String(msg.channelId)) {
           const left = (await getQueue()).length - 1;
           await addLog({ kind: "update", why: left > 0
-            ? "🗂️ closing " + room + " — " + left + " room" + (left === 1 ? "" : "s") + " still in line."
-            : "🗂️ closing " + room + " — that was the last one in line. All done." });
+            ? "🗂️ saved " + room + " — " + left + " room" + (left === 1 ? "" : "s") + " still in line."
+            : "🗂️ saved " + room + " — that was the last one in line. All done." });
           await advanceQueue(running.tabId, true);
         }
       } else if (msg.parked) {
