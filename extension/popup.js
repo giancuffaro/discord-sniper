@@ -930,14 +930,42 @@ $("savepaperkeys").onclick = async () => {
  * "make it always on, i need every trade to go through AI reading." No off
  * button any more — the only states are "on" (a working key is saved) and
  * "needs a key". The bridge ignores the old enabled flag to match. */
+const providerKeySaved = {};
+const providerKeyEditing = new Set();
 function paintProviderKeys(st) {
   for (const provider of ["openai", "gemini", "perplexity", "deepseek"]) {
     const label = $("provider-" + provider + "-state");
-    if (label && label.dataset.busy !== "1") label.textContent =
-      st && st.ai_provider_keys_saved && st.ai_provider_keys_saved[provider]
-        ? "saved · not activated or tested" : "no saved key";
+    const input = $("provider-" + provider + "-key");
+    const save = document.querySelector('[data-save-provider="' + provider + '"]');
+    const replace = document.querySelector('[data-replace-provider="' + provider + '"]');
+    if (st && st.ai_provider_keys_saved && typeof st.ai_provider_keys_saved[provider] === "boolean")
+      providerKeySaved[provider] = st.ai_provider_keys_saved[provider];
+    if (!label || label.dataset.busy === "1") continue;
+    const saved = providerKeySaved[provider];
+    const editing = providerKeyEditing.has(provider);
+    const showInput = editing || saved === false;
+    if (input) input.style.display = showInput ? "" : "none";
+    if (save) save.style.display = showInput ? "" : "none";
+    if (replace) {
+      replace.style.display = saved ? "" : "none";
+      replace.textContent = editing ? "Cancel replacement" : "Replace key";
+    }
+    label.textContent = saved === undefined ? "Checking saved status"
+      : saved ? "Key saved · not activated or tested" : "No saved key";
   }
 }
+document.querySelectorAll("[data-replace-provider]").forEach(button => {
+  button.onclick = () => {
+    const provider = button.dataset.replaceProvider;
+    const input = $("provider-" + provider + "-key");
+    if (providerKeyEditing.has(provider)) {
+      providerKeyEditing.delete(provider);
+      input.value = "";
+    } else providerKeyEditing.add(provider);
+    paintProviderKeys(null);
+    if (providerKeyEditing.has(provider)) input.focus();
+  };
+});
 document.querySelectorAll("[data-save-provider]").forEach(button => {
   button.onclick = async () => {
     const provider = button.dataset.saveProvider;
@@ -951,7 +979,10 @@ document.querySelectorAll("[data-save-provider]").forEach(button => {
       const result = await askBridge("/config", {ai_provider_keys: {[provider]: input.value.trim()}});
       if (!result || !result.ok) throw new Error("save_failed");
       input.value = "";
-      label.textContent = "saved · not activated or tested";
+      providerKeySaved[provider] = true;
+      providerKeyEditing.delete(provider);
+      delete label.dataset.busy;
+      paintProviderKeys(null);
     } catch (_) {
       label.textContent = "Could not save — check the bridge connection";
     } finally {

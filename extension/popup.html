@@ -459,17 +459,21 @@
     <label style="margin-top:12px">Additional AI provider keys</label>
     <div class="note">Saved on this PC for future use. Saving does not activate a reader, test a key, or spend credits.</div>
     <label>OpenAI — <span id="provider-openai-state">checking saved status</span></label>
-    <input id="provider-openai-key" type="password" autocomplete="off" placeholder="Paste OpenAI API key">
-    <button data-save-provider="openai" style="margin-top:4px">Save OpenAI key</button>
+    <button data-replace-provider="openai" style="display:none;font-size:11px">Replace key</button>
+    <input style="display:none" id="provider-openai-key" type="password" autocomplete="off" placeholder="Paste OpenAI API key">
+    <button data-save-provider="openai" style="display:none;margin-top:4px">Save OpenAI key</button>
     <label>Gemini — <span id="provider-gemini-state">checking saved status</span></label>
-    <input id="provider-gemini-key" type="password" autocomplete="off" placeholder="Paste Gemini API key">
-    <button data-save-provider="gemini" style="margin-top:4px">Save Gemini key</button>
+    <button data-replace-provider="gemini" style="display:none;font-size:11px">Replace key</button>
+    <input style="display:none" id="provider-gemini-key" type="password" autocomplete="off" placeholder="Paste Gemini API key">
+    <button data-save-provider="gemini" style="display:none;margin-top:4px">Save Gemini key</button>
     <label>Perplexity — <span id="provider-perplexity-state">checking saved status</span></label>
-    <input id="provider-perplexity-key" type="password" autocomplete="off" placeholder="Paste Perplexity API key">
-    <button data-save-provider="perplexity" style="margin-top:4px">Save Perplexity key</button>
+    <button data-replace-provider="perplexity" style="display:none;font-size:11px">Replace key</button>
+    <input style="display:none" id="provider-perplexity-key" type="password" autocomplete="off" placeholder="Paste Perplexity API key">
+    <button data-save-provider="perplexity" style="display:none;margin-top:4px">Save Perplexity key</button>
     <label>DeepSeek — <span id="provider-deepseek-state">checking saved status</span></label>
-    <input id="provider-deepseek-key" type="password" autocomplete="off" placeholder="Paste DeepSeek API key">
-    <button data-save-provider="deepseek" style="margin-top:4px">Save DeepSeek key</button>
+    <button data-replace-provider="deepseek" style="display:none;font-size:11px">Replace key</button>
+    <input style="display:none" id="provider-deepseek-key" type="password" autocomplete="off" placeholder="Paste DeepSeek API key">
+    <button data-save-provider="deepseek" style="display:none;margin-top:4px">Save DeepSeek key</button>
 
     <label style="margin-top:12px">Voice listener — <b id="voiceState">off</b></label>
     <input id="dgKey" type="password" autocomplete="off"
