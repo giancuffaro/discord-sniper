@@ -1,5 +1,15 @@
 # Caller research data
 
+Entry provenance is separate from exit ownership. `python entry_attribution.py`
+compares exact option contract, same date, quantity and a 0–120 second order-to-entry
+window, then reads the adjacent WORKING caller. It scans legacy manual rows too.
+`entry_attribution` retains candidate orders and their log lines; `trade_attribution`
+and the reading copy show recovered entry caller, entry basis and exit method.
+Broker adoption times are excluded from timed promotion. Missing times and
+competing orders stay candidates. Matches are correlations, not broker-order-ID
+proof; repeated ledger rows can share the same order and must not be counted as
+distinct trades without deduplication. Legacy manual flags are not rewritten.
+
 ## Start here
 
 Open `local-reader-measure/caller-identity/MASTER-RESEARCH.html` for a local,

@@ -8,6 +8,8 @@ from caller_ledger import OUT
 def reconcile(out=OUT):
     db=sqlite3.connect(out/'callers.sqlite3')
     db.executescript('''
+      CREATE TABLE IF NOT EXISTS entry_attribution(record_id TEXT PRIMARY KEY,
+        entry_caller TEXT,entry_basis TEXT,exit_method TEXT,evidence_json TEXT);
       CREATE TABLE IF NOT EXISTS trade_source_recovery(record_id TEXT PRIMARY KEY,
         classification TEXT, recovered_caller TEXT, evidence_json TEXT, limitation TEXT);
       CREATE TABLE IF NOT EXISTS trade_identity_links(record_id TEXT PRIMARY KEY,
@@ -23,16 +25,21 @@ def reconcile(out=OUT):
         CASE WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
           THEN a.caller END AS recorded_caller,
         s.recovered_caller AS recovered_posting_name,
-        CASE WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
+        e.entry_caller AS recovered_entry_caller,e.entry_basis,e.exit_method,
+        e.evidence_json AS entry_evidence,
+        CASE WHEN e.entry_basis='contract_time_quantity_match' THEN e.entry_caller
+          WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
           THEN a.caller ELSE s.recovered_caller END AS attribution_name,
-        CASE WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
+        CASE WHEN e.entry_basis='contract_time_quantity_match' THEN 'entry_log_match'
+          WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
           THEN 'recorded_caller' WHEN s.recovered_caller IS NOT NULL
           THEN 'log_candidate' ELSE 'missing' END AS name_basis,
         s.classification AS origin_classification,s.evidence_json AS origin_evidence,
         s.limitation AS origin_limitation,
         CASE WHEN a.identity_status='candidate' AND json_array_length(a.candidates_json)=1
           THEN json_extract(a.candidates_json,'$[0]') END AS candidate_trader_id
-        FROM attributed_research a LEFT JOIN trade_source_recovery s USING(record_id);
+        FROM attributed_research a LEFT JOIN trade_source_recovery s USING(record_id)
+        LEFT JOIN entry_attribution e USING(record_id);
     ''')
     names=defaultdict(set)
     sightings=defaultdict(set)

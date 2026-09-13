@@ -133,6 +133,8 @@ if __name__=='__main__':
         result=integrate()
         from recover_trade_sources import recover
         result['log_recovery']=recover()
+        from entry_attribution import recover_entries
+        result['entry_recovery']=recover_entries()
         from trade_identity import reconcile
         result['trader_identity']=reconcile()
         from research_report import render
