@@ -931,8 +931,10 @@ $("savepaperkeys").onclick = async () => {
  * button any more — the only states are "on" (a working key is saved) and
  * "needs a key". The bridge ignores the old enabled flag to match. */
 const providerKeySaved = {};
+let observerDisplay = null;
 const providerKeyEditing = new Set();
 function paintProviderKeys(st) {
+  if (st && st.context_observer) observerDisplay = st.context_observer;
   for (const provider of ["openai", "gemini", "perplexity"]) {
     const label = $("provider-" + provider + "-state");
     const input = $("provider-" + provider + "-key");
@@ -951,7 +953,9 @@ function paintProviderKeys(st) {
       replace.textContent = editing ? "Cancel replacement" : "Replace key";
     }
     label.textContent = saved === undefined ? "Checking saved status"
-      : saved ? "Key saved · not activated or tested" : "No saved key";
+      : saved ? (observerDisplay && observerDisplay.enabled && !observerDisplay.paused && observerDisplay.models[provider]
+          ? "Key saved · " + (provider === "openai" ? "primary observer: " : "backup observer: ") + observerDisplay.models[provider]
+          : "Key saved · inactive") : "No saved key";
   }
 }
 document.querySelectorAll("[data-replace-provider]").forEach(button => {
