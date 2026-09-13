@@ -2980,6 +2980,19 @@ async function whopSelfHeal() {
   } catch (e) {}
 }
 
+async function publishDepartmentHealth() {
+  const lane = await assignedLane();
+  if (!lane) return;
+  const issues = await needsFromExtension();
+  const c = await cfg();
+  await fetch(bridgeBaseFrom(c.bridge_url) + "/department-health", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({lane, version: chrome.runtime.getManifest().version,
+      issues: issues.map(i => i.what), rooms_expected: ALL_ROOMS.filter(r => r.state === "on").length}),
+    signal: AbortSignal.timeout(5000)
+  });
+}
+
 let watchBuildBusy = false;
 async function watchBuildSweep() {
   // Keep one ordered maintenance sweep. Overlapping tab mutations and network
@@ -2996,7 +3009,7 @@ async function watchBuildSweep() {
     const jobs = [pollRoomsFile, roomSchedule, syncFills,
       ensureReaders, oneTabPerChannel, closeNonRoomTabs, evictOtherLane,
       refreshBridgeChannels, checkBridgeHealth, memoryShed, keepRoomsLoaded,
-      honourOpenRoomsRequest, whopSelfHeal];
+      honourOpenRoomsRequest, whopSelfHeal, publishDepartmentHealth];
     for (const job of jobs) {
       try { await job(); } catch (e) { /* the next repair still runs */ }
     }

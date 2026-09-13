@@ -16,21 +16,21 @@ def available(cfg):
     return bool(settings.get('enabled') and any(keys.get(p) for p in ('openai', 'gemini')))
 
 
-def request(provider, model, key, system, prompt):
+def request(provider, model, key, system, prompt, output_limit=1600, reasoning="low", timeout_seconds=30):
     if provider == 'openai':
         url = 'https://api.openai.com/v1/responses'
         headers = {'Authorization': 'Bearer ' + key}
         body = {'model': model, 'instructions': system, 'input': prompt,
-                'max_output_tokens': 1600, 'reasoning': {'effort': 'low'},
+                'max_output_tokens': output_limit, 'reasoning': {'effort': reasoning},
                 'text': {'format': {'type': 'json_object'}}, 'store': False}
     else:
         url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent'
         headers = {'x-goog-api-key': key}
         body = {'systemInstruction': {'parts': [{'text': system}]},
                 'contents': [{'parts': [{'text': prompt}]}],
-                'generationConfig': {'maxOutputTokens': 1600, 'responseMimeType': 'application/json'}}
+                'generationConfig': {'maxOutputTokens': output_limit, 'responseMimeType': 'application/json'}}
     try:
-        r = requests.post(url, headers=headers, json=body, timeout=(5, 30), allow_redirects=False)
+        r = requests.post(url, headers=headers, json=body, timeout=(5, timeout_seconds), allow_redirects=False)
         if not 200 <= r.status_code < 300:
             return {'_error': 'HTTP_%d' % r.status_code}
         data = r.json()

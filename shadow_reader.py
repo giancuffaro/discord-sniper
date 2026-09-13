@@ -22,6 +22,15 @@ _recent = {}
 _seen = {}
 _jobs = queue.Queue(maxsize=256)
 _worker_started = False
+_last_finished = 0
+_last_error = ""
+_last_provider = ""
+
+def status():
+    return {"queue_remaining": _jobs.qsize(), "worker_started": _worker_started,
+            "last_finished": _last_finished, "last_error": _last_error, "last_provider": _last_provider,
+            "context_hours": context_reader.CONTEXT_MS // 3600000, "context_messages": context_reader.MAX_CONTEXT}
+
 
 
 def _write(row):
@@ -34,12 +43,21 @@ def _write(row):
 
 
 def _worker():
+    global _last_finished, _last_error, _last_provider
     while True:
         current, prior, parser, cfg = _jobs.get()
         try:
             allowed = cfg.get("allowed_symbols", []) or []
             raw, latency = context_reader.read(current, prior, allowed, cfg)
             grade = context_reader.assess(current, prior, raw, allowed)
+            _last_finished = time.time()
+            _last_error = str(raw.get("_error") or "")
+            _last_provider = str(raw.get("_provider") or "")
+            try:
+                import departments
+                departments.reader_review(current, prior, parser, raw, grade)
+            except Exception:
+                pass
             _write({"kind": "read", "current": current, "prior": prior,
                     "parser": parser, "ai_raw": raw, "ai": grade,
                     "model_ms": latency, "finishedAt": int(time.time() * 1000),

@@ -4274,6 +4274,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self._authorized():
             return self._json(403, {"ok": False, "error": "bad or missing X-Sniper-Token"})
+        if self.path.startswith("/departments"):
+            import shadow_reader
+            return self._json(200, {"enabled": bool((CFG.get("departments") or {}).get("enabled")), "reader": shadow_reader.status()})
         if self.path.startswith("/mode"):
             return self._json(200, self._status())
         if self.path.startswith("/stream"):
@@ -5380,6 +5383,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._set_numbers()
         if self.path.startswith("/fix"):
             return self._fix()
+        if self.path.startswith("/department-health"):
+            try:
+                import departments
+                n = min(int(self.headers.get("Content-Length", 0)), 65536)
+                body = json.loads(self.rfile.read(n))
+                return self._json(200, {"ok": departments.save_extension_health(body)})
+            except Exception:
+                return self._json(400, {"ok": False})
         if self.path.startswith("/mode"):
             return self._set_mode()
         if self.path.startswith("/flatten"):
@@ -6255,6 +6266,11 @@ def main():
         import subprocess as _subprocess
         marker = os.path.join(HERE, "daily-audits", ".last-run")
         while True:
+            try:
+                import departments
+                departments.health_tick()
+            except Exception:
+                pass
             try:
                 import eastern
                 now = eastern.now()

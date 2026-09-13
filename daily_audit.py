@@ -193,6 +193,12 @@ def run(day):
     summary["status"] = "attention" if attention else "pass"
     _write_atomic(os.path.join(OUT_DIR, "latest.json"),
                   json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    try:
+        import departments
+        summary["daily_analyst"] = departments.daily(day)
+    except Exception:
+        summary["daily_analyst"] = {"status": "failed"}
+    _write_atomic(os.path.join(OUT_DIR, "latest.json"), json.dumps(summary, indent=2, sort_keys=True) + "\n")
     if attention:
         _queue_attention(day, summary, report_path)
     print("DAILY AUDIT %s — %s; silent=%d possible=%d coverage=%d failed=%d"
