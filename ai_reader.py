@@ -484,6 +484,14 @@ def validate(read, text, allowed_symbols):
         side = "CALLS"
     elif side in ("PUT", "PUTS"):
         side = "PUTS"
+    instrument = str(read.get("instrument") or "option").lower()
+    if action in ("OPEN", "ADD"):
+        if instrument == "option" and side not in ("CALLS", "PUTS"):
+            return False, "option entry requires an explicit call or put side", None
+        if instrument == "future":
+            side = {"BUY": "LONG", "SELL": "SHORT"}.get(side, side)
+            if side not in ("LONG", "SHORT"):
+                return False, "futures entry requires an explicit direction", None
 
     cleaned = {
         "action": action,
@@ -516,7 +524,9 @@ def canonical(c):
     price = c.get("price")
     if act in ("OPEN", "ADD"):
         if c.get("instrument") == "future":
-            d = c.get("side") if c.get("side") in ("LONG", "SHORT") else "LONG"
+            d = {"BUY": "LONG", "SELL": "SHORT"}.get(c.get("side"), c.get("side"))
+            if d not in ("LONG", "SHORT"):
+                return ""
             s = "%s %s" % (d, t)
             return s + (" @ %g" % price if price is not None else "")
         if c.get("instrument") == "equity":
@@ -524,7 +534,9 @@ def canonical(c):
             return s + (" @ %g" % price if price is not None else "")
         # An entry verb (BTO / adding) + a $ before the strike is the form the
         # parser reads without ambiguity — a bare "COIN 155C" doesn't parse.
-        sd = "C" if c.get("side") == "CALLS" else ("P" if c.get("side") == "PUTS" else "C")
+        sd = {"CALL": "C", "CALLS": "C", "PUT": "P", "PUTS": "P"}.get(c.get("side"))
+        if sd is None:
+            return ""
         verb = "adding" if act == "ADD" else "BTO"
         s = "%s %s $%g%s" % (verb, t, float(c.get("strike")), sd)
         if c.get("expiry"):

@@ -250,7 +250,7 @@ const RE_BACKIN = /\bback\s+in\b/i;
 // appears in advice and in warnings — "DO NOT BUY IN" is a real Honeydrip line.
 // So it goes in guarded: RE_BUY_CMD below only counts an imperative buy that
 // nothing negates. RE_NO_BUY is checked first at the call site.
-const RE_ENTRY = /\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b|\bswinging\b(?!\s+(?:trade|idea|setup|watch))/i;
+const RE_ENTRY = /^\$?\d+(?:\.\d+)?\s+entry\s+on\s+\$?[A-Z]{1,5}\b|\b(?:in|entered|entering|filled|bto|bought|buying|grabbed)\b|\b(?:took|take|taking)\s+(?:some|a|entry|entries)\b|\bswinging\b(?!\s+(?:trade|idea|setup|watch))/i;
 const RE_BUY_CMD = /\bbuy(?:s)?\b/i;
 /* A STOP or a TARGET is only ever written about a trade being TAKEN (9/7).
  * "SL .80", "TP 1.60 / 1.95 / 2.6", "targets 2.0/2.45", "SL: 1.9". Requires a
@@ -2289,6 +2289,7 @@ function parseSignalInner(text, cfg) {
       if (wl === "session" && enteredContract) continue;
       if (wl === "yesterday" && enteredContract &&
           !low.replace(/\byesterday['’]?s\s+session\b/g, "").includes("yesterday")) continue;
+      if (wl === "no adds" && /^\$?\d+(?:\.\d+)?\s+entry\s+on\s+\$?[A-Z]{1,5}\b/i.test(t) && findContract(t)) continue;
       if (_explicitSell) continue;
       if (_statedEntry) continue;
       if (_explicitBuy && wl !== "do not" && wl !== "don't" && wl !== "dont ") continue;
@@ -3070,7 +3071,7 @@ function parseSignalInner(text, cfg) {
   //    UPS 105 calls", "sold some", "sold most", "sold a third" read as a
   //    FULL exit — the bot would have flattened a position the trader only
   //    trimmed. A fraction/partial word next to the sell word is a trim.
-  const partSell = /\b(?:sold|sell|selling|closed|closing|out|exited|took)\s+(?:out\s+)?(?:of\s+)?(?:(\d)\s*\/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d\/\d)\b/i.exec(t);
+  const partSell = /\b(?:sold|sell|selling|closed|closing|out|exited|took)\s+(?:out\s+)?(?:(?:of|on)\s+)?(?:(\d)\s*\/\s*(\d)|half|a\s+third|a\s+quarter|some|most|part(?:ial)?|a\s+few|another\s+\d\/\d)\b/i.exec(t);
   const fullSell = /\b(?:sold|sell|selling|closed|closing|out|exited)\s+(?:out\s+)?(?:of\s+)?(?:the\s+)?(?:rest|remaining|remainder|all|everything|last|final)\b/i.test(t);
   if (RE_EXIT.test(low) || partSell) {
     const c = findContract(t);

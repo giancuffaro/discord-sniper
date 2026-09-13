@@ -42,6 +42,7 @@ const output = input.map(r => {
     return { action: s.action || null, symbol: s.symbol || null,
       strike: s.strike ?? null, side: s.side || null,
       expiry: s.expiry || null, limit: s.limit ?? null,
+      direction: s.direction || null, qty: s.qty ?? null,
       fire: !!s.fire, why: s.why || "" };
   } catch (e) { return { action: null, error: String(e).slice(0, 100) }; }
 });
