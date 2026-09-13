@@ -26,5 +26,16 @@ class FailoverTests(unittest.TestCase):
   self.cfg['context_observer']['enabled']=False
   with patch.object(p,'request') as call:p.read('sys','ctx',self.cfg)
   call.assert_not_called()
+ def test_configured_backup_becomes_primary(self):
+  self.cfg['context_observer']['provider_order']=['gemini','openai']
+  with patch.object(p,'request',return_value={'action':'NONE'}) as call:
+   raw,_=p.read('sys','same context',self.cfg)
+  self.assertEqual(call.call_args.args[0],'gemini')
+  self.assertEqual(raw['_attempts'][0]['provider'],'gemini')
+ def test_invalid_order_uses_known_default(self):
+  self.cfg['context_observer']['provider_order']=['perplexity','gemini']
+  with patch.object(p,'request',return_value={'action':'NONE'}) as call:
+   p.read('sys','same context',self.cfg)
+  self.assertEqual(call.call_args.args[0],'openai')
 
 if __name__=='__main__':unittest.main()

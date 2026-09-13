@@ -6,6 +6,7 @@ import requests
 import ai_reader
 
 DEFAULT_MODELS = {'openai': 'gpt-5.4', 'gemini': 'gemini-3.1-flash-lite'}
+DEFAULT_ORDER = ('openai', 'gemini')
 _cooldown = {}
 _lock = threading.Lock()
 
@@ -62,7 +63,11 @@ def read(system, prompt, cfg):
     attempts = []
     if not available(cfg):
         return {'_error': 'observer_disabled_or_missing_keys'}, 0
-    for provider in ('openai', 'gemini'):
+    configured = (settings.get('provider_order') or DEFAULT_ORDER)
+    order = tuple(p for p in configured if p in DEFAULT_ORDER)
+    if len(order) != len(DEFAULT_ORDER) or set(order) != set(DEFAULT_ORDER):
+        order = DEFAULT_ORDER
+    for provider in order:
         key = keys.get(provider)
         model = (settings.get('models') or {}).get(provider) or DEFAULT_MODELS[provider]
         if not key:
