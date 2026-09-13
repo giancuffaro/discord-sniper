@@ -13,6 +13,7 @@ from datetime import datetime
 
 import ai_reader
 import context_reader
+import observer_providers
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "local-reader-measure")
@@ -94,6 +95,7 @@ def enqueue(body, cfg):
                  and posted - p["postedAt"] <= context_reader.CONTEXT_MS]
         if current["id"]:
             prior = [p for p in prior if p["id"] != current["id"]]
+        prior.sort(key=lambda p: p["postedAt"])
         prior = prior[-context_reader.MAX_CONTEXT:]
         if current["id"]:
             for prior_row in list(ring):
@@ -108,7 +110,7 @@ def enqueue(body, cfg):
         return {"ok": True, "status": "context_only"}
     if os.path.exists(os.path.join(OUT, 'AI-PAUSED')):
         return {"ok": True, "status": "paused"}
-    if not ai_reader.available(cfg):
+    if not (observer_providers.available(cfg) if cfg.get("context_observer") is not None else ai_reader.available(cfg)):
         return {"ok": True, "status": "ai_off"}
     parser = body.get("parser") if isinstance(body.get("parser"), dict) else {}
     try:

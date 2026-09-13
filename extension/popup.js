@@ -933,7 +933,7 @@ $("savepaperkeys").onclick = async () => {
 const providerKeySaved = {};
 const providerKeyEditing = new Set();
 function paintProviderKeys(st) {
-  for (const provider of ["openai", "gemini", "perplexity", "deepseek"]) {
+  for (const provider of ["openai", "gemini", "perplexity"]) {
     const label = $("provider-" + provider + "-state");
     const input = $("provider-" + provider + "-key");
     const save = document.querySelector('[data-save-provider="' + provider + '"]');

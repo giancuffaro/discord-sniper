@@ -11,7 +11,7 @@ HERE = Path(__file__).resolve().parent
 
 def probe(provider, key, model_override=None):
     models = {'openai':'gpt-4.1-2025-04-14','anthropic':'claude-haiku-4-5-20251001',
-              'gemini':'gemini-3.1-flash-lite','perplexity':'sonar','deepseek':'deepseek-chat'}
+              'gemini':'gemini-3.1-flash-lite','perplexity':'sonar'}
     model = model_override or models[provider]
     result = {'provider':provider,'model':model,'checked_at':datetime.now(timezone.utc).isoformat()}
     if not key:
@@ -28,8 +28,7 @@ def probe(provider, key, model_override=None):
         body = {'model':model,'max_tokens':16,'messages':[{'role':'user','content':prompt}]}
     else:
         url = {'openai':'https://api.openai.com/v1/chat/completions',
-               'perplexity':'https://api.perplexity.ai/v1/sonar',
-               'deepseek':'https://api.deepseek.com/chat/completions'}[provider]
+               'perplexity':'https://api.perplexity.ai/v1/sonar'}[provider]
         headers['Authorization']='Bearer '+key
         body={'model':model,'max_tokens':16,'messages':[{'role':'user','content':prompt}]}
     started=time.monotonic()
@@ -70,7 +69,7 @@ def main():
     cfg=json.loads((HERE/'settings.json').read_text(encoding='utf-8'))
     keys=dict(cfg.get('ai_provider_keys') or {})
     keys['anthropic']=cfg.get('execution',{}).get('ai_reader',{}).get('api_key','')
-    providers=('openai','anthropic','gemini','perplexity','deepseek')
+    providers=('openai','anthropic','gemini','perplexity')
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
         results=list(pool.map(lambda p:probe(p,str(keys.get(p) or '').strip()),providers))
     out=HERE/'local-reader-measure'/'provider-key-check.json'

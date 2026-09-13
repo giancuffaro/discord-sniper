@@ -4159,7 +4159,7 @@ class Handler(BaseHTTPRequestHandler):
                 "ai_key_status": AI_KEY_STATUS,
                 "ai_provider_keys_saved": {
                     provider: bool((CFG.get("ai_provider_keys") or {}).get(provider))
-                    for provider in ("openai", "gemini", "perplexity", "deepseek")},
+                    for provider in ("openai", "gemini", "perplexity")},
                 "pocket_scalps_only": bool(CFG.get("pocket_scalps_only")),
                 # Swings paused (9/4). Shown in the popup so the state is
                 # never a guess — a silent gate that refuses trades is the
@@ -4947,7 +4947,7 @@ class Handler(BaseHTTPRequestHandler):
             data = {}
         if "ai_provider_keys" in body:
             incoming = body["ai_provider_keys"]
-            providers = {"openai", "gemini", "perplexity", "deepseek"}
+            providers = {"openai", "gemini", "perplexity"}
             if (not isinstance(incoming, dict) or not incoming
                     or any(k not in providers or not isinstance(v, str)
                            or not v.strip() or len(v) > 4096
