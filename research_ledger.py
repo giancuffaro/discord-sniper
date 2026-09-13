@@ -105,9 +105,27 @@ def query(text=None, gaps=False):
     return result
 
 
+def trades(text=None):
+    """Search names, account candidates and provenance together; no inferred fills."""
+    db=sqlite3.connect((OUT/'callers.sqlite3').as_uri()+'?mode=ro',uri=True)
+    db.row_factory=sqlite3.Row
+    sql='''SELECT record_id,date,symbol,room,recorded_caller,recovered_posting_name,
+      attribution_name,name_basis,resolved_trader_id,verified_trader_id,
+      candidate_trader_id,identity_status,identity_reason,origin_classification,
+      origin_evidence,source_path,source_row FROM trade_attribution
+      WHERE kind='reconciled_trade' '''
+    params=[]
+    if text:
+        sql+=' AND (instr(lower(coalesce(attribution_name,\'\')),lower(?))>0 OR symbol=? OR resolved_trader_id=? OR candidate_trader_id=?)'
+        params=[text,text.upper(),text,text]
+    result=[dict(r) for r in db.execute(sql+' ORDER BY date DESC LIMIT 100',params)]
+    db.close()
+    return result
+
+
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action',choices=['refresh','search','gaps'])
+    parser.add_argument('action',choices=['refresh','search','gaps','trades'])
     parser.add_argument('text',nargs='?')
     args=parser.parse_args()
     if args.action=='refresh':
@@ -117,6 +135,8 @@ if __name__=='__main__':
         result['log_recovery']=recover()
         from trade_identity import reconcile
         result['trader_identity']=reconcile()
+    elif args.action=='trades':
+        result=trades(args.text)
     elif args.action=='search':
         if not args.text:
             parser.error('search requires text')

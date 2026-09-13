@@ -25,6 +25,14 @@ class IdentityTests(unittest.TestCase):
             self.assertEqual(first,reconcile(out))
             actual=dict(db.execute('SELECT record_id,trader_id FROM trade_identity_links'))
             self.assertEqual(actual,{'candidate':None,'manual':None,'explicit':'123'})
+            merged=db.execute("SELECT recorded_caller,attribution_name,candidate_trader_id,verified_trader_id FROM trade_attribution WHERE record_id='candidate'").fetchone()
+            self.assertEqual(merged,('Brett','Brett','123',None))
+            db.execute("UPDATE ledger_records SET caller='?' WHERE record_id='candidate'")
+            db.execute("INSERT INTO trade_source_recovery VALUES('candidate','source_name_candidate','Poster','[]','Posting name only')")
+            db.commit()
+            reconcile(out)
+            merged=db.execute("SELECT recorded_caller,attribution_name,name_basis,verified_trader_id FROM trade_attribution WHERE record_id='candidate'").fetchone()
+            self.assertEqual(merged,(None,'Poster','log_candidate',None))
             db.close()
 
 

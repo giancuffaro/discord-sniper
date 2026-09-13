@@ -8,6 +8,8 @@ from caller_ledger import OUT
 def reconcile(out=OUT):
     db=sqlite3.connect(out/'callers.sqlite3')
     db.executescript('''
+      CREATE TABLE IF NOT EXISTS trade_source_recovery(record_id TEXT PRIMARY KEY,
+        classification TEXT, recovered_caller TEXT, evidence_json TEXT, limitation TEXT);
       CREATE TABLE IF NOT EXISTS trade_identity_links(record_id TEXT PRIMARY KEY,
         trader_id TEXT, status TEXT NOT NULL, candidates_json TEXT, reason TEXT NOT NULL);
       DROP VIEW IF EXISTS attributed_research;
@@ -16,6 +18,21 @@ def reconcile(out=OUT):
         i.status AS identity_status,i.candidates_json,i.reason AS identity_reason
         FROM ledger_records r LEFT JOIN trade_identity_links i USING(record_id)
         WHERE r.current=1;
+      DROP VIEW IF EXISTS trade_attribution;
+      CREATE VIEW trade_attribution AS SELECT a.*,
+        CASE WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
+          THEN a.caller END AS recorded_caller,
+        s.recovered_caller AS recovered_posting_name,
+        CASE WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
+          THEN a.caller ELSE s.recovered_caller END AS attribution_name,
+        CASE WHEN TRIM(COALESCE(a.caller,'')) NOT IN ('','?','unknown','Unknown')
+          THEN 'recorded_caller' WHEN s.recovered_caller IS NOT NULL
+          THEN 'log_candidate' ELSE 'missing' END AS name_basis,
+        s.classification AS origin_classification,s.evidence_json AS origin_evidence,
+        s.limitation AS origin_limitation,
+        CASE WHEN a.identity_status='candidate' AND json_array_length(a.candidates_json)=1
+          THEN json_extract(a.candidates_json,'$[0]') END AS candidate_trader_id
+        FROM attributed_research a LEFT JOIN trade_source_recovery s USING(record_id);
     ''')
     names=defaultdict(set)
     sightings=defaultdict(set)

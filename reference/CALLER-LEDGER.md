@@ -1,5 +1,19 @@
 # Caller research data
 
+## Unified attribution
+
+`trade_attribution` combines the original ledger record, recorded caller name,
+recovered posting name, origin log evidence, resolved ID, candidate ID and ID
+verification status in one SQL view. `attribution_name` prefers the recorded
+caller; a fallback recovered name is explicitly marked `name_basis=log_candidate`.
+Names remain usable even when an account ID is missing. A posting name does not
+establish the human trader behind a relay. Original source records are untouched.
+
+Use `python research_ledger.py trades Brett` or `python research_ledger.py trades
+493537866039689217` to search trades by name or account ID (100-row limit).
+This merges retained research records and recovery evidence, not the changing
+live Active Trades display; live position-book names still live in state.json.
+
 `python recover_trade_sources.py` records timestamp-matched `trades.log` evidence
 in `trade_source_recovery` and local `LOG-RECOVERY.md`. Broker adoption timestamps
 are not treated as original entry times, nor as proof of manual ownership.
