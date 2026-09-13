@@ -41,6 +41,12 @@ def qqq_put():
 
 
 class MirrorOffIsInert(unittest.TestCase):
+    def test_live_activation_stays_blocked_without_protective_exits(self):
+        self.assertFalse(index_mirror.live_exit_ready())
+
+    def test_new_york_clock_tracks_winter_offset(self):
+        winter = dt.datetime(2026, 12, 1, 12, 0, tzinfo=ET)
+        self.assertEqual(winter.utcoffset(), dt.timedelta(hours=-5))
     def test_spy_call_is_byte_for_byte_unchanged_when_off(self):
         order = spy_call()
         before = copy.deepcopy(order)

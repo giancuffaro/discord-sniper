@@ -42,6 +42,7 @@ ever scored. Outside the window the option order is left alone.
 import csv
 import datetime as dt
 import os
+from zoneinfo import ZoneInfo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SHADOW_CSV = os.path.join(HERE, "futures_mirror_shadow.csv")
@@ -54,7 +55,16 @@ OPEN_MINUTE = 9 * 60 + 30
 LAST_MINUTE = 15 * 60 + 45
 
 DEFAULT_MAP = {"SPY": "MES", "QQQ": "MNQ"}
-ET = dt.timezone(dt.timedelta(hours=-4))
+ET = ZoneInfo('America/New_York')
+
+
+def live_exit_ready():
+    """The futures route currently records levels but does not enforce them.
+
+    Keep mirror activation blocked until a broker-confirmed protective exit
+    and target/ratchet path exists and has its own execution tests.
+    """
+    return False
 
 
 def settings(cfg):

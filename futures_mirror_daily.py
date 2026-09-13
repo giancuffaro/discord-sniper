@@ -36,6 +36,7 @@ import json
 import math
 import os
 import sys
+from zoneinfo import ZoneInfo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SHADOW = os.path.join(HERE, "futures_mirror_shadow.csv")
@@ -50,7 +51,7 @@ SETTINGS = os.path.join(HERE, "settings.json")
 # UTC and the alerts are wall-clock ET; this is the one place they meet, and it
 # has to agree with the study or the running total is two different numbers
 # added together.
-ET = dt.timezone(dt.timedelta(hours=-4))
+ET = ZoneInfo('America/New_York')
 
 MAP = {"SPY": ("ES", "MES", 5.0), "QQQ": ("NQ", "MNQ", 2.0)}
 STOP, TGT = 25.0, 50.0

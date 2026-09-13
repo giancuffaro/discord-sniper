@@ -2822,6 +2822,10 @@ def _place_impl(order):
     # this line down it is indistinguishable from a futures call a room posted.
     # While the switch is off index_mirror.convert() returns before it reads
     # anything and the order is untouched. See index_mirror.py.
+    if (index_mirror.enabled(CFG) and index_mirror.eligible(order, CFG)
+            and not index_mirror.live_exit_ready()):
+        note("MIRROR   refused: futures protective exits are not operational")
+        return False, "index mirror unavailable: futures protective exits are not operational"
     try:
         if index_mirror.convert(order, CFG, note):
             sym = str(order.get("symbol", "")).upper()
@@ -4200,6 +4204,7 @@ class Handler(BaseHTTPRequestHandler):
                 "index_mirror": {
                     "enabled": index_mirror.enabled(CFG),
                     "map": index_mirror.symbol_map(CFG),
+                    "available": index_mirror.live_exit_ready(),
                 },
                 "paper": paper_on(),
                 "paper_available": (WB is not None and getattr(WB, "paper", False)),
@@ -5172,6 +5177,9 @@ class Handler(BaseHTTPRequestHandler):
         if "index_mirror" in body:
             _im = body["index_mirror"]
             _want = bool(_im.get("enabled") if isinstance(_im, dict) else _im)
+            if _want and not index_mirror.live_exit_ready():
+                return self._json(409, {"ok": False,
+                    "why": "index mirror unavailable: futures protective exits are not operational"})
             _cur = dict((data.setdefault("execution", {})
                          .get("index_mirror") or {}))
             _cur.setdefault("map", {"SPY": "MES", "QQQ": "MNQ"})
