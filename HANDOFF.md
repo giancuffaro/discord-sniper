@@ -21,7 +21,7 @@ Last updated: 2026-09-13 — Departments enabled and smoke-tested; Discord/Whop 
 
 ## Who and what
 - Caller research catalog: `python caller_ledger.py` refreshes ignored `local-reader-measure/caller-identity/callers.sqlite3`. `/callers` includes read-only SQL account sightings; popup v3.8.26 maps those by channel ID instead of legacy room labels. Historical win rates are unavailable until account/trade attribution is established. Existing confirmed Honey Drip controls remain; newly observed accounts do not create execution keys. No live dedup or eligibility changes. See `reference/CALLER-LEDGER.md`; historical identities and performance joins remain pending.
-- G (giancuffaro230@gmail.com) — non-coder, trades options + futures live,
+- G (giancuffaro230@gmail.com) — maintains this code himself (9/13), trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
 - The machine: Chrome MV3 extension source v3.8.25 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot watches health, syncs broker truth, journals after the close, and never places or cancels an order. Market Sniper on port 8000 shares the Webull account and API budget; positions this bot did not originate remain visible but untouched.
