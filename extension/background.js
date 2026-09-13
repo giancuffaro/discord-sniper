@@ -1214,6 +1214,9 @@ async function flushCaptures() {
 /* Save one room's captured messages straight to Downloads — called the moment a
  * grab finishes, so there's no button to press. Returns how many it wrote. */
 async function downloadRoom(channelId, roomLabel) {
+  // Completion can arrive during the final coalesced capture write.
+  while (CAPTURE_FLUSHING) await new Promise(r => setTimeout(r,25));
+  await flushCaptures();
   let captured = [];
   try { captured = (await chrome.storage.local.get("captured")).captured || []; } catch (e) {}
   const rows = captured.filter(e => String(e.channel) === String(channelId))
