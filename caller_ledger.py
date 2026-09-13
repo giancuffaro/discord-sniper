@@ -37,6 +37,9 @@ def build(root=ROOT, out=OUT):
     CREATE TABLE IF NOT EXISTS confirmed_accounts(discord_user_id TEXT PRIMARY KEY,
       caller_name TEXT, evidence_json TEXT);
     CREATE TABLE IF NOT EXISTS feed_evidence(evidence_id TEXT PRIMARY KEY, evidence_json TEXT);
+    CREATE TABLE IF NOT EXISTS account_sightings(discord_user_id TEXT,
+      channel_id TEXT, server_id TEXT, display_name TEXT, source_url TEXT,
+      verification TEXT, PRIMARY KEY(discord_user_id,channel_id,display_name));
     CREATE INDEX IF NOT EXISTS message_author ON messages(observation_id);
     CREATE VIEW IF NOT EXISTS caller_coverage AS
       SELECT a.observation_id,a.display_name,c.channel_id,c.server_id,c.label,
@@ -81,12 +84,30 @@ def build(root=ROOT, out=OUT):
                        (rid,obs,mid,at,body,'message_id_and_content' if mid else 'legacy_exact_timestamp_author_text'))
             db.execute('INSERT OR IGNORE INTO source_rows VALUES(?,?,?,?)',
                        (str(path.relative_to(root)),n,digest(line),rid))
+    for evidence_path in sorted(out.glob('browser-collection*.json')):
+        for room in json.loads(evidence_path.read_text(encoding='utf-8-sig')):
+            match = re.fullmatch(r'https://discord.com/channels/(\d+)/(\d+)',room.get('url',''))
+            if not match:
+                continue
+            gid,cid=match.groups()
+            for account in room.get('accounts',[]):
+                uid=account.get('id')
+                if not isinstance(uid,str) or not re.fullmatch(r'\d{17,20}',uid):
+                    continue
+                db.execute('INSERT OR IGNORE INTO confirmed_accounts VALUES(?,?,?)',
+                  (uid,account['name'],json.dumps({'source':evidence_path.name,'account_type':'unverified','status':'browser_copy_user_id_verified'})))
+                db.execute('INSERT OR REPLACE INTO account_sightings VALUES(?,?,?,?,?,?)',
+                  (uid,cid,gid,account['name'],room['url'],evidence_path.name))
     registry_path = out / 'registry.json'
     if registry_path.exists():
         registry = json.loads(registry_path.read_text(encoding='utf-8-sig'))
         for account in registry.get('accounts', []):
             db.execute('INSERT OR REPLACE INTO confirmed_accounts VALUES(?,?,?)',
                        (account['discord_user_id'],account.get('caller_name'),json.dumps(account,ensure_ascii=False)))
+            if account.get('status')=='browser_copy_user_id_verified':
+                for cid in account.get('channel_ids',[]):
+                    db.execute('INSERT OR IGNORE INTO account_sightings VALUES(?,?,?,?,?,?)',
+                      (account['discord_user_id'],cid,account.get('server_id'),account['caller_name'],account.get('source_url'),account.get('source')))
         for item in registry.get('verified_feed_matches', []):
             db.execute('INSERT OR REPLACE INTO feed_evidence VALUES(?,?)', (digest(item),json.dumps(item)))
     db.commit()
