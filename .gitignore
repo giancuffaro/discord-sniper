@@ -73,6 +73,12 @@ alert_tape.csv
 alert_tape.csv.*
 alert_meta.csv
 alert_meta.csv.*
+# The index-mirror shadow (9/13): one row for every SPY/QQQ entry the bridge
+# saw, written whether the mirror switch is on or off. Same class as the alert
+# tape — it grows every session, it is the input to futures_mirror_daily.py,
+# and it is trading data, not code.
+futures_mirror_shadow.csv
+futures_mirror_shadow.csv.*
 # Telemetry (9/6). Our own measurements, same class as option_tape: they can
 # never be re-derived from anywhere, and they must NOT go in git — that is
 # exactly how archive/logs put 68 MB in .git. Back them up like the tape.
