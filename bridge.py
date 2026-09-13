@@ -20,6 +20,7 @@ your wifi, not the internet.
 import json
 import os
 import shutil
+import subprocess
 import sys
 import threading
 import time
@@ -1387,6 +1388,32 @@ def note(line):
             f.write("%s\t%s\n" % (datetime.now(ET).isoformat(timespec="seconds"), line))
     except OSError:
         pass
+
+
+def _restart_onto_disk():
+    """Re-exec when possible; let the existing bridge watchdog recover Windows
+    execv failures only when that watchdog is actually running. The dispatch
+    gate and saved day state are handled by the caller before reaching here.
+    """
+    try:
+        os.execv(sys.executable, [sys.executable, os.path.join(HERE, "bridge.py")])
+    except OSError as error:
+        if os.name == "nt":
+            try:
+                command = ("$p=Get-CimInstance Win32_Process -Filter \"Name='cmd.exe'\" "
+                           "| Where-Object { $_.CommandLine -like '*_bridge_loop.bat*' } "
+                           "| Select-Object -First 1; if ($p) { exit 0 } else { exit 1 }")
+                supervised = subprocess.run(
+                    ["powershell.exe", "-NoProfile", "-Command", command],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    timeout=5, check=False).returncode == 0
+            except (OSError, subprocess.TimeoutExpired):
+                supervised = False
+            if supervised:
+                note("CODE     Windows execv failed (%s); supervised bridge "
+                     "will restart this process" % error)
+                os._exit(0)
+        raise
 
 
 def today_str():
@@ -4922,8 +4949,7 @@ class Handler(BaseHTTPRequestHandler):
         def _restart():
             time.sleep(1.2)
             try:
-                os.execv(sys.executable,
-                         [sys.executable, os.path.join(HERE, "bridge.py")])
+                _restart_onto_disk()
             except Exception as e:                          # noqa: BLE001
                 note("self-update: restart failed, staying on old code (%s). "
                      "The new files are on disk for the next START HERE." % e)
@@ -6151,8 +6177,7 @@ def main():
             except Exception:                           # noqa: BLE001
                 pass
             try:
-                os.execv(sys.executable,
-                         [sys.executable, os.path.join(HERE, "bridge.py")])
+                _restart_onto_disk()
             except Exception as e:                      # noqa: BLE001
                 _DISPATCH_GATE.release()
                 note("CODE     restart failed (%s) — the next START HERE "
