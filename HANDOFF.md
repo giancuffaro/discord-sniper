@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.21 reload unverified.
+Last updated: 2026-09-13 — Departments enabled and smoke-tested; Discord/Whop v3.8.21 heartbeats confirmed.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -68,8 +68,7 @@ Last updated: 2026-09-13 — UI cleanup and 50-message observer context; 3.8.21 
   estimated API cost of $45 authorized. Results: local-reader-measure/
   openai-trial-2026-09-12/final-release-3.8.14/. No new paid scan needed.
   Contextual AI now uses OpenAI with Gemini fallback; Anthropic helper remains billing-blocked. Chrome
-  remote history remains incomplete. Source3.8.14 tested; Chrome load needs
-  user confirmation because browser policy blocks the extensions page.
+  remote history remains incomplete. Both Chrome lanes reported v3.8.21 on 9/13; configured missing tabs restored and current extension issue lists empty. Market-hours capture remains to verify.
 
 ## Rules of the house (current, in force)
 ENTRIES
