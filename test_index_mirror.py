@@ -214,6 +214,21 @@ class BridgeWiring(unittest.TestCase):
         self.assertLess(src.index("index_mirror.convert(order, CFG, note)"),
                         src.index("key = find_key(order) if BOOK is not None"))
 
+    def test_the_mirror_runs_before_the_round_number_pullback(self):
+        """SPY and QQQ are both in pullback.MANAGED, so a SPY entry near a
+        round number would otherwise arm a stock-level wait. A mirrored order
+        is MES/MNQ by then, which is not managed, so it goes straight out at
+        market — which is the entry the replay measured. Locking the order of
+        those two blocks here because nothing else would notice if it moved."""
+        here = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(here, "bridge.py"), encoding="utf-8") as f:
+            src = f.read()
+        self.assertLess(src.index("index_mirror.convert(order, CFG, note)"),
+                        src.index("okp, msgp = pullback_manager().start(order)"))
+        import pullback
+        self.assertNotIn("MES", pullback.MANAGED)
+        self.assertNotIn("MNQ", pullback.MANAGED)
+
 
 if __name__ == "__main__":
     unittest.main()
