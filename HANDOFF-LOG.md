@@ -12,6 +12,21 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-13 (OpenAI full retained scan completed and reviewed)
+Verified all12,162 unique source records have successful AI results;12,164
+attempts include two historical429s, zero unresolved errors/pending requests.
+Token cost $28.369066; accounted budget $28.404972/$45. Agent-design work parked
+per G. Fresh offline comparison to current parser and normalized expiry saved
+under local-reader-measure/openai-trial-2026-09-12/completed-review-2026-09-13/.
+REVIEW.md explains9,264 agreements/2,898 candidates and limitations; seven new
+selected source cases labeled. Next specific candidates: Midas explicit entry
+suppressed by no adds; Mugzone out on most incorrectly CLOSE rather than TRIM.
+285 review rows are PREPARE and51 resting-order holds, not automatic bugs.
+AI schema omits PREPARE/STOPMOVE; standalone parse comparison omits downstream
+context resolver. Repeated historical snapshots/relays/edits inflate counts.
+Do not report candidate counts as true missed trades or use them as labels.
+No new paid requests or live parser changes in this completion review.
+
 ## 2026-09-12 (Equivalent expiry comparison)
 G authorized equivalent expiration spellings. reader_measure.expiry_key now
 compares US month/day, month names/ordinals, explicit two/four-digit years
