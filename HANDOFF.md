@@ -33,8 +33,11 @@ Last updated: 2026-09-13 — popup 3.8.27: Webull paper test-engine block DELETE
   at 12:40 on 9/11). Do not read the status page's `live:false` as "bot off".
   CASH MOI680 was $0.55 at the 9/10 close.
   FUTURES R8IEC is flat with $0.82 available in the current read and
-  `futures_brokers.webull` is false, so the bot will not touch it. Topstep,
-  NinjaTrader and Tradovate are also disabled. The 9/10 close was −$671 net
+  `futures_brokers.webull` is false, so the bot will not touch it. Topstep
+  and Tradovate are disabled. NINJATRADER PAUSED 9/13 (G: "pain in the ass,
+  put it on pause, don't execute anything") — futures_brokers.ninjatrader.enabled
+  = false in settings.json; account 1114140 stays configured, nothing is sent.
+  NT is order-out only; the bot reads no bars or quotes from it. The 9/10 close was −$671 net
   of fees: the bot +$46 on seven one-lot trades and G's 21 hand round-trips
   −$706 (HANDOFF-LOG 9/10). Rate budget is SHARED with Market Sniper.
 - SEPARATE tool: Market Sniper (his own build, 127.0.0.1:8000) trades HIS
