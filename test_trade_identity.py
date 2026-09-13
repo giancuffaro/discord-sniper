@@ -38,7 +38,7 @@ class IdentityTests(unittest.TestCase):
                                 'source_supported')
             db.close()
 
-    def test_name_matches_never_become_verified_and_manual_stays_separate(self):
+    def test_name_matches_never_become_verified_and_manual_exit_is_not_entry_origin(self):
         with tempfile.TemporaryDirectory() as tmp:
             out=Path(tmp)
             db=sqlite3.connect(out/'callers.sqlite3')
@@ -56,6 +56,8 @@ class IdentityTests(unittest.TestCase):
             self.assertEqual(first,reconcile(out))
             actual=dict(db.execute('SELECT record_id,trader_id FROM trade_identity_links'))
             self.assertEqual(actual,{'candidate':None,'manual':None,'explicit':'123'})
+            self.assertEqual(db.execute("SELECT status FROM trade_identity_links WHERE record_id='manual'").fetchone()[0],
+                             'candidate')
             merged=db.execute("SELECT recorded_caller,attribution_name,candidate_trader_id,verified_trader_id FROM trade_attribution WHERE record_id='candidate'").fetchone()
             self.assertEqual(merged,('Brett','Brett','123',None))
             db.execute("UPDATE ledger_records SET caller='?' WHERE record_id='candidate'")

@@ -82,9 +82,9 @@ def reconcile(out=OUT):
         data=json.loads(payload)
         trader=None
         candidates=[]
-        if str(data.get('manual','')).casefold() in ('true','1','yes'):
-            status,reason='manual','Manual position; not assigned to a signal caller'
-        elif rid in reviewed and reviewed[rid]['trader_id'] in known:
+        # The historical `manual` field is manual_close in Book._row: it says
+        # who exited, not who entered. It cannot disqualify a source caller.
+        if rid in reviewed and reviewed[rid]['trader_id'] in known:
             item=reviewed[rid]
             trader=item['trader_id']
             status,reason='source_supported',item['reason']

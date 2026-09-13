@@ -1,0 +1,299 @@
+status,entry,exit,why,pts,usd,mfe,mae,bars,mode,ts,sym,dirn,room,caller,src,lvl,ref
+ok,28502.0,28522.0,RATCHET,20.0,40.0,38.0,16.25,2.0,market,2026-08-03 09:36:49-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,29797.5,29804.166666666668,RATCHET,6.666666666667879,13.333333333335759,28.25,17.0,18.0,market,2026-08-04 13:12:58-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,7803.5,7753.5,TARGET,50.0,250.0,49.0,16.0,130.0,market,2026-08-05 09:52:00-04:00,SPY,S,,JpmInvestments,bot,,
+ok,29915.0,29895.0,RATCHET,20.0,40.0,43.25,3.75,2.0,market,2026-08-05 10:29:00-04:00,QQQ,S,Honeydrip daytrades,Mike,bot,,
+ok,29858.5,29833.5,STOP,-25.0,-50.0,0.0,0.0,1.0,market,2026-08-05 11:02:00-04:00,QQQ,L,Demon Alerts,Demon Alerts,bot,,
+ok,7756.5,7756.5,BE,0.0,0.0,18.0,6.0,238.0,market,2026-08-05 12:01:00-04:00,SPY,L,,,bot,,
+ok,7766.75,7747.75,CLOSE,19.0,95.0,21.0,7.75,204.0,market,2026-08-05 12:35:00-04:00,SPY,S,,,bot,,
+ok,7781.5,7756.5,STOP,-25.0,-125.0,4.75,23.5,134.0,market,2026-08-11 10:42:00-04:00,SPY,L,Honeydrip daytrades,Unraveller,bot,,
+ok,7770.25,7769.5,CLOSE,0.75,3.75,13.75,10.75,359.0,market,2026-08-12 10:00:00-04:00,SPY,S,MR.TOPHAT,MR.TOPHAT (OPTIONS/FUTURES),bot,,
+ok,29904.5,29917.833333333332,RATCHET,13.33333333333212,26.66666666666424,31.5,13.25,6.0,market,2026-08-12 10:06:00-04:00,QQQ,L,Demon Alerts,Demon Alerts,bot,,
+ok,7769.0,7769.5,CLOSE,0.5,2.5,12.0,4.5,211.0,market,2026-08-12 12:28:00-04:00,SPY,L,,JpmInvestments,bot,,
+ok,29918.5,29911.833333333332,RATCHET,6.666666666667879,13.333333333335759,29.25,0.75,17.0,market,2026-08-12 13:08:00-04:00,QQQ,S,Demon Alerts,TLM,bot,,
+ok,7812.5,7805.5,CLOSE,-7.0,-35.0,4.5,16.0,324.0,market,2026-08-14 10:35:00-04:00,SPY,L,Honeydrip daytrades,Unraveller,bot,,
+ok,7795.0,7768.75,CLOSE,26.25,131.25,28.75,5.0,354.0,market,2026-08-17 10:05:00-04:00,SPY,S,MR.TOPHAT,Vero,bot,,
+ok,30174.0,30174.0,BE,-0.0,-0.0,18.75,6.5,2.0,market,2026-08-17 10:23:00-04:00,QQQ,S,,Vero,bot,,
+ok,7727.0,7715.25,CLOSE,-11.75,-58.75,8.25,16.75,389.0,market,2026-08-18 09:30:00-04:00,SPY,L,Whop Day Trades,Trademorewiser (MOD),bot,,
+ok,29658.75,29683.75,STOP,-25.0,-50.0,1.0,23.75,2.0,market,2026-08-18 09:46:00-04:00,QQQ,S,Vero 2,Vero,bot,,
+ok,7724.5,7715.25,CLOSE,9.25,46.25,14.25,8.25,370.0,market,2026-08-18 09:49:00-04:00,SPY,S,Whop Day Trades,MR.TOPHAT (OPTIONS/FUTURES),bot,,
+ok,7721.5,7715.25,CLOSE,6.25,31.25,11.25,11.25,345.0,market,2026-08-18 10:14:00-04:00,SPY,S,Whop Day Trades,TradingTheTrend,bot,,
+ok,29622.0,29615.333333333332,RATCHET,6.666666666667879,13.333333333335759,26.25,0.75,4.0,market,2026-08-18 10:46:09-04:00,QQQ,S,VeroTrade: ✅⏐vero-trades,Vero,chat,,
+ok,7720.0,7715.25,CLOSE,4.75,23.75,9.75,8.75,303.0,market,2026-08-18 10:56:00-04:00,SPY,S,Whop Day Trades,Mike,bot,,
+ok,7723.25,7715.25,CLOSE,-8.0,-40.0,5.5,13.0,293.0,market,2026-08-18 11:06:00-04:00,SPY,L,Whop Day Trades,JpmInvestments,bot,,
+ok,29572.75,29597.75,STOP,-25.0,-50.0,0.0,0.0,1.0,market,2026-08-19 09:41:00-04:00,QQQ,S,Vero 2,Vero,bot,,
+ok,7729.0,7754.0,STOP,-25.0,-125.0,8.25,24.75,66.0,market,2026-08-19 09:48:00-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,,
+ok,7733.25,7746.583333333333,RATCHET,13.33333333333303,66.66666666666515,31.5,6.75,102.0,market,2026-08-19 09:53:00-04:00,SPY,L,Honeydrip daytrades,,bot,,
+ok,7739.75,7764.75,STOP,-25.0,-125.0,13.25,23.0,66.0,market,2026-08-19 09:55:00-04:00,SPY,S,Honeydrip daytrades,Mike,bot,,
+ok,29502.75,29477.75,STOP,-25.0,-50.0,9.5,21.5,2.0,market,2026-08-19 09:56:17-04:00,QQQ,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+ok,7739.75,7746.416666666667,RATCHET,6.66666666666697,33.33333333333485,25.0,13.25,96.0,market,2026-08-19 09:59:15-04:00,SPY,L,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Brett,chat,,
+ok,7738.0,7744.666666666667,RATCHET,6.66666666666697,33.33333333333485,26.75,6.5,79.0,market,2026-08-19 10:17:00-04:00,SPY,L,Honeydrip daytrades,,bot,,
+ok,7736.5,7743.166666666667,RATCHET,6.66666666666697,33.33333333333485,28.25,0.75,70.0,market,2026-08-19 10:27:00-04:00,SPY,L,Honeydrip daytrades,,bot,,
+ok,7751.5,7731.25,CLOSE,20.25,101.25,29.75,8.0,275.0,market,2026-08-19 11:24:00-04:00,SPY,S,Honeydrip daytrades,,bot,,
+ok,7747.5,7731.25,CLOSE,16.25,81.25,25.75,12.0,265.0,market,2026-08-19 11:34:15-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+ok,7746.75,7731.25,CLOSE,15.5,77.5,25.0,12.75,262.0,market,2026-08-19 11:37:26-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+ok,7741.0,7731.25,CLOSE,9.75,48.75,19.25,18.5,259.0,market,2026-08-19 11:40:32-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+ok,29582.5,29557.5,STOP,-25.0,-50.0,0.75,22.75,5.0,market,2026-08-19 12:51:00-04:00,QQQ,L,Vero 2,TLM,bot,,
+ok,7737.0,7731.25,CLOSE,5.75,28.75,15.25,8.0,184.0,market,2026-08-19 12:55:40-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+ok,7714.25,7689.25,STOP,-25.0,-125.0,5.75,23.75,221.0,market,2026-08-20 09:35:00-04:00,SPY,L,MR.TOPHAT,MR.TOPHAT (OPTIONS/FUTURES),bot,,
+ok,29399.25,29349.25,TARGET,50.0,100.0,0.0,0.0,1.0,market,2026-08-20 09:55:00-04:00,QQQ,S,Vero 1,Vero,bot,,
+ok,29362.0,29362.0,BE,-0.0,-0.0,21.75,8.25,2.0,market,2026-08-20 09:58:00-04:00,QQQ,S,Vero 1,Demon Alerts,bot,,
+ok,29360.25,29360.25,BE,0.0,0.0,17.25,0.75,2.0,market,2026-08-20 10:54:00-04:00,QQQ,L,Vero 1,,bot,,
+ok,7696.75,7671.75,STOP,-25.0,-125.0,8.0,23.0,136.0,market,2026-08-20 11:54:57-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+ok,7696.0,7671.0,STOP,-25.0,-125.0,8.75,24.5,108.0,market,2026-08-20 12:28:03-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+ok,29281.5,29306.5,STOP,-25.0,-50.0,0.0,0.0,1.0,market,2026-08-21 09:55:46-04:00,QQQ,S,VeroTrade: ✅⏐vero-trades,Vero,chat,,
+ok,29138.25,29124.916666666668,RATCHET,13.33333333333212,26.66666666666424,31.25,5.25,2.0,market,2026-08-24 09:35:07-04:00,QQQ,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,,
+ok,7669.75,7669.75,CLOSE,-0.0,-0.0,14.75,16.75,379.0,market,2026-08-24 09:40:00-04:00,SPY,S,MR.TOPHAT,MR.TOPHAT (OPTIONS/FUTURES),bot,,
+ok,7656.0,7681.0,STOP,-25.0,-125.0,1.0,24.75,124.0,market,2026-08-24 09:44:28-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+ok,7665.75,7665.75,BE,0.0,0.0,20.75,8.0,192.0,market,2026-08-24 10:23:23-04:00,SPY,L,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Brett,chat,,
+ok,7661.75,7669.75,CLOSE,-8.0,-40.0,4.0,24.75,334.0,market,2026-08-24 10:25:00-04:00,SPY,S,MR.TOPHAT,,bot,,
+ok,7663.25,7669.75,CLOSE,6.5,32.5,23.25,5.5,330.0,market,2026-08-24 10:29:00-04:00,SPY,L,MR.TOPHAT,,bot,,
+ok,7671.25,7669.75,CLOSE,1.5,7.5,13.5,15.25,320.0,market,2026-08-24 10:39:00-04:00,SPY,S,MR.TOPHAT,,bot,,
+ok,29044.75,29069.75,STOP,-25.0,-50.0,2.5,24.75,8.0,market,2026-08-24 11:05:00-04:00,QQQ,S,ZT fut-6,,bot,,
+ok,29048.75,29073.75,STOP,-25.0,-50.0,10.0,15.75,8.0,market,2026-08-24 11:15:00-04:00,QQQ,S,ZT fut-6,,bot,,
+ok,7683.5,7669.75,CLOSE,-13.75,-68.75,3.0,19.0,235.0,market,2026-08-24 12:04:00-04:00,SPY,L,MR.TOPHAT,TradingTheTrend,bot,,
+ok,29211.0,29186.0,STOP,-25.0,-50.0,1.25,16.0,9.0,market,2026-08-24 12:22:00-04:00,QQQ,L,ZT fut-6,Namrood-BOT,bot,,
+ok,29225.5,29232.166666666668,RATCHET,6.666666666667879,13.333333333335759,26.75,16.25,6.0,market,2026-08-25 10:22:00-04:00,QQQ,L,,,bot,,
+ok,29229.75,29179.75,TARGET,50.0,100.0,16.5,2.0,2.0,market,2026-08-25 10:28:00-04:00,QQQ,S,,,bot,,
+ok,7680.0,7691.0,CLOSE,-11.0,-55.0,6.75,15.0,327.0,market,2026-08-25 10:32:16-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,,
+ok,29231.5,29224.833333333332,RATCHET,6.666666666667879,13.333333333335759,26.5,7.0,3.0,market,2026-08-25 10:32:42-04:00,QQQ,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options,Namrood-BOT,chat,,
+ok,7678.75,7691.0,CLOSE,-12.25,-61.25,5.5,16.25,318.0,market,2026-08-25 10:41:00-04:00,SPY,S,,,bot,,
+ok,29201.25,29226.25,STOP,-25.0,-50.0,6.0,18.5,4.0,market,2026-08-25 10:42:00-04:00,QQQ,S,,,bot,,
+ok,7677.25,7691.0,CLOSE,-13.75,-68.75,1.0,17.75,308.0,market,2026-08-25 10:51:00-04:00,SPY,S,,,bot,,
+ok,7679.0,7691.0,CLOSE,12.0,60.0,16.0,2.75,307.0,market,2026-08-25 10:52:27-04:00,SPY,L,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,,
+ok,7688.0,7691.0,CLOSE,3.0,15.0,7.0,8.75,238.0,market,2026-08-25 12:01:00-04:00,SPY,L,,,bot,,
+ok,7685.75,7692.0,CLOSE,-6.25,-31.25,14.75,19.75,383.0,market,2026-08-26 09:36:00-04:00,SPY,S,Honeydrip daytrades,Unraveller,bot,,
+ok,7694.25,7694.25,BE,-0.0,-0.0,23.25,8.25,300.0,market,2026-08-26 09:46:41-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,,
+ok,7699.5,7692.833333333333,RATCHET,6.66666666666697,33.33333333333485,28.5,3.0,290.0,market,2026-08-26 09:55:00-04:00,SPY,S,Honeydrip daytrades,Unraveller,bot,,
+ok,29323.5,29298.5,STOP,-25.0,-50.0,9.25,17.75,5.0,market,2026-08-26 09:56:06-04:00,QQQ,L,VeroTrade: ✅⏐1k-challenge,Vero,chat,,
+ok,29310.25,29310.25,BE,-0.0,-0.0,16.75,9.75,6.0,market,2026-08-26 10:00:48-04:00,QQQ,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱😈demon,Demon Alerts,chat,,
+ok,29267.0,29253.666666666668,RATCHET,13.33333333333212,26.66666666666424,31.5,6.0,3.0,market,2026-08-26 10:10:00-04:00,QQQ,S,,Vero,bot,,
+ok,7694.75,7688.083333333333,RATCHET,6.66666666666697,33.33333333333485,23.75,2.25,191.0,market,2026-08-26 10:12:54-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,,
+ok,7691.75,7691.75,BE,-0.0,-0.0,20.75,5.25,241.0,market,2026-08-26 10:19:46-04:00,SPY,S,VeroTrade: ✅⏐1k-challenge,Vero,chat,,
+ok,7694.0,7694.0,BE,-0.0,-0.0,23.0,1.5,212.0,market,2026-08-26 11:13:51-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+ok,29615.25,29590.25,STOP,-25.0,-50.0,6.0,20.25,5.0,market,2026-08-27 12:04:01-04:00,QQQ,L,TradingTheTrend: 🚨option-alerts🚨,TradingTheTrend,chat,,
+ok,7758.5,7765.166666666667,RATCHET,6.66666666666697,33.33333333333485,24.0,0.75,57.0,market,2026-08-28 10:42:29-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options,Namrood-BOT,chat,,
+ok,29734.75,29734.75,BE,0.0,0.0,20.25,9.5,4.0,market,2026-08-28 10:44:16-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,29412.75,29387.75,STOP,-25.0,-50.0,13.5,15.25,4.0,market,2026-08-31 09:43:03-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,7645.0,7670.0,STOP,-25.0,-125.0,4.0,24.5,59.0,market,2026-09-01 09:32:32-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,,
+ok,7645.25,7670.25,STOP,-25.0,-125.0,4.25,24.25,53.0,market,2026-09-01 09:38:00-04:00,SPY,S,ZT all-trades-mashup,,bot,,
+ok,7644.0,7669.0,STOP,-25.0,-125.0,2.5,23.75,49.0,market,2026-09-01 09:41:00-04:00,SPY,S,ZT all-trades-mashup,,bot,,
+ok,7644.75,7669.75,STOP,-25.0,-125.0,3.25,24.75,38.0,market,2026-09-01 09:53:09-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,,
+ok,7656.25,7656.25,BE,0.0,0.0,16.75,4.5,56.0,market,2026-09-01 10:09:25-04:00,SPY,L,Honey Drip Network 🍯💰📈: 👑｜aristotle-trades,👑KingBeeAri🐝,chat,,
+ok,29164.75,29139.75,STOP,-25.0,-50.0,2.25,16.25,2.0,market,2026-09-01 10:16:54-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,7661.5,7636.5,STOP,-25.0,-125.0,12.25,19.75,185.0,market,2026-09-01 10:20:00-04:00,SPY,L,ZT all-trades-mashup,,bot,,
+ok,7666.5,7639.833333333333,RATCHET,26.66666666666697,133.33333333333485,45.0,7.25,285.0,market,2026-09-01 10:26:18-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,,
+ok,7671.5,7671.5,BE,-0.0,-0.0,17.75,1.5,73.0,market,2026-09-01 10:34:00-04:00,SPY,S,ZT all-trades-mashup,,bot,,
+ok,7668.75,7642.083333333333,RATCHET,26.66666666666697,133.33333333333485,47.25,5.0,271.0,market,2026-09-01 10:44:00-04:00,SPY,S,ZT all-trades-mashup,ZTRADEZ BOT,bot,,
+ok,7664.0,7644.0,RATCHET,20.0,100.0,42.5,9.75,307.0,market,2026-09-01 10:52:06-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+ok,7662.5,7642.5,RATCHET,20.0,100.0,41.0,11.25,256.0,market,2026-09-01 10:59:16-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+ok,7658.0,7644.666666666667,RATCHET,13.33333333333303,66.66666666666515,36.5,15.75,295.0,market,2026-09-01 11:04:00-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+ok,7654.5,7641.166666666667,RATCHET,13.33333333333303,66.66666666666515,33.0,19.25,243.0,market,2026-09-01 11:08:06-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+ok,29312.75,29287.75,STOP,-25.0,-50.0,4.0,23.75,11.0,market,2026-09-01 11:49:20-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,@Elite,chat,,
+ok,7665.0,7640.0,STOP,-25.0,-125.0,0.25,23.25,72.0,market,2026-09-01 12:13:00-04:00,SPY,L,ZT all-trades-mashup,ZTRADEZ BOT,bot,,
+ok,7659.25,7634.25,STOP,-25.0,-125.0,0.75,24.25,137.0,market,2026-09-01 12:17:00-04:00,SPY,L,ZT all-trades-mashup,ZTRADEZ BOT,bot,,
+ok,7646.5,7639.833333333333,RATCHET,6.66666666666697,33.33333333333485,25.0,4.25,161.0,market,2026-09-01 12:30:00-04:00,SPY,S,ZT all-trades-mashup,,bot,,
+ok,7654.0,7674.0,RATCHET,20.0,100.0,37.25,8.25,164.0,market,2026-09-02 09:44:00-04:00,SPY,L,Midas,,bot,,
+ok,7650.0,7670.0,RATCHET,20.0,100.0,41.25,3.5,231.0,market,2026-09-02 09:50:49-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+ok,7650.5,7670.5,RATCHET,20.0,100.0,40.75,3.0,220.0,market,2026-09-02 09:54:00-04:00,SPY,L,Midas,,bot,,
+ok,7659.25,7672.583333333333,RATCHET,13.33333333333303,66.66666666666515,32.0,1.75,189.0,market,2026-09-02 10:00:57-04:00,SPY,L,VeroTrade: ✅⏐1k-challenge,Vero,chat,,
+ok,29127.75,29177.75,TARGET,50.0,100.0,49.25,8.5,8.0,market,2026-09-02 10:14:05-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,7671.75,7671.75,BE,0.0,0.0,19.5,1.5,181.0,market,2026-09-02 10:17:44-04:00,SPY,L,ELITE OPTIONS: 🔔︱shoofs-trade-alerts,Elite Options | Shoof,chat,,
+ok,7687.0,7687.0,BE,-0.0,-0.0,17.0,4.25,218.0,market,2026-09-02 10:40:00-04:00,SPY,S,Midas,ZTRADEZ BOT,bot,,
+ok,7688.75,7678.25,CLOSE,-10.5,-52.5,2.5,18.75,271.0,market,2026-09-02 11:28:05-04:00,SPY,L,Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge,Midas (Admin),chat,,
+ok,7686.25,7678.25,CLOSE,-8.0,-40.0,1.75,16.25,264.0,market,2026-09-02 11:35:51-04:00,SPY,L,Sniper HQ: sniper-alerts-options,Fill Announcer,chat,,
+ok,7683.5,7678.25,CLOSE,-5.25,-26.25,4.25,13.5,256.0,market,2026-09-02 11:43:00-04:00,SPY,L,Midas,Midas (Admin),bot,,
+ok,7709.75,7734.75,STOP,-25.0,-125.0,9.75,23.25,66.0,market,2026-09-03 10:02:02-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ Manager,chat,,
+ok,7708.25,7733.25,STOP,-25.0,-125.0,8.25,24.75,62.0,market,2026-09-03 10:06:00-04:00,SPY,S,ZT all-trades-mashup,,bot,,
+ok,29302.5,29295.833333333332,RATCHET,6.666666666667879,13.333333333335759,29.25,5.25,5.0,market,2026-09-03 10:36:00-04:00,QQQ,S,,,bot,,
+ok,29280.75,29305.75,STOP,-25.0,-50.0,5.25,17.5,2.0,market,2026-09-03 10:46:00-04:00,QQQ,S,,,bot,,
+ok,7733.25,7758.25,STOP,-25.0,-125.0,0.75,24.5,22.0,market,2026-09-03 11:09:00-04:00,SPY,S,ZT all-trades-mashup,ZTRADEZ Manager,bot,,
+ok,29461.75,29461.75,BE,0.0,0.0,18.25,12.0,9.0,market,2026-09-03 11:11:41-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,7752.5,7756.25,CLOSE,-3.75,-18.75,5.5,14.0,263.0,market,2026-09-03 11:36:00-04:00,SPY,S,ZT all-trades-mashup,,bot,,
+ok,7753.75,7756.25,CLOSE,-2.5,-12.5,6.75,12.75,253.0,market,2026-09-03 11:46:00-04:00,SPY,S,ZT all-trades-mashup,,bot,,
+ok,7758.0,7756.25,CLOSE,1.75,8.75,11.0,8.5,248.0,market,2026-09-03 11:51:46-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+ok,7753.75,7756.25,CLOSE,-2.5,-12.5,6.75,12.75,234.0,market,2026-09-03 12:05:00-04:00,SPY,S,ZT all-trades-mashup,,bot,,
+ok,7753.0,7756.25,CLOSE,3.25,16.25,13.5,6.0,220.0,market,2026-09-03 12:19:00-04:00,SPY,L,ZT all-trades-mashup,,bot,,
+ok,7750.25,7756.25,CLOSE,6.0,30.0,16.25,3.25,210.0,market,2026-09-03 12:29:00-04:00,SPY,L,ZT all-trades-mashup,,bot,,
+ok,7755.75,7756.25,CLOSE,0.5,2.5,10.75,8.75,200.0,market,2026-09-03 12:39:00-04:00,SPY,L,ZT all-trades-mashup,ZTRADEZ BOT,bot,,
+ok,7756.0,7756.25,CLOSE,0.25,1.25,10.5,4.0,143.0,market,2026-09-03 13:36:34-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+ok,7760.5,7756.25,CLOSE,-4.25,-21.25,6.0,8.5,124.0,market,2026-09-03 13:55:09-04:00,SPY,L,Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge,Midas (Admin),chat,,
+ok,7744.75,7731.416666666667,RATCHET,13.33333333333303,66.66666666666515,33.0,3.5,159.0,market,2026-09-04 09:41:00-04:00,SPY,S,,,bot,,
+ok,7747.0,7733.666666666667,RATCHET,13.33333333333303,66.66666666666515,35.25,0.75,178.0,market,2026-09-04 09:49:54-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,,
+ok,29533.25,29526.583333333332,RATCHET,6.666666666667879,13.333333333335759,23.75,11.0,7.0,market,2026-09-04 10:44:59-04:00,QQQ,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,,
+ok,29520.75,29520.75,BE,-0.0,-0.0,22.0,3.0,2.0,market,2026-09-04 10:55:00-04:00,QQQ,S,,,bot,,
+ok,29521.0,29521.0,BE,0.0,0.0,22.0,23.75,20.0,market,2026-09-04 10:57:00-04:00,QQQ,L,,,bot,,
+ok,29524.0,29524.0,BE,0.0,0.0,19.0,12.75,10.0,market,2026-09-04 11:07:00-04:00,QQQ,L,,,bot,,
+ok,29485.0,29535.0,TARGET,50.0,100.0,46.0,13.75,58.0,market,2026-09-04 13:57:00-04:00,QQQ,L,,,bot,,
+ok,29478.0,29528.0,TARGET,50.0,100.0,47.0,1.75,39.0,market,2026-09-04 14:07:00-04:00,QQQ,L,,,bot,,
+ok,29501.5,29526.5,STOP,-25.0,-50.0,12.0,24.75,3.0,market,2026-09-08 09:54:33-04:00,QQQ,S,Platinum nitro,@Owner Alerts,bot,,
+ok,29480.25,29480.25,BE,-0.0,-0.0,18.75,5.5,2.0,market,2026-09-08 10:03:38-04:00,QQQ,S,Platinum nitro,,bot,,
+ok,29452.75,29452.75,BE,-0.0,-0.0,20.25,7.25,2.0,market,2026-09-08 10:09:58-04:00,QQQ,S,VeroTrade: ✅⏐1k-challenge,Vero,chat,,
+ok,29479.75,29479.75,BE,-0.0,-0.0,19.5,14.0,4.0,market,2026-09-08 10:15:47-04:00,QQQ,S,Vero 1,Vero,bot,,
+ok,7687.0,7681.0,CLOSE,6.0,30.0,14.75,17.0,328.0,market,2026-09-08 10:31:12-04:00,SPY,S,VeroTrade: ✅⏐1k-challenge,Vero,chat,,
+ok,7690.25,7681.0,CLOSE,-9.25,-46.25,13.75,18.0,325.0,market,2026-09-08 10:34:06-04:00,SPY,L,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,,
+ok,7689.5,7681.0,CLOSE,8.5,42.5,17.25,14.5,324.0,market,2026-09-08 10:35:01-04:00,SPY,S,Vero 1,Vero,bot,,
+ok,29530.75,29530.75,BE,0.0,0.0,19.5,19.0,8.0,market,2026-09-08 10:44:35-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,7703.25,7678.25,STOP,-25.0,-125.0,0.75,23.0,216.0,market,2026-09-08 11:13:21-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+ok,29579.5,29579.5,BE,-0.0,-0.0,17.0,15.5,10.0,market,2026-09-08 12:11:00-04:00,QQQ,S,Platinum nitro,,bot,,
+ok,29581.0,29581.0,BE,-0.0,-0.0,19.25,23.5,12.0,market,2026-09-08 12:21:00-04:00,QQQ,S,Platinum nitro,,bot,,
+ok,29592.0,29567.0,STOP,-25.0,-50.0,12.5,20.5,5.0,market,2026-09-08 12:24:06-04:00,QQQ,L,TradingTheTrend: 🎰lotto-alerts,rks_$$$$,chat,,
+ok,7653.25,7646.583333333333,RATCHET,6.66666666666697,33.33333333333485,24.5,11.75,62.0,market,2026-09-09 10:37:07-04:00,SPY,S,VeroTrade: ✅⏐vero-trades,Vero,chat,,
+ok,7649.0,7649.0,BE,-0.0,-0.0,20.25,1.5,36.0,market,2026-09-09 11:03:39-04:00,SPY,S,Vero 2,Vero,bot,,
+ok,7597.0,7597.0,BE,0.0,0.0,23.0,11.5,173.0,market,2026-09-10 09:34:29-04:00,SPY,L,Midas,Midas (Admin),bot,,
+ok,7594.5,7619.5,STOP,-25.0,-125.0,9.0,11.25,22.0,market,2026-09-10 10:02:00-04:00,SPY,S,Midas,,bot,,
+ok,7594.5,7619.5,STOP,-25.0,-125.0,4.0,11.25,12.0,market,2026-09-10 10:12:00-04:00,SPY,S,Midas,,bot,,
+ok,7607.75,7598.75,CLOSE,9.0,45.0,16.25,11.5,332.0,market,2026-09-10 10:27:37-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Brett,chat,,
+ok,29176.75,29201.75,STOP,-25.0,-50.0,11.0,21.5,6.0,market,2026-09-10 12:10:57-04:00,QQQ,S,VeroTrade: ✅⏐vero-trades,Vero,chat,,
+ok,7598.0,7598.0,BE,0.0,0.0,19.75,6.5,98.0,market,2026-09-10 12:25:22-04:00,SPY,L,OWLS all-alerts,eli,bot,,
+ok,7672.75,7659.0,CLOSE,13.75,68.75,15.25,8.25,278.0,market,2026-09-11 11:21:00-04:00,SPY,S,,,bot,,
+ok,29421.25,29396.25,STOP,-25.0,-50.0,7.25,9.25,10.0,market,2026-09-11 15:40:00-04:00,QQQ,L,,,bot,,
+ok,28500.0,28520.0,RATCHET,20.0,40.0,40.0,14.25,2.0,snap,2026-08-03 09:36:49-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+snap never touched,,,,,,,,,snap,2026-08-04 13:12:58-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,29775.0,29797.5
+snap never touched,,,,,,,,,snap,2026-08-05 09:52:00-04:00,SPY,S,,JpmInvestments,bot,7825.0,7803.5
+snap never touched,,,,,,,,,snap,2026-08-05 10:29:00-04:00,QQQ,S,Honeydrip daytrades,Mike,bot,29925.0,29915.0
+ok,29850.0,29850.0,BE,0.0,0.0,19.25,24.0,6.0,snap,2026-08-05 11:02:00-04:00,QQQ,L,Demon Alerts,Demon Alerts,bot,,
+snap never touched,,,,,,,,,snap,2026-08-05 12:01:00-04:00,SPY,L,,,bot,7750.0,7756.5
+snap never touched,,,,,,,,,snap,2026-08-05 12:35:00-04:00,SPY,S,,,bot,7775.0,7766.75
+snap never touched,,,,,,,,,snap,2026-08-11 10:42:00-04:00,SPY,L,Honeydrip daytrades,Unraveller,bot,7775.0,7781.5
+snap never touched,,,,,,,,,snap,2026-08-12 10:00:00-04:00,SPY,S,MR.TOPHAT,MR.TOPHAT (OPTIONS/FUTURES),bot,7775.0,7770.25
+ok,29900.0,29913.333333333332,RATCHET,13.33333333333212,26.66666666666424,36.0,8.75,6.0,snap,2026-08-12 10:06:00-04:00,QQQ,L,Demon Alerts,Demon Alerts,bot,,
+snap never touched,,,,,,,,,snap,2026-08-12 12:28:00-04:00,SPY,L,,JpmInvestments,bot,7750.0,7769.0
+snap never touched,,,,,,,,,snap,2026-08-12 13:08:00-04:00,QQQ,S,Demon Alerts,TLM,bot,29925.0,29918.5
+snap never touched,,,,,,,,,snap,2026-08-14 10:35:00-04:00,SPY,L,Honeydrip daytrades,Unraveller,bot,7800.0,7812.5
+snap never touched,,,,,,,,,snap,2026-08-17 10:05:00-04:00,SPY,S,MR.TOPHAT,Vero,bot,7800.0,7795.0
+ok,30175.0,30175.0,BE,-0.0,-0.0,19.75,5.5,2.0,snap,2026-08-17 10:23:00-04:00,QQQ,S,,Vero,bot,,
+ok,7725.0,7715.25,CLOSE,-9.75,-48.75,10.25,14.75,388.0,snap,2026-08-18 09:30:00-04:00,SPY,L,Whop Day Trades,Trademorewiser (MOD),bot,,
+ok,29675.0,29675.0,BE,-0.0,-0.0,17.25,7.5,2.0,snap,2026-08-18 09:46:00-04:00,QQQ,S,Vero 2,Vero,bot,,
+ok,7725.0,7715.25,CLOSE,9.75,48.75,14.75,7.75,370.0,snap,2026-08-18 09:49:00-04:00,SPY,S,Whop Day Trades,MR.TOPHAT (OPTIONS/FUTURES),bot,,
+ok,7725.0,7715.25,CLOSE,9.75,48.75,14.75,7.75,345.0,snap,2026-08-18 10:14:00-04:00,SPY,S,Whop Day Trades,TradingTheTrend,bot,,
+snap never touched,,,,,,,,,snap,2026-08-18 10:46:09-04:00,QQQ,S,VeroTrade: ✅⏐vero-trades,Vero,chat,29625.0,29622.0
+snap never touched,,,,,,,,,snap,2026-08-18 10:56:00-04:00,SPY,S,Whop Day Trades,Mike,bot,7725.0,7720.0
+snap never touched,,,,,,,,,snap,2026-08-18 11:06:00-04:00,SPY,L,Whop Day Trades,JpmInvestments,bot,7700.0,7723.25
+ok,29575.0,29600.0,STOP,-25.0,-50.0,14.5,23.0,2.0,snap,2026-08-19 09:41:00-04:00,QQQ,S,Vero 2,Vero,bot,,
+snap never touched,,,,,,,,,snap,2026-08-19 09:48:00-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,7750.0,7729.0
+snap never touched,,,,,,,,,snap,2026-08-19 09:53:00-04:00,SPY,L,Honeydrip daytrades,,bot,7725.0,7733.25
+snap never touched,,,,,,,,,snap,2026-08-19 09:55:00-04:00,SPY,S,Honeydrip daytrades,Mike,bot,7750.0,7739.75
+ok,29500.0,29475.0,STOP,-25.0,-50.0,12.25,18.75,2.0,snap,2026-08-19 09:56:17-04:00,QQQ,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,,
+snap never touched,,,,,,,,,snap,2026-08-19 09:59:15-04:00,SPY,L,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Brett,chat,7725.0,7739.75
+snap never touched,,,,,,,,,snap,2026-08-19 10:17:00-04:00,SPY,L,Honeydrip daytrades,,bot,7725.0,7738.0
+snap never touched,,,,,,,,,snap,2026-08-19 10:27:00-04:00,SPY,L,Honeydrip daytrades,,bot,7725.0,7736.5
+snap never touched,,,,,,,,,snap,2026-08-19 11:24:00-04:00,SPY,S,Honeydrip daytrades,,bot,7775.0,7751.5
+snap never touched,,,,,,,,,snap,2026-08-19 11:34:15-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,7750.0,7747.5
+snap never touched,,,,,,,,,snap,2026-08-19 11:37:26-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,7750.0,7746.75
+snap never touched,,,,,,,,,snap,2026-08-19 11:40:32-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,7750.0,7741.0
+ok,29575.0,29550.0,STOP,-25.0,-50.0,8.25,23.25,12.0,snap,2026-08-19 12:51:00-04:00,QQQ,L,Vero 2,TLM,bot,,
+snap never touched,,,,,,,,,snap,2026-08-19 12:55:40-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,7750.0,7737.0
+snap never touched,,,,,,,,,snap,2026-08-20 09:35:00-04:00,SPY,L,MR.TOPHAT,MR.TOPHAT (OPTIONS/FUTURES),bot,7700.0,7714.25
+ok,29400.0,29350.0,TARGET,50.0,100.0,0.0,0.0,1.0,snap,2026-08-20 09:55:00-04:00,QQQ,S,Vero 1,Vero,bot,,
+ok,29375.0,29368.333333333332,RATCHET,6.666666666667879,13.333333333335759,23.75,20.0,2.0,snap,2026-08-20 09:58:00-04:00,QQQ,S,Vero 1,Demon Alerts,bot,,
+ok,29350.0,29350.0,BE,0.0,0.0,22.25,0.0,2.0,snap,2026-08-20 10:54:00-04:00,QQQ,L,Vero 1,,bot,,
+snap never touched,,,,,,,,,snap,2026-08-20 11:54:57-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,7675.0,7696.75
+snap never touched,,,,,,,,,snap,2026-08-20 12:28:03-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,7675.0,7696.0
+ok,29300.0,29300.0,BE,-0.0,-0.0,20.0,20.25,2.0,snap,2026-08-21 09:55:46-04:00,QQQ,S,VeroTrade: ✅⏐vero-trades,Vero,chat,,
+snap never touched,,,,,,,,,snap,2026-08-24 09:35:07-04:00,QQQ,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,29150.0,29138.25
+snap never touched,,,,,,,,,snap,2026-08-24 09:40:00-04:00,SPY,S,MR.TOPHAT,MR.TOPHAT (OPTIONS/FUTURES),bot,7675.0,7669.75
+snap never touched,,,,,,,,,snap,2026-08-24 09:44:28-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,7675.0,7656.0
+snap never touched,,,,,,,,,snap,2026-08-24 10:23:23-04:00,SPY,L,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Brett,chat,7650.0,7665.75
+snap never touched,,,,,,,,,snap,2026-08-24 10:25:00-04:00,SPY,S,MR.TOPHAT,,bot,7675.0,7661.75
+snap never touched,,,,,,,,,snap,2026-08-24 10:29:00-04:00,SPY,L,MR.TOPHAT,,bot,7650.0,7663.25
+ok,7675.0,7675.0,BE,-0.0,-0.0,17.25,0.5,59.0,snap,2026-08-24 10:39:00-04:00,SPY,S,MR.TOPHAT,,bot,,
+ok,29050.0,29075.0,STOP,-25.0,-50.0,7.75,19.5,8.0,snap,2026-08-24 11:05:00-04:00,QQQ,S,ZT fut-6,,bot,,
+ok,29050.0,29075.0,STOP,-25.0,-50.0,11.25,24.75,9.0,snap,2026-08-24 11:15:00-04:00,QQQ,S,ZT fut-6,,bot,,
+snap never touched,,,,,,,,,snap,2026-08-24 12:04:00-04:00,SPY,L,MR.TOPHAT,TradingTheTrend,bot,7675.0,7683.5
+ok,29200.0,29175.0,STOP,-25.0,-50.0,12.25,20.5,20.0,snap,2026-08-24 12:22:00-04:00,QQQ,L,ZT fut-6,Namrood-BOT,bot,,
+ok,29225.0,29231.666666666668,RATCHET,6.666666666667879,13.333333333335759,27.25,15.75,6.0,snap,2026-08-25 10:22:00-04:00,QQQ,L,,,bot,,
+ok,29250.0,29200.0,TARGET,50.0,100.0,26.5,18.75,5.0,snap,2026-08-25 10:28:00-04:00,QQQ,S,,,bot,,
+snap never touched,,,,,,,,,snap,2026-08-25 10:32:16-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,7700.0,7680.0
+ok,29250.0,29200.0,TARGET,50.0,100.0,26.5,18.75,5.0,snap,2026-08-25 10:32:42-04:00,QQQ,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options,Namrood-BOT,chat,,
+snap never touched,,,,,,,,,snap,2026-08-25 10:41:00-04:00,SPY,S,,,bot,7700.0,7678.75
+ok,29225.0,29225.0,BE,-0.0,-0.0,18.75,3.0,2.0,snap,2026-08-25 10:42:00-04:00,QQQ,S,,,bot,,
+snap never touched,,,,,,,,,snap,2026-08-25 10:51:00-04:00,SPY,S,,,bot,7700.0,7677.25
+snap never touched,,,,,,,,,snap,2026-08-25 10:52:27-04:00,SPY,L,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,7675.0,7679.0
+snap never touched,,,,,,,,,snap,2026-08-25 12:01:00-04:00,SPY,L,,,bot,7675.0,7688.0
+snap never touched,,,,,,,,,snap,2026-08-26 09:36:00-04:00,SPY,S,Honeydrip daytrades,Unraveller,bot,7700.0,7685.75
+ok,7700.0,7693.333333333333,RATCHET,6.66666666666697,33.33333333333485,29.0,2.5,291.0,snap,2026-08-26 09:46:41-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,,
+ok,7700.0,7693.333333333333,RATCHET,6.66666666666697,33.33333333333485,29.0,2.5,290.0,snap,2026-08-26 09:55:00-04:00,SPY,S,Honeydrip daytrades,Unraveller,bot,,
+ok,29300.0,29300.0,BE,0.0,0.0,20.0,3.25,5.0,snap,2026-08-26 09:56:06-04:00,QQQ,L,VeroTrade: ✅⏐1k-challenge,Vero,chat,,
+snap never touched,,,,,,,,,snap,2026-08-26 10:00:48-04:00,QQQ,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱😈demon,Demon Alerts,chat,29325.0,29310.25
+snap never touched,,,,,,,,,snap,2026-08-26 10:10:00-04:00,QQQ,S,,Vero,bot,29275.0,29267.0
+snap never touched,,,,,,,,,snap,2026-08-26 10:12:54-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,7700.0,7694.75
+snap never touched,,,,,,,,,snap,2026-08-26 10:19:46-04:00,SPY,S,VeroTrade: ✅⏐1k-challenge,Vero,chat,7700.0,7691.75
+snap never touched,,,,,,,,,snap,2026-08-26 11:13:51-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱jpm-investments,JpmInvestments,chat,7700.0,7694.0
+ok,29600.0,29575.0,STOP,-25.0,-50.0,13.25,23.0,15.0,snap,2026-08-27 12:04:01-04:00,QQQ,L,TradingTheTrend: 🚨option-alerts🚨,TradingTheTrend,chat,,
+snap never touched,,,,,,,,,snap,2026-08-28 10:42:29-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱namrood-options,Namrood-BOT,chat,7750.0,7758.5
+snap never touched,,,,,,,,,snap,2026-08-28 10:44:16-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,29725.0,29734.75
+ok,29400.0,29406.666666666668,RATCHET,6.666666666667879,13.333333333335759,26.25,2.5,3.0,snap,2026-08-31 09:43:03-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,7650.0,7643.333333333333,RATCHET,6.66666666666697,33.33333333333485,28.5,23.75,385.0,snap,2026-09-01 09:32:32-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,,
+snap never touched,,,,,,,,,snap,2026-09-01 09:38:00-04:00,SPY,S,ZT all-trades-mashup,,bot,7650.0,7645.25
+ok,7650.0,7643.333333333333,RATCHET,6.66666666666697,33.33333333333485,28.5,23.75,370.0,snap,2026-09-01 09:41:00-04:00,SPY,S,ZT all-trades-mashup,,bot,,
+ok,7650.0,7643.333333333333,RATCHET,6.66666666666697,33.33333333333485,28.5,23.75,359.0,snap,2026-09-01 09:53:09-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,,
+snap never touched,,,,,,,,,snap,2026-09-01 10:09:25-04:00,SPY,L,Honey Drip Network 🍯💰📈: 👑｜aristotle-trades,👑KingBeeAri🐝,chat,7650.0,7656.25
+ok,29150.0,29150.0,BE,0.0,0.0,17.0,1.5,2.0,snap,2026-09-01 10:16:54-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+snap never touched,,,,,,,,,snap,2026-09-01 10:20:00-04:00,SPY,L,ZT all-trades-mashup,,bot,7650.0,7661.5
+snap never touched,,,,,,,,,snap,2026-09-01 10:26:18-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,7675.0,7666.5
+snap never touched,,,,,,,,,snap,2026-09-01 10:34:00-04:00,SPY,S,ZT all-trades-mashup,,bot,7675.0,7671.5
+snap never touched,,,,,,,,,snap,2026-09-01 10:44:00-04:00,SPY,S,ZT all-trades-mashup,ZTRADEZ BOT,bot,7675.0,7668.75
+snap never touched,,,,,,,,,snap,2026-09-01 10:52:06-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,7675.0,7664.0
+snap never touched,,,,,,,,,snap,2026-09-01 10:59:16-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,7675.0,7662.5
+snap never touched,,,,,,,,,snap,2026-09-01 11:04:00-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,7675.0,7658.0
+snap never touched,,,,,,,,,snap,2026-09-01 11:08:06-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,7675.0,7654.5
+ok,29300.0,29300.0,BE,0.0,0.0,16.75,4.75,7.0,snap,2026-09-01 11:49:20-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,@Elite,chat,,
+snap never touched,,,,,,,,,snap,2026-09-01 12:13:00-04:00,SPY,L,ZT all-trades-mashup,ZTRADEZ BOT,bot,7650.0,7665.0
+ok,7650.0,7625.0,STOP,-25.0,-125.0,5.75,24.5,139.0,snap,2026-09-01 12:17:00-04:00,SPY,L,ZT all-trades-mashup,ZTRADEZ BOT,bot,,
+snap never touched,,,,,,,,,snap,2026-09-01 12:30:00-04:00,SPY,S,ZT all-trades-mashup,,bot,7650.0,7646.5
+ok,7650.0,7670.0,RATCHET,20.0,100.0,41.25,4.25,237.0,snap,2026-09-02 09:44:00-04:00,SPY,L,Midas,,bot,,
+ok,7650.0,7670.0,RATCHET,20.0,100.0,41.25,3.5,231.0,snap,2026-09-02 09:50:49-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+ok,7650.0,7670.0,RATCHET,20.0,100.0,41.25,2.5,227.0,snap,2026-09-02 09:54:00-04:00,SPY,L,Midas,,bot,,
+snap never touched,,,,,,,,,snap,2026-09-02 10:00:57-04:00,SPY,L,VeroTrade: ✅⏐1k-challenge,Vero,chat,7650.0,7659.25
+ok,29125.0,29151.666666666668,RATCHET,26.66666666666788,53.33333333333576,43.5,5.75,7.0,snap,2026-09-02 10:14:05-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+snap never touched,,,,,,,,,snap,2026-09-02 10:17:44-04:00,SPY,L,ELITE OPTIONS: 🔔︱shoofs-trade-alerts,Elite Options | Shoof,chat,7650.0,7671.75
+snap never touched,,,,,,,,,snap,2026-09-02 10:40:00-04:00,SPY,S,Midas,ZTRADEZ BOT,bot,7700.0,7687.0
+snap never touched,,,,,,,,,snap,2026-09-02 11:28:05-04:00,SPY,L,Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge,Midas (Admin),chat,7675.0,7688.75
+snap never touched,,,,,,,,,snap,2026-09-02 11:35:51-04:00,SPY,L,Sniper HQ: sniper-alerts-options,Fill Announcer,chat,7675.0,7686.25
+snap never touched,,,,,,,,,snap,2026-09-02 11:43:00-04:00,SPY,L,Midas,Midas (Admin),bot,7675.0,7683.5
+snap never touched,,,,,,,,,snap,2026-09-03 10:02:02-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ Manager,chat,7725.0,7709.75
+snap never touched,,,,,,,,,snap,2026-09-03 10:06:00-04:00,SPY,S,ZT all-trades-mashup,,bot,7725.0,7708.25
+snap never touched,,,,,,,,,snap,2026-09-03 10:36:00-04:00,QQQ,S,,,bot,29325.0,29302.5
+ok,29300.0,29300.0,BE,-0.0,-0.0,18.0,6.25,2.0,snap,2026-09-03 10:46:00-04:00,QQQ,S,,,bot,,
+snap never touched,,,,,,,,,snap,2026-09-03 11:09:00-04:00,SPY,S,ZT all-trades-mashup,ZTRADEZ Manager,bot,7750.0,7733.25
+ok,29450.0,29463.333333333332,RATCHET,13.33333333333212,26.66666666666424,30.0,0.25,9.0,snap,2026-09-03 11:11:41-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+snap never touched,,,,,,,,,snap,2026-09-03 11:36:00-04:00,SPY,S,ZT all-trades-mashup,,bot,7775.0,7752.5
+snap never touched,,,,,,,,,snap,2026-09-03 11:46:00-04:00,SPY,S,ZT all-trades-mashup,,bot,7775.0,7753.75
+snap never touched,,,,,,,,,snap,2026-09-03 11:51:46-04:00,SPY,S,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,7775.0,7758.0
+snap never touched,,,,,,,,,snap,2026-09-03 12:05:00-04:00,SPY,S,ZT all-trades-mashup,,bot,7775.0,7753.75
+ok,7750.0,7756.25,CLOSE,6.25,31.25,16.5,3.0,215.0,snap,2026-09-03 12:19:00-04:00,SPY,L,ZT all-trades-mashup,,bot,,
+ok,7750.0,7756.25,CLOSE,6.25,31.25,16.5,3.0,210.0,snap,2026-09-03 12:29:00-04:00,SPY,L,ZT all-trades-mashup,,bot,,
+snap never touched,,,,,,,,,snap,2026-09-03 12:39:00-04:00,SPY,L,ZT all-trades-mashup,ZTRADEZ BOT,bot,7750.0,7755.75
+snap never touched,,,,,,,,,snap,2026-09-03 13:36:34-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,7750.0,7756.0
+snap never touched,,,,,,,,,snap,2026-09-03 13:55:09-04:00,SPY,L,Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge,Midas (Admin),chat,7750.0,7760.5
+snap never touched,,,,,,,,,snap,2026-09-04 09:41:00-04:00,SPY,S,,,bot,7750.0,7744.75
+snap never touched,,,,,,,,,snap,2026-09-04 09:49:54-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,7750.0,7747.0
+snap never touched,,,,,,,,,snap,2026-09-04 10:44:59-04:00,QQQ,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Mike,chat,29550.0,29533.25
+ok,29525.0,29518.333333333332,RATCHET,6.666666666667879,13.333333333335759,27.75,5.0,10.0,snap,2026-09-04 10:55:00-04:00,QQQ,S,,,bot,,
+ok,29500.0,29500.0,BE,0.0,0.0,22.75,2.5,3.0,snap,2026-09-04 10:57:00-04:00,QQQ,L,,,bot,,
+snap never touched,,,,,,,,,snap,2026-09-04 11:07:00-04:00,QQQ,L,,,bot,29500.0,29524.0
+ok,29475.0,29525.0,TARGET,50.0,100.0,49.5,3.75,42.0,snap,2026-09-04 13:57:00-04:00,QQQ,L,,,bot,,
+snap never touched,,,,,,,,,snap,2026-09-04 14:07:00-04:00,QQQ,L,,,bot,29475.0,29478.0
+ok,29525.0,29511.666666666668,RATCHET,13.33333333333212,26.66666666666424,35.5,1.25,2.0,snap,2026-09-08 09:54:33-04:00,QQQ,S,Platinum nitro,@Owner Alerts,bot,,
+snap never touched,,,,,,,,,snap,2026-09-08 10:03:38-04:00,QQQ,S,Platinum nitro,,bot,29500.0,29480.25
+ok,29475.0,29500.0,STOP,-25.0,-50.0,16.5,23.75,8.0,snap,2026-09-08 10:09:58-04:00,QQQ,S,VeroTrade: ✅⏐1k-challenge,Vero,chat,,
+ok,29500.0,29525.0,STOP,-25.0,-50.0,16.0,24.75,14.0,snap,2026-09-08 10:15:47-04:00,QQQ,S,Vero 1,Vero,bot,,
+snap never touched,,,,,,,,,snap,2026-09-08 10:31:12-04:00,SPY,S,VeroTrade: ✅⏐1k-challenge,Vero,chat,7700.0,7687.0
+snap never touched,,,,,,,,,snap,2026-09-08 10:34:06-04:00,SPY,L,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Unraveller,chat,7675.0,7690.25
+snap never touched,,,,,,,,,snap,2026-09-08 10:35:01-04:00,SPY,S,Vero 1,Vero,bot,7700.0,7689.5
+ok,29525.0,29531.666666666668,RATCHET,6.666666666667879,13.333333333335759,25.25,13.25,8.0,snap,2026-09-08 10:44:35-04:00,QQQ,L,ELITE OPTIONS: 🔔︱brandos-trade-alerts,EliteOptions | Brando,chat,,
+ok,7700.0,7675.0,STOP,-25.0,-125.0,4.0,24.25,284.0,snap,2026-09-08 11:13:21-04:00,SPY,L,ZTRADEZ (OPTIONS & STOCKS): ◽︱all-trades-mashup,ZTRADEZ BOT,chat,,
+snap never touched,,,,,,,,,snap,2026-09-08 12:11:00-04:00,QQQ,S,Platinum nitro,,bot,29600.0,29579.5
+ok,29600.0,29580.0,RATCHET,20.0,40.0,38.25,4.5,9.0,snap,2026-09-08 12:21:00-04:00,QQQ,S,Platinum nitro,,bot,,
+ok,29575.0,29588.333333333332,RATCHET,13.33333333333212,26.66666666666424,34.25,13.25,26.0,snap,2026-09-08 12:24:06-04:00,QQQ,L,TradingTheTrend: 🎰lotto-alerts,rks_$$$$,chat,,
+snap never touched,,,,,,,,,snap,2026-09-09 10:37:07-04:00,SPY,S,VeroTrade: ✅⏐vero-trades,Vero,chat,7675.0,7653.25
+ok,7650.0,7650.0,BE,-0.0,-0.0,21.25,0.5,36.0,snap,2026-09-09 11:03:39-04:00,SPY,S,Vero 2,Vero,bot,,
+snap never touched,,,,,,,,,snap,2026-09-10 09:34:29-04:00,SPY,L,Midas,Midas (Admin),bot,7575.0,7597.0
+snap never touched,,,,,,,,,snap,2026-09-10 10:02:00-04:00,SPY,S,Midas,,bot,7600.0,7594.5
+ok,7600.0,7598.75,CLOSE,1.25,6.25,8.5,20.0,341.0,snap,2026-09-10 10:12:00-04:00,SPY,S,Midas,,bot,,
+snap never touched,,,,,,,,,snap,2026-09-10 10:27:37-04:00,SPY,S,Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps,Brett,chat,7625.0,7607.75
+ok,29200.0,29186.666666666668,RATCHET,13.33333333333212,26.66666666666424,30.5,2.0,5.0,snap,2026-09-10 12:10:57-04:00,QQQ,S,VeroTrade: ✅⏐vero-trades,Vero,chat,,
+snap never touched,,,,,,,,,snap,2026-09-10 12:25:22-04:00,SPY,L,OWLS all-alerts,eli,bot,7575.0,7598.0
+ok,7675.0,7659.0,CLOSE,16.0,80.0,17.5,6.0,276.0,snap,2026-09-11 11:21:00-04:00,SPY,S,,,bot,,
+ok,29400.0,29400.0,BE,0.0,0.0,17.75,5.5,6.0,snap,2026-09-11 15:40:00-04:00,QQQ,L,,,bot,,
