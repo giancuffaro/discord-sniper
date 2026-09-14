@@ -100,7 +100,7 @@ class ProtectiveStops(unittest.TestCase):
              'quantity': '1'}])
         api.place_order.assert_not_called()
         api.get_order_detail.return_value.json.return_value = {
-            'orders': [dict(payload, status='FILLED')]}
+            'orders': [dict(payload, status='FILLED', order_type='MARKET')]}
         self.assertEqual(futures.request_exit_through_stop(wb, payload), 'filled')
         api.replace_order.assert_called_once()
 

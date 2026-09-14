@@ -454,7 +454,7 @@ def _stop_api(wb):
     return account, api
 
 
-def protective_stop_status(wb, payload):
+def protective_stop_status(wb, payload, allow_market=False):
     """The exact order's broker status, or a refusal; never guess from a list."""
     account, api = _stop_api(wb)
     cid = payload['client_order_id']
@@ -467,11 +467,13 @@ def protective_stop_status(wb, payload):
         row = rows[0] if isinstance(rows, list) and len(rows) == 1 else data
         if not isinstance(row, dict):
             raise ValueError('detail missing')
+        otype = str(row.get('order_type') or '')
         if (str(row.get('client_order_id')) != cid
                 or str(row.get('symbol')) != payload['symbol']
                 or str(row.get('side')) != payload['side']
-                or str(row.get('order_type')) != 'STOP_LOSS'
-                or str(row.get('stop_price')) != payload['stop_price']
+                or otype not in (('STOP_LOSS', 'MARKET') if allow_market else ('STOP_LOSS',))
+                or (otype == 'STOP_LOSS'
+                    and str(row.get('stop_price')) != payload['stop_price'])
                 or str(row.get('quantity')) != payload['quantity']):
             raise ValueError('detail does not match the protective stop')
         return str(row.get('status') or '').upper()
@@ -525,7 +527,7 @@ def request_exit_through_stop(wb, payload):
     leave the position unresolved and do not issue another order.
     """
     account, api = _stop_api(wb)
-    status = protective_stop_status(wb, payload)
+    status = protective_stop_status(wb, payload, allow_market=True)
     if status == 'FILLED':
         return 'filled'
     if status not in ('PENDING', 'SUBMITTED'):
