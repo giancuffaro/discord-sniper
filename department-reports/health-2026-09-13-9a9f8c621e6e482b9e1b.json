@@ -1,0 +1,36 @@
+{
+  "role": "health",
+  "day": "2026-09-13",
+  "checked_at": 1789356621.071046,
+  "model": "gpt-5.4-mini",
+  "evidence_truncated": false,
+  "result": {
+    "summary": "The supplied health evidence reports an observer queue backlog exceeding 20 messages, but it does not by itself confirm an outage or alert failure. The session is marked as not in session, so the backlog may reflect idle or deferred processing rather than active loss.",
+    "findings": [
+      {
+        "evidence": "{\"in_session\": false, \"issues\": [\"Observer queue backlog exceeds 20 messages\"]}",
+        "recommendation": "Verify the queue depth over time, whether messages are still being processed, and whether any alerts were delayed or dropped before treating this as an incident."
+      }
+    ],
+    "limitations": [
+      "Only one health record is provided; there are no timestamps, trend data, or queue capacity details.",
+      "The evidence does not indicate whether the backlog is transient, persistent, or already cleared.",
+      "No direct alert-delivery or broker-confirmed outcome is included, so impact on trading alerts cannot be confirmed."
+    ],
+    "_provider": "openai",
+    "_model": "gpt-5.4-mini",
+    "_usage": {
+      "input_tokens": 524,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 440,
+      "output_tokens_details": {
+        "reasoning_tokens": 230
+      },
+      "total_tokens": 964
+    }
+  },
+  "fingerprint": "9a9f8c621e6e482b9e1b"
+}
