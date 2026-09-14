@@ -62,3 +62,5 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789408290.951,missed,AMZN,CALLS,260,9/18,,255.0,,MuggZone,OWLS all-alerts
 1789408431.785,armed,QQQ,CALLS,715,9/17,,712.0,,EliteOptions | Brando,Brando Alerts
 1789408431.794,armed,QQQ,CALLS,715,SEPT 17,,712.0,,EliteOptions | Brando,Brando Alerts
+1789409031.897,missed,QQQ,CALLS,715,SEPT 17,,712.0,,EliteOptions | Brando,Brando Alerts
+1789409032.005,missed,QQQ,CALLS,715,9/17,,712.0,,EliteOptions | Brando,Brando Alerts
