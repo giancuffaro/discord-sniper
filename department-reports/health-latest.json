@@ -1,9 +1,7 @@
 {
   "in_session": true,
   "issues": [
-    "Honeydrip daytrades is ON but has no tab in this browser",
-    "Aristotle is ON but has no tab in this browser",
-    "Aristotle small is ON but has no tab in this browser",
+    "Aristotle small tab is open but its reader hasn't beaten in a while",
     "Midas is ON but has no tab in this browser",
     "Option Alerts is ON but has no tab in this browser",
     "TTT Lotto is ON but has no tab in this browser",
@@ -50,13 +48,13 @@
     }
   ],
   "observer": {
-    "queue_remaining": 0,
+    "queue_remaining": 2,
     "worker_started": true,
-    "last_finished": 1789393355.03961,
+    "last_finished": 1789395016.9111192,
     "last_error": "",
     "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789394717.740839
+  "checked_at": 1789395017.7474654
 }
