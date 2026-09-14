@@ -3875,6 +3875,116 @@ def _expiry_from_clues(order):
     return None
 
 
+def _dateless_expiry(sym, order):
+    """The expiry for a call that named a strike but NO date.
+    -> (iso_date, one-line reason, {iso_date: ask})
+
+    G's rule, 9/10: "if it doesn't have a date, it defaults to zero DTE." The
+    old code could only obey that on a hard-coded list of ETFs and indices and
+    assumed every single stock had FRIDAY WEEKLIES ONLY. That was already
+    false: on 9/14 the same bot bought NVDA 210P expiring WEDNESDAY 9/16, and
+    the room's dateless TSLA 357.5c at $1.42 — that day's 0DTE — was bought as
+    the 9/18 weekly at $7.40. Mega-caps list Mon/Wed/Fri now.
+
+    So the listing is ASKED, never assumed: one batched snapshot call names
+    every plausible date at once and only the contracts that really exist come
+    back (webull_options.listed_expiries, cached per contract per day). Today
+    if today is listed; otherwise the nearest date that is. DAILY_EXPIRY_ROOTS
+    survives as the fallback for when that lookup cannot answer at all — and
+    the log says plainly that it fell back.
+    """
+    from webull_options import (weekly_expiry, DAILY_EXPIRY_ROOTS,
+                                dateless_candidates)
+    today = _date_o.date.today().isoformat()
+    cands = dateless_candidates()
+    asks, why_failed = {}, ""
+    _q = WB or WB_LIVE
+    try:
+        if _q is None:
+            raise RuntimeError("no Webull connection")
+        asks = _q.listed_expiries(sym, order.get("strike"),
+                                  order.get("side") or "CALL", cands) or {}
+    except Exception as e:                              # noqa: BLE001
+        asks, why_failed = {}, str(e)[:80]
+    if asks:
+        listed = [d for d in cands if d in asks]
+        if today in asks:
+            return (today,
+                    "today (%s) IS a listed expiration for %s, so 0DTE it is"
+                    % (today, sym), asks)
+        if listed:
+            return (listed[0],
+                    "today is not a listed expiration for %s — nearest listed "
+                    "is %s" % (sym, listed[0]), asks)
+    if sym in DAILY_EXPIRY_ROOTS:
+        return (today,
+                "listing lookup failed (%s), fell back to the daily-expiry "
+                "table: %s has same-day contracts, so TODAY (%s)"
+                % (why_failed or "nothing listed came back", sym, today), {})
+    fri = weekly_expiry()
+    return (fri,
+            "listing lookup failed (%s), fell back to Friday (%s)"
+            % (why_failed or "nothing listed came back", fri), {})
+
+
+def _price_sanity(sym, order, asks):
+    """Their posted price is the tell that we resolved the WRONG contract.
+    -> "" when it's fine, or the refusal line when it isn't.
+
+    9/14: the room said TSLA $357.5c at $1.42 and the bot bought a contract
+    asking $7.40 — five times the price — without once noticing. A caller's
+    premium and the contract's ask are the same number on the same trade; when
+    they are miles apart, the date is wrong, not the caller.
+
+    Only ever runs on an expiry the BRIDGE inferred, and only when the caller
+    actually posted a price — no price, no opinion. When another listed expiry
+    does match their number, that one is taken; when none does, nothing is
+    bought. Multipliers live in settings.json (execution.price_sanity).
+    """
+    try:
+        theirs = float(order.get("limit") or 0)
+    except (TypeError, ValueError):
+        theirs = 0.0
+    if theirs <= 0:
+        return ""                      # no caller price: this gate is inert
+    _ps = EXEC.get("price_sanity") or {}
+    try:
+        hi = float(_ps.get("max_ratio", 2.5))
+        lo = float(_ps.get("min_ratio", 0.4))
+    except (TypeError, ValueError):
+        hi, lo = 2.5, 0.4
+    _cp = str(order.get("side") or "")[:1].upper()
+    exp = order.get("expiry")
+    ask = (asks or {}).get(exp)
+    try:
+        ask = float(ask) if ask else None
+    except (TypeError, ValueError):
+        ask = None
+    if ask is None or ask <= 0:
+        return ""                      # nothing real to compare against
+
+    def _ok(a):
+        try:
+            return a is not None and lo * theirs <= float(a) <= hi * theirs
+        except (TypeError, ValueError):
+            return False
+
+    if _ok(ask):
+        return ""
+    for d in sorted(asks):
+        if d == exp or not _ok(asks[d]):
+            continue
+        note("EXPIRY   %s %s%s %s asks %.2f against the caller's %.2f — %s "
+             "asks %.2f, which is the trade they posted. Switching."
+             % (sym, order.get("strike"), _cp, exp, ask, theirs, d,
+                float(asks[d])))
+        order["expiry"] = d
+        return ""
+    return ("REFUSED OPEN %s — %s%s %s asks %.2f but the caller said %.2f; no "
+            "listed expiry matches, not buying the wrong contract"
+            % (sym, order.get("strike"), _cp, exp, ask, theirs))
+
+
 _POS = {"t": 0.0, "v": []}
 # Circuit breaker for the Webull FUTURES position read — see the comment at
 # its call site. Three consecutive refusals and it stands down, doubling to
@@ -5618,45 +5728,41 @@ class Handler(BaseHTTPRequestHandler):
                 note("no explicit date, but the call said %s -> %s"
                      % (_why, order["expiry"]))
 
-        # NOTHING IN THE MESSAGE — fall back on what the LISTING allows.
+        # NOTHING IN THE MESSAGE — so ASK THE LISTING, don't assume it.
         #
-        # Split by ticker, because the two cases are not the same question
-        # (G, 9/7). A single stock has FRIDAY WEEKLIES ONLY: a midweek 0DTE
-        # does not exist, so "this Friday" is not a guess, it is the only
-        # contract that can be bought. 29 of the 35 identified dateless
-        # alerts were single stocks.
+        # The rule is one line (G, 9/10): "if it doesn't have a date, it
+        # defaults to zero DTE." What the old code did instead was split by
+        # ticker — same-day for a short hard-coded list of ETFs and indices,
+        # "a single stock has FRIDAY WEEKLIES ONLY" for everything else — and
+        # that second half was simply stale. 9/14 proved it twice inside two
+        # minutes: the dateless TSLA 357.5c the room priced at $1.42 (that
+        # day's 0DTE) was bought as the 9/18 weekly at $7.40, and the very
+        # next entry was an NVDA 210P expiring WEDNESDAY 9/16 — a midweek
+        # expiry on a single stock, which the assumption said cannot exist.
         #
-        # SPY / QQQ / IWM DO have same-day expiries, so there the old
-        # blanket Friday WAS picking a duration out of the air on exactly
-        # the tickers where 0DTE vs Friday is a completely different trade.
-        # His call: those default to 0DTE, which is how those rooms trade.
-        #
-        # 9/10, G restated it flatly: "if it doesn't have a date, it defaults
-        # to zero DTE." That is what happens here for every root that HAS a
-        # same-day listing — the list is DAILY_EXPIRY_ROOTS, no longer three
-        # hard-coded ETFs, so SPX/XSP/NDX/RUT obey the rule the day an
-        # index-capable broker is connected. On a single stock there is no
-        # such contract to buy: Friday is not a softer default, it is the only
-        # listing that exists that week, and 29 of the 35 dateless alerts in
-        # the journal were single stocks.
+        # So nothing is assumed now. One batched snapshot call asks Webull
+        # which of the plausible dates it actually lists for this exact
+        # contract; today wins if today is listed, otherwise the nearest date
+        # that is. The static table is kept for one job only — the answer when
+        # that lookup cannot answer — and the log says when it was used.
         if (order.get("action") in ("OPEN", "ADD") and order.get("strike")
                 and not order.get("expiry")
                 and EXEC.get("assume_weekly_expiry", True)):
             try:
-                from webull_options import weekly_expiry, DAILY_EXPIRY_ROOTS
-                if sym in DAILY_EXPIRY_ROOTS:
-                    order["expiry"] = _date_o.date.today().isoformat()
-                    note("no date and no clue on %s — using TODAY (%s). "
-                         "These are the only tickers where a midweek 0DTE "
-                         "exists, and it is what the rooms mean."
-                         % (sym, order["expiry"]))
-                else:
-                    order["expiry"] = weekly_expiry()
-                    note("no date in that call — %s has FRIDAY WEEKLIES ONLY, "
-                         "so this Friday (%s) is the only listing there is, "
-                         "not a guess." % (sym, order["expiry"]))
-            except Exception:
-                pass
+                _exp, _why, _asks = _dateless_expiry(sym, order)
+            except Exception:                           # noqa: BLE001
+                _exp = _why = None
+                _asks = {}
+            if _exp:
+                order["expiry"] = _exp
+                note("EXPIRY   %s %s%s had no date — using %s: %s"
+                     % (sym, order.get("strike"),
+                        str(order.get("side") or "")[:1].upper(), _exp, _why))
+                # And the caller's own premium is the check on that answer.
+                _bad = _price_sanity(sym, order, _asks)
+                if _bad:
+                    note(_bad)
+                    return self._reply(403, _bad)
 
         # IS THAT A TICKER, OR A WORD FROM THE MESSAGE? (9/8)
         # The reader treats a capitalised word in front of a strike as a
@@ -6420,6 +6526,19 @@ def main():
                 if not evs:
                     continue
                 time.sleep(6)                 # let the fill/cancel settle
+                # A NAKED HOLD IS FIXED HERE, NOT JUST REPORTED (9/14 TSLA).
+                # POSTCHECK is read-only about everything else, and check 3
+                # below still only reports — but a live position holding with
+                # no resting stop is the one finding that cannot wait for a
+                # human to read a log line. The book re-arms it through the
+                # same _arm_stop every entry uses (price off the actual fill,
+                # exchange tick, clamped under the bid), throttled to one
+                # attempt a minute per position. The snapshot is re-read just
+                # below, so check 3 reports the state AFTER this ran.
+                try:
+                    BOOK.rearm_missing_stops()
+                except Exception:                       # noqa: BLE001
+                    pass
                 # POST-MORTEM ON EVERY EXIT (9/9, G: "analyze every single
                 # trade after exiting"). Each close/stop schedules
                 # postmortem.py for that symbol 10.5 min out — after the
