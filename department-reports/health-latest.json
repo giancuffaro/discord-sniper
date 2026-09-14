@@ -1,8 +1,6 @@
 {
   "in_session": false,
-  "issues": [
-    "Observer queue backlog exceeds 20 messages"
-  ],
+  "issues": [],
   "lanes": [
     {
       "lane": "discord",
@@ -16,13 +14,13 @@
     }
   ],
   "observer": {
-    "queue_remaining": 42,
+    "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789356613.2207587,
+    "last_finished": 1789356913.30228,
     "last_error": "",
     "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789356615.9775374
+  "checked_at": 1789356915.9853225
 }
