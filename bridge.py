@@ -5035,7 +5035,18 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"off": True})
         allowed = CFG.get("allowed_symbols", []) or []
         read = ai_reader.read_signal(text, allowed, CFG)
-        ok, why, cleaned = ai_reader.validate(read, text, allowed)
+        # A MODEL FIELD THAT ISN'T A NUMBER IS A REFUSAL, NEVER A 500 (9/14,
+        # found replaying the 12,162 retained OpenAI reads). OpenAI writes ""
+        # where Anthropic wrote null, and sometimes a RANGE — "1.26-1.30",
+        # "570-580", "Premium". validate() floats those and RAISES: 249 of
+        # 12,162. context_reader.assess() has always caught this; these two
+        # live lanes never did, and an unhandled raise here answers the
+        # extension with an HTTP 500 that reads to it like a dead bridge.
+        # A field the model got wrong is no call, exactly like a bad regex.
+        try:
+            ok, why, cleaned = ai_reader.validate(read, text, allowed)
+        except (TypeError, ValueError, OverflowError) as _ve:
+            ok, why, cleaned = False, "invalid model field: %s" % str(_ve)[:80], None
         _by = str((read or {}).get("_provider") or "?") if isinstance(read, dict) else "?"
         _mdl = str((read or {}).get("_model") or "") if isinstance(read, dict) else ""
         if not ok:
@@ -5122,7 +5133,18 @@ class Handler(BaseHTTPRequestHandler):
         # screenshot read would always fail the "must appear in the text" bar.
         seen = str(read.get("_seen_text") or "")
         check_text = (caption + "\n" + seen).strip()
-        ok, why, cleaned = ai_reader.validate(read, check_text, allowed)
+        # A MODEL FIELD THAT ISN'T A NUMBER IS A REFUSAL, NEVER A 500 (9/14,
+        # found replaying the 12,162 retained OpenAI reads). OpenAI writes ""
+        # where Anthropic wrote null, and sometimes a RANGE — "1.26-1.30",
+        # "570-580", "Premium". validate() floats those and RAISES: 249 of
+        # 12,162. context_reader.assess() has always caught this; these two
+        # live lanes never did, and an unhandled raise here answers the
+        # extension with an HTTP 500 that reads to it like a dead bridge.
+        # A field the model got wrong is no call, exactly like a bad regex.
+        try:
+            ok, why, cleaned = ai_reader.validate(read, check_text, allowed)
+        except (TypeError, ValueError, OverflowError) as _ve:
+            ok, why, cleaned = False, "invalid model field: %s" % str(_ve)[:80], None
         if not ok:
             note("IMG READ no call — %s" % (why or "")[:80])
             tape_read("vision", "screenshot", "", seen or caption or "(image)",
