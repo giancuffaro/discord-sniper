@@ -444,6 +444,46 @@ def protective_stop_order(contract, direction, qty, fill, stop, client_order_id)
             'time_in_force': 'GTC', 'entrust_type': 'QTY'}
 
 
+def submit_protective_stop(wb, payload):
+    """Submit one exact Webull stop and confirm its identity from order detail.
+
+    Never probe alternate submit methods after an ambiguous response: the
+    first request may already have created a working stop. The client ID is
+    caller-supplied and must be durably reserved before invoking this method.
+    No live path calls it until fill/exit reconciliation is implemented.
+    """
+    account = getattr(wb, 'futures_account_id', None)
+    api = getattr(getattr(wb, 'trade', None), 'order_v3', None)
+    if not account or api is None or not all(hasattr(api, n) for n in
+                                               ('place_order', 'get_order_detail')):
+        raise FuturesRefused('exact Webull futures stop API unavailable')
+    cid = payload['client_order_id']
+    try:
+        response = api.place_order(account, [payload])
+    except Exception as exc:
+        raise FuturesRefused('protective stop submission uncertain; check exact client ID at broker') from exc
+    # Even a 200 acceptance is not proof of a working protective stop.
+    try:
+        detail = api.get_order_detail(account, cid)
+        if getattr(detail, 'status_code', None) != 200:
+            raise ValueError('detail unavailable')
+        data = detail.json()
+        rows = data.get('orders') if isinstance(data, dict) else None
+        row = rows[0] if isinstance(rows, list) and len(rows) == 1 else data
+        if not isinstance(row, dict):
+            raise ValueError('detail missing')
+        if (str(row.get('client_order_id')) != cid
+                or str(row.get('symbol')) != payload['symbol']
+                or str(row.get('side')) != payload['side']
+                or str(row.get('order_type')) != 'STOP_LOSS'
+                or str(row.get('quantity')) != payload['quantity']
+                or str(row.get('status')) not in ('PENDING', 'SUBMITTED')):
+            raise ValueError('detail does not prove the intended working stop')
+        return cid
+    except Exception as exc:
+        raise FuturesRefused('protective stop unverified; inspect exact client ID at broker') from exc
+
+
 def execute(wb, book, order, key, note):
     """The whole live futures path: entry, trim, or close. Returns (ok, msg).
     Sizing is pinned to one contract on purpose — see the file docstring."""

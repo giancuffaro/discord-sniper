@@ -43,6 +43,34 @@ class ProtectiveStops(unittest.TestCase):
         wb.assert_not_called()
         self.assertFalse(futures.protective_entries_ready())
 
+    def test_broker_stop_requires_exact_working_detail(self):
+        payload = futures.protective_stop_order('MESZ6', 'LONG', 1, 7000,
+                                                6975, 'sniperstop123')
+        wb = Mock(futures_account_id='fake-futures-account')
+        api = wb.trade.order_v3
+        api.place_order.return_value = Mock(status_code=200)
+        api.get_order_detail.return_value = Mock(status_code=200)
+        api.get_order_detail.return_value.json.return_value = {
+            'orders': [dict(payload, status='SUBMITTED')]}
+        self.assertEqual(futures.submit_protective_stop(wb, payload),
+                         'sniperstop123')
+        api.place_order.assert_called_once_with('fake-futures-account', [payload])
+        api.get_order_detail.assert_called_once_with('fake-futures-account',
+                                                      'sniperstop123')
+
+    def test_wrong_contract_or_unknown_response_never_counts_as_protection(self):
+        payload = futures.protective_stop_order('MNQZ6', 'SHORT', 1, 25000,
+                                                25025, 'sniperstop456')
+        wb = Mock(futures_account_id='fake-futures-account')
+        api = wb.trade.order_v3
+        api.place_order.return_value = Mock(status_code=200)
+        api.get_order_detail.return_value = Mock(status_code=200)
+        api.get_order_detail.return_value.json.return_value = {
+            'orders': [dict(payload, symbol='MESZ6', status='SUBMITTED')]}
+        with self.assertRaisesRegex(futures.FuturesRefused, 'unverified'):
+            futures.submit_protective_stop(wb, payload)
+        api.place_order.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()
