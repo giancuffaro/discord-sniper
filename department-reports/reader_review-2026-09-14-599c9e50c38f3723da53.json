@@ -1,0 +1,45 @@
+{
+  "role": "reader_review",
+  "day": "2026-09-14",
+  "checked_at": 1789397555.3885486,
+  "model": "gpt-6-astra",
+  "evidence_truncated": false,
+  "result": {
+    "summary": "The reader proposes a CRWD trim where the parser returned no action. The immediately preceding CRWD update supports that interpretation, but contract details and supporting-source eligibility require verification. This is not a confirmed parser bug.",
+    "findings": [
+      {
+        "evidence": "The current message says \"103% take profits and feel free to leave runners @everyone\". The immediately preceding same-author, same-channel message says \"94% CRWD @here\". The parser returned action=null and fire=false; the reader returned TRIM for CRWD.",
+        "recommendation": "Review this as a candidate missed contextual trim. Verify that the current message continues the CRWD discussion before assigning a ticker. Preserve the distinction between taking partial profits and closing the entire position; no trim quantity is supplied."
+      },
+      {
+        "evidence": "The reader inferred CALL, strike 240 and expiry 9/18 from \"Load CRWD 240 C 9/18 lottos @here\", citing that historical message. Validation lists only the preceding \"94% CRWD @here\" message as eligible and flags \"expiry_not_literal\" and \"unsupported_context_id\". Its normalized result removes the strike but retains expiry 9/18 and CALLS despite ok=true.",
+        "recommendation": "Verify historical-context eligibility and contract continuity before retaining the inferred contract fields. Review whether ok=true is intended to coexist with these flags and partially retained unsupported fields. If the contract cannot be verified from permitted sources, leave those fields unresolved."
+      },
+      {
+        "evidence": "The reader reports confidence 1.0 although the current message omits the ticker and contract, and the broader history includes GOOG, RBLX and WMT. Its supporting_ids omit the immediately preceding CRWD update that provides the strongest local ticker linkage.",
+        "recommendation": "Review confidence calibration and evidence attribution. If contextual linkage is accepted, cite the eligible CRWD update and separately identify any verified source used to establish contract details."
+      }
+    ],
+    "limitations": [
+      "The supplied evidence is marked untruncated, but it does not establish complete position history or the application's context-eligibility rules.",
+      "The stated 103% is a caller-reported percentage, not an exit premium or broker-confirmed return. No fills, exact exit, remaining quantity or realized-profit calculations are provided.",
+      "The historical bare value \"2.38\" has no explicit units or instrument linkage in that message. Its premium units remain unresolved; no conversion or inferred exit price is warranted.",
+      "No execution result is supplied. Parser fire=false and null fields do not establish a zero position or a service outage."
+    ],
+    "_provider": "openai",
+    "_model": "gpt-6-astra",
+    "_usage": {
+      "input_tokens": 4165,
+      "input_tokens_details": {
+        "cache_write_tokens": 4162,
+        "cached_tokens": 0
+      },
+      "output_tokens": 563,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 4728
+    }
+  },
+  "fingerprint": "599c9e50c38f3723da53"
+}
