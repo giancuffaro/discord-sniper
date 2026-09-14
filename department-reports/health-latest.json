@@ -1,11 +1,6 @@
 {
   "in_session": true,
-  "issues": [
-    "Whop Day Trades tab is open but its reader hasn't beaten in a while",
-    "Whop Futures tab is open but its reader hasn't beaten in a while",
-    "Whop High Risk tab is open but its reader hasn't beaten in a while",
-    "Whop 2K Challenge tab is open but its reader hasn't beaten in a while"
-  ],
+  "issues": [],
   "lanes": [
     {
       "lane": "discord",
@@ -21,11 +16,11 @@
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789415746.0025558,
+    "last_finished": 1789416022.9869337,
     "last_error": "",
-    "last_provider": "openai",
+    "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789415752.4748714
+  "checked_at": 1789416052.481263
 }
