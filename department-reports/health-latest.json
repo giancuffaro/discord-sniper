@@ -21,11 +21,11 @@
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789414731.097703,
+    "last_finished": 1789415092.4467497,
     "last_error": "",
     "last_provider": "openai",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789414852.4582791
+  "checked_at": 1789415152.464603
 }
