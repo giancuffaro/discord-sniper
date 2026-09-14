@@ -12,6 +12,96 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-14 (both AI readers off the billing-blocked key — and the crash the replay found)
+
+G: "fix what you can for now." So the gap left open earlier today is closed:
+the ONE-MESSAGE text reader (`AI READ` -> ai_reader.read_signal), the lane that
+proposes live entries, is off the hard-coded Anthropic call and onto the same
+provider selection as the image lane and the observer.
+
+WHAT IT COST BEFORE. bridge.log holds 242 `AI READ  no call - ai: HTTP 400`
+lines — every one of them the billing-blocked Anthropic key, every one a
+message the regex parser had already given up on and nobody read. The saved-key
+probe said "billing" at boot and the lane still reported itself available.
+
+WHAT CHANGED. observer_providers grew `read_signal()` beside `read_image()`;
+both live lanes now run through `_run()` — the same keys (settings
+`ai_provider_keys`), the same cooldown map, the same 900s park on an
+HTTP_400/401/402/403 — under ONE order setting,
+`context_observer.reader_provider_order`, default OpenAI then Gemini.
+(That setting REPLACES the `vision_provider_order` introduced a few hours
+earlier: one name for one decision, and it was never written to settings.json,
+so there is nothing to migrate.) `vision_available()` became
+`providers_available()` for the same reason. Anthropic stays LAST and is
+skipped outright while billing-blocked. The bridge gate moved from
+`ai_reader.available()` (Anthropic key only) to `signal_available()`, and the
+log names the reader:
+
+    AI READ  [via openai gpt-5.4]  'Entry - Contract: TSLA $357.5p - Pri'  ->  BTO TSLA $357.5P @ 1.42
+    AI READ  no call — ai: openai HTTP_429; gemini timeout
+
+Nothing about what a read may DO changed. The answer is still validated field
+by field against the literal message and run back through the parser and every
+guard; AI confidence authorizes nothing.
+
+THE MEASURED BEFORE/AFTER, WITH NO API SPEND. AGENTS.md wants a measured replay
+for a lane that can create orders, so the 12,162 retained OpenAI reads from the
+9/12 trial (`local-reader-measure/openai-trial-2026-09-12/final-release-3.8.14/`)
+were replayed through the NEW read_signal() plumbing with the provider call
+mocked to hand back each recorded reply, then through the live validate():
+
+    retained OpenAI reads replayed : 12162
+    reached read_signal unchanged  : 12162   (schema matches: all nine fields —
+                                              action/instrument/ticker/side/
+                                              strike/expiry/price/qty/confidence
+                                              — present on 100% of rows)
+    validate ACCEPTED (a proposal) :  1960
+    validate REFUSED (no call)     : 10202
+
+The refusals are the guards working on real OpenAI output: 9,506 "no actionable
+call", 95 hallucinated SPY, 55 entry with no ticker, 41 AAPL, 34 TSLA. Note the
+trial ran gpt-4.1; production is gpt-5.4 under the same JSON-object response
+format and the same requested schema.
+
+AND THE REPLAY FOUND A LIVE DEFECT — worth the whole exercise. 249 of the
+12,162 reads made `validate()` RAISE, not refuse:
+
+    199  ValueError: could not convert string to float: ''
+     10  ... 'Premium'
+      2  ... '5.00-5.05'      (also '1.26-1.30', '570-580', '1.28 to 2.05')
+
+OpenAI writes `""` where Anthropic wrote `null`, and occasionally answers a
+RANGE. `context_reader.assess()` has always caught this; the two LIVE bridge
+lanes had no guard at all, so one of those reads would have come back to the
+extension as an unhandled HTTP 500 — which the extension reads as a dead bridge
+and RETRIES. Fixed with `ai_reader.judge()`: validate() that can never raise,
+one copy, now called by `_ai_read`, `_ai_read_image` AND `context_reader.assess`
+(whose own duplicate try/except is gone). A bad model field is "invalid model
+field: ..." — no call, never an order. Re-replayed: 0 unhandled, the 249 become
+clean refusals, the 1,960 accepted proposals are unchanged.
+
+DELIBERATELY NOT DONE: making validate() treat `""` as absent (the same as
+null) would turn ~199 of those refusals into accepted proposals. That is a
+parser-behaviour change with live impact — MORE reads reaching the order path —
+so it stays G's call, not a side effect of a plumbing fix.
+
+TESTS: test_image_reader.py is now 19 tests covering BOTH lanes (it keeps its
+image-lane name — this sandbox cannot delete files, and one file with an
+imperfect name beats two half-files). New: OpenAI picked while Anthropic is
+billing-blocked, Gemini fallback, a parse failure yielding no call, a
+hallucinated ticker still refused, a clean read still having to clear
+validate(), both-down spending nothing, validate() genuinely raising on the
+three recorded bad-field shapes, and judge() turning every one into no call.
+Every provider call mocked; zero API spend. All test_*.py run directly — all
+pass except test_stream_bus.py (missing `paho`, pre-existing). All five
+test_*.js pass. py_compile on ai_reader.py, observer_providers.py,
+context_reader.py, bridge.py and the test.
+
+DEPLOY: unchanged from this morning's entry — the bridge logged "CODE new build
+ready — waiting for a safe window (or the close, whichever comes first)" and is
+still on the 10:38:34 build with a pullback hunt armed. It restarts onto all of
+today's code at the first safe window or the close.
+
 ## 2026-09-14 (the EDITED alert that armed two pullbacks, and the blind eyes)
 
 BUG 1 — ONE MESSAGE, TWO ARMS, ONE WRONG BUY. 10:21, room "Platinum nitro",
