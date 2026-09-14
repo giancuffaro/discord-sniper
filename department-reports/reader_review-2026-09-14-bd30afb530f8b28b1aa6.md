@@ -1,0 +1,14 @@
+# Reader Review — 2026-09-14
+
+The reader plausibly linked “50% @here” to the CRWD discussion, but its contract attribution used ineligible context and failed validation. The TRIM interpretation also needs review: the current message may be a performance update rather than a new trim instruction. These are verification proposals, not confirmed parser bugs.
+
+## Findings
+- The current message contains only “50% @here.” Both parser and reader label it TRIM, although it has no explicit sale instruction. Earlier messages distinguish percentage updates such as “38%” and “46%” from explicit instructions such as “40% again trim down to your last runners @here.” Verify the author's retained source examples and action-label policy before treating a standalone percentage as TRIM. Consider distinguishing performance updates from actionable trim instructions; do not interpret 50% as a quantity sold or a verified return.
+- The reader cites the CRWD entry message ending 1549056821866659954 and the later trim message ending 1549058415802712096. Only the latter is in eligible_prior_ids. The reader supplies CRWD, CALL, strike 240 and expiry 9/18, while validation reports unsupported_context_id and expiry_not_literal and returns ok=false. Verify the permitted context window and provenance rules. If broader contextual resolution is intended, require an authorized, traceable link to the original contract message. Otherwise leave contract fields unresolved rather than using ineligible evidence. Do not treat the rejected reader result as validated.
+- The broader supplied history explicitly names “Load CRWD 240 C 9/18 lottos” and later “30% CRWD down to runners,” supporting a possible CRWD continuation. However, GOOG is also discussed, and the current message is not a reply and names no instrument. The reader reports confidence 0.9 despite the contextual dependency. Review confidence calibration and separate confidence in instrument linkage from confidence in action intent. Verify whether eligible messages carry validated position context; conversational proximity alone should not establish an executable contract attribution.
+
+## Limitations
+- Evidence is marked untruncated, but no complete position ledger, context-eligibility policy or action-label specification is supplied.
+- The standalone historical value “2.38” lacks explicit premium units and a confirmed entry linkage. Preserve it as raw text; no conversion or exit-price calculation is justified.
+- No broker fills, contemporaneous quotes or supplied return calculations confirm the percentage claims or exact trade outcomes.
+- Null parser contract fields and null reader price and quantity represent missing data, not zero. The parser's fire=false does not establish whether any downstream execution occurred.
