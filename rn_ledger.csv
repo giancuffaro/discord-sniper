@@ -57,3 +57,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789401771.692,submitted,TSLA,PUTS,340,9/25,,364.0,,MuggZone,Mugzone Options
 1789401773.697,filled,TSLA,PUTS,340,9/25,,364.0,2.38,MuggZone,Mugzone Options
 1789406281.814,armed,SPY,PUTS,762,0DTE,,763.0,,Midas (Admin),Midas
+1789406882.001,missed,SPY,PUTS,762,0DTE,,763.0,,Midas (Admin),Midas
