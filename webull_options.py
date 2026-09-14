@@ -124,6 +124,37 @@ def weekly_expiry(today=None):
     return friday.isoformat()
 
 
+def dateless_candidates(today=None):
+    """Every expiry a call with NO date could plausibly mean, SOONEST FIRST.
+
+    Today first, because that is the rule (G, 9/10: "if it doesn't have a date,
+    it defaults to zero DTE"). Then the rest of this week's trading days, then
+    this week's Friday, then next week's Friday for a call that means the
+    weekly. Which of these actually EXIST is a question only the broker can
+    answer — see WebullOptions.listed_expiries(). This list is the QUESTION,
+    not the answer.
+    """
+    today = today or dt.date.today()
+    out = []
+    d = today
+    for _ in range(7):
+        if _is_trading_day(d):
+            out.append(d.isoformat())
+        if d.weekday() == 4:               # stop at this week's Friday
+            break
+        d += dt.timedelta(days=1)
+    fri = weekly_expiry(today)
+    if fri not in out:
+        out.append(fri)
+    try:
+        nxt = (dt.date.fromisoformat(fri) + dt.timedelta(days=7)).isoformat()
+        if nxt not in out:
+            out.append(nxt)
+    except ValueError:
+        pass
+    return out
+
+
 _MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
            "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
 
@@ -1070,6 +1101,54 @@ class WebullOptions:
             out[sym] = (ask, bid, row)
         return out
 
+
+    def listed_expiries(self, symbol, strike, option_type, candidates):
+        """Which of these dates Webull REALLY lists for this contract, and what
+        each one is asking. -> {iso_date: ask}, only the dates that answered.
+
+        Webull publishes no expiration list through this SDK, so the listing is
+        read the only way it can be: ask the option snapshot for the whole
+        candidate set at once. A contract that does not exist returns no row —
+        that absence IS the listing answer, and the rows that do come back hand
+        us the ask for free, which is what catches a 5x price mismatch against
+        what the caller posted.
+
+        ONE batched call (the endpoint takes 20 symbols; there are never more
+        than about six candidates), cached per contract per DAY, so a dateless
+        alert costs one request no matter how many times it is re-read. An
+        empty answer is never cached: a throttle at 9:31 must not blind the
+        rest of the session.
+        """
+        key = (str(symbol).upper(), str(strike), str(option_type).upper()[:1],
+               dt.date.today().isoformat())
+        cache = getattr(self, "_listed_cache", None)
+        if cache is None:
+            cache = self._listed_cache = {}
+        hit = cache.get(key)
+        if hit is not None:
+            return dict(hit)
+        occs = {}
+        for iso in (candidates or []):
+            try:
+                occs[occ_symbol(symbol, iso, option_type, strike)] = iso
+            except Exception:                           # noqa: BLE001
+                continue                # a date occ.py can't build isn't a date
+        if not occs:
+            return {}
+        rows = self.ask_bid_many(list(occs)) or {}
+        out = {}
+        for occ, iso in occs.items():
+            got = rows.get(occ)
+            if not got:
+                continue
+            ask = got[0]
+            try:
+                out[iso] = float(ask) if ask else None
+            except (TypeError, ValueError):
+                out[iso] = None
+        if out:
+            cache[key] = dict(out)
+        return out
 
     def _stock_fns(self):
         if getattr(self, "_sfns", None) is not None:
