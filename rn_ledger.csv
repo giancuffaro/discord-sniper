@@ -68,3 +68,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789409104.883,submitted,META,CALLS,700,9/18,,667.0,,👑KingBeeAri🐝,Aristotle
 1789409106.897,filled,META,CALLS,700,9/18,,667.0,2.61,👑KingBeeAri🐝,Aristotle
 1789409656.773,armed,QQQ,CALLS,713,2026-09-14,,712.0,,Skyy,shabs
+1789410025.801,armed,TSLA,PUTS,360,0DTE,,362.0,,MuggZone,Mugzone Options
