@@ -24,6 +24,7 @@ The call is a plain HTTPS POST (urllib) so there's no extra package to install.
 import base64
 import json
 import re
+import time
 import urllib.request
 import urllib.error
 
@@ -137,6 +138,46 @@ def available(cfg):
 
 def _cfg(cfg):
     return ((cfg or {}).get("execution", {}) or {}).get("ai_reader", {}) or {}
+
+
+# ANTHROPIC IS THE LAST RESORT NOW (9/14). The account has been billing-blocked
+# since 9/13, and the image lane was the one place still calling it FIRST: every
+# screenshot read on 9/14 came back "HTTP 400: Your credit balance is too low",
+# including PT's 10:22 post. A refusal that names credit/billing parks the
+# provider for six hours so the image lane stops paying latency for a call that
+# cannot succeed; settings execution.ai_reader.billing_blocked = true parks it
+# outright.
+BILLING_WORDS = ("credit balance", "insufficient credit", "billing",
+                 "purchase credits", "insufficient_quota")
+_ANTHROPIC_BLOCK_UNTIL = [0.0]
+ANTHROPIC_BLOCK_SECONDS = 6 * 3600
+
+
+def note_anthropic_error(err):
+    """Remember a refusal that can only be fixed by paying the bill."""
+    low = str(err or "").lower()
+    if any(w in low for w in BILLING_WORDS):
+        _ANTHROPIC_BLOCK_UNTIL[0] = time.time() + ANTHROPIC_BLOCK_SECONDS
+        return True
+    return False
+
+
+def anthropic_blocked(cfg):
+    if _cfg(cfg).get("billing_blocked"):
+        return True
+    return time.time() < _ANTHROPIC_BLOCK_UNTIL[0]
+
+
+def image_available(cfg):
+    """Can a screenshot be read at all? Any vision provider key will do — the
+    Anthropic key alone is no longer the answer to that question."""
+    try:
+        import observer_providers
+        if observer_providers.vision_available(cfg):
+            return True
+    except Exception:                                       # noqa: BLE001
+        pass
+    return bool(_cfg(cfg).get("api_key")) and not anthropic_blocked(cfg)
 
 
 def _extract_json(s):
@@ -302,32 +343,36 @@ def _fetch_image_b64(url, timeout=8, cap_bytes=5 * 1024 * 1024):
         return None
 
 
-def read_image(images, caption, allowed_symbols, cfg, timeout=15):
-    """Ask Claude to read a screenshot into the same fields read_signal returns,
-    PLUS a seen_text transcription used for the anti-hallucination check. Returns
-    a dict (with _seen_text) or None. Never raises for an ordinary failure."""
+def _image_blocks(images, timeout):
+    """Fetch at most three images the browser already displayed and return
+    [(media_type, base64), ...]."""
+    blocks = []
+    for u in list(images)[:3]:
+        got = _fetch_image_b64(u, timeout=min(timeout, 8))
+        if got:
+            blocks.append(got)
+    return blocks
+
+
+def _attempt_error(attempts):
+    """'openai HTTP_400; gemini timeout' — which provider failed and how, so
+    the log line is the diagnosis instead of a bare 'no read'."""
+    bits = []
+    for a in attempts or []:
+        if a.get("error"):
+            bits.append("%s %s" % (a.get("provider"), a.get("error")))
+    return "; ".join(bits)
+
+
+def _read_image_anthropic(blocks, prompt, cfg, timeout):
+    """The last-resort lane. Same prompt, same JSON contract."""
     a = _cfg(cfg)
     key = a.get("api_key")
-    if not key or not images:
-        return None
-    # A vision-capable model. The configured model is used as-is (Haiku 4.5 and
-    # the Sonnet/Opus lines all read images); a dedicated vision_model override
-    # wins when set.
     model = a.get("vision_model") or a.get("model") or DEFAULT_MODEL
-    blocks = []
-    for u in list(images)[:3]:            # cap: at most 3 images per post
-        got = _fetch_image_b64(u, timeout=min(timeout, 8))
-        if not got:
-            continue
-        mt, b64 = got
-        blocks.append({"type": "image", "source": {
-            "type": "base64", "media_type": mt, "data": b64}})
-    if not blocks:
-        return {"_error": "no image could be fetched"}
-    allowed = ", ".join(sorted(set(allowed_symbols or [])))[:400]
-    prompt = VISION_INSTRUCTION.format(allowed=allowed or "(none listed)",
-                                       caption=(caption or "")[:400])
-    content = blocks + [{"type": "text", "text": prompt}]
+    content = [{"type": "image", "source": {"type": "base64",
+                                            "media_type": mt, "data": b64}}
+               for mt, b64 in blocks]
+    content.append({"type": "text", "text": prompt})
     body = json.dumps({
         "model": model,
         "max_tokens": 400,
@@ -346,7 +391,7 @@ def read_image(images, caption, allowed_symbols, cfg, timeout=15):
         # log had failed as a bare "HTTP 400" — the API's own explanation was
         # read and discarded, so nobody could tell whether it was image size,
         # a media type, or a bad request. The message is short and it is the
-        # whole diagnosis; carry it.
+        # whole diagnosis; carry it, and let it park a billing failure.
         why = ""
         try:
             body_ = e.read().decode("utf-8", "replace")
@@ -354,9 +399,10 @@ def read_image(images, caption, allowed_symbols, cfg, timeout=15):
             why = str(((j.get("error") or {}).get("message")) or body_)[:160]
         except Exception:                                   # noqa: BLE001
             pass
-        return {"_error": "HTTP %s%s" % (e.code, (": " + why) if why else "")}
+        note_anthropic_error(why)
+        return {"_error": "anthropic HTTP %s%s" % (e.code, (": " + why) if why else "")}
     except Exception:                                       # noqa: BLE001
-        return {"_error": "unreachable"}
+        return {"_error": "anthropic unreachable"}
     try:
         parts = data.get("content") or []
         raw = "".join(p.get("text", "") for p in parts if isinstance(p, dict))
@@ -364,7 +410,57 @@ def read_image(images, caption, allowed_symbols, cfg, timeout=15):
         raw = ""
     out = _extract_json(raw)
     if not isinstance(out, dict):
-        return {"_error": "unparseable reply"}
+        return {"_error": "anthropic unparseable reply"}
+    out["_provider"] = "anthropic"
+    out["_model"] = model
+    return out
+
+
+def read_image(images, caption, allowed_symbols, cfg, timeout=15):
+    """Read a screenshot into the same fields read_signal returns, PLUS a
+    seen_text transcription used for the anti-hallucination check.
+
+    THE PROVIDER ORDER IS THE SAME ONE THE TEXT OBSERVER USES (9/14): OpenAI
+    vision first, Gemini next, Anthropic last and only when it is not
+    billing-blocked. Same prompt contract, same keys, same cooldowns. Nothing
+    here authorizes an order: the result is a PROPOSED read, validated field by
+    field against the image's own transcribed words and then run through the
+    normal parser and guards, exactly as before.
+
+    Returns a dict (with _seen_text and _provider) or None. Never raises for an
+    ordinary failure — a reader that crashes the bridge would be worse than one
+    that stays quiet.
+    """
+    if not images:
+        return None
+    blocks = _image_blocks(images, timeout)
+    if not blocks:
+        return {"_error": "no image could be fetched"}
+    allowed = ", ".join(sorted(set(allowed_symbols or [])))[:400]
+    prompt = VISION_INSTRUCTION.format(allowed=allowed or "(none listed)",
+                                       caption=(caption or "")[:400])
+    attempts = []
+    try:
+        import observer_providers
+    except Exception:                                       # noqa: BLE001
+        observer_providers = None
+    if observer_providers is not None and observer_providers.vision_available(cfg):
+        out, _ms = observer_providers.read_image(VISION_SYSTEM, prompt,
+                                                 blocks, cfg)
+        if isinstance(out, dict):
+            attempts = out.get("_attempts") or []
+            if not out.get("_error"):
+                out["_seen_text"] = str(out.get("seen_text") or "")
+                return out
+    failed = _attempt_error(attempts)
+    if not _cfg(cfg).get("api_key"):
+        return {"_error": failed or "no vision provider key"}
+    if anthropic_blocked(cfg):
+        return {"_error": ((failed + "; ") if failed else "")
+                          + "anthropic billing-blocked"}
+    out = _read_image_anthropic(blocks, prompt, cfg, timeout)
+    if out.get("_error"):
+        return {"_error": ((failed + "; ") if failed else "") + out["_error"]}
     # Expose the transcription under a private key the bridge feeds to validate()
     # as the "text" — so the literal-match guard checks the image's own words.
     out["_seen_text"] = str(out.get("seen_text") or "")

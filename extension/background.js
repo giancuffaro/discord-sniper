@@ -1507,7 +1507,7 @@ async function badge() {
 // matters, and nothing in this field measures it. Voice and vision alerts
 // have no such stamp and pass null on purpose: a blank is honest, a
 // Date.now() there would silently record every voice call as instant.
-async function sendOrder(sig, qty, c, author, postedAt) {
+async function sendOrder(sig, qty, c, author, postedAt, mid) {
   // THE TICKER CHECK (9/8). Last stop before the bridge: if the broker lists
   // no options on it, the reader picked up a WORD, not a ticker. This is the
   // guard that stops "OPEN WITH 773C" (from "...then can go with 773c") and
@@ -1557,6 +1557,18 @@ async function sendOrder(sig, qty, c, author, postedAt) {
     usd: (sig.usd === 0 || sig.usd) ? sig.usd : null,
     be: !!sig.be,     // breakeven-stops flag (8/29)
     source: "discord-extension", raw: sig.raw, ts: Date.now(),
+    /* THE MESSAGE ID (9/14). Discord keeps ONE id for a message that gets
+     * EDITED — the row just grows an "(edited)" mark — so this is the only
+     * certain way for the bridge to tell "the caller corrected that call"
+     * from "the caller posted a second call". Without it, 357.5c edited to
+     * 357.5p armed TWO pullbacks and the stale CALL arm bought $740 of the
+     * wrong side. content.js has always had it (msg.mid); it just never
+     * reached the bridge. Empty for voice and vision, which have no row. */
+    message_id: String(mid || ""),
+    /* The SECOND contract of a two-strike call ("$NVDA $225C/ and $230C")
+     * carries its sibling's message id on purpose. It is not a correction of
+     * leg one, so it is flagged and the bridge's edit check skips it. */
+    sibling: !!sig.sibling,
     // THE LATENCY CHAIN (9/6). alert_at is the caller's post time from
     // Discord's own markup; seen_at is when this reader had it parsed. The
     // bridge stamps sent_at and filled_at. Splitting it three ways is the
@@ -1648,7 +1660,8 @@ async function sendOrder(sig, qty, c, author, postedAt) {
         expiry: (leg2.expiry === undefined || leg2.expiry === null)
                   ? sig.expiry : leg2.expiry,
         limit: (leg2.limit === 0 || leg2.limit) ? leg2.limit : sig.limit,
-        also: null
+        also: null,
+        sibling: true
       });
       try {
         // F22 (9/11 audit): a refused second leg (HTTP non-2xx, e.g. the
@@ -1657,7 +1670,7 @@ async function sendOrder(sig, qty, c, author, postedAt) {
         // refusal fell straight through unlogged. The whole alert still
         // reported ok:true, and the only sign the second contract never
         // went out was its absence from the popup's fills.
-        const r2 = await sendOrder(leg, 1, c, author, postedAt);
+        const r2 = await sendOrder(leg, 1, c, author, postedAt, mid);
         if (!r2 || !r2.ok) {
           siblingFailures.push(sig.symbol + " " + leg2.strike
             + (leg2.expiry ? " " + leg2.expiry : "") + ": "
@@ -4534,7 +4547,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         await guardRecord(one, c, msg.author, msg.test);
         inFlight++;
         let r1;
-        try { r1 = await sendOrder(one, one.qty || 1, c, msg.author, msg.postedAt); }
+        try { r1 = await sendOrder(one, one.qty || 1, c, msg.author, msg.postedAt, msg.mid); }
         finally { inFlight--; }
         await bridgeStrike(r1);
         if (r1.ok) watchFills();
@@ -4698,7 +4711,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     inFlight++;
     let res;
     try {
-      res = await sendOrder(sig, qty, c, msg.author, msg.postedAt);
+      res = await sendOrder(sig, qty, c, msg.author, msg.postedAt, msg.mid);
     } finally {
       inFlight--;     // must drop even if that threw, or updates stall forever
     }

@@ -48,6 +48,7 @@ import positions
 import index_mirror
 import ratchet_tiers as _rt
 import pullback as _pullback
+import alert_revision
 from request_journal import RequestJournal
 from urllib.parse import urlparse, parse_qs
 
@@ -2591,6 +2592,87 @@ def pullback_manager():
     return _PULLBACK
 
 
+# --- AN EDITED ALERT IS A REPLACEMENT, NOT A SECOND TRADE (9/14) -------------
+# The evidence and the identity rules live in alert_revision.py; the DECISION
+# is pure and tested there. The cancelling has to live here, because only the
+# bridge holds the book and the pullback watcher.
+_REVISIONS = alert_revision.Revisions()
+
+
+def _revision_check(order):
+    """An OPEN that revises one already pending stands the earlier one down.
+
+    ENTRIES ONLY still holds (HANDOFF, EXITS): if the earlier contract has
+    already FILLED, nothing is sold — the ratchet owns every exit — and the
+    line says so out loud, so an edited alert can never leave a silent second
+    position again.
+    """
+    try:
+        priors = _REVISIONS.superseded_by(order)
+    except Exception:                                   # noqa: BLE001
+        return
+    for prior in priors:
+        try:
+            _revise_one(prior, order)
+        except Exception as _e:                         # noqa: BLE001
+            note("EDITED   couldn't stand the earlier %s entry down (%s) — "
+                 "check the popup's fills before the new one runs"
+                 % (prior.get("symbol") or "?", str(_e)[:80]))
+
+
+def _revise_one(prior, order):
+    sym = prior.get("symbol") or str(order.get("symbol") or "?").upper()
+    who = prior.get("trader_name") or "the caller"
+    was = alert_revision.label(alert_revision.as_order(prior), order)
+    now = alert_revision.label(order, alert_revision.as_order(prior))
+    key = prior.get("key")
+    state = None
+    if BOOK is not None and key:
+        try:
+            state = BOOK.state_of(key)
+        except Exception:                               # noqa: BLE001
+            state = None
+    if state == positions.FILLED:
+        fill = None
+        try:
+            fill = (BOOK.info(key) or {}).get("fill")
+        except Exception:                               # noqa: BLE001
+            fill = None
+        try:
+            fill = ("%.2f" % float(fill)) if fill else ""
+        except (TypeError, ValueError):
+            fill = ""
+        note("EDITED   %s — %s changed %s \u2192 %s, but the %s already "
+             "filled at %s — position stays, ratchet owns it"
+             % (sym, who, was, now, was, fill or "its entry price"))
+        _REVISIONS.drop(prior)
+        return
+    hunts = 0
+    if _PULLBACK is not None:
+        try:
+            hunts = _PULLBACK.cancel_order(alert_revision.as_order(prior))
+        except Exception:                               # noqa: BLE001
+            hunts = 0
+    pulled = False
+    if BOOK is not None and key and state == positions.WORKING:
+        try:
+            BOOK.cancel_entry(key, "the caller edited the alert")
+            pulled = True
+        except Exception:                               # noqa: BLE001
+            pulled = False
+    if hunts and pulled:
+        what = "the earlier pullback is cancelled and its resting bid pulled"
+    elif hunts:
+        what = "the earlier pullback is cancelled"
+    elif pulled:
+        what = "the earlier resting bid is cancelled"
+    else:
+        what = "the earlier entry had nothing left to cancel"
+    note("EDITED   %s — %s changed %s \u2192 %s; %s, only the new one stands"
+         % (sym, who, was, now, what))
+    _REVISIONS.drop(prior)
+
+
 def _alert_tape_register(order):
     """Put this alert's contract on the slow price recorder. Never raises.
 
@@ -5010,7 +5092,12 @@ class Handler(BaseHTTPRequestHandler):
             import ai_reader
         except Exception as e:                              # noqa: BLE001
             return self._json(200, {"off": True, "why": "ai_reader missing: %s" % e})
-        if not ai_reader.available(CFG):
+        # WHICH BRAIN READS THE PICTURE (9/14). Not "is the Anthropic key
+        # saved" any more — that key has been billing-blocked since 9/13 and
+        # every screenshot read on 9/14 died on it. Any vision provider key
+        # answers this now, and ai_reader picks OpenAI, then Gemini, then
+        # Anthropic last.
+        if not ai_reader.image_available(CFG):
             return self._json(200, {"off": True})
         allowed = CFG.get("allowed_symbols", []) or []
         read = ai_reader.read_image(images, caption, allowed, CFG)
@@ -5037,8 +5124,10 @@ class Handler(BaseHTTPRequestHandler):
                 _IMG_SEEN[_h] = (time.time(), _out)
             return self._json(200, _out)
         canon = ai_reader.canonical(cleaned)
-        note("IMG READ  [screenshot]  ->  %s   (saw: '%s')"
-             % (canon, seen[:60]))
+        _by = str(read.get("_provider") or "?")
+        _mdl = str(read.get("_model") or "")
+        note("IMG READ  [screenshot via %s%s]  ->  %s   (saw: '%s')"
+             % (_by, (" " + _mdl) if _mdl else "", canon, seen[:60]))
         tape_read("vision", "screenshot", "", seen or caption or "(image)",
                   action=str(cleaned.get("action") or ""),
                   symbol=str(cleaned.get("ticker") or cleaned.get("symbol") or ""),
@@ -5931,7 +6020,18 @@ class Handler(BaseHTTPRequestHandler):
                     "the date was a typo; take it by hand if you mean it."
                     % (order.get("expiry"), stale))
 
+        # THE EDIT CHECK, LAST (9/14). It runs here and not earlier because
+        # the contract is only final now: the dateless-expiry lookup, the
+        # micros rewrite and the bare-exit resolver have all had their say, so
+        # "did the caller change the contract?" is asked of the same fields the
+        # broker is about to be given.
+        _revision_check(order)
         ok, msg = place(order)
+        if ok and order.get("action") == "OPEN":
+            try:
+                _REVISIONS.record(order, tkey(order))
+            except Exception:                           # noqa: BLE001
+                pass
         self._reply(200 if ok else 502, msg)
 
     def log_message(self, *a):
