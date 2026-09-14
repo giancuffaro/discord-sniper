@@ -42,3 +42,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789396604.914,armed,QQQ,PUTS,704,9/14,,705.0,,Demon × LKS,Demon day-trades
 1789396617.223,submitted,QQQ,PUTS,704,9/14,,705.0,,Demon × LKS,Demon day-trades
 1789396619.237,filled,QQQ,PUTS,704,9/14,,705.0,1.13,Demon × LKS,Demon day-trades
+1789396876.227,armed,QQQ,PUTS,705,9/14,,705.0,,Vero,Vero 2
