@@ -517,6 +517,30 @@ def cancel_protective_stop(wb, payload):
     raise FuturesRefused('protective stop still working or uncertain; no separate close sent')
 
 
+def request_exit_through_stop(wb, payload):
+    """Convert this one protective stop to MARKET; never send a second exit.
+
+    Webull documents modifying a futures STOP_LOSS order to MARKET. If the
+    stop filled concurrently, detail will say FILLED; if status is uncertain,
+    leave the position unresolved and do not issue another order.
+    """
+    account, api = _stop_api(wb)
+    status = protective_stop_status(wb, payload)
+    if status == 'FILLED':
+        return 'filled'
+    if status not in ('PENDING', 'SUBMITTED'):
+        raise FuturesRefused('protective stop status uncertain; no separate exit sent')
+    try:
+        api.replace_order(account, [{
+            'client_order_id': payload['client_order_id'],
+            'order_type': 'MARKET', 'quantity': payload['quantity']}])
+    except Exception as exc:
+        raise FuturesRefused('stop-to-market replacement uncertain; inspect exact order') from exc
+    # A successful replace response is not a confirmed fill. The caller must
+    # reconcile this exact order's execution before marking the trade closed.
+    return 'replace_requested'
+
+
 def execute(wb, book, order, key, note):
     """The whole live futures path: entry, trim, or close. Returns (ok, msg).
     Sizing is pinned to one contract on purpose — see the file docstring."""

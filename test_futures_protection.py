@@ -85,6 +85,25 @@ class ProtectiveStops(unittest.TestCase):
         with self.assertRaisesRegex(futures.FuturesRefused, 'no separate close'):
             futures.cancel_protective_stop(wb, payload)
 
+    def test_caller_exit_replaces_the_same_stop_never_places_second_sell(self):
+        payload = futures.protective_stop_order('MESZ6', 'LONG', 1, 7000,
+                                                6975, 'sniperstop999')
+        wb = Mock(futures_account_id='fake-futures-account')
+        api = wb.trade.order_v3
+        api.get_order_detail.return_value = Mock(status_code=200)
+        api.get_order_detail.return_value.json.return_value = {
+            'orders': [dict(payload, status='SUBMITTED')]}
+        self.assertEqual(futures.request_exit_through_stop(wb, payload),
+                         'replace_requested')
+        api.replace_order.assert_called_once_with('fake-futures-account', [
+            {'client_order_id': 'sniperstop999', 'order_type': 'MARKET',
+             'quantity': '1'}])
+        api.place_order.assert_not_called()
+        api.get_order_detail.return_value.json.return_value = {
+            'orders': [dict(payload, status='FILLED')]}
+        self.assertEqual(futures.request_exit_through_stop(wb, payload), 'filled')
+        api.replace_order.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()
