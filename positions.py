@@ -120,8 +120,15 @@ def key_of(trader, symbol, strike=None, side=None, expiry=None):
     appended; empty when the caller has none (a bare "out AMD" carries no
     strike) — find_key()'s find_by_symbol() fallback resolves those by
     symbol alone already and does not need the key itself to match."""
-    who = str(trader or "?").strip().lower() or "?"
-    sym = str(symbol or "").upper()
+    # "|" IS THE SEPARATOR, so it cannot also be part of a field (9/14, TSLA).
+    # The room "PT | ei trades" made the key "pt | ei trades|TSLA|357.5|C|..."
+    # and every reader that takes field [1] as the ticker got " ei trades"
+    # instead: _arm_stop asked Webull for a stop on an option root called
+    # " ei trades", Webull refused it as a bad root, and a $740 TSLA position
+    # whose born stop had just been cancelled sat NAKED until he sold it by
+    # hand. One separator, one meaning.
+    who = str(trader or "?").strip().lower().replace("|", "/") or "?"
+    sym = str(symbol or "").upper().replace("|", "")
     try:
         strike_s = ("%g" % float(strike)) if strike not in (None, "") else ""
     except (TypeError, ValueError):
@@ -1814,6 +1821,90 @@ class Book:
                 pass
         return n
 
+    def rearm_missing_stops(self, min_age=5.0, retry_seconds=60.0):
+        """A live options position holding with NO resting stop gets one, NOW.
+
+        The stop born with the order can be gone seconds after the fill: the
+        rebase path cancels it on purpose when the fill came better than the
+        bid it was priced off, and the replacement can then be refused. 9/14
+        TSLA is the whole reason this exists — born stop 7.25 cancelled at
+        10:24:09, replacement refused at 10:24:11 ("bad option root"), and
+        $740 rode the rest of the move with nothing resting at the broker.
+        POSTCHECK saw it at 10:24:16 and, being read-only, only said so.
+
+        The watchdog on this PC is still a guard, but it dies with this
+        process and a resting order does not. So: one re-arm, through the same
+        _arm_stop every entry uses (which prices the stop off the ACTUAL fill,
+        snaps it to the exchange tick, and clamps it a tick under the bid when
+        the bid is already below it). Throttled per position so a contract
+        Webull keeps refusing cannot become an order loop.
+
+        Deliberately narrow: no futures (they run their stop), no adopted
+        positions (his own trades are hands-off), nothing closing, no swing on
+        a caller's stock level, nothing simulated, and nothing younger than
+        min_age — a stop still in flight is not a naked hold.
+        """
+        now = time.time()
+        with self._lock:
+            keys = []
+            for k, p in self._pos.items():
+                if p.get("state") != FILLED or int(p.get("qty") or 0) <= 0:
+                    continue
+                if (p.get("kind") == "future" or p.get("adopted")
+                        or p.get("closing") or p.get("no_auto_stop")):
+                    continue
+                if p.get("stop_order_id") or p.get("bracket_stop_id"):
+                    continue
+                if p.get("swing") and p.get("their_stop"):
+                    continue
+                if self._sim(p):
+                    continue
+                try:
+                    if float(p.get("fill") or 0) <= 0:
+                        continue
+                except (TypeError, ValueError):
+                    continue
+                if now - float(p.get("opened") or 0) < min_age:
+                    continue
+                if now - float(p.get("stop_rearm_at") or 0) < retry_seconds:
+                    continue
+                keys.append(k)
+        n = 0
+        for k in keys:
+            with self._lock:
+                q = self._pos.get(k)
+                if q is None:
+                    continue
+                q["stop_rearm_at"] = now
+                p = dict(q)
+            sym = str(p.get("symbol") or "").upper() or k.split("|")[1]
+            try:
+                self._arm_stop(k, p.get("side"), p.get("strike"),
+                               p.get("expiry"), int(p.get("qty") or 1),
+                               float(p.get("fill")))
+            except Exception as e:                      # noqa: BLE001
+                self._event(k, "stop-warn",
+                            "%s — held with no resting stop and the re-arm "
+                            "failed (%s); the watchdog on this PC is the only "
+                            "guard. Retrying in a minute."
+                            % (sym, str(e)[:90]))
+                continue
+            with self._lock:
+                q = self._pos.get(k)
+                got = bool(q) and bool(q.get("stop_order_id"))
+            if got:
+                n += 1
+                self._event(k, "stop-set",
+                            "%s — was held with NO resting stop; a fresh one "
+                            "is resting at Webull now, off the %.2f fill"
+                            % (sym, float(p.get("fill"))))
+            else:
+                self._event(k, "stop-warn",
+                            "%s — held with no resting stop and Webull still "
+                            "won't take one; the watchdog on this PC is the "
+                            "only guard. Retrying in a minute." % sym)
+        return n
+
     def overnight_stops_pending(self):
         """Whether an eligible overnight swing still lacks today's guard."""
         import datetime as _dt
@@ -2346,7 +2437,12 @@ class Book:
         """Both halves of it. The resting order first, because that's the one
         that survives this program dying; the watchdog second, because that's
         the one that works when Webull won't take the resting order."""
-        sym = key.split("|")[1]
+        # From the position record first: this is the name that goes to the
+        # broker, and a key written before the fix above (state.json survives
+        # a restart) still carries the trader's "|" in it. The split stays as
+        # the fallback for a key with no row behind it.
+        sym = str((self._pos.get(key) or {}).get("symbol") or "").upper() \
+            or key.split("|")[1]
         with self._lock:
             pf = self._pos.get(key)
             if pf and pf.get("kind") == "future":
