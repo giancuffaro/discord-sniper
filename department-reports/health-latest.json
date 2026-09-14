@@ -1,5 +1,5 @@
 {
-  "in_session": false,
+  "in_session": true,
   "issues": [],
   "lanes": [
     {
@@ -22,5 +22,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789391417.67909
+  "checked_at": 1789391717.6843717
 }
