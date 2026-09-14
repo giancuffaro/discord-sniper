@@ -36,3 +36,5 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789156213.066,missed,QQQ,CALLS,716,9/11,,715.0,,TradingTheTrend,Option Alerts
 1789395681.518,armed,TSLA,CALLS,357.5,2026-09-18,,358.0,,PT | ei trades,Platinum ei-alerts
 1789395737.485,armed,TSLA,PUTS,357.5,2026-09-18,,359.0,,@Owner Alerts,Platinum nitro
+1789395847.607,submitted,TSLA,CALLS,357.5,2026-09-18,,358.0,,PT | ei trades,Platinum ei-alerts
+1789395849.61,filled,TSLA,CALLS,357.5,2026-09-18,,358.0,7.4,PT | ei trades,Platinum ei-alerts
