@@ -12,6 +12,82 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-14 (the dateless TSLA — wrong contract, then no stop)
+
+WHAT HAPPENED. 10:21, "Platinum nitro" / "PT | ei trades" posted
+`Entry Contract: TSLA $357.5c Price: $1.42` with no expiry — that room never
+posts one. The bridge's dateless rule split by ticker: same-day for
+DAILY_EXPIRY_ROOTS, and for everything else "a single stock has FRIDAY WEEKLIES
+ONLY" (G's 9/7 call, from 29 of 35 dateless alerts being single stocks). So it
+bought TSLA 357.5C **2026-09-18** at **$7.40** ($740). The caller's $1.42 was
+the **2026-09-14** 0DTE. Two minutes later the same bot bought NVDA 210P
+expiring **Wednesday 2026-09-16** — a midweek expiry on a single stock, which
+the assumption said could not exist. The assumption was simply stale: mega-caps
+list Mon/Wed/Fri now. Nothing in the machine noticed it had paid 5x the price
+the caller posted.
+
+THEN IT SAT NAKED, and this part was a different bug. Log, 10:24:
+
+    STOP-BORN TSLA — the bid is 7.30, so a 7.35 stop was already triggered
+      at birth; resting it at 7.25 instead
+    FILLED   TSLA — filled 1.0 at 7.40
+    STOP-SET  ei trades — filled better than the bid the bracket was priced
+      off; moving the stop from 7.25 to 7.00 (-5% of the FILL)
+    STOP-WARN  ei trades — Webull wouldn't hold a resting stop
+      (bad option root ' ei trades')
+    POSTCHECK FILLED TSLA — PROBLEM: TSLA is held with NO resting stop
+
+Read the trader's name: **"PT | ei trades" contains the key separator.**
+positions.key_of builds `who|SYM|strike|side|expiry`, so the key became
+`pt | ei trades|TSLA|357.5|C|2026-09-18` and `key.split("|")[1]` — which
+_arm_stop used as the TICKER it sends to the broker — was `" ei trades"`. The
+rebase path had already cancelled the born 7.25 leg on purpose (the fill came
+better than the bid it was priced off), and the replacement stop was refused
+locally as a bad option root. $740 rode with nothing resting at Webull.
+POSTCHECK saw it 7 seconds later and, being read-only, only said so. The
+watchdog's own stop-sell at 10:26 was then refused by Webull six times
+(OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH). G closed it by hand at 7.06,
+−$34.
+
+WHAT CHANGED (v3.8.31)
+- webull_options.dateless_candidates() — the dates a dateless call could
+  plausibly mean, soonest first. webull_options.listed_expiries() — which of
+  them Webull REALLY lists for that exact contract, and each one's ask, from
+  ONE batched snapshot call (the existing ask_bid_many), cached per contract
+  per day. An absent row IS the listing answer; an empty result is never
+  cached, so a 9:31 throttle can't blind the session.
+- bridge._dateless_expiry() replaces the static Friday-only block: today if
+  today is listed, else the nearest listed date. DAILY_EXPIRY_ROOTS survives
+  only as the fallback when the lookup can't answer, and the log line names
+  which of the three it used.
+- bridge._price_sanity() — the caller's own premium checks our answer. Outside
+  0.4x–2.5x (execution.price_sanity) on an INFERRED expiry, it takes the
+  listed expiry that does match, else refuses: `REFUSED OPEN TSLA — 357.5C
+  2026-09-18 asks 7.40 but the caller said 1.42; no listed expiry matches, not
+  buying the wrong contract`. No posted price = inert.
+- positions.key_of() now strips "|" out of the trader name and the symbol —
+  one separator, one meaning — and _arm_stop takes the ticker from the
+  position record, not from the key, so a key already written to state.json
+  can't send the trader's name to the broker.
+- positions.rearm_missing_stops() — a live options position holding with no
+  resting stop gets one through the same _arm_stop every entry uses, throttled
+  to one attempt a minute per position. POSTCHECK calls it right after its
+  6-second settle and re-reads the book, so check 3 now reports the state
+  AFTER the repair instead of narrating a naked position.
+- tests: test_expiry_lookup.py (mocked Webull, no network) covers today-listed,
+  nearest-listed, lookup failure → Friday/daily-table fallback, SPY → today,
+  the price gate switching, refusing, the band edges, and staying inert with
+  no caller price.
+
+NOT A BUG: the repeated `positions.py ... in auto_ratchet` frames in bridge.log
+are not a RecursionError. They are the SDK logger's "Call stack:" dump attached
+to a Windows log-rotation PermissionError on webull_data_streaming_sdk.log
+(9/10) — one frame each of _watchdog → auto_ratchet → replace_stop, printed
+repeatedly because the rotation failed repeatedly. auto_ratchet does not call
+itself anywhere in the file, and the string "RecursionError" appears zero times
+in bridge.log.
+
+
 ## 2026-09-13 (Webull futures protection audit)
 
 The Webull route was found enabled in current settings while the index mirror
@@ -5534,3 +5610,189 @@ false alarm fixed. Story of each in HANDOFF-LOG.md.
 It went back over the 50 KB ceiling. State stays in HANDOFF.md; this is history.
 
 Last updated: 2026-09-10 (10:12) — WHOP WAS DARK A MONTH: checking a live Trademorewiser NQ short (Day Trades) found it never reached trades.log, and the room had caught exactly 1 alert total since 8/13. Cause: nothing ever recreated a Whop tab once it died, and nothing noticed if the whole "Sniper Whop" Chrome profile wasn't running. Fixed — whopSelfHeal() (background.js, whop lane only, Discord's 9/8 "a closed tab stays closed" rule untouched) + _whop_loop.bat/_whop_hidden.vbs watchdog (installed by START HERE.bat, Startup entry + 30-min revive task, same model as the Fill Announcer). Takes effect next time START HERE.bat runs. Story in HANDOFF-LOG.md. ALSO TODAY: the ratchet moved 7.5/5/2 -> 5/3/5 on G's call (OPRA tape bought, 537 contract-days; 115 real room calls; old $158 rank #82, new $504 rank #1, +$3.01 a trade, 95% band +$0.72..+$4.91 — the first spacing to clear its own error bar) and every backtest/report now READS the spacing from ratchet_tiers.live_spacing(); full-depth scan of all 25 Discord servers / 289 channels (2 live options feeds found in TradingTheTrend, added `off`); RWGates set LAPSED — the account has been REMOVED from that server, not just unsubscribed. Everything before today is in HANDOFF-LOG.md.
+
+
+## Lifted out of HANDOFF.md on 2026-09-14 (kept verbatim, to hold HANDOFF.md under 50 KB)
+
+- AI MEASUREMENT: OpenAI retained scan: 12,162 successful; $28.37 of $45 authorized. Results: local-reader-measure/
+  openai-trial-2026-09-12/final-release-3.8.14/. No new paid scan needed.
+  Contextual AI now uses Gemini with OpenAI fallback; legacy Anthropic one-message reader remains billing-blocked. Chrome
+  remote history remains incomplete. Both Chrome lanes reported v3.8.27 on 9/13 after the Whop watchdog repair. G closed Platinum futures-alerts, NGD ngd-trades and Chika Alerts, then authorized a one-shot reopen; all three tabs were verified open. START HERE once Monday morning still opens enabled rooms; roomSchedule closes them after hours and does not reopen them automatically. Market-hours capture remains to verify.
+
+OPTIONALITY REVIEW 9/13: Channel is ON by user choice. v3.8.24 blocks OPEN when its chosen premium equals an explicitly dollar-ticker-labelled stock quote, and fixes the sell-option guard for the observed "this is option selling not traditional contract buying" negation. Three bad OPEN classifications removed in the distinct grabbed-text screen; 11,385-message gate unchanged (852 entries, 3,048 actions). Multi-contract extraction, export duplication and conditional exit wording remain unresolved; no claim that all findings are fixed.
+
+PREMIUM REVIEW: Department AI distinguishes per-share quotes, cents, per-contract
+cost, position totals and profit. No arbitrary premium range and no automatic
+factor-of-100 correction. Equivalent amounts with verified units are not bugs;
+missing units remain unresolved pending original-source evidence. User confirmed
+Discord Chrome Profile 2 and Whop Chrome Profile 6 on 2026-09-13.
+
+ENTRIES
+- Bid the caller's price or better; pullback entries cross the ask at the
+  touch. RN (round-number) pullback is global and ON (waits for the next
+  round number, 10-min window; a never-touched RN = skipped, logged
+  "PULLBACK never hit"). One contract per entry while the bracket is on.
+  THE LEVEL STAYS $1 — SETTLED 9/9 on 106 beta-name alerts (META/AMD/AAPL/
+  NVDA/TSLA/MSFT/AMZN/GOOGL, 8/4–9/8) replayed on real 1-second stock bars
+  (pullback_levels.py → reference/PULLBACK-LEVELS.md): the $1 wait beats
+  taking the alert by +$8/contract (paired, 65 trades, 2.6× its noise);
+  $2 / $2.50 / $5 / $10 add nothing over $1 on the same trades (+0.4, +1.7,
+  +6.1 — all inside noise) while skipping 40–75% of the trades; a 15-min
+  wait changes nothing vs 10. And the "they bounce off 2.50s and 5s" idea
+  is false in this sample: $5 lines held 31%, $2.50 36%, a random x.25 line
+  38%. Don't re-open on a feeling — re-run the script when the sample doubles.
+- ROOMS — ONE SWITCH PER ROOM (9/9 evening, G: "a list of all the rooms
+  we've been to and the option to open the tab or not; if I selected to
+  open it I obviously want it live"). The popup's Channels tab lists every
+  room in extension/rooms.txt grouped as the file groups them, with its
+  state: ON = tab open + read + trades LIVE; OFF = no tab, nothing read,
+  nothing traded (the one-line reason sits above it in the file and shows
+  dim in the popup); LAPSED = off because the sub ran out, probed daily.
+  There is NO testing/paper state any more. The switch writes rooms.txt
+  through the bridge (POST /rooms rewrites that one line in place), the
+  extension re-reads the file and opens/closes the tab; the other Chrome
+  profile sees the change within 30 s (pollRoomsFile) and follows for its
+  own lane's rooms. START HERE opens only `on` rooms. CLOSING A TAB BY
+  HAND IS NOT A BENCH — START HERE and a flip reopen every `on` room; the
+  switch is the only bench. Benched rooms are never deleted from the file.
+  WHOSE TABS THE REAPER MAY CLOSE (9/10). ONLY tabs the extension itself
+  opened (`_OURS`). A tab a HUMAN opened is never closed, whatever URL it is
+  on. Written the other way round first — "close any discord.com tab that is
+  not an `on` room" — and within the hour it had eaten the Discord Settings
+  tab G asked Claude to work in, twice, mid-edit. Sparing the ACTIVE tab is
+  not enough: the moment he clicks away, or a tool drives another window, his
+  tab stops being active. If you ever widen this again, that is the failure
+  you are re-inviting.
+  WHO MAY OPEN A TAB (9/10, G: "get rid of auto opening tabs UNLESS it's
+  the start sniper"). Exactly three things, and nothing else:
+    1. START HERE.bat, through its one-shot open-rooms request
+    2. the popup's Channels switch (his click)
+    3. whopSelfHeal() — kept on his call so the Whop lane can revive its own
+       4 tabs; its dedupe now reads pendingUrl and queries the whole origin,
+       because the old query missed a still-LOADING tab and that is how a
+       heal pass turned 4 Whop tabs into 8
+  roomSchedule() no longer opens anything — it used to open every `on` room
+  at 9:15. It still CLOSES at 4:30, which is what stops the overnight pings.
+  probeOne() opens a lapsed room off-hours to see if access came back and
+  closes that tab seconds later in a finally — a door-knock, not an open.
+  NO ACCESS = OUT OF SERVICE (9/10, G: "do not open the tab if we don't have
+  access"). revokeCheck() reads the tab titles it already has; a room whose
+  title says "No Access" is now written to rooms.txt as `lapsed` through the
+  bridge and its tab closed, instead of only logging a warning. RWGates
+  proved the warning alone was useless — it fired for three weeks while the
+  room kept opening a blank tab every morning. `lapsed` not `off` on purpose:
+  the daily probe keeps knocking, so it un-lapses itself if the sub returns.
+  6th field = the room's RULES (9/9 evening): comma flags `bare` (an entry
+  with no verb counts, AND its tokens may arrive in any word order — see
+  WORD ORDER below), `dotdate` (the expiry is written with a DOT — Maguro's
+  "$slv 63c 10.16 2.35" is Oct 16 at $2.35; per-room because elsewhere that
+  number IS the price), `pivot=NQ` (the room trades ONE future and writes only
+  the last digits of the level — Chika's "short 195 pivot" is NQ 29,195; the
+  BRIDGE expands it against a live quote, the browser never guesses a price),
+  `readonly` (read the room and write down what we WOULD have done, send
+  nothing — NOT the same as `off`, which reads nothing at all),
+  `sym=SPX` (symbol to assume when the call names none).
+  The `spx` flag was DELETED 9/10 on G's instruction — see NO SPX->SPY.
+  The bridge DERIVES dot_date_channels / entry_no_verb_channels /
+  default_symbol_channels from these (apply_room_rules, at boot and on
+  every write) — settings.json no longer holds those lists. Rules count
+  whatever the room's state (shabs/eli are off but relayed via OWLS).
+  Set from the popup: the pills on each Channels row (SPY-proxy / bare /
+  SPX / 24h).
+- ROOM HOURS: `on` rooms use tabs 9:15–16:30 ET on weekdays unless
+  marked `always` (futures rooms). roomSchedule closes daytime tabs after
+  hours; it does not reopen them at 9:15. START HERE once in the morning
+  creates a one-shot, lane-aware open-rooms request, up to three tabs per
+  pass with six-second spacing. Whop alone self-heals missing tabs. Closing
+  a Discord tab by hand leaves it closed until the next START HERE request
+  or a room-switch change. The last browser tab is protected from closure.
+- CHANNELS / CONTROLS: Callers are shown within their verified room, with
+  win rate unavailable unless backed by evidence. The separate Callers and
+  Needs You tabs/buttons were removed at G's request. Existing Honey Drip
+  caller switches retain their specific room keys; other observed accounts
+  are identity rows only. Strategy Numbers and Room Rules remain in the UI.
+  GET/POST /callers and /rooms still provide their existing bridge functions.
+- STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung
+  (quote-verified). 3-ITM translation for SPY/QQQ/Mag7 0DTE. ADD buys the
+  held strike.
+- "ADDED <full contract>" you are not in = an OPEN entry. A bare "added to
+  SPY" refuses.
+- NO SPX→SPY. DELETED 9/10, G: "do not translate any SPX to SPY. Delete any
+  sort of translation between SPX and SPY." SPX/SPXW/XSP/RUT/NDX/VIX entries
+  are HELD with a plain reason until execution.index_broker is set
+  (tastytrade or tradier, a separate funded account). SPY 760c is not SPX
+  7600c — different multiplier, tick and settlement. OWLS relay still gives
+  shabs/eli default_symbol SPX so the CONTRACT is read right; it just does
+  not go to Webull. Exits on an SPX position are unaffected (there are none).
+- WORD ORDER (9/10, G: "it doesn't matter the order of the expiration or the
+  price or the ticker. It's not relevant. It could be in any order"). In a
+  `bare` room the reader strips THIS contract's own three tokens — ticker,
+  strike+side, date — wherever each sits, and fires if nothing is left over:
+  "8/24 $255P $AMZN", "2DTE $765C SPY CALLS", "$255P $AMZN" all read.
+  SCOPED ON PURPOSE: unscoped it fired "TSLA 9/4 360P .72" in every room,
+  which is a real entry in some rooms and a chart caption in others.
+  test_word_order.js + test_bare_entry.js hold both sides.
+- TWO CONTRACTS IN ONE MESSAGE = TWO ORDERS (9/10, G: "when you have
+  multistrikes, just buy both of them. Buy two contracts, one of each").
+  ONE contract each, separate positions with their own born stop and their
+  own ratchet — not a spread. Two shapes:
+    "$NVDA $225C/ and $230C NEXT FRI"            two strikes, one expiry
+    "$APLD 10/16 30c 2.75 ... $APLD 9/18 30c .9" two expiries, own prices
+  The second leg goes only after leg one is ACCEPTED. Guards: same ticker
+  only (two DIFFERENT tickers on a line is a levels row / watchlist — take
+  the first, leave the rest); a bare strike with another ticker written in
+  front of it is that ticker's, not a sibling; call+put is a strangle and
+  the whole line refuses rather than trading one leg; max 3 extras.
+- EXPIRY, in one place (webull_options.expiry_to_date):
+  · NDTE is N CALENDAR days out. If N lands on a weekend or holiday it rolls
+    BACK to the previous trading day (G, 9/10: "there is no 3DTE if in three
+    days is a Saturday — it would just end in 2DTE"). Never past today.
+  · NO DATE = 0DTE (G, 9/10), and the LISTING is ASKED, never assumed
+    (9/14). One batched snapshot call names today, the rest of this week and
+    both Fridays; only contracts Webull really lists answer. Today wins if
+    today is listed, else the nearest listed date. One call per dateless
+    alert, cached per contract per day. DAILY_EXPIRY_ROOTS is now ONLY the
+    fallback for when that lookup can't answer, and the log says it fell
+    back. The old "a single stock has FRIDAY WEEKLIES ONLY" rule is DEAD: it
+    bought TSLA 357.5C 9/18 at $7.40 on a $1.42 0DTE call, and the NVDA 210P
+    9/16 two minutes later proves mega-caps list Mon/Wed/Fri. Clues still win
+    first: "NEXT WEEK"/"NEXT FRI" -> next week's Friday, shouted MONTH -> that
+    monthly.
+  · CALLER-PRICE GATE (9/14, execution.price_sanity = 0.4x–2.5x): on an
+    expiry the bridge INFERRED, if the resolved contract's ask falls outside
+    that band around the price the caller posted, it is the wrong contract —
+    take the listed expiry that IS in band, else REFUSE the entry and say so.
+    No posted price = the gate is inert.
+- SPREAD GUARD (entries only): refuse if spread > 20% of mid or > max($0.20,
+  10% of mid). THIN guard: < 250 contracts last session = refused.
+- STALE-ENTRY GATE: entries older than 3 min never fire. Negations ("NOT
+  getting in", "too expensive") hard-veto; "out the gate" is hype.
+- DEDUPE LADDER: extension in-flight lock → bridge echo-lock (same contract
+  OPEN within 20 s refused) → per-trader "already in" claim → one
+  average-down ADD if the same trader re-posts ≥1% under what was PAID.
+  Position identity is caller+symbol+strike+side+expiry in both extension
+  and Python; sibling strikes/expiries remain separate. Client order IDs are
+  reserved durably in request_journal.sqlite before broker dispatch.
+- RETRACTION ("not ready / scratch that / cancel / disregard / hold off /
+  nevermind") pulls that trader's resting bids and armed pullback hunts.
+- FUTURES: micros only (NQ→MNQ, ES→MES ...). Entry snaps to the 25-pt grid
+  in his favour. Their stop/target wins; 25/50 fills the gaps. A MARKET entry
+  (no price in the alert) gets that bracket off the FILL instead — positions.
+  _arm_stop, but these are only recorded levels. Webull futures OPEN now refuses before broker lookup until an exact GTC STOP_LOSS is placed and verified after its fill, and stop/close reconciliation is tested. No futures quote-driven target/ratchet is operational. The 3 historical Webull futures OPEN orders would now be refused; no parser actions changed.
+- INDEX MIRROR (9/13) — **OFF and activation blocked** until a broker-confirmed futures protective exit path exists. The shadow records SPY/QQQ option entries, and `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the daily audit. Reports land in `daily-reports/FUTURES-MIRROR-<date>.md`; the cumulative history is `reference/FUTURES-MIRROR-REPLAY.csv`. The original 149-alert 8/3–9/11 replay lost $721 gross (ZT mashup accounted for $703). The replay's 25/50 stop, target and ratchet are simulated, not current live futures exits. New-day coverage is only bridge shadow rows plus `master_alerts.csv`; posts missed upstream are absent. The popup switch stays disabled until live exits are verified.
+- THE POCKET (hidden from the UI on purpose): a :43-:51 scalp-entry clock
+  gate exists behind settings flag pocket_scalps_only, default OFF. The
+  decision comes from HIS fill data (ledger minute-of-hour), not the QQQ study.
+- Positions record the underlying at fill (und_at_fill); FILLED log lines,
+  announcer posts and the journal all carry it.
+
+EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
+
+## Subscriptions (audited 8/28)
+Whop (~17.5% tax on top): Insiders Pro $199 | STS/RWGates $189 | Felony $100
+| Boka $99.99 | Platinum $99 | "VIP discord access" $65 (unidentified) |
+ZTRADEZ $65 (LAPSING ~9/10 — G's call to let it go; all 4 remaining ZT rooms
+cut 9/9 ahead of it) | Vero $49. Stripe: Honeydrip/Aristotle $125. Free: Rafita.
+≈ $1,140/mo rooms + ~$52 infra (ProjectX $29, NT data $12, Deepgram ~$5,
+Webull data ~$5.50) + ~$30 exchange fees ≈ $1,220/mo before AI usage.
+Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
