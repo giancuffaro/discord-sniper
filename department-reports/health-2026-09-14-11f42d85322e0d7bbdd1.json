@@ -1,0 +1,37 @@
+{
+  "role": "health",
+  "day": "2026-09-14",
+  "checked_at": 1789392023.2070265,
+  "model": "gpt-5.4-mini",
+  "evidence_truncated": false,
+  "result": {
+    "summary": "The session is reported as in_session=true, but many alert sources are flagged as ON while having no tab in this browser. This indicates missing browser-tab visibility for those channels, not a confirmed service outage.",
+    "findings": [
+      {
+        "evidence": "Issue list repeatedly states \"X is ON but has no tab in this browser\" for many channels, including AbTrades Alert Bot, Aristotle, Aristotle small, Brando Alerts, Brick Alerts, Demon day-trades, Ducci Alerts, FloridaManFinance, Hog Alerts, Honeydrip daytrades, Jon Tran Alerts, Maguro Alerts, Midas, Mugzone Options, Nando Alerts, OWLS all-alerts, OWLS jon-and-kian, Option Alerts, Optionality free-trades, PhiccDuck Alerts, Platinum day-trades, Platinum ei-alerts, Platinum equity, Platinum nitro, Quantum Alerts, Shoof Alerts, TTT Lotto, Vero 2, Xephyr Alerts, eli, and shabs.",
+        "recommendation": "Verify whether these alert channels are expected to be open in another browser/profile/workspace, or whether the current browser context is missing tabs that should be present. Do not treat this as a confirmed outage without source verification."
+      }
+    ],
+    "limitations": [
+      "The evidence does not confirm whether missing tabs mean the channels are closed, unsupported, hidden in another window, or unavailable.",
+      "No source data is provided for alert content, delivery success, or browser state beyond the single issue list.",
+      "This report cannot distinguish a quiet room from an outage for these channels; it only shows absence of tabs in the current browser.",
+      "No numerical health metrics or timestamps are provided to quantify impact or duration."
+    ],
+    "_provider": "openai",
+    "_model": "gpt-5.4-mini",
+    "_usage": {
+      "input_tokens": 964,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 570,
+      "output_tokens_details": {
+        "reasoning_tokens": 224
+      },
+      "total_tokens": 1534
+    }
+  },
+  "fingerprint": "11f42d85322e0d7bbdd1"
+}
