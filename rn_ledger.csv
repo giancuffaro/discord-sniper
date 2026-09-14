@@ -64,3 +64,6 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789408431.794,armed,QQQ,CALLS,715,SEPT 17,,712.0,,EliteOptions | Brando,Brando Alerts
 1789409031.897,missed,QQQ,CALLS,715,SEPT 17,,712.0,,EliteOptions | Brando,Brando Alerts
 1789409032.005,missed,QQQ,CALLS,715,9/17,,712.0,,EliteOptions | Brando,Brando Alerts
+1789409100.295,armed,META,CALLS,700,9/18,,667.0,,👑KingBeeAri🐝,Aristotle
+1789409104.883,submitted,META,CALLS,700,9/18,,667.0,,👑KingBeeAri🐝,Aristotle
+1789409106.897,filled,META,CALLS,700,9/18,,667.0,2.61,👑KingBeeAri🐝,Aristotle
