@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-14 — v3.8.31, dateless expiries are read from the live listing (0DTE when today is listed), a caller-price gate refuses a contract priced nothing like the call, and a naked hold is re-armed instead of only reported.
+Last updated: 2026-09-14 — v3.8.31: an EDITED alert now cancels the entry it corrects instead of arming a second one, and screenshot reads run OpenAI → Gemini with Anthropic last (it is billing-blocked).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -51,6 +51,14 @@ Last updated: 2026-09-14 — v3.8.31, dateless expiries are read from the live l
 - PROVIDER KEYS: Keys pane saves OpenAI, Gemini and Perplexity credentials under settings.json ai_provider_keys. Saved provider fields are hidden with an explicit Replace key option. OpenAI/Gemini connected to context observer; Perplexity stored inactive. DeepSeek credential and fields removed by user request; Anthropic retained billing-blocked. Status returns presence flags only; inputs are not included in browser draft persistence.
 - DEPARTMENTS: enabled. Existing bridge audit loop calls health_tick every five minutes; extension maintenance publishes Discord/Whop lane heartbeat and reader issues. GPT-5.4 mini analyzes changed issues (12/day), Astra escalates multi-issue incidents (2/day), reviews selected reader disagreements (20/day), and analyzes existing daily reports after the 16:40 audit (1/day). Results are advisory files in department-reports, never executed as code/orders. Astra and Mini live probes passed; first Astra report for Friday 9/11 and Mini preflight generated. Context snapshots persist at most once/minute (up to one minute may be lost on abrupt exit).
 - READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer enabled: Gemini gemini-3.1-flash-lite primary, OpenAI gpt-5.4 fallback; same prompt, bounded requests and cooldowns; observation only. Needs You pane/buttons/polling removed. Caller controls appear under matching Channels; v3.8.27 shows verified account sightings by channel ID and an unavailable win rate until evidence supports one. Existing Honey Drip controls remain limited to their specific room IDs; newly observed accounts have no execution keys. Historical identity attribution is candidate-only unless the original source supports an account link. Grabber v3.8.22 re-resolves replaced message panes each step, tracks oldest-message progress instead of page height, allows 30 seconds for stalled loads, and clears failed runs; stale-ID recovery and queue advancement fixed; v3.8.23 restores the original one-year target (exceeds requested four months); the Optionality tab already had May 6 loaded and was correctly stopping at the shorter cutoff. Retains tabs and labels stalled history partial. v3.8.25 capture retains message_id, captured_at and observed revisions, dedupes by channel+ID, and exports structured .json beside readable .txt. Legacy ID-less rows remain explicit legacy-unknown; re-grab is needed to obtain IDs, not infer them. Browser full-history completeness remains unverified.
+- IMAGE READS (9/14): a screenshot goes to the SAME providers as the text
+  observer — OpenAI vision, then Gemini, Anthropic LAST and skipped while
+  billing-blocked (execution.ai_reader.billing_blocked, or a credit refusal
+  parks it 6h). Same prompt, keys, cooldowns and 24h repeat-image cache; the
+  log names who read it, and the read is still only a proposal the parser and
+  guards judge. Until now every 📸 read died "HTTP 400: credit balance too
+  low". OPEN: the one-message TEXT reader (AI READ) is still on Anthropic and
+  fails the same way.
 - AI MEASUREMENT: full scan results and the Chrome-lane history are in
   HANDOFF-LOG.md (9/14). Contextual AI = Gemini primary, OpenAI fallback;
   the legacy Anthropic one-message reader stays billing-blocked. START HERE
@@ -215,6 +223,17 @@ ENTRIES
   Position identity is caller+symbol+strike+side+expiry in both extension
   and Python; sibling strikes/expiries remain separate. Client order IDs are
   reserved durably in request_journal.sqlite before broker dispatch.
+- AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14). Discord keeps ONE
+  message id when a caller EDITS a call, so an OPEN whose message id is
+  already pending — or, with no id, the same trader's same ticker inside
+  5 min on a different contract — CANCELS the earlier pullback hunt and its
+  resting bid, logs one line ("EDITED  TSLA — PT | ei trades changed 357.5C
+  → 357.5P; the earlier pullback is cancelled, only the new one stands"),
+  then arms the new one. Two DIFFERENT message ids are two calls, never an
+  edit (TWO CONTRACTS still holds); an identical repost stays with the dedupe
+  ladder. Already FILLED = nothing is sold, entries only, and the line says
+  so. Born from PT's TSLA $357.5c edited to 357.5p: both sides armed and the
+  stale CALL arm bought 357.5C at 7.40 ($740). alert_revision.py.
 - RETRACTION ("not ready / scratch that / cancel / disregard / hold off /
   nevermind") pulls that trader's resting bids and armed pullback hunts.
 - FUTURES: micros only (NQ→MNQ, ES→MES ...). Entry snaps to the 25-pt grid
@@ -454,9 +473,7 @@ FILL ANNOUNCER (announcer.py, read-only)
   into the registry 9/11 after its writer existed but the common reader did
   not know about it.
   NOT bars/ — that and bars_capture.py were archived 9/9 and tape.py never
-  registered them. (test_architecture.py asserted an exact set of four and
-  had gone stale; it now requires the four core sources and checks every
-  registered source resolves to a path.) tape.path(
+  registered them. tape.path(
   "databento") = the despiked clean file when it exists — every backtest
   replays the same prices. Webull has NO historical option prices; the
   tapes are our own record. Databento key (settings execution.databento)
@@ -523,22 +540,18 @@ FILL ANNOUNCER (announcer.py, read-only)
   super small now"): the SAME popup.html opened as a normal tab —
   chrome-extension://iaokjlndnmamhgmgkoldkhjehmdkginj/popup.html?page=1
   (the "⤢ page" button in the popup opens or focuses it; bookmarkable).
-  No 800×600 cap; every tab becomes a card on a 3-column grid (Channels and
-  Logs span the height); same code, same 1-2 s polling of the same bridge.
-  One file, two sizes — never a second dashboard. IS_PAGE in popup.js
+  No 800×600 cap; every tab is a card on a 3-column grid, same code and
+  same 1-2 s bridge polling. One file, two sizes — never a second
+  dashboard. IS_PAGE in popup.js
   guards the popup-only bits (window.close after a room jump).
 - POPUP (v3.5.77, 9/9 evening): the rooms list paints FIRST in render()
   and any exception in the rest of the popup is written INTO the Channels
-  pane ("popup error (…): …") — never a blank pane again. It caught its
-  first one the same evening: `esc is not defined` at renderTable — the
-  HTML-escaper lived only as a local inside the holdings block while the
-  module-level renderTable() called it, so ANY day-table row killed render()
-  before the rooms drew (blank Channels tab since the 9/7 slimming). esc()
-  is module-level now, one copy. If G reports a broken popup again, the red
+  pane ("popup error (…): …") — never a blank pane again. esc() is
+  module-level, one copy. If G reports a broken popup again, the red
   line under the rooms is the diagnosis; ask for it. Claude-in-Chrome CANNOT
   read the popup (another extension's page; screenshots/JS/console all
-  refused). Extension id: chrome-extension://iaokjlndnmamhgmgkoldkhjehmdkginj
-  (Chrome hashes the folder path as UTF-16LE; same id in both profiles).
+  refused). Its id is the one in THE PAGE url above — Chrome hashes the
+  folder path as UTF-16LE, so both profiles get the same one.
 - Multi-account: extras mirror LIVE entries 1:1 with own books/stops.
 - START HERE.bat saves+pushes before its reset; RESTART BRIDGE.bat
   pre-flights and warns. Logs: trades.log (the story), bridge.log (raw,
@@ -585,25 +598,16 @@ FILL ANNOUNCER (announcer.py, read-only)
 3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50
    MNQ pts), qty 1 — create in NT8, type SNIPER in the popup.
 4. Close any old parked Whop tabs. (Chrome hardware acceleration: DONE 9/10
-   — `--disable-gpu` is now on every flagged Chrome launch in START HERE.bat
-   and _whop_loop.bat, so it applies itself on the next full restart and no
-   longer depends on the Settings checkbox. Reason it matters is CORRECTNESS,
-   not speed: GPU black-tab disease paints a room black, and a black tab
-   reads NOTHING while looking open. Flags only bind on a cold start — if
-   that profile's Chrome is already running, the launch reuses the existing
-   process and ignores them.)
+   — `--disable-gpu` rides every flagged Chrome launch. CORRECTNESS, not
+   speed: a GPU black tab reads NOTHING while looking open. Flags bind only
+   on a cold start, so a Chrome already running ignores them.)
 5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
-6. CHROME BEFORE 9:15 (9/11): START HERE ran at 09:49, so no room was read
-   9:15–9:49 — QCOM 185C, NVDA 220C, MNQ short and DELL 560C were never seen.
-   Rooms open themselves at 9:15 only if Chrome + the extension are already
-   up; run START HERE (or schedule it) by 9:00 on trading days.
+6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension
+   are already up (9/11: a 09:49 start missed QCOM/NVDA/MNQ/DELL). Run START
+   HERE, or schedule it, by 9:00 on trading days.
 7. Chrome extension for Claude was NOT connected at the 16:35 close-out, so
    the /stream check (last_sweep_ms, budget_left) was skipped; re-sign-in
    the "Claude in Chrome" side panel if you want the autopilot to read it.
-(OWLS all-alerts "no tab" — RESOLVED by ROOM HOURS: the extension opens
-every `on` room at 9:15 by itself; verify OWLS reads on 9/10.)
-(daily-journal-and-fix — DELETED 9/9 evening; Mode C did its first clean
-close-out today.)
 
 ## Watch items (open)
 - PULLBACK STOCK TARGET vs THE RATCHET (9/10, G's call): a pullback entry

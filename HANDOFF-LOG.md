@@ -12,6 +12,107 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-14 (the EDITED alert that armed two pullbacks, and the blind eyes)
+
+BUG 1 — ONE MESSAGE, TWO ARMS, ONE WRONG BUY. 10:21, room "Platinum nitro",
+caller "PT | ei trades" posted `Entry — Contract: TSLA $357.5c — Price: $1.42`
+and then EDITED that same Discord message to `357.5p` (the row shows
+"(edited)"). Discord keeps ONE message id through an edit; content.js keys its
+dedupe on id + text LENGTH, and the "(edited)" mark makes the row longer, so
+the corrected call was read as a fresh alert — correctly — and the bridge armed
+a SECOND round-number pullback with nothing standing the first one down:
+
+    10:21:21  PULLBACK TSLA CALL: stock at 358.63, waiting for a dip to $358
+    10:22:17  PULLBACK TSLA PUT:  stock at 358.14, waiting for a bounce to $359
+    10:24:06  ORDER IN BUY 1 TSLA 357.5C 2026-09-18 @ 7.75  [stop 7.25]
+
+The stale CALL arm fired and bought the side the caller had already corrected.
+The PUT arm never fired. pullback.py already had cancel_for(trader) (retraction,
+8/26) and cancel_order(order) (phantom exit, 9/2), and start() already refused a
+duplicate arm of the IDENTICAL contract — nothing anywhere handled a REVISION.
+
+WHY THE MESSAGE ID WAS NOT THERE. content.js has always sent `mid: li.id` and
+background.js has always used it for seenMessage() — it simply never went into
+the order payload, so the bridge had no way to tell "the caller corrected that
+call" from "the caller posted a second call". sendOrder() now carries it as
+`message_id`, and the second contract of a two-strike call ("$NVDA $225C/ and
+$230C") is flagged `sibling: true` so it is never mistaken for a correction of
+leg one. Extension 3.8.30 -> 3.8.31.
+
+THE RULE, in alert_revision.py (pure, no broker, no book, no network): an OPEN
+whose message id is already pending REPLACES it. With no message id on either
+side (legacy build, voice, vision) the fallback is the same trader, the same
+ticker, a different contract, inside five minutes. Two DIFFERENT message ids are
+deliberately NOT an edit — separately posted contracts are separate trades
+(HANDOFF: TWO CONTRACTS IN ONE MESSAGE = TWO ORDERS), and cancelling a live arm
+because the caller posted a second contract would be a worse bug than the one
+being fixed. An identical contract is never a revision either; the dedupe ladder
+already owns reposts. bridge._revision_check() then cancels the earlier hunt
+(Pullback.cancel_order) and its resting bid (Book.cancel_entry) through the
+paths that already existed, and logs:
+
+    EDITED   TSLA — PT | ei trades changed 357.5C → 357.5P; the earlier
+             pullback is cancelled, only the new one stands
+
+ENTRIES ONLY IS UNTOUCHED. If the earlier contract already FILLED, nothing is
+sold — the ratchet owns every exit — and the line says so instead:
+
+    EDITED   TSLA — PT | ei trades changed 357.5C → 357.5P, but the 357.5C
+             already filled at 7.40 — position stays, ratchet owns it
+
+test_alert_revision.py holds all of it: the C->P edit, the resting-bid pull, the
+5-minute no-id fallback, the 400-second miss, a different trader, a different
+message id, an identical repost, a sibling leg, a non-OPEN action, and the
+payload wiring in background.js/content.js. 13 tests, mock book and mock
+pullback, no network.
+
+BUG 2 — THE EYES WERE BILLING-BLOCKED. Every screenshot read on 9/14 failed:
+
+    10:22:54  IMG READ couldn't read the image (HTTP 400: Your credit balance
+              is too low to access the Anthropic API...)
+
+reads.log shows the same "[FAILED: HTTP 400 ...Anthropic]" on every 📸 read of
+the day. The text observer had already moved to OpenAI/Gemini on 9/13 when
+Anthropic went billing-blocked; the IMAGE lane in ai_reader.read_image() still
+posted straight to api.anthropic.com. It now goes through the same providers,
+the same keys (settings ai_provider_keys) and the same cooldown map as the
+observer — observer_providers.read_image(), OpenAI vision first, Gemini next —
+with Anthropic LAST and skipped outright while it is billing-blocked
+(execution.ai_reader.billing_blocked, or any credit/billing refusal parks it six
+hours). Same VISION_SYSTEM prompt and same JSON contract, so the anti-
+hallucination guard still checks every field against the image's own
+transcribed words, and the bridge still treats the answer as a PROPOSAL the
+parser and guards judge — AI confidence authorizes nothing. The bridge's gate
+moved from ai_reader.available() (Anthropic key only) to image_available() (any
+vision key), and the log now names the reader:
+
+    IMG READ  [screenshot via openai gpt-5.4]  ->  BTO TSLA $357.5P @ 1.42
+
+test_image_reader.py (10 tests, every provider call mocked, zero API spend)
+covers the OpenAI pick while Anthropic is blocked, the Gemini fallback, the
+image blocks actually riding along, the both-down error naming each provider,
+the Anthropic last-resort when it is the only healthy key, and that the TEXT
+observer's Gemini-first order is unmoved.
+
+STILL OPEN, SAME CAUSE: the one-message TEXT reader (`AI READ`, bridge._ai_read
+-> ai_reader.read_signal) is still hard-coded to Anthropic and still logging
+"AI READ no call — ai: HTTP 400" all day. Same fix, not made here because it is
+the lane that proposes live entries and AGENTS.md wants a measured before/after
+replay for that.
+
+TESTS: every test_*.py ran directly (no pytest) — all pass except
+test_stream_bus.py, which fails on a missing `paho` module and did so before
+this change. All five test_*.js pass. py_compile on bridge.py, ai_reader.py,
+observer_providers.py, alert_revision.py and both new tests; node --check on
+extension/background.js.
+
+DEPLOY: the running bridge logged "CODE change on disk — will restart once it
+settles (after the close if the market's open)" at 11:21:39 and "CODE new build
+ready — waiting for a safe window" at 11:22:39. It was mid-session with a QQQ
+pullback hunt armed, so the new build goes live at the first safe window or the
+close, exactly as designed. The extension needs its usual reload; the manifest
+bump to 3.8.31 makes that provable.
+
 ## 2026-09-14 (the dateless TSLA — wrong contract, then no stop)
 
 WHAT HAPPENED. 10:21, "Platinum nitro" / "PT | ei trades" posted
