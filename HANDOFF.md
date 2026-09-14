@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-14 — v3.8.31: an EDITED alert now cancels the entry it corrects instead of arming a second one, and screenshot reads run OpenAI → Gemini with Anthropic last (it is billing-blocked).
+Last updated: 2026-09-14 — v3.8.31: an EDITED alert cancels the entry it corrects, and BOTH AI readers run OpenAI → Gemini with Anthropic last (billing-blocked).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -28,7 +28,7 @@ Last updated: 2026-09-14 — v3.8.31: an EDITED alert now cancels the entry it c
 - G (giancuffaro230@gmail.com) — maintains this code himself (9/13), trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
-- The machine: Chrome MV3 extension source v3.8.31 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). `extension/rooms.txt` is the one room list. Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot audits and journals after close. Market Sniper shares Webull; this bot never manages its positions.
+- The machine: Chrome MV3 extension source v3.8.31 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot audits and journals after close. Market Sniper shares Webull; this bot never manages its positions.
 - Accounts: `execution.mode=dryrun` does not disable per-room live Webull
   orders. Verify current buying power and positions at the broker before
   making claims. Webull options share one API budget with Market Sniper;
@@ -46,23 +46,26 @@ Last updated: 2026-09-14 — v3.8.31: an EDITED alert now cancels the entry it c
   the growing dataset is what earns parser/strategy improvements. Exact caller
   results require real entry+exit evidence; never substitute a later high.
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
-- ANTHROPIC STATUS: saved-key presence is separate from probe result. Billing, rate limits, authentication, access and connection failures have distinct labels; do not interpret every failed check as a missing key.
-- KEY CHECK (9/13): OpenAI, Gemini and Perplexity probes passed; Anthropic billing blocked, DeepSeek removed. See sanitized local-reader-measure/provider-key-check.json.
-- PROVIDER KEYS: Keys pane saves OpenAI, Gemini and Perplexity credentials under settings.json ai_provider_keys. Saved provider fields are hidden with an explicit Replace key option. OpenAI/Gemini connected to context observer; Perplexity stored inactive. DeepSeek credential and fields removed by user request; Anthropic retained billing-blocked. Status returns presence flags only; inputs are not included in browser draft persistence.
+- PROVIDER KEYS: the Keys pane saves OpenAI, Gemini and Perplexity under settings.json ai_provider_keys; saved fields hide behind an explicit Replace key, status returns presence flags only, and inputs never ride in browser draft persistence. OpenAI/Gemini feed the observer AND both live readers; Perplexity is stored inactive; DeepSeek was removed at G's request; Anthropic is kept and billing-blocked (9/13 probe: OpenAI/Gemini/Perplexity passed — sanitized local-reader-measure/provider-key-check.json). Saved-key PRESENCE is not a probe RESULT: billing, rate limit, authentication, access and connection failures carry distinct labels, so a failed check is not a missing key.
 - DEPARTMENTS: enabled. Existing bridge audit loop calls health_tick every five minutes; extension maintenance publishes Discord/Whop lane heartbeat and reader issues. GPT-5.4 mini analyzes changed issues (12/day), Astra escalates multi-issue incidents (2/day), reviews selected reader disagreements (20/day), and analyzes existing daily reports after the 16:40 audit (1/day). Results are advisory files in department-reports, never executed as code/orders. Astra and Mini live probes passed; first Astra report for Friday 9/11 and Mini preflight generated. Context snapshots persist at most once/minute (up to one minute may be lost on abrupt exit).
 - READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer enabled: Gemini gemini-3.1-flash-lite primary, OpenAI gpt-5.4 fallback; same prompt, bounded requests and cooldowns; observation only. Needs You pane/buttons/polling removed. Caller controls appear under matching Channels; v3.8.27 shows verified account sightings by channel ID and an unavailable win rate until evidence supports one. Existing Honey Drip controls remain limited to their specific room IDs; newly observed accounts have no execution keys. Historical identity attribution is candidate-only unless the original source supports an account link. Grabber v3.8.22 re-resolves replaced message panes each step, tracks oldest-message progress instead of page height, allows 30 seconds for stalled loads, and clears failed runs; stale-ID recovery and queue advancement fixed; v3.8.23 restores the original one-year target (exceeds requested four months); the Optionality tab already had May 6 loaded and was correctly stopping at the shorter cutoff. Retains tabs and labels stalled history partial. v3.8.25 capture retains message_id, captured_at and observed revisions, dedupes by channel+ID, and exports structured .json beside readable .txt. Legacy ID-less rows remain explicit legacy-unknown; re-grab is needed to obtain IDs, not infer them. Browser full-history completeness remains unverified.
-- IMAGE READS (9/14): a screenshot goes to the SAME providers as the text
-  observer — OpenAI vision, then Gemini, Anthropic LAST and skipped while
-  billing-blocked (execution.ai_reader.billing_blocked, or a credit refusal
-  parks it 6h). Same prompt, keys, cooldowns and 24h repeat-image cache; the
-  log names who read it, and the read is still only a proposal the parser and
-  guards judge. Until now every 📸 read died "HTTP 400: credit balance too
-  low". OPEN: the one-message TEXT reader (AI READ) is still on Anthropic and
-  fails the same way.
+- WHO READS (9/14): BOTH live ai_reader lanes — the one-message reader
+  (AI READ) and the screenshot reader (IMG READ) — use the observer's
+  providers, keys and cooldown map: OpenAI gpt-5.4, then Gemini, then
+  Anthropic LAST and skipped while billing-blocked
+  (execution.ai_reader.billing_blocked; any credit refusal parks it 6h). One
+  order setting, `context_observer.reader_provider_order`. Same prompts, the
+  24h image cache, the log names who read it. Changing WHO reads
+  changes nothing about what a read may DO — still a proposal the parser and
+  every guard judge, AI confidence authorizes nothing. On 9/14 alone the old
+  hard-coded Anthropic call cost 242 "AI READ no call - ai: HTTP 400" and
+  every 📸 read. ai_reader.judge() is the ONE copy of "validate() can never
+  raise": a model field that is "" or a range ("1.26-1.30") is NO CALL — not
+  a crash, not an order. 249 of the 12,162 retained OpenAI reads do that, and
+  neither live lane had a guard on it.
 - AI MEASUREMENT: full scan results and the Chrome-lane history are in
-  HANDOFF-LOG.md (9/14). Contextual AI = Gemini primary, OpenAI fallback;
-  the legacy Anthropic one-message reader stays billing-blocked. START HERE
-  opens enabled rooms Monday morning; roomSchedule closes them after hours
+  HANDOFF-LOG.md (9/14). Contextual AI = Gemini primary, OpenAI fallback.
+  START HERE opens enabled rooms Monday morning; roomSchedule closes them after hours
   and does not reopen them. Market-hours capture still to verify.
 
 ## Rules of the house (current, in force)
@@ -74,8 +77,7 @@ extraction, export duplication and conditional exit wording remain unresolved.
 PREMIUM REVIEW: Department AI distinguishes per-share quotes, cents, per-contract
 cost, position totals and profit. No arbitrary premium range and no automatic
 factor-of-100 correction. Equivalent amounts with verified units are not bugs;
-missing units remain unresolved pending original-source evidence. User confirmed
-Discord Chrome Profile 2 and Whop Chrome Profile 6 on 2026-09-13.
+missing units remain unresolved pending original-source evidence.
 
 ENTRIES
 - Bid the caller's price or better; pullback entries cross the ask at the
