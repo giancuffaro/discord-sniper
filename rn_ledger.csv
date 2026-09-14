@@ -45,3 +45,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789396876.227,armed,QQQ,PUTS,705,9/14,,705.0,,Vero,Vero 2
 1789396938.827,submitted,QQQ,PUTS,705,9/14,,705.0,,Vero,Vero 2
 1789396946.364,filled,QQQ,PUTS,705,9/14,,705.0,1.41,Vero,Vero 2
+1789398751.119,armed,MSFT,CALLS,505,2026-09-14,,503.0,,MuggZone,OWLS all-alerts
