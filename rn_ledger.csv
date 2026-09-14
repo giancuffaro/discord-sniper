@@ -54,3 +54,5 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789399536.926,filled,META,CALLS,670,9/18,,656.0,6.65,Unraveller,Honeydrip daytrades
 1789399861.559,missed,QQQ,CALLS,708,2026-09-14,,706.0,,Skyy,shabs
 1789401170.118,armed,TSLA,PUTS,340,9/25,,364.0,,MuggZone,Mugzone Options
+1789401771.692,submitted,TSLA,PUTS,340,9/25,,364.0,,MuggZone,Mugzone Options
+1789401773.697,filled,TSLA,PUTS,340,9/25,,364.0,2.38,MuggZone,Mugzone Options
