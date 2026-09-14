@@ -421,8 +421,8 @@ def protective_stop_order(contract, direction, qty, fill, stop, client_order_id)
     import re
     contract = str(contract or '').upper()
     direction = str(direction or '').upper()
-    if not re.fullmatch(r'[A-Z]{1,4}[FGHJKMNQUVXZ]\d{1,2}', contract):
-        raise FuturesRefused('protective stop needs the exact filled futures contract')
+    if not re.fullmatch(r'(?:MES|MNQ)[FGHJKMNQUVXZ]\d{1,2}', contract):
+        raise FuturesRefused('protective stop needs the exact filled MES/MNQ contract')
     if direction not in ('LONG', 'SHORT') or int(qty) != 1:
         raise FuturesRefused('protective stop needs an exact one-lot direction and size')
     if not re.fullmatch(r'[A-Za-z0-9]{1,32}', str(client_order_id or '')):
@@ -435,11 +435,11 @@ def protective_stop_order(contract, direction, qty, fill, stop, client_order_id)
         raise FuturesRefused('protective stop prices must be finite and positive')
     if (direction == 'LONG' and stop >= fill) or (direction == 'SHORT' and stop <= fill):
         raise FuturesRefused('protective stop is on the wrong side of the fill')
-    if contract.startswith(('MES', 'MNQ')) and abs(stop * 4 - round(stop * 4)) > 1e-8:
+    if abs(stop * 4 - round(stop * 4)) > 1e-8:
         raise FuturesRefused('MES/MNQ stop must be on a quarter-point tick')
     return {'combo_type': 'NORMAL', 'client_order_id': str(client_order_id),
             'symbol': contract, 'instrument_type': 'FUTURES', 'market': 'US',
-            'order_type': 'STOP_LOSS', 'stop_price': f'{stop:g}',
+            'order_type': 'STOP_LOSS', 'stop_price': f'{stop:.2f}'.rstrip('0').rstrip('.'),
             'quantity': '1', 'side': 'SELL' if direction == 'LONG' else 'BUY',
             'time_in_force': 'GTC', 'entrust_type': 'QTY'}
 
@@ -450,8 +450,6 @@ def execute(wb, book, order, key, note):
     action = order.get("action")
     sym = str(order.get("symbol", "")).upper()
     direction = str(order.get("direction") or "").upper()
-    contract = front_month(wb, sym)
-
     if action == "OPEN":
         # The current market-entry -> fill-watch path cannot yet guarantee a
         # broker-confirmed stop. A numeric plan in Book is NOT a protective
@@ -460,6 +458,9 @@ def execute(wb, book, order, key, note):
         if not protective_entries_ready():
             return False, ("Webull futures entry held: broker-confirmed protective "
                            "stop is not operational; no order was sent")
+    contract = front_month(wb, sym)
+
+    if action == "OPEN":
         side = "SELL" if direction == "SHORT" else "BUY"
         raw_px = order.get("limit")
         entry_px = _round_entry(sym, raw_px, direction)   # snap in his favour
