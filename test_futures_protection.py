@@ -71,6 +71,20 @@ class ProtectiveStops(unittest.TestCase):
             futures.submit_protective_stop(wb, payload)
         api.place_order.assert_called_once()
 
+    def test_cancel_confirmation_prevents_a_second_exit_after_stop_fill(self):
+        payload = futures.protective_stop_order('MESZ6', 'LONG', 1, 7000,
+                                                6975, 'sniperstop789')
+        wb = Mock(futures_account_id='fake-futures-account')
+        api = wb.trade.order_v3
+        api.get_order_detail.return_value = Mock(status_code=200)
+        api.get_order_detail.return_value.json.return_value = {
+            'orders': [dict(payload, status='FILLED')]}
+        self.assertEqual(futures.cancel_protective_stop(wb, payload), 'filled')
+        api.get_order_detail.return_value.json.return_value = {
+            'orders': [dict(payload, status='PENDING')]}
+        with self.assertRaisesRegex(futures.FuturesRefused, 'no separate close'):
+            futures.cancel_protective_stop(wb, payload)
+
 
 if __name__ == '__main__':
     unittest.main()

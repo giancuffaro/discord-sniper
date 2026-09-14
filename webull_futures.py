@@ -444,25 +444,20 @@ def protective_stop_order(contract, direction, qty, fill, stop, client_order_id)
             'time_in_force': 'GTC', 'entrust_type': 'QTY'}
 
 
-def submit_protective_stop(wb, payload):
-    """Submit one exact Webull stop and confirm its identity from order detail.
-
-    Never probe alternate submit methods after an ambiguous response: the
-    first request may already have created a working stop. The client ID is
-    caller-supplied and must be durably reserved before invoking this method.
-    No live path calls it until fill/exit reconciliation is implemented.
-    """
+def _stop_api(wb):
     account = getattr(wb, 'futures_account_id', None)
     api = getattr(getattr(wb, 'trade', None), 'order_v3', None)
     if not account or api is None or not all(hasattr(api, n) for n in
-                                               ('place_order', 'get_order_detail')):
+                                               ('place_order', 'get_order_detail',
+                                                'cancel_order')):
         raise FuturesRefused('exact Webull futures stop API unavailable')
+    return account, api
+
+
+def protective_stop_status(wb, payload):
+    """The exact order's broker status, or a refusal; never guess from a list."""
+    account, api = _stop_api(wb)
     cid = payload['client_order_id']
-    try:
-        response = api.place_order(account, [payload])
-    except Exception as exc:
-        raise FuturesRefused('protective stop submission uncertain; check exact client ID at broker') from exc
-    # Even a 200 acceptance is not proof of a working protective stop.
     try:
         detail = api.get_order_detail(account, cid)
         if getattr(detail, 'status_code', None) != 200:
@@ -476,12 +471,50 @@ def submit_protective_stop(wb, payload):
                 or str(row.get('symbol')) != payload['symbol']
                 or str(row.get('side')) != payload['side']
                 or str(row.get('order_type')) != 'STOP_LOSS'
-                or str(row.get('quantity')) != payload['quantity']
-                or str(row.get('status')) not in ('PENDING', 'SUBMITTED')):
-            raise ValueError('detail does not prove the intended working stop')
-        return cid
+                or str(row.get('stop_price')) != payload['stop_price']
+                or str(row.get('quantity')) != payload['quantity']):
+            raise ValueError('detail does not match the protective stop')
+        return str(row.get('status') or '').upper()
     except Exception as exc:
         raise FuturesRefused('protective stop unverified; inspect exact client ID at broker') from exc
+
+
+def submit_protective_stop(wb, payload):
+    """Submit once, then prove broker holds this exact working STOP_LOSS.
+
+    Never probe alternate submit methods after an ambiguous response: the
+    first request may already have created a working stop. The client ID is
+    caller-supplied and must be durably reserved before invoking this method.
+    No live path calls it until fill/exit reconciliation is implemented.
+    """
+    account, api = _stop_api(wb)
+    try:
+        api.place_order(account, [payload])
+    except Exception as exc:
+        raise FuturesRefused('protective stop submission uncertain; check exact client ID at broker') from exc
+    if protective_stop_status(wb, payload) not in ('PENDING', 'SUBMITTED'):
+        raise FuturesRefused('protective stop is not working at broker')
+    return payload['client_order_id']
+
+
+def cancel_protective_stop(wb, payload):
+    """An exit may proceed only after CANCELLED is confirmed; FILLED means flat.
+
+    Any uncertain status means do not send a separate close that could reverse
+    a one-lot position. The broker status, not a successful HTTP cancel, wins.
+    """
+    account, api = _stop_api(wb)
+    cid = payload['client_order_id']
+    try:
+        api.cancel_order(account, cid)
+    except Exception:
+        pass                         # a fill may have raced the cancel
+    status = protective_stop_status(wb, payload)
+    if status == 'CANCELLED':
+        return 'cancelled'
+    if status == 'FILLED':
+        return 'filled'
+    raise FuturesRefused('protective stop still working or uncertain; no separate close sent')
 
 
 def execute(wb, book, order, key, note):
