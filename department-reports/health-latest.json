@@ -31,7 +31,11 @@
     "Jon Tran Alerts is ON but has no tab in this browser",
     "Hog Alerts is ON but has no tab in this browser",
     "Quantum Alerts is ON but has no tab in this browser",
-    "Optionality free-trades is ON but has no tab in this browser"
+    "Optionality free-trades is ON but has no tab in this browser",
+    "Whop Day Trades tab is open but its reader hasn't beaten in a while",
+    "Whop Futures tab is open but its reader hasn't beaten in a while",
+    "Whop High Risk tab is open but its reader hasn't beaten in a while",
+    "Whop 2K Challenge tab is open but its reader hasn't beaten in a while"
   ],
   "lanes": [
     {
@@ -54,5 +58,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789392317.6976755
+  "checked_at": 1789392617.7025588
 }
