@@ -11,13 +11,13 @@ import ai_reader
 
 DEFAULT_MODELS = {'openai': 'gpt-5.4', 'gemini': 'gemini-3.1-flash-lite'}
 DEFAULT_ORDER = ('openai', 'gemini')
-# THE SCREENSHOT LANE (9/14). Same two providers, same keys, same cooldowns —
-# a separate order only so the image lane can be steered without moving the
-# text observer. It exists because the image reader still hard-coded Anthropic,
-# which has been billing-blocked since 9/13: every screenshot read on 9/14
-# failed "HTTP 400: Your credit balance is too low", including PT's 10:22 post.
-DEFAULT_VISION_ORDER = ('openai', 'gemini')
-VISION_MODELS = DEFAULT_MODELS
+# THE LIVE READER LANES (9/14) — the one-message text reader and the screenshot
+# reader. Same two providers, same keys, same cooldowns as the observer; their
+# own order setting only so the live lanes can be steered without moving the
+# measurement observer. They exist because BOTH lanes still hard-coded
+# Anthropic, which has been billing-blocked since 9/13: on 9/14 that was 242
+# "AI READ no call - ai: HTTP 400" lines and every screenshot read of the day.
+DEFAULT_READER_ORDER = ('openai', 'gemini')
 _cooldown = {}
 _lock = threading.Lock()
 
@@ -28,12 +28,12 @@ def available(cfg):
     return bool(settings.get('enabled') and any(keys.get(p) for p in ('openai', 'gemini')))
 
 
-def vision_available(cfg):
-    """A screenshot can be read as soon as ONE provider key exists. Deliberately
-    not gated on context_observer.enabled: that switch governs the measurement
-    observer, and turning measurement off must never blind the image reader."""
+def providers_available(cfg):
+    """A live lane can read as soon as ONE provider key exists. Deliberately not
+    gated on context_observer.enabled: that switch governs the measurement
+    observer, and turning measurement off must never blind the live readers."""
     keys = (cfg or {}).get('ai_provider_keys') or {}
-    return any(keys.get(p) for p in DEFAULT_VISION_ORDER)
+    return any(keys.get(p) for p in DEFAULT_READER_ORDER)
 
 
 def request(provider, model, key, system, prompt, output_limit=1600, reasoning="low", timeout_seconds=30, images=None):
@@ -138,14 +138,26 @@ def read(system, prompt, cfg):
                 _order(settings, 'provider_order', DEFAULT_ORDER), None, 1600)
 
 
+def read_signal(system, prompt, cfg, output_limit=400):
+    """ONE message read for the live reader lane. Same keys, same order and the
+    same cooldown map as the observer — not gated on the observer's own switch,
+    because measurement being off must never stop the live reader reading."""
+    settings = cfg.get('context_observer') or {}
+    if not providers_available(cfg):
+        return {'_error': 'no_provider_key'}, 0
+    return _run(system, prompt, cfg,
+                _order(settings, 'reader_provider_order', DEFAULT_READER_ORDER),
+                None, output_limit)
+
+
 def read_image(system, prompt, images, cfg, output_limit=900):
     """A screenshot read, through the same keys, order and cooldowns as the
-    text observer. `images` is [(media_type, base64), ...]."""
+    text lanes. `images` is [(media_type, base64), ...]."""
     settings = cfg.get('context_observer') or {}
-    if not vision_available(cfg):
-        return {'_error': 'no_vision_provider_key'}, 0
+    if not providers_available(cfg):
+        return {'_error': 'no_provider_key'}, 0
     if not images:
         return {'_error': 'no_image'}, 0
     return _run(system, prompt, cfg,
-                _order(settings, 'vision_provider_order', DEFAULT_VISION_ORDER),
+                _order(settings, 'reader_provider_order', DEFAULT_READER_ORDER),
                 list(images), output_limit)

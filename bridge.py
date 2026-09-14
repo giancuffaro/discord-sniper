@@ -5026,16 +5026,24 @@ class Handler(BaseHTTPRequestHandler):
             import ai_reader
         except Exception as e:                              # noqa: BLE001
             return self._json(200, {"off": True, "why": "ai_reader missing: %s" % e})
-        if not ai_reader.available(CFG):
+        # WHICH BRAIN READS THE MESSAGE (9/14) — the same question the image
+        # lane answers: any provider key, not "is the Anthropic key saved".
+        # That key has been billing-blocked since 9/13 and this lane logged 242
+        # "no call - ai: HTTP 400" lines on 9/14 while still reporting itself
+        # available. ai_reader picks OpenAI, then Gemini, then Anthropic last.
+        if not ai_reader.signal_available(CFG):
             return self._json(200, {"off": True})
         allowed = CFG.get("allowed_symbols", []) or []
         read = ai_reader.read_signal(text, allowed, CFG)
         ok, why, cleaned = ai_reader.validate(read, text, allowed)
+        _by = str((read or {}).get("_provider") or "?") if isinstance(read, dict) else "?"
+        _mdl = str((read or {}).get("_model") or "") if isinstance(read, dict) else ""
         if not ok:
             note("AI READ  no call — %s" % (why or "")[:80])
             return self._json(200, {"ok": False, "why": why})
         canon = ai_reader.canonical(cleaned)
-        note("AI READ  '%s'  ->  %s" % (text[:50], canon))
+        note("AI READ  [via %s%s]  '%s'  ->  %s"
+             % (_by, (" " + _mdl) if _mdl else "", text[:50], canon))
         return self._json(200, {"ok": True, "canonical": canon,
                                 "read": cleaned,
                                 "confidence": cleaned.get("confidence", 0)})

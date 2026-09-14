@@ -140,6 +140,12 @@ def _cfg(cfg):
     return ((cfg or {}).get("execution", {}) or {}).get("ai_reader", {}) or {}
 
 
+def key_of(cfg):
+    """The Anthropic key. Its presence is no longer the same question as
+    "can we read" — see signal_available()."""
+    return _cfg(cfg).get("api_key")
+
+
 # ANTHROPIC IS THE LAST RESORT NOW (9/14). The account has been billing-blocked
 # since 9/13, and the image lane was the one place still calling it FIRST: every
 # screenshot read on 9/14 came back "HTTP 400: Your credit balance is too low",
@@ -168,16 +174,25 @@ def anthropic_blocked(cfg):
     return time.time() < _ANTHROPIC_BLOCK_UNTIL[0]
 
 
-def image_available(cfg):
-    """Can a screenshot be read at all? Any vision provider key will do — the
-    Anthropic key alone is no longer the answer to that question."""
+def _providers_ready(cfg):
     try:
         import observer_providers
-        if observer_providers.vision_available(cfg):
-            return True
+        return observer_providers.providers_available(cfg)
     except Exception:                                       # noqa: BLE001
-        pass
-    return bool(_cfg(cfg).get("api_key")) and not anthropic_blocked(cfg)
+        return False
+
+
+def signal_available(cfg):
+    """Can ONE message be read at all? Any provider key will do — the Anthropic
+    key alone stopped being the answer to that on 9/13, when it was billing-
+    blocked and `available()` still said yes 242 times."""
+    return _providers_ready(cfg) or (
+        bool(_cfg(cfg).get("api_key")) and not anthropic_blocked(cfg))
+
+
+def image_available(cfg):
+    """Same question for a screenshot, same answer."""
+    return signal_available(cfg)
 
 
 def _extract_json(s):
@@ -194,21 +209,10 @@ def _extract_json(s):
         return None
 
 
-def read_signal(text, allowed_symbols, cfg, timeout=8):
-    """Ask Claude to read one message into fields. Returns a dict or None.
-
-    Never raises into the caller for an ordinary failure (no key, network, bad
-    reply) — a reader that crashes the bridge would be worse than one that
-    stays quiet. Returns None on any trouble; the message just stays unread,
-    same as before the AI existed.
-    """
+def _read_signal_anthropic(prompt, cfg, timeout):
+    """The last-resort lane. Same prompt, same JSON contract."""
     a = _cfg(cfg)
-    key = a.get("api_key")
-    if not key or not text:
-        return None
     model = a.get("model") or DEFAULT_MODEL
-    allowed = ", ".join(sorted(set(allowed_symbols or [])))[:400]
-    prompt = INSTRUCTION.format(allowed=allowed or "(none listed)", text=text[:1500])
     body = json.dumps({
         "model": model,
         "max_tokens": 300,
@@ -217,16 +221,22 @@ def read_signal(text, allowed_symbols, cfg, timeout=8):
     }).encode("utf-8")
     req = urllib.request.Request(ANTHROPIC_URL, data=body, method="POST")
     req.add_header("content-type", "application/json")
-    req.add_header("x-api-key", key)
+    req.add_header("x-api-key", key_of(cfg))
     req.add_header("anthropic-version", API_VERSION)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        # 401 bad key, 429 rate, 5xx — all just mean "no read this time".
-        return {"_error": "HTTP %s" % e.code}
+        why = ""
+        try:
+            j = json.loads(e.read().decode("utf-8", "replace"))
+            why = str(((j.get("error") or {}).get("message")) or "")[:160]
+        except Exception:                                   # noqa: BLE001
+            pass
+        note_anthropic_error(why)
+        return {"_error": "anthropic HTTP %s" % e.code}
     except Exception:                                       # noqa: BLE001
-        return {"_error": "unreachable"}
+        return {"_error": "anthropic unreachable"}
     # Anthropic returns content as a list of blocks; the text is in the first.
     try:
         parts = data.get("content") or []
@@ -235,7 +245,53 @@ def read_signal(text, allowed_symbols, cfg, timeout=8):
         raw = ""
     out = _extract_json(raw)
     if not isinstance(out, dict):
-        return {"_error": "unparseable reply"}
+        return {"_error": "anthropic unparseable reply"}
+    out["_provider"] = "anthropic"
+    out["_model"] = model
+    return out
+
+
+def read_signal(text, allowed_symbols, cfg, timeout=8):
+    """Read ONE message into fields. Returns a dict or None.
+
+    THE PROVIDER ORDER IS THE ONE THE IMAGE LANE AND THE OBSERVER USE (9/14):
+    OpenAI first, Gemini next, Anthropic last and skipped while it is
+    billing-blocked. Same prompt, same JSON contract, same keys, same cooldown
+    map. This changes WHO reads, never what a read is allowed to do: the answer
+    is still DATA, validated field by field against the literal message and then
+    run back through the parser and every guard. AI confidence authorizes
+    nothing. Before this, the lane was hard-coded to Anthropic and logged 242
+    "AI READ no call - ai: HTTP 400" lines on 9/14 alone.
+
+    Never raises into the caller for an ordinary failure (no key, network, bad
+    reply) — a reader that crashes the bridge would be worse than one that stays
+    quiet. A failure comes back as {"_error": ...}, which validate() turns into
+    a refusal: no call, never an order.
+    """
+    if not text:
+        return None
+    allowed = ", ".join(sorted(set(allowed_symbols or [])))[:400]
+    prompt = INSTRUCTION.format(allowed=allowed or "(none listed)", text=text[:1500])
+    attempts = []
+    try:
+        import observer_providers
+    except Exception:                                       # noqa: BLE001
+        observer_providers = None
+    if observer_providers is not None and observer_providers.providers_available(cfg):
+        out, _ms = observer_providers.read_signal(SYSTEM, prompt, cfg)
+        if isinstance(out, dict):
+            attempts = out.get("_attempts") or []
+            if not out.get("_error"):
+                return out
+    failed = _attempt_error(attempts)
+    if not key_of(cfg):
+        return {"_error": failed} if failed else None
+    if anthropic_blocked(cfg):
+        return {"_error": ((failed + "; ") if failed else "")
+                          + "anthropic billing-blocked"}
+    out = _read_signal_anthropic(prompt, cfg, timeout)
+    if out.get("_error") and failed:
+        out["_error"] = failed + "; " + out["_error"]
     return out
 
 
@@ -444,7 +500,7 @@ def read_image(images, caption, allowed_symbols, cfg, timeout=15):
         import observer_providers
     except Exception:                                       # noqa: BLE001
         observer_providers = None
-    if observer_providers is not None and observer_providers.vision_available(cfg):
+    if observer_providers is not None and observer_providers.providers_available(cfg):
         out, _ms = observer_providers.read_image(VISION_SYSTEM, prompt,
                                                  blocks, cfg)
         if isinstance(out, dict):
