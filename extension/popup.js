@@ -563,6 +563,10 @@ function _fbPaintToggles() {
 
 function paintFuturesBrokers() {
   const fb = (modeStatus || {}).futures_brokers || {};
+  if ($("fbProtection")) $("fbProtection").textContent =
+    modeStatus && modeStatus.webull_futures_entry_ready === false
+      ? "Webull futures entries paused: broker protective stops are not verified. Mirror stays off."
+      : "";
   const nt = fb.ninjatrader || {}, ts = fb.topstep || {};
   // Seed toggles from the bridge ONCE, only if the browser never stored an
   // intent of its own. After that the browser copy wins — a refresh can't turn

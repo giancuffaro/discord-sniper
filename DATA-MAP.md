@@ -493,7 +493,7 @@ em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
 | File | Columns | What it is |
 |---|---|---|
 | `futures_mirror_shadow.csv` | `ts_iso, date, time_et, sym, dirn, micro, room, caller, their_price, outcome` | **Append-only, gitignored, written live by the bridge** for EVERY SPY/QQQ option entry it sees — filled, refused, pullback-armed, TEST room — whether the mirror switch is on or off. The daily replay's input, so it never waits on a master_alerts rebuild. |
-| `reference/FUTURES-MIRROR-REPLAY.csv` | `status, entry, exit, why, pts, usd, mfe, mae, bars, mode, ts, sym, dirn, room, caller, src, lvl, ref` | **The cumulative record**, one row per alert per entry mode (`market` = the headline, `snap` = the 25-pt-limit variant, selection-biased). Seeded with the 149 market rows of the 9/13 study; appended daily, deduped on `mode+ts+sym+dirn` so a re-run cannot inflate the running total. |
+| `reference/FUTURES-MIRROR-REPLAY.csv` | `status, entry, exit, why, pts, usd, mfe, mae, bars, mode, ts, sym, dirn, room, caller, src, lvl, ref` | **The cumulative record**, one market-mode row per alert (the selection-biased snap variant stays in each day report only). Seeded with the 149 market rows of the 9/13 study; appended daily, deduped on `mode+ts+sym+dirn` so a re-run cannot inflate the running total. |
 | `reference/FUTURES-MIRROR-REPLAY-2026-09-13.csv` | same | Frozen — the original 8/3–9/11 study (298 rows, both modes). The seed. Do not append to it. |
 | `daily-reports/FUTURES-MIRROR-<date>.md` | — | One day's trades, day total, running total since 2026-08-03, win rate, by room, by sym×direction, exits, and what the number is not. |
 

@@ -12,6 +12,19 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-13 (Webull futures protection audit)
+
+The Webull route was found enabled in current settings while the index mirror
+remained off. Official Webull futures API supports standalone STOP_LOSS/GTC,
+but no linked OTO/OCO bracket. The code had only recorded stop/target numbers;
+it sent no protective order. Live Webull futures OPEN now refuses before any
+broker lookup until exact fill identity, durable stop submission, broker
+verification and stop-versus-manual-close reconciliation are implemented.
+Three historical `FUTURES ORDER IN` entries would be refused by this gate.
+An offline STOP_LOSS payload/strict-detail adapter and tests are staged; it
+is not yet called by the live book. Mirror remains off and unavailable. No
+real order was placed or cancelled during this review.
+
 ## 2026-09-13 (Gemini-first observer and index-mirror verification)
 
 Gemini 3.1 Flash Lite now leads the 50-message contextual observer; OpenAI

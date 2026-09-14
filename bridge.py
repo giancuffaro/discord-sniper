@@ -4199,6 +4199,7 @@ class Handler(BaseHTTPRequestHandler):
                 # popup toggles show their true state after a reload. Passwords
                 # are stripped — never send a credential back to a browser.
                 "futures_brokers": _futures_brokers_safe(),
+                "webull_futures_entry_ready": __import__('webull_futures').protective_entries_ready(),
                 # The SPY/QQQ -> MES/MNQ mirror switch, so the popup toggle
                 # shows its true state after a reload. On/off and the map only.
                 "index_mirror": {
