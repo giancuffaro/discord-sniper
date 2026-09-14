@@ -10,22 +10,22 @@
     {
       "lane": "discord",
       "fresh": true,
-      "version": "3.8.30"
+      "version": "3.8.31"
     },
     {
       "lane": "whop",
       "fresh": true,
-      "version": "3.8.30"
+      "version": "3.8.31"
     }
   ],
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789399051.6929736,
+    "last_finished": 1789399394.1590586,
     "last_error": "",
     "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789399118.4059427
+  "checked_at": 1789399418.412524
 }
