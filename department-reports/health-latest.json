@@ -16,11 +16,11 @@
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789416022.9869337,
+    "last_finished": 1789416128.8266852,
     "last_error": "",
     "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789416052.481263
+  "checked_at": 1789416352.486896
 }
