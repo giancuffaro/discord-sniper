@@ -389,12 +389,11 @@ def _entry_clears_stop(direction, entry, stop):
 
 
 def _bracket(direction, entry, their_stop=None, their_target=None):
-    """(stop, target) for a futures entry.
+    """(planned stop, planned target) for a futures entry.
 
     THEIRS WINS when posted — his call: "theirs first, mine as fallback". The
-    fixed 25/50 only fills the gaps, so a room that posts a stop keeps its own
-    risk and a room that posts nothing still gets a bracket instead of running
-    naked. Direction decides which side each level sits on."""
+    fixed 25/50 only fills the missing numbers. These values are not broker
+    orders. Direction decides which side each level sits on."""
     try:
         e = float(entry)
     except (TypeError, ValueError):
@@ -572,7 +571,7 @@ def execute(wb, book, order, key, note):
         if order.get("their_stop") is None or order.get("their_target") is None:
             _sl = "theirs" if order.get("their_stop") is not None                 else "yours (%g pts)" % FUT_STOP_PTS
             _tl = "theirs" if order.get("their_target") is not None                 else "yours (%g pts)" % FUT_TARGET_PTS
-            note("FUTURES  %s bracket: stop %g (%s), target %g (%s)"
+            note("FUTURES  %s planned levels (NOT broker orders): stop %g (%s), target %g (%s)"
                  % (sym, stop_px, _sl, target_px, _tl))
         # THE ENTRY MUST CLEAR THE STOP. See _entry_clears_stop — the
         # round-number snap above can land the entry exactly ON the caller's

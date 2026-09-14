@@ -22,7 +22,9 @@ broker lookup until exact fill identity, durable stop submission, broker
 verification and stop-versus-manual-close reconciliation are implemented.
 Three historical `FUTURES ORDER IN` entries would be refused by this gate.
 An offline STOP_LOSS payload/strict-detail adapter and tests are staged; it
-is not yet called by the live book. Mirror remains off and unavailable. No
+is not yet called by the live book. Same-order stop-to-market replacement is
+also staged; see `reference/FUTURES-PROTECTIVE-EXITS.md`. Mirror remains off
+and unavailable. No
 real order was placed or cancelled during this review.
 
 ## 2026-09-13 (Gemini-first observer and index-mirror verification)
