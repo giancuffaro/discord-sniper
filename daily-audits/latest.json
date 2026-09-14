@@ -2,12 +2,18 @@
   "caller_outcomes": "daily-reports\\CALLER-OUTCOMES-2026-09-14.md",
   "caller_ratchet_comparison": "daily-reports\\CALLER-VS-RATCHET-2026-09-14.md",
   "coverage_warnings": 0,
+  "daily_analyst": {
+    "model": "gpt-6-astra",
+    "report": "C:\\Users\\Hulk\\Desktop\\discord-sniper\\department-reports\\daily-2026-09-14-81b8904d80cf7db65d0a.json",
+    "status": "completed"
+  },
   "daily_report": "daily-reports\\REPORT-2026-09-14.md",
   "date": "2026-09-14",
   "failed_checks": [
     "ratchet policy comparison"
   ],
   "generated_at": "2026-09-14T16:41:28.625812-04:00",
+  "index_mirror": "daily-reports\\FUTURES-MIRROR-2026-09-14.md",
   "possible_missed": 3,
   "report": "daily-audits\\AUDIT-2026-09-14.txt",
   "silent_drops": 13,
