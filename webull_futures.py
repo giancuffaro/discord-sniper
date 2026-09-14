@@ -409,6 +409,41 @@ def _bracket(direction, entry, their_stop=None, their_target=None):
     return stop, target
 
 
+def protective_stop_order(contract, direction, qty, fill, stop, client_order_id):
+    """A *standalone* broker stop for an exact filled futures contract.
+
+    Webull supports STOP_LOSS/GTC for futures but no linked OCO/OTOCO. Never
+    submit a simultaneous target order: after one exit fills, the other can
+    reverse the position. This payload is not sent until the fill, exact
+    contract, side and remaining quantity have all been broker-confirmed.
+    """
+    import math
+    import re
+    contract = str(contract or '').upper()
+    direction = str(direction or '').upper()
+    if not re.fullmatch(r'[A-Z]{1,4}[FGHJKMNQUVXZ]\d{1,2}', contract):
+        raise FuturesRefused('protective stop needs the exact filled futures contract')
+    if direction not in ('LONG', 'SHORT') or int(qty) != 1:
+        raise FuturesRefused('protective stop needs an exact one-lot direction and size')
+    if not re.fullmatch(r'[A-Za-z0-9]{1,32}', str(client_order_id or '')):
+        raise FuturesRefused('protective stop needs a durable client order ID')
+    try:
+        fill, stop = float(fill), float(stop)
+    except (TypeError, ValueError):
+        raise FuturesRefused('protective stop needs confirmed fill and stop prices') from None
+    if not (math.isfinite(fill) and math.isfinite(stop) and fill > 0 and stop > 0):
+        raise FuturesRefused('protective stop prices must be finite and positive')
+    if (direction == 'LONG' and stop >= fill) or (direction == 'SHORT' and stop <= fill):
+        raise FuturesRefused('protective stop is on the wrong side of the fill')
+    if contract.startswith(('MES', 'MNQ')) and abs(stop * 4 - round(stop * 4)) > 1e-8:
+        raise FuturesRefused('MES/MNQ stop must be on a quarter-point tick')
+    return {'combo_type': 'NORMAL', 'client_order_id': str(client_order_id),
+            'symbol': contract, 'instrument_type': 'FUTURES', 'market': 'US',
+            'order_type': 'STOP_LOSS', 'stop_price': f'{stop:g}',
+            'quantity': '1', 'side': 'SELL' if direction == 'LONG' else 'BUY',
+            'time_in_force': 'GTC', 'entrust_type': 'QTY'}
+
+
 def execute(wb, book, order, key, note):
     """The whole live futures path: entry, trim, or close. Returns (ok, msg).
     Sizing is pinned to one contract on purpose — see the file docstring."""
@@ -418,6 +453,13 @@ def execute(wb, book, order, key, note):
     contract = front_month(wb, sym)
 
     if action == "OPEN":
+        # The current market-entry -> fill-watch path cannot yet guarantee a
+        # broker-confirmed stop. A numeric plan in Book is NOT a protective
+        # order. Refuse the entry until the standalone stop lifecycle is
+        # implemented and verified, including unknown-acceptance recovery.
+        if not protective_entries_ready():
+            return False, ("Webull futures entry held: broker-confirmed protective "
+                           "stop is not operational; no order was sent")
         side = "SELL" if direction == "SHORT" else "BUY"
         raw_px = order.get("limit")
         entry_px = _round_entry(sym, raw_px, direction)   # snap in his favour
@@ -478,3 +520,8 @@ def execute(wb, book, order, key, note):
         return True, "futures %s sent: %s x%d" % (action.lower(), contract, n)
 
     return False, "nothing to do for futures action %r" % action
+
+
+def protective_entries_ready():
+    """Remain fail-closed until exact fill/stop/cancel reconciliation is proven."""
+    return False
