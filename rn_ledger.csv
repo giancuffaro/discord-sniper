@@ -52,3 +52,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789399458.12,armed,META,CALLS,670,9/18,,656.0,,Unraveller,Honeydrip daytrades
 1789399534.918,submitted,META,CALLS,670,9/18,,656.0,,Unraveller,Honeydrip daytrades
 1789399536.926,filled,META,CALLS,670,9/18,,656.0,6.65,Unraveller,Honeydrip daytrades
+1789399861.559,missed,QQQ,CALLS,708,2026-09-14,,706.0,,Skyy,shabs
