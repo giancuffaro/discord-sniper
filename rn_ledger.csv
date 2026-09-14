@@ -71,3 +71,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789410025.801,armed,TSLA,PUTS,360,0DTE,,362.0,,MuggZone,Mugzone Options
 1789410146.906,submitted,QQQ,CALLS,713,2026-09-14,,712.0,,Skyy,shabs
 1789410148.911,filled,QQQ,CALLS,713,2026-09-14,,712.0,0.24,Skyy,shabs
+1789410625.826,missed,TSLA,PUTS,360,0DTE,,362.0,,MuggZone,Mugzone Options
