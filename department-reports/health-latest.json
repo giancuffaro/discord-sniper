@@ -9,7 +9,7 @@
     },
     {
       "lane": "whop",
-      "fresh": false,
+      "fresh": true,
       "version": "3.8.30"
     }
   ],
@@ -22,5 +22,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789359916.0385373
+  "checked_at": 1789360216.0450776
 }
