@@ -664,6 +664,24 @@ def validate(read, text, allowed_symbols):
     return True, None, cleaned
 
 
+def judge(read, text, allowed_symbols):
+    """validate(), but it can never raise — the ONE copy of that guard.
+
+    A MODEL FIELD THAT ISN'T A NUMBER IS A REFUSAL, NEVER A CRASH (9/14, found
+    by replaying the 12,162 retained OpenAI reads from the 9/12 scan). OpenAI
+    writes "" where Anthropic wrote null, and sometimes a RANGE — "1.26-1.30",
+    "570-580", "Premium". validate() floats those and raises ValueError: 249 of
+    12,162. context_reader.assess() had always caught it; the two LIVE lanes in
+    the bridge had not, and an unhandled raise there answers the extension with
+    an HTTP 500 that reads to it exactly like a dead bridge. A field the model
+    got wrong is no call, the same as a bad regex read.
+    """
+    try:
+        return validate(read, text, allowed_symbols)
+    except (TypeError, ValueError, OverflowError) as exc:
+        return False, "invalid model field: %s" % str(exc)[:100], None
+
+
 def canonical(c):
     """Rebuild a validated read as a CLEAN call in the room's own grammar, so it
     can be run straight back through the real parser (signals.py / parser.js) and

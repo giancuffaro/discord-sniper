@@ -135,11 +135,8 @@ def assess(current, prior, read_result, allowed_symbols):
     support = eligible_prior(current, prior)
     evidence = "\n".join([str(p.get("text") or "") for p in support]
                          + [str(current.get("text") or "")])
-    try:
-        ok, why, cleaned = ai_reader.validate(read_result, evidence,
-                                              allowed_symbols)
-    except (TypeError, ValueError, OverflowError) as exc:
-        ok, why, cleaned = False, "invalid model field: %s" % str(exc)[:100], None
+    ok, why, cleaned = ai_reader.judge(read_result, evidence,
+                                       allowed_symbols)
     return {"ok": ok, "why": why, "read": cleaned,
             "eligible_prior_ids": [p.get("id") for p in support],
             "safety_flags": safety_flags(current, prior, read_result)}

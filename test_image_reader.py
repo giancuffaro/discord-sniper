@@ -161,6 +161,44 @@ class TextProviderOrder(unittest.TestCase):
         self.assertFalse(ai_reader.validate(out, "TSLA 357.5p", ["TSLA"])[0])
 
 
+class NeverRaises(unittest.TestCase):
+    """OpenAI writes "" where Anthropic wrote null, and sometimes a RANGE.
+    validate() floats those and raises — 249 of the 12,162 retained reads from
+    the 9/12 scan do it. A bad field is a refusal, never a crash and never an
+    order; an unhandled raise in the bridge's read lane would answer the
+    extension with a 500 that reads to it like a dead bridge."""
+
+    BAD = ({"action": "TRIM", "ticker": "SHEL", "side": "CALL", "strike": 93,
+            "expiry": "9/4", "price": "2.18-2.20", "confidence": 1.0},
+           {"action": "ADD", "ticker": "AAPL", "side": "", "strike": "",
+            "expiry": "", "price": 2.85, "qty": "", "confidence": 0.8},
+           {"action": "OPEN", "ticker": "SPY", "side": "CALL",
+            "strike": "570-580", "expiry": "0DTE", "price": "Premium"})
+
+    def test_validate_really_does_raise_on_these(self):
+        hit = 0
+        for bad in self.BAD:
+            try:
+                ai_reader.validate(dict(bad), "SHEL AAPL SPY 93 2.85 0DTE", [])
+            except (TypeError, ValueError, OverflowError):
+                hit += 1
+        self.assertTrue(hit, "fixtures no longer reproduce the raise")
+
+    def test_judge_turns_every_one_into_no_call(self):
+        for bad in self.BAD:
+            ok, why, cleaned = ai_reader.judge(
+                dict(bad), "SHEL AAPL SPY 93 2.85 0DTE", [])
+            self.assertFalse(ok)
+            self.assertIsNone(cleaned)
+            self.assertTrue(why)
+
+    def test_a_good_read_is_unaffected(self):
+        ok, why, cleaned = ai_reader.judge(dict(GOOD), "TSLA 357.5P 1.42",
+                                           ["TSLA"])
+        self.assertTrue(ok, why)
+        self.assertEqual(cleaned["ticker"], "TSLA")
+
+
 class Availability(unittest.TestCase):
     def setUp(self):
         ai_reader._ANTHROPIC_BLOCK_UNTIL[0] = 0.0
