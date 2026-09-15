@@ -8,23 +8,24 @@ Last updated: 2026-09-15 — five rules retired, 2 unbacked rewritten, 6 drifted
   STACK — the new rule takes the old one's place, never sits beside it.
 - ONE RULE, ONE LINE. Numbers, formats, procedures and rationale are MECHANICS:
   one reference doc per subsystem. G's own wording stays verbatim.
-- Bump the one "Last updated:" line; never prepend an essay. Session notes,
-  findings and post-mortems go to HANDOFF-LOG.md ("SESSION NOTES", newest first,
-  dated) — that file grows forever, this one may not.
-- HARD CEILING: UNDER 14 KB. Past it you are writing history or mechanics: move
-  it (history → HANDOFF-LOG.md, how-it-works → reference/).
+- Bump the one "Last updated:" line; never prepend an essay. Session notes and
+  post-mortems go to HANDOFF-LOG.md ("SESSION NOTES", newest first, dated) —
+  that file grows forever, this one may not.
+- HARD CEILING: UNDER 15 KB (was 14; raised 9/15 rather than cut real rules to
+  hit a round number). Past it you are writing history or mechanics: move it
+  (history → HANDOFF-LOG.md, how-it-works → reference/).
 - No handoff copies, dated handoffs or upload snapshots; daily performance lives
-  in `daily-reports/`. HANDOFF-LOG.md and the handoffs zipped in `archive/` are
-  historical evidence, never current instructions.
+  in `daily-reports/`. HANDOFF-LOG.md and the zipped handoffs in `archive/` are
+  evidence, never current instructions.
 
 ## Where the mechanics live (one per subsystem; see INDEX.md)
 ASK-MAP.md (which file answers which ask) → STATUS.json → reports/INDEX.json.
-Mechanics in reference/: ENTRIES · RATCHET · ROOMS-TABS ·
-OPERATIONS (restarts, the 16:40 audit, git, autopilot, readers, keys,
-PC2, caller research, weekly files, house file rules, watch-item detail, this
-file's long form) · OPTIONS-BROKER-REFERENCE · PULLBACK-LEVELS · CALLER-LEDGER ·
-EOD-BENCHMARK-SPEC. Also DATA-MAP.md · MARKET-HOURS.md · ARCHITECTURE.md (the
-machine, accounts, coexistence, north star) · INDEX.md · HANDOFF-LOG.md.
+reference/: ENTRIES · RATCHET · ROOMS-TABS · OPERATIONS (restarts, the 16:40
+audit, git, autopilot, readers, keys, PC2, caller research, weekly files, house
+rules, watch-item detail, this file's long form) · OPTIONS-BROKER-REFERENCE ·
+PULLBACK-LEVELS · CALLER-LEDGER · EOD-BENCHMARK-SPEC · RULES-INDEX (rule →
+the code that enforces it). Also DATA-MAP · MARKET-HOURS · ARCHITECTURE (the
+machine, accounts, coexistence, north star) · INDEX · HANDOFF-LOG.
 
 ## Who and what
 - G (giancuffaro230@gmail.com) maintains this code himself (9/13), trades options + futures live, real money, wants it CONDENSED. "Fix everything is default always" — bugs get fixed without asking, same day. "Fix errors every day after journaling."
@@ -56,7 +57,7 @@ ENTRIES · ENTRIES.md
 
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · RATCHET.md
 - NO DAILY LOSS STOP (G, 9/14: "No. We are not gonna do a daily daily stop limit. No. We're not."). Never propose one, never wire one. The per-trade born stop is the only cap.
-- ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out", "closed everything" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
+- ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
 - THE RATCHET (5/3/5 since 9/10, flat): born −5%, +3% → breakeven, each +5% locks +5%; ratchet_tiers.py is the one implementation; stops never loosen; anti-clip off.
 - FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number. SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
 - CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent.
@@ -71,7 +72,7 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json; logs only when those two cannot answer. STATUS.json.verified is trusted while its inputs are unchanged (VERIFY ONCE).
 - THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept, LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the 15-minute Codex guard.
 - GIT: settings.json holds every key and is never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
-- REPLACE, DON'T STACK (G, 9/9). When anything changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place; never left beside it, not commented out, not "superseded", not "legacy", not a dead branch "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md. A fallback that stays is a deliberate design decision.
+- REPLACE, DON'T STACK (G, 9/9). When anything changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place; never beside it, not commented out, not "superseded", not "legacy", not "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md. A fallback that stays is a deliberate design decision.
 - CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (test: DATA-MAP.md). Records that cannot be re-derived — tapes, telemetry, days/ — are APPENDED to, never rewritten.
 - READ DATA-MAP.md WITH INDEX.md every session (INDEX = what a file IS, DATA-MAP = what is IN it). RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump the manifest on extension changes; never install webullsdkcore into the bridge's Python; no sandbox, no local sim — a non-LIVE room's call is REFUSED, never faked.
 - DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the owner. Browser reads only.

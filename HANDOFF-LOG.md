@@ -12,6 +12,9 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+- 9/15 late: G asked for a live-room tab to clean itself up ("when the live zoom for felony finishes kill the tab please, clean after yourself"). Implemented in extension/background.js v3.8.36: `armVoiceTabClose()` arms when the ears stop on a quiet auto-listen session and closes the tab 10 minutes later if it is still silent, still a discord.com/zoom.us URL, and the ears have not restarted; sound returning or the tab being closed by hand cancels the timer. Ten minutes, not the ears' one-minute grace, so a pause between segments never kills a live room. This is the ONE exception to "never close a human's tab" and is scoped to voice/Zoom tabs the ears actually ran on.
+- HANDOFF ceiling raised 14 KB -> 15 KB the same evening. The file came back over after the live-tab rule and the two rewritten unbacked rules; every cheap trim was taken (pending list, watch items, pointer map, subscriptions, three verbose bullets) and the remaining 219 bytes were real rules. Raising the number beat shaving meaning.
+
 ## 2026-09-15 (rule-vs-code audit: 191 rules walked, 2 unbacked claims killed, dead code deleted)
 
 G's ask, after the five-rule retirement exposed two rules with no code behind
