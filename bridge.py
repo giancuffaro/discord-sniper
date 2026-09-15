@@ -4221,6 +4221,98 @@ def _price_sanity(sym, order, asks):
             % (sym, order.get("strike"), _cp, exp, ask, theirs))
 
 
+def _verify_listed(sym, order):
+    """The contract the caller NAMED has to EXIST. -> "" or the refusal line.
+
+    9/14 taught the DATELESS path to ask the listing instead of assuming it
+    (_dateless_expiry). A date the caller SPELLED OUT skipped that check
+    completely and was taken on faith. So a room posting "INTC 9/14 97C" — a
+    MONDAY expiry on a stock that has no Monday expirations — sailed past every
+    guard and died much later as an empty quote, which in the log is
+    indistinguishable from a data hiccup. Nobody learns the room posted a
+    contract that does not exist.
+
+    Mon/Wed expirations exist on the nine Qualifying Securities (AAPL AMZN
+    AVGO GOOGL META MSFT NVDA TSLA + IBIT, live 2026-01-26) and on nothing
+    else, and that list is re-cut QUARTERLY on a $700B market-cap test. Which
+    is the whole argument for asking the broker every time rather than keeping
+    a table: the table is wrong the next time a name crosses the line, and it
+    is wrong silently. MU sat at $1.04T on 9/14 and may or may not have been
+    added in the Q3 re-cut — the broker knows, and we do not have to.
+
+    ONE snapshot call for the one date the caller named, cached per contract
+    per day by listed_expiries, so re-reads of the same alert are free. Only
+    when that comes back EMPTY does it spend a second call on the rest of the
+    week — and that second answer doubles as the THROTTLE GUARD: if no date at
+    all answers, the problem is the data feed, not the contract, so the order
+    goes through with a loud line. Refusing a real trade costs more than
+    taking a bad one, and a 429 at 9:31 must never become a trading halt.
+
+    Same reason it fails open on no connection, an unreadable date, or any
+    exception: this is a guard, never a gate on the money path.
+
+    Turn it off with execution.verify_listed = false in settings.json.
+    """
+    if order.get("_expiry_verified"):
+        return ""               # the dateless path already asked, and paid
+    if order.get("action") not in ("OPEN", "ADD"):
+        return ""
+    if (order.get("kind") or "option") == "future":
+        return ""
+    if not order.get("strike") or not order.get("expiry"):
+        return ""
+    if not EXEC.get("verify_listed", True):
+        return ""
+    _q = WB or WB_LIVE
+    if _q is None:
+        return ""
+    try:
+        from webull_options import expiry_to_date, dateless_candidates
+        want = str(expiry_to_date(order.get("expiry")))
+    except Exception:                                   # noqa: BLE001
+        return ""
+    side = order.get("side") or "CALL"
+    guessed = bool(order.get("_expiry_guessed"))
+    # A GUESSED date gets the siblings in the same call, because the caller's
+    # own premium is the check on a guess (_price_sanity) and that check needs
+    # something to switch TO. A date the caller typed gets one symbol.
+    if guessed:
+        cands = sorted(set(dateless_candidates()) | {want})
+    else:
+        cands = [want]
+    try:
+        asks = _q.listed_expiries(sym, order.get("strike"), side, cands) or {}
+    except Exception as e:                              # noqa: BLE001
+        note("LISTING  could not check %s %s (%s) — letting it through"
+             % (sym, want, str(e)[:60]))
+        return ""
+    if want in asks:
+        order["_expiry_verified"] = True
+        return _price_sanity(sym, order, asks) if guessed else ""
+
+    # Not listed — or the feed is down. One more call tells those apart.
+    real = {}
+    try:
+        rest = [d for d in dateless_candidates() if d != want]
+        if rest:
+            real = _q.listed_expiries(sym, order.get("strike"),
+                                      side, rest) or {}
+    except Exception:                                   # noqa: BLE001
+        real = {}
+    if not real:
+        note("LISTING  %s %s%s %s answered nothing and neither did any other "
+             "date — that reads like the feed, not the contract. Letting it "
+             "through." % (sym, order.get("strike"),
+                           str(side)[:1].upper(), want))
+        return ""
+    return ("BAD-CONTRACT %s %s%s %s — the broker lists no such contract. "
+            "Listed for that strike: %s. (%s said: %s) Nothing sent."
+            % (sym, order.get("strike"), str(side)[:1].upper(), want,
+               ", ".join(sorted(real)) or "nothing nearby",
+               str(order.get("trader") or "the room")[:30],
+               str(order.get("raw") or "")[:90].replace("\n", " ")))
+
+
 _POS = {"t": 0.0, "v": []}
 # Circuit breaker for the Webull FUTURES position read — see the comment at
 # its call site. Three consecutive refusals and it stands down, doubling to
@@ -6013,6 +6105,7 @@ class Handler(BaseHTTPRequestHandler):
                 order["expiry"], _why = _got
                 note("no explicit date, but the call said %s -> %s"
                      % (_why, order["expiry"]))
+                order["_expiry_guessed"] = True
 
         # NOTHING IN THE MESSAGE — so ASK THE LISTING, don't assume it.
         #
@@ -6045,10 +6138,23 @@ class Handler(BaseHTTPRequestHandler):
                      % (sym, order.get("strike"),
                         str(order.get("side") or "")[:1].upper(), _exp, _why))
                 # And the caller's own premium is the check on that answer.
+                order["_expiry_guessed"] = True
+                if _asks:
+                    order["_expiry_verified"] = True
                 _bad = _price_sanity(sym, order, _asks)
                 if _bad:
                     note(_bad)
                     return self._reply(403, _bad)
+
+        # AND THE CONTRACT ITSELF HAS TO EXIST (9/15). Everything above settles
+        # WHICH date; this asks the broker whether that date is real. It is the
+        # same question the dateless path already asks, now asked of the dates
+        # the caller typed out too — see _verify_listed for why a table of
+        # which names have Mon/Wed expirations cannot be trusted to stay true.
+        _nope = _verify_listed(sym, order)
+        if _nope:
+            note(_nope)
+            return self._reply(403, _nope)
 
         # IS THAT A TICKER, OR A WORD FROM THE MESSAGE? (9/8)
         # The reader treats a capitalised word in front of a strike as a
