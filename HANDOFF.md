@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; needs a bridge restart). Five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
+Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; needs a bridge restart). ENTRY SLACK built, OFF and activation blocked: 27 of 201 option orders never filled, and the replay says every slack level loses. Five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
 
 ## How to update this file (long form: OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. REPLACE, DON'T
@@ -41,6 +41,7 @@ machine, accounts, coexistence, north star) · INDEX · HANDOFF-LOG.
 
 ENTRIES · ENTRIES.md
 - PRICE: caller's price or better; pullbacks cross the ask; one contract per entry. RN PULLBACK is ON and global; THE LEVEL STAYS $1 (SETTLED 9/9), never re-opened on a feeling.
+- ENTRY SLACK (G, 9/15) — **OFF and activation blocked**: the bot bids the caller's price or better and never chases. `execution.entry_slack_pct` exists only so `reference/entry_slack_replay.py` can measure what crossing the ask would have done; a non-zero value refuses to arm until the replay shows a net gain outside its error bar. 27 of 201 option orders never filled — measured daily, not argued.
 - ONE SWITCH PER ROOM (G, 9/9): ON = tab + read + trades LIVE; OFF = nothing; LAPSED = sub ran out. No paper state. A TAB CLOSED BY HAND IS NOT A BENCH; benched rooms stay.
 - TABS (9/10): the reaper closes only `_OURS`, never a human's; only START HERE, the popup switch and whopSelfHeal() open one; "No Access" → `lapsed` + close; the last tab stays.
 - ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed. CHANNELS: callers inside their verified room, win rate needs evidence, no Callers tab (G).

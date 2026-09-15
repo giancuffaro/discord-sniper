@@ -545,6 +545,13 @@ em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
   first and caches any day it has to buy as a single-date file (~1¢/day).
 - `archive/2026-09-09-cleanup/bars/` holds an older capture — do not mix them.
 
+## Entry slack — would crossing the ask have paid? (9/15)
+
+| File | Columns | What it is |
+|---|---|---|
+| `reference/ENTRY-SLACK-REPLAY.csv` | `date, time, kind, occ, symbol, qty, our_bid, actual_fill, improvement, status, bid_at_read, ask_at_read, quote_gap_s, why` + `slack_<0/2/3/5/7.5/10>_cross / _entry / _pl` | One row per option order with a recorded outcome (178 of 201 ORDER INs): `kind=nofill` rows carry what each slack level would have crossed at and what the trade would have been worth under the live ratchet; `kind=fill` rows carry the price improvement resting earned and what each slack would have handed back (`_pl` negative = cost). `status` is `scored` / `quarantined` (the tape's ask was at or under our bid, so it disagrees with the broker) / `unscored` (no quote within 90s of the order — never estimated). **Derived, rewritten from `trades.log` + `tape.py` every run** — nothing in it is irreplaceable. |
+| `daily-reports/ENTRY-SLACK week-of-….md` (that day's `===== Tue Sep 15 2026 =====` block) | — | One `VERDICT —` line (the brief carries it verbatim), the population and its COVERAGE, the slack→cost/benefit table read as a DIFFERENCE against today's rule, the paired bootstrap band, today's no-fills, why the rescues still lost, and the quarantined and unscored rows by name. |
+
 ## The index mirror (9/13)
 
 | File | Columns | What it is |

@@ -25,6 +25,7 @@ newest first; `python reports.py show <kind> <day>` prints just that day.
 | What's pending / waiting on me? | `STATUS.json` → `pending`; the full text is HANDOFF.md "## Pending external setup and decisions" | the numbered items | — |
 | Balance / buying power | `STATUS.json` → `balance` (nlv, day_pl, bp, as_of); live bp: `bridge.buying_power` | the numbers as printed | never estimate from fills |
 | Ratchet replay (5/3/5 vs fixed stop; from the caller's entry) | `python reports.py show ratchet-compare <day>` / `show caller-vs-ratchet <day>` | the summary lines ("Our ratchet on the N paths…", coverage stated) | never extrapolate past the stated coverage |
+| Why didn't we get filled? / should we loosen the entry? | `python reports.py show entry-slack <day>` | the `VERDICT —` line, then the COVERAGE sentence and the "vs today" column of the slack table | the switch is OFF and activation is BLOCKED — this is a measurement, and the absolute "model net" column is biased; read the difference |
 | Futures mirror (SPY/QQQ as MES/MNQ) | `python reports.py show futures-mirror <day>`; running total `reference/FUTURES-MIRROR-REPLAY.csv` | day total, running total since 2026-08-03, "bars: unavailable" if unscored | the switch is OFF — this is a measurement |
 | Give me the report for `<day>` | `python reports.py status <day>` → if CURRENT: `python reports.py path report <day>` and hand that file (or `show`); if STALE: `python reports.py build report <day>` | the file itself | never rebuild a CURRENT one; never paste logs into a report |
 | List bot trades (a day) | `python reports.py show brief <day>` → "Bot trades"; or `master_ledger.csv` rows with `date == <day>`, `account == live`, not `manual` | one line per round trip: contract, in → out, P&L, why it exited | not days/*.json, not journal.csv |
@@ -42,6 +43,6 @@ Commands, all read-only and local:
 `python reports.py path <kind> <day>` · `python reports.py build <kind|all> <day>`
 (skips CURRENT) · `python status_json.py [day]` (rebuild STATUS.json from disk) ·
 `python reports.py kinds` (the registry). Kinds: report, brief, caller-outcomes,
-caller-vs-ratchet, ratchet-compare, futures-mirror, audit, scoreboard,
-alert-audit (+ the hand-made alert-ledger, ninjago-futures-radar, alert-history,
+caller-vs-ratchet, ratchet-compare, futures-mirror, entry-slack, audit,
+scoreboard, alert-audit (+ the hand-made alert-ledger, ninjago-futures-radar, alert-history,
 parser-history).

@@ -98,3 +98,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789486392.506,submitted,AMD,PUTS,490,9/18,,504.0,,Unraveller,Honeydrip daytrades
 1789486394.516,filled,AMD,PUTS,490,9/18,,504.0,5.45,Unraveller,Honeydrip daytrades
 1789492858.207,armed,NVDA,CALLS,220,2026-09-16,,211.0,,Eva,OWLS all-alerts
+1789493458.321,missed,NVDA,CALLS,220,2026-09-16,,211.0,,Eva,OWLS all-alerts
