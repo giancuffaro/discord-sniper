@@ -254,27 +254,6 @@ if "!NEEDSTART!"=="0" (
   )
 )
 
-rem ---- [4.5/5] the Fill Announcer, hidden (his ask, 9/2) --------
-rem  Same launcher the Startup entry and the revive task use. Safe to
-rem  fire every time: the loop stands down if a heartbeat is fresh
-rem  (one announcer, never two), and a NON-EMPTY announcer.stop means
-rem  "he turned it off on purpose" - we honour that and skip.
-set "ANN_OFF=0"
-if exist "announcer.stop" (
-  for %%z in ("announcer.stop") do if %%~zz GTR 0 set "ANN_OFF=1"
-)
-if "!ANN_OFF!"=="1" (
-  echo         Fill Announcer is switched OFF ^(STOP ANNOUNCER was used^).
-  echo         Run ANNOUNCER.bat to turn it back on.
-) else (
-  if exist "_announcer_hidden.vbs" (
-    wscript.exe "%~dp0_announcer_hidden.vbs"
-    echo         Fill Announcer running in the background.
-  ) else (
-    echo         _announcer_hidden.vbs is missing - announcer not started.
-  )
-)
-
 rem ---- [4.7/5] the Sniper Whop watchdog, hidden (9/10) ----------
 rem  Whop rooms caught exactly 1 alert in the month since 8/13 -
 rem  Day Trades went dark because nothing noticed the "Sniper Whop"
@@ -283,7 +262,7 @@ rem  only fills in tabs on this file's one-shot token. This loop
 rem  (mirrors the bridge's own _run_hidden.vbs / _bridge_loop.bat)
 rem  relaunches that browser if its window ever isn't there, at
 rem  logon and every 30 min if the watchdog process itself dies -
-rem  same durability model as the Fill Announcer. Same STOP file as
+rem  same durability model as the bridge loop. Same STOP file as
 rem  everything else is the off switch.
 set "SU_WHOP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\sniper-whop-watchdog.vbs"
 > "%SU_WHOP%" echo WScript.Sleep 60000
