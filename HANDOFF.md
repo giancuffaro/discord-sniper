@@ -49,8 +49,8 @@ Last updated: 2026-09-15 — APPEND, DON'T PILE is a rule; the 19 legacy room-ch
   the growing dataset is what earns parser/strategy improvements. Exact caller
   results require real entry+exit evidence; never substitute a later high.
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
-- PROVIDER KEYS: the Keys pane saves OpenAI, Gemini and Perplexity under settings.json ai_provider_keys; saved fields hide behind an explicit Replace key, status returns presence flags only. OpenAI/Gemini feed the observer AND both live readers; Perplexity stored inactive; DeepSeek removed (G); Anthropic kept but billing-blocked. Saved-key PRESENCE is not a probe RESULT: billing, rate-limit, auth, access and connection failures carry distinct labels.
-- DEPARTMENTS: enabled. Bridge audit loop calls health_tick every five minutes; extension maintenance publishes Discord/Whop lane heartbeat and reader issues. GPT-5.4 mini analyzes changed issues (12/day); Astra escalates multi-issue incidents (2/day), reviews selected reader disagreements (20/day) and analyzes the daily reports after the 16:40 audit (1/day). Output is advisory files in department-reports, never code or orders. Context snapshots persist at most once/minute.
+- PROVIDER KEYS: the Keys pane saves OpenAI, Gemini and Perplexity under settings.json ai_provider_keys; saved fields hide behind Replace key, status returns presence flags only. OpenAI/Gemini feed the observer AND both live readers; Perplexity stored inactive; DeepSeek removed (G); Anthropic kept but billing-blocked. Saved-key PRESENCE is not a probe RESULT: billing, rate-limit, auth, access and connection failures carry distinct labels.
+- DEPARTMENTS: enabled. Bridge audit loop calls health_tick every five minutes; extension maintenance publishes Discord/Whop lane heartbeat and reader issues. GPT-5.4 mini analyzes changed issues (12/day); Astra escalates multi-issue incidents (2/day), reviews selected reader disagreements (20/day) and analyzes the daily reports after the 16:40 audit (1/day). Output is advisory, appended to department-reports/<role>.jsonl + .md (one living pair per department, newest first in the .md), never code or orders. Context snapshots persist at most once/minute.
 - READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission 15 minutes, same-caller field borrowing five minutes. AI observer: Gemini gemini-3.1-flash-lite primary, OpenAI gpt-5.4 fallback; observation only. Caller controls appear under matching Channels with verified account sightings by channel ID; win rate shows unavailable until evidence supports one. Honey Drip controls stay limited to their room IDs; newly observed accounts have no execution keys; historical identity attribution is candidate-only. Grabber tracks oldest-message progress, allows 30s for a stalled load, targets one year back, labels stalled history partial. Capture retains message_id, captured_at and revisions, dedupes by channel+ID, exports .json beside .txt. Daily Sniper Reports add an Open in Chrome link only on one exact captured source match; the localhost handoff accepts only configured Discord guild/channel/message IDs and opens Chrome Profile 2 (no broker or Discord API capability). Legacy ID-less rows stay unavailable — re-grab, never infer. Full-history completeness unverified.
 - WHO READS (9/14): BOTH live ai_reader lanes — the one-message reader
   (AI READ) and the screenshot reader (IMG READ) — use the observer's
@@ -147,16 +147,14 @@ ENTRIES
 - ROOM HOURS: `on` rooms use tabs 9:15–16:30 ET on weekdays unless
   marked `always` (futures rooms). roomSchedule closes daytime tabs after
   hours; it does not reopen them at 9:15. START HERE once in the morning
-  creates a one-shot, lane-aware open-rooms request, up to three tabs per
-  pass with six-second spacing. Whop alone self-heals missing tabs. Closing
-  a Discord tab by hand leaves it closed until the next START HERE request
-  or a room-switch change. The last browser tab is protected from closure.
-- CHANNELS / CONTROLS: Callers are shown within their verified room, with
-  win rate unavailable unless backed by evidence. The separate Callers and
-  Needs You tabs/buttons were removed at G's request. Existing Honey Drip
-  caller switches retain their specific room keys; other observed accounts
-  are identity rows only. Strategy Numbers and Room Rules remain in the UI.
-  GET/POST /callers and /rooms still provide their existing bridge functions.
+  creates a one-shot, lane-aware open-rooms request (≤3 tabs per pass, 6 s
+  apart). Whop alone self-heals missing tabs. A Discord tab closed by hand
+  stays closed until the next START HERE or a room-switch change. The last
+  browser tab is never closed.
+- CHANNELS / CONTROLS: callers are shown within their verified room, win
+  rate unavailable unless backed by evidence; no separate Callers / Needs You
+  tab (G). Honey Drip caller switches keep their room keys; other observed
+  accounts are identity rows only. GET/POST /callers and /rooms serve them.
 - STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung
   (quote-verified). 3-ITM translation for SPY/QQQ/Mag7 0DTE. ADD buys the
   held strike.
@@ -266,8 +264,8 @@ ENTRIES
 - THE POCKET (hidden on purpose): a :43-:51 scalp-entry clock gate behind
   settings pocket_scalps_only, default OFF. Decided from HIS fill data
   (ledger minute-of-hour), not the QQQ study.
-- Positions record the underlying at fill (und_at_fill); FILLED log lines,
-  announcer posts and the journal all carry it.
+- Positions record the underlying at fill (und_at_fill); FILLED lines,
+  announcer posts and the journal carry it.
 
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
 - ENTRIES ONLY (G, 9/3; verified live 9/8): the bot follows room ENTRIES
@@ -281,7 +279,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
-- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. Won the 115-trade OPRA sweep; price tiers, a born-stop floor and G's stock ladder all failed to beat it outside error bars (HANDOFF-LOG.md). Re-run `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py`, `reference/stock_stop_replay.py` as the sample grows; the BORN stop, not the rungs, ends these trades.
+- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. Won the 115-trade OPRA sweep; nothing else beat it outside error bars (HANDOFF-LOG.md). Re-run `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py`, `reference/stock_stop_replay.py` as the sample grows; the BORN stop, not the rungs, ends these trades.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
@@ -290,10 +288,10 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   level = wide −25%. Option SELL orders are DAY-only at Webull, so
   Book.rearm_overnight_stops re-arms every open swing at 9:31. Scalps
   excluded on purpose.
-- CLOSE path (9/9 phantom-exit fix): every bot sell waits for FILLED
-  (_sell_confirmed) — an ACCEPTED sell is never booked as filled; a
-  never-filled sell releases the key and logs EXIT-RETRY. Late/partial fills
-  found during cancel reduce the remaining quantity before any retry.
+- CLOSE path: every bot sell waits for FILLED (_sell_confirmed) — an
+  ACCEPTED sell is never booked as filled; a never-filled sell releases the
+  key and logs EXIT-RETRY; late/partial fills found during cancel reduce the
+  remaining quantity before any retry.
 - A CLOSE for a contract the book does not hold is REFUSED, never sent
   (his 12-lot scalps live in the same account).
 - 0DTE: ETF options trade to 16:15; auto-exercise at $0.01 ITM — flatten
@@ -440,9 +438,9 @@ FILL ANNOUNCER (announcer.py, read-only)
   off switch = announcer.stop containing "stop" (STOP ANNOUNCER.bat);
   "Fill Announcer revive" schtask every 30 min; announcer.restart = reload.
 - STATUS: PAUSED since 9/2 (announcer.stop = "stop", G: "get this app
-  working 100% first"). Its board is computed FROM THE LEDGER (9/9).
-- Its order hunt is paced (0.20 s, once per account) — the 9/2 429 storm
-  (77k TOO_MANY_REQUESTS on the shared key) must never come back.
+  working 100% first"). Its board is computed FROM THE LEDGER (9/9). Its
+  order hunt is paced (0.20 s, once per account) — the 9/2 429 storm must
+  never come back.
 
 ## DATA — one central file per family (9/9). THE APP READS ONLY THESE.
 - BROKER RECORD → master_broker.csv (one row per Webull order leg, every
