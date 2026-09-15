@@ -212,3 +212,26 @@ the history and the open question are here. Close one here when G decides.
 4. Close any old parked Whop tabs. (`--disable-gpu` rides every flagged
    Chrome launch since 9/10 — a GPU black tab reads NOTHING while looking
    open; flags bind only on a cold start.)
+
+## How to update HANDOFF.md — the long form (moved from HANDOFF.md 9/15, verbatim)
+
+HANDOFF.md keeps the short form at the top of the file; this is the original
+wording of every clause, with the old 30 KB ceiling now replaced by 14 KB.
+
+## How to update this file (READ BEFORE EDITING — the old way broke things)
+- This file is a STATE, not a story. Edit the rule that changed, in place.
+  REPLACE, DON'T STACK: the new rule takes the old one's place — never
+  leave the old one beside it with a "SUPERSEDED" note.
+- Bump the one "Last updated:" line above. One line. Never prepend an essay.
+- Session notes, findings, post-mortems, numbers-of-the-day go to
+  HANDOFF-LOG.md under "SESSION NOTES", newest first, dated. That file may
+  grow forever; this one may not. Hard ceiling: under 30 KB. If you are
+  about to push it past that, you are writing history or mechanics, not a
+  rule — move it (history → HANDOFF-LOG.md, how-it-works → reference/).
+- RULES live here; MECHANICS (how a subsystem works, numbers, formats) live
+  in one reference doc per subsystem, pointed to from the section below.
+  G's own rule wording ("(G, date)", "RULE:") stays verbatim.
+- Do not create handoff copies, dated handoffs, or upload snapshots. Daily
+  performance belongs in `daily-reports/`; operating rules belong here.
+- `HANDOFF-LOG.md` and the retired handoffs zipped in `archive/` are
+  historical evidence, never current instructions.
