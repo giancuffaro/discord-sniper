@@ -12,9 +12,9 @@ SOURCES (read-only)
   recovered_alerts_chat.csv    entries + management posts; `links_to` ties a
                                trim/exit/add back to its entry.  high+medium
                                confidence only, 2026-08-03 .. 2026-09-10.
-  daily-reports/CALLER-OUTCOMES-2026-09-11.csv
-  daily-reports/CALLER-OUTCOMES-2026-09-14.csv
-                               already-paired claim events for two days.
+  daily-reports/CALLER-OUTCOMES.csv
+                               already-paired claim events, one csv for every
+                               day (``date`` column); this reads 9/11 + 9/14.
   master_ledger.csv            what WE did, for the side-by-side.
   databento_tape.csv / option_tape.csv / missed_tape.csv / alert_tape.csv
                                real bids, used only to price a caller exit that
@@ -476,8 +476,10 @@ SWING_FT = sum(1 for m in matches if m["caller_ft_same_day"] is False)
 
 # ------------------------------------------------ CALLER-OUTCOMES two days
 out_rows = []
-for d in ("2026-09-11", "2026-09-14"):
-    for r in rd(os.path.join("daily-reports", "CALLER-OUTCOMES-%s.csv" % d)):
+OC_DAYS = ("2026-09-11", "2026-09-14")
+for r in rd(os.path.join("daily-reports", "CALLER-OUTCOMES.csv")):
+    d = (r.get("date") or "").strip()
+    if d in OC_DAYS:
         a = dt("%s %s" % (d, r.get("entry_time", "").strip()))
         b = dt("%s %s" % (d, r.get("event_time", "").strip()))
         if not a or not b:
@@ -833,7 +835,7 @@ A("---")
 A("")
 A("## 6. The two fully-paired days (9/11 and 9/14)")
 A("")
-A("`daily-reports/CALLER-OUTCOMES-*.csv` pairs claim events by hand for two days. "
+A("`daily-reports/CALLER-OUTCOMES.csv` pairs claim events by hand for two days. "
   "Small, but every row carries both timestamps - so it is the cleanest check on "
   "the big sample above.")
 A("")

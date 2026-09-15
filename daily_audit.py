@@ -54,6 +54,14 @@ def summarize_replay(output):
     }
 
 
+def _reconciled(day, output):
+    """True/False from build_ledger's RECONCILIATION line for ``day``, None
+    when the day had no export to reconcile against."""
+    m = re.search(r"^\s*%s\s+export\s+\S+\s+ledger\s+\S+\s+(MATCH|DRIFT)"
+                  % re.escape(day), output or "", re.M)
+    return (m.group(1) == "MATCH") if m else None
+
+
 def _write_atomic(path, text):
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
@@ -92,6 +100,8 @@ def _queue_attention(day, summary, report_path):
 
 
 def run(day):
+    import reports
+    import status_json
     os.makedirs(OUT_DIR, exist_ok=True)
     # BROKER TRUTH FIRST (9/15). Nothing in this repo ever pulled the account's
     # order history — `absorb_exports()` only folds a file a Claude session had
@@ -130,7 +140,6 @@ def run(day):
                      or counts["coverage_warnings"])
     status = "attention" if attention else "pass"
     generated = dt.datetime.now().astimezone().isoformat()
-    report_path = os.path.join(OUT_DIR, "AUDIT-%s.txt" % day)
 
     lines = ["DISCORD SNIPER DAILY AUDIT — %s" % day,
              "generated: %s" % generated,
@@ -146,83 +155,56 @@ def run(day):
                       step["seconds"]))
         if not step["ok"] and step["output"]:
             lines.append(step["output"][-4000:])
-    _write_atomic(report_path, "\n".join(lines).rstrip() + "\n")
+    # ONE FILE PER WEEK (9/15): this day's block in AUDIT week-of-….txt,
+    # newest day first; a re-run replaces the block.
+    report_path = reports.write_day("audit", day,
+                                    "\n".join(lines).rstrip() + "\n")
 
     summary = {"date": day, "generated_at": generated, "status": status,
                **counts, "failed_checks": failed,
                "broker_sync": {"ok": broker_step["ok"],
                                "note": (steps_note[-1] if steps_note
-                                        else "")[:200]},
+                                        else "")[:200],
+                               # build_ledger's own MATCH/DRIFT line for the
+                               # day (ledger == broker export to the cent)
+                               "reconciled": _reconciled(day, broker_step["output"])},
                "report": os.path.relpath(report_path, HERE)}
     _write_atomic(os.path.join(OUT_DIR, "latest.json"),
                   json.dumps(summary, indent=2, sort_keys=True) + "\n")
-    report_step = _run("daily operating report",
-                       [sys.executable, os.path.join(HERE, "daily_report.py"), day],
-                       120)
-    if not report_step["ok"]:
-        attention = True
-        summary["status"] = "attention"
-        summary["failed_checks"].append(report_step["name"])
+
+    # THE REPORTS go through reports.py (REUSE, DON'T REBUILD, 9/15): each
+    # kind is rebuilt only when its inputs moved since reports/INDEX.json
+    # last saw them, and every build is recorded there so the index is
+    # always populated by this run. Order matters — each one reads the ones
+    # before it. A failure marks the day "attention" exactly as before.
+    kinds = (("daily operating report", "report", "daily_report"),
+             ("ratchet policy comparison", "ratchet-compare", "ratchet_comparison"),
+             ("caller outcome ledger", "caller-outcomes", "caller_outcomes"),
+             ("caller versus ratchet comparison", "caller-vs-ratchet",
+              "caller_ratchet_comparison"))
+    for label, kind, key in kinds:
+        res = reports.build(kind, day, quiet=True)
+        print("%s %s — %s" % (res["status"].upper(), res["path"], label))
+        if res["status"] == "failed":
+            attention = True
+            summary["failed_checks"].append(label)
+            print(res["output"][-2000:])
+        else:
+            summary[key] = res["path"]
+        summary["status"] = "attention" if attention else "pass"
         _write_atomic(os.path.join(OUT_DIR, "latest.json"),
                       json.dumps(summary, indent=2, sort_keys=True) + "\n")
-    else:
-        summary["daily_report"] = os.path.relpath(
-            os.path.join(HERE, "daily-reports", "REPORT-%s.md" % day), HERE)
-        _write_atomic(os.path.join(OUT_DIR, "latest.json"),
-                      json.dumps(summary, indent=2, sort_keys=True) + "\n")
-    policy_step = _run("ratchet policy comparison",
-                       [sys.executable,
-                        os.path.join(HERE, "daily_policy_compare.py"), day],
-                       120)
-    if not policy_step["ok"]:
-        attention = True
-        summary["status"] = "attention"
-        summary["failed_checks"].append(policy_step["name"])
-    else:
-        summary["ratchet_comparison"] = os.path.relpath(
-            os.path.join(HERE, "daily-reports",
-                         "RATCHET-COMPARE-%s.md" % day), HERE)
-    caller_step = _run("caller outcome ledger",
-                       [sys.executable,
-                        os.path.join(HERE, "caller_outcomes.py"), day],
-                       120)
-    if not caller_step["ok"]:
-        attention = True
-        summary["status"] = "attention"
-        summary["failed_checks"].append(caller_step["name"])
-    else:
-        summary["caller_outcomes"] = os.path.relpath(
-            os.path.join(HERE, "daily-reports",
-                         "CALLER-OUTCOMES-%s.md" % day), HERE)
-    paired_step = _run("caller versus ratchet comparison",
-                       [sys.executable,
-                        os.path.join(HERE, "caller_ratchet_compare.py"), day],
-                       120)
-    if not paired_step["ok"]:
-        attention = True
-        summary["status"] = "attention"
-        summary["failed_checks"].append(paired_step["name"])
-    else:
-        summary["caller_ratchet_comparison"] = os.path.relpath(
-            os.path.join(HERE, "daily-reports",
-                         "CALLER-VS-RATCHET-%s.md" % day), HERE)
-    summary["status"] = "attention" if attention else "pass"
-    _write_atomic(os.path.join(OUT_DIR, "latest.json"),
-                  json.dumps(summary, indent=2, sort_keys=True) + "\n")
     # INDEX MIRROR (9/13) — score the SPY/QQQ -> MES/MNQ idea on today's real
     # ES/NQ bars and update the running total. It runs AFTER the audit and can
     # never fail it: the mirror is a measurement of a switch that is off, and
     # the audit is the day's books.
-    try:
-        import futures_mirror_daily
-        futures_mirror_daily.main(day)
-        summary["index_mirror"] = os.path.relpath(
-            os.path.join(HERE, "daily-reports",
-                         "FUTURES-MIRROR-%s.md" % day), HERE)
-    except Exception as _mirror_error:                  # noqa: BLE001
+    res = reports.build("futures-mirror", day, quiet=True)
+    if res["status"] == "failed":
         summary["index_mirror"] = {"status": "failed",
-                                   "why": str(_mirror_error)[:200]}
-        print("INDEX MIRROR replay failed: %s" % str(_mirror_error)[:200])
+                                   "why": res["output"][-200:]}
+        print("INDEX MIRROR replay failed: %s" % res["output"][-200:])
+    else:
+        summary["index_mirror"] = res["path"]
 
     try:
         import departments
@@ -231,20 +213,29 @@ def run(day):
         summary["daily_analyst"] = {"status": "failed"}
     # THE BRIEF (9/15) — the one screen G reads on his phone, built from every
     # report above and posted to Sniper HQ through the Fill Announcer webhook.
-    # It runs LAST so the reports it summarises already exist, and it is
-    # wrapped: a brief that cannot be built must never cost him the audit.
-    try:
-        import daily_brief
-        daily_brief.main(day, do_post=True)
-        summary["brief"] = os.path.relpath(
-            os.path.join(HERE, "daily-reports", "BRIEF-%s.md" % day), HERE)
-    except Exception as _brief_error:                   # noqa: BLE001
-        summary["brief"] = {"status": "failed",
-                            "why": str(_brief_error)[:200]}
-        print("DAILY BRIEF failed: %s" % str(_brief_error)[:200])
+    # It runs after the reports it summarises, and a brief that cannot be
+    # built must never cost him the audit. A CURRENT brief (nothing above
+    # changed since it was posted) is not posted twice.
+    res = reports.build("brief", day, extra=("--post",), quiet=True)
+    if res["status"] == "failed":
+        summary["brief"] = {"status": "failed", "why": res["output"][-200:]}
+        print("DAILY BRIEF failed: %s" % res["output"][-200:])
+    else:
+        summary["brief"] = res["path"]
     _write_atomic(os.path.join(OUT_DIR, "latest.json"), json.dumps(summary, indent=2, sort_keys=True) + "\n")
     if attention:
         _queue_attention(day, summary, report_path)
+    # The audit's own record in the report index, then STATUS.json LAST: the
+    # one small file that answers "how did we do / what broke / is it
+    # verified" without reading a log (ASK-MAP.md).
+    try:
+        reports.record("audit", day)
+    except Exception as _index_error:                   # noqa: BLE001
+        print("reports index not updated: %s" % str(_index_error)[:200])
+    try:
+        status_json.write(day, summary, steps)
+    except Exception as _status_error:                  # noqa: BLE001
+        print("STATUS.json not written: %s" % str(_status_error)[:200])
     print("DAILY AUDIT %s — %s; silent=%d possible=%d coverage=%d failed=%d"
           % (day, summary["status"].upper(), counts["silent_drops"],
              counts["possible_missed"], counts["coverage_warnings"],

@@ -20,9 +20,9 @@ import daily_report
 import jsparse
 import occ as occ_symbol
 import replay_check
+import reports
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT_DIR = os.path.join(HERE, "daily-reports")
 ET = ZoneInfo("America/New_York")
 
 
@@ -499,19 +499,15 @@ def build(day):
             unique.append(row)
     claims = unique
 
-    os.makedirs(OUT_DIR, exist_ok=True)
-    csv_path = os.path.join(OUT_DIR, "CALLER-OUTCOMES-%s.csv" % day)
+    # ONE csv for every day (``date`` column, this day's rows replaced) and
+    # one weekly .md with this day's block — never a dated file.
     fields = ["entry_time", "event_time", "room", "caller", "symbol",
               "contract", "entry", "event", "reported_exit", "reported_pct",
               "profit_per_contract", "calculated_pct", "implied_exit",
               "trim_size", "raw"]
     fields.insert(-1, "basis")
-    with open(csv_path + ".tmp", "w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fields)
-        writer.writeheader(); writer.writerows(claims)
-    os.replace(csv_path + ".tmp", csv_path)
+    reports.write_csv_rows("caller-outcomes", day, fields, claims)
 
-    md_path = os.path.join(OUT_DIR, "CALLER-OUTCOMES-%s.md" % day)
     lines = ["# Caller outcome evidence — %s" % day, "",
              "Caller claims are separate from broker results and ratchet simulations. Partial trims remain partial; percentages imply a price only when the caller's entry is known.", "",
              "| Entry | Event | Trader / room | Contract | Caller entry | Caller event | Exit/claim | Calculated | Evidence |",
@@ -541,9 +537,8 @@ def build(day):
               "- Full exits recorded: **%d**; calculable: **%d**; price/percent unavailable: **%d**." %
               (len(full), len(calculable_full), len(full) - len(calculable_full)),
               "- Quantity-weighted caller P&L stays unavailable when trim size or the final runner exit is missing."]
-    with open(md_path + ".tmp", "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("\n".join(lines).rstrip() + "\n")
-    os.replace(md_path + ".tmp", md_path)
+    md_path = reports.write_day("caller-outcomes", day,
+                                "\n".join(lines).rstrip() + "\n")
     print(md_path)
     return md_path
 

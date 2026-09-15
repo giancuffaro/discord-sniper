@@ -36,7 +36,7 @@ def integrate(root=ROOT, out=OUT):
                (root / 'master_ledger.csv','reconciled_trade'),
                (root / 'master_broker.csv','broker_record'),
                (root / 'master_postmortems.csv','postmortem')]
-    sources += [(p,'caller_counterfactual') for p in sorted((root / 'daily-reports').glob('CALLER-OUTCOMES-*.csv'))]
+    sources.append((root / 'daily-reports' / 'CALLER-OUTCOMES.csv','caller_counterfactual'))
     # Read each file once. Rebuilt ledgers replace the current view, retaining old rows.
     for path, kind in sources:
         if not path.exists():

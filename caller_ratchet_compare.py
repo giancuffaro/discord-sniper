@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 
 import daily_policy_compare as policy
 import caller_outcomes
+import reports
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ET = ZoneInfo("America/New_York")
@@ -28,13 +29,7 @@ def _clock(day, value):
 
 
 def _claims(day):
-    path = os.path.join(HERE, "daily-reports",
-                        "CALLER-OUTCOMES-%s.csv" % day)
-    try:
-        with open(path, encoding="utf-8-sig", newline="") as fh:
-            return list(csv.DictReader(fh))
-    except OSError:
-        return []
+    return reports.csv_rows("caller-outcomes", day) or []
 
 
 def _caller_result(day, event, claims):
@@ -232,11 +227,8 @@ def build(day):
               "- Every observed entry is listed: **%d scored + %d awaiting tape/futures handling = %d**." %
               (len(compared), len(all_entries) - len(compared), len(all_entries)),
               "- This assumes the caller's posted price filled. It measures trade management from their original entry, not whether that fill was executable for us."]
-    out = os.path.join(HERE, "daily-reports",
-                       "CALLER-VS-RATCHET-%s.md" % day)
-    with open(out + ".tmp", "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("\n".join(lines).rstrip() + "\n")
-    os.replace(out + ".tmp", out)
+    out = reports.write_day("caller-vs-ratchet", day,
+                            "\n".join(lines).rstrip() + "\n")
     print(out)
     return out
 

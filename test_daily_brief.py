@@ -17,6 +17,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import daily_brief                                          # noqa: E402
+import reports                                              # noqa: E402
 
 DAY = "2026-09-14"
 
@@ -142,38 +143,41 @@ class BriefFixture(unittest.TestCase):
                             "extension-discord.json"),
                '{"lane": "discord", "issues": ["Chika Alerts is ON but has '
                'no tab in this browser"], "rooms_expected": 40}')
+        self._point_at_fixture()
         if self.full_reports:
-            _write(os.path.join(self.root, "daily-reports",
-                                "CALLER-OUTCOMES-%s.csv" % DAY),
-                   OUTCOMES_HEAD + "\n".join(OUTCOMES_ROWS) + "\n")
-            _write(os.path.join(self.root, "daily-reports",
-                                "CALLER-VS-RATCHET-%s.md" % DAY),
+            # 9/15: one csv for every day and one weekly file per kind, this
+            # day under its ===== header — written the way the reports do.
+            import csv
+            import io as _io
+            rd = csv.DictReader(_io.StringIO(
+                OUTCOMES_HEAD + "\n".join(OUTCOMES_ROWS) + "\n"))
+            reports.write_csv_rows("caller-outcomes", DAY, rd.fieldnames,
+                                   list(rd))
+            reports.write_day("caller-vs-ratchet", DAY,
                    "# Caller entry versus our ratchet\n\n"
                    "- Our ratchet on the **20 paths with a caller-posted "
                    "entry**: **+976 per one-contract replay**.\n")
-            _write(os.path.join(self.root, "daily-reports",
-                                "FUTURES-MIRROR-%s.md" % DAY),
+            reports.write_day("futures-mirror", DAY,
                    "# FUTURES MIRROR\n\n**bars: unavailable** — "
                    "BentoClientError: 422 dataset_unavailable_range\n\n"
                    "8 SPY/QQQ alert(s) were found for this date and are NOT "
                    "scored.\n")
-        self._point_at_fixture()
 
     def _point_at_fixture(self):
         """Nothing in these tests may read the real repo, and nothing may
         touch the network — the bridge door is stubbed shut by default."""
         import broker_sync
-        saved = (daily_brief.HERE, daily_brief.REPORTS,
+        saved = (daily_brief.HERE, reports.HERE,
                  daily_brief._bridge_buying_power,
                  broker_sync.HERE, broker_sync.BALANCES)
         daily_brief.HERE = self.root
-        daily_brief.REPORTS = os.path.join(self.root, "daily-reports")
+        reports.HERE = self.root
         daily_brief._bridge_buying_power = lambda: None
         broker_sync.HERE = self.root
         broker_sync.BALANCES = os.path.join(self.root, "balance_daily.csv")
 
         def restore():
-            (daily_brief.HERE, daily_brief.REPORTS,
+            (daily_brief.HERE, reports.HERE,
              daily_brief._bridge_buying_power,
              broker_sync.HERE, broker_sync.BALANCES) = saved
         self.addCleanup(restore)
@@ -416,8 +420,7 @@ class TestWhatBroke(BriefFixture):
         _write(os.path.join(self.root, "department-reports",
                             "extension-discord.json"),
                '{"lane": "discord", "issues": []}')
-        os.remove(os.path.join(self.root, "daily-reports",
-                               "FUTURES-MIRROR-%s.md" % DAY))
+        os.remove(reports.path("futures-mirror", DAY))
         text, summary = self.brief()
         self.assertIn("## What broke\nnothing broke", text)
         self.assertIn("0 things broke", summary)
@@ -439,7 +442,7 @@ class TestMissingInputs(BriefFixture):
 
     def test_missing_reports_say_unavailable_and_do_not_crash(self):
         text, summary = self.brief()
-        self.assertIn("CALLER-OUTCOMES-%s.csv unavailable" % DAY, text)
+        self.assertIn("CALLER-OUTCOMES.csv unavailable", text)
         self.assertIn("ratchet replay: unavailable", text)
         self.assertIn("## Day", text)
         self.assertIn("## Bot trades", text)
@@ -462,14 +465,11 @@ class TestWriteAndPost(BriefFixture):
         out = io.StringIO()
         saved, sys.stdout = sys.stdout, out
         try:
-            path = os.path.join(self.root, "daily-reports",
-                                "BRIEF-%s.md" % DAY)
             daily_brief.main(DAY)
-            with open(path, encoding="utf-8") as fh:
-                first = fh.read()
+            first = reports.day_text("brief", DAY)
             daily_brief.main(DAY)
-            with open(path, encoding="utf-8") as fh:
-                second = fh.read()
+            second = reports.day_text("brief", DAY)
+            self.assertEqual(reports.days_in("brief", DAY), [DAY])
         finally:
             sys.stdout = saved
         self.assertEqual(first.split("built from")[0],

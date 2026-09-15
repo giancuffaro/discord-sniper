@@ -34,8 +34,9 @@ import sys
 import urllib.request
 import uuid
 
+import reports
+
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPORTS = os.path.join(HERE, "daily-reports")
 UNAVAILABLE = "unavailable"
 
 # A hand trade is one the bot did not originate.  `manual` is the ledger's own
@@ -414,11 +415,10 @@ def _scored(row):
 
 
 def section_callers(day, bot):
-    csv_path = os.path.join(REPORTS, "CALLER-OUTCOMES-%s.csv" % day)
-    rows = _read_csv(csv_path)
+    rows = reports.csv_rows("caller-outcomes", day)
     if rows is None:
         return "\n".join(["## Callers right / wrong",
-                          "CALLER-OUTCOMES-%s.csv %s." % (day, UNAVAILABLE),
+                          "CALLER-OUTCOMES.csv %s." % UNAVAILABLE,
                           _ratchet_line(day) or ""]).rstrip()
 
     claims = {}
@@ -481,9 +481,9 @@ def _bot_took(caller, contract, bot):
 
 
 def _ratchet_line(day):
-    text = _read_text(os.path.join(REPORTS, "CALLER-VS-RATCHET-%s.md" % day))
+    text = reports.day_text("caller-vs-ratchet", day)
     if text is None:
-        return "ratchet replay: %s (CALLER-VS-RATCHET-%s.md missing)" % (
+        return "ratchet replay: %s (no CALLER-VS-RATCHET block for %s)" % (
             UNAVAILABLE, day)
     match = re.search(r"Our ratchet on the \*\*(\d+) paths? with a caller-"
                       r"posted entry\*\*: \*\*([+\-−]?[\d,]+)", text)
@@ -563,7 +563,7 @@ def _strip_label(label, body):
 
 
 def _mirror_fault(day):
-    text = _read_text(os.path.join(REPORTS, "FUTURES-MIRROR-%s.md" % day))
+    text = reports.day_text("futures-mirror", day)
     if text is None:
         return None
     match = re.search(r"\*\*bars: unavailable\*\*\s*—\s*(.+)", text)
@@ -637,10 +637,9 @@ def build(day):
               broke, section_pending()]
 
     sources = ["master_ledger.csv", "master_broker.csv", "balance_daily.csv",
-               "trades.log",
-               "daily-reports/CALLER-OUTCOMES-%s.csv" % day,
-               "daily-reports/CALLER-VS-RATCHET-%s.md" % day,
-               "daily-reports/FUTURES-MIRROR-%s.md" % day,
+               "trades.log", "daily-reports/CALLER-OUTCOMES.csv",
+               reports.KINDS["caller-vs-ratchet"].rel_path(day).replace("\\", "/"),
+               reports.KINDS["futures-mirror"].rel_path(day).replace("\\", "/"),
                "department-reports/extension-*.json", "HANDOFF.md"]
     stamp = dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z")
     footer = "built from %s · %s" % (", ".join(sources), stamp)
@@ -723,12 +722,7 @@ def post(day, text, summary, opener=urllib.request.urlopen):
 def main(day=None, do_post=False):
     day = day or dt.date.today().isoformat()
     text, summary = build(day)
-    os.makedirs(REPORTS, exist_ok=True)
-    path = os.path.join(REPORTS, "BRIEF-%s.md" % day)
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(text)
-    os.replace(tmp, path)
+    path = reports.write_day("brief", day, text)
     print(text)
     print(path)
     if do_post:

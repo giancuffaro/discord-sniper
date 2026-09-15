@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 
 import occ
 import ratchet_tiers as rt
+import reports
 import tape
 from webull_options import stop_below, tick_round, tick_step
 
@@ -123,13 +124,11 @@ def _simulate(path, entry, contract, use_ratchet):
 
 
 def _observed_total(day):
-    path = os.path.join(HERE, "daily-reports", "REPORT-%s.md" % day)
-    try:
-        text = open(path, encoding="utf-8").read()
-        m = re.search(r"Unique entry alerts observed .*?\|\s*(\d+)\s*\|", text)
-        return int(m.group(1)) if m else None
-    except OSError:
+    text = reports.day_text("report", day)
+    if text is None:
         return None
+    m = re.search(r"Unique entry alerts observed .*?\|\s*(\d+)\s*\|", text)
+    return int(m.group(1)) if m else None
 
 
 def _path_after(quotes, event):
@@ -194,11 +193,8 @@ def build(day):
         lines += ["", "## Actual bot trade", ""]
         for event, entry, fixed, ratchet, _last in actual:
             lines.append("- %s realized **%+.0f**. The quote replay gives fixed **%+.0f** versus ratchet **%+.0f**; the real ratchet fill was better because the market sell completed above the trigger bid." % (event["label"], event["actual"], fixed["pl"], ratchet["pl"]))
-    os.makedirs(os.path.join(HERE, "daily-reports"), exist_ok=True)
-    out = os.path.join(HERE, "daily-reports", "RATCHET-COMPARE-%s.md" % day)
-    with open(out + ".tmp", "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("\n".join(lines).rstrip() + "\n")
-    os.replace(out + ".tmp", out)
+    out = reports.write_day("ratchet-compare", day,
+                            "\n".join(lines).rstrip() + "\n")
     print(out)
     return out
 

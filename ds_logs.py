@@ -276,6 +276,57 @@ def merge_day(existing_text, day, export_text, lane="", held=()):
     return "\n".join(out).rstrip("\n") + "\n", stats
 
 
+# ---- day blocks for ANY weekly file (9/15: the reports use these too) ------
+
+def _trim_blank(lines):
+    lines = list(lines)
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    while lines and not lines[-1].strip():
+        lines.pop()
+    return lines
+
+
+def put_day(existing_text, day, body_text, preamble_lines=(),
+            newest_first=False):
+    """Replace ``day``'s block in a weekly file body; keep every other day.
+
+    The generic half of ``merge_day``: no section de-dupe, just one block per
+    day under its ``===== Mon Sep 14 2026 =====`` header, ordered oldest or
+    newest first. ``preamble_lines`` are rewritten at the top every time (the
+    text before the first header is never kept). Returns the new file text.
+    """
+    blocks = [(d, _trim_blank(ls))
+              for d, ls in split_day_blocks(existing_text) if d != day]
+    blocks.append((day, _trim_blank(
+        (body_text or "").replace("\r\n", "\n").split("\n"))))
+    blocks.sort(key=lambda b: b[0], reverse=newest_first)
+    out = list(preamble_lines)
+    if out:
+        out.append("")
+    for d, lines in blocks:
+        out.append(day_header(d))
+        out.append("")
+        out.extend(lines)
+        out.append("")
+    return "\n".join(out).rstrip("\n") + "\n"
+
+
+def get_day(text, day):
+    """The body of ``day``'s block in a weekly file, or None when the file
+    holds no such day."""
+    for d, lines in split_day_blocks(text or ""):
+        if d == day:
+            return "\n".join(_trim_blank(lines)) + "\n"
+    return None
+
+
+def weekly_file(prefix, day, ext):
+    """``REPORT week-of-Sep-14-to-Sep-20-2026.md`` — the report-side twin of
+    ``weekly_name``; same week tag, any prefix and extension."""
+    return "%s %s.%s" % (prefix, week_tag(day), ext)
+
+
 # ---- what the readers ask for ---------------------------------------------
 
 def logs_dir(root):

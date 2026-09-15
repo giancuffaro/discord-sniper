@@ -16,9 +16,9 @@ import subprocess
 from collections import Counter, defaultdict
 
 import replay_check
+import reports
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT_DIR = os.path.join(HERE, "daily-reports")
 
 
 def _read_csv(name, day):
@@ -283,7 +283,6 @@ def _finalize_deferred(day, decisions):
 
 
 def build(day):
-    os.makedirs(OUT_DIR, exist_ok=True)
     messages, decisions = _decision_rows(day)
     decisions = _finalize_deferred(day, decisions)
     ledger = [r for r in _read_csv("master_ledger.csv", day)
@@ -386,16 +385,16 @@ def build(day):
     for room, count in speaking.most_common():
         lines.append("| %s | %d |" % (room.replace("|", "\\|"), count))
 
+    # The sibling reports live in the same weekly files (one per kind per
+    # week, this day under its ===== header) — the link is the week file.
+    def _week(kind):
+        return os.path.basename(reports.path(kind, day)).replace(" ", "%20")
     lines += ["", "## Detailed benchmarks", "",
-              "- [Caller entry, trim, and exit evidence](CALLER-OUTCOMES-%s.md)" % day,
-              "- [Caller original entry versus our ratchet](CALLER-VS-RATCHET-%s.md)" % day,
-              "- [Fixed stop versus live ratchet replay](RATCHET-COMPARE-%s.md)" % day]
+              "- [Caller entry, trim, and exit evidence](%s)" % _week("caller-outcomes"),
+              "- [Caller original entry versus our ratchet](%s)" % _week("caller-vs-ratchet"),
+              "- [Fixed stop versus live ratchet replay](%s)" % _week("ratchet-compare")]
 
-    out = os.path.join(OUT_DIR, "REPORT-%s.md" % day)
-    tmp = out + ".tmp"
-    with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("\n".join(lines).rstrip() + "\n")
-    os.replace(tmp, out)
+    out = reports.write_day("report", day, "\n".join(lines).rstrip() + "\n")
     print(out)
     return out
 

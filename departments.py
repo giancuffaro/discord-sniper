@@ -207,10 +207,11 @@ def reader_review(current,prior,parser,raw,grade):
 def daily(day):
     import datetime
     datetime.date.fromisoformat(day)
+    import reports
     evidence={}
-    for prefix in ('REPORT','RATCHET-COMPARE','CALLER-OUTCOMES','CALLER-VS-RATCHET'):
-        path=HERE/'daily-reports'/(prefix+'-'+day+'.md')
-        evidence[path.name]=path.read_text(encoding='utf-8') if path.exists() else 'MISSING — unavailable'
+    for kind in ('report','ratchet-compare','caller-outcomes','caller-vs-ratchet'):
+        text=reports.day_text(kind,day)
+        evidence[reports.KINDS[kind].prefix+'-'+day+'.md']=text if text is not None else 'MISSING — unavailable'
     return run('daily',evidence,day)
 
 

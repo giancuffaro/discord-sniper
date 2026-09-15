@@ -40,7 +40,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SHADOW = os.path.join(HERE, "futures_mirror_shadow.csv")
 MASTER = os.path.join(HERE, "master_alerts.csv")
 BARS_DIR = os.path.join(HERE, "bars")
-REPORT_DIR = os.path.join(HERE, "daily-reports")
 CUMULATIVE = os.path.join(HERE, "reference", "FUTURES-MIRROR-REPLAY.csv")
 SEED = os.path.join(HERE, "reference", "FUTURES-MIRROR-REPLAY-2026-09-13.csv")
 SETTINGS = os.path.join(HERE, "settings.json")
@@ -340,11 +339,9 @@ def _table(header, rows):
 
 
 def write_report(day, lines):
-    os.makedirs(REPORT_DIR, exist_ok=True)
-    path = os.path.join(REPORT_DIR, "FUTURES-MIRROR-%s.md" % day)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines).rstrip() + "\n")
-    return path
+    import reports
+    return reports.write_day("futures-mirror", day,
+                             "\n".join(lines).rstrip() + "\n")
 
 
 CAVEATS = [
