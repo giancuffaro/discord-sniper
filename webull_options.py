@@ -17,6 +17,7 @@ liked better. If it can't build exactly what they called, it refuses.
 
 import datetime as dt
 import math
+import os
 import re
 import time
 import uuid
@@ -55,6 +56,30 @@ except Exception:                                       # noqa: BLE001
         "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24",
     }
 
+
+
+def _rotate_into_archive(log_name):
+    """The SDK's file logger rotates hourly and left `webull_api.log.<date>_<hh>`
+    in the folder root (28 of them by 9/15). Rotated files land in
+    archive/webull-api-logs/ instead; the live file stays where it is.
+    Python's BaseRotatingHandler.namer maps the rotated name, so the SDK's
+    own handler does the moving."""
+    import logging
+    import logging.handlers
+    here = os.path.dirname(os.path.abspath(__file__))
+    dest = os.path.join(here, "archive", "webull-api-logs")
+
+    def namer(default_name):
+        os.makedirs(dest, exist_ok=True)
+        return os.path.join(dest, os.path.basename(default_name))
+
+    loggers = [logging.root] + [logging.getLogger(n)
+                                for n in list(logging.root.manager.loggerDict)]
+    for lg in loggers:
+        for h in getattr(lg, "handlers", ()):
+            if (isinstance(h, logging.handlers.BaseRotatingHandler)
+                    and os.path.basename(h.baseFilename) == os.path.basename(log_name)):
+                h.namer = namer
 
 class Refused(Exception):
     """Something is wrong and no order went out. The message is written to be
@@ -658,6 +683,7 @@ class WebullOptions:
         # a morning and buried the announcer's loop in stack traces.
         try:
             api.set_file_logger(getattr(self, "sdk_log_name", "webull_api.log"))
+            _rotate_into_archive(getattr(self, "sdk_log_name", "webull_api.log"))
         except Exception:                               # noqa: BLE001
             pass
         self._api = api
