@@ -15,9 +15,11 @@ A day's block holds only what the earlier days of that same file do not
 already hold; re-exporting the same day REPLACES that day's block instead of
 stacking a second header. Week runs Monday..Sunday, day boundary Eastern.
 
-The pre-9/10 untagged dailies (`signal-room-chat Aug-18-2026.txt` ..
-`Sep-10-2026.txt`) predate the lane split and are NOT merged; every reader
-here still finds them.
+A line an EARLIER week of the same lane already holds is not repeated either
+(``merge_day(..., held=...)``): the extension's export is cumulative, so
+without that every Monday would re-hold the whole backlog. The pre-9/10
+untagged dailies were merged into their weeks on 9/15 (Aug-18..Sep-9 as
+discord, Sep-10 as whop) and zipped under archive/.
 """
 import glob
 import os
@@ -234,13 +236,25 @@ def preamble(monday, sunday, lane):
     ]
 
 
-def merge_day(existing_text, day, export_text, lane=""):
+def held_keys(texts, seen=None):
+    """Every dedupe key the weekly-file ``texts`` hold, for ``merge_day``'s
+    ``held``: the earlier weeks of a lane, so a backlog is never re-held."""
+    seen = set() if seen is None else seen
+    for text in texts:
+        for _, lines in split_day_blocks(text):
+            _dedupe_block(lines, seen)
+    return seen
+
+
+def merge_day(existing_text, day, export_text, lane="", held=()):
     """Put ``export_text`` (one day's export) into the weekly file body.
 
     The day's own block is REPLACED, never stacked. Every block is then
     re-deduped against the blocks before it, so the result is the same
     whether the day was exported once or twenty times, and the earliest
-    day that held a line is the day that keeps it.
+    day that held a line is the day that keeps it. ``held`` is the text of
+    the EARLIER week files of this lane (or a set from ``held_keys``): a
+    line one of them holds is dropped from this week too.
 
     Returns (new_text, {day_iso: {section: dropped_count}}).
     """
@@ -249,7 +263,7 @@ def merge_day(existing_text, day, export_text, lane=""):
     blocks.sort(key=lambda b: b[0])
 
     mon, sun = week_bounds(day)
-    seen = set()
+    seen = set(held) if isinstance(held, set) else held_keys(held)
     stats = {}
     out = preamble(mon, sun, lane)
     for d, lines in blocks:

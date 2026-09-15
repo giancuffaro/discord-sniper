@@ -203,14 +203,25 @@ class DayBlocks(unittest.TestCase):
                             ds_logs.weekly_name(mon, "discord"))
         a = msg("2026-09-13 09:30:00", "123", "SPY 500C", "111")
         b = msg("2026-09-14 09:30:00", "123", "QQQ 400C", "222")
-        # Sunday's backlog rides along into Monday's export, but Monday is a
-        # different FILE, so it is written there in full rather than dropped.
+        # Sunday's backlog rides along into Monday's export. Monday is a
+        # different FILE, and last week's file is passed as ``held``, so the
+        # backlog stays where it was first captured and Monday holds only b.
         last, _ = ds_logs.merge_day("", sun, export("2026-09-13", [a]), "discord")
-        fresh, stats = ds_logs.merge_day("", mon, export("2026-09-14", [a, b]), "discord")
-        self.assertEqual(stats["2026-09-14"].get("raw", 0), 0)   # nothing dropped
-        self.assertIn(a, fresh)
+        fresh, stats = ds_logs.merge_day("", mon, export("2026-09-14", [a, b]),
+                                         "discord", held=[last])
+        self.assertEqual(stats["2026-09-14"]["raw"], 1)
+        self.assertNotIn(a, fresh)
         self.assertIn(b, fresh)
         self.assertIn(a, last)
+        # Without ``held`` (nothing earlier on disk) Monday is written in full.
+        alone, stats = ds_logs.merge_day("", mon, export("2026-09-14", [a, b]), "discord")
+        self.assertEqual(stats["2026-09-14"].get("raw", 0), 0)
+        self.assertIn(a, alone)
+
+    def test_the_bridge_holds_last_week_back(self):
+        py = (HERE / "bridge.py").read_text(encoding="utf-8")
+        self.assertIn("when - _dt.timedelta(days=7), lane))", py)
+        self.assertIn("held=[_read(prior)])", py)
 
 
 class ReadersFindTheDays(unittest.TestCase):

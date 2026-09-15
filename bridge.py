@@ -5262,12 +5262,19 @@ class Handler(BaseHTTPRequestHandler):
 
                 import ds_logs
                 when = _dt.datetime.strptime(day, "%Y-%m-%d").date()
-                old = ""
-                if os.path.exists(path):
-                    with open(path, encoding="utf-8", errors="replace") as f:
-                        old = f.read()
+                lane = str(body.get("lane") or "")
+
+                def _read(p):
+                    if not os.path.exists(p):
+                        return ""
+                    with open(p, encoding="utf-8", errors="replace") as f:
+                        return f.read()
+                # The export is cumulative; last week's file already holds
+                # the backlog, so this week's blocks never re-hold it.
+                prior = os.path.join(d, ds_logs.weekly_name(
+                    when - _dt.timedelta(days=7), lane))
                 text, _ = ds_logs.merge_day(
-                    old, when, text, str(body.get("lane") or ""))
+                    _read(path), when, text, lane, held=[_read(prior)])
             with open(path, "w", encoding="utf-8") as f:
                 f.write(text)
             return self._json(200, {"ok": True, "saved": name})
