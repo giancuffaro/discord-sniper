@@ -25,7 +25,15 @@ IDENTITY, in order:
      only certain signal, and it wins whenever both sides carry one.
   2. NO message id on either side (a legacy extension build, voice, vision):
      the same trader, the same ticker, a different contract, within five
-     minutes.
+     minutes, AND the text reads as a correction of the pending one. That
+     means either an explicit correction word ("edit", "edited",
+     "correction", "meant", "typo", a leading "*", "not calls/puts") or a
+     near-duplicate: with the contract tokens (ticker, strike, side, expiry,
+     price) stripped, the two texts are >= 0.9 similar (difflib ratio; two
+     bare contract lines are compared whole instead). A same-trader,
+     same-ticker alert that reads differently is a SIBLING trade (TSLA calls
+     at 10:00, TSLA puts as a new idea at 10:03) and the earlier arm stays.
+     No text on either side is no evidence, so it is never an edit.
 
 Two message ids that DIFFER are two different messages and never an edit. The
 house rule is that separately posted contracts are separate trades (HANDOFF:
@@ -38,11 +46,16 @@ dedupe ladder (extension in-flight lock -> bridge echo-lock -> per-trader
 claim) already owns it.
 """
 
+import difflib
+import re
 import threading
 import time
 
 # How far back the no-message-id fallback will look.
 WINDOW_SECONDS = 300.0
+# How alike two no-message-id alerts must read, contract tokens removed,
+# before the second is an edit of the first.
+SIMILARITY = 0.9
 # How long any pending entry is remembered at all. Longer than the 10-minute
 # pullback window so an edit that lands late still finds its original.
 TTL_SECONDS = 900.0
@@ -90,6 +103,54 @@ def label(order, other=None):
 
 def message_id(order):
     return _text(order.get("message_id"))
+
+
+def raw_text(order):
+    return _text(order.get("raw"))
+
+
+_CORRECTION = re.compile(
+    r"(?i)(?:^\s*\*)|\b(?:edit(?:ed)?|correction|corrected|meant|typo)\b"
+    r"|\bnot\s+(?:the\s+)?(?:calls?|puts?|\$?\d)")
+_CONTRACT_TOKENS = re.compile(
+    r"(?i)\$?\d+(?:[.,/]\d+)*[cp]?\b|\b(?:calls?|puts?|[cp])\b"
+    r"|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b"
+    r"|[@$\u2014\-:|,.]+")
+
+
+def is_correction(text):
+    """Does the alert SAY it is a fix? ("*puts", "meant 360", "typo")."""
+    return bool(_CORRECTION.search(_text(text)))
+
+
+def _prose(text, symbol):
+    t = _text(text).lower()
+    sym = _text(symbol).lower()
+    if sym:
+        t = re.sub(r"\b%s\b" % re.escape(sym), " ", t)
+    t = _CONTRACT_TOKENS.sub(" ", t)
+    return " ".join(t.split())
+
+
+def similarity(a, b, symbol=""):
+    """How alike two alerts read once the contract itself is removed. Two bare
+    contract lines ("TSLA 357.5c 1.42") have no prose left, so they are
+    compared whole: a one-letter side flip still scores ~0.94, a different
+    strike and price ~0.73."""
+    pa, pb = _prose(a, symbol), _prose(b, symbol)
+    if pa and pb:
+        return difflib.SequenceMatcher(None, pa, pb).ratio()
+    ta, tb = " ".join(_text(a).lower().split()), " ".join(_text(b).lower().split())
+    if not ta or not tb:
+        return 0.0
+    return difflib.SequenceMatcher(None, ta, tb).ratio()
+
+
+def reads_as_edit(new_text, old_text, symbol=""):
+    """The no-message-id test: a correction word, or a near-duplicate."""
+    if is_correction(new_text):
+        return True
+    return similarity(new_text, old_text, symbol) >= SIMILARITY
 
 
 def trader_of(order):
@@ -144,6 +205,7 @@ class Revisions:
                  "strike": order.get("strike"),
                  "expiry": order.get("expiry"),
                  "entry_mode": _text(order.get("entry_mode")),
+                 "raw": raw_text(order),
                  "key": key}
         with self._lock:
             self._sweep(now)
@@ -175,6 +237,7 @@ class Revisions:
         mine = contract_of(order)
         mid = message_id(order)
         who = trader_of(order)
+        text = raw_text(order)
         out = []
         with self._lock:
             self._sweep(now)
@@ -191,6 +254,8 @@ class Revisions:
                         continue
                     if now - e["ts"] > self.window:
                         continue
+                    if not reads_as_edit(text, e.get("raw"), mine[0]):
+                        continue                # a sibling trade, not a fix
                 out.append(dict(e))
         return out
 
