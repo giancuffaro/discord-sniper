@@ -25,10 +25,10 @@ trades this bot exists to take. So the number used is the last COMPLETED
 session's volume for that contract, which is known before the bell and cannot
 move while we are deciding.
 
-WHY A WARM CACHE. The fire path cannot afford a broker round trip; this is a
-sniper. The whole map is pulled once in the morning and the entry check is a
-dictionary lookup. A miss does one short lookup with a hard timeout and then
-gets out of the way.
+ONE LOOKUP PER CONTRACT. The fire path cannot afford a broker round trip; this
+is a sniper. The first call on a contract does one short Tradier lookup with a
+hard timeout, the answer is kept in memory for the process, and every later
+check on that contract is a dictionary lookup.
 
 FAIL OPEN, ALWAYS. If Tradier is down, or the contract is not in the map, the
 trade goes through with a note. Blocking real entries because a data provider
@@ -41,15 +41,12 @@ thing we are trying to avoid; refusing the exit would BE that thing.
 """
 
 import json
-import os
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-CACHE = os.path.join(HERE, "liquidity_cache.json")
 BASE = "https://api.tradier.com/v1"
 
 # G's call, 9/8. Set from the measurement above: SNDK's thinnest strike traded
@@ -60,7 +57,6 @@ DEFAULT_FLOOR = 250
 
 _LOCK = threading.Lock()
 _MAP = {}          # occ -> {"v": volume, "oi": open_interest}
-_DAY = None        # the session the map describes
 _MISS_AT = {}      # occ -> last on-demand lookup time, so we ask once
 
 
@@ -96,77 +92,6 @@ def _chain(tok, sym, expiry, timeout=20):
     return out
 
 
-def _expiries(tok, sym, n=3, timeout=20):
-    try:
-        b = _get(tok, "/markets/options/expirations",
-                 {"symbol": sym, "includeAllRoots": "true"}, timeout)
-    except Exception:
-        return []
-    ex = (((b or {}).get("expirations") or {}).get("date")) or []
-    return list(ex)[:n]
-
-
-def _today(tok):
-    """The session the numbers belong to. Tradier's clock, not our clock."""
-    try:
-        b = _get(tok, "/markets/clock", {}, 10)
-        return str(((b or {}).get("clock") or {}).get("date") or "")
-    except Exception:
-        return time.strftime("%Y-%m-%d")
-
-
-def warm(cfg, symbols, expiries_each=2, note=None):
-    """Pull the volume map for `symbols` once. Call it in the morning.
-
-    Deliberately bounded: a couple of expiries per symbol, because a room calls
-    this week's contracts, not next quarter's. Roughly two Tradier calls per
-    symbol — well inside the rate budget for a once-a-day job.
-    """
-    global _MAP, _DAY
-    tok = _tok(cfg)
-    if not tok:
-        if note:
-            note("LIQUIDITY: no Tradier token — volume gate is OFF (fails open)")
-        return 0
-    day = _today(tok)
-    got = {}
-    for sym in sorted(set(s for s in symbols if s)):
-        for e in _expiries(tok, sym, expiries_each):
-            got.update(_chain(tok, sym, e))
-    with _LOCK:
-        _MAP = got
-        _DAY = day
-    try:
-        tmp = CACHE + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump({"day": day, "map": got}, f)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, CACHE)
-    except Exception:
-        pass
-    if note:
-        note("LIQUIDITY: warmed %d contracts across %d symbols for %s"
-             % (len(got), len(set(symbols)), day))
-    return len(got)
-
-
-def load_cache(note=None):
-    """Bring yesterday's map back after a restart, so a crash mid-day doesn't
-    turn the gate off until tomorrow morning."""
-    global _MAP, _DAY
-    try:
-        d = json.load(open(CACHE, encoding="utf-8"))
-        with _LOCK:
-            _MAP = d.get("map") or {}
-            _DAY = d.get("day")
-        if note:
-            note("LIQUIDITY: loaded %d cached contracts (%s)" % (len(_MAP), _DAY))
-        return len(_MAP)
-    except Exception:
-        return 0
-
-
 def volume_of(occ, cfg=None, allow_lookup=True):
     """(volume, source) for one OCC symbol. None means we do not know."""
     if not occ:
@@ -175,7 +100,7 @@ def volume_of(occ, cfg=None, allow_lookup=True):
     with _LOCK:
         hit = _MAP.get(occ)
     if hit:
-        return (hit.get("v"), "warm cache")
+        return (hit.get("v"), "already looked up")
     if not allow_lookup or not cfg:
         return (None, "not in the cache")
     # One short on-demand try, once per contract. A hard 3s ceiling: if the

@@ -93,10 +93,6 @@ def _mk(pair):
     return pair[0] * 60 + pair[1]
 
 
-def now_et():
-    return _now()
-
-
 def is_holiday(dt=None):
     d = dt or _now()
     return d.strftime("%Y-%m-%d") in FULL_CLOSE.get(d.year, set())
@@ -150,25 +146,6 @@ def is_open(kind="option", symbol=None, dt=None):
     if str(kind).lower().startswith("fut"):
         return futures_open(dt)
     return options_open(symbol, dt)
-
-
-def session_bounds(dt=None):
-    """Regular options session as 'HH:MM' strings, for minute-bar capture
-    (09:30 .. 16:15). Half-days shorten the close."""
-    d = dt or _now()
-    close = HALF_DAY_LATE_CLOSE if is_half_day(d) else OPTIONS_CLOSE_LATE
-    return ("%02d:%02d" % OPTIONS_OPEN, "%02d:%02d" % close)
-
-
-def restart_safe_open(dt=None):
-    """The padded window the bridge uses to decide it's mid-market and should
-    hold a code restart until the close: weekdays 09:20-16:15, and now also
-    False on holidays so a restart can happen freely on a closed day."""
-    d = dt or _now()
-    if d.weekday() >= 5 or is_holiday(d):
-        return False
-    m = _hm(d)
-    return (9 * 60 + 20) <= m <= (16 * 60 + 15)
 
 
 def holiday_table_flag(dt=None):

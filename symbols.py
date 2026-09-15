@@ -125,11 +125,3 @@ def resolve(sym):
         return s[1:]
     return ""
 
-
-def reload_list():
-    """Pick up a fresh optionable.txt without a restart."""
-    global _OK, _WHY
-    with _LOCK:
-        _OK, _WHY = None, ""
-        _load()
-        return (_OK is not None, _WHY)
