@@ -1,4 +1,8 @@
-/* Export the exact retained live-message corpus used by parser_gate.js. */
+/* Export the exact retained live-message corpus used by parser_gate.js.
+ * 9/15: "DS Logs" is one WEEKLY file per lane with a
+ * "===== Mon Sep 14 2026 =====" header per capture day, plus the pre-9/10
+ * legacy dailies. The name filter matches both and a day header matches no
+ * message line, so this reads the same corpus it always did. */
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");

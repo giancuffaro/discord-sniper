@@ -15,7 +15,6 @@ with canned phrases. It never replayed the day's REAL room messages. This does:
 Run:  python replay_check.py [YYYY-MM-DD]     (default: today)
 Prints per-room counts and every silent drop with the raw text. Read-only.
 """
-import glob
 import os
 import re
 import sys
@@ -24,6 +23,7 @@ from datetime import date
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import ds_logs  # noqa: E402
 import jsparse  # noqa: E402  (the PRODUCTION parser via node; Python mirror only as fallback)
 
 DAY = sys.argv[1] if len(sys.argv) > 1 else date.today().isoformat()
@@ -89,85 +89,26 @@ def parser_cfg(channel_id, text):
 
 
 def newest_export():
-    """9/10: exports are now "<day> (discord).txt" / "<day> (whop).txt" — both
-    profiles used to write ONE name and clobber each other's whole day. The
-    glob already matches both; taking the newest mtime is still right for
-    "what just happened", and export_for_day below reads EVERY lane for a day."""
-    fs = sorted(glob.glob(os.path.join(HERE, "DS Logs", "signal-room-chat*.txt")),
-                key=os.path.getmtime)
+    """The most recently written export, for "what just happened".
+
+    9/10 the exports split by lane; 9/15 they became one file per WEEK per
+    lane. Newest mtime is still the right answer to that question, and
+    exports_for_day below reads EVERY lane for a day.
+    """
+    fs = sorted(ds_logs.export_files(HERE), key=os.path.getmtime)
     return fs[-1] if fs else None
 
 
-def export_for_day(day):
-    """9/3, G: run this for every past day. newest_export() always returns
-    the single most-recently-modified file no matter what DAY was asked
-    for — fine for "today" but silently wrong for anything historical
-    (it would filter the newest file for a date string that isn't in it
-    and report zero results). Resolve DAY to the actual export file:
-    first by filename ("signal-room-chat Aug-18-2026.txt" -> 2026-08-18),
-    falling back to scanning file contents for that date if the name
-    doesn't decode cleanly.
-    """
-    fs = sorted(glob.glob(os.path.join(HERE, "DS Logs", "signal-room-chat*.txt")))
-    for f in fs:
-        m = re.search(r"signal-room-chat (\w+-\d+-\d+)(?: \([a-z]+\))?\.txt$", os.path.basename(f))
-        if not m:
-            continue
-        try:
-            from datetime import datetime
-            d = datetime.strptime(m.group(1), "%b-%d-%Y").date().isoformat()
-        except ValueError:
-            continue
-        if d == day:
-            return f
-    for f in fs:
-        try:
-            with open(f, encoding="utf-8", errors="replace") as fh:
-                for ln in fh:
-                    if ln.startswith(day + " "):
-                        return f
-        except OSError:
-            continue
-    return None
-
-
 def exports_for_day(day):
-    """Every lane export for ``day`` (Discord and Whop), newest per lane.
+    """Every lane export holding ``day`` (Discord and Whop).
 
-    The split-profile exporter writes ``(discord)`` and ``(whop)`` files.
-    ``export_for_day`` predates that split and returns on the first filename,
-    which silently excluded the other lane from the daily miss audit.
+    9/3, G: run this for every past day. 9/15: the exports are WEEKLY files
+    and a day is a "===== Mon Sep 14 2026 =====" block inside one, so the day
+    comes from the headers, not the file name. The pre-9/10 legacy dailies are
+    still found by name. ``load`` below filters to ``DAY`` line by line either
+    way, so a weekly file hands back exactly that day.
     """
-    fs = sorted(glob.glob(os.path.join(HERE, "DS Logs",
-                                       "signal-room-chat*.txt")))
-    matched = []
-    for f in fs:
-        m = re.search(
-            r"signal-room-chat (\w+-\d+-\d+)(?: \(([a-z]+)\))?\.txt$",
-            os.path.basename(f))
-        if not m:
-            continue
-        try:
-            from datetime import datetime
-            file_day = datetime.strptime(m.group(1), "%b-%d-%Y").date().isoformat()
-        except ValueError:
-            continue
-        if file_day == day:
-            matched.append(f)
-    if matched:
-        # If a legacy unsuffixed file and split-lane files coexist, the split
-        # files are the authoritative independent snapshots.
-        split = [f for f in matched if re.search(r" \((discord|whop)\)\.txt$", f)]
-        return split or matched
-    found = []
-    for f in fs:
-        try:
-            with open(f, encoding="utf-8", errors="replace") as fh:
-                if any(ln.startswith(day + " ") for ln in fh):
-                    found.append(f)
-        except OSError:
-            continue
-    return found
+    return ds_logs.files_for_day(HERE, day)
 
 
 def load(fn):

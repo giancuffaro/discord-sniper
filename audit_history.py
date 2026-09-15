@@ -21,7 +21,6 @@ Then it groups the misses by SHAPE so a fix covers a class, not one line.
 Run:  python audit_history.py            (writes ALERT-AUDIT.html + console)
       python audit_history.py --quiet    (console summary only)
 """
-import glob
 import html
 import os
 import re
@@ -31,6 +30,7 @@ from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import ds_logs                                          # noqa: E402
 import jsparse                                          # noqa: E402
 import replay_check                                     # noqa: E402
 
@@ -39,8 +39,6 @@ import replay_check                                     # noqa: E402
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)(?: message_id=[^\]\s]+)?\]  (.*)$")
-RE_DID = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  <(\w+)>  (.*)$")
 RE_PRICE = re.compile(r"\b\d{1,4}\.\d{1,2}\b")
 RE_CONFIRMED_FILL = re.compile(
     r"\btook\s+en(?:try|ry|rty|trey|ty)\b|"
@@ -48,40 +46,6 @@ RE_CONFIRMED_FILL = re.compile(
     r"\b\d{1,3}\.\d{1,2}\s+(?:fill(?:ed)?\s+)?took\s+en(?:try|ry|rty|trey|ty)\b",
     re.I)
 SKIP = ("Sniper HQ", "this room")
-
-
-def day_of(path):
-    m = re.search(r"signal-room-chat (\w+-\d+-\d+)(?: \([a-z]+\))?\.txt$", os.path.basename(path))
-    if not m:
-        return None
-    try:
-        return datetime.strptime(m.group(1), "%b-%d-%Y").date().isoformat()
-    except ValueError:
-        return None
-
-
-def load(fn, day):
-    msgs, dids = {}, []
-    sec = None
-    with open(fn, encoding="utf-8", errors="replace") as f:
-        for ln in f:
-            ln = ln.rstrip("\n")
-            if ln.startswith("=== RAW MESSAGES"):
-                sec = "m"
-                continue
-            if ln.startswith("=== WHAT THE BOT DID"):
-                sec = "d"
-                continue
-            if sec == "m":
-                m = RE_MSG.match(ln)
-                if m and m.group(1) == day:
-                    _d, t, room, cid, text = m.groups()
-                    msgs[(t, cid, text[:100])] = (t, room, cid, text)
-            elif sec == "d":
-                m = RE_DID.match(ln)
-                if m and m.group(1) == day:
-                    dids.append(m.groups()[1:])
-    return list(msgs.values()), dids
 
 
 def bridge_lines(day=None):
@@ -145,8 +109,11 @@ def shape_of(body):
 
 
 def main():
-    files = sorted(glob.glob(os.path.join(HERE, "DS Logs", "signal-room-chat*.txt")))
-    days = sorted({day_of(f) for f in files if day_of(f)})
+    # WHICH DAYS WE HAVE (9/15). The exports are weekly files now, so the day
+    # comes from the "===== Mon Sep 14 2026 =====" headers inside them, not
+    # from the file name. ds_logs.all_days() still finds the pre-9/10 legacy
+    # dailies by name.
+    days = ds_logs.all_days(HERE)
 
     rooms = defaultdict(lambda: {"days_spoke": set(), "msgs": 0, "traded": 0,
                                  "missed": [], "blind": [], "calls": 0})

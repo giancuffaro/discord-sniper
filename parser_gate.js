@@ -127,6 +127,12 @@ try { OLD_ROOMS = roomRules(gitFile(BASE, "extension/rooms.txt")); }
 catch (e) { OLD_ROOMS = ROOMS; }
 
 // ---- the corpus ------------------------------------------------------------
+// 9/15: "DS Logs" is one WEEKLY file per lane ("signal-room-chat
+// week-of-Sep-14-to-Sep-20-2026 (discord).txt"), each capture day under a
+// "===== Mon Sep 14 2026 =====" header, plus the pre-9/10 legacy dailies.
+// The name filter below matches both, a day header matches no message line,
+// and the weekly files already hold each line once — so the corpus is the
+// same set of messages it was when every day had its own file.
 const RE = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+\[(.+?)#(\d+)\]\s+([\s\S]*)$/;
 const seen = new Set();
 const rows = [];

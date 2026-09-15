@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
+import ds_logs
 from eastern import ET
 
 ROW = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+\[(.+?)#([^\]]+)\]\s+(.*)$")
@@ -66,7 +67,10 @@ def load(root, since=None, until=None):
         seen[key] = row
         rows.append(row)
 
-    for file in sorted((root/'DS Logs').glob('signal-room-chat*.txt')):
+    # 9/15: one WEEKLY file per lane, each capture day under a
+    # "===== Mon Sep 14 2026 =====" header. A day header starts with
+    # '===' so the section switch below already treats it as 'other'.
+    for file in [Path(f) for f in ds_logs.export_files(str(root))]:
         section = None
         for n, line in enumerate(file.read_text(encoding='utf-8', errors='replace').splitlines(), 1):
             if line.startswith('==='):

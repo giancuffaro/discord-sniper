@@ -13,7 +13,6 @@ Reads what's already on disk — no network, no broker:
 Writes SCOREBOARD.html next to this file. Run:  python scoreboard.py [days]
 (default: last 10 calendar days). Safe to run any time; nothing is modified.
 """
-import glob
 import html
 import os
 import re
@@ -24,6 +23,7 @@ from datetime import date, datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import ds_logs  # noqa: E402
 import jsparse  # noqa: E402  (the PRODUCTION parser via node)
 import ledger  # noqa: E402
 DAYS_BACK = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 10
@@ -58,9 +58,15 @@ def load_rooms():
 
 
 def load_exports():
-    """Every message + verdict across all exports, de-duplicated."""
+    """Every message + verdict across all exports, de-duplicated.
+
+    9/15 the exports are WEEKLY files with a "===== Mon Sep 14 2026 ====="
+    header per capture day; the day headers are not message lines, so they
+    fall through the section regexes, and the pre-9/10 legacy dailies are
+    still in the same list.
+    """
     msgs, dids = {}, {}
-    for fn in sorted(glob.glob(os.path.join(HERE, "DS Logs", "signal-room-chat*.txt"))):
+    for fn in ds_logs.export_files(HERE):
         section = None
         try:
             with open(fn, encoding="utf-8", errors="replace") as f:

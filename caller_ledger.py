@@ -6,13 +6,16 @@ The database is additive and keeps source rows for audit/replay.
 """
 import hashlib
 import json
-from pathlib import Path
 import re
 import sqlite3
+import sys
 from contextlib import closing
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / 'local-reader-measure' / 'caller-identity'
+sys.path.insert(0, str(ROOT))
+import ds_logs  # noqa: E402
 
 
 def digest(*parts):
@@ -79,7 +82,11 @@ def build(root=ROOT, out=OUT):
         db.execute('INSERT INTO channels VALUES(?,?,?,?) ON CONFLICT(channel_id) DO UPDATE SET server_id=excluded.server_id,label=excluded.label,configured_state=excluded.configured_state',
                    (p[0], guild[1] if guild else None, p[2], p[4]))
     row_re = re.compile(r'^(\d{4}-\d\d-\d\d \d\d:\d\d(?::\d\d)?)\s+(?:\[(.*?) #([^\]]+)\]\s+)?(?:\[message_id=([^\]]+)\]\s+)?([^:]+):\s*(.*)$')
-    files = sorted(set((root / 'DS Logs').glob('signal-room-chat*.txt')) | set((root / 'DS Logs').glob('grab *.txt')))
+    # 9/15: room chat is one WEEKLY file per lane with a day header per
+    # capture day. ds_logs.export_files covers those and the pre-9/10
+    # legacy dailies; the day headers match no message row.
+    files = sorted({Path(f) for f in ds_logs.export_files(str(root))}
+                   | set((root / 'DS Logs').glob('grab *.txt')))
     for path in files:
         channel = label = None
         for n, line in enumerate(path.read_text(encoding='utf-8-sig', errors='replace').splitlines(), 1):
