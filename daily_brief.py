@@ -71,6 +71,13 @@ def _money(value):
     return "%s$%s" % (sign, ("%.2f" % abs(value)).rstrip("0").rstrip("."))
 
 
+def _dollars(value):
+    """A balance, not a result — no leading + on an account's own worth."""
+    if value is None:
+        return UNAVAILABLE
+    return "$%s" % ("%.2f" % value)
+
+
 def _pct(value):
     if value is None:
         return UNAVAILABLE
@@ -218,12 +225,96 @@ def _contract(row):
 
 
 # --------------------------------------------------------------- the sections
+def _broker_day_pl(day):
+    """The broker's own round-trip P&L for the day, gross of fees.
+
+    build_ledger already pairs every FILLED leg FIFO per OCC across days and
+    reconciles the result against the ledger to the cent — so this asks IT
+    rather than keeping a second, slightly different pairing here."""
+    try:
+        import build_ledger
+        trips = build_ledger.load_broker_exports()
+    except Exception:                                       # noqa: BLE001
+        return None
+    priced = [t for t in trips
+              if t.get("date") == day and t.get("pl") is not None]
+    return sum(t["pl"] for t in priced) if priced else None
+
+
+def balance_for(day):
+    """What the account was worth, and when that was read.
+
+    The audit's own broker_sync step writes today's net liquidation, day P&L
+    and option buying power into balance_daily.csv minutes before the brief
+    runs, so reading that file IS the live read — with its timestamp on it.
+    Run by hand with no sync, it falls back to the bridge's own status door
+    on loopback (the live buying power it already caches, no second client),
+    then to the newest older row, and only then to unavailable.
+    """
+    try:
+        import broker_sync
+    except Exception:                                       # noqa: BLE001
+        broker_sync = None
+    if broker_sync is not None:
+        today = broker_sync.latest_balance(day)
+        if today:
+            return dict(today, basis="read %s" % (today.get("read_at")
+                                                  or day)[:19])
+    live = _bridge_buying_power()
+    if live is not None:
+        return {"date": day, "nlv": None, "day_pl": None, "bp": live,
+                "basis": "live from the bridge"}
+    if broker_sync is not None:
+        older = broker_sync.latest_balance()
+        if older:
+            return dict(older, basis="last read %s" % older.get("date"))
+    return None
+
+
+def _bridge_buying_power():
+    """The running bridge's cached option buying power, over loopback. It is
+    the SAME client that trades — never a second one — and it answers from a
+    30s cache, so this costs the broker nothing. Unreachable is not an error:
+    the brief is often built somewhere the bridge is not."""
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:8787/", timeout=3) as r:
+            status = json.loads(r.read().decode("utf-8") or "{}")
+    except Exception:                                       # noqa: BLE001
+        return None
+    return _num(status.get("buying_power"))
+
+
+def _prior_nlv(day):
+    """The last recorded net liquidation BEFORE this day, for the change."""
+    try:
+        import broker_sync
+        with open(os.path.join(HERE, "balance_daily.csv"),
+                  encoding="utf-8", newline="") as fh:
+            import csv
+            rows = [r for r in csv.DictReader(fh)
+                    if (r.get("date") or "") < day and r.get("nlv")]
+    except Exception:                                       # noqa: BLE001
+        return None
+    if not rows:
+        return None
+    return (rows[-1].get("date"), _num(rows[-1].get("nlv")))
+
+
 def section_day(day, bot, hand, broker):
     dated = [r for r in (broker or []) if (r.get("date") or "").strip() == day]
+    balance = balance_for(day)
     if broker is None:
         export = "master_broker.csv unreadable"
     elif dated:
-        export = "%d broker order legs" % len(dated)
+        gross = _broker_day_pl(day)
+        net = balance.get("day_pl") if balance and balance.get("date") == day \
+            else None
+        if net is not None:
+            export = "%s net · %s gross on %d broker legs (the gap is fees)" \
+                % (_money(net), _money(gross), len(dated))
+        else:
+            export = "%s on %d broker legs (gross of fees)" % (_money(gross),
+                                                               len(dated))
     else:
         seen = sorted({(r.get("date") or "").strip() for r in broker} - {""})
         export = "broker export missing" + (
@@ -244,11 +335,29 @@ def section_day(day, bot, hand, broker):
 
     lines = ["## Day",
              "- Webull margin day P&L: %s" % export,
-             "- Balance: %s — no balance snapshot is kept on disk" % UNAVAILABLE,
+             "- Balance: %s" % _balance_line(day, balance),
              side("Bot", bot, bot_net, bot_blind),
              side("Hand (G)", hand, hand_net, hand_blind),
              "- Ledger day total: %s" % _money(day_net)]
     return "\n".join(lines), bot_net, hand_net
+
+
+def _balance_line(day, balance):
+    if not balance:
+        return "%s — no live read and nothing in balance_daily.csv" % UNAVAILABLE
+    bits = []
+    if balance.get("nlv") is not None:
+        text = "NLV %s" % _dollars(balance["nlv"])
+        prior = _prior_nlv(day)
+        if prior and prior[1] is not None:
+            text += " (%s vs %s)" % (_money(balance["nlv"] - prior[1]),
+                                     prior[0])
+        bits.append(text)
+    if balance.get("bp") is not None:
+        bits.append("option BP %s" % _dollars(balance["bp"]))
+    if not bits:
+        return "%s — the read came back empty" % UNAVAILABLE
+    return "%s · %s" % (" · ".join(bits), balance.get("basis") or "")
 
 
 def section_bot_trades(bot):
@@ -527,7 +636,8 @@ def build(day):
     blocks = [day_block, section_bot_trades(bot), section_callers(day, bot),
               broke, section_pending()]
 
-    sources = ["master_ledger.csv", "master_broker.csv", "trades.log",
+    sources = ["master_ledger.csv", "master_broker.csv", "balance_daily.csv",
+               "trades.log",
                "daily-reports/CALLER-OUTCOMES-%s.csv" % day,
                "daily-reports/CALLER-VS-RATCHET-%s.md" % day,
                "daily-reports/FUTURES-MIRROR-%s.md" % day,
@@ -550,7 +660,13 @@ def build(day):
 
 def _day_headline(day, broker):
     dated = [r for r in (broker or []) if (r.get("date") or "").strip() == day]
-    return "%d broker legs" % len(dated) if dated else "broker export missing"
+    if not dated:
+        return "broker export missing"
+    balance = balance_for(day)
+    if balance and balance.get("date") == day \
+            and balance.get("day_pl") is not None:
+        return _money(balance["day_pl"])
+    return _money(_broker_day_pl(day))
 
 
 def _short(day):

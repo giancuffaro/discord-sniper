@@ -420,6 +420,14 @@ def affordability(limit, qty, have, buffer=0.0):
         % (cost, max(0.0, room), tail))
 
 
+def _num_or_none(value):
+    """A float, or None. Webull hands numbers back as strings."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _find(obj, *names):
     """Webull's field naming drifts between endpoints, so look for any of them
     anywhere in the response rather than trusting one exact path."""
@@ -1381,6 +1389,91 @@ class WebullOptions:
         setattr(self, cache_key + "_at", now)
         setattr(self, cache_key + "_ttl", 8 if val is not None else 300)
         return val
+
+    def account_snapshot(self):
+        """Net liquidation, day P&L and option buying power for the margin
+        account — one read, or None when Webull will not say.
+
+        `buying_power()` above returns ONE number and caches it for the
+        trading path; this returns the whole picture and is called once a day,
+        after the close, by broker_sync.py. Same hunted balance endpoint, no
+        second client, no loop: it costs one hit against the 2-per-2s door.
+        """
+        if getattr(self, "paper", False):
+            return None
+        for _name, fn in self._balance_fns():
+            for args in ((self.account_id,), (), (self.account_id, "USD")):
+                try:
+                    res = fn(*args)
+                except TypeError:
+                    continue
+                except Exception:                       # noqa: BLE001
+                    break
+                if getattr(res, "status_code", 200) != 200:
+                    continue
+                body = res.json() if hasattr(res, "json") else res
+                snap = {
+                    "nlv": _num_or_none(_find(
+                        body, "net_liquidation_value", "netLiquidationValue",
+                        "total_net_liquidation_value")),
+                    "day_pl": _num_or_none(_find(
+                        body, "day_profit_loss", "dayProfitLoss",
+                        "total_day_profit_loss")),
+                    "bp": _num_or_none(_find(
+                        body, "option_buying_power", "optionBuyingPower",
+                        "day_buying_power", "dayBuyingPower")),
+                }
+                if any(v is not None for v in snap.values()):
+                    return snap
+        return None
+
+    def order_history(self, start_date, end_date, page_size=100):
+        """Every option order leg the account placed in [start, end], as the
+        raw SDK dicts. Read-only; the day's export is built from this.
+
+        PAGING IS NOT OPTIONAL (HANDOFF, broker facts): Webull answers at most
+        `page_size` orders and expects the last client_order_id back to
+        continue. A caller that reads one page and stops silently loses every
+        order past the first hundred — which is most of a busy day. Stop on a
+        short page, and never loop more than 50 times whatever the server says.
+        """
+        out, cursor, guard = [], None, 0
+        while guard < 50:
+            guard += 1
+            kw = {"start_date": start_date, "end_date": end_date,
+                  "page_size": str(page_size)}
+            if cursor:
+                kw["last_client_order_id"] = cursor
+            body = None
+            for args, extra in (((self.account_id,), kw),
+                                ((self.account_id, start_date, end_date), {})):
+                body, _why = self._try_calls(
+                    ["order_v3", "order", "trade", "account_v2"],
+                    ["history", "list_orders", "orders", "query_orders"],
+                    *args, **extra)
+                if body is not None:
+                    break
+            if body is None:
+                break
+            groups = body if isinstance(body, list) else \
+                ((body or {}).get("orders") or (body or {}).get("data") or [])
+            page = []
+            for grp in (groups or []):
+                nested = grp.get("orders") if isinstance(grp, dict) \
+                    and isinstance(grp.get("orders"), list) else [grp]
+                page += [o for o in nested if isinstance(o, dict)]
+            if not page:
+                break
+            out += page
+            if len(groups) < page_size:
+                break
+            last = groups[-1] if isinstance(groups[-1], dict) else {}
+            nxt = last.get("client_order_id") or \
+                (page[-1].get("client_order_id") if page else None)
+            if not nxt or nxt == cursor:
+                break
+            cursor = nxt
+        return out
 
     def afford_check(self, limit, qty):
         """Raises if the order costs more than the account has."""

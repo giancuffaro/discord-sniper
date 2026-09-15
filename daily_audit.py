@@ -93,6 +93,19 @@ def _queue_attention(day, summary, report_path):
 
 def run(day):
     os.makedirs(OUT_DIR, exist_ok=True)
+    # BROKER TRUTH FIRST (9/15). Nothing in this repo ever pulled the account's
+    # order history — `absorb_exports()` only folds a file a Claude session had
+    # written by hand, and the last one was 9/11, so 9/12-9/14 reported
+    # "broker export missing" and every hand trade was invisible. broker_sync
+    # does the pull (and one balance read) BEFORE the reports, so they see the
+    # day's real fills. Wrapped: a broker that will not answer must not stop
+    # the parser audit, which needs no broker at all.
+    broker_step = _run("broker truth sync",
+                       [sys.executable, os.path.join(HERE, "broker_sync.py"),
+                        day], 180)
+    steps_note = broker_step["output"].strip().splitlines()
+    print("BROKER SYNC %s — %s" % ("ok" if broker_step["ok"] else "FAILED",
+                                   steps_note[-1] if steps_note else ""))
     steps = []
     replay = _run("daily message replay",
                   [sys.executable, os.path.join(HERE, "replay_check.py"), day])
@@ -137,6 +150,9 @@ def run(day):
 
     summary = {"date": day, "generated_at": generated, "status": status,
                **counts, "failed_checks": failed,
+               "broker_sync": {"ok": broker_step["ok"],
+                               "note": (steps_note[-1] if steps_note
+                                        else "")[:200]},
                "report": os.path.relpath(report_path, HERE)}
     _write_atomic(os.path.join(OUT_DIR, "latest.json"),
                   json.dumps(summary, indent=2, sort_keys=True) + "\n")

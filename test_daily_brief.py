@@ -160,17 +160,98 @@ class BriefFixture(unittest.TestCase):
         self._point_at_fixture()
 
     def _point_at_fixture(self):
-        saved = (daily_brief.HERE, daily_brief.REPORTS)
+        """Nothing in these tests may read the real repo, and nothing may
+        touch the network — the bridge door is stubbed shut by default."""
+        import broker_sync
+        saved = (daily_brief.HERE, daily_brief.REPORTS,
+                 daily_brief._bridge_buying_power,
+                 broker_sync.HERE, broker_sync.BALANCES)
         daily_brief.HERE = self.root
         daily_brief.REPORTS = os.path.join(self.root, "daily-reports")
+        daily_brief._bridge_buying_power = lambda: None
+        broker_sync.HERE = self.root
+        broker_sync.BALANCES = os.path.join(self.root, "balance_daily.csv")
 
         def restore():
-            daily_brief.HERE, daily_brief.REPORTS = saved
+            (daily_brief.HERE, daily_brief.REPORTS,
+             daily_brief._bridge_buying_power,
+             broker_sync.HERE, broker_sync.BALANCES) = saved
         self.addCleanup(restore)
 
     def brief(self):
         text, summary = daily_brief.build(DAY)
         return text, summary
+
+
+class TestDayMoney(BriefFixture):
+    """Day P&L and balance — the three lines that read `unavailable` for
+    three days because nothing pulled the broker export."""
+
+    def _with_broker(self, day_legs=True, balances=None):
+        if day_legs:
+            _write(os.path.join(self.root, "master_broker.csv"),
+                   "date,occ,symbol,side,status,filled,total_qty,price,"
+                   "avg_price,placed_time,filled_time\n"
+                   "%s,QQQ260914P00704000,QQQ,BUY,FILLED,1,1,1.13,1.13,"
+                   "%s 10:36:56,%s 10:36:57\n" % (DAY, DAY, DAY))
+        if balances is not None:
+            _write(os.path.join(self.root, "balance_daily.csv"),
+                   "date,nlv,day_pl,bp,read_at\n" + balances)
+        # the ledger's broker pairing is the audit's job, not the brief's
+        daily_brief._broker_day_pl = lambda _day: -321.0
+        self.addCleanup(setattr, daily_brief, "_broker_day_pl",
+                        daily_brief._broker_day_pl)
+
+    def test_net_and_gross_when_both_exist(self):
+        self._with_broker(balances="%s,1279.86,-333.85,1279.86,"
+                                   "2026-09-14T16:41:02-04:00\n" % DAY)
+        text, summary = self.brief()
+        self.assertIn("Webull margin day P&L: -$333.85 net · -$321 gross on "
+                      "1 broker legs (the gap is fees)", text)
+        self.assertIn("day -$333.85", summary)
+
+    def test_balance_line_carries_nlv_bp_and_when_it_was_read(self):
+        self._with_broker(balances="%s,1279.86,-333.85,1279.86,"
+                                   "2026-09-14T16:41:02-04:00\n" % DAY)
+        text, _ = self.brief()
+        line = [l for l in text.splitlines() if l.startswith("- Balance:")][0]
+        self.assertIn("NLV $1279.86", line)
+        self.assertIn("option BP $1279.86", line)
+        self.assertIn("read 2026-09-14T16:41:02", line)
+
+    def test_day_over_day_change(self):
+        self._with_broker(
+            balances="2026-09-11,1600.00,-12.00,1600.00,x\n"
+                     "%s,1279.86,-333.85,1279.86,y\n" % DAY)
+        text, _ = self.brief()
+        line = [l for l in text.splitlines() if l.startswith("- Balance:")][0]
+        self.assertIn("-$320.14 vs 2026-09-11", line)
+
+    def test_gross_only_when_no_balance_was_recorded(self):
+        self._with_broker(balances=None)
+        text, _ = self.brief()
+        self.assertIn("-$321 on 1 broker legs (gross of fees)", text)
+
+    def test_an_older_balance_is_labelled_as_older_never_as_today(self):
+        self._with_broker(balances="2026-09-11,1600.00,-12.00,1600.00,x\n")
+        text, _ = self.brief()
+        line = [l for l in text.splitlines() if l.startswith("- Balance:")][0]
+        self.assertIn("last read 2026-09-11", line)
+        self.assertIn("-$321 on 1 broker legs (gross of fees)", text)
+
+    def test_the_bridge_answers_when_no_row_exists(self):
+        self._with_broker(balances=None)
+        daily_brief._bridge_buying_power = lambda: 1279.86
+        text, _ = self.brief()
+        line = [l for l in text.splitlines() if l.startswith("- Balance:")][0]
+        self.assertIn("option BP $1279.86 · live from the bridge", line)
+
+    def test_no_broker_no_bridge_no_file_says_unavailable(self):
+        self._with_broker(day_legs=False, balances=None)
+        text, summary = self.brief()
+        self.assertIn("Webull margin day P&L: broker export missing", text)
+        self.assertIn("Balance: unavailable", text)
+        self.assertIn("day broker export missing", summary)
 
 
 class TestSections(BriefFixture):
