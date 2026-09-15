@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — room-chat exports are ONE FILE PER WEEK PER LANE (G's rule, v3.8.33 + ds_logs.py); the 16:40 audit starts with the broker export and ends by posting the one-screen BRIEF to Sniper HQ; PROVIDER KEYS / DEPARTMENTS / READER-UI / DAILY REPORT bullets condensed to state (history in HANDOFF-LOG.md).
+Last updated: 2026-09-15 — EVERY entry now asks the broker whether the contract exists before it is sent (bridge._verify_listed, execution.verify_listed); a date the CALLER typed is no longer taken on faith, and an unlisted one is refused with a BAD-CONTRACT line naming the room. Prior: room-chat exports are ONE FILE PER WEEK PER LANE (v3.8.33 + ds_logs.py); the 16:40 audit starts with the broker export and ends by posting the one-screen BRIEF to Sniper HQ.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -215,6 +215,22 @@ ENTRIES
     that band around the price the caller posted, it is the wrong contract —
     take the listed expiry that IS in band, else REFUSE the entry and say so.
     No posted price = the gate is inert.
+  · THE CONTRACT MUST EXIST (9/15, bridge._verify_listed,
+    execution.verify_listed): a date the caller TYPED OUT used to skip the
+    listing check and be taken on faith. Now every entry asks the broker
+    whether that exact contract is listed — ONE snapshot call for that one
+    date, cached per contract per day, and a second call only when the first
+    comes back empty. Not listed, but sibling dates are -> REFUSE and write
+    BAD-CONTRACT naming the room and the raw alert. NOTHING listed on any
+    date -> that is the feed, not the contract: the order goes THROUGH with a
+    LISTING line. Fails open on no connection, a date it cannot read, or any
+    exception — a guard, never a gate. Why asked and not tabled: Mon/Wed
+    expirations exist on the nine Qualifying Securities (AAPL AMZN AVGO GOOGL
+    META MSFT NVDA TSLA + IBIT, live 2026-01-26) and that list is re-cut
+    QUARTERLY on a $700B market-cap test, so any table we keep goes wrong
+    silently. A GUESSED expiry gets its siblings in the same call and the
+    caller-price gate above; a date the caller typed is checked for existence
+    only, never price-switched.
 - SPREAD GUARD (entries only): refuse if spread > 20% of mid or > max($0.20,
   10% of mid). THIN guard: < 250 contracts last session = refused.
 - STALE-ENTRY GATE: entries older than 3 min never fire. Negations ("NOT
