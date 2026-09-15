@@ -371,7 +371,9 @@ def input_signatures(name, day):
             sig[kind(arg).csv_name + " (day rows)"] = (
                 _h(json.dumps(rows, sort_keys=True)) if rows is not None
                 else "missing")
-    return sig
+    # One spelling on every machine: the index must not churn between a
+    # Windows build (backslashes) and a Linux check (slashes).
+    return {k.replace("\\", "/"): v for k, v in sig.items()}
 
 
 def fingerprint(sigs):
