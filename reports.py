@@ -446,8 +446,9 @@ def run_script(k, day, extra=()):
 
 
 def build(name, day, force=False, extra=(), quiet=False):
-    """REUSE, DON'T REBUILD. Returns {status: current|built|failed|manual,
-    path, why, seconds, output}."""
+    """REUSE, DON'T REBUILD. Returns {status: current|built|partial|failed|
+    manual, path, why, seconds, output}. ``partial`` = the script wrote the
+    day's block but exited non-zero; nothing is recorded, so it is retried."""
     k = kind(name)
     state, why, rel = check(name, day)
     if state == "manual":
@@ -459,10 +460,17 @@ def build(name, day, force=False, extra=(), quiet=False):
             print("CURRENT %s" % rel)
         return {"status": "current", "path": rel, "why": why, "seconds": 0, "output": ""}
     sigs = input_signatures(name, day)
+    started = time.time() - 1
     res = run_script(k, day, extra)
-    if res["ok"] and _output_present(k, day):
+    present = _output_present(k, day)
+    if res["ok"] and present:
         record(name, day, sigs)
         status = "built"
+    elif present and os.path.getmtime(k.path(day)) >= started:
+        # The script wrote its block but exited non-zero (the futures mirror
+        # says "bars unavailable" that way): the file is real, the index is
+        # NOT updated, so the next call tries again.
+        status = "partial"
     else:
         status = "failed"
     if not quiet:
@@ -524,7 +532,7 @@ def main(argv):
                 rc = rc or (0 if text is not None else 1)
             else:
                 res = build(name, day, force="--force" in argv)
-                if res["status"] == "failed":
+                if res["status"] in ("failed", "partial"):
                     rc = 1
                     print(res["output"][-3000:])
         return rc

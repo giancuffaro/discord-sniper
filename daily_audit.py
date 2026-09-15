@@ -185,7 +185,7 @@ def run(day):
     for label, kind, key in kinds:
         res = reports.build(kind, day, quiet=True)
         print("%s %s — %s" % (res["status"].upper(), res["path"], label))
-        if res["status"] == "failed":
+        if res["status"] in ("failed", "partial"):
             attention = True
             summary["failed_checks"].append(label)
             print(res["output"][-2000:])
