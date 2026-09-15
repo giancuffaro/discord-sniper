@@ -30,12 +30,10 @@ settings.json (keys, gitignored) · master_ledger.csv / master_alerts.csv · day
 · daily-reports/ + daily-audits/ (one week file per kind).
 
 ## Who and what
-- G (giancuffaro230@gmail.com) — maintains this code himself (9/13), trades options + futures live,
-  real money. Wants it CONDENSED. "Fix everything is default always" — bugs
-  get fixed without asking, same day. "Fix errors every day after journaling."
-- Real-money actions are HIS ALONE: placing/canceling orders, flipping rooms
-  LIVE, unlocking accounts, funding, questionnaires, accepting ToS, passwords.
-- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; check buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate, NinjaTrader stay OFF. COEXISTENCE: Market Sniper (port 8000) is his own tool on the same account and budget — its positions are visible, NEVER stop-managed or sold.
+- G (giancuffaro230@gmail.com) maintains this code himself (9/13) and trades options + futures live, real money. Wants it CONDENSED. "Fix everything is default always" — bugs get fixed without asking, same day. "Fix errors every day after journaling."
+- Real-money actions are HIS ALONE: placing/canceling orders, flipping rooms LIVE, unlocking accounts, funding, questionnaires, accepting ToS, passwords.
+- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; check buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate and NinjaTrader stay OFF.
+- COEXISTENCE: Market Sniper (port 8000) shares the account and the rate budget — its positions are visible, NEVER stop-managed or sold.
 - NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot vs broker truth; a later high is never a caller exit.
 - AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing; "" or a range is NO CALL — not a crash, not an order; department output is advisory. CALLER IDENTITY IS CANDIDATE EVIDENCE: no win rate until attribution exists, a new account never gets an execution key, ID-less rows stay unavailable — re-grab, never infer.
 - Claude exports and project/context/ are historical reference only.
@@ -89,7 +87,7 @@ FILL ANNOUNCER (announcer.py, read-only) · reference/OPERATIONS.md
 ## DATA — one central file per family (9/9). THE APP READS ONLY THESE.
 (what is inside each: DATA-MAP.md)
 - BROKER RECORD → master_broker.csv; the Webull export is ONE file OVERWRITTEN every run, never dated piles; one balance row a day in balance_daily.csv.
-- FILLS → master_ledger.csv. The broker's exit/P&L/state/account WIN over the book; a DRIFT line means something upstream lied; nothing reads days/*.json or journal.csv for analysis.
+- FILLS → master_ledger.csv; the broker's exit/P&L/state/account WIN over the book, a DRIFT line means something upstream lied, and nothing reads days/*.json or journal.csv for analysis.
 - ALERTS → master_alerts.csv. RN LEDGER → rn_ledger.csv (append-only). HOLIDAYS / HOURS → market_hours.py owns the table — UPDATE EVERY YEAR. POST-MORTEMS → master_postmortems.csv + postmortems/; his own hand trades are never graded.
 - PRICE TAPES → tape.py is the ONE registry; Webull has NO historical option prices; databento_backfill.py spends credit — never run its main() casually.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I don't want any more confusions"): account="paper" rows stay OUT of master_ledger.csv, account="unknown" is NOT paper.
@@ -118,16 +116,16 @@ FILL ANNOUNCER (announcer.py, read-only) · reference/OPERATIONS.md
 6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension
    are already up. Run START HERE, or schedule it, by 9:00 on trading days.
 
-## Watch items (open) — the detail is in reference/OPERATIONS.md
-- PULLBACK STOCK TARGET vs THE RATCHET (9/10): a pullback entry also closes at a fixed stock target, a second exit beside the ratchet. (a) delete it (b) keep it — G decides.
-- FUTURES RECORDS (G, 9/9): when futures execution works its fills must be pulled into the ledger; until then futures callers rank by count, not money.
-- Telemetry rows lack room/caller → the master_alerts taken side is anonymous.
-- Deepgram key may be one char short (39) — watch for voice auth errors.
-- First live overnight broker stop on a swing: confirm it survives the night.
-- Should a room's NAMED exit reach adopted positions? Under entries-only today: no.
-- bridge.log has no rotation (20 MB).
-- Multi-account 'L': verify no orphan positions after mirror exits.
-- Topstep is not executing futures; Webull futures $0 by choice — refusals there are intentional.
+## Watch items (open) — full text of each: reference/OPERATIONS.md
+- G'S CALL: PULLBACK STOCK TARGET vs THE RATCHET (9/10) — a pullback entry also
+  closes at a fixed stock target, a second exit beside the ratchet. (a) delete
+  it (b) keep it. Nothing changes until he says.
+- Open: futures fills must reach the ledger the day futures execution works ·
+  telemetry rows lack room/caller · Deepgram key may be one char short (39) ·
+  the first live overnight swing stop is unconfirmed · a room's NAMED exit still
+  does not reach adopted positions · bridge.log has no rotation (20 MB) ·
+  multi-account "L" may orphan positions after mirror exits · Topstep is not
+  executing futures and Webull futures is $0 by choice (refusals intentional).
 
 ## Subscriptions
 ≈ $1,140/mo rooms + ~$52 infra + ~$30 exchange fees ≈ $1,220/mo before AI
