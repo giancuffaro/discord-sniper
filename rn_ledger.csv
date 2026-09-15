@@ -82,3 +82,5 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789480413.744,filled,TSLA,CALLS,370,2026-09-16,,361.0,1.19,Nitro Trades,Platinum nitro
 1789480646.455,armed,SPY,PUTS,759,9/16,,760.0,,Brett,Honeydrip daytrades
 1789480885.672,armed,AAPL,PUTS,330,9/18,,331.0,,Unraveller,Honeydrip daytrades
+1789481228.416,armed,QQQ,PUTS,708,2026-09-15,,708.0,,@Owner Alerts,Platinum nitro
+1789481246.466,missed,SPY,PUTS,759,9/16,,760.0,,Brett,Honeydrip daytrades
