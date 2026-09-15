@@ -1,5 +1,84 @@
 # AUDIT — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Tue Sep 15 2026 =====
+
+DISCORD SNIPER DAILY AUDIT — 2026-09-15
+generated: 2026-09-15T16:41:33.835614-04:00
+status: ATTENTION
+silent drops: 6
+possible missed entries: 0
+coverage warnings: 0
+failed checks: none
+
+MESSAGE REPLAY
+REPLAY CHECK for 2026-09-15 — exports: signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt, signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt
+
+OWLS Capital: 🌟｜shabs-sky-alerts — 46 msgs, 10 actionable, 2 judged, 4 SILENT
+   15:12:33  OPEN    SPX   7590c lotto at 135/con expires itm or 0 goodnight
+   15:12:45  OPEN    SPX   7590c lotto at 135/con expires itm or 0 goodnight @here
+   15:12:33  OPEN    SPX   7590c lotto at 135/con expires itm or 0 goodnight
+   15:12:45  OPEN    SPX   7590c lotto at 135/con expires itm or 0 goodnight @here
+
+OWLS Capital: 🌟｜ab — 18 msgs, 5 actionable, 3 judged, 1 SILENT
+   11:08:57  OPEN    FUN   $AMZN lotto Size Layering some just for fun 9/25 260c 3.1 No SL Willing to have one more scale on these lottos if we see 245 - 249 @Owls
+
+OWLS Capital: 🌟｜eli-alerts — 22 msgs, 6 actionable, 5 judged, 1 SILENT
+   11:01:46  OPEN    SPX   7580p 3.6 @here
+
+Platinum Trading: 🟣│futures-alerts — 60 msgs, 2 actionable, 2 judged, 0 SILENT
+
+NGD: ngd-trades — 123 msgs, 123 actionable, 123 judged, 0 SILENT
+
+Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps — 94 msgs, 61 actionable, 23 judged, 0 SILENT
+
+Honey Drip Network 🍯💰📈: 👑｜aristotle-trades — 54 msgs, 18 actionable, 2 judged, 0 SILENT
+
+Platinum Trading: 👑│nitro — 12 msgs, 6 actionable, 4 judged, 0 SILENT
+
+OWLS Capital: 🛎️｜all-alerts — 78 msgs, 17 actionable, 8 judged, 0 SILENT
+
+Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge — 34 msgs, 6 actionable, 0 judged, 0 SILENT
+
+Low Key Stonks: 😈demon-day-trades — 6 msgs, 2 actionable, 2 judged, 0 SILENT
+
+OWLS Capital: 🌟｜jon-and-kian — 12 msgs, 5 actionable, 3 judged, 0 SILENT
+
+VeroTrade: ✅⏐1k-challenge — 2 msgs, 2 actionable, 2 judged, 0 SILENT
+
+ELITE OPTIONS: shoof-alerts — 10 msgs, 10 actionable, 6 judged, 0 SILENT
+
+OWLS Capital: 🌟｜muggzone-options — 20 msgs, 2 actionable, 2 judged, 0 SILENT
+
+Day Trades — 3 msgs, 3 actionable, 2 judged, 0 SILENT
+
+TOTAL silent drops: 6  (actionable per the parser, no verdict, no bridge line)
+POSSIBLE MISSED ENTRIES: 0
+
+REGRESSION CHECKS
+PASS  JS test_bare_entry.js  0.09s
+PASS  JS test_buy_verb.js  0.08s
+PASS  JS test_dotdate.js  0.08s
+PASS  JS test_elite.js  0.08s
+PASS  JS test_exits.js  0.08s
+PASS  JS test_loaded_fill.js  0.08s
+PASS  JS test_optionable.js  0.05s
+PASS  JS test_owls_jonkian.js  0.08s
+PASS  JS test_percon.js  0.08s
+PASS  JS test_pivot.js  0.08s
+PASS  JS test_plan_entry.js  0.08s
+PASS  JS test_spreads.js  0.08s
+PASS  JS test_word_order.js  0.08s
+PASS  JS test_resolve.js  0.09s
+PASS  Historical parser corpus gate  1.98s
+    11386 messages, 75 rooms, 6362 on the allowlist
+    entries fired BEFORE : 852
+    entries fired NOW    : 852   (+0)
+    all actions BEFORE/NOW: 3048 / 3048
+    JUNK TICKERS: 0
+PASS  Python regression suite  54.95s
+    Ran 295 tests in 31.288s
+    OK
+
 ===== Mon Sep 14 2026 =====
 
 DISCORD SNIPER DAILY AUDIT — 2026-09-14

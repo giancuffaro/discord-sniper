@@ -42,6 +42,29 @@
     "trades.log (day lines)": "2819c3298f51b247"
    },
    "output": "daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md"
+  },
+  "2026-09-15": {
+   "built_at": "2026-09-15T16:41:45-04:00",
+   "fingerprint": "9488239612658b80",
+   "inputs": {
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "ef019437d8e3b04d",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "84252ad34477322c",
+    "alert_meta.csv (day rows)": "22d8ed33b92b2149",
+    "alert_tape.csv (day rows)": "e508858cfa129d55",
+    "caller_outcomes.py": "25690:1789451347",
+    "daily-audits/recovered-2026-09-15.json": "missing",
+    "daily_report.py": "18269:1789451346",
+    "extension/optionable.txt": "30073:1788840105",
+    "extension/parse_batch.js": "2964:1789152506",
+    "extension/parser.js": "179623:1789324393",
+    "extension/rooms.txt": "34154:1789439937",
+    "master_alerts.csv (day rows)": "f20c4f27703e822a",
+    "master_ledger.csv (day rows)": "30b668a4b18542cb",
+    "master_postmortems.csv (day rows)": "a6f317dc16294f7c",
+    "quote_shadow.csv (day rows)": "7e5da3507f1cfcbf",
+    "trades.log (day lines)": "bd60edf568438815"
+   },
+   "output": "daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md"
   }
  },
  "caller-vs-ratchet": {
@@ -97,6 +120,20 @@
     "ratchet_tiers.py": "16164:1789049087"
    },
    "output": "daily-reports/RATCHET-COMPARE week-of-Sep-14-to-Sep-20-2026.md"
+  },
+  "2026-09-15": {
+   "built_at": "2026-09-15T16:41:40-04:00",
+   "fingerprint": "528cf909ccdfaafe",
+   "inputs": {
+    "alert_meta.csv (day rows)": "22d8ed33b92b2149",
+    "alert_tape.csv (day rows)": "e508858cfa129d55",
+    "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md (day block)": "36b543b4875470c5",
+    "daily_policy_compare.py": "9341:1789451347",
+    "master_ledger.csv (day rows)": "30b668a4b18542cb",
+    "option_tape.csv (day rows)": "16d628502ece0948",
+    "ratchet_tiers.py": "16166:1789491110"
+   },
+   "output": "daily-reports/RATCHET-COMPARE week-of-Sep-14-to-Sep-20-2026.md"
   }
  },
  "report": {
@@ -117,6 +154,26 @@
     "master_postmortems.csv (day rows)": "daacb878515115fa",
     "replay_check.py": "15780:1789445270",
     "trades.log (day lines)": "2819c3298f51b247"
+   },
+   "output": "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md"
+  },
+  "2026-09-15": {
+   "built_at": "2026-09-15T16:41:35-04:00",
+   "fingerprint": "9241036bdb736c3e",
+   "inputs": {
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "ef019437d8e3b04d",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "84252ad34477322c",
+    "daily-audits/recovered-2026-09-15.json": "missing",
+    "daily_report.py": "18269:1789451346",
+    "extension/optionable.txt": "30073:1788840105",
+    "extension/parse_batch.js": "2964:1789152506",
+    "extension/parser.js": "179623:1789324393",
+    "extension/rooms.txt": "34154:1789439937",
+    "master_alerts.csv (day rows)": "f20c4f27703e822a",
+    "master_ledger.csv (day rows)": "30b668a4b18542cb",
+    "master_postmortems.csv (day rows)": "a6f317dc16294f7c",
+    "replay_check.py": "15780:1789445270",
+    "trades.log (day lines)": "bd60edf568438815"
    },
    "output": "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md"
   }

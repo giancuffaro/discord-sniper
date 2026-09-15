@@ -1,5 +1,44 @@
 # CALLER-OUTCOMES — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Tue Sep 15 2026 =====
+
+# Caller outcome evidence — 2026-09-15
+
+Caller claims are separate from broker results and ratchet simulations. Partial trims remain partial; percentages imply a price only when the caller's entry is known.
+
+| Entry | Event | Trader / room | Contract | Caller entry | Caller event | Exit/claim | Calculated | Evidence |
+|---|---|---|---|---:|---|---:|---:|---|
+| 09:33:20 | 09:34:33 | Trademorewiser (MOD) | MNQ @ 29395.00 | $29395.00 | partial trim | price unavailable | unavailable | caller trim; price unavailable |
+| 09:41:33 | 09:43:54 | Nitro Trades | TSLA 370C @ 1.71 | $1.71 | full exit | $1.40 | -18.1% | market bid at caller exit |
+| 09:42:28 | 09:48:13 | Unraveller | AMD 490P 9/18 | — | full exit | $4.65 | unavailable | market bid at caller exit |
+| 09:57:26 | 10:01:36 | Brett | SPY 759P 9/16 @ 2.80 | $2.80 | partial trim | +10.0% | implied $3.08 | caller-stated |
+| 09:57:26 | 10:03:49 | Brett | SPY 759P 9/16 @ 2.80 | $2.80 | partial trim | +13.5% | implied $3.18 | caller-stated |
+| 09:57:26 | 10:04:22 | Brett | SPY 759P 9/16 @ 2.80 | $2.80 | partial trim | +18.0% | implied $3.30 | caller-stated |
+| 10:01:25 | 10:05:34 | Unraveller | AAPL 330P 9/18 @ 3.20 | $3.20 | partial trim | +8.0% | implied $3.46 | caller-stated |
+| 10:01:25 | 10:07:22 | Unraveller | AAPL 330P 9/18 @ 3.20 | $3.20 | partial trim | +13.0% | implied $3.62 | caller-stated |
+| 09:57:26 | 10:07:52 | Brett | SPY 759P 9/16 @ 2.80 | $2.80 | partial trim | +27.0% | implied $3.56 | caller-stated |
+| 09:57:26 | 10:13:37 | Brett | SPY 759P 9/16 @ 2.80 | $2.80 | partial trim | +19.0% | implied $3.33 | caller-stated |
+| 09:57:26 | 10:14:55 | Brett | SPY 759P 9/16 @ 2.80 | $2.80 | partial trim | +100.0% | implied $5.60 | caller-stated |
+| 10:51:55 | 10:53:51 | Mike | TSLA 350P 9/18 @ 3.35 | $3.35 | partial trim | +10.0% | implied $3.69 | caller-stated |
+| 10:51:55 | 10:57:38 | Mike | TSLA 350P 9/18 @ 3.35 | $3.35 | full exit | $3.05 | -9.0% | market bid at caller exit |
+| 10:51:55 | 10:58:24 | Mike | TSLA 350P 9/18 @ 3.35 | $3.35 | full exit | $2.99 | -10.7% | market bid at caller exit |
+| 10:07:08 | 10:58:29 | @Owner Alerts | QQQ 708P @ 1.42 | $1.42 | partial trim | +200.0% | implied $4.26 | caller-stated |
+| 10:48:00 | 11:18:12 | Vero | QQQ 706P 9/15 @ 1.47 | $1.47 | full exit | $1.43 | -2.7% | market bid at caller exit |
+| 09:57:26 | 11:24:28 | Brett | SPY 759P 9/16 @ 2.80 | $2.80 | full exit | $4.01 | +43.2% | market bid at caller exit |
+| 11:32:59 | 11:40:52 | Unraveller | AMD 490P 9/18 @ 5.30 | $5.30 | partial trim | +10.0% | implied $5.83 | caller-stated |
+| 10:14:43 | 11:44:37 | Elite Options \| Shoof | CRWD 240C 9/18 @ 4.25 | $4.25 | partial trim (1/2 of the position) | price unavailable | unavailable | caller trim; price unavailable |
+| 11:32:59 | 11:50:27 | Unraveller | AMD 490P 9/18 @ 5.30 | $5.30 | full exit | $5.30 | +0.0% | market bid at caller exit |
+| 10:14:43 | 12:49:05 | Elite Options \| Shoof | CRWD 240C 9/18 @ 4.25 | $4.25 | partial trim (1/4 of the position) | price unavailable | unavailable | caller trim; price unavailable |
+| 09:57:26 | 13:17:27 | Brett | SPY 759P 9/16 @ 2.80 | $2.80 | partial trim | price unavailable | unavailable | caller trim; price unavailable |
+| 09:57:26 | 13:23:02 | Brett | SPY 759P 9/16 @ 2.80 | $2.80 | full exit | $4.30 | +53.6% | market bid at caller exit |
+| 13:36:13 | 14:02:20 | Mike (Admin) | TSLA 350P @ 3.60 | $3.60 | full exit | price unavailable | unavailable | caller exit; price unavailable |
+| 10:14:43 | 14:36:26 | Elite Options \| Shoof | CRWD 240C 9/18 @ 4.25 | $4.25 | full exit | $6.65 | +56.5% | market bid at caller exit |
+| 14:57:44 | 14:59:14 | AbTrades Alert Bot | HOOD 120C 9/25 @ 1.22 | $1.22 | partial trim | +35.0% | implied $1.65 | caller-stated |
+
+- Claim events paired: **26**.
+- Full exits recorded: **10**; calculable: **8**; price/percent unavailable: **2**.
+- Quantity-weighted caller P&L stays unavailable when trim size or the final runner exit is missing.
+
 ===== Mon Sep 14 2026 =====
 
 # Caller outcome evidence — 2026-09-14
