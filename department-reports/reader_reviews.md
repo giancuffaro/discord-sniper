@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 66d1e1d2ccc6aa1cb778
+
+The current message supports an OPEN alert for SPY 9/16 759 puts, and the reader preserves the quoted value 2.8. Parser and reader agree on the contract and action. The principal review candidate is an ineligible supporting-context reference despite validation reporting success; no confirmed parser bug or executed trade is established.
+
+## Findings
+- The reader cites prior message chat-messages-829754942817828884-1549416601474961461, which says '@Brett (Admin) loading SPY 9/16 759P @here'. That message is present in the supplied history, but validation reports eligible_prior_ids: [], safety_flags: ['unsupported_context_id'], and ok: true. Verify the source-selection eligibility rules and whether this safety flag is intended to be advisory or blocking. The reference is present but ineligible under the supplied validation result, not demonstrably fabricated. Review attribution separately from extraction because the current message independently supplies the contract and entry language.
+- The current source says '@Brett (Admin) in SPY 9/16 759P @ 2.8 @everyone'. Reader price '2.8' becomes numeric 2.8 in validation. The parser excerpt has no price field. Neither the current wording nor retained Brett examples explicitly establishes premium units. Preserve raw '@ 2.8' and report unresolved premium units pending source verification. Do not rescale it. Verify the parser schema before treating its absent price field as an omission; absence is not zero. If per-share units are confirmed, use the instrument's verified premium multiplier for contract premium.
+- The retained channel explanation distinguishes 'LOADING' preparation from entry, and the current message changes the same Brett SPY contract from 'loading' to 'in'. Parser and reader both classify the current message as OPEN. Verify this channel-specific distinction against retained original messages and use the loading-to-entry pair as a review case. Keep caller attribution to Brett separate from the transmitting author, HoneyDrip (Scribe), and do not treat preparatory loading messages as confirmed entries.
+
+## Limitations
+- Only the current message has supplied parser and reader outputs; historical parsing behavior cannot be established.
+- No broker fills, contemporaneous quotes, quantity, exit, or performance calculations are supplied. An alert classified OPEN with fire: true does not establish order placement or execution.
+- The first reader attempt returned HTTP_503 and the fallback attempt succeeded. This demonstrates an attempt-level service failure, not a channel outage or missing-message coverage.
+- Evidence is marked untruncated, but that does not establish complete channel history. Findings remain proposals requiring source and implementation verification.
+
+---
+
 # Reader Review — 2026-09-15 — 4b3457e05f382447d048
 
 The current message plausibly expresses profit-taking intent, which the reader classified as TRIM while the parser returned no action. AMD 515 calls expiring 9/16 are a plausible contextual target, but source linkage requires verification. Validation also omitted the reader's strike. These are review proposals, not confirmed parser bugs.
