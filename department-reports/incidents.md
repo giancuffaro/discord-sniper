@@ -1,5 +1,21 @@
 # Incident reviews — newest first
 
+# Incident — 2026-09-15 — ba422a747837657445e7
+
+During an active session, the incident evidence reports enabled alert sources with no corresponding tab in the inspected browser. This suggests a potential monitoring-coverage gap, but does not establish an ingestion outage or missed alerts.
+
+## Findings
+- The snapshot has in_session=true, and every listed issue states that an alert source is ON but has no tab in this browser. Affected entries include AbTrades Alert Bot, Aristotle, the listed OWLS and Platinum channels, Vero 1, Vero 2, and other named sources. Verify the reported enabled states and browser-tab inventory against the authoritative source-to-session mapping. Determine whether each source requires a tab in this browser or is intentionally monitored through another browser, session, or ingestion mechanism before classifying the discrepancy as an incident.
+- The supplied evidence contains no source-message timestamps, ingestion receipts, connection health, or delivery logs. Missing browser tabs alone do not show whether rooms are quiet, alerts are being collected elsewhere, or collection has stopped. For each affected source, compare recent original messages with ingestion and delivery records, and inspect collector heartbeats and authentication state. Treat a quiet room separately from a failed collector; establish any coverage gap and its duration only from verified records.
+
+## Limitations
+- Evidence is marked untruncated, but consists only of an active-session flag and reported missing-tab issues.
+- No capture timestamp, browser identity, expected monitoring architecture, or independent tab inventory is provided.
+- Missed alerts, outage duration, trading impact, and parser defects cannot be established from this snapshot.
+- No remediation was performed.
+
+---
+
 # Incident — 2026-09-14 — 07065cb7710876c3e06e
 
 During an active session, the evidence reports enabled alert sources without tabs in this browser and stale reader heartbeats for four open Whop tabs. These are potential monitoring gaps requiring verification, not confirmed outages or parser bugs.

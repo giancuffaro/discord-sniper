@@ -1,5 +1,20 @@
 # Health reviews — newest first
 
+# Health — 2026-09-15 — ba422a747837657445e7
+
+The session is reported as active, but the evidence lists many alert sources as ON while also saying they have no tab in this browser. This is a source-verification issue: the report does not confirm whether the tabs are hidden, open in another browser/profile, intentionally closed, or whether the alert inventory is stale.
+
+## Findings
+- Evidence shows "in_session": true and an issues list containing repeated entries of the form "<source> is ON but has no tab in this browser". Verify against the authoritative browser/tab inventory and session source before treating these sources as disconnected or unhealthy.
+
+## Limitations
+- The evidence does not include timestamps, so freshness cannot be confirmed.
+- No independent browser/tab inventory is provided, so the missing-tab condition cannot be distinguished from tabs open in another profile, window, or browser.
+- The text only states ON status; it does not confirm alert delivery, broker interaction, or any downstream execution.
+- The report does not show whether these are expected omissions or a synchronization delay, so this should not be treated as a confirmed parser or system bug.
+
+---
+
 # Health — 2026-09-14 — a33fba3169239be41603
 
 The session is active, and four Whop tabs are open, but each is reported as not having had a recent beat. This may indicate a quiet room, delayed updates, or an outage; the evidence does not distinguish among them.

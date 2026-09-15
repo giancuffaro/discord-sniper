@@ -1,13 +1,13 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — cut to a RULES CORE (was 28,060 bytes): one line per rule, mechanics moved verbatim to the reference docs. Ceiling is now 14 KB.
+Last updated: 2026-09-15 — cut to a RULES CORE (was 28,060 bytes): one line per rule, mechanics moved verbatim to the reference docs. Ceiling now 14 KB.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
   REPLACE, DON'T STACK: the new rule takes the old one's place — never
   leave the old one beside it with a "SUPERSEDED" note.
-- ONE RULE, ONE LINE. Numbers, formats, procedures, examples and rationale are MECHANICS — reference doc, not here.
+- ONE RULE, ONE LINE. Numbers, formats, procedures and rationale are MECHANICS.
 - Bump the one "Last updated:" line above. One line. Never prepend an essay.
 - Session notes, findings, post-mortems, numbers-of-the-day go to
   HANDOFF-LOG.md under "SESSION NOTES", newest first, dated. That file may
@@ -23,23 +23,21 @@ Last updated: 2026-09-15 — cut to a RULES CORE (was 28,060 bytes): one line pe
   historical evidence, never current instructions.
 
 ## Where the mechanics live (one pointer per subsystem)
-ASK-MAP.md (what to read for which question) · STATUS.json (the day's numbers,
+ASK-MAP.md (which file answers which question) · STATUS.json (the day's numbers,
 what broke, verified checks) · reports/INDEX.json (report cache) ·
-reference/ENTRIES.md (entry mechanics: pullback, strikes, expiry, guards,
-dedupe, edits, futures, index mirror) · reference/RATCHET.md (ratchet, futures
-ratchet, swings, close path, 0DTE) · reference/ROOMS-TABS.md (rooms.txt fields,
-tabs, hours, relays, Whop, voice, popup) · reference/OPERATIONS.md (restarts,
-POSTCHECK, the 16:40 audit, git, autopilot, announcer, departments, readers,
-keys, second machine, caller research) · DATA-MAP.md (what is inside every
-data file, the data families) · reference/OPTIONS-BROKER-REFERENCE.md (Webull
-facts) · MARKET-HOURS.md (hours, holidays) · ARCHITECTURE.md (modules, seams)
-· INDEX.md (what every file is).
-9/15: OPERATIONS also holds the weekly-file + house rules and the watch-item
-detail · ARCHITECTURE the machine, accounts, coexistence, north star · DATA-MAP
-the CONDENSE test · also reference/EOD-BENCHMARK-SPEC.md, PULLBACK-LEVELS.md,
-CALLER-LEDGER.md · HANDOFF-LOG.md (history) · extension/rooms.txt ·
-settings.json (keys, gitignored) · master_ledger.csv / master_alerts.csv ·
-days/ · daily-reports/ + daily-audits/ (one week file per kind).
+reference/ENTRIES.md (pullback, strikes, expiry, guards, dedupe, edits, futures,
+index mirror) · reference/RATCHET.md (ratchet, futures ratchet, swings, close
+path, 0DTE) · reference/ROOMS-TABS.md (rooms.txt fields, tabs, hours, relays,
+Whop, voice, popup) · reference/OPERATIONS.md (restarts, POSTCHECK, the 16:40
+audit, git, autopilot, announcer, departments, readers, keys, second machine,
+caller research, weekly files, the house file rules, the watch-item detail) ·
+DATA-MAP.md (what is inside every data file, the data families, the CONDENSE
+test) · reference/OPTIONS-BROKER-REFERENCE.md (Webull facts) · MARKET-HOURS.md ·
+ARCHITECTURE.md (modules, seams, the machine, accounts, coexistence, north star)
+· INDEX.md (what every file is) · reference/EOD-BENCHMARK-SPEC.md (the report
+contract) · PULLBACK-LEVELS.md · CALLER-LEDGER.md · HANDOFF-LOG.md (history) ·
+extension/rooms.txt · settings.json (keys, gitignored) · master_ledger.csv /
+master_alerts.csv (truth) · days/ · daily-reports/ + daily-audits/.
 
 ## Who and what
 - G (giancuffaro230@gmail.com) — maintains this code himself (9/13), trades options + futures live,
@@ -47,10 +45,10 @@ days/ · daily-reports/ + daily-audits/ (one week file per kind).
   get fixed without asking, same day. "Fix errors every day after journaling."
 - Real-money actions are HIS ALONE: placing/canceling orders, flipping rooms
   LIVE, unlocking accounts, funding, questionnaires, accepting ToS, passwords.
-- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; verify buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate, NinjaTrader stay OFF.
-- COEXISTENCE: Market Sniper (port 8000) is his own tool on the same account and rate budget — its positions are visible, NEVER stop-managed or sold.
-- NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot policy vs broker truth; a later high is never a caller exit.
-- AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing; "" or a range is NO CALL — not a crash, not an order; department output is advisory, never code or orders.
+- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; check buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate, NinjaTrader stay OFF.
+- COEXISTENCE: Market Sniper (port 8000) is his own tool on the same account and budget — its positions are visible, NEVER stop-managed or sold.
+- NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot vs broker truth; a later high is never a caller exit.
+- AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing; "" or a range is NO CALL — not a crash, not an order. Department output is advisory.
 - CALLER IDENTITY IS CANDIDATE EVIDENCE: no win rate until trade attribution exists; a new account never gets an execution key; ID-less rows stay unavailable — re-grab, never infer.
 - Claude exports and project/context/ are historical reference only.
 
@@ -84,13 +82,13 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · re
 - CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent. 0DTE: ETFs trade to 16:15, auto-exercise at $0.01 ITM — flatten before the close.
 
 RESTARTS / SAFETY / HOUSE RULES · reference/OPERATIONS.md
-- BOOT: state photo per event; all UNVERIFIED until the broker confirms; expired options = dead paper; updates apply at the first safe window. POSTCHECK logs a PROBLEM when book, stop and quote bus disagree.
+- BOOT: all UNVERIFIED until the broker confirms; expired options = dead paper; updates apply at the first safe window. POSTCHECK logs a PROBLEM when book, stop and quote bus disagree.
 - RULE: weekly signal-room-chat logs (replaces daily) (G, 9/15). ds_logs.py owns naming, blocks and de-dupe; never hand-edit a week file.
 - WEEKLY REPORTS (9/15): ONE file per week per kind, newest day first; reports.py owns it, writers never mint a dated file.
 - APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for its kind — never a new dated file beside it; rotated logs and finished experiments zip to `archive/`.
 - REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is — `reports.py status` decides, `reports/INDEX.json` is the memory. Rebuild only when it says stale. Never re-derive by reading logs what a report already states.
 - ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json. Logs are read only when those two cannot answer. Checks recorded in STATUS.json.verified are trusted while their inputs are unchanged (VERIFY ONCE).
-- THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept and LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the deleted 15-minute Codex guard.
+- THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept, LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the 15-minute Codex guard.
 - GIT: settings.json holds every key and is never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
 - REPLACE, DON'T STACK (G, 9/9). When something changes — a rule, a value,
   a function, a setting, a room line, a doc — the new version takes the old
@@ -151,7 +149,7 @@ FILL ANNOUNCER (announcer.py, read-only) · reference/OPERATIONS.md
 
 ## Watch items (open) — the detail is in reference/OPERATIONS.md
 - PULLBACK STOCK TARGET vs THE RATCHET (9/10): a pullback entry also closes at a fixed stock target, a second exit beside the ratchet. (a) delete it (b) keep it — G decides.
-- FUTURES RECORDS (G, 9/9): the moment futures execution works its fills must be pulled into the ledger; until then futures callers rank by count, not money.
+- FUTURES RECORDS (G, 9/9): when futures execution works its fills must be pulled into the ledger; until then futures callers rank by count, not money.
 - Telemetry rows lack room/caller → the master_alerts taken side is anonymous.
 - Deepgram key may be one char short (39) — watch for voice auth errors.
 - First live overnight broker stop on a swing: confirm it survives the night.
