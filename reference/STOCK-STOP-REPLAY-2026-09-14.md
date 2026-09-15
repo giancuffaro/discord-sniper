@@ -30,7 +30,7 @@ Every stop distance and every fixed target above is read from the live `pullback
 | **S3** stop/arm 0.45 (Mag 7 2.00), rungs unchanged | 45 | -458 | 24% | -10.18 | 6m 31s | 24 | 4 | 12 | 0 | 5 |
 | **P0** LIVE pullback stock exit: fixed stop + fixed target, no ratchet | 45 | -379 | 24% | -8.42 | 3m 33s | 31 | 0 | 0 | 13 | 1 |
 | **A** OUR PREMIUM 5/3/5 ratchet on the same entry | 45 | -594 | 11% | -13.20 | 22s | 30 | 9 | 5 | 0 | 1 |
-| **H** HYBRID (Claude's suggestion): S1 stock stop, then premium 5/3/5 at +3% | 45 | -483 | 20% | -10.73 | 48s | 21 | 14 | 9 | 0 | 1 |
+| **H** HYBRID (Claude's suggestion): S1 stock stop, then premium 5/3/5 at +3% | 45 | -483 | 20% | -10.73 | 1m 44s | 21 | 14 | 9 | 0 | 1 |
 
 Webull charges $0 commission on options, so net = gross.
 
@@ -56,8 +56,9 @@ Webull charges $0 commission on options, so net = gross.
 
 A stock rule fires on the stock's clock; the option can only be sold at the next quote the tape holds.
 
-- Median lag from fire to the option quote used: **0s**; mean **-1000.7s**; worst **124s**.
-- Exits where the lag was over a second: **5 of 315**. On those, the bid actually used differs from the last bid before the fire by **-7.00** on average (one contract) — that is the price of the gap.
+- Median lag from fire to the option quote used: **0s**; mean **7.2s**; worst **124s**. (244 exits measured.)
+- Exits where the lag was over a second: **5**. On those the bid actually used differs from the last bid before the fire by **-7.00 per contract** on average — that is what the gap costs.
+- Exits where the option tape simply ENDED before the rule fired: **71**. Those have no lag to measure and are marked in the CSV (`tape_ended_first`); their exit is the last bid the tape holds.
 - On the OPRA sample the tape is ~1 quote/second, so the lag is essentially zero. It is the Webull sweep days that pay.
 
 ## Named cases
