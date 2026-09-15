@@ -321,7 +321,7 @@ ROOMS_TXT = os.path.join(HERE, "extension", "rooms.txt")
 ROOM_STATES = ("on", "off", "lapsed")
 
 
-ROOM_RULE_FLAGS = ("spx", "bare", "always")   # + "sym=XXX"; always = tab open 24h (futures rooms)
+ROOM_RULE_FLAGS = ("bare", "always")   # + "sym=XXX"; always = tab open 24h (futures rooms)
 
 
 def read_rooms():
@@ -329,7 +329,6 @@ def read_rooms():
     file order, every room (on / off / lapsed). A line with no 5th field is
     `on` — what every line meant before the state column existed (9/9).
     6th field (9/9 evening, "room rules on the room line"): comma flags —
-      spx       index calls in this room trade as SPY (strike/10, premium dropped)
       bare      an entry with no verb still counts ("SPY 650c 1.20")
       sym=SPX   the symbol to assume when the call names none
       always    tab stays open 24h (futures rooms); everything else opens
@@ -409,7 +408,7 @@ def set_room_state(room_id, state):
 
 def set_room_rules(room_id, rules):
     """Rewrite ONE room's rules (6th field) in place. rules = list/str of
-    flags: spx, bare, sym=XXX. Unknown flags are refused. Returns (ok, why)."""
+    flags: bare, always, sym=XXX. Unknown flags are refused. Returns (ok, why)."""
     if isinstance(rules, str):
         rules = [x for x in rules.split(",")]
     clean = []
@@ -422,7 +421,7 @@ def set_room_rules(room_id, rules):
         elif r.startswith("sym=") and r[4:].isalpha() and 1 <= len(r[4:]) <= 6:
             clean.append("sym=" + r[4:].upper())
         else:
-            return False, "unknown rule %r (use spx, bare, sym=XXX)" % r
+            return False, "unknown rule %r (use bare, always, sym=XXX)" % r
     seen, out = set(), []
     for r in clean:
         k = r.split("=")[0]
@@ -1771,75 +1770,6 @@ def entry_words(ticket):
     return ("bid is in at %.2f on %s %s%s — you're not in it until somebody "
             "sells to you" % (float(ticket.get("limit") or 0),
                               ticket.get("symbol"), ticket.get("strike"), side))
-
-
-def dry_entry(order):
-    """Track a dry-run entry in the book the same way a real one is tracked.
-
-    With keys saved it prices off the live bid and then watches the real quote,
-    so tomorrow's log tells you which of these bids a seller would actually
-    have come down to. Without keys there's nothing to ask, and the book says
-    so on the line where it assumes the fill.
-    """
-    if BOOK is None:
-        return
-    limit = order.get("limit")
-    occ = bid = ask = None
-    # A futures entry has no OCC symbol and, until the data subscription
-    # exists, no quote to check against. It tracks at the price they posted,
-    # with the multiplier that makes its points worth real dollars.
-    if order.get("kind") == "future":
-        if not limit:
-            note("DRY RUN  %s futures call came with no price — not tracked"
-                 % order.get("symbol"))
-            return
-        order["mult"] = FUT_MULT.get(str(order.get("symbol", "")).upper(), 1.0)
-        BOOK.entry_sent(order, {"order_id": None, "occ": None,
-                                "limit": float(limit), "bid": None, "ask": None,
-                                "qty": int(order.get("qty") or 1)})
-        return
-    # Equity — plain shares, his Swing Trades / Long Term style ("Entered
-    # BULL equity @ 7.24"). One share is one share: multiplier 1, no OCC,
-    # no expiry. Test-sized in dollars, not contracts — about $1000 worth —
-    # because 100 shares of NFLX and 100 of a $7 stock are different bets.
-    if order.get("kind") == "equity":
-        if not limit:
-            note("DRY RUN  %s equity call came with no price — not tracked"
-                 % order.get("symbol"))
-            return
-        order["mult"] = 1.0
-        BOOK.entry_sent(order, {"order_id": None, "occ": None,
-                                "limit": float(limit), "bid": None, "ask": None,
-                                "qty": int(order.get("qty") or 1)})
-        return
-    if WB is not None:
-        try:
-            from webull_options import occ_symbol, expiry_to_date
-            kind = ("CALL" if str(order.get("side", "")).upper().startswith("C")
-                    else "PUT")
-            occ = occ_symbol(order["symbol"], expiry_to_date(order.get("expiry")),
-                             kind, order.get("strike"))
-            ask, bid, _ = WB.ask_bid(occ)
-            limit = WB.entry_limit(bid, ask)
-        except Exception as e:                          # noqa: BLE001
-            note("DRY RUN  no live quote for %s (%s) — using the price they "
-                 "posted instead" % (order.get("symbol"), str(e)[:90]))
-    # HIS nickel-under idea: bid below their posted price. A resting limit that
-    # only fills if the ask comes down to it — misses the runaways, catches
-    # the pullbacks. The fill-watcher already refuses it if nobody sells there.
-    off = entry_offset(order.get("kind"))
-    if off and limit:
-        limit = round(max(0.01, float(limit) - off), 4)
-        order["bid_under"] = off
-        note("DRY RUN  bidding %.2f under their price -> %.2f (his rule)"
-             % (off, limit))
-    if not limit:
-        note("DRY RUN  %s came with no price and there's no quote, so there's "
-             "nothing to follow — not tracked" % order.get("symbol"))
-        return
-    BOOK.entry_sent(order, {"order_id": None, "occ": occ, "limit": float(limit),
-                            "bid": bid, "ask": ask,
-                            "qty": int(order.get("qty") or 1)})
 
 
 def exit_price(order, key):
@@ -5042,49 +4972,6 @@ class Handler(BaseHTTPRequestHandler):
             message="the master switch is retired — each room has its own "
                     "TESTING/LIVE toggle in the popup now"))
 
-    def _set_mode_retired(self):
-        global WB_ERROR
-        reload_settings()
-        try:
-            n = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(n) or b"{}")
-        except Exception:
-            return self._json(400, {"ok": False, "message": "unreadable request"})
-
-        want = "webull" if body.get("live") else "dryrun"
-        if want == MODE:
-            return self._json(200, dict(self._status(), ok=True,
-                                        message="already there"))
-
-        if want == "webull":
-            if not (EXEC.get("webull") or {}).get("app_key"):
-                return self._json(400, dict(self._status(), ok=False,
-                    message="there are no Webull keys saved yet. Open START "
-                            "HERE and press 2 first, then flip this."))
-
-        ok, msg = save_mode(want)
-        if want == "webull":
-            connect_broker(quiet=True)
-            if WB is None:
-                # It's on, but it can't reach the broker. Better to say so now
-                # than to let you find out on the first call of the day.
-                note("LIVE MODE ON but Webull isn't connected — %s" % WB_ERROR)
-                return self._json(200, dict(self._status(), ok=False,
-                    message="live mode is on, but it couldn't connect: %s"
-                            % WB_ERROR))
-            note("LIVE MODE ON — real orders, account %s" % WB_ACCOUNT)
-            return self._json(200, dict(self._status(), ok=True,
-                message="LIVE. Real orders, account %s.%s"
-                        % (WB_ACCOUNT, "" if ok else "  (" + msg + ")")))
-
-        WB_ERROR = ""       # a stale connection error is noise once you're safe
-        # Back to pretend fills and pretend stops — unless something is still
-        # open, in which case build_book leaves the real one alone.
-        build_book()
-        note("DRY RUN — nothing real will be sent")
-        return self._json(200, dict(self._status(), ok=True,
-            message="dry run. Orders are logged, nothing is sent."))
-
     def _mark(self):
         """What is this contract worth right now, and what is that to you.
 
@@ -5806,7 +5693,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _set_room(self):
         """POST /rooms {"id": ..., "state": "on"|"off"} and/or {"id": ...,
-        "rules": "spx,bare,sym=SPX"} — THE ONE SWITCH (9/9): the popup flips
+        "rules": "bare,sym=SPX"} — THE ONE SWITCH (9/9): the popup flips
         a room here; rooms.txt is the only list, so the write lands there
         and every reader (both Chrome profiles, START HERE, the tools) sees
         the same truth. Never touches a trade."""
