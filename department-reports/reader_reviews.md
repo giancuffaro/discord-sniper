@@ -1,5 +1,38 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 60f6195b6b753168c16f
+
+The reader proposes a META trim interpretation for “Down to runners,” while the parser returns no action. Nearby source messages support that interpretation, but this is a candidate contextual-recognition gap, not a confirmed parser bug or executable trade.
+
+## Findings
+- The current message says “Down to runners @here.” The parser has action=null and fire=false; the reader returns action=TRIM, ticker=META, confidence=0.68. Its supporting messages are “50% META @everyone” followed by “70% @here,” both included in validation.eligible_prior_ids. Verify the original message sequence and intended parser scope before proposing contextual trim recognition. META is a supported candidate referent, but “down to runners” may report an already-reduced position rather than request a new reduction.
+- Earlier messages include “30% META trim half,” a separate apparent entry sequence following an AMD watch, and “Gap filled so down to runners.” The latest explicit symbol is META. The current message supplies no contract, quantity, or exit premium, and the reader leaves those fields null. Verify same-author, same-channel position linkage and whether this is a new trim or a status update. Preserve missing fields rather than borrowing quantities or contract details from another sequence; do not interpret runners as a full exit or a fixed remaining percentage.
+- Validation reports ok=true with no safety flags. One provider attempt reports “cooldown,” followed by a successful OpenAI reader response. Treat validation as acceptance of the interpretation under the supplied checks, not confirmation of trade identity or execution. Treat the cooldown as an individual provider-attempt issue, not evidence of a reader-wide outage.
+
+## Limitations
+- No broker fills, position ledger, exact exit premiums, or realized-return calculations are supplied. Percentage updates are caller-reported claims, not broker-confirmed results.
+- The raw standalone values “2.6” and “4.2” have no explicit premium units; no conversion or exit-price inference is justified.
+- Although the supplied evidence is marked untruncated, reply targets, edit history, and complete position coverage are not established.
+
+---
+
+# Reader Review — 2026-09-15 — a44412d7a616786171ba
+
+The parser and reader agree that the current message is a SPY trim. The reader links it to Brett’s prior SPY 9/16 759P entry, but validation does not fully accept that context and removes the strike. This warrants source and eligibility-policy review, not classification as a confirmed parser bug.
+
+## Findings
+- The current message says '@Brett (Admin) trimming SPY @ 13.5%' without contract details. Prior message chat-messages-829754942817828884-1549418841099210898 explicitly says '@Brett (Admin) in SPY 9/16 759P @ 2.8'. The reader supplies expiry 9/16, strike 759 and PUT; the parser leaves these fields null and reports fire=false. Verify the original entry and intervening position history before proposing caller-scoped contract inheritance. Attribute the scribe’s messages to Brett within this channel rather than merging all HoneyDrip-authored alerts. Missing literal contract details and fire=false alone do not establish a parser defect.
+- The reader cites both the explicit entry and the earlier 10% SPY trim. Validation lists only the earlier trim as eligible, flags 'expiry_not_literal' and 'unsupported_context_id', and returns ok=true with expiry 9/16 and side PUTS retained but strike=null. Review why the explicit entry was ineligible and what ok=true guarantees. Verify whether retaining inferred expiry and side while removing strike follows the intended provenance policy. Preserve the distinction between reader output and validated output; do not describe the complete contract as validation-confirmed.
+- The source reports '13.5%' rather than an exit premium or an explicit quantity to trim. The reader and validated output both leave price and qty null. Preserve '13.5%' as raw percentage commentary. Verify its meaning from Brett’s retained source examples before assigning a performance field; do not treat it as a premium, trim fraction, exact exit, or broker-confirmed return. Keep the prior raw entry value '@ 2.8' separate and do not derive an exit price.
+
+## Limitations
+- Only one current parser/reader comparison is supplied; parser state, eligibility rules and the reason for fire=false are absent.
+- Evidence is marked untruncated, but completeness of the underlying channel and position history is not established.
+- No broker fills, execution records, position quantities or return calculations are provided.
+- The Gemini attempt reports cooldown and the OpenAI attempt succeeds; this does not establish a channel or application outage.
+
+---
+
 # Reader Review — 2026-09-15 — 9cb20cfff2f5a5224682
 
 The reader interpreted the message as a profit-taking instruction, while the parser produced no action. This is a candidate contextual-recognition issue requiring source verification, not a confirmed parser bug. Validation also flagged unsupported context and removed the inferred strike.
