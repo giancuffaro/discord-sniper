@@ -171,7 +171,7 @@ def build(day):
     not_taken_after_review = len([r for r in decided_entries
                                   if r["kind"] != "sent"])
 
-    lines = ["# Discord Sniper daily report — %s" % day, "",
+    lines = ["# Daily Sniper Report — %s" % day, "",
              "Generated %s." % dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z"), "",
              "## Coverage", "",
              "- Rooms configured on: **%d** Discord and **%d** Whop." % (d_rooms, w_rooms),

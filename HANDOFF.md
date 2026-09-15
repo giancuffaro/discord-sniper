@@ -291,13 +291,13 @@ RESTARTS / SAFETY
   lane. Resting stops at Webull guard every gap.
 - POSTCHECK after every trade: book vs account, stop resting, quote bus
   fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
-- DAILY AUDIT / REPORT: bridge.py runs `daily_audit.py` once per weekday at
+- DAILY SNIPER REPORT: bridge.py runs `daily_audit.py` once per weekday at
   16:40 ET, after the 16:30 export/tab sweep. It replays that day's exact
   Discord and Whop inputs with each room's production grammar. `parser_gate.js`
   also compares parser.js, rooms.txt and optionable.txt over every retained
   live message; AUTO PUSH runs that gate before any such rule ships and blocks
   invented symbols or expiry shifts. The audit runs every JS/Python test, writes `daily-audits/AUDIT-<date>.txt`
-  plus `latest.json`, queues unresolved items, and writes the daily report:
+  plus `latest.json`, queues unresolved items, and writes the Daily Sniper Report:
   room coverage, decisions, skips, recovered gaps, fills, P&L and postmortems.
   Relay duplicates stay raw but count once. The 15-minute Codex guard was
   deleted at G's request; do not recreate it. Findings become tested fixtures. Caller-vs-system P&L is shown
