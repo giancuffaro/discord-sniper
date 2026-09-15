@@ -25,6 +25,10 @@ Last updated: 2026-09-15 — the 16:40 audit now STARTS by pulling the broker ex
   account sightings by channel ID. Win rates stay unavailable until trade
   attribution exists, and a newly observed account never gets an execution key.
   See reference/CALLER-LEDGER.md; the 9/13 detail is in HANDOFF-LOG.md.
+- Caller behaviour (9/14): options first trim median 5.4 min at +17%; no posted
+  option stop — revealed give-up −17%; bot out before their first trim on 15 of
+  22 matched pairs. reference/CALLER-PROFILE-2026-09-14.md (rebuild:
+  reference/caller_profile.py).
 - G (giancuffaro230@gmail.com) — maintains this code himself (9/13), trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."

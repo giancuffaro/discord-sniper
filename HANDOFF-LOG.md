@@ -12,6 +12,71 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (how the callers actually trade — hold time, first trim, their stop)
+
+G asked the question plainly: "what is the callers' average trade hold time,
+because we need to kind of match that to get similar results — I'm even happy
+getting to the first trim. What's their normal stop also?" Measurement only,
+no live code touched. New re-runnable script `reference/caller_profile.py`;
+report `reference/CALLER-PROFILE-2026-09-14.md` + `.csv`.
+
+WHAT IT MEASURES. `recovered_alerts_chat.csv`, de-duplicated (2,535 of 2,681
+rows survive; the export overlap is real), high+medium confidence only,
+2026-08-03 .. 2026-09-10 → 695 entries (530 option, 161 futures, 4 equity) and
+459 management posts that `links_to` could tie to one of them. 194 entries have
+at least one linked management post. Cross-checked against the two hand-paired
+days in `daily-reports/CALLER-OUTCOMES-2026-09-11/-14.csv` and joined to
+`master_ledger.csv` for the bot side.
+
+THE ANSWERS.
+* Options, entry → first trim: median **5.4 min** (p25 1.1 / p75 18.9, n=100),
+  posted at a median **+17%** (p25 +10 / p75 +29, n=96). Entry → full exit,
+  same day: median 13.8 min (n=86). The 9/11+9/14 hand-paired days agree in
+  shape — 13.3 min to first trim (n=23), 13.2 min to full exit (n=12).
+* Futures barely manage in public: 147 of 161 entries are silent, so the
+  futures hold numbers rest on n=1–11 and are not a result.
+* **66.4% of option entries get no management post at all**, 78.9% get no
+  posted exit. Those are `unavailable`, not losses — a later high is not an exit.
+* Their stop on options does not exist as a posted number. 26 of 530 option
+  entries mention a stop at all; 13 of those are an UNDERLYING level, 6 say
+  "no stop loss", **2** quote a premium stop. Revealed instead by the losing
+  exits they do post: median **−17%**, p25 −31% (n=27). Futures are the
+  opposite — 156 of 161 carry a stop (median 20 pts), but 84 of those come from
+  one automated `TP:/SL:` signal poster and are a machine parameter.
+* "SL to b/e" is rare in this window: 6 of 695 entries.
+* Runner vs trim, the only 22 entries where both ends are readable: 11 finished
+  BELOW the first trim, 7 added more than +25 points past it.
+
+THE MATCH NUMBER G WAS REALLY ASKING FOR. Joining caller entries to
+`master_ledger.csv` on date+symbol+strike+side within 5 minutes: 70 contracts
+we also held, 22 pairs where the caller also posted a same-day first trim.
+**We were already out before their first trim on 15 of those 22 — 6 of them in
+the red.** Our median hold on matched trades is 3.0 min and our median exit
+−5.5%; theirs is 8.1 min to a first trim at +24.6% on the same contracts. The
+gap is the exit clock, not the alert selection.
+
+TWO FIXES THE FIRST RUN EXPOSED, both in the new script, both before publishing
+a number: the breakeven regex was matching the ordinary English word "be"
+(43 false hits → 6 real ones), and cross-day swing management was dragging
+hold-time medians into the thousands of minutes (now split same-day vs
+next-day-or-later everywhere). One deliberate recovery rule is documented in
+the script: VeroTrade writes the premium inline ("QQQ 718P 8/18 1.22") and the
+original recovery left `their_price` blank, so `entry_price()` recovers that one
+message shape — 24 prices, counted separately in the report.
+
+THE CAVEATS, KEPT LOUD. 491 management messages in the file carry no `links_to`
+at all (ticker + a percent, nothing else) and can never be tied to an entry; 37
+more point outside the window or below medium confidence, 5 are ambiguous. So
+every hold-time number describes **the callers tidy enough to write a linkable
+management post**, not all calls. Percentages marked `stated` are the caller's
+own claim on his own fill; only 1 percent in the whole study is a
+market-bid-at-exit `measured` value, plus 5 in the hand-paired days. No caller
+win rate and no caller net result is computable and none is claimed.
+`their_target` is recorded nowhere, so no target study exists. The ledger join
+proves we held the same contract in the same minute, not that the room caused
+the order — `master_ledger.csv` carries a room on a minority of rows.
+
+
 ## 2026-09-15 (the broker export was never automated — found, fixed, backfilled)
 
 WHY 9/14 HAD NO BROKER TRUTH. Not a restart, not a 429. **No code has ever
