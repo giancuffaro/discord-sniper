@@ -69,12 +69,29 @@ def _f(v):
 
 
 def _hms(epoch):
+    """An epoch as EASTERN wall-clock.
+
+    It used to be `datetime.fromtimestamp(...)` — the MACHINE's local time.
+    That is right on G's PC and silently wrong everywhere else: a rebuild run
+    from a UTC box on 9/15 rewrote every days-json row's `opened` four hours
+    forward (10:23 became 14:23) while `closed`, which comes from a stored
+    string, stayed Eastern — one row, two clocks. The ledger's times are
+    Eastern by definition, so say so instead of inheriting whatever TZ the
+    shell happened to have.
+    """
     if not epoch:
         return ""
     try:
-        return datetime.fromtimestamp(float(epoch)).strftime("%H:%M:%S")
+        import eastern
+        return datetime.fromtimestamp(float(epoch), eastern.ET) \
+            .strftime("%H:%M:%S")
     except (TypeError, ValueError, OSError):
         return ""
+    except Exception:                                   # noqa: BLE001
+        try:
+            return datetime.fromtimestamp(float(epoch)).strftime("%H:%M:%S")
+        except (TypeError, ValueError, OSError):
+            return ""
 
 
 def _r2(v):
