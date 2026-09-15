@@ -126,11 +126,20 @@ for _k in (
           "g:bars/ES_1m_*.csv", "g:bars/NQ_1m_*.csv",
           "f:futures_mirror_daily.py"), timeout=300,
          what="SPY/QQQ entries replayed as MES/MNQ on real ES/NQ 1-min bars"),
+    Kind("entry-slack", "ENTRY-SLACK", REPORTS, "md",
+         "reference/entry_slack_replay.py",
+         ("dated:trades.log", "tape:alert_tape.csv", "tape:quote_shadow.csv",
+          "tape:option_tape.csv", "tape:databento_tape.csv",
+          "tape:missed_tape.csv", "f:entry_slack.py", "f:tape.py",
+          "f:ratchet_tiers.py", "f:reference/ratchet_replay_tape.py",
+          "f:reference/entry_slack_replay.py"), timeout=300,
+         what="would crossing the ask have filled the no-fills, and what would "
+              "it cost in the price improvement we earn today"),
     Kind("brief", "BRIEF", REPORTS, "md", "daily_brief.py",
          ("csvdate:master_ledger.csv", "csvdate:master_broker.csv",
           "csvdate:balance_daily.csv", "dated:trades.log",
           "csv:caller-outcomes", "block:caller-vs-ratchet",
-          "block:futures-mirror", "json:department-reports/extension-*.json",
+          "block:futures-mirror", "block:entry-slack", "json:department-reports/extension-*.json",
           "f:HANDOFF.md", "f:daily_brief.py"),
          what="the one screen G reads: day, bot trades, callers, what broke, pending"),
     Kind("audit", "AUDIT", AUDITS, "txt", "daily_audit.py",
@@ -159,7 +168,7 @@ for _k in (
 
 # The order the audit builds them in: each one's inputs come before it.
 BUILD_ORDER = ("report", "ratchet-compare", "caller-outcomes",
-               "caller-vs-ratchet", "futures-mirror", "brief")
+               "caller-vs-ratchet", "futures-mirror", "entry-slack", "brief")
 
 
 def _date(day):

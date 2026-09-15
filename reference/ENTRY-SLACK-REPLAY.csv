@@ -1,0 +1,179 @@
+date,time,kind,occ,symbol,qty,our_bid,actual_fill,improvement,status,bid_at_read,ask_at_read,quote_gap_s,why,slack_0_cross,slack_0_entry,slack_0_pl,slack_2_cross,slack_2_entry,slack_2_pl,slack_3_cross,slack_3_entry,slack_3_pl,slack_5_cross,slack_5_entry,slack_5_pl,slack_7.5_cross,slack_7.5_entry,slack_7.5_pl,slack_10_cross,slack_10_entry,slack_10_pl
+2026-08-05,13:14:51,nofill,AAPL260807C00315000,AAPL,5,1.13,,,quarantined,1.09,1.10,0,recorded ask 1.10 was at or under our bid 1.13 — the tape and the broker's book disagree,,,,,,,,,,,,,,,,,,
+2026-08-05,14:10:06,nofill,MSFT260807P00480000,MSFT,5,2.15,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-05,14:35:12,nofill,SPCX260807P00090000,SPCX,5,0.30,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-05,15:27:07,fill,HPE260821C00055000,HPE,5,3.02,3.02,0,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-11,09:36:51,nofill,GOOGL260814C00360000,GOOGL,1,2.10,,,quarantined,2.00,2.03,0,recorded ask 2.03 was at or under our bid 2.10 — the tape and the broker's book disagree,,,,,,,,,,,,,,,,,,
+2026-08-11,10:04:11,nofill,IBM260814C00240000,IBM,1,3.32,,,quarantined,3.05,3.20,46,recorded ask 3.20 was at or under our bid 3.32 — the tape and the broker's book disagree,,,,,,,,,,,,,,,,,,
+2026-08-11,10:14:53,nofill,BAC260821C00064000,BAC,1,0.88,,,quarantined,0.84,0.85,58,recorded ask 0.85 was at or under our bid 0.88 — the tape and the broker's book disagree,,,,,,,,,,,,,,,,,,
+2026-08-11,10:50:07,nofill,NVDA260814C00220000,NVDA,1,2.91,,,quarantined,2.73,2.76,53,recorded ask 2.76 was at or under our bid 2.91 — the tape and the broker's book disagree,,,,,,,,,,,,,,,,,,
+2026-08-11,14:11:26,fill,RIOT260911C00023000,RIOT,1,0.99,0.96,3,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-11,15:57:11,fill,ZETA260828C00030000,ZETA,1,1.21,1.15,6,scored,1.14,1.18,0,,True,1.2,-5,True,1.2,-5,True,1.2,-5,True,1.2,-5,True,1.2,-5,True,1.2,-5
+2026-08-11,15:58:21,fill,SKHY260828C00150000,SKHY,1,6.23,6.01,22,scored,5.90,6.10,0,,True,6.1,-9,True,6.1,-9,True,6.1,-9,True,6.1,-9,True,6.1,-9,True,6.1,-9
+2026-08-12,09:41:14,fill,META260814C00610000,META,1,3.22,3.15,7,scored,2.93,3.15,0,,True,3.15,-0,True,3.15,-0,True,3.15,-0,True,3.15,-0,True,3.15,-0,True,3.15,-0
+2026-08-12,09:46:15,fill,LYFT260814C00016500,LYFT,1,0.74,0.68,6,scored,0.66,0.68,1,,True,0.68,-0,True,0.68,-0,True,0.68,-0,True,0.68,-0,True,0.68,-0,True,0.68,-0
+2026-08-12,09:53:36,nofill,AMZN260814P00270000,AMZN,1,2.56,,,quarantined,2.45,2.48,0,recorded ask 2.48 was at or under our bid 2.56 — the tape and the broker's book disagree,,,,,,,,,,,,,,,,,,
+2026-08-12,09:58:26,fill,AMZN260814C00277500,AMZN,1,0.69,0.67,2,scored,0.66,0.68,0,,True,0.68,-1,True,0.68,-1,True,0.68,-1,True,0.68,-1,True,0.68,-1,True,0.68,-1
+2026-08-12,10:00:08,fill,SPY260812P00772000,SPY,1,1.20,1.20,0,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-12,10:05:02,fill,AMZN260814C00275000,AMZN,1,0.91,0.87,4,scored,0.85,0.86,0,,True,0.86,1,True,0.86,1,True,0.86,1,True,0.86,1,True,0.86,1,True,0.86,1
+2026-08-12,10:06:03,fill,QQQ260812C00727000,QQQ,1,0.90,0.87,3,scored,0.86,0.87,0,,True,0.87,-0,True,0.87,-0,True,0.87,-0,True,0.87,-0,True,0.87,-0,True,0.87,-0
+2026-08-12,10:15:08,fill,NVDA260812C00222500,NVDA,1,1.56,1.54,2,scored,1.52,1.54,0,,True,1.54,-0,True,1.54,-0,True,1.54,-0,True,1.54,-0,True,1.54,-0,True,1.54,-0
+2026-08-12,10:30:12,fill,AAPL260814P00305000,AAPL,1,3.83,3.73,10,scored,3.65,3.75,0,,True,3.75,-2,True,3.75,-2,True,3.75,-2,True,3.75,-2,True,3.75,-2,True,3.75,-2
+2026-08-12,12:28:00,fill,SPY260812C00773000,SPY,1,0.53,0.51,2,scored,0.50,0.51,0,,True,0.51,-0,True,0.51,-0,True,0.51,-0,True,0.51,-0,True,0.51,-0,True,0.51,-0
+2026-08-12,12:38:59,fill,SPCX260814C00155000,SPCX,1,0.84,0.83,1,scored,0.80,0.83,0,,True,0.85,-2,True,0.85,-2,True,0.85,-2,True,0.85,-2,True,0.85,-2,True,0.85,-2
+2026-08-12,12:41:33,fill,NVDA260814P00217500,NVDA,1,0.71,0.69,2,scored,0.67,0.68,0,,True,0.68,1,True,0.68,1,True,0.68,1,True,0.68,1,True,0.68,1,True,0.68,1
+2026-08-12,13:08:31,nofill,QQQ260814P00720000,QQQ,1,1.93,,,quarantined,1.89,1.91,63,recorded ask 1.91 was at or under our bid 1.93 — the tape and the broker's book disagree,,,,,,,,,,,,,,,,,,
+2026-08-12,13:47:13,fill,META260814C00585000,META,1,4.50,4.24,26,scored,4.20,4.40,0,,True,4.4,-16,True,4.4,-16,True,4.4,-16,True,4.4,-16,True,4.4,-16,True,4.4,-16
+2026-08-12,14:37:02,fill,SPCX260814P00141000,SPCX,1,1.58,1.53,5,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-13,09:41:42,fill,NVDA260814C00232500,NVDA,1,0.27,0.25,2,scored,0.25,0.26,0,,True,0.26,-1,True,0.26,-1,True,0.26,-1,True,0.26,-1,True,0.26,-1,True,0.26,-1
+2026-08-13,09:43:04,fill,SMCI260814C00039500,SMCI,1,1.21,1.18,3,scored,1.10,1.14,0,,True,1.14,4,True,1.14,4,True,1.14,4,True,1.14,4,True,1.14,4,True,1.14,4
+2026-08-13,09:45:43,fill,NVDA260814C00225000,NVDA,1,2.47,2.41,6,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-13,09:49:43,fill,CBRS260821C00340000,CBRS,1,0.78,0.61,17,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-13,09:54:04,fill,NVDA260814C00225000,NVDA,1,2.50,2.40,10,scored,2.38,2.41,0,,True,2.41,-1,True,2.41,-1,True,2.41,-1,True,2.41,-1,True,2.41,-1,True,2.41,-1
+2026-08-13,09:55:15,fill,AAPL260814C00305000,AAPL,1,1.73,1.67,6,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-13,09:55:17,fill,TSLA260814C00340000,TSLA,1,1.07,1.05,2,scored,1.03,1.04,0,,True,1.04,1,True,1.04,1,True,1.04,1,True,1.04,1,True,1.04,1,True,1.04,1
+2026-08-13,09:57:05,fill,JACK260821C00022500,JACK,1,0.83,0.80,3,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-13,10:03:03,fill,AMD260814C00505000,AMD,1,3.58,3.47,11,scored,3.25,3.50,0,,True,3.5,-3,True,3.5,-3,True,3.5,-3,True,3.5,-3,True,3.5,-3,True,3.5,-3
+2026-08-13,10:10:33,fill,AVGO260821C00450000,AVGO,1,2.61,2.55,6,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-14,09:40:29,fill,AMD260819C00507500,AMD,1,5.93,5.69,24,scored,5.65,5.80,0,,True,5.8,-11,True,5.8,-11,True,5.8,-11,True,5.8,-11,True,5.8,-11,True,5.8,-11
+2026-08-14,09:46:35,fill,AAPL260819C00307500,AAPL,1,2.77,2.70,7,scored,2.63,2.70,0,,True,2.7,-0,True,2.7,-0,True,2.7,-0,True,2.7,-0,True,2.7,-0,True,2.7,-0
+2026-08-14,10:18:51,fill,NVDA260819P00225000,NVDA,1,3.02,2.93,9,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-14,10:35:24,nofill,SPY260817C00775000,SPY,1,3.14,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-17,09:30:42,fill,SPY260821P00776000,SPY,1,3.17,3.14,3,scored,3.11,3.14,0,,True,3.14,-0,True,3.14,-0,True,3.14,-0,True,3.14,-0,True,3.14,-0,True,3.14,-0
+2026-08-17,09:31:38,fill,META260821C00595000,META,1,5.15,5.20,-5,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-17,09:50:58,fill,AMD260821C00535000,AMD,1,6.15,6.20,-5,scored,6.10,6.40,55,,False,6.2,-0,False,6.2,-0,False,6.2,-0,True,6.4,-20,True,6.4,-20,True,6.4,-20
+2026-08-17,10:08:55,fill,SCHW260821C00114000,SCHW,1,0.32,0.30,2,scored,0.29,0.30,80,,True,0.3,-0,True,0.3,-0,True,0.3,-0,True,0.3,-0,True,0.3,-0,True,0.3,-0
+2026-08-17,11:59:15,nofill,INTC260828C00115000,INTC,1,1.77,,,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-18,09:30:16,fill,SPY260819C00775000,SPY,1,0.31,0.29,2,scored,0.27,0.30,0,,True,0.3,-1,True,0.3,-1,True,0.3,-1,True,0.3,-1,True,0.3,-1,True,0.3,-1
+2026-08-18,09:31:50,fill,INTC260828C00115000,INTC,1,0.77,0.75,2,scored,0.76,0.80,4,,False,0.75,-0,False,0.75,-0,False,0.75,-0,True,0.8,-5,True,0.8,-5,True,0.8,-5
+2026-08-18,09:33:30,fill,INTC260828C00115000,INTC,1,0.70,0.68,2,scored,0.66,0.68,1,,True,0.68,-0,True,0.68,-0,True,0.68,-0,True,0.68,-0,True,0.68,-0,True,0.68,-0
+2026-08-18,09:35:31,nofill,PLTR260821C00172500,PLTR,1,3.35,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-18,09:44:13,fill,NVDA260821C00227500,NVDA,1,0.85,0.82,3,scored,0.80,0.82,0,,True,0.82,-0,True,0.82,-0,True,0.82,-0,True,0.82,-0,True,0.82,-0,True,0.82,-0
+2026-08-18,09:46:18,nofill,QQQ260818P00718000,QQQ,1,1.22,,,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-18,09:49:17,nofill,INTC260819P00097000,INTC,1,1.51,,,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-18,09:50:28,fill,SPY260819P00769000,SPY,1,2.39,0.45,194,scored,2.34,2.35,0,,True,2.35,-190,True,2.35,-190,True,2.35,-190,True,2.35,-190,True,2.35,-190,True,2.35,-190
+2026-08-18,09:50:28,fill,SPY260819P00769000,SPY,1,2.39,2.34,5,scored,2.34,2.35,0,,True,2.35,-1,True,2.35,-1,True,2.35,-1,True,2.35,-1,True,2.35,-1,True,2.35,-1
+2026-08-18,09:53:40,fill,AMZN260819P00257500,AMZN,1,1.47,1.45,2,scored,1.45,1.47,2,,True,1.47,-2,True,1.47,-2,True,1.47,-2,True,1.47,-2,True,1.47,-2,True,1.47,-2
+2026-08-18,09:53:56,fill,MSFT260821C00485000,MSFT,1,3.45,3.40,5,scored,3.65,3.70,0,,False,3.4,-0,False,3.4,-0,False,3.4,-0,False,3.4,-0,True,3.7,-30,True,3.7,-30
+2026-08-18,09:59:31,fill,INTC260819P00097000,INTC,1,1.53,1.55,-2,scored,1.52,1.56,0,,False,1.55,-0,True,1.56,-1,True,1.56,-1,True,1.56,-1,True,1.56,-1,True,1.56,-1
+2026-08-18,10:07:16,fill,DOCU260821C00065000,DOCU,1,0.40,0.40,0,scored,0.43,0.44,39,,False,0.4,-0,False,0.4,-0,False,0.4,-0,False,0.4,-0,False,0.4,-0,True,0.45,-5
+2026-08-18,10:11:28,nofill,SPY260819P00769000,SPY,1,2.40,,,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-18,10:14:38,fill,SPY260825P00760000,SPY,1,1.88,1.87,1,scored,1.85,1.87,0,,True,1.87,-0,True,1.87,-0,True,1.87,-0,True,1.87,-0,True,1.87,-0,True,1.87,-0
+2026-08-18,10:17:32,fill,QQQ260818P00718000,QQQ,1,1.60,1.59,1,scored,1.56,1.58,0,,True,1.58,1,True,1.58,1,True,1.58,1,True,1.58,1,True,1.58,1,True,1.58,1
+2026-08-18,10:52:06,fill,MSFT260821C00485000,MSFT,1,3.27,3.20,7,scored,3.00,3.20,0,,True,3.2,-0,True,3.2,-0,True,3.2,-0,True,3.2,-0,True,3.2,-0,True,3.2,-0
+2026-08-18,11:08:10,fill,SPY260818C00769000,SPY,1,0.63,0.58,5,scored,0.58,0.59,0,,True,0.59,-1,True,0.59,-1,True,0.59,-1,True,0.59,-1,True,0.59,-1,True,0.59,-1
+2026-08-18,12:01:30,fill,KO260821C00089000,KO,1,0.58,0.54,4,scored,0.52,0.56,0,,True,0.56,-2,True,0.56,-2,True,0.56,-2,True,0.56,-2,True,0.56,-2,True,0.56,-2
+2026-08-18,13:43:36,nofill,GLD260831C00405000,GLD,1,2.45,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-18,14:01:41,fill,AAPL260821C00312500,AAPL,1,1.95,1.90,5,scored,1.85,1.90,0,,True,1.9,-0,True,1.9,-0,True,1.9,-0,True,1.9,-0,True,1.9,-0,True,1.9,-0
+2026-08-18,15:49:24,fill,BAC261002C00066000,BAC,1,1.16,1.06,10,scored,0.88,1.13,0,,True,1.13,-7,True,1.13,-7,True,1.13,-7,True,1.13,-7,True,1.13,-7,True,1.13,-7
+2026-08-18,15:56:14,fill,TSLA260918P00300000,TSLA,1,3.32,3.21,11,scored,3.15,3.25,0,,True,3.25,-4,True,3.25,-4,True,3.25,-4,True,3.25,-4,True,3.25,-4,True,3.25,-4
+2026-08-18,15:57:14,fill,M260918C00025000,M,1,0.74,0.75,-1,scored,0.72,0.76,1,,False,0.75,-0,False,0.75,-0,True,0.8,-5,True,0.8,-5,True,0.8,-5,True,0.8,-5
+2026-08-18,15:58:53,fill,UBER260904P00074000,UBER,1,1.75,1.75,0,scored,1.76,1.77,40,,False,1.75,-0,True,1.77,-2,True,1.77,-2,True,1.77,-2,True,1.77,-2,True,1.77,-2
+2026-08-19,09:31:33,fill,MRNA260821P00110000,MRNA,1,5.60,5.60,0,scored,5.10,6.00,1,,False,5.6,-0,False,5.6,-0,False,5.6,-0,False,5.6,-0,True,6.0,-40,True,6.0,-40
+2026-08-19,09:38:21,fill,GOOGL260821C00345000,GOOGL,1,2.81,2.72,9,scored,2.51,2.72,1,,True,2.72,-0,True,2.72,-0,True,2.72,-0,True,2.72,-0,True,2.72,-0,True,2.72,-0
+2026-08-19,09:40:28,fill,AAPL260918C00330000,AAPL,1,2.92,2.83,9,scored,2.76,2.85,1,,True,2.85,-2,True,2.85,-2,True,2.85,-2,True,2.85,-2,True,2.85,-2,True,2.85,-2
+2026-08-19,09:43:39,fill,GOOGL260821C00345000,GOOGL,1,2.38,2.32,6,scored,2.17,2.32,0,,True,2.32,-0,True,2.32,-0,True,2.32,-0,True,2.32,-0,True,2.32,-0,True,2.32,-0
+2026-08-19,09:50:37,fill,NFLX260821C00079000,NFLX,1,1.00,1.00,0,scored,1.00,1.02,0,,False,1.0,-0,True,1.02,-2,True,1.02,-2,True,1.02,-2,True,1.02,-2,True,1.02,-2
+2026-08-19,09:50:55,fill,MSFT260821C00480000,MSFT,1,5.37,5.20,17,scored,5.10,5.25,0,,True,5.25,-5,True,5.25,-5,True,5.25,-5,True,5.25,-5,True,5.25,-5,True,5.25,-5
+2026-08-19,09:55:46,fill,SPY260820P00770000,SPY,1,2.09,2.02,7,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-19,09:56:42,nofill,SOFI260828C00018000,SOFI,1,0.51,,,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-19,10:00:23,fill,GOOGL260821C00342500,GOOGL,1,3.38,3.30,8,scored,3.05,3.30,1,,True,3.3,-0,True,3.3,-0,True,3.3,-0,True,3.3,-0,True,3.3,-0,True,3.3,-0
+2026-08-19,10:03:52,fill,SOFI260828C00018000,SOFI,1,0.61,0.59,2,scored,0.57,0.59,2,,True,0.59,-0,True,0.59,-0,True,0.59,-0,True,0.59,-0,True,0.59,-0,True,0.59,-0
+2026-08-19,10:22:10,fill,TSLA260821C00360000,TSLA,1,0.51,0.48,3,scored,0.48,0.49,0,,True,0.49,-1,True,0.49,-1,True,0.49,-1,True,0.49,-1,True,0.49,-1,True,0.49,-1
+2026-08-19,10:33:04,fill,TSLA260821P00340000,TSLA,1,4.14,3.98,16,scored,3.90,4.00,1,,True,4.0,-2,True,4.0,-2,True,4.0,-2,True,4.0,-2,True,4.0,-2,True,4.0,-2
+2026-08-19,10:45:07,fill,TSLA260821P00345000,TSLA,1,4.24,4.10,14,scored,3.95,4.10,1,,True,4.1,-0,True,4.1,-0,True,4.1,-0,True,4.1,-0,True,4.1,-0,True,4.1,-0
+2026-08-19,10:45:17,nofill,JPM260828C00385000,JPM,1,0.17,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-19,10:51:54,fill,PFE270115C00030000,PFE,1,1.08,1.10,-2,scored,1.06,1.10,1,,False,1.1,-0,True,1.1,-0,True,1.1,-0,True,1.1,-0,True,1.1,-0,True,1.1,-0
+2026-08-19,11:03:24,fill,SPCX260821C00143000,SPCX,1,2.21,2.15,6,scored,2.12,2.16,0,,True,2.2,-5,True,2.2,-5,True,2.2,-5,True,2.2,-5,True,2.2,-5,True,2.2,-5
+2026-08-19,11:25:22,fill,TSLA260821C00352500,TSLA,1,3.04,2.94,10,scored,2.92,2.96,0,,True,2.96,-2,True,2.96,-2,True,2.96,-2,True,2.96,-2,True,2.96,-2,True,2.96,-2
+2026-08-19,12:56:51,fill,QQQ260821C00722000,QQQ,1,1.88,1.83,5,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-19,13:16:40,fill,AAPL260821P00310000,AAPL,1,0.97,0.94,3,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-19,15:46:07,fill,MP260828C00060000,MP,1,1.33,1.34,-1,scored,1.33,1.40,1,,False,1.34,-0,False,1.34,-0,False,1.34,-0,False,1.34,-0,True,1.4,-6,True,1.4,-6
+2026-08-20,09:38:28,fill,NFLX260821C00080000,NFLX,1,1.28,1.30,-2,scored,1.29,1.32,0,,False,1.3,-0,False,1.3,-0,False,1.3,-0,True,1.32,-2,True,1.32,-2,True,1.32,-2
+2026-08-20,09:40:01,fill,IBIT260821C00040000,IBIT,1,0.75,0.71,4,scored,0.69,0.73,0,,True,0.73,-2,True,0.73,-2,True,0.73,-2,True,0.73,-2,True,0.73,-2,True,0.73,-2
+2026-08-20,09:50:27,fill,INTC260821P00090000,INTC,1,1.35,1.33,2,scored,1.29,1.33,1,,True,1.33,-0,True,1.33,-0,True,1.33,-0,True,1.33,-0,True,1.33,-0,True,1.33,-0
+2026-08-20,11:54:01,nofill,M260918C00025000,M,1,0.55,,,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-21,12:14:12,fill,CLF260828C00011500,CLF,1,0.52,0.50,2,scored,0.45,0.50,1,,True,0.5,-0,True,0.5,-0,True,0.5,-0,True,0.5,-0,True,0.5,-0,True,0.5,-0
+2026-08-24,09:45:03,fill,NVDA260828C00207500,NVDA,1,7.97,7.75,22,scored,7.65,7.75,0,,True,7.75,-0,True,7.75,-0,True,7.75,-0,True,7.75,-0,True,7.75,-0,True,7.75,-0
+2026-08-24,09:45:03,fill,NVDA260828C00207500,NVDA,1,7.97,7.80,17,scored,7.65,7.75,0,,True,7.75,5,True,7.75,5,True,7.75,5,True,7.75,5,True,7.75,5,True,7.75,5
+2026-08-24,09:46:35,fill,MSFT260828P00487500,MSFT,1,8.02,7.85,17,scored,7.25,7.85,0,,True,7.85,-0,True,7.85,-0,True,7.85,-0,True,7.85,-0,True,7.85,-0,True,7.85,-0
+2026-08-24,10:21:28,fill,HOOD260918C00107000,HOOD,1,7.86,7.50,36,scored,7.20,7.70,0,,True,7.7,-20,True,7.7,-20,True,7.7,-20,True,7.7,-20,True,7.7,-20,True,7.7,-20
+2026-08-24,10:21:28,fill,HOOD260918C00107000,HOOD,1,7.86,7.50,36,scored,7.20,7.70,0,,True,7.7,-20,True,7.7,-20,True,7.7,-20,True,7.7,-20,True,7.7,-20,True,7.7,-20
+2026-08-24,10:28:51,fill,SPY260825P00763000,SPY,1,1.90,1.83,7,scored,1.82,1.84,0,,True,1.84,-1,True,1.84,-1,True,1.84,-1,True,1.84,-1,True,1.84,-1,True,1.84,-1
+2026-08-24,10:28:51,fill,SPY260825P00763000,SPY,1,1.90,1.84,6,scored,1.82,1.84,0,,True,1.84,-0,True,1.84,-0,True,1.84,-0,True,1.84,-0,True,1.84,-0,True,1.84,-0
+2026-08-24,10:34:38,fill,MSFT260828P00487500,MSFT,1,6.79,6.65,14,scored,6.20,6.65,0,,True,6.65,-0,True,6.65,-0,True,6.65,-0,True,6.65,-0,True,6.65,-0,True,6.65,-0
+2026-08-24,10:34:38,fill,MSFT260828P00487500,MSFT,1,6.79,6.65,14,scored,6.20,6.65,0,,True,6.65,-0,True,6.65,-0,True,6.65,-0,True,6.65,-0,True,6.65,-0,True,6.65,-0
+2026-08-24,10:59:40,fill,TSLA260824C00357500,TSLA,1,2.19,2.17,2,scored,2.12,2.17,0,,True,2.17,-0,True,2.17,-0,True,2.17,-0,True,2.17,-0,True,2.17,-0,True,2.17,-0
+2026-08-24,11:41:12,fill,SPCX260828C00137000,SPCX,1,4.34,4.30,4,scored,4.30,4.45,0,,False,4.3,-0,False,4.3,-0,True,4.5,-20,True,4.5,-20,True,4.5,-20,True,4.5,-20
+2026-08-24,12:55:19,fill,IWM260824C00298000,IWM,1,0.36,0.34,2,scored,0.33,0.34,0,,True,0.34,-0,True,0.34,-0,True,0.34,-0,True,0.34,-0,True,0.34,-0,True,0.34,-0
+2026-08-24,13:18:51,fill,WMB261120P00070000,WMB,1,3.58,3.50,8,scored,3.30,3.50,0,,True,3.5,-0,True,3.5,-0,True,3.5,-0,True,3.5,-0,True,3.5,-0,True,3.5,-0
+2026-08-24,14:13:11,fill,ELF260918C00105000,ELF,1,6.00,6.00,0,scored,5.70,6.20,0,,False,6.0,-0,False,6.0,-0,False,6.0,-0,True,6.2,-20,True,6.2,-20,True,6.2,-20
+2026-08-24,15:27:52,fill,WMT260918C00107000,WMT,1,2.28,2.23,5,scored,2.15,2.23,0,,True,2.23,-0,True,2.23,-0,True,2.23,-0,True,2.23,-0,True,2.23,-0,True,2.23,-0
+2026-08-24,15:57:02,nofill,SNAP261016C00006000,SNAP,1,0.31,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-24,15:58:22,fill,WMT260911C00107000,WMT,1,2.03,1.97,6,scored,1.89,1.98,0,,True,1.98,-1,True,1.98,-1,True,1.98,-1,True,1.98,-1,True,1.98,-1,True,1.98,-1
+2026-08-25,09:33:16,fill,MSFT260828P00485000,MSFT,1,5.42,5.25,17,scored,5.00,5.30,0,,True,5.3,-5,True,5.3,-5,True,5.3,-5,True,5.3,-5,True,5.3,-5,True,5.3,-5
+2026-08-25,09:36:57,fill,NVDA260828C00212500,NVDA,1,6.23,6.05,18,scored,5.95,6.05,0,,True,6.05,-0,True,6.05,-0,True,6.05,-0,True,6.05,-0,True,6.05,-0,True,6.05,-0
+2026-08-25,11:38:47,fill,TSLA260828P00352500,TSLA,1,5.98,5.85,13,scored,5.75,5.85,0,,True,5.85,-0,True,5.85,-0,True,5.85,-0,True,5.85,-0,True,5.85,-0,True,5.85,-0
+2026-08-25,13:27:10,fill,SLV260918C00062500,SLV,1,2.79,2.73,6,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-25,13:39:09,fill,SPCX260904C00139000,SPCX,1,5.26,5.15,11,unscored,,,,no recorded bid/ask within 90s of the order,,,,,,,,,,,,,,,,,,
+2026-08-25,14:03:05,fill,SMR260904C00010000,SMR,1,0.57,0.55,2,scored,0.50,0.55,0,,True,0.55,-0,True,0.55,-0,True,0.55,-0,True,0.55,-0,True,0.55,-0,True,0.55,-0
+2026-08-25,15:59:39,fill,CDE260918C00022000,CDE,1,1.39,1.35,4,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-26,09:47:45,fill,TSLA260828P00350000,TSLA,1,5.26,5.15,11,scored,5.00,5.15,0,,True,5.15,-0,True,5.15,-0,True,5.15,-0,True,5.15,-0,True,5.15,-0,True,5.15,-0
+2026-08-31,14:46:10,fill,IWM260831P00293000,IWM,1,0.22,0.20,2,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-08-31,15:59:16,fill,S260918C00022500,S,1,0.93,0.85,8,scored,0.75,0.85,1,,True,0.85,-0,True,0.85,-0,True,0.85,-0,True,0.85,-0,True,0.85,-0,True,0.85,-0
+2026-09-01,10:44:40,fill,SPY260901P00764000,SPY,1,1.00,0.96,4,scored,0.95,0.96,0,,True,0.96,-0,True,0.96,-0,True,0.96,-0,True,0.96,-0,True,0.96,-0,True,0.96,-0
+2026-09-01,12:13:17,fill,SPY260901C00764000,SPY,1,0.78,0.73,5,scored,0.72,0.73,0,,True,0.73,-0,True,0.73,-0,True,0.73,-0,True,0.73,-0,True,0.73,-0,True,0.73,-0
+2026-09-01,15:58:07,fill,FLR260918C00057500,FLR,1,1.64,1.64,0,scored,1.60,1.65,0,,False,1.64,-0,True,1.65,-1,True,1.65,-1,True,1.65,-1,True,1.65,-1,True,1.65,-1
+2026-09-02,11:17:07,fill,AMZN260904P00255000,AMZN,1,2.41,2.34,7,scored,2.31,2.35,0,,True,2.35,-1,True,2.35,-1,True,2.35,-1,True,2.35,-1,True,2.35,-1,True,2.35,-1
+2026-09-02,11:35:29,fill,SPY260903C00766000,SPY,1,2.25,2.18,7,scored,2.17,2.18,0,,True,2.18,-0,True,2.18,-0,True,2.18,-0,True,2.18,-0,True,2.18,-0,True,2.18,-0
+2026-09-02,15:05:22,nofill,IWM260902C00294000,IWM,1,0.18,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-09-02,15:57:48,fill,IREN260918C00040000,IREN,1,2.51,2.45,6,scored,2.40,2.45,1,,True,2.45,-0,True,2.45,-0,True,2.45,-0,True,2.45,-0,True,2.45,-0,True,2.45,-0
+2026-09-03,10:14:00,fill,WMT260925C00108000,WMT,1,2.22,2.17,5,scored,2.05,2.17,2,,True,2.17,-0,True,2.17,-0,True,2.17,-0,True,2.17,-0,True,2.17,-0,True,2.17,-0
+2026-09-03,10:48:36,nofill,IWM260904C00294000,IWM,1,1.24,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-09-03,11:34:35,fill,C260904P00139000,C,1,1.66,1.66,0,scored,1.66,1.71,21,,False,1.66,-0,False,1.66,-0,False,1.66,-0,True,1.71,-5,True,1.71,-5,True,1.71,-5
+2026-09-03,13:36:38,fill,SPY260903C00772000,SPY,1,1.30,1.23,7,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-09-03,15:55:54,fill,XLF261016C00058000,XLF,1,1.58,1.58,0,scored,1.54,1.60,2,,False,1.58,-0,True,1.6,-2,True,1.6,-2,True,1.6,-2,True,1.6,-2,True,1.6,-2
+2026-09-03,15:58:13,nofill,IBIT260918C00047000,IBIT,1,1.34,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-09-04,09:48:40,fill,NVDA260904C00235000,NVDA,1,1.06,1.00,6,scored,0.99,1.01,3,,True,1.01,-1,True,1.01,-1,True,1.01,-1,True,1.01,-1,True,1.01,-1,True,1.01,-1
+2026-09-04,09:49:10,fill,NVDA260904C00235000,NVDA,1,1.03,1.01,2,scored,0.96,0.98,0,,True,0.98,3,True,0.98,3,True,0.98,3,True,0.98,3,True,0.98,3,True,0.98,3
+2026-09-04,09:50:07,fill,INTC260904C00094000,INTC,1,0.95,0.95,0,scored,0.95,0.97,56,,False,0.95,-0,False,0.95,-0,True,0.97,-2,True,0.97,-2,True,0.97,-2,True,0.97,-2
+2026-09-04,10:16:28,fill,INTC260918C00096000,INTC,1,4.10,4.05,5,scored,4.00,4.05,4,,True,4.05,-0,True,4.05,-0,True,4.05,-0,True,4.05,-0,True,4.05,-0,True,4.05,-0
+2026-09-08,09:36:07,fill,AMD260911C00510000,AMD,1,6.20,5.91,29,scored,5.70,6.05,0,,True,6.05,-14,True,6.05,-14,True,6.05,-14,True,6.05,-14,True,6.05,-14,True,6.05,-14
+2026-09-08,09:53:48,fill,AMD260911C00510000,AMD,1,5.50,5.08,42,scored,5.00,5.25,0,,True,5.25,-17,True,5.25,-17,True,5.25,-17,True,5.25,-17,True,5.25,-17,True,5.25,-17
+2026-09-08,09:54:32,fill,QQQ260908P00717000,QQQ,1,1.69,1.63,6,scored,1.60,1.61,0,,True,1.61,2,True,1.61,2,True,1.61,2,True,1.61,2,True,1.61,2,True,1.61,2
+2026-09-08,10:03:37,fill,QQQ260908P00717000,QQQ,1,1.69,1.57,12,scored,1.57,1.59,0,,True,1.59,-2,True,1.59,-2,True,1.59,-2,True,1.59,-2,True,1.59,-2,True,1.59,-2
+2026-09-08,10:07:03,fill,TSLA260911C00372500,TSLA,1,3.35,3.25,10,scored,3.15,3.25,1,,True,3.25,-0,True,3.25,-0,True,3.25,-0,True,3.25,-0,True,3.25,-0,True,3.25,-0
+2026-09-08,10:15:46,fill,QQQ260908P00716000,QQQ,1,1.11,1.06,5,scored,1.06,1.07,0,,True,1.07,-1,True,1.07,-1,True,1.07,-1,True,1.07,-1,True,1.07,-1,True,1.07,-1
+2026-09-08,10:25:16,fill,AMD260909C00515000,AMD,1,1.86,1.80,6,scored,1.78,1.79,1,,True,1.79,1,True,1.79,1,True,1.79,1,True,1.79,1,True,1.79,1,True,1.79,1
+2026-09-08,10:34:59,fill,SPY260908P00767000,SPY,1,1.00,0.98,2,scored,0.96,0.97,1,,True,0.97,1,True,0.97,1,True,0.97,1,True,0.97,1,True,0.97,1,True,0.97,1
+2026-09-08,12:59:14,fill,IWM260909P00295000,IWM,1,0.78,0.78,0,scored,0.78,0.79,56,,False,0.78,-0,True,0.79,-1,True,0.79,-1,True,0.79,-1,True,0.79,-1,True,0.79,-1
+2026-09-09,10:59:42,fill,META260909C00655000,META,1,4.40,4.11,29,scored,4.00,4.20,3,,True,4.2,-9,True,4.2,-9,True,4.2,-9,True,4.2,-9,True,4.2,-9,True,4.2,-9
+2026-09-09,11:03:38,fill,SPY260909P00764000,SPY,1,1.64,1.58,6,scored,1.56,1.58,5,,True,1.58,-0,True,1.58,-0,True,1.58,-0,True,1.58,-0,True,1.58,-0,True,1.58,-0
+2026-09-10,09:34:26,fill,SPY260910C00758000,SPY,1,1.61,1.60,1,scored,1.62,1.63,5,,False,1.6,-0,True,1.63,-3,True,1.63,-3,True,1.63,-3,True,1.63,-3,True,1.63,-3
+2026-09-10,09:34:58,fill,SPY260910C00758000,SPY,1,1.52,1.45,7,scored,1.45,1.46,0,,True,1.46,-1,True,1.46,-1,True,1.46,-1,True,1.46,-1,True,1.46,-1,True,1.46,-1
+2026-09-10,09:44:44,fill,META260911P00645000,META,1,5.55,5.43,12,scored,5.35,5.55,5,,True,5.55,-12,True,5.55,-12,True,5.55,-12,True,5.55,-12,True,5.55,-12,True,5.55,-12
+2026-09-10,09:55:44,nofill,SPCX260911C00155000,SPCX,1,1.95,,,unscored,,,,no tape ever quoted this contract,,,,,,,,,,,,,,,,,,
+2026-09-10,10:05:32,fill,META260911C00675000,META,1,1.12,1.00,12,scored,0.95,0.99,5,,True,0.99,1,True,0.99,1,True,0.99,1,True,0.99,1,True,0.99,1,True,0.99,1
+2026-09-10,10:29:33,fill,SPY260910P00757000,SPY,1,0.72,0.70,2,scored,0.68,0.69,4,,True,0.69,1,True,0.69,1,True,0.69,1,True,0.69,1,True,0.69,1,True,0.69,1
+2026-09-10,10:31:28,fill,IWM260911C00290000,IWM,1,1.47,1.44,3,scored,1.44,1.45,5,,True,1.45,-1,True,1.45,-1,True,1.45,-1,True,1.45,-1,True,1.45,-1,True,1.45,-1
+2026-09-10,12:25:20,fill,SPY260910C00761000,SPY,1,0.17,0.15,2,scored,0.14,0.15,4,,True,0.15,-0,True,0.15,-0,True,0.15,-0,True,0.15,-0,True,0.15,-0,True,0.15,-0
+2026-09-11,12:40:38,fill,CPS260918C00025000,CPS,1,0.65,0.65,0,scored,0.60,0.65,24,,True,0.65,-0,True,0.65,-0,True,0.65,-0,True,0.65,-0,True,0.65,-0,True,0.65,-0
+2026-09-14,10:13:14,nofill,CRWD260918C00245000,CRWD,1,2.35,,,scored,2.41,2.52,0,,False,,0,False,,0,False,,0,False,,0,True,2.52,0,True,2.52,0
+2026-09-14,10:23:14,fill,NVDA260916P00210000,NVDA,1,2.40,2.40,0,scored,2.38,2.41,1,,False,2.4,-0,True,2.41,-1,True,2.41,-1,True,2.41,-1,True,2.41,-1,True,2.41,-1
+2026-09-14,10:24:06,fill,TSLA260918C00357500,TSLA,1,7.75,7.40,35,scored,7.25,7.40,0,,True,7.4,-0,True,7.4,-0,True,7.4,-0,True,7.4,-0,True,7.4,-0,True,7.4,-0
+2026-09-14,10:36:56,fill,QQQ260914P00704000,QQQ,1,1.13,1.13,0,scored,1.11,1.12,0,,True,1.12,1,True,1.12,1,True,1.12,1,True,1.12,1,True,1.12,1,True,1.12,1
+2026-09-14,10:42:14,fill,MU260916P00850000,MU,1,2.10,2.10,0,scored,2.12,2.23,0,,False,2.1,-0,False,2.1,-0,False,2.1,-0,False,2.1,-0,True,2.23,-13,True,2.23,-13
+2026-09-14,10:42:18,fill,QQQ260914P00705000,QQQ,1,1.48,1.41,7,scored,1.40,1.42,1,,True,1.42,-1,True,1.42,-1,True,1.42,-1,True,1.42,-1,True,1.42,-1,True,1.42,-1
+2026-09-14,11:15:42,fill,MSFT260914C00505000,MSFT,1,0.70,0.65,5,scored,0.62,0.65,1,,True,0.65,-0,True,0.65,-0,True,0.65,-0,True,0.65,-0,True,0.65,-0,True,0.65,-0
+2026-09-14,11:25:34,fill,META260918C00670000,META,1,6.80,6.65,15,scored,6.45,6.65,0,,True,6.65,-0,True,6.65,-0,True,6.65,-0,True,6.65,-0,True,6.65,-0,True,6.65,-0
+2026-09-14,12:02:50,fill,TSLA260925P00340000,TSLA,1,2.45,2.38,7,scored,2.34,2.39,1,,True,2.39,-1,True,2.39,-1,True,2.39,-1,True,2.39,-1,True,2.39,-1,True,2.39,-1
+2026-09-14,14:05:04,fill,META260918C00700000,META,1,2.68,2.61,7,scored,2.57,2.62,1,,True,2.62,-1,True,2.62,-1,True,2.62,-1,True,2.62,-1,True,2.62,-1,True,2.62,-1
+2026-09-14,14:22:26,fill,QQQ260914C00713000,QQQ,1,0.25,0.24,1,scored,0.23,0.24,0,,True,0.24,-0,True,0.24,-0,True,0.24,-0,True,0.24,-0,True,0.24,-0,True,0.24,-0
+2026-09-15,09:47:25,fill,META260916C00690000,META,1,1.94,1.88,6,scored,1.86,1.87,0,,True,1.87,1,True,1.87,1,True,1.87,1,True,1.87,1,True,1.87,1,True,1.87,1
+2026-09-15,09:53:31,fill,TSLA260916C00370000,TSLA,1,1.34,1.19,15,scored,1.17,1.21,1,,True,1.21,-2,True,1.21,-2,True,1.21,-2,True,1.21,-2,True,1.21,-2,True,1.21,-2
+2026-09-15,10:14:42,nofill,CRWD260918C00240000,CRWD,1,4.25,,,scored,4.40,4.50,0,,False,,0,False,,0,False,,0,False,,0,True,4.5,-45,True,4.5,-45
+2026-09-15,10:56:47,fill,TSLA260918P00350000,TSLA,1,3.40,3.25,15,scored,3.15,3.25,8,,True,3.25,-0,True,3.25,-0,True,3.25,-0,True,3.25,-0,True,3.25,-0,True,3.25,-0
+2026-09-15,11:03:19,fill,QQQ260915P00703000,QQQ,1,0.64,0.61,3,scored,0.62,0.63,1,,True,0.63,-2,True,0.63,-2,True,0.63,-2,True,0.63,-2,True,0.63,-2,True,0.63,-2
+2026-09-15,11:33:11,fill,AMD260918P00490000,AMD,1,5.60,5.45,15,scored,5.35,5.45,0,,True,5.45,-0,True,5.45,-0,True,5.45,-0,True,5.45,-0,True,5.45,-0,True,5.45,-0
+2026-09-15,12:25:25,fill,MU260916C00950000,MU,1,3.70,3.70,0,scored,3.85,3.95,1,,False,3.7,-0,False,3.7,-0,False,3.7,-0,False,3.7,-0,True,3.95,-25,True,3.95,-25
+2026-09-15,12:50:34,nofill,CRWD260918C00250000,CRWD,1,3.50,,,scored,3.55,3.65,1,,False,,0,False,,0,False,,0,True,3.65,-35,True,3.65,-35,True,3.65,-35
