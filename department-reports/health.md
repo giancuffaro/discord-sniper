@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-15 — 7c15c343d8f67a266bf6
+
+The session is marked in-session, but many alert sources are reported as ON without a corresponding tab in this browser, and several Whop tabs have readers that "haven't beaten in a while." This looks like a browser/session visibility or stale-reader status issue, not a confirmed outage or confirmed data loss.
+
+## Findings
+- Status messages report many sources as ON but with no tab in this browser, including AbTrades Alert Bot, Brick Alerts, Demon day-trades, Ducci Alerts, FloridaManFinance, Hog Alerts, Jon Tran Alerts, Maguro Alerts, Mugzone Options, Nando Alerts, OWLS all-alerts, OWLS jon-and-kian, Optionality free-trades, PhiccDuck Alerts, Quantum Alerts, Xephyr Alerts, and eli. Verify whether these sources are intentionally hidden, moved to another browser/profile, or whether the tab inventory is stale. Do not treat the missing tabs as confirmed outages without source-side confirmation.
+- Several Whop tabs are open but their reader "hasn't beaten in a while": Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, Whop Swing Trades, and shabs. Check whether these readers are simply quiet or whether their heartbeat/reader process is stalled. Source verification is needed before concluding the rooms are inactive or broken.
+
+## Limitations
+- The evidence is a status list only; it does not include timestamps, heartbeats, tab counts, or source-side confirmation.
+- An "ON but has no tab" message indicates a visibility or sync mismatch, but it does not prove the source is down.
+- A reader that "hasn't beaten in a while" may indicate a quiet room, delayed updates, or a stalled reader; the evidence does not distinguish among these cases.
+- No trade prices, fills, or numerical performance data are present, so no broker-confirmed results can be assessed.
+
+---
+
 # Health — 2026-09-15 — c512fd208f809dee240a
 
 The evidence indicates a browser coverage gap: many alert sources are reported as ON but have no tab in this browser. A smaller set of Whop tabs are open but their readers have not beaten in a while, which may indicate stale updates or inactivity, but this is not confirmed from the provided data.

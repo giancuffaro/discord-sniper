@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — a95809e415fb80dc6d8b
+
+The source appears to describe a partial option sale. The reader extracted the trade details, while the parser returned no action and validation omitted the strike and partial-sale quantity. These are review candidates, not confirmed parser bugs.
+
+## Findings
+- The source says "@Elite ALERT SOLD | BE 9/18 270C at 8.05 (1/2)". The parser returned fire=false with all displayed trade fields null; the reader returned TRIM, BE, 9/18, CALL, strike "270", price 8.05, and qty "1/2". Verify the original message and parser scope to determine whether this partial-sale format should be recognized. Check whether the null result reflects unsupported syntax or intentional handling of exit alerts.
+- Validation reports ok=true, but validation.read has strike=null and qty=null despite the reader extracting strike "270" and qty "1/2". No prior messages or eligible prior IDs were supplied. Review the validation contract and downstream field requirements. Preserve the explicit strike and fractional-sale wording where supported, and verify what "1/2" refers to before deriving a contract count.
+- The source reports "at 8.05" without explicit premium units; the reader preserves the raw numeric value as price=8.05. No caller-convention examples or broker fills are supplied. Retain 8.05 as the reported value and mark premium units unresolved pending source or caller-specific verification. Do not rescale it or treat it as a broker-confirmed exit fill.
+
+## Limitations
+- No position history is provided to establish holdings, entry premium, or the number of contracts represented by "1/2".
+- The expiry text is "9/18"; an expiry year is not explicitly stated.
+- No broker-confirmed execution or return calculation is provided.
+- A Gemini cooldown followed by a successful OpenAI attempt is recorded; this does not establish a service outage.
+- Validation success and reader confidence do not independently verify the source interpretation.
+
+---
+
 # Reader Review — 2026-09-15 — bbf857f4376a0677f12b
 
 The reader proposed a fully confident MNQ SHORT close at 29476, but validation rejected its unsupported context reference. The message identifies a full take-profit level without explicitly identifying an instrument, direction, or completed exit. Review should focus on context eligibility and target-versus-execution interpretation, not a confirmed parser bug.
