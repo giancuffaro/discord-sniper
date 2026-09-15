@@ -104,7 +104,8 @@ def rooms(day):
         m = re.search(r"\((discord|whop)\)\.txt$", f)
         lane = m.group(1) if m else "discord"
         try:
-            text = open(f, encoding="utf-8", errors="replace").read()
+            with open(f, encoding="utf-8", errors="replace") as fh:
+                text = fh.read()
         except OSError:
             continue
         block = ds_logs.get_day(text, dt.date.fromisoformat(day)) or ""
