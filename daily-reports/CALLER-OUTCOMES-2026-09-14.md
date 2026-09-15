@@ -14,7 +14,6 @@ Caller claims are separate from broker results and ratchet simulations. Partial 
 | 10:13:15 | 10:50:22 | MuggZone | CRWD 245C 9/18 @ 2.35 | $2.35 | partial trim | +35.0% | implied $3.17 | caller-stated |
 | 10:13:15 | 10:51:47 | MuggZone | CRWD 245C 9/18 @ 2.35 | $2.35 | partial trim | +94.0% | implied $4.56 | caller-stated |
 | 10:13:15 | 10:58:28 | MuggZone | CRWD 245C 9/18 @ 2.35 | $2.35 | partial trim | $3.60 | +53.2% | market bid at caller exit |
-| 10:41:16 | 11:06:08 | Vero | QQQ 705P 9/14 @ 1.55 | $1.55 | full exit | price unavailable | unavailable | caller exit; price unavailable |
 | 10:36:45 | 11:06:18 | @Futures Alerts | MNQ @ 28977.50 | $28977.50 | full exit | price unavailable | unavailable | caller exit; price unavailable |
 | 10:13:15 | 11:07:00 | MuggZone | CRWD 245C 9/18 @ 2.35 | $2.35 | partial trim | +100.0% | implied $4.70 | caller-stated |
 | 11:12:31 | 11:25:50 | MuggZone | MSFT 505C @ 0.85 | $0.85 | partial trim | +25.0% | implied $1.06 | caller-stated |
@@ -36,6 +35,6 @@ Caller claims are separate from broker results and ratchet simulations. Partial 
 | 14:05:00 | 14:10:44 | 👑KingBeeAri🐝 | META 700C 9/18 | — | partial trim | +43.0% | unavailable | caller-stated |
 | 14:20:25 | 15:14:52 | MuggZone | TSLA 360P 0DTE | — | partial trim | +145.0% | unavailable | caller-stated |
 
-- Claim events paired: **31**.
-- Full exits recorded: **6**; calculable: **2**; price/percent unavailable: **4**.
+- Claim events paired: **30**.
+- Full exits recorded: **5**; calculable: **2**; price/percent unavailable: **3**.
 - Quantity-weighted caller P&L stays unavailable when trim size or the final runner exit is missing.

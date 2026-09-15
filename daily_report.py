@@ -124,6 +124,8 @@ def _reason(row):
         return "order sent"
     if "protective stop is not operational" in low:
         return "futures protective exit not operational; no order sent"
+    if "new option trades are only allowed" in low:
+        return "options entry window closed; no order"
     if "pullback trigger expired" in low:
         return "pullback expired; no order"
     if "too stale" in low:

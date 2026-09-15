@@ -14,7 +14,7 @@ Every recognized entry alert from configured ON rooms. A `sent` row means the br
 | contract expiry already passed; no order | 1 |
 | spread too wide | 1 |
 | buying-power safety; no order | 1 |
-| skipped | 1 |
+| options entry window closed; no order | 1 |
 
 ## Every alert
 
@@ -72,7 +72,7 @@ Every recognized entry alert from configured ON rooms. A `sent` row means the br
 | 15:47:03 | OPEN MNQ @ 29218.13 | failed | futures protective exit not operational; no order sent |
 | 15:51:37 | OPEN MNQ @ 29181.13 | failed | futures protective exit not operational; no order sent |
 | 15:55:00 | OPEN MNQ @ 29199.63 | failed | futures protective exit not operational; no order sent |
-| 16:02:07 | OPEN TSLA 340P 9/25 @ 3.05 | skipped | skipped |
+| 16:02:07 | OPEN TSLA 340P 9/25 @ 3.05 | skipped | options entry window closed; no order |
 
 ## Notes
 
