@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — cut to a RULES CORE (was 28,060 bytes): one line per rule, mechanics moved verbatim to the reference docs. Ceiling now 14 KB.
+Last updated: 2026-09-15 — G retired five rules: the 0DTE pre-close flatten, the optionality review, the room silence alarm, the Fill Announcer, its heading.
 
 ## How to update this file (long form: OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. REPLACE, DON'T
@@ -20,7 +20,7 @@ Last updated: 2026-09-15 — cut to a RULES CORE (was 28,060 bytes): one line pe
 ## Where the mechanics live (one per subsystem; see INDEX.md)
 ASK-MAP.md (which file answers which ask) → STATUS.json → reports/INDEX.json.
 Mechanics in reference/: ENTRIES · RATCHET · ROOMS-TABS ·
-OPERATIONS (restarts, the 16:40 audit, git, autopilot, announcer, readers, keys,
+OPERATIONS (restarts, the 16:40 audit, git, autopilot, readers, keys,
 PC2, caller research, weekly files, house file rules, watch-item detail, this
 file's long form) · OPTIONS-BROKER-REFERENCE · PULLBACK-LEVELS · CALLER-LEDGER ·
 EOD-BENCHMARK-SPEC. Also DATA-MAP.md · MARKET-HOURS.md · ARCHITECTURE.md (the
@@ -53,14 +53,14 @@ ENTRIES · ENTRIES.md
 - IF THE CORRECTED CONTRACT ALREADY FILLED (9/15, G: "if in profit keep the ratchet and set the stop to breakeven, if it's a losing trade, close it automatically"), on CURRENT BID vs fill. THE ONE EXCEPTION TO ENTRIES-ONLY, not a room exit.
 - RETRACTION ("not ready / scratch that / cancel / disregard / hold off / nevermind") pulls that trader's bids and armed hunts.
 - FUTURES: micros only; their stop/target wins; a Webull futures OPEN refuses until an exact GTC STOP_LOSS is verified after its fill. INDEX MIRROR (9/13) OFF until a broker-confirmed futures exit exists; THE POCKET default OFF.
-- REVIEWS (9/13): optionality channel ON (G); no arbitrary premium range, no automatic x100 correction.
 
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · RATCHET.md
 - NO DAILY LOSS STOP (G, 9/14: "No. We are not gonna do a daily daily stop limit. No. We're not."). Never propose one, never wire one. The per-trade born stop is the only cap.
 - ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out", "closed everything" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
 - THE RATCHET (5/3/5 since 9/10, flat): born −5%, +3% → breakeven, each +5% locks +5%; ratchet_tiers.py is the one implementation; stops never loosen; anti-clip off.
 - FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number. SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
-- CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent. 0DTE: ETFs trade to 16:15, auto-exercise at $0.01 ITM — flatten before the close.
+- CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent.
+- NO PRE-CLOSE FLATTEN (G, 9/15, told the risk and chose it): the bot does NOT close 0DTE before the bell. A 0DTE left $0.01 ITM auto-exercises into 100 shares; that is HIS risk to run, HIS to close by hand. Never re-add an auto-flatten. ETFs trade to 16:15.
 
 RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - BOOT: all UNVERIFIED until the broker confirms; expired options = dead paper; updates apply at the first safe window. POSTCHECK logs a PROBLEM when book, stop and quote bus disagree.
@@ -75,14 +75,12 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (test: DATA-MAP.md). Records that cannot be re-derived — tapes, telemetry, days/ — are APPENDED to, never rewritten.
 - READ DATA-MAP.md WITH INDEX.md every session (INDEX = what a file IS, DATA-MAP = what is IN it). RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump extension/manifest.json on extension changes; never install webullsdkcore into the bridge's Python; sandbox is RETIRED, paper is LOCAL (SIM).
 - DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the owner. Browser reads only.
+- FILL ANNOUNCER REMOVED (G, 9/15): reinstall when the bot is profitable. The daily BRIEF still posts to Sniper HQ through the announcer webhook URL in settings.json — that key stays.
 
 ROOMS / TABS / READERS · ROOMS-TABS.md
 - rooms.txt = THE channel list (tabs + trading, one file). START HERE IS FULLY UNATTENDED (G, 9/9); between runs NOTHING opens rooms; the only manual inputs are a Discord/Whop login and Webull keys.
 - Relays: OWLS all-alerts active, RELAY UNWRAP re-books under the real trader; ZTRADEZ, shabs, eli retired 9/9. Never close a human tab; Profile 2 = Discord, Profile 6 = Whop.
-- VOICE: ears always transcribe (Deepgram); voice ENTRIES ON (9/2), exits irrelevant; a typed copy of a voice fire is an echo. A room quiet 40 min in hours raises the silence alarm.
-
-FILL ANNOUNCER (announcer.py, read-only) · OPERATIONS.md
-- Posts every fill, milestone, stop-out and the scoreboard to G's webhooks; NEITHER channel goes into rooms.txt. PAUSED since 9/2; board computed FROM THE LEDGER (9/9); order hunt paced — the 9/2 429 storm must never come back.
+- VOICE: ears always transcribe (Deepgram); voice ENTRIES ON (9/2), exits irrelevant; a typed copy of a voice fire is an echo.
 
 ## DATA — one file per family (9/9); THE APP READS ONLY THESE (inside each: DATA-MAP.md)
 - BROKER RECORD → master_broker.csv; the Webull export is ONE file OVERWRITTEN every run, never dated piles; one balance row a day in balance_daily.csv.
@@ -101,12 +99,11 @@ FILL ANNOUNCER (announcer.py, read-only) · OPERATIONS.md
 - Multi-account: extras mirror LIVE entries 1:1, own books/stops. SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
 
 ## Pending external setup and decisions
-1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project instructions and remove the old uploaded handoffs (local cleanup does not remove what was already uploaded).
+1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project instructions; remove the old uploaded handoffs (local cleanup does not touch uploads).
 2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call whether Claude does it or he does.
 3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50 MNQ pts), qty 1 — create in NT8, type SNIPER in the popup.
 4. Close any old parked Whop tabs (Chrome flags note: reference/OPERATIONS.md).
-5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
-6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension are already up. Run START HERE, or schedule it, by 9:00 on trading days.
+5. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension are already up. Run START HERE, or schedule it, by 9:00 on trading days.
 
 ## Watch items (open) — full text: OPERATIONS.md
 - G'S CALL, nothing changes until he says: PULLBACK STOCK TARGET vs THE RATCHET
