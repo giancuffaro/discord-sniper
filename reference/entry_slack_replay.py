@@ -170,7 +170,10 @@ def _occ(order):
 
 
 def population():
-    """(no_fills, filled) — every option order in the record, paired."""
+    """(no_fills, filled, n_order_in) — every option order in the record,
+    paired to its outcome line. An ORDER IN with neither a FILLED nor a
+    NOFILL after it (cancelled, edited, pullback never touched) is counted in
+    n_order_in and scored nowhere."""
     orders, nofills, fills = read_log()
     out_nf, out_f = [], []
     for event in nofills:
@@ -186,7 +189,8 @@ def population():
         out_f.append(dict(order, occ=_occ(order), outcome_ts=event["ts"],
                           fill=event["fill"], qty=event["qty"] or order["qty"],
                           kind="fill"))
-    return ([r for r in out_nf if r["occ"]], [r for r in out_f if r["occ"]])
+    return ([r for r in out_nf if r["occ"]], [r for r in out_f if r["occ"]],
+            len(orders))
 
 
 # ---------------------------------------------------------------- the quotes
@@ -310,13 +314,13 @@ def score_fill(row, path):
 
 
 def build():
-    nofills, fills = population()
+    nofills, fills, n_orders = population()
     paths = quote_paths([r["occ"] for r in nofills + fills])
     for row in nofills:
         score_nofill(row, paths.get(row["occ"]) or [])
     for row in fills:
         score_fill(row, paths.get(row["occ"]) or [])
-    return nofills, fills
+    return nofills, fills, n_orders
 
 
 # ------------------------------------------------------------------- totals
@@ -335,6 +339,13 @@ def totals(nofills, fills):
                       "given_up": given, "net": gross - given,
                       "crossed_fills": sum(1 for r in scored_f
                                            if r["runs"][slack]["crossed"])}
+    # SLACK 0 IS THE BASELINE, not zero dollars. The model prices a cross at
+    # the recorded ask, and our real fills came in BETTER than that ask, so
+    # the slack-0 column already shows a loss against the broker's own prices.
+    # That bias is constant across the sweep, so the number that means
+    # anything is the DIFFERENCE from slack 0 — it cancels.
+    for slack in SLACKS:
+        out[slack]["delta"] = out[slack]["net"] - out[0.0]["net"]
     return out, scored_nf, scored_f
 
 
