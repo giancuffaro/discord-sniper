@@ -3,23 +3,18 @@ Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
 Last updated: 2026-09-15 — cut to a RULES CORE (was 28,060 bytes): one line per rule, mechanics moved verbatim to the reference docs. Ceiling now 14 KB.
 
-## How to update this file (READ BEFORE EDITING — the old way broke things)
-- This file is a STATE, not a story. Edit the rule that changed, in place.
-  REPLACE, DON'T STACK: the new rule takes the old one's place — never
-  leave the old one beside it with a "SUPERSEDED" note.
-- ONE RULE, ONE LINE. Numbers, formats, procedures and rationale are MECHANICS.
-- Bump the one "Last updated:" line above. One line. Never prepend an essay.
-- Session notes, findings, post-mortems, numbers-of-the-day go to
-  HANDOFF-LOG.md under "SESSION NOTES", newest first, dated. That file may
-  grow forever; this one may not. Hard ceiling: under 14 KB. If you are
-  about to push it past that, you are writing history or mechanics, not a
-  rule — move it (history → HANDOFF-LOG.md, how-it-works → reference/).
-- RULES live here; MECHANICS (how a subsystem works, numbers, formats) live
-  in one reference doc per subsystem, pointed to from the section below.
-  G's own rule wording ("(G, date)", "RULE:") stays verbatim.
-- Do not create handoff copies, dated handoffs, or upload snapshots. Daily
-  performance belongs in `daily-reports/`; operating rules belong here.
-- `HANDOFF-LOG.md` and the retired handoffs zipped in `archive/` are
+## How to update this file (READ BEFORE EDITING — long form: reference/OPERATIONS.md)
+- A STATE, not a story. Edit the rule that changed, IN PLACE. REPLACE, DON'T
+  STACK: the new rule takes the old one's place, never sits beside it.
+- ONE RULE, ONE LINE. Numbers, formats, procedures and rationale are MECHANICS
+  and live in one reference doc per subsystem. G's own wording stays verbatim.
+- Bump the one "Last updated:" line. One line. Never prepend an essay.
+- Session notes, findings, post-mortems and numbers-of-the-day go to
+  HANDOFF-LOG.md ("SESSION NOTES", newest first, dated) — it may grow forever,
+  this file may not. Hard ceiling: under 14 KB. Past it you are writing history
+  or mechanics: move it (history → HANDOFF-LOG.md, how-it-works → reference/).
+- No handoff copies, dated handoffs or upload snapshots; daily performance lives
+  in `daily-reports/`. HANDOFF-LOG.md and the handoffs zipped in `archive/` are
   historical evidence, never current instructions.
 
 ## Where the mechanics live (one pointer per subsystem)
@@ -45,8 +40,7 @@ master_alerts.csv (truth) · days/ · daily-reports/ + daily-audits/.
   get fixed without asking, same day. "Fix errors every day after journaling."
 - Real-money actions are HIS ALONE: placing/canceling orders, flipping rooms
   LIVE, unlocking accounts, funding, questionnaires, accepting ToS, passwords.
-- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; check buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate, NinjaTrader stay OFF.
-- COEXISTENCE: Market Sniper (port 8000) is his own tool on the same account and budget — its positions are visible, NEVER stop-managed or sold.
+- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; check buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate, NinjaTrader stay OFF. COEXISTENCE: Market Sniper (port 8000) is his own tool on the same account and budget — its positions are visible, NEVER stop-managed or sold.
 - NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot vs broker truth; a later high is never a caller exit.
 - AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing; "" or a range is NO CALL — not a crash, not an order. Department output is advisory.
 - CALLER IDENTITY IS CANDIDATE EVIDENCE: no win rate until trade attribution exists; a new account never gets an execution key; ID-less rows stay unavailable — re-grab, never infer.
@@ -62,13 +56,11 @@ ENTRIES · reference/ENTRIES.md
 - ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed.
 - CHANNELS: callers inside their verified room; win rate needs evidence; no Callers tab (G).
 - STRIKES: max 1 OTM, deeper snaps to the first rung; 3-ITM for SPY/QQQ/Mag7 0DTE; ADD buys the held strike.
-- "ADDED <full contract>" you are not in = an OPEN entry; a bare "added to SPY" refuses.
-- NO SPX→SPY (G, 9/10: "do not translate any SPX to SPY"); index entries are HELD until execution.index_broker is set.
-- WORD ORDER: any order, `bare` rooms only. TWO CONTRACTS = TWO ORDERS (9/10): one each, own stop and ratchet, same ticker; call+put refuses the line.
-- EXPIRY, one place: NDTE = N CALENDAR days rolling BACK, never past today; NO DATE = 0DTE (G, 9/10), the LISTING ASKED never assumed; "FRIDAY WEEKLIES ONLY" is DEAD.
+- "ADDED <full contract>" you are not in = an OPEN entry; a bare "added to SPY" refuses. NO SPX→SPY (G, 9/10: "do not translate any SPX to SPY"); index entries are HELD until execution.index_broker is set.
+- WORD ORDER: any order, `bare` rooms only. TWO CONTRACTS = TWO ORDERS (9/10): one each, own stop and ratchet, same ticker; call+put refuses the line. EXPIRY, one place: NDTE = N CALENDAR days rolling BACK, never past today; NO DATE = 0DTE (G, 9/10), the LISTING ASKED never assumed; "FRIDAY WEEKLIES ONLY" is DEAD.
 - CONTRACT MUST EXIST (9/15) AND BE IN PRICE BAND (9/14): siblings listed → REFUSE; nothing listed → THROUGH + LISTING line; fails open, a guard never a gate.
-- GUARDS: SPREAD/THIN refuse wide or illiquid; nothing older than 3 min fires; negations hard-veto; DEDUPE ends at ONE average-down ADD under what was PAID.
-- AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14): it kills the earlier hunt and its bid; two DIFFERENT message ids are two calls. Identity = caller+symbol+strike+side+expiry.
+- GUARDS: SPREAD/THIN refuse wide or illiquid; nothing older than 3 min fires; negations hard-veto; DEDUPE ends at ONE average-down ADD under what was PAID; identity = caller+symbol+strike+side+expiry.
+- AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14): it kills the earlier hunt and its bid; two DIFFERENT message ids are two calls.
 - IF THE CORRECTED CONTRACT ALREADY FILLED (9/15, G: "if in profit keep the ratchet and set the stop to breakeven, if it's a losing trade, close it automatically"), on CURRENT BID vs fill. THE ONE EXCEPTION TO ENTRIES-ONLY, not a room exit.
 - RETRACTION ("not ready / scratch that / cancel / disregard / hold off / nevermind") pulls that trader's bids and armed hunts.
 - FUTURES: micros only; their stop/target wins; a Webull futures OPEN refuses until an exact GTC STOP_LOSS is verified after its fill. INDEX MIRROR (9/13) OFF until a broker-confirmed futures exit exists. THE POCKET default OFF.
@@ -77,8 +69,7 @@ ENTRIES · reference/ENTRIES.md
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · reference/RATCHET.md
 - ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out", "closed everything" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
 - THE RATCHET (5/3/5 since 9/10, flat): born −5%, +3% → breakeven, each +5% locks +5%; ratchet_tiers.py is the one implementation; stops never loosen; anti-clip off.
-- FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number.
-- SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
+- FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number. SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
 - CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent. 0DTE: ETFs trade to 16:15, auto-exercise at $0.01 ITM — flatten before the close.
 
 RESTARTS / SAFETY / HOUSE RULES · reference/OPERATIONS.md
@@ -131,8 +122,7 @@ FILL ANNOUNCER (announcer.py, read-only) · reference/OPERATIONS.md
 ## Operational truths · reference/OPERATIONS.md, reference/ROOMS-TABS.md
 - sniper-autopilot (*/30 ET) never places or cancels orders and never touches settings.json.
 - THE PAGE is the SAME popup.html opened as a tab — never a second dashboard. Claude-in-Chrome CANNOT read the popup; the red line under the rooms is the diagnosis — ask for it.
-- Multi-account: extras mirror LIVE entries 1:1 with own books/stops.
-- SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
+- Multi-account: extras mirror LIVE entries 1:1 with own books/stops. SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
 
 ## Pending external setup and decisions
 1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project
