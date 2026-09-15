@@ -206,3 +206,9 @@ the history and the open question are here. Close one here when G decides.
 - Multi-account "L": verify no orphan positions after mirror exits.
 - Topstep: not executing futures (see HANDOFF-LOG.md for the findings);
   Webull futures $0 by choice — futures refusals there are intentional.
+
+## Pending item 4 — the Chrome flags note (moved from HANDOFF.md 9/15, verbatim)
+
+4. Close any old parked Whop tabs. (`--disable-gpu` rides every flagged
+   Chrome launch since 9/10 — a GPU black tab reads NOTHING while looking
+   open; flags bind only on a cold start.)

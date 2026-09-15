@@ -34,12 +34,12 @@ keys, second machine, caller research) · DATA-MAP.md (what is inside every
 data file, the data families) · reference/OPTIONS-BROKER-REFERENCE.md (Webull
 facts) · MARKET-HOURS.md (hours, holidays) · ARCHITECTURE.md (modules, seams)
 · INDEX.md (what every file is).
-9/15: OPERATIONS also holds the weekly-file + house rules · ARCHITECTURE the
-machine, accounts, coexistence, north star · DATA-MAP the CONDENSE test ·
-reference/EOD-BENCHMARK-SPEC.md, PULLBACK-LEVELS.md, CALLER-LEDGER.md ·
-HANDOFF-LOG.md (history) · extension/rooms.txt · settings.json (keys,
-gitignored) · master_ledger.csv / master_alerts.csv (truth) · days/ ·
-daily-reports/ + daily-audits/ (one week file per kind).
+9/15: OPERATIONS also holds the weekly-file + house rules and the watch-item
+detail · ARCHITECTURE the machine, accounts, coexistence, north star · DATA-MAP
+the CONDENSE test · also reference/EOD-BENCHMARK-SPEC.md, PULLBACK-LEVELS.md,
+CALLER-LEDGER.md · HANDOFF-LOG.md (history) · extension/rooms.txt ·
+settings.json (keys, gitignored) · master_ledger.csv / master_alerts.csv ·
+days/ · daily-reports/ + daily-audits/ (one week file per kind).
 
 ## Who and what
 - G (giancuffaro230@gmail.com) — maintains this code himself (9/13), trades options + futures live,
@@ -47,11 +47,11 @@ daily-reports/ + daily-audits/ (one week file per kind).
   get fixed without asking, same day. "Fix errors every day after journaling."
 - Real-money actions are HIS ALONE: placing/canceling orders, flipping rooms
   LIVE, unlocking accounts, funding, questionnaires, accepting ToS, passwords.
-- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; verify buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate and NinjaTrader stay OFF.
+- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; verify buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate, NinjaTrader stay OFF.
 - COEXISTENCE: Market Sniper (port 8000) is his own tool on the same account and rate budget — its positions are visible, NEVER stop-managed or sold.
-- PRODUCT NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot policy vs broker truth; a later high is never a caller exit.
+- NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot policy vs broker truth; a later high is never a caller exit.
 - AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing; "" or a range is NO CALL — not a crash, not an order; department output is advisory, never code or orders.
-- CALLER IDENTITY IS CANDIDATE EVIDENCE: win rates unavailable until trade attribution exists; a new account never gets an execution key; ID-less rows stay unavailable — re-grab, never infer.
+- CALLER IDENTITY IS CANDIDATE EVIDENCE: no win rate until trade attribution exists; a new account never gets an execution key; ID-less rows stay unavailable — re-grab, never infer.
 - Claude exports and project/context/ are historical reference only.
 
 ## Rules of the house (current, in force)
@@ -60,8 +60,8 @@ ENTRIES · reference/ENTRIES.md
 - PRICE: caller's price or better; pullbacks cross the ask; one contract per entry.
 - RN PULLBACK is ON and global; THE LEVEL STAYS $1 (SETTLED 9/9) — never re-opened on a feeling.
 - ONE SWITCH PER ROOM (G, 9/9): ON = tab + read + trades LIVE; OFF = nothing; LAPSED = sub ran out. No paper state. A TAB CLOSED BY HAND IS NOT A BENCH; benched rooms stay in the file.
-- TABS (9/10): the reaper closes only `_OURS`, never a human's; only START HERE, the popup switch and whopSelfHeal() open one; "No Access" → `lapsed` + close.
-- ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed; the last tab never closes.
+- TABS (9/10): the reaper closes only `_OURS`, never a human's; only START HERE, the popup switch and whopSelfHeal() open one; "No Access" → `lapsed` + close; the last tab never closes.
+- ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed.
 - CHANNELS: callers inside their verified room; win rate needs evidence; no Callers tab (G).
 - STRIKES: max 1 OTM, deeper snaps to the first rung; 3-ITM for SPY/QQQ/Mag7 0DTE; ADD buys the held strike.
 - "ADDED <full contract>" you are not in = an OPEN entry; a bare "added to SPY" refuses.
@@ -81,8 +81,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · re
 - THE RATCHET (5/3/5 since 9/10, flat): born −5%, +3% → breakeven, each +5% locks +5%; ratchet_tiers.py is the one implementation; stops never loosen; anti-clip off.
 - FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number.
 - SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
-- CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent.
-- 0DTE: ETF options trade to 16:15; auto-exercise at $0.01 ITM — flatten before the close.
+- CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent. 0DTE: ETFs trade to 16:15, auto-exercise at $0.01 ITM — flatten before the close.
 
 RESTARTS / SAFETY / HOUSE RULES · reference/OPERATIONS.md
 - BOOT: state photo per event; all UNVERIFIED until the broker confirms; expired options = dead paper; updates apply at the first safe window. POSTCHECK logs a PROBLEM when book, stop and quote bus disagree.
@@ -104,7 +103,7 @@ RESTARTS / SAFETY / HOUSE RULES · reference/OPERATIONS.md
 - CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when the merge cannot break a reader (the test: DATA-MAP.md). Records that can never be re-derived — price tapes, telemetry, days/ — are APPENDED to, never rewritten. In doubt, leave it and write why in DATA-MAP.md.
 - READ DATA-MAP.md WITH INDEX.md every session: INDEX says what a file IS, DATA-MAP what is IN it. RUN build_ledger.py IN EASTERN.
 - COMPILE-CHECK everything touched; bump extension/manifest.json on extension changes; never install webullsdkcore into the bridge's Python; sandbox is RETIRED, paper is LOCAL (SIM).
-- DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the server owner. Browser reads only.
+- DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the owner. Browser reads only.
 
 ROOMS / TABS / READERS · reference/ROOMS-TABS.md
 - rooms.txt = THE channel list (tabs + trading, one file). START HERE IS FULLY UNATTENDED (G, 9/9); between runs NOTHING opens rooms; the only manual inputs are a Discord/Whop login and Webull keys.
@@ -119,9 +118,8 @@ FILL ANNOUNCER (announcer.py, read-only) · reference/OPERATIONS.md
 (what is inside each: DATA-MAP.md)
 - BROKER RECORD → master_broker.csv; the Webull export is ONE file OVERWRITTEN every run, never dated piles; one balance row a day in balance_daily.csv.
 - FILLS → master_ledger.csv. The broker's exit/P&L/state/account WIN over the book; a DRIFT line means something upstream lied; nothing reads days/*.json or journal.csv for analysis.
-- ALERTS → master_alerts.csv. RN LEDGER → rn_ledger.csv (append-only).
+- ALERTS → master_alerts.csv. RN LEDGER → rn_ledger.csv (append-only). HOLIDAYS / HOURS → market_hours.py owns the table — UPDATE EVERY YEAR.
 - PRICE TAPES → tape.py is the ONE registry; Webull has NO historical option prices; databento_backfill.py spends credit — never run its main() casually.
-- HOLIDAYS / HOURS → market_hours.py owns the table — UPDATE EVERY YEAR.
 - POST-MORTEMS → master_postmortems.csv + postmortems/; his own hand trades are never graded.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I don't want any more confusions"): account="paper" rows stay OUT of master_ledger.csv, account="unknown" is NOT paper.
 - BOT ATTRIBUTION: a caller name is candidate evidence until the entry links to an alert and the trade to broker fills; never quote P&L from a book-priced row when a broker row exists.
@@ -146,9 +144,7 @@ FILL ANNOUNCER (announcer.py, read-only) · reference/OPERATIONS.md
    futures decouple) — G's call whether Claude does it or he does.
 3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50
    MNQ pts), qty 1 — create in NT8, type SNIPER in the popup.
-4. Close any old parked Whop tabs. (`--disable-gpu` rides every flagged
-   Chrome launch since 9/10 — a GPU black tab reads NOTHING while looking
-   open; flags bind only on a cold start.)
+4. Close any old parked Whop tabs (the Chrome flags note: reference/OPERATIONS.md).
 5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
 6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension
    are already up. Run START HERE, or schedule it, by 9:00 on trading days.
