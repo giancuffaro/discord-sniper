@@ -30,6 +30,13 @@ import webull_options as wo                              # noqa: E402
 FAILED = []
 LOG = []
 
+# THE TEST MUST NOT WRITE TO THE REAL TRADE LOG (9/15). bridge.note() appends
+# to trades.log, which is the money record the journal is built from. Every run
+# of this file was dropping fake EXPIRY/LISTING lines about TSLA 357.5C and
+# INTC 97C into it, mixed in with real fills — 15 of them on 9/15 alone. The
+# lines go to LOG instead; assert on LOG if a test ever needs to read them.
+bridge.note = lambda *a, **k: LOG.append(" ".join(str(x) for x in a))
+
 
 def check(name, got, want):
     if got == want:
