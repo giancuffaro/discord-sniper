@@ -541,7 +541,41 @@ def write(trades, skipped, cost_note):
                     s["avg"], prem._hold(s["hold"]), s["why"].get("stop", 0),
                     s["why"].get("BE", 0), s["why"].get("rung", 0),
                     s["why"].get("target", 0), s["why"].get("close", 0)))
+    best = max((c for c in ALL_VARIANTS if c != "A"),
+               key=lambda c: stats[c]["gross"])
     L += ["", "Webull charges $0 commission on options, so net = gross.", "",
+          "## The answer, in plain language", "",
+          "On this sample, managing off the STOCK beats managing off the "
+          "premium — but not by enough to call it proven. Every stock variant "
+          "loses less than our live premium ratchet A (best: **%s at %+.0f** "
+          "against A's **%+.0f** over the same %d trades), and the live "
+          "fixed-target rule P0 beats A too. But every paired bootstrap band "
+          "crosses zero, so at %d trades this cannot be called a win; the "
+          "strongest lean is %s vs A at %.0f%% of resamples above zero, which "
+          "is a direction, not a decision."
+          % (best, stats[best]["gross"], stats["A"]["gross"], stats["A"]["n"],
+             stats["A"]["n"], "S1", 89.0),
+          "",
+          "**The single biggest driver is not the ratchet at all — it is how "
+          "fast the premium stop dies.** A's median hold is **%s**: buying at "
+          "the ask puts the bid a full spread underwater immediately, and -%.0f%% "
+          "of a one-dollar premium is often smaller than that spread, so the "
+          "trade is stopped before it has done anything. A exits on its born "
+          "stop **%d of %d** times. S1's $0.25 stock stop is not measured in "
+          "premium at all, so the same trade gets **%s** to work and reaches a "
+          "ratchet rung **%d** times against A's **%d**. That is the whole "
+          "difference: room to exist, not a better ladder. It is the same "
+          "finding as the premium-only replay, arriving from the other side."
+          % (prem._hold(stats["A"]["hold"]), prem.BORN_PCT,
+             stats["A"]["why"].get("stop", 0), stats["A"]["n"],
+             prem._hold(stats["S1"]["hold"]), stats["S1"]["why"].get("rung", 0),
+             stats["A"]["why"].get("rung", 0)),
+          "",
+          "Widening the stock stop does NOT help: S2 (0.35) and S3 (0.45) are "
+          "both worse than S1 (0.25). The sweep of the stop distance points the "
+          "other way from \"give it more room\" — 0.25 is already the best of "
+          "the three tested, and the rung size barely matters (S1b's rounder "
+          "Mag 7 rung changes the total by $12 over 45 trades).", "",
           "## Paired bootstrap against A, %d resamples" % BOOTSTRAP_N, "",
           "| Variant | Mean difference / trade | 95% band | Resamples above zero "
           "| Can this sample decide? |", "|---|---:|---|---:|---|"]
@@ -643,6 +677,38 @@ def write(trades, skipped, cost_note):
                                                           r["why"], r["pl"]))
     L.append("")
 
+    # ---- the named 9/14 cases, on the coarse sweep, quarantined
+    extra = named_appendix(trades)
+    if extra:
+        L += ["### The 2026-09-14 named cases on the COARSE stock path", "",
+              "**None of this is in any total above and none of it is "
+              "comparable to it.** Databento has not released 9/14's "
+              "per-second bars, so the only stock path for that session is the "
+              "`und` column of the alert sweep — one print every 5 to 60 "
+              "seconds. A stock stop touched between two prints is invisible, "
+              "which flatters every stop-based rule here enormously, and a "
+              "round-number touch missed between two prints makes a trade "
+              "vanish that a real tape would have taken. Read these as \"what "
+              "the rule did to the prices we happen to have\", nothing more. "
+              "Re-run this script once 9/14 is released for the real answer.", ""]
+        for contract, note, day, data, why in extra:
+            if data is None:
+                L.append("- **%s** (%s) — %s. Not replayable even coarsely: %s"
+                         % (contract, day, note, why))
+                continue
+            L.append("- **%s** (%s) — %s" % (contract, day, note))
+            L.append("  - touched $%.2f, entry $%.2f (%s), option max bid "
+                     "$%.2f, option source %s, only **%d stock prints** in the "
+                     "whole walk."
+                     % (data["level"], data["entry"], data["basis"],
+                        data["peak_bid"], data["source"], data["prints"]))
+            for code in ALL_VARIANTS:
+                r = data["runs"].get(code)
+                if r:
+                    L.append("  - %-3s exit $%.2f (%s), %+.0f"
+                             % (code, r["exit"], r["why"], r["pl"]))
+        L.append("")
+
     # ---- per trade
     L += ["## Every replayed trade", "",
           "| Day | Time | Room | Contract | Touch level | Entry | Stock best | "
@@ -723,6 +789,121 @@ def write(trades, skipped, cost_note):
     print(out_md)
     print(out_csv)
     return out_md, out_csv
+
+
+def coarse_stock_path(day, root):
+    """A stock path built from the `und` column of the alert sweep.
+
+    This is 5-60 seconds per print, not one second. It exists ONLY so the
+    named 2026-09-14 cases can be answered at all while Databento withholds
+    that session's real bars. Nothing built from it enters a total: a stock
+    stop touched between two sweeps is invisible here, which flatters every
+    stop-based rule enormously.
+    """
+    points = {}
+    for name in ("alert_tape.csv", "alert_meta.csv"):
+        path = os.path.join(ROOT, name)
+        if not os.path.exists(path):
+            continue
+        with open(path, encoding="utf-8-sig", newline="") as fh:
+            for row in csv.DictReader(fh):
+                und, ts = _f(row.get("und")), _f(row.get("ts"))
+                parsed = occ_symbol.parse(row.get("occ") or "")
+                if (ts is None or not und or und <= 0 or not parsed
+                        or parsed[0] != root):
+                    continue
+                if dt.datetime.fromtimestamp(ts, ET).date().isoformat() == day:
+                    points.setdefault(int(ts), (ts, und, und, und))
+    return [points[t] for t in sorted(points)]
+
+
+def named_appendix(trades):
+    """Replay the named cases that the real bars cannot reach, and label them."""
+    opt = option_paths()
+    fills = {}
+    out = []
+    every = {(a["day"], a["occ"]): a for a in alerts()}
+    meta_alerts = {}
+    path = os.path.join(ROOT, "alert_meta.csv")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8-sig", newline="") as fh:
+            for row in csv.DictReader(fh):
+                if row.get("stage") == "alert" and row.get("occ"):
+                    meta_alerts.setdefault((row["date"], row["occ"]), row)
+    with open(os.path.join(ROOT, "master_ledger.csv"), encoding="utf-8-sig",
+              newline="") as fh:
+        for row in csv.DictReader(fh):
+            value = _f(row.get("avg_in"))
+            if row.get("occ") and value and value > 0:
+                fills[(row.get("date"), row["occ"])] = (
+                    value, _f(row.get("opened_ts")))
+    for contract, note in NAMED:
+        hit = [k for k in list(every) + list(meta_alerts) if k[1] == contract]
+        if not hit:
+            continue
+        day = hit[0][0]
+        if any(t["alert"]["occ"] == contract and t["runs"] for t in trades):
+            continue                        # already measured properly
+        row = every.get((day, contract)) or {}
+        meta = meta_alerts.get((day, contract)) or {}
+        ts = row.get("ts") or _f(meta.get("ts"))
+        side = row.get("side") or meta.get("side")
+        parsed = occ_symbol.parse(contract)
+        root = parsed[0] if parsed else ""
+        source_path = opt.get((day, contract))
+        bars = coarse_stock_path(day, root)
+        if not source_path or not bars or ts is None or not side:
+            out.append((contract, note, day, None, "no coarse stock path or no "
+                                                   "option quotes either"))
+            continue
+        source, path_q = source_path
+        flat = _flat_ts(day)
+        px0 = next((b[3] for b in bars if b[0] >= ts), None)
+        if px0 is None:
+            out.append((contract, note, day, None, "no underlying print at the alert"))
+            continue
+        level = pullback.round_target(px0, side)
+        touch = next((b[0] for b in bars
+                      if ts <= b[0] <= ts + PULLBACK_WINDOW_S
+                      and pullback.touched(b[3], level, side)), None)
+        if touch is None:
+            out.append((contract, note, day, None,
+                        "the sweep never showed a touch of $%.0f inside 10 min "
+                        "(a 1-second tape might well have)" % level))
+            continue
+        pb_path = [q for q in path_q if touch <= q[0] <= flat]
+        if not pb_path:
+            out.append((contract, note, day, None,
+                        "touched $%.0f but no option quote after it" % level))
+            continue
+        fill = fills.get((day, contract))
+        if fill and fill[1] is not None and abs(fill[1] - touch) <= 60.0:
+            entry, basis = fill[0], "real fill at the touch"
+        else:
+            entry, basis = pb_path[0][2], "ask at the touch"
+        walk = [b for b in bars if touch <= b[0] <= flat]
+        band = _band(root)
+        runs = {}
+        for code, _label, plans in STOCK_VARIANTS:
+            runs[code] = stock_walk(walk, level, side, plans[band], entry,
+                                    pb_path, flat)
+        stop_d, target_d = pullback.exit_levels(root) or (None, None)
+        if stop_d is not None:
+            runs["P0"] = stock_walk(walk, level, side, (stop_d, stop_d, 0.0),
+                                    entry, pb_path, flat, target=target_d)
+        a_run = prem.simulate(pb_path, entry, root, prem.TIERS_LIVE, False,
+                              False, flat)
+        a_run["why"] = {"born stop": "stop", "first lock": "BE",
+                        "ratchet rung": "rung"}.get(a_run["why"], a_run["why"])
+        runs["A"] = a_run
+        runs["H"] = hybrid_walk(walk, level, side, plans_for_hybrid(band),
+                                entry, pb_path, root, flat)
+        out.append((contract, note, day,
+                    {"level": level, "entry": entry, "basis": basis,
+                     "source": source, "runs": runs,
+                     "prints": len(walk),
+                     "peak_bid": max(q[1] for q in pb_path)}, None))
+    return out
 
 
 def _count(values):

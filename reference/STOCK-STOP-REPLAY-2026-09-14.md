@@ -34,6 +34,14 @@ Every stop distance and every fixed target above is read from the live `pullback
 
 Webull charges $0 commission on options, so net = gross.
 
+## The answer, in plain language
+
+On this sample, managing off the STOCK beats managing off the premium — but not by enough to call it proven. Every stock variant loses less than our live premium ratchet A (best: **S1b at -287** against A's **-594** over the same 45 trades), and the live fixed-target rule P0 beats A too. But every paired bootstrap band crosses zero, so at 45 trades this cannot be called a win; the strongest lean is S1 vs A at 89% of resamples above zero, which is a direction, not a decision.
+
+**The single biggest driver is not the ratchet at all — it is how fast the premium stop dies.** A's median hold is **22s**: buying at the ask puts the bid a full spread underwater immediately, and -5% of a one-dollar premium is often smaller than that spread, so the trade is stopped before it has done anything. A exits on its born stop **30 of 45** times. S1's $0.25 stock stop is not measured in premium at all, so the same trade gets **3m 33s** to work and reaches a ratchet rung **11** times against A's **5**. That is the whole difference: room to exist, not a better ladder. It is the same finding as the premium-only replay, arriving from the other side.
+
+Widening the stock stop does NOT help: S2 (0.35) and S3 (0.45) are both worse than S1 (0.25). The sweep of the stop distance points the other way from "give it more room" — 0.25 is already the best of the three tested, and the rung size barely matters (S1b's rounder Mag 7 rung changes the total by $12 over 45 trades).
+
 ## Paired bootstrap against A, 4000 resamples
 
 | Variant | Mean difference / trade | 95% band | Resamples above zero | Can this sample decide? |
@@ -71,6 +79,35 @@ A stock rule fires on the stock's clock; the option can only be sold at the next
 - **QQQ260914P00704000** — Demon's QQQ 704P. **Not measurable here**: it is a 2026-09-14 alert, and that session's per-second stock bars are still embargoed by Databento
 - **TSLA260918C00357500** — Platinum ei-alerts TSLA 357.5C. **Not measurable here**: it is a 2026-09-14 alert, and that session's per-second stock bars are still embargoed by Databento
 - **TSLA260918P00357500** — Platinum nitro TSLA 357.5P. **Not measurable here**: it is a 2026-09-14 alert, and that session's per-second stock bars are still embargoed by Databento
+
+### The 2026-09-14 named cases on the COARSE stock path
+
+**None of this is in any total above and none of it is comparable to it.** Databento has not released 9/14's per-second bars, so the only stock path for that session is the `und` column of the alert sweep — one print every 5 to 60 seconds. A stock stop touched between two prints is invisible, which flatters every stop-based rule here enormously, and a round-number touch missed between two prints makes a trade vanish that a real tape would have taken. Read these as "what the rule did to the prices we happen to have", nothing more. Re-run this script once 9/14 is released for the real answer.
+
+- **QQQ260914C00708000** (2026-09-14) — Skyy's 0DTE that the caller rode to +423%. Not replayable even coarsely: the sweep never showed a touch of $706 inside 10 min (a 1-second tape might well have)
+- **MSFT260914C00505000** (2026-09-14) — the bot's fastest stop-out of 9/14. Not replayable even coarsely: the sweep never showed a touch of $502 inside 10 min (a 1-second tape might well have)
+- **QQQ260914C00713000** (2026-09-14) — 0.24 -> 0.22 in seconds. Not replayable even coarsely: the sweep never showed a touch of $711 inside 10 min (a 1-second tape might well have)
+- **CRWD260918C00245000** (2026-09-14) — MuggZone's CRWD. Not replayable even coarsely: the sweep never showed a touch of $230 inside 10 min (a 1-second tape might well have)
+- **QQQ260914P00705000** (2026-09-14) — Vero's QQQ 705P
+  - touched $705.00, entry $1.43 (ask at the touch), option max bid $1.44, option source Webull sweep, only **658 stock prints** in the whole walk.
+  - S1  exit $1.23 (stop), -20
+  - S1b exit $1.23 (stop), -20
+  - S2  exit $1.23 (stop), -20
+  - S3  exit $1.06 (stop), -37
+  - P0  exit $1.23 (stop), -20
+  - A   exit $1.36 (stop), -7
+  - H   exit $1.23 (stop), -20
+- **QQQ260914P00704000** (2026-09-14) — Demon's QQQ 704P
+  - touched $705.00, entry $1.01 (ask at the touch), option max bid $1.00, option source Webull sweep, only **664 stock prints** in the whole walk.
+  - S1  exit $0.25 (BE), -76
+  - S1b exit $0.25 (BE), -76
+  - S2  exit $0.25 (stop), -76
+  - S3  exit $0.25 (stop), -76
+  - P0  exit $0.25 (stop), -76
+  - A   exit $0.25 (stop), -76
+  - H   exit $0.25 (stop), -76
+- **TSLA260918C00357500** (2026-09-14) — Platinum ei-alerts TSLA 357.5C. Not replayable even coarsely: the sweep never showed a touch of $357 inside 10 min (a 1-second tape might well have)
+- **TSLA260918P00357500** (2026-09-14) — Platinum nitro TSLA 357.5P. Not replayable even coarsely: the sweep never showed a touch of $359 inside 10 min (a 1-second tape might well have)
 
 ## Every replayed trade
 
