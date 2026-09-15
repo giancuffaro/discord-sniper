@@ -30,6 +30,11 @@ class DailyAuditTests(unittest.TestCase):
             "OPEN MNQ @ 29000 — Ninjago Futures Radar · NGD: ngd-trades — bridge refused"})
         self.assertEqual((caller, room), ("Ninjago Futures Radar", "NGD: ngd-trades"))
 
+    def test_stale_decision_uses_preserved_original_author(self):
+        caller, room = _caller_room({"text":
+            "OPEN QQQ 710C — that call is 78 seconds old — too stale | EliteOptions | Brando: QQQ call"})
+        self.assertEqual((caller, room), ("EliteOptions | Brando", "unavailable"))
+
     def test_load_keeps_raw_messages_when_live_parser_is_partial(self):
         content = """=== RAW MESSAGES ===
 2026-09-11 09:31:00  [Morning #1]  OPEN AAPL 100C @ 1.00

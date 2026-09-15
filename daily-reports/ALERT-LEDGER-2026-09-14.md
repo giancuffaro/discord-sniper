@@ -28,7 +28,7 @@ Every recognized entry alert from configured ON rooms. A `sent` row means the br
 | 09:24:03 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4312.80 | failed | futures protective exit not operational; no order sent |
 | 10:07:59 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4308.10 | failed | futures protective exit not operational; no order sent |
 | 10:10:02 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4308.60 | failed | futures protective exit not operational; no order sent |
-| 10:11:45 | that call is 78 seconds old | unavailable | OPEN QQQ 710C 9/16 @ 3.45 | skipped | stale when received (78s old; 20s Discord limit) |
+| 10:11:45 | EliteOptions \| Brando | unavailable | OPEN QQQ 710C 9/16 @ 3.45 | skipped | stale when received (78s old; 20s Discord limit) |
 | 10:13:15 | MuggZone | OWLS Capital: 🌟｜muggzone-options | OPEN CRWD 245C 9/18 @ 2.35 | sent | order sent |
 | 10:18:44 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29049.75 | failed | futures protective exit not operational; no order sent |
 | 10:21:21 | PT | unavailable | OPEN TSLA 357.5C @ 1.42 | skipped | pullback expired; no order |
@@ -39,7 +39,7 @@ Every recognized entry alert from configured ON rooms. A `sent` row means the br
 | 10:30:54 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4310.80 | failed | futures protective exit not operational; no order sent |
 | 10:30:58 | Vero | VeroTrade: ✅⏐vero-trades | OPEN QQQ 714P 9/10 @ 1.15 | failed | contract expiry already passed; no order |
 | 10:31:16 | Trademorewiser (MOD) | Whop Day Trades | OPEN MNQ @ 29000.00 | failed | futures protective exit not operational; no order sent |
-| 10:31:27 | that call is 29 seconds old | unavailable | OPEN SPY 759P 9/10 @ 1.15 | skipped | stale when received (29s old; 20s Discord limit) |
+| 10:31:27 | Vero | unavailable | OPEN SPY 759P 9/10 @ 1.15 | skipped | stale when received (29s old; 20s Discord limit) |
 | 10:36:45 | Demon × LKS | Low Key Stonks: 😈demon-day-trades | OPEN QQQ 704P 9/14 @ 1.00 | skipped | pullback expired; no order |
 | 10:36:45 | @Futures Alerts | Platinum Trading: 🟣│futures-alerts | OPEN MNQ @ 28977.50 | failed | futures protective exit not operational; no order sent |
 | 10:41:16 | Vero | VeroTrade: ✅⏐vero-trades | OPEN QQQ 705P 9/14 @ 1.55 | skipped | pullback expired; no order |
@@ -68,13 +68,13 @@ Every recognized entry alert from configured ON rooms. A `sent` row means the br
 | 14:43:12 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29269.00 | failed | futures protective exit not operational; no order sent |
 | 14:56:04 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29265.88 | failed | futures protective exit not operational; no order sent |
 | 15:12:43 | AbTrades | OWLS Capital: 🛎️｜all-alerts | OPEN AFRM 80C 10/16 @ 2.02 | failed | swing paused |
-| 15:13:25 | that call is 48 seconds old | unavailable | OPEN AFRM 80C 9/14 @ 2.02 | skipped | stale when received (48s old; 20s Discord limit) |
+| 15:13:25 | AbTrades Alert Bot | unavailable | OPEN AFRM 80C 9/14 @ 2.02 | skipped | stale when received (48s old; 20s Discord limit) |
 | 15:25:09 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29223.25 | failed | futures protective exit not operational; no order sent |
 | 15:41:02 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29222.00 | failed | futures protective exit not operational; no order sent |
 | 15:47:03 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29218.13 | failed | futures protective exit not operational; no order sent |
 | 15:51:37 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29181.13 | failed | futures protective exit not operational; no order sent |
 | 15:55:00 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29199.63 | failed | futures protective exit not operational; no order sent |
-| 16:02:07 | it's 16:02 ET | unavailable | OPEN TSLA 340P 9/25 @ 3.05 | skipped | options entry window closed; no order |
+| 16:02:07 | MuggZone | unavailable | OPEN TSLA 340P 9/25 @ 3.05 | skipped | options entry window closed; no order |
 
 ## Notes
 

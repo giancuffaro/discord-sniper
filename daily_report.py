@@ -156,6 +156,13 @@ def _caller_room(row):
     if len(parts) < 2:
         return "unavailable", "unavailable"
     source = parts[1].strip()
+    # A stale refusal leads with its age, then preserves the original author
+    # after ``|``.  Prefer that author over the guard message.
+    if source.lower().startswith(("that call is", "it's ")):
+        original = str(row.get("text") or "").split(" | ", 1)
+        if len(original) == 2:
+            author = original[1].split(":", 1)[0].strip()
+            return author or "unavailable", "unavailable"
     if " · " not in source:
         return source or "unavailable", "unavailable"
     caller, room = source.split(" · ", 1)
