@@ -13,7 +13,7 @@ Line numbers are as of 2026-09-15 after that day's dead-code deletions. A rule
 whose evidence line has moved is still findable by the symbol named beside it —
 the symbol is the claim, the number is only a shortcut.
 
-The four DRIFTED rows are open decisions for G: fix the rule or fix the code.
+The six DRIFTED rows are open decisions for G: fix the rule or fix the code.
 Nothing in this file changes behaviour; it is a map.
 
 | # | HANDOFF line | Rule | Bucket | Enforcing code / why not |
@@ -37,7 +37,7 @@ Nothing in this file changes behaviour; it is a map.
 | 17 | 34 | NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot vs broker truth | DECISION-ONLY | the north star, not a mechanism |
 | 18 | 34 | a later high is never a caller exit | ENFORCED | reference/caller_profile.py:24 and :677; daily_report.py:355 |
 | 19 | 35 | AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing | ENFORCED | ai_reader.py:262 — every AI read goes back through parser + guards |
-| 20 | 35 | "" or a range is NO CALL — not a crash, not an order | ENFORCED | ai_reader returns no action on an empty/range price; bridge refuses without a strike (bridge.py:5876 "that wasn't a readable order") |
+| 20 | 35 | "" or a range is NO CALL — not a crash, not an order | ENFORCED | ai_reader returns no action on an empty/range price; bridge refuses without a strike (bridge.py:5872 "that wasn't a readable order") |
 | 21 | 35 | department output is advisory | ENFORCED | departments.py:1-2 and SYSTEM prompt — reviews are read-only, nothing is executed |
 | 22 | 36 | CALLER IDENTITY IS CANDIDATE EVIDENCE: no win rate until attribution exists, a new account never gets an execution key, ID-less rows stay unavailable — re-grab, never infer | ENFORCED | trade_identity.py + caller_ledger.py; bridge.py:3238 caller switch keyed on a named caller |
 | 23 | 37 | Claude exports and project/context/ are reference only | DECISION-ONLY | reference-only material |
@@ -72,10 +72,10 @@ Nothing in this file changes behaviour; it is a map.
 | 52 | 48 | call+put refuses the line | DRIFTED | extension/parser.js:811 — a call+put pair is "left alone": the PUT is not added as a sibling, but the CALL still fires. The rule says the line is refused; nothing refuses it. |
 | 53 | 49 | EXPIRY, one place: NDTE = N CALENDAR days rolling BACK, never past today | ENFORCED | build_ledger.py:147 + the parser's NDTE reader |
 | 54 | 49 | NO DATE = 0DTE (G, 9/10), the LISTING ASKED never assumed, clues win first | ENFORCED | bridge.py:4044 _dateless_expiry asks the listing; today wins when listed |
-| 55 | 49 | "FRIDAY WEEKLIES ONLY" is DEAD | ENFORCED | bridge.py:5998 records the Friday-weeklies assumption as deleted |
+| 55 | 49 | "FRIDAY WEEKLIES ONLY" is DEAD | ENFORCED | bridge.py:4050 and :5983 record the Friday-weeklies assumption as retired |
 | 56 | 50 | CONTRACT MUST EXIST (9/15) AND BE IN PRICE BAND (9/14): siblings listed → REFUSE | ENFORCED | bridge.py:4154 _verify_listed -> BAD-CONTRACT |
-| 57 | 50 | nothing listed → THROUGH + LISTING line | ENFORCED | bridge.py:4216 LISTING line when nothing answers |
-| 58 | 50 | fails open, a guard never a gate | ENFORCED | bridge.py:4194 "letting it through" — fails open |
+| 57 | 50 | nothing listed → THROUGH + LISTING line | ENFORCED | bridge.py:4233 LISTING line when nothing answers |
+| 58 | 50 | fails open, a guard never a gate | ENFORCED | bridge.py:4216 "letting it through" — fails open |
 | 59 | 51 | GUARDS: SPREAD/THIN refuse wide or illiquid | ENFORCED | webull_options.py:2337 spread guard; liquidity.py:137 check() volume floor |
 | 60 | 51 | nothing older than 3 min fires | DRIFTED | extension/guards.js:22 max_message_age_seconds = 20 (Discord) and :160 a 90s window for Whop. Nothing uses 3 minutes. |
 | 61 | 51 | negations hard-veto | ENFORCED | extension/parser.js negation veto before any action is set |
@@ -174,7 +174,7 @@ Nothing in this file changes behaviour; it is a map.
 | 154 | 86 | the Webull export is ONE file OVERWRITTEN every run, never dated piles | ENFORCED | broker_sync.py OVERWRITES Webull_Orders_auto.csv every run |
 | 155 | 86 | one balance row a day in balance_daily.csv | ENFORCED | broker_sync.py:18 one balance row a day in balance_daily.csv |
 | 156 | 87 | FILLS → master_ledger.csv | ENFORCED | build_ledger.py -> master_ledger.csv; ledger.py is the reader |
-| 157 | 87 | the broker's exit/P&L/state/account WIN over the book, a DRIFT line means something upstream lied, and nothing reads days/*.json or journal.csv for analysis | DRIFTED | the broker-wins half is enforced (build_ledger.py:1155 DRIFT). The "nothing reads journal.csv" half is not: bridge.py:1570 still WRITES journal.csv and caller_report.py:66 still READS it for analysis. |
+| 157 | 87 | the broker's exit/P&L/state/account WIN over the book, a DRIFT line means something upstream lied, and nothing reads days/*.json or journal.csv for analysis | DRIFTED | the broker-wins half is enforced (build_ledger.py:1155 DRIFT). The "nothing reads journal.csv" half is not: bridge.py:1661 still WRITES journal.csv and caller_report.py:66 still READS it for analysis. |
 | 158 | 88 | ALERTS → master_alerts.csv | ENFORCED | build_alerts.py -> master_alerts.csv |
 | 159 | 88 | RN LEDGER → rn_ledger.csv (append-only) | ENFORCED | pullback.py:83 appends to rn_ledger.csv |
 | 160 | 88 | HOLIDAYS/HOURS → market_hours.py owns the table — UPDATE EVERY YEAR. POST-MORTEMS → master_postmortems.csv + postmortems/ | ENFORCED | market_hours.py owns FULL_CLOSE/HALF_DAY; holiday_table_flag() warns before the table expires |
