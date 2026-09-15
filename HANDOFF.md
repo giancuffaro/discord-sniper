@@ -15,16 +15,15 @@ Last updated: 2026-09-15 — APPEND, DON'T PILE is a rule; the 19 legacy room-ch
   push it past that, you are writing history, not state — move it.
 - Do not create handoff copies, dated handoffs, or upload snapshots. Daily
   performance belongs in `daily-reports/`; operating rules belong here.
-- `HANDOFF-LOG.md` is historical evidence, never current instructions. Retired
-  handoffs are preserved in `archive/retired-handoff-documents-2026-09-12.zip`
-  for explicit historical investigation only; do not apply their rules/code.
+- `HANDOFF-LOG.md` and the retired handoffs zipped in `archive/` are
+  historical evidence, never current instructions.
 
 ## Who and what
 - Caller research catalog: `python caller_ledger.py` refreshes the ignored
   local-reader-measure/caller-identity/callers.sqlite3; /callers maps read-only
   account sightings by channel ID. Win rates stay unavailable until trade
-  attribution exists, and a newly observed account never gets an execution key.
-  See reference/CALLER-LEDGER.md; the 9/13 detail is in HANDOFF-LOG.md.
+  attribution exists; a newly observed account never gets an execution key.
+  See reference/CALLER-LEDGER.md.
 - Caller behaviour (9/14): options first trim median 5.4 min at +17%; no posted
   option stop — revealed give-up −17%; bot out before their first trim on 15 of
   22 matched pairs. reference/CALLER-PROFILE-2026-09-14.md (rebuild:
@@ -61,16 +60,12 @@ Last updated: 2026-09-15 — APPEND, DON'T PILE is a rule; the 19 legacy room-ch
   order setting, `context_observer.reader_provider_order`. Same prompts, the
   24h image cache, the log names who read it. Changing WHO reads
   changes nothing about what a read may DO — still a proposal the parser and
-  every guard judge, AI confidence authorizes nothing. On 9/14 alone the old
-  hard-coded Anthropic call cost 242 "AI READ no call - ai: HTTP 400" and
-  every 📸 read. ai_reader.judge() is the ONE copy of "validate() can never
-  raise": a model field that is "" or a range ("1.26-1.30") is NO CALL — not
-  a crash, not an order. 249 of the 12,162 retained OpenAI reads do that, and
-  neither live lane had a guard on it.
-- AI MEASUREMENT: full scan results and the Chrome-lane history are in
-  HANDOFF-LOG.md (9/14). Contextual AI = Gemini primary, OpenAI fallback.
-  START HERE opens enabled rooms Monday morning; roomSchedule closes them after hours
-  and does not reopen them. Market-hours capture still to verify.
+  every guard judge, AI confidence authorizes nothing. ai_reader.judge() is
+  the ONE copy of "validate() can never raise": a model field that is "" or a
+  range ("1.26-1.30") is NO CALL — not a crash, not an order (the 9/14
+  numbers are in HANDOFF-LOG.md).
+- AI MEASUREMENT: results in HANDOFF-LOG.md (9/14). Contextual AI = Gemini
+  primary, OpenAI fallback. Market-hours capture still to verify.
 
 ## Rules of the house (current, in force)
 OPTIONALITY REVIEW 9/13 (full findings in HANDOFF-LOG.md): the channel is ON
@@ -113,10 +108,8 @@ ENTRIES
   switch is the only bench. Benched rooms are never deleted from the file.
   WHOSE TABS THE REAPER MAY CLOSE (9/10). ONLY tabs the extension itself
   opened (`_OURS`). A tab a HUMAN opened is never closed, whatever URL it is
-  on. Written the other way round first, it ate the Discord Settings tab G
-  was working in, twice, mid-edit — and sparing the ACTIVE tab is no fix,
-  since his tab stops being active the moment he clicks away. Widen this
-  again and that is the failure you are re-inviting.
+  on — it ate G's Discord Settings tab twice before this, and sparing the
+  ACTIVE tab is no fix (his tab stops being active when he clicks away).
   WHO MAY OPEN A TAB (9/10, G: "get rid of auto opening tabs UNLESS it's
   the start sniper"). Exactly three things, and nothing else:
     1. START HERE.bat, through its one-shot open-rooms request
@@ -124,8 +117,8 @@ ENTRIES
     3. whopSelfHeal() — kept on his call so the Whop lane can revive its own
        4 tabs; its dedupe MUST read pendingUrl and query the whole origin, or
        a still-LOADING tab is missed and a heal pass turns 4 Whop tabs into 8
-  roomSchedule() no longer opens anything — it used to open every `on` room
-  at 9:15. It still CLOSES at 4:30, which is what stops the overnight pings.
+  roomSchedule() opens nothing; it only CLOSES at 4:30, which is what stops
+  the overnight pings.
   probeOne() opens a lapsed room off-hours, then closes that tab seconds
   later in a finally — a door-knock, not an open.
   NO ACCESS = OUT OF SERVICE (9/10, G: "do not open the tab if we don't have
@@ -418,16 +411,14 @@ ROOMS / TABS / READERS
   --hide-crash-restore-bubble so "Restore pages?" never waits on a click.
   The only inputs left are the ones no script may do: a Discord/Whop login
   if a profile is logged out, and Webull keys in the popup.
-- Relay rooms (one bot account relaying many traders): ZT all-trades-mashup
-  (1334236429655740457, ZTRADEZ BOT) COVERED ALL 19 ZT direct rooms, but the
-  whole ZTRADEZ server was cut 9/9 (subscription lapsing in 1 day) — no
-  active ZT room remains. OWLS all-alerts (1449226651064991806, "OWLS
-  Capital Clanker", 9/9 — slug map shabs-sky-alerts→shabs, eli-alerts→eli,
+- Relay rooms (one bot account relaying many traders): ZTRADEZ was cut 9/9
+  (no active ZT room). OWLS all-alerts (1449226651064991806, "OWLS Capital
+  Clanker") is active — slug map shabs-sky-alerts→shabs, eli-alerts→eli,
   muggzone-options→MuggZone, giul-heatseeker→Giul, florida-man,
-  common-stock, jon-and-kian, ab→AbTrades, tt, eva, neal) is still active.
-  RELAY UNWRAP in background.js re-books under the real trader (footer
-  "#slug" / possessive), so per-trader claims, dedupe and scoreboard hold.
-  shabs + eli direct rooms retired 9/9 (covered by OWLS all-alerts).
+  common-stock, jon-and-kian, ab→AbTrades, tt, eva, neal. RELAY UNWRAP in
+  background.js re-books under the real trader (footer "#slug" /
+  possessive), so per-trader claims, dedupe and scoreboard hold; shabs + eli
+  direct rooms retired 9/9 (covered by OWLS).
 - EMBED RACE: bots post the call in an embed that hydrates after the row
   paints; content.js keys SEEN on id+length so the hydrated read re-emits.
 - TAB HEALTH: content/Whop reinjection clears the old observer and heartbeat; background reinjects before any reload and logs every reload. Room opening is paced, memory shedding touches at most one inactive room per cycle, and active/voice tabs are protected. Extension maintenance jobs run in one ordered sweep; normal message delivery stays event-driven. Chrome uses Profile 2 for Discord and Profile 6 for Whop; `whop-profile.txt` pins the folder.
@@ -625,14 +616,12 @@ FILL ANNOUNCER (announcer.py, read-only)
    futures decouple) — G's call whether Claude does it or he does.
 3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50
    MNQ pts), qty 1 — create in NT8, type SNIPER in the popup.
-4. Close any old parked Whop tabs. (Chrome hardware acceleration: DONE 9/10
-   — `--disable-gpu` rides every flagged Chrome launch. CORRECTNESS, not
-   speed: a GPU black tab reads NOTHING while looking open. Flags bind only
-   on a cold start, so a Chrome already running ignores them.)
+4. Close any old parked Whop tabs. (`--disable-gpu` rides every flagged
+   Chrome launch since 9/10 — a GPU black tab reads NOTHING while looking
+   open; flags bind only on a cold start.)
 5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
 6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension
-   are already up. Run START
-   HERE, or schedule it, by 9:00 on trading days.
+   are already up. Run START HERE, or schedule it, by 9:00 on trading days.
 
 ## Watch items (open)
 - PULLBACK STOCK TARGET vs THE RATCHET (9/10, G's call): a pullback entry
