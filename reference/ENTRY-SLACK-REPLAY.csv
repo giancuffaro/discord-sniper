@@ -177,3 +177,5 @@ date,time,kind,occ,symbol,qty,our_bid,actual_fill,improvement,status,bid_at_read
 2026-09-15,11:33:11,fill,AMD260918P00490000,AMD,1,5.60,5.45,15,scored,5.35,5.45,0,,True,5.45,-0,True,5.45,-0,True,5.45,-0,True,5.45,-0,True,5.45,-0,True,5.45,-0
 2026-09-15,12:25:25,fill,MU260916C00950000,MU,1,3.70,3.70,0,scored,3.85,3.95,1,,False,3.7,-0,False,3.7,-0,False,3.7,-0,False,3.7,-0,True,3.95,-25,True,3.95,-25
 2026-09-15,12:50:34,nofill,CRWD260918C00250000,CRWD,1,3.50,,,scored,3.55,3.65,1,,False,,0,False,,0,False,,0,True,3.65,-35,True,3.65,-35,True,3.65,-35
+2026-09-15,13:36:31,fill,TSLA260918P00350000,TSLA,1,3.90,3.78,12,scored,3.70,3.85,0,,True,3.85,-7,True,3.85,-7,True,3.85,-7,True,3.85,-7,True,3.85,-7,True,3.85,-7
+2026-09-15,14:57:43,nofill,HOOD260925C00120000,HOOD,1,1.22,,,scored,1.28,1.32,0,,False,,0,False,,0,False,,0,False,,0,False,,0,True,1.32,25

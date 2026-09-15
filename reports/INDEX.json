@@ -88,20 +88,20 @@
  },
  "entry-slack": {
   "2026-09-15": {
-   "built_at": "2026-09-15T17:30:17+00:00",
-   "fingerprint": "f4d24f51c5a0fd2f",
+   "built_at": "2026-09-15T16:42:08-04:00",
+   "fingerprint": "79368bbea612c257",
    "inputs": {
-    "alert_tape.csv (day rows)": "8564b36c105c8be7",
+    "alert_tape.csv (day rows)": "e508858cfa129d55",
     "databento_tape.csv (day rows)": "e3b0c44298fc1c14",
     "entry_slack.py": "7323:1789492821",
     "missed_tape.csv (day rows)": "e3b0c44298fc1c14",
-    "option_tape.csv (day rows)": "07a07afc4586c03f",
-    "quote_shadow.csv (day rows)": "4da176ef9e7fc09f",
+    "option_tape.csv (day rows)": "16d628502ece0948",
+    "quote_shadow.csv (day rows)": "7e5da3507f1cfcbf",
     "ratchet_tiers.py": "16166:1789491110",
     "reference/entry_slack_replay.py": "34808:1789493332",
     "reference/ratchet_replay_tape.py": "48823:1789438395",
     "tape.py": "10632:1789492976",
-    "trades.log (day lines)": "4decc3ad33885e66"
+    "trades.log (day lines)": "bd60edf568438815"
    },
    "output": "daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md"
   }

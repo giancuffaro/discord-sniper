@@ -6,24 +6,24 @@
 
 Measurement only. `execution.entry_slack_pct` is 0 and its activation is BLOCKED: the bot bids the caller's price or better and never chases. This file exists to tell G, every day, what that rule costs and what it saves.
 
-VERDICT — 2 no-fills today; nothing beats today's rule: every slack level from 2% to 10% comes out behind it (-$13 to -$291), and the 95% band on 135 paired orders (-$3.47 .. -$1.01 per order) CLEARS zero
+VERDICT — 3 no-fills today; nothing beats today's rule: every slack level from 2% to 10% comes out behind it (-$13 to -$266), and the 95% band on 137 paired orders (-$3.37 .. -$0.77 per order) CLEARS zero
 
 ## The population
 
 | | n | note |
 |---|---:|---|
-| option ORDER IN lines, all time | 201 | every option order the bot has ever sent |
-| with a recorded outcome | 178 | a FILLED or NOFILL line after it; the rest were cancelled, edited or never resolved |
-| never filled | 27 | the 90-second window expired with the bid unhit — the population this rule is about |
-| filled | 151 | where the cost side lives |
-| no-fills SCORED | **3** | a real recorded bid/ask within 90s of the order |
+| option ORDER IN lines, all time | 203 | every option order the bot has ever sent |
+| with a recorded outcome | 180 | a FILLED or NOFILL line after it; the rest were cancelled, edited or never resolved |
+| never filled | 28 | the 90-second window expired with the bid unhit — the population this rule is about |
+| filled | 152 | where the cost side lives |
+| no-fills SCORED | **4** | a real recorded bid/ask within 90s of the order |
 | no-fills QUARANTINED | 7 | the tape says the ask was already at or under our bid, so at slack 0 the model contradicts the broker. Counted nowhere |
 | no-fills UNSCORED | 17 | no quote at read time. Not estimated, not extrapolated, not counted |
-| fills SCORED | 132 of 151 | the cost is only charged where a real ask was recorded |
+| fills SCORED | 133 of 152 | the cost is only charged where a real ask was recorded |
 
-COVERAGE, said plainly: **3 of the 27 option no-fills can be scored**. 7 are quarantined and 17 have no quote at read time. The benefit side of this question rests on 3 trades; the cost side on 132. They are not measured to the same standard and the table below must be read that way.
+COVERAGE, said plainly: **4 of the 28 option no-fills can be scored**. 7 are quarantined and 17 have no quote at read time. The benefit side of this question rests on 4 trades; the cost side on 133. They are not measured to the same standard and the table below must be read that way.
 
-`grep -c NOFILL trades.log` says 52. Five of those are POSTCHECK lines about a no-fill; 20 of the remaining 47 are FUTURES (16 MNQ, 4 MGC), which have no ask to cross on this rule. The option population is 27 of 201 ORDER INs (13%), not 52 of 204.
+`grep -c NOFILL trades.log` says 52. Five of those are POSTCHECK lines about a no-fill; 20 of the remaining 47 are FUTURES (16 MNQ, 4 MGC), which have no ask to cross on this rule. The option population is 28 of 203 ORDER INs (14%), not 52 of 204.
 
 ## Slack level → what it buys, what it costs
 
@@ -31,30 +31,30 @@ Exits are the LIVE ratchet, read from `ratchet_tiers.live_spacing()` and never t
 
 | slack | no-fills rescued | gross from the rescues | fills that would cross | improvement given up | model net | **vs today** |
 |---|---|---|---|---|---|---|
-| 0% — today's rule | 0 of 3 | +$0 | 109 of 132 | -$367 | -$367 | **baseline** |
-| 2% | 0 of 3 | +$0 | 118 of 132 | -$380 | -$380 | **-$13** |
-| 3% | 0 of 3 | +$0 | 121 of 132 | -$407 | -$407 | **-$40** |
-| 5% | 1 of 3 | -$35 | 126 of 132 | -$459 | -$494 | **-$127** |
-| 7.5% | 3 of 3 | -$80 | 131 of 132 | -$573 | -$653 | **-$286** |
-| 10% | 3 of 3 | -$80 | 132 of 132 | -$578 | -$658 | **-$291** |
+| 0% — today's rule | 0 of 4 | +$0 | 110 of 133 | -$374 | -$374 | **baseline** |
+| 2% | 0 of 4 | +$0 | 119 of 133 | -$387 | -$387 | **-$13** |
+| 3% | 0 of 4 | +$0 | 122 of 133 | -$414 | -$414 | **-$40** |
+| 5% | 1 of 4 | -$35 | 127 of 133 | -$466 | -$501 | **-$127** |
+| 7.5% | 3 of 4 | -$80 | 132 of 133 | -$580 | -$660 | **-$286** |
+| 10% | 4 of 4 | -$55 | 133 of 133 | -$585 | -$640 | **-$266** |
 
-**Read the last column, not the one before it.** The model prices a cross at the recorded ask, and our real fills came in BETTER than that ask — so the slack-0 column is already -$367 against the broker's own prices on 109 of 132 scored fills. That bias is the same at every slack level, so it cancels in the difference and poisons the absolute.
+**Read the last column, not the one before it.** The model prices a cross at the recorded ask, and our real fills came in BETTER than that ask — so the slack-0 column is already -$374 against the broker's own prices on 110 of 133 scored fills. That bias is the same at every slack level, so it cancels in the difference and poisons the absolute.
 
-Across ALL 151 filled orders in the record — scored or not — resting at the caller's price filled **+$1235** better than the price we bid, about +$0.08 a contract. That is the thing crossing spends.
+Across ALL 152 filled orders in the record — scored or not — resting at the caller's price filled **+$1247** better than the price we bid, about +$0.08 a contract. That is the thing crossing spends.
 
 ## Paired bootstrap against today's rule (same orders, both times)
 
 | slack | n paired orders | mean diff / order | 95% band (4000 resamples) | resamples above zero | verdict |
 |---|---|---|---|---|---|
-| 2% | 135 | -$0.10 | -$0.17 .. -$0.04 | 0% | real at this sample — and it is on the **LOSS** side |
-| 3% | 135 | -$0.30 | -$0.64 .. -$0.07 | 0% | real at this sample — and it is on the **LOSS** side |
-| 5% | 135 | -$0.94 | -$1.76 .. -$0.32 | 0% | real at this sample — and it is on the **LOSS** side |
-| 7.5% | 135 | -$2.12 | -$3.43 .. -$0.99 | 0% | real at this sample — and it is on the **LOSS** side |
-| 10% | 135 | -$2.16 | -$3.47 .. -$1.01 | 0% | real at this sample — and it is on the **LOSS** side |
+| 2% | 137 | -$0.09 | -$0.17 .. -$0.04 | 0% | real at this sample — and it is on the **LOSS** side |
+| 3% | 137 | -$0.29 | -$0.64 .. -$0.07 | 0% | real at this sample — and it is on the **LOSS** side |
+| 5% | 137 | -$0.93 | -$1.72 .. -$0.33 | 0% | real at this sample — and it is on the **LOSS** side |
+| 7.5% | 137 | -$2.09 | -$3.45 .. -$1.01 | 0% | real at this sample — and it is on the **LOSS** side |
+| 10% | 137 | -$1.94 | -$3.37 .. -$0.77 | 0% | real at this sample — and it is on the **LOSS** side |
 
 The band is the 2.5th-97.5th percentile of the resampled MEAN difference, the same method the 9/10 ratchet sweep used. A band containing zero means this sample cannot tell the rules apart, whatever the totals say.
 
-One asymmetry matters more than the band: the 132 fills give the cost side a real sample, while the benefit side has 3 trades. So a band that clears zero here is evidence about the COST of crossing, not proof about its upside.
+One asymmetry matters more than the band: the 133 fills give the cost side a real sample, while the benefit side has 4 trades. So a band that clears zero here is evidence about the COST of crossing, not proof about its upside.
 
 ## Today's no-fills (2026-09-15)
 
@@ -62,6 +62,7 @@ One asymmetry matters more than the band: the 132 fills give the cost side a rea
 |---|---|---|---|---|---|---|
 | 10:14 | CRWD260918C00240000 | $4.25 | 4.40 x 4.50 | scored | 7.5% at $4.50 -> -$45; 10% at $4.50 -> -$45 |  |
 | 12:50 | CRWD260918C00250000 | $3.50 | 3.55 x 3.65 | scored | 5% at $3.65 -> -$35; 7.5% at $3.65 -> -$35; 10% at $3.65 -> -$35 |  |
+| 14:57 | HOOD260925C00120000 | $1.22 | 1.28 x 1.32 | scored | 10% at $1.32 -> +$25 |  |
 
 ## Why the rescues still lost
 
@@ -72,6 +73,7 @@ This is the part the complaint cannot see from the chart. Crossing pays the offe
 | 2026-09-14 | CRWD260918C00245000 | $2.35 | $2.52 | $2.82 | +11.9% | first lock | $2.52 | +$0 |
 | 2026-09-15 | CRWD260918C00240000 | $4.25 | $4.50 | $4.60 | +2.2% | born stop | $4.05 | -$45 |
 | 2026-09-15 | CRWD260918C00250000 | $3.50 | $3.65 | $3.80 | +4.1% | born stop | $3.30 | -$35 |
+| 2026-09-15 | HOOD260925C00120000 | $1.22 | $1.32 | $1.75 | +32.6% | ratchet rung | $1.57 | +$25 |
 
 ## Quarantined — the tape disagrees with the broker
 
@@ -111,8 +113,8 @@ These came back with a recorded ask at or UNDER the price we bid, so at slack 0 
 
 ## Honest limits
 
-- 135 scored orders cannot settle a trading rule. They can rule things out, and they can price a cost.
-- The benefit side is 3 trades. Nothing here is a verdict on the upside of crossing; it is a verdict on what the record can see.
+- 137 scored orders cannot settle a trading rule. They can rule things out, and they can price a cost.
+- The benefit side is 4 trades. Nothing here is a verdict on the upside of crossing; it is a verdict on what the record can see.
 - The quote at read time is the nearest recorded print inside 90s, not a tick-by-tick book. A price that lived between two prints is invisible here.
 - Most feeds carry no SIZE, so an ask with one contract behind it looks exactly like an ask with fifty. The August orders were qty 5, which is the likeliest reason for the quarantine above.
 - The forward replay has no slippage, no queue and no partial fills: the entry pays the offer and the exit prints at the bid that broke the stop. Real life is worse.
