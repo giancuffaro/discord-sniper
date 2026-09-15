@@ -129,7 +129,9 @@ def _reason(row):
     if "pullback trigger expired" in low:
         return "pullback expired; no order"
     if "too stale" in low:
-        return "stale when read"
+        age = re.search(r"that call is\s+(\d+)\s+seconds old", low)
+        return ("stale when received (%ss old; 20s Discord limit)" % age.group(1)
+                if age else "stale when read")
     if "costs $" in low or "buying power" in low:
         return "buying-power safety; no order"
     if "expiry" in low and "expired" in low:
@@ -145,6 +147,19 @@ def _reason(row):
     if "same contract" in low or "another relay" in low:
         return "duplicate/repost"
     return row["kind"]
+
+
+def _caller_room(row):
+    """Extract the display attribution preserved in the bridge decision line."""
+    first = str(row.get("text") or "").split(" | ", 1)[0]
+    parts = first.split(" — ")
+    if len(parts) < 2:
+        return "unavailable", "unavailable"
+    source = parts[1].strip()
+    if " · " not in source:
+        return source or "unavailable", "unavailable"
+    caller, room = source.split(" · ", 1)
+    return caller.strip() or "unavailable", room.strip() or "unavailable"
 
 
 def _recovered(day):
@@ -265,10 +280,13 @@ def build(day):
         lines.append("- No matched trade is available for a system-versus-caller verdict.")
 
     lines += ["", "## Every recognized decision", "",
-              "| Time | Alert | Result | Reason |", "|---|---|---|---|"]
+              "| Time | Caller | Room | Alert | Result | Reason |",
+              "|---|---|---|---|---|---|"]
     for r in decisions:
-        lines.append("| %s | %s %s | %s | %s |" %
-                     (r["time"], r["action"], r["contract"], r["kind"], _reason(r)))
+        caller, room = _caller_room(r)
+        lines.append("| %s | %s | %s | %s %s | %s | %s |" %
+                     (r["time"], caller.replace("|", "\\|"), room.replace("|", "\\|"),
+                      r["action"], r["contract"], r["kind"], _reason(r)))
     if recovered_entries or recovered_adds:
         lines += ["", "## Recovered gaps", ""]
         for r in recovered_entries + recovered_adds:

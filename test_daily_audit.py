@@ -3,7 +3,7 @@ import tempfile
 import unittest
 
 from daily_audit import summarize_replay
-from daily_report import _reportable_channel, _reason
+from daily_report import _reportable_channel, _reason, _caller_room
 import replay_check
 from replay_check import find_missed_entries
 
@@ -24,6 +24,11 @@ class DailyAuditTests(unittest.TestCase):
         self.assertEqual(_reason({"kind": "failed", "text":
                          "Webull futures entry held: broker-confirmed protective stop is not operational"}),
                          "futures protective exit not operational; no order sent")
+
+    def test_decision_attribution_splits_caller_and_room(self):
+        caller, room = _caller_room({"text":
+            "OPEN MNQ @ 29000 — Ninjago Futures Radar · NGD: ngd-trades — bridge refused"})
+        self.assertEqual((caller, room), ("Ninjago Futures Radar", "NGD: ngd-trades"))
 
     def test_load_keeps_raw_messages_when_live_parser_is_partial(self):
         content = """=== RAW MESSAGES ===
