@@ -12,6 +12,47 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (no-id edits stop killing sibling trades; holiday-table flag; Perplexity URL; two essays cut)
+
+1. alert_revision.py — the NO-message-id fallback (AI/voice/image reads)
+   treated ANY pending arm from the same trader on the same ticker inside 5
+   min as an edit, so "TSLA calls" then "TSLA puts" three minutes later as a
+   NEW idea cancelled the calls. Now it is an edit only when the new text
+   reads as a fix: a correction word (edit/edited/correction/meant/typo, a
+   leading "*", "not calls/puts") or, with the ticker/strike/side/expiry/price
+   tokens stripped, difflib ratio ≥ 0.9 against the pending alert's text (bare
+   contract lines with < 3 words of prose are compared whole: a side flip
+   scores ~0.94, a new strike+price ~0.73). No text on either side = no
+   evidence = sibling. The order's text field is `raw` (extension sends it;
+   Revisions.record keeps it). Message-id path untouched. test_alert_revision.py
+   22 -> 26 (legit second trade stays; near-duplicate is an edit; "meant puts"
+   is an edit; no text is not an edit).
+2. market_hours.py — the module comment promised a "holiday_table_stale" flag
+   that did not exist. Added holiday_table_flag(): "holiday_table_expiring"
+   within 60 days of 2027-12-31, "holiday_table_stale" once the year passes
+   HOLIDAYS_THROUGH; status() carries it, status_json.broke() leads its list
+   with it, daily_brief "What broke" prints the holiday_table_line(). No 2028
+   dates added. New test_market_hours.py (8), monkeypatched dates.
+3. provider_key_check.py:31 — the Perplexity probe posted to
+   api.perplexity.ai/v1/sonar (not an endpoint). Now /chat/completions with
+   model "sonar". Not run against the real key.
+4. REPLACE, DON'T STACK — two comment essays cut to one line each; their
+   substance is here: bridge.py:66 — note() and _BOOT_NOISE were defined
+   ~1,400 lines below the module-top paper_trading check that calls note() at
+   import, so paper_trading=true would have crashed the bridge on load with
+   NameError; they were moved above that call on 9/15. build_alerts.py:222 —
+   the missing-alert_meta.csv branch returned a 2-tuple while _apply_meta
+   unpacks 3 (the OSError path below already returned 3), the ValueError was
+   swallowed by ledger._ensure() and master_alerts.csv went stale silently;
+   it returns three empty dicts since 9/15. Same trim in quote_bus.py:50 and
+   :123 — the WHO-SPENDS tell (a traceback.extract_stack() on every
+   Budget.take(), the hottest path in the file) was gated behind
+   QUOTE_BUS_DEBUG_TELL=1 on 9/15; the two paragraphs saying so are now one
+   line each.
+5. Left alone, on purpose: futures OPENs are blocked by the INDEX MIRROR gate
+   (bridge.py:3065-3068, index_mirror.live_exit_ready() false until futures
+   protective exits are proven) — that is the design, not a bug.
+
 ## 2026-09-15 (REUSE, DON'T REBUILD — report cache, STATUS.json, ASK-MAP, weekly reports, HANDOFF cut to a rules core)
 
 G: "If I ask for a report and then another day ask again I'd like you to not

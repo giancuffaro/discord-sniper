@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — REUSE, DON'T REBUILD and ASK-MAP FIRST are rules (reports.py, STATUS.json, ASK-MAP.md); every report kind is one file per week; HANDOFF cut to a rules core, mechanics moved to reference/ (list in HANDOFF-LOG.md). Prior: APPEND, DON'T PILE; bridge._verify_listed.
+Last updated: 2026-09-15 — no-message-id edit needs a correction word or ≥0.9 text match (alert_revision.py); holiday_table_flag() surfaced in STATUS.json + the brief; Perplexity probe URL fixed; two comment essays cut to one line. Prior: REUSE, DON'T REBUILD; ASK-MAP FIRST.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -147,9 +147,12 @@ ENTRIES (mechanics: reference/ENTRIES.md)
   per-trader "already in" claim → one average-down ADD ≥1% under what was
   PAID. Position identity is caller+symbol+strike+side+expiry everywhere.
 - AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14): an OPEN whose message
-  id is already pending — or the same trader's same ticker inside 5 min on a
-  different contract — CANCELS the earlier hunt and its resting bid, then arms
-  the new one. Two DIFFERENT message ids are two calls, never an edit.
+  id is already pending on a different contract CANCELS the earlier hunt and
+  its resting bid, then arms the new one. Two DIFFERENT message ids are two
+  calls, never an edit. NO message id (voice/vision/legacy): same trader, same
+  ticker, inside 5 min AND the text reads as a fix — a correction word (edit,
+  meant, typo, "*", "not calls/puts") or ≥0.9 similar with the contract
+  stripped. Otherwise it is a SIBLING trade and both arms stand (alert_revision.py).
 - IF THE CORRECTED CONTRACT ALREADY FILLED (9/15, G: "if in profit keep the
   ratchet and set the stop to breakeven, if it's a losing trade, close it
   automatically"). Judged on the CURRENT BID vs the fill: bid >= fill -> stop
@@ -324,7 +327,9 @@ FILL ANNOUNCER (announcer.py, read-only; mechanics: reference/OPERATIONS.md)
   tasty_quote, databento, missed, alert). Webull has NO historical option
   prices; the tapes are our own record. databento_backfill.py spends credit —
   never run its main() casually.
-- HOLIDAYS / HOURS → market_hours.py owns the table (UPDATE EVERY YEAR).
+- HOLIDAYS / HOURS → market_hours.py owns the table (through 2027, UPDATE EVERY
+  YEAR). holiday_table_flag() says "expiring" in the last 60 days and "stale"
+  past it; STATUS.json "broke" and the brief's "What broke" both show it.
 - POST-MORTEMS → master_postmortems.csv + postmortems/ (G 9/9: "analyze every
   single trade after exiting … be attentive to these"). His own hand trades
   are never graded.
