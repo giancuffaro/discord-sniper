@@ -12,6 +12,84 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (is the ratchet too tight? — replay on real quotes; two report fixes)
+
+MEASUREMENT, NOTHING CHANGED LIVE. G: "I think the ratchet is too tight."
+New `reference/ratchet_replay_tape.py` (standalone, reads CSVs only) replays
+four exit rules over the SAME recorded bid/ask paths from `alert_tape.csv`
+densified with `option_tape.csv`, entry = the ask at the first quote after the
+alert or the REAL `master_ledger.csv` fill, exit always on the bid, stop checked
+BEFORE the ratchet on each sweep, flat at 15:59. Output:
+`reference/RATCHET-REPLAY-TAPE-2026-09-14.md` + `.csv`.
+
+  A LIVE 5/3/5 (born -5%, arm +3 -> BE, +5% rungs)   16 trades  -248  19% win
+  B 9/2 price tiers + anti-clip k=0.40               16 trades  -335  12% win
+  C A + born-stop floor max(5%, 2x spread, 3 ticks)  16 trades  -248  19% win
+  D B + that floor                                   16 trades  -312  19% win
+
+Gap-clean subset (14): A -67, B -131, C -67, D -108. Paired 4,000-resample
+bootstrap vs A: B -4.57/trade (95% -16.71..+5.00), D -2.93 (-15.50..+6.86) —
+both bands span zero, so this sample CANNOT decide them; C was byte-identical
+to A on every single trade, because on penny-tick names the 3-tick floor and
+the broker's own "stop one tick under the bid" clamp land on the same price.
+Nothing here justifies a change. 16 trades over two sessions.
+
+WHAT THE TAPE ACTUALLY SAYS. 13 of 16 exits are the stop at or below entry
+(6 born stop, 7 first lock). Only 10 of 16 ever saw the bid reach the +3% arm
+at all, and 7 of those armed and still came out at or below entry. So the arm
+and the rung are not the live problem — the BORN stop is, and specifically the
+broker clamp: when the -5% stop sits above the bid Webull 417s it, so the real
+resting stop becomes one tick under the bid. QQQ 713C: filled 0.24, clamped
+stop 0.21, dead. MSFT 505C: filled 0.65, clamped 0.62, dead in 18 s.
+
+NAMED CASES. Skyy QQQ 708C (caller +423%) and 11 others are LATE START — the
+alert sweep's first quote for them is minutes after the call (708C: 10.8 min),
+so no entry rule can be scored on them; replayed and shown, never totalled.
+CRWD 245C is the only row where the floor changed an outcome (D +9 vs B -14).
+Vero QQQ 705P and Demon QQQ 704P: every variant identical or nearly so.
+
+COVERAGE, HONESTLY. 16 scored, 12 late-start, 14 excluded outright. Only 4 of
+28 paths reach 15:59. The sweep is 5 s with positions open and 30-60 s
+otherwise, so stop hits between sweeps are INVISIBLE and every stop count is a
+floor. No slippage, entry crosses the ask. `bars/stock` has no 1-second file
+for 9/11 or 9/14, so the pullback replay runs on the sweep's `und` column and
+understates touches: 7 of 13 eligible alerts filled, and on the only 5 where
+both rules entered cleanly the mean difference is +3.60/trade, band -3.00..
++12.80 — nothing. The $1 level stays settled on the 9/9 study (65 paired
+trades, real 1-second bars); this does not overturn it.
+
+TWO REPORT BUGS FIXED (report generators only; no live decision code touched).
+1. `caller_outcomes._claim_values` could not see a price written straight after
+   the contract, so Brando's "SOLD | QQQ SEPT 16 710C $4.80 1/2 POSITION" and
+   "... $5.50 1/4 POS" were both filed "price unavailable". It now reads $/@/
+   bare-decimal forms anchored to the contract token AND to an exit word within
+   80 characters — over the 45,871 retained room lines the contract anchor
+   alone fired 181 times with visible junk (bot footers, promos); both anchors
+   fire 123 times and the inspected sample was all genuine exits. The fraction
+   (1/2, 1/4, half) is captured as `trim_size`, a new CSV column, printed in
+   the md. 9/14 now reads Brando +39.1% and +59.4%.
+2. Midas posted "SPY 760P 9/14 @ 760.40" — that is SPY, not the premium. The
+   live OPEN path has refused this since v3.8.24; the report path had no guard,
+   so the replay printed -$75,936 on that one row and the day's total read
+   -74,960. Same rule now applies in the reports, measured instead of worded:
+   a posted price within 2% of the underlying at that minute (`und`) AND at
+   least 3x the contract's own ask is a stock quote -> entry basis
+   "unavailable (stock price posted)", row kept, dollars withheld from every
+   total. 9/14 CALLER-VS-RATCHET now reads **+976** across the 20 caller-posted
+   entries (+971 across 24 scorable paths).
+   STILL POISONED, next job: the +976 is itself dominated by two rows whose
+   caller price is garbled the other way — 10:21 TSLA 357.5C posted @1.42 when
+   the market was 7.70/7.75 (+608) and 10:22 TSLA 357.5P posted @1.61 against
+   6.40/6.50 (+479). A caller price an order of magnitude off the contemporaneous
+   quote needs the same kind of guard.
+
+Tests: `test_caller_outcomes.py` grew from 5 to 17 cases, including Brando's
+two exact lines, the date-is-not-a-fraction cases, and the stock-price rule.
+Every test file passes except `test_stream_bus.py` (no `paho` — pre-existing).
+HANDOFF.md was also converted CRLF -> LF to match `.gitattributes` (`* text=auto
+eol=lf`); it sits at 51,180 bytes, 20 under the 50 KiB ceiling, so the next
+session that adds a rule must move history out first.
+
 ## 2026-09-15 (an edit that already filled: breakeven if green, closed if red)
 
 G, in his words: "if in profit keep the ratchet and set the stop to breakeven,
