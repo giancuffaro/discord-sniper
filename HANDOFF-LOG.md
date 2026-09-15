@@ -12,6 +12,137 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (an edit that already filled: breakeven if green, closed if red)
+
+G, in his words: "if in profit keep the ratchet and set the stop to breakeven,
+if it's a losing trade, close it automatically." That is now the already-filled
+branch of the revision check.
+
+WHY THIS IS NOT A BREACH OF ENTRIES-ONLY. Entries-only says the bot follows a
+room's ENTRIES and never its exits — no trims, no stop-moves, no "all out",
+the ratchet's resting stop is the only way out. An EDIT is a different animal:
+the caller changed the CONTRACT, which means the position we are sitting in is
+OUR misread of their call, not a trade they asked us out of. 9/14 is the proof
+— PT's TSLA $357.5c edited to $357.5p, and the bot held $740 of the side the
+room had already corrected. Cleaning up our own wrong read is not obeying a
+caller's exit. HANDOFF says this in place, under ENTRIES and again under the
+EXITS doctrine, as THE one exception.
+
+HOW IT DECIDES. The CURRENT BID against the fill, at the moment the edit is
+processed. The bid comes from the quote bus CACHE — that contract is already
+being swept because we just bought it, so the read costs nothing of the 60/min
+option-snapshot budget and the edit never waits on a network call — falling
+back to the last bid the watchdog wrote on the record.
+
+  bid >= fill  ->  the resting stop goes to BREAKEVEN through the existing
+                   Book.stop_to_breakeven() -> _arm_stop() path (tick-rounded
+                   to the exchange step, clamped one tick under the fill so it
+                   cannot trigger on the spread), and the ratchet keeps running
+                   from there. Nothing is sold.
+  bid <  fill  ->  CLOSED through the existing exit path: the same
+                   _place_impl CLOSE the pullback stock exit and the underlying
+                   hard stop use. That inherits claim(), which pulls the
+                   resting stop and WAITS for the broker to let go before any
+                   sell leaves, plus the double-sell guard, the hand-trade
+                   refusal and _sell_confirmed. No new sell routine was written
+                   for this, deliberately.
+
+The two lines, generated from the real code:
+
+    EDITED   TSLA — PT | ei trades changed 357.5C → 357.5P, but the 357.5C
+             already filled at 7.40 and is green (bid 7.52) — stop moved to
+             breakeven, ratchet keeps it
+    EDITED   TSLA — PT | ei trades changed 357.5C → 357.5P, but the 357.5C
+             already filled at 7.40 and is red (bid 7.06) — closed at market,
+             wrong contract
+
+WHERE IT REFUSES TO ACT. No bid from either source, a non-option, or a stop
+that will not move (a swing running on the caller's stock level, a contract
+Webull refuses stops on) — all fall back to today's behaviour: logged, left
+alone, and the line SAYS which. "no live bid to judge it by, so it is LEFT
+ALONE; position stays, ratchet owns it." Guessing green from red would mean
+either selling a winner or leaving a loser sitting on a moved stop. There is
+also a resolve-check before the red path: if the CLOSE order we are about to
+build does not key back to the exact position we just measured, nothing is
+sent and the line says to close it by hand. This sells real money; it gets a
+second lock.
+
+WHAT NEVER REACHES IT. A price-only edit (same ticker, side, strike and expiry
+= not a revision at all, so the filled branch never runs) and a different
+message id (two messages are two calls, never an edit). Both are tested.
+
+JOURNAL. `exit_by` reads "edit-close" for a position this closed, and a
+breakeven stop that later fires reads "edit-BE" instead of "bot stop" — one
+new boolean on the position record (`edit_be`, set by Book.mark_edit_
+breakeven, carried through export_state) and two branches in Book._exit_by.
+The daily report already groups on exit_by, so it can count what our own
+misreads cost without another column.
+
+TESTS: test_alert_revision.py is 22 now. New: green -> stop to BE and an
+AssertionError wired into the sell path to prove nothing is sold; flat counts
+as green; red -> exactly one _place_impl CLOSE carrying source "edit" and the
+right contract; the close path is asserted to contain no second sell routine;
+a refused close leaves the position open and says so; no quote -> log only; a
+stop that will not move is said out loud; a price-only edit touches nothing; a
+different message id touches nothing; the no-id 5-minute fallback still
+reaches the filled branch. Mock book, mock broker, no network. Every
+test_*.py run directly: all pass except test_stream_bus.py (missing `paho`,
+pre-existing). All five test_*.js pass.
+
+--- NOT DONE, AND WHY: the 9/14 TSLA 357.5C journal row --------------------
+
+The ask was to mark that row exit_by "hand" because "the broker shows G closed
+it by hand at 7.06 (hand client_order_id)". I could not find that, and I am not
+rewriting a journal row against the evidence on this machine:
+
+  * master_broker.csv has ZERO rows dated 2026-09-14 — the broker export for
+    that day has never been pulled. There is no TSLA260918C00357500 row in it
+    at all, and Webull_Orders_auto.csv has none either.
+  * The string 7.06 does not appear anywhere in trades.log on 9/14.
+  * days/2026-09-14.json has the position as state "stopped", exit None.
+  * trades.log reads, in order: 10:26:08 "STOPPED TSLA — bid hit 7.00, at or
+    under your 7.00 stop. Selling 1." / 10:26:11 "Webull said an order was
+    still on this contract; cleared it and re-sent the sell" / 10:26:31 "the
+    resting stop at Webull had already sold it; the watchdog stands down".
+
+Everything on disk says the bot's own resting stop sold it and the fill price
+was never captured ("sold, but at a price I never saw"). Marking it "hand"
+would move a bot loss onto G's hand-trading column in the scoreboard on an
+unverified claim — the exact thing BROKER TRUTH exists to stop.
+
+THE REAL FIX, when the 9/14 export exists: pull the broker history into
+Webull_Orders_auto.csv and run `python3 build_ledger.py`. master_ledger.csv is
+REBUILT from master_broker.csv + days/ + trades.log, so a hand edit to it would
+be erased on the next rebuild anyway — and the merge rule already says the
+broker's exit, price, state and account WIN over the book's belief. If the
+broker really shows a hand client_order_id at 7.06, the rebuild will write
+exit_by itself, from evidence. If G has that order id, paste it and I will
+reconcile it in minutes.
+
+--- MOVED OUT OF HANDOFF.md (state file, not a manual) ---------------------
+
+PC2 SETUP, when it exists (verbatim, so HANDOFF can point here):
+  (1) this PC: put a long random string in bridge_token, bridge_listen
+      "0.0.0.0", allow TCP 8787 in Windows firewall for the LAN only, restart
+      the bridge;
+  (2) PC2: clone the repo, create extension/bridge.txt with PC1's LAN IP + the
+      same secret, add `"http://<PC1-LAN-IP>/*"` to extension/manifest.json
+      host_permissions, Load Unpacked in a Chrome profile logged into the NEW
+      Discord account;
+  (3) Whop: re-link the moved subs to the new Discord account so the paid
+      roles land there.
+LANE TAGS still come first — both PCs read the same rooms.txt and would open
+and trade the same rooms. That warning stays in HANDOFF.
+
+Also trimmed out of HANDOFF today to hold it under 50 KB, all of it settled
+history whose detail lives elsewhere: the $1 pullback-level arithmetic (it is
+in reference/PULLBACK-LEVELS.md, which the rule names), the RN-ledger sample
+numbers, the grabber v3.8.22/23 build notes, the v3.8.25 capture note, three
+tab/reaper post-mortems compressed to their rules, and a stale "SPX" pill in
+the Channels row list that the 9/10 NO-SPX-TO-SPY decision had already killed.
+
+DEPLOY: see below.
+
 ## 2026-09-14 (both AI readers off the billing-blocked key — and the crash the replay found)
 
 G: "fix what you can for now." So the gap left open earlier today is closed:
