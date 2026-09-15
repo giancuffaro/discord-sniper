@@ -54,11 +54,13 @@ ENTRIES · ENTRIES.md
 - RETRACTION ("not ready / scratch that / cancel / disregard / hold off / nevermind") pulls that trader's bids and armed hunts.
 - FUTURES: micros only; their stop/target wins; a Webull futures OPEN refuses until an exact GTC STOP_LOSS is verified after its fill. INDEX MIRROR (9/13) OFF until a broker-confirmed futures exit exists; THE POCKET default OFF.
 - REVIEWS (9/13): optionality channel ON (G); no arbitrary premium range, no automatic x100 correction.
+
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · RATCHET.md
 - ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out", "closed everything" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
 - THE RATCHET (5/3/5 since 9/10, flat): born −5%, +3% → breakeven, each +5% locks +5%; ratchet_tiers.py is the one implementation; stops never loosen; anti-clip off.
 - FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number. SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
 - CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent. 0DTE: ETFs trade to 16:15, auto-exercise at $0.01 ITM — flatten before the close.
+
 RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - BOOT: all UNVERIFIED until the broker confirms; expired options = dead paper; updates apply at the first safe window. POSTCHECK logs a PROBLEM when book, stop and quote bus disagree.
 - RULE: weekly signal-room-chat logs (replaces daily) (G, 9/15). ds_logs.py owns naming, blocks and de-dupe; never hand-edit a week file.
@@ -72,10 +74,12 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (test: DATA-MAP.md). Records that cannot be re-derived — tapes, telemetry, days/ — are APPENDED to, never rewritten.
 - READ DATA-MAP.md WITH INDEX.md every session (INDEX = what a file IS, DATA-MAP = what is IN it). RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump extension/manifest.json on extension changes; never install webullsdkcore into the bridge's Python; sandbox is RETIRED, paper is LOCAL (SIM).
 - DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the owner. Browser reads only.
+
 ROOMS / TABS / READERS · ROOMS-TABS.md
 - rooms.txt = THE channel list (tabs + trading, one file). START HERE IS FULLY UNATTENDED (G, 9/9); between runs NOTHING opens rooms; the only manual inputs are a Discord/Whop login and Webull keys.
 - Relays: OWLS all-alerts active, RELAY UNWRAP re-books under the real trader; ZTRADEZ, shabs, eli retired 9/9. Never close a human tab; Profile 2 = Discord, Profile 6 = Whop.
 - VOICE: ears always transcribe (Deepgram); voice ENTRIES ON (9/2), exits irrelevant; a typed copy of a voice fire is an echo. A room quiet 40 min in hours raises the silence alarm.
+
 FILL ANNOUNCER (announcer.py, read-only) · OPERATIONS.md
 - Posts every fill, milestone, stop-out and the scoreboard to G's webhooks; NEITHER channel goes into rooms.txt. PAUSED since 9/2; board computed FROM THE LEDGER (9/9); order hunt paced — the 9/2 429 storm must never come back.
 
@@ -91,7 +95,6 @@ FILL ANNOUNCER (announcer.py, read-only) · OPERATIONS.md
 - NO MARKET ORDERS ON OPTIONS; combos = MASTER(LIMIT) + STOP_LOSS on SINGLE only. Option SELL orders are DAY-only → every resting stop dies at the close.
 - Rate limits are PER ENDPOINT per app key, shared with Market Sniper; 429 = throttle, 417 = business rejection. No option streaming; fills ARE pushed.
 - Ticks are symbol-aware; never invent one.
-
 - sniper-autopilot (*/30 ET) never places or cancels orders, never touches settings.json.
 - THE PAGE is the SAME popup.html opened as a tab — never a second dashboard. Claude-in-Chrome CANNOT read it; the red line under the rooms is the diagnosis — ask for it.
 - Multi-account: extras mirror LIVE entries 1:1, own books/stops. SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
