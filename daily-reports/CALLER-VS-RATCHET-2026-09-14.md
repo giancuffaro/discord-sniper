@@ -9,7 +9,7 @@ The caller's posted premium is the hypothetical fill when available. Our 5/3/5 r
 | 10:22 TSLA | Platinum nitro | $1.61 | caller posted | partial +36.0% | caller-stated | $6.40 | +297.5% / +479 (quote-path replay) |
 | 10:23 NVDA | Whop Day Trades | $2.40 | real bot fill | full $1.50 (-37.5%) | market bid at caller exit | $2.38 | -0.8% / -2 (broker-confirmed actual) |
 | 10:36 QQQ | Demon day-trades | $1.00 | caller posted | unavailable | no paired caller exit | $1.10 | +10.0% / +10 (quote-path replay) |
-| 10:41 QQQ | Vero 2 | $1.55 | caller posted | full exit posted; price unavailable | caller exit; price unavailable | $1.62 | +4.5% / +7 (quote-path replay) |
+| 10:41 QQQ | Vero 2 | $1.55 | caller posted | unavailable | no paired caller exit | $1.62 | +4.5% / +7 (quote-path replay) |
 | 10:42 MU | Mugzone Options | $2.10 | real fill = caller posted | partial exit posted; price unavailable | caller trim; price unavailable | $2.05 | -2.4% / -5 (broker-confirmed actual) |
 | 11:07 DRAM | OWLS all-alerts | $0.57 | first recorded ask; caller price absent | unavailable | no paired caller exit | $0.56 | -1.8% / -1 (quote-path replay) |
 | 11:12 MSFT | OWLS all-alerts | $0.85 | caller posted | partial exit posted; price unavailable | caller trim; price unavailable | $0.93 | +9.4% / +8 (quote-path replay) |
