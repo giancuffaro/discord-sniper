@@ -1,5 +1,39 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 0fcce9fcdc37529f605c
+
+The current META message appears to be performance commentary, not an explicit close or new trim instruction. The reader's CLOSE classification and inherited contract details warrant source verification. The parser reports TRIM with fire=false; no execution or broker-confirmed outcome is established.
+
+## Findings
+- The current message says "$META absolutely gone - $8 move caught. If this was 0DTE we would be up 500-600%." It contains no explicit sell, close, or trim instruction. The reader nevertheless returns CLOSE with confidence 1.0, while the parser returns TRIM. An earlier message says "Trimmed left runners," which describes a prior partial exit rather than a current full close. Review the action classifications against the original conversation. Consider treating the current message as commentary unless additional source evidence establishes an exit instruction; do not infer a full close from "absolutely gone" or repeat a prior trim.
+- The reader cites the earlier "BTO $META 690c 09/16 @1.90" message to populate the contract. That message's ID is absent from validation.eligible_prior_ids. Validation reports ok=true but flags expiry_not_literal and unsupported_context_id; its normalized read retains expiry 09/16 and CALLS while changing strike from "690" to null. Verify the permitted context-linking rules and why validation accepted unsupported context. Review the retained expiry and side, and the removed strike, for consistent provenance handling. Do not treat the inherited contract as verified for a current close.
+- "$8 move caught" describes a claimed META price move, not a stated option exit premium. "If this was 0DTE we would be up 500-600%" is explicitly counterfactual. Both reader price and qty are null. Keep the claimed underlying move separate from option premiums and realized returns. Preserve missing price and quantity as unknown, not zero, and do not record the hypothetical percentage as an actual trade result.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not establish complete position history or the meaning of the intervening mention-only message.
+- No broker fills, exit premiums, quantities, or realized-profit calculations are provided.
+- The prior trim and runner-target messages do not explicitly identify a symbol or contract, so their position linkage requires verification.
+- These are review proposals based on the supplied records, not confirmed parser bugs or claims of remediation.
+
+---
+
+# Reader Review — 2026-09-15 — 4ab261414c0e92d6920d
+
+The current message supports a SPY trim attributed to Brett. The reader links it to the earlier SPY 9/16 759P entry, but validation flags that contextual linkage and removes the strike. This is a source-verification candidate, not a confirmed parser bug.
+
+## Findings
+- The current text is '@Brett (Admin) trimming SPY @ 18% @everyone'. Both parser and reader identify TRIM and SPY. The reader supplies expiry 9/16, PUT, and strike 759 from the earlier same-channel Brett entry, message 1549418841099210898: '@Brett (Admin) in SPY 9/16 759P @ 2.8 @everyone'. The subsequent Brett SPY trims at 10% and 13.5% support continuity, but do not repeat the contract. Verify the original entry and caller-specific position continuity before accepting inherited contract fields. Attribute the trade to the referenced caller, Brett, rather than pooling every HoneyDrip scribe message into one position history. Do not use a 'loading' message alone as confirmation of entry.
+- Validation reports ok=true alongside 'expiry_not_literal' and 'unsupported_context_id'. Its eligible_prior_ids include only the two preceding trim messages, not the explicit entry cited by the reader. The validated read retains expiry 9/16 and side PUTS but changes strike 759 to null. The parser separately reports fire=false. Review context-eligibility rules and field-level provenance to establish why the entry was excluded and why expiry and side survived while strike did not. Verify the meaning of ok=true and fire=false before treating this as either a successful contract resolution or an erroneous suppression.
+- The current message quotes '18%' without an exit premium or trim quantity. Reader price and qty are null. The earlier entry preserves the raw value '@ 2.8'; no broker fill or supporting return calculation is supplied. Keep price and quantity missing rather than zero. Preserve 18% as a source-reported percentage, pending verification of its meaning; do not interpret it as 18% of contracts sold or derive an exact exit premium or realized return. Verify premium units before converting the entry value into contract cost.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not establish complete position history or include original-message retrieval, reply targets, or broker records.
+- Only the current parser, reader, and validation outputs are provided; internal eligibility rules and the reason for fire=false are unavailable.
+- No execution, simulation results, or independently verified profit calculations are provided.
+- A Gemini cooldown followed by an OpenAI response does not establish a channel outage or missed-message coverage.
+
+---
+
 # Reader Review — 2026-09-15 — 60f6195b6b753168c16f
 
 The reader proposes a META trim interpretation for “Down to runners,” while the parser returns no action. Nearby source messages support that interpretation, but this is a candidate contextual-recognition gap, not a confirmed parser bug or executable trade.
