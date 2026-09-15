@@ -34,7 +34,7 @@ down until you delete it.
 | `bridge.py` | The HTTP server on 127.0.0.1:8787 the extension talks to. Orders, endpoints, restarts, POSTCHECK. |
 | `positions.py` | The Book — what filled, stops, watchdog, ratchet, adopt/reconcile with the broker. |
 | `webull_options.py` | Every Webull call: orders, stops, quotes, positions. Rate-limit rules live here. |
-| `ratchet_tiers.py` | The stop ladder: born −7.5%, +5% → breakeven, then +2% locked per +2% (flat, no cheap tier). Futures: arm at ⅔ of the stop distance, rung every ~27%. Anti-clip on 2+ DTE only. |
+| `ratchet_tiers.py` | The stop ladder as it actually runs (9/10, re-checked 9/15): born −5% (settings `strategy.stop_loss_pct`), +3% → breakeven, then +5% locked per +5% (flat, no cheap tier, tick floor widens the rung on cheap names). Futures: arm at ⅔ of the stop distance, rung every ~27%. **Anti-clip is OFF** — `strategy.anticlip` is absent from settings.json, so `anti_clip()` never runs. |
 | `quote_bus.py` | One batched option-quote call per second for every open contract → `option_tape.csv`. |
 | `alert_tape.py` | The SLOW second lane: real bid/ask for every contract the rooms called, including the ones we never bought → `alert_tape.csv` (+ `alert_meta.csv`, the room/caller/greeks of each alert). One batched call every 30s, 5s when nothing is open. Always yields to orders and to the fast bus. |
 | `stream_bus.py` | Live stock/ETF prices pushed over Webull MQTT. |
@@ -90,6 +90,10 @@ entry the bridge saw, written switch-on or switch-off; the index mirror's input)
 ## Documentation
 
 `ASK-MAP.md` — **when G asks X, read THIS file / run THIS command.** Start here. ·
+`reference/RULES-INDEX.md` — **every HANDOFF rule → the file:line that enforces it**,
+or DECISION-ONLY where no code is expected (built 9/15; 116 enforced, 67
+decision-only, 6 drifted, 2 unbacked-and-rewritten of 191). Read it instead of
+re-deriving which rules the machine actually keeps. ·
 `HANDOFF.md` — **the living memory. Read this second.** Every rule in force, one
 line each, under 14 KB (cut from 28 KB on 9/15); every mechanic lives in one
 `reference/` doc per subsystem — ENTRIES, RATCHET, ROOMS-TABS, OPERATIONS (which
