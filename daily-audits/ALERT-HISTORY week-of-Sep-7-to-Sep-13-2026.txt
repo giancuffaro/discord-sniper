@@ -1,3 +1,7 @@
+# ALERT-HISTORY — week of Mon Sep 7 2026 to Sun Sep 13 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Fri Sep 11 2026 =====
+
 ALERT AUDIT — every export since the bot went live (2026-08-18 .. 2026-09-11)
 
 PER DAY   traded / missed(action) / blind(no action)

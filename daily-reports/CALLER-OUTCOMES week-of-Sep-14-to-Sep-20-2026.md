@@ -1,3 +1,7 @@
+# CALLER-OUTCOMES — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Mon Sep 14 2026 =====
+
 # Caller outcome evidence — 2026-09-14
 
 Caller claims are separate from broker results and ratchet simulations. Partial trims remain partial; percentages imply a price only when the caller's entry is known.

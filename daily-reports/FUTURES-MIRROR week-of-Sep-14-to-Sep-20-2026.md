@@ -1,9 +1,17 @@
-# FUTURES MIRROR — 2026-09-13
+# FUTURES-MIRROR — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Mon Sep 14 2026 =====
+
+# FUTURES MIRROR — 2026-09-14
 
 SPY/QQQ room entries replayed as one-contract MES/MNQ, market entry, 25-pt stop / 50-pt target, futures ratchet.
 The switch is OFF: this is a measurement, not a trade.
 
-**No SPY/QQQ entries on this date.** Nothing to replay.
+**bars: unavailable** — BentoClientError: 422 dataset_unavailable_range
+Part or all of your request for dataset 'GLBX.MDP3' requires a subscription and/or license to access. Try again with an end time before 2026-09-14T21:51:16.760476000Z.
+do
+
+8 SPY/QQQ alert(s) were found for this date and are NOT scored. Nothing is guessed and nothing is written to the cumulative file; re-run once bars are available.
 
 
 ### What this number is not

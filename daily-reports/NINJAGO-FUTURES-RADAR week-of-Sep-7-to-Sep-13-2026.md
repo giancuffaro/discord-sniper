@@ -1,3 +1,7 @@
+# NINJAGO-FUTURES-RADAR — week of Mon Sep 7 2026 to Sun Sep 13 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Fri Sep 11 2026 =====
+
 # Ninjago Futures Radar caller-bracket replay — 2026-09-11
 
 ## What this measures

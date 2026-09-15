@@ -1,3 +1,7 @@
+# CALLER-VS-RATCHET — week of Mon Sep 7 2026 to Sun Sep 13 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Fri Sep 11 2026 =====
+
 # Caller entry versus our ratchet — 2026-09-11
 
 The caller's posted premium is the hypothetical fill when available. Our 5/3/5 ratchet is replayed against the best available exact-contract bid path: historical OPRA when present, otherwise the live Tastytrade/Webull tapes. Caller exits use their posted price/percentage, or the contemporaneous bid when they posted only the exit time.

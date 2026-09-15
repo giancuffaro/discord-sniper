@@ -1,3 +1,7 @@
+# ALERT-LEDGER — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Mon Sep 14 2026 =====
+
 # Alert Ledger — 2026-09-14
 
 Every recognized entry alert from configured ON rooms. A `sent` row means the bridge accepted an order request; it does not by itself prove a broker fill.

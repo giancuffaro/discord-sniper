@@ -1,3 +1,7 @@
+# REPORT — week of Mon Sep 7 2026 to Sun Sep 13 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Fri Sep 11 2026 =====
+
 # Discord Sniper daily report — 2026-09-11
 
 Generated 2026-09-11 18:42:46 Eastern Daylight Time.

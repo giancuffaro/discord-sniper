@@ -1,9 +1,14 @@
+# RATCHET-COMPARE — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Mon Sep 14 2026 =====
+
 # Ratchet comparison — 2026-09-14
 
 This replay isolates the exit rule. Both versions buy **one contract** at the first recorded ask (the actual fill for a filled bot trade) and use the same initial broker-compatible **-5% born stop**. The fixed version never moves that stop. The live version arms at **+3%** and then advances in **+5%** rungs, subject to tick and spread floors.
 
 | Alert | Source | Entry | Fixed stop P&L | Ratchet P&L | Ratchet advantage |
 |---|---|---:|---:|---:|---:|
+| 09:58 SPY | ? | $0.72 | -3 | +0 | +3 |
 | 10:13 CRWD | Mugzone Options | $2.52 | -17 | -2 | +15 |
 | 10:21 TSLA | Platinum ei-alerts | $7.80 | -40 | -40 | +0 |
 | 10:22 TSLA | Platinum nitro | $6.55 | -35 | +30 | +65 |
@@ -41,18 +46,19 @@ This replay isolates the exit rule. Both versions buy **one contract** at the fi
 
 ## Result
 
-- Price-replayable alerts: **34 of 53 observed**.
-- Fixed born stop: **-315** total per one-contract replay.
+- Price-replayable alerts: **35 of 53 observed**.
+- Fixed born stop: **-318** total per one-contract replay.
 - Live ratchet: **-202** total per one-contract replay.
-- Ratchet advantage on the covered subset: **+113**.
-- **19 alerts cannot be scored yet** because no exact-contract bid/ask path was recorded. This subset cannot establish the winner for the entire day.
-- **1 legacy event cannot be scored** because its source timestamp is missing; the report does not guess where it belongs on the price tape.
+- Ratchet advantage on the covered subset: **+116**.
+- **18 alerts cannot be scored yet** because no exact-contract bid/ask path was recorded. This subset cannot establish the winner for the entire day.
 - At least one value is marked at the end of its available tape and is not a final exit.
 - HOOD is deliberately included because the question asks what happened if every alert were forced through. The live bot refused its 22% spread; bypassing that filter would have produced the replayed loss.
 
 ## Actual bot trade
 
+- 09:58 SPY realized **+36**. The quote replay gives fixed **-3** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
 - 10:23 NVDA realized **-2**. The quote replay gives fixed **-12** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:24 TSLA realized **-34**. The quote replay gives fixed **-40** versus ratchet **-40**; the real ratchet fill was better because the market sell completed above the trigger bid.
 - 10:36 QQQ realized **+0**. The quote replay gives fixed **-8** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
 - 10:42 MU realized **-5**. The quote replay gives fixed **-10** versus ratchet **-10**; the real ratchet fill was better because the market sell completed above the trigger bid.
 - 10:42 QQQ realized **-2**. The quote replay gives fixed **-7** versus ratchet **-7**; the real ratchet fill was better because the market sell completed above the trigger bid.

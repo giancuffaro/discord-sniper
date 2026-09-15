@@ -1,3 +1,7 @@
+# RATCHET-COMPARE — week of Mon Sep 7 2026 to Sun Sep 13 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Fri Sep 11 2026 =====
+
 # Ratchet comparison — 2026-09-11
 
 This replay isolates the exit rule. Both versions buy **one contract** at the first recorded ask (the actual fill for a filled bot trade) and use the same initial broker-compatible **-5% born stop**. The fixed version never moves that stop. The live version arms at **+3%** and then advances in **+5%** rungs, subject to tick and spread floors.

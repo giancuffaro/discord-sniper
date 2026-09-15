@@ -1,12 +1,16 @@
+# REPORT — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Mon Sep 14 2026 =====
+
 # Daily Sniper Report — 2026-09-14
 
-Generated 2026-09-14 22:49:36 Eastern Daylight Time.
+Generated 2026-09-15 01:50:52 EDT.
 
 ## Coverage
 
 - Rooms configured on: **35** Discord and **5** Whop.
 - Rooms/channels with a live parser input today: **20**.
-- Live parser inputs retained: **766** messages.
+- Live parser inputs retained: **740** messages.
 - Rooms with no message are quiet or unverified; the report does not call them healthy solely from silence.
 
 ## Alert flow
@@ -26,19 +30,19 @@ Generated 2026-09-14 22:49:36 Eastern Daylight Time.
 
 ## Actual results
 
-- Bot trades: **11** — 1 win, 7 loss, 3 flat.
-- Realized P&L: **-57.00**.
-- Trademorewiser (MOD) NVDA 210.0P 2026-09-16: 2.4 → 2.38, **-2.00** (stopped).
-- PT | ei trades TSLA 357.5C 2026-09-18: 7.4 → ?, **+0.00** (stopped).
-- Demon × LKS QQQ 704.0P 2026-09-14: 1.13 → 1.13, **+0.00** (stopped).
+- Bot trades: **11** — 2 win, 8 loss, 1 flat.
+- Realized P&L: **-55.00**.
+- Gian SPY 761.0C 2026-09-14: 0.72 → 0.9, **+36.00** (closed).
+- Trademorewiser (MOD) NVDA 210.0P 2026-09-16: 2.4 → 2.38, **-2.00** (closed).
+- PT | ei trades TSLA 357.5C 2026-09-18: 7.4 → 7.06, **-34.00** (closed).
+- Demon × LKS QQQ 704.0P 2026-09-14: 1.13 → 1.13, **+0.00** (closed).
 - MuggZone MU 850.0P 2026-09-16: 2.1 → 2.05, **-5.00** (pullback stop).
 - Vero QQQ 705.0P 2026-09-14: 1.41 → 1.39, **-2.00** (closed).
-- MuggZone MSFT 505.0C 2026-09-14: 0.65 → 0.61, **-4.00** (stopped).
-- Unraveller META 670.0C 2026-09-18: 6.65 → 6.2, **-45.00** (stopped).
+- MuggZone MSFT 505.0C 2026-09-14: 0.65 → 0.61, **-4.00** (closed).
+- Unraveller META 670.0C 2026-09-18: 6.65 → 6.2, **-45.00** (closed).
 - MuggZone TSLA 340.0P 2026-09-25: 2.38 → 2.34, **-4.00** (pullback stop).
 - 👑KingBeeAri🐝 META 700.0C 2026-09-18: 2.61 → 2.68, **+7.00** (bot stop).
 - Skyy QQQ 713.0C 2026-09-14: 0.24 → 0.22, **-2.00** (bot stop).
-- Gian SPY 761.0C 2026-09-14: 0.72 → ?, **+0.00** (closed).
 
 ## Entry and exit comparison
 
@@ -65,7 +69,7 @@ Generated 2026-09-14 22:49:36 Eastern Daylight Time.
 | 10:07:59 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4308.10 | failed | futures protective exit not operational; no order sent | unavailable |
 | 10:10:02 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4308.60 | failed | futures protective exit not operational; no order sent | unavailable |
 | 10:11:45 | EliteOptions \| Brando | unavailable | OPEN QQQ 710C 9/16 @ 3.45 | skipped | stale when received (78s old; 20s Discord limit) | unavailable |
-| 10:13:15 | MuggZone | OWLS Capital: 🌟｜muggzone-options | OPEN CRWD 245C 9/18 @ 2.35 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1503509270526951575/1549060440443723847) |
+| 10:13:15 | MuggZone | OWLS Capital: 🌟｜muggzone-options | OPEN CRWD 245C 9/18 @ 2.35 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1503509270526951575/1549069806593118231) |
 | 10:18:44 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29049.75 | failed | futures protective exit not operational; no order sent | unavailable |
 | 10:21:21 | PT | unavailable | OPEN TSLA 357.5C @ 1.42 | skipped | pullback expired; no order | unavailable |
 | 10:22:17 | @Owner Alerts | Platinum Trading: 👑│nitro | OPEN TSLA 357.5P @ 1.61 | skipped | pullback expired; no order | unavailable |
@@ -79,16 +83,16 @@ Generated 2026-09-14 22:49:36 Eastern Daylight Time.
 | 10:36:45 | Demon × LKS | Low Key Stonks: 😈demon-day-trades | OPEN QQQ 704P 9/14 @ 1.00 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/722872384800948227/1169216956746969088/1549066369360994305) |
 | 10:36:45 | @Futures Alerts | Platinum Trading: 🟣│futures-alerts | OPEN MNQ @ 28977.50 | failed | futures protective exit not operational; no order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/911385966864896081/911390080285962290/1549066374674911277) |
 | 10:41:16 | Vero | VeroTrade: ✅⏐vero-trades | OPEN QQQ 705P 9/14 @ 1.55 | skipped | pullback expired; no order | unavailable |
-| 10:42:14 | MuggZone | OWLS Capital: 🌟｜muggzone-options | OPEN MU 850P 9/16 @ 2.10 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1503509270526951575/1549067740197953558) |
+| 10:42:14 | MuggZone | OWLS Capital: 🌟｜muggzone-options | OPEN MU 850P 9/16 @ 2.10 | sent | order sent | unavailable |
 | 10:54:01 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4314.90 | failed | futures protective exit not operational; no order sent | unavailable |
 | 11:04:03 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4313.20 | failed | futures protective exit not operational; no order sent | unavailable |
 | 11:05:41 | Trademorewiser (MOD) | Whop Day Trades | OPEN MNQ @ 29995.00 | failed | futures protective exit not operational; no order sent | unavailable |
 | 11:07:40 | Eva | OWLS Capital: 🛎️｜all-alerts | OPEN DRAM 58C 9/18 | failed | spread too wide | unavailable |
 | 11:12:31 | MuggZone | OWLS Capital: 🛎️｜all-alerts | OPEN MSFT 505C @ 0.85 | sent | order sent | unavailable |
 | 11:13:01 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 28997.50 | failed | futures protective exit not operational; no order sent | unavailable |
-| 11:21:01 | Skyy | OWLS Capital: 🌟｜shabs-sky-alerts | OPEN QQQ 708C @ 0.75 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1513300726141419550/1549077508937355276) |
+| 11:21:01 | Skyy | OWLS Capital: 🌟｜shabs-sky-alerts | OPEN QQQ 708C @ 0.75 | skipped | pullback expired; no order | unavailable |
 | 11:24:18 | Unraveller | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN META 670C 9/18 @ 6.50 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1549078339820716036) |
-| 11:28:00 | Midas (Admin) | Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | OPEN SPY 760P 9/14 @ 760.40 | failed | buying-power safety; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/1144369893760831489/1549079273564938303) |
+| 11:28:00 | Midas (Admin) | Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | OPEN SPY 760P 9/14 @ 760.40 | failed | buying-power safety; no order | unavailable |
 | 11:52:50 | MuggZone | OWLS Capital: 🌟｜muggzone-options | OPEN TSLA 340P 9/25 @ 2.40 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1503509270526951575/1549085512818495580) |
 | 12:13:22 | Demon × LKS | Low Key Stonks: 😈demon-day-trades | OPEN WMT 110C 9/18 @ 0.96 | failed | swing paused | [Open in Chrome](http://127.0.0.1:8787/open-discord/722872384800948227/1169216956746969088/1549090686010134580) |
 | 12:24:35 | Trademorewiser (MOD) | Whop Day Trades | OPEN MNQ @ 29220.00 | failed | futures protective exit not operational; no order sent | unavailable |
@@ -117,13 +121,13 @@ Generated 2026-09-14 22:49:36 Eastern Daylight Time.
 | Room/channel | Parser inputs |
 |---|---:|
 | Honey Drip Network 🍯💰📈: 👑｜aristotle-trades | 174 |
-| OWLS Capital: 🌟｜shabs-sky-alerts | 114 |
-| Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | 108 |
+| Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | 104 |
+| OWLS Capital: 🌟｜shabs-sky-alerts | 104 |
 | OWLS Capital: 🛎️｜all-alerts | 68 |
 | NGD: ngd-trades | 60 |
-| OWLS Capital: 🌟｜muggzone-options | 58 |
 | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | 50 |
 | Platinum Trading: 🟣│futures-alerts | 46 |
+| OWLS Capital: 🌟｜muggzone-options | 46 |
 | OWLS Capital: 🌟｜ab | 20 |
 | Platinum Trading: 👑│nitro | 10 |
 | ELITE OPTIONS: brando-alerts | 8 |
@@ -139,6 +143,6 @@ Generated 2026-09-14 22:49:36 Eastern Daylight Time.
 
 ## Detailed benchmarks
 
-- [Caller entry, trim, and exit evidence](CALLER-OUTCOMES-2026-09-14.md)
-- [Caller original entry versus our ratchet](CALLER-VS-RATCHET-2026-09-14.md)
-- [Fixed stop versus live ratchet replay](RATCHET-COMPARE-2026-09-14.md)
+- [Caller entry, trim, and exit evidence](CALLER-OUTCOMES%20week-of-Sep-14-to-Sep-20-2026.md)
+- [Caller original entry versus our ratchet](CALLER-VS-RATCHET%20week-of-Sep-14-to-Sep-20-2026.md)
+- [Fixed stop versus live ratchet replay](RATCHET-COMPARE%20week-of-Sep-14-to-Sep-20-2026.md)

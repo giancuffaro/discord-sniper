@@ -1,3 +1,7 @@
+# AUDIT — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Mon Sep 14 2026 =====
+
 DISCORD SNIPER DAILY AUDIT — 2026-09-14
 generated: 2026-09-14T22:29:35.871054-04:00
 status: ATTENTION

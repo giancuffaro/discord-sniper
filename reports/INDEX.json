@@ -1,0 +1,104 @@
+{
+ "brief": {
+  "2026-09-14": {
+   "built_at": "2026-09-15T01:51:10-04:00",
+   "fingerprint": "df1e28af7cde3b26",
+   "inputs": {
+    "CALLER-OUTCOMES.csv (day rows)": "2b6b7d3817eef38b",
+    "HANDOFF.md": "49783:1789448400",
+    "balance_daily.csv (day rows)": "649802de9a8713fa",
+    "daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md (day block)": "12120176f0fbc706",
+    "daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md (day block)": "9fb0ae1b2cfc7980",
+    "daily_brief.py": "28846:1789451346",
+    "department-reports/extension-discord.json": "111:1789451440",
+    "department-reports/extension-whop.json": "108:1789451461",
+    "master_broker.csv (day rows)": "77e6c4be7cfe4fa3",
+    "master_ledger.csv (day rows)": "4f16ae9716b8489b",
+    "trades.log (day lines)": "2819c3298f51b247"
+   },
+   "output": "daily-reports/BRIEF week-of-Sep-14-to-Sep-20-2026.md"
+  }
+ },
+ "caller-outcomes": {
+  "2026-09-14": {
+   "built_at": "2026-09-15T01:51:01-04:00",
+   "fingerprint": "f8b823d470b5eb39",
+   "inputs": {
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "76f52796835aa716",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "7ad235090e8f2a6c",
+    "alert_meta.csv (day rows)": "b09cc5603cf160d6",
+    "alert_tape.csv (day rows)": "c3f4f90939f65518",
+    "caller_outcomes.py": "25690:1789451347",
+    "daily-audits/recovered-2026-09-14.json": "missing",
+    "daily_report.py": "18269:1789451346",
+    "extension/optionable.txt": "30073:1788840105",
+    "extension/parse_batch.js": "2964:1789152506",
+    "extension/parser.js": "179623:1789324393",
+    "extension/rooms.txt": "34154:1789439937",
+    "master_alerts.csv (day rows)": "4ce89495ee17f82b",
+    "master_ledger.csv (day rows)": "4f16ae9716b8489b",
+    "master_postmortems.csv (day rows)": "daacb878515115fa",
+    "quote_shadow.csv (day rows)": "502b275fcdb0414e",
+    "trades.log (day lines)": "2819c3298f51b247"
+   },
+   "output": "daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md"
+  }
+ },
+ "caller-vs-ratchet": {
+  "2026-09-14": {
+   "built_at": "2026-09-15T01:51:07-04:00",
+   "fingerprint": "0e0ed60e6e3435bf",
+   "inputs": {
+    "CALLER-OUTCOMES.csv (day rows)": "2b6b7d3817eef38b",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "76f52796835aa716",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "7ad235090e8f2a6c",
+    "alert_tape.csv (day rows)": "c3f4f90939f65518",
+    "caller_ratchet_compare.py": "12308:1789451347",
+    "daily-audits/recovered-2026-09-14.json": "missing",
+    "master_ledger.csv (day rows)": "4f16ae9716b8489b",
+    "option_tape.csv (day rows)": "2d51d8df807eabd7",
+    "ratchet_tiers.py": "16164:1789049087",
+    "tape.py": "9933:1789447628"
+   },
+   "output": "daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md"
+  }
+ },
+ "ratchet-compare": {
+  "2026-09-14": {
+   "built_at": "2026-09-15T01:50:57-04:00",
+   "fingerprint": "2983edadf719c60e",
+   "inputs": {
+    "alert_meta.csv (day rows)": "b09cc5603cf160d6",
+    "alert_tape.csv (day rows)": "c3f4f90939f65518",
+    "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md (day block)": "f1b9bb0280eb1670",
+    "daily_policy_compare.py": "9341:1789451347",
+    "master_ledger.csv (day rows)": "4f16ae9716b8489b",
+    "option_tape.csv (day rows)": "2d51d8df807eabd7",
+    "ratchet_tiers.py": "16164:1789049087"
+   },
+   "output": "daily-reports/RATCHET-COMPARE week-of-Sep-14-to-Sep-20-2026.md"
+  }
+ },
+ "report": {
+  "2026-09-14": {
+   "built_at": "2026-09-15T01:50:52-04:00",
+   "fingerprint": "87e6579a25aa9662",
+   "inputs": {
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "76f52796835aa716",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "7ad235090e8f2a6c",
+    "daily-audits/recovered-2026-09-14.json": "missing",
+    "daily_report.py": "18269:1789451346",
+    "extension/optionable.txt": "30073:1788840105",
+    "extension/parse_batch.js": "2964:1789152506",
+    "extension/parser.js": "179623:1789324393",
+    "extension/rooms.txt": "34154:1789439937",
+    "master_alerts.csv (day rows)": "4ce89495ee17f82b",
+    "master_ledger.csv (day rows)": "4f16ae9716b8489b",
+    "master_postmortems.csv (day rows)": "daacb878515115fa",
+    "replay_check.py": "15780:1789445270",
+    "trades.log (day lines)": "2819c3298f51b247"
+   },
+   "output": "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md"
+  }
+ }
+}

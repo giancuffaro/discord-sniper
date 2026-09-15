@@ -1,18 +1,18 @@
 {
-  "caller_outcomes": "daily-reports\\CALLER-OUTCOMES-2026-09-14.md",
-  "caller_ratchet_comparison": "daily-reports\\CALLER-VS-RATCHET-2026-09-14.md",
+  "caller_outcomes": "daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md",
+  "caller_ratchet_comparison": "daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md",
   "coverage_warnings": 0,
   "daily_analyst": {
     "status": "duplicate_or_daily_limit"
   },
-  "daily_report": "daily-reports\\REPORT-2026-09-14.md",
+  "daily_report": "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md",
   "date": "2026-09-14",
   "failed_checks": [],
   "generated_at": "2026-09-14T22:29:35.871054-04:00",
-  "index_mirror": "daily-reports\\FUTURES-MIRROR-2026-09-14.md",
+  "index_mirror": "daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md",
   "possible_missed": 3,
-  "ratchet_comparison": "daily-reports\\RATCHET-COMPARE-2026-09-14.md",
-  "report": "daily-audits\\AUDIT-2026-09-14.txt",
+  "ratchet_comparison": "daily-reports/RATCHET-COMPARE week-of-Sep-14-to-Sep-20-2026.md",
+  "report": "daily-audits/AUDIT week-of-Sep-14-to-Sep-20-2026.txt",
   "silent_drops": 11,
   "status": "attention"
 }

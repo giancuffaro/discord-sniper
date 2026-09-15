@@ -1,3 +1,7 @@
+# BRIEF — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
+
+===== Mon Sep 14 2026 =====
+
 # SNIPER BRIEF — 2026-09-14
 
 ## Day
@@ -43,16 +47,15 @@ ratchet on those 20 caller-priced paths: +976 per 1-contract replay
 - STOP-WARN 5 — ei trades — Webull wouldn't hold a resting stop (bad option root ' ei trades'). The watchdog on this PC is still on it,…
 - EXPIRY 3 — MSFT 505C had no date — using 2026-09-14: today (2026-09-14) IS a listed expiration for MSFT, so 0DTE it is
 - IMG READ 3 — couldn't read the image (HTTP 400: Your credit balance is too low to access the Anthropic API. Please go to Plans & Bil…
-- AI READ 244 — no call — ai: HTTP 400
+- AI READ 245 — no call — ai: HTTP 400
 - MIRROR — bars unavailable, 8 alert(s) unscored: BentoClientError: 422 dataset_unavailable_range
-- LANE discord 2 — Platinum futures-alerts is ON but has no tab in this browser; Chika Alerts is ON but has no tab in this browser
 
 ## Pending (G's action)
 - In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project instructions and remove the old uploaded handof…
 - Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call whether Cl…
 - NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50 MNQ pts), qty 1 — create in NT8, type …
-- Close any old parked Whop tabs.
+- Close any old parked Whop tabs. (`--disable-gpu` rides every flagged Chrome launch since 9/10 — a GPU black t…
 - Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
-- CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension are already up (9/11: a 09:49 start mis…
+- CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension are already up. Run START HERE, or sche…
 
-built from master_ledger.csv, master_broker.csv, balance_daily.csv, trades.log, daily-reports/CALLER-OUTCOMES-2026-09-14.csv, daily-reports/CALLER-VS-RATCHET-2026-09-14.md, daily-reports/FUTURES-MIRROR-2026-09-14.md, department-reports/extension-*.json, HANDOFF.md · 2026-09-14 23:27 EDT
+built from master_ledger.csv, master_broker.csv, balance_daily.csv, trades.log, daily-reports/CALLER-OUTCOMES.csv, daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md, daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md, department-reports/extension-*.json, HANDOFF.md · 2026-09-15 01:51 EDT
