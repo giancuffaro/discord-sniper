@@ -155,18 +155,34 @@ def split_sections(text):
     return out
 
 
+# "Discord Sniper — self-learning export (2026-09-14, refreshed ...)"
+EXPORT_DAY_RE = re.compile(r"self-learning export \((\d{4})-(\d{2})-(\d{2})[,)]")
+
+
 def split_day_blocks(text):
     """[(date, [lines])] for a weekly file, in file order. Lines before the
-    first day header (the preamble) are dropped."""
+    first day header (the preamble) are dropped.
+
+    A weekly file with NO day header at all is a whole-file export that landed
+    under the weekly name -- what a pre-9/15 bridge writes if the extension
+    updates first. Its own "self-learning export (<day>," line says which day
+    it is, so it is read as that day's block rather than thrown away.
+    """
     blocks = []
     cur = None
-    for ln in (text or "").replace("\r\n", "\n").split("\n"):
+    lines = (text or "").replace("\r\n", "\n").split("\n")
+    for ln in lines:
         day = parse_day_header(ln)
         if day is not None:
             cur = (day, [])
             blocks.append(cur)
         elif cur is not None:
             cur[1].append(ln)
+    if not blocks and any(ln.strip() for ln in lines):
+        m = EXPORT_DAY_RE.search(text or "")
+        if m:
+            blocks.append((date(int(m.group(1)), int(m.group(2)),
+                                int(m.group(3))), lines))
     return blocks
 
 

@@ -178,6 +178,25 @@ class DayBlocks(unittest.TestCase):
         self.assertEqual(stats["2026-09-14"].get("parser", 0), 0)
         self.assertEqual(text.count(line), 2)
 
+    def test_a_headerless_whole_file_export_is_not_thrown_away(self):
+        """A pre-9/15 bridge writing under the weekly name has no day headers.
+
+        The extension can be reloaded before the bridge picks up the new code,
+        and then one export lands whole under the weekly name. Its own
+        "self-learning export (<day>," line says which day it is.
+        """
+        mon = date(2026, 9, 14)
+        a = msg("2026-09-14 09:30:00", "123", "SPY 500C", "111")
+        stale = export("2026-09-14", [a])
+        self.assertNotIn("=====", stale.replace("===", ""))
+        b = msg("2026-09-15 09:30:00", "123", "IWM 200C", "222")
+        text, stats = ds_logs.merge_day(stale, date(2026, 9, 15),
+                                        export("2026-09-15", [a, b]), "discord")
+        self.assertIn(ds_logs.day_header(mon), text)
+        self.assertEqual(text.count(a), 1)
+        self.assertEqual(text.count(b), 1)
+        self.assertEqual(stats["2026-09-15"]["raw"], 1)
+
     def test_a_new_week_is_a_new_file(self):
         sun, mon = date(2026, 9, 13), date(2026, 9, 14)
         self.assertNotEqual(ds_logs.weekly_name(sun, "discord"),
