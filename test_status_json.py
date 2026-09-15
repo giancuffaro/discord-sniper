@@ -78,7 +78,7 @@ class StatusFixture(unittest.TestCase):
                              "possible_missed": 3, "failed_checks": []}) + "\n")
         _write(os.path.join(self.root, "HANDOFF.md"),
                "# H\n\n## Pending external setup and decisions\n"
-               "1. First thing.\n2. Second thing (DONE 9/1).\n\n## Watch\n")
+               "1. First thing.\n2. DONE 9/1 — second thing.\n\n## Watch\n")
         self.summary = {"date": DAY, "status": "attention", "silent_drops": 11,
                         "possible_missed": 3, "coverage_warnings": 0,
                         "failed_checks": [],

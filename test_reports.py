@@ -63,6 +63,7 @@ class Fixture(unittest.TestCase):
                "sys.path.insert(0, %r)\n"
                "import reports\n"
                "reports.HERE = %r\n"
+               "reports.KINDS['t'] = reports.Kind('t', 'T', 'daily-reports', 'md')\n"
                "day = sys.argv[1]\n"
                "body = open(os.path.join(reports.HERE, 'in.txt')).read()\n"
                "reports.write_day('t', day, '# T %%s\\n%%s' %% (day, body))\n"
