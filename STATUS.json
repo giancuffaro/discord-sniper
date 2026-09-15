@@ -22,7 +22,7 @@
  "bridge": {
   "buying_power": null,
   "health": {
-   "checked_at": 1789451487.213863,
+   "checked_at": 1789452011.7475297,
    "issues": [],
    "lanes": [
     {
@@ -37,7 +37,7 @@
     }
    ]
   },
-  "probed_at": "2026-09-15T01:52:25-04:00",
+  "probed_at": "2026-09-15T02:02:40-04:00",
   "up": false
  },
  "broke": [
@@ -74,11 +74,11 @@
  ],
  "reports": [
   "alert-audit            all        STALE    ALERT-AUDIT.html  [never recorded in reports/INDEX.json]",
-  "alert-history          2026-09-14 MISSING  daily-audits/ALERT-HISTORY week-of-Sep-14-to-Sep-20-2026.txt  [no such file]",
   "alert-ledger           2026-09-14 MANUAL   daily-reports/ALERT-LEDGER week-of-Sep-14-to-Sep-20-2026.md  [no builder; hand-made]",
   "audit                  2026-09-14 STALE    daily-audits/AUDIT week-of-Sep-14-to-Sep-20-2026.txt  [never recorded in reports/INDEX.json]",
-  "brief                  2026-09-14 CURRENT  daily-reports/BRIEF week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-15T01:52:21-04:00]",
-  "caller-outcomes        2026-09-14 CURRENT  daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-15T01:51:01-04:00]"
+  "brief                  2026-09-14 STALE    daily-reports/BRIEF week-of-Sep-14-to-Sep-20-2026.md  [changed: HANDOFF.md]",
+  "caller-outcomes        2026-09-14 CURRENT  daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-15T01:51:01-04:00]",
+  "caller-vs-ratchet      2026-09-14 CURRENT  daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-15T01:51:07-04:00]"
  ],
  "rooms": {
   "discord": {
@@ -94,26 +94,31 @@
  },
  "verified": {
   "bridge_code_live": {
-   "at": "2026-09-15T01:52:25-04:00",
+   "at": "2026-09-15T02:02:40-04:00",
    "bridge_py_mtime": "2026-09-15T01:48:31-04:00",
-   "sha": "77afc8d"
+   "sha": "6b5c40d"
   },
   "broker_reconciled": {
-   "at": "2026-09-15T01:52:25-04:00",
+   "at": "2026-09-15T02:02:40-04:00",
    "broker_legs": 47,
    "ledger_pl": -321.0,
    "match": null,
    "sync_ok": null
   },
   "parser_gate": {
-   "at": null,
-   "counts": null
+   "at": "2026-09-15T02:02:40-04:00",
+   "counts": {
+    "actions": 3048,
+    "entries": 852,
+    "messages": 11386,
+    "pass": true
+   }
   },
   "tests": {
-   "at": null,
-   "failed": null,
-   "passed": null
+   "at": "2026-09-15T02:02:40-04:00",
+   "failed": 1,
+   "passed": 261
   }
  },
- "written_at": "2026-09-15T01:52:24-04:00"
+ "written_at": "2026-09-15T02:02:39-04:00"
 }
