@@ -77,8 +77,10 @@ it; `ledger.alerts()`) · `backups/` (dated copies of the master files, last 5 e
 `trades.log` (dated, the raw story) · `bridge.log` (console echo)
 · `days/*.json` (per-day book state — not for analysis) · `journal.csv` (legacy export) ·
 `option_tape.csv` / `databento_tape_clean.csv` / `missed_tape.csv` (price tapes — `tape.py`
-is the one reader) · `journal-*.xlsx` (built 4:45pm weekdays) · `DS Logs/` (extension
-exports — every message the reader saw) · `corpus/` (room language samples) · `futures_mirror_shadow.csv` (one row per SPY/QQQ
+is the one reader) · `journal-*.xlsx` (built 4:45pm weekdays) · `DS Logs/` (extension exports — every
+message the reader saw; ONE FILE PER WEEK PER LANE, `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt`, each capture day under a
+`===== Mon Sep 14 2026 =====` header holding only that day's new lines — `ds_logs.py` owns the
+naming, the day blocks and the de-dupe; pre-9/10 dailies are left as they are) · `corpus/` (room language samples) · `futures_mirror_shadow.csv` (one row per SPY/QQQ
 entry the bridge saw, written switch-on or switch-off; the index mirror's input)
 
 ## Documentation

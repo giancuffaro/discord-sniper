@@ -169,22 +169,71 @@ The 636 span 442 in August and 194 in September.
 **Question they answer:** every message the reader saw in every room, and what
 the bot did with each one.
 
-21 `signal-room-chat <Month-D>-2026.txt` files, 8 KB to 6.5 MB each,
-2026-08-18 → 2026-09-11 (weekdays only; 2026-09-11 is the newest). Frozen once
-written — a new file is written each night, the old ones are never edited.
+**ONE FILE PER WEEK PER LANE (9/15).** The name is the Monday..Sunday week of
+the capture day, month abbreviated, no zero padding:
 
-Each file has three blocks:
+```
+signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt
+signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt
+```
+
+A week that straddles New Year carries both years — `week-of-Dec-29-2025-to-Jan-4-2026`.
+Day boundary is Eastern. Inside the file each capture day is its own block
+under its own header, in date order:
+
+```
+===== Mon Sep 14 2026 =====
+```
+
+**DELTA, NOT A RE-EXPORT.** The extension's export is cumulative — every pass
+re-writes the whole retained backlog — so a day's block holds **only the lines
+the earlier days of that same file do not already hold**. A re-export of the
+same day REPLACES that day's block; a second header for one day can never
+stack. Identity is the `message_id` when the capture carried one (the body
+alongside it, so an edited message is never dropped), otherwise the whole line
+— which already spells out timestamp, room and text. `ds_logs.py` owns all of
+it; `bridge.py::_export_log` calls `ds_logs.merge_day` on write and
+`extension/background.js` sends the day's delta with `day` and `lane`.
+
+**Legacy dailies are untouched.** `signal-room-chat Aug-18-2026.txt` ..
+`Sep-10-2026.txt` and `signal-room-chat browser-history-*.txt` predate the lane
+split and are NOT merged — they stay exactly as they are, and every reader here
+still finds them by name. The seven lane-tagged dailies that WERE merged
+(Sep 10/11/13/14 discord, Sep 11/13/14 whop — 33.0 MB) are zipped at
+`archive/signal-room-chat-dailies-pre-weekly-2026-09-15.zip` (3.0 MB, archive/
+is gitignored, kept on disk so nothing is lost) and then deleted. The merge was
+asserted line-for-line first: every distinct record in the dailies is in the
+weekly files, none added.
+
+Note `signal-room-chat Sep-10-2026.txt` (no lane tag) is the **whop** lane's
+pre-tag export, not the discord one — its rooms are all `#whop:` URLs. It was
+left in place: the discord Sep 10 block in the weekly file came from
+`Sep-10-2026 (discord).txt`. `exports_for_day` has always preferred the
+lane-tagged file for 9/10, so nothing double-counts.
+
+**Where days come from now:** the `===== Mon Sep 14 2026 =====` headers, not
+the file name. `ds_logs.days_covered(path)`, `ds_logs.all_days(root)` and
+`ds_logs.files_for_day(root, day)` are the one place that is decided;
+`replay_check.exports_for_day` and `audit_history` go through them, and a
+legacy daily is still resolved by its name.
+
+Each day block has the same blocks the daily file had:
 
 **`=== CURRENT STATE ===`** — a photo of the machine at export time: version,
 bridge/Webull status, buying power, the bracket settings, and **the full LIVE /
-OFF / SHADOW room list for that day**. This is the only record of which rooms
-were on which day.
+OFF / SHADOW room list for that day**. Kept verbatim, never deduped. This is
+the only record of which rooms were on which day.
 
-**`=== RAW MESSAGES THE READER SAW (n) ===`** — one line per message:
+**`=== RAW MESSAGES THE READER SAW (n) ===`** — one line per message. `n` is
+the count in THAT DAY'S BLOCK, not the running total:
 
 ```
-2026-09-08 15:23:49  [Platinum Trading: 👑│nitro #911389167169191946]  Nitro Trades: <full message text>
+2026-09-08 15:23:49  [Platinum Trading: 👑│nitro #911389167169191946 message_id=1414...]  Nitro Trades: <full message text>
 ```
+
+**`=== LIVE PARSER INPUTS (n) ===`** — the same messages as the parser actually
+received them (quotes and embeds resolved). A second VIEW of a RAW message, not
+a duplicate of it: the two are deduped separately and never suppress each other.
 
 **`=== WHAT THE BOT DID (n) ===`** — one line per decision:
 
@@ -192,44 +241,52 @@ were on which day.
 2026-09-09 09:37:01  <sent>  OPEN GOOGL 345C 8/21 @ 3.40 x1 — Unraveller · Honey Drip … — sent in 3086 ms — waiting for GOOGL to touch $345
 ```
 
-### Counts across all 21 files
+### Counts across all 24 files (4 weekly + 20 legacy dailies, 40.7 MB)
 
 | | Count |
 |---|---|
-| Raw message lines | **145,982** |
-| Distinct messages (timestamp + room + full text) | **14,713** |
-| Distinct messages ignoring the room label | **14,102** |
-| Distinct room labels | 275 (242 distinct Discord channel IDs) |
-| Voice-transcript lines (`[this room #538…]`) | **26,739** |
-| "WHAT THE BOT DID" lines | **15,796** |
+| Capture days covered | **22** (2026-08-18 → 2026-09-14) |
+| Raw message lines | **136,579** |
+| Distinct messages (timestamp + room + full text) | **19,958** |
+| Distinct room labels | 294 |
+| Raw lines carrying a real `message_id` | **1,697** (everything else is `legacy-unknown`) |
+| Voice-transcript lines (`[this room …]`) | **27,807** |
+| LIVE PARSER INPUTS lines | **1,986** |
+| "WHAT THE BOT DID" lines | **16,775** |
 
 ### The 8 bot-decision tags
 
 | Tag | n | Example | Good for |
 |---|---|---|---|
-| `<skipped>` | 7,334 | `⚠ reader is running but its message watcher is detached — reloading that room` | Mostly plumbing. 1,655 detached-watcher, 1,080 "tab shows a different page", 347 audio-blocked, 84 "no Whop tab open". **This is why a room went quiet.** |
-| `<update>` | 4,238 | `🎙 auto-listening to (2928) Discord / #🔔︱shoofs-trade-alerts` | Voice listening start/stop, room heartbeats. |
-| `<ignored>` | 2,461 | `entries only — the ratchet owns the exit; Midas (Admin)'s exit on MARA noted, not traded` | **The full EXIT-IGNORED record** (trades.log has only 2). Also 1,220 "that's a REPLY quoting an older message". |
-| `<sent>` | 963 | see above | **Only 345 are orders** (197 distinct). The other 618 are `ROOMS` / `ROOM HOURS` tab management. Filter on the text starting with `OPEN` or `(Swing) OPEN`. |
-| `<failed>` | 296 | `OPEN RKLB 75C 10/16 @ 3.10 x5 — cranmer00 · ZTRADEZ … — the bridge refused it: HTTP 502 swing trades are paused` | Alert + room + caller + their price + the exact refusal. |
+| `<skipped>` | 7,642 | `⚠ reader is running but its message watcher is detached — reloading that room` | Mostly plumbing. **This is why a room went quiet.** |
+| `<update>` | 4,131 | `🎙 auto-listening to (2928) Discord / #🔔︱shoofs-trade-alerts` | Voice listening start/stop, room heartbeats. |
+| `<ignored>` | 3,003 | `entries only — the ratchet owns the exit; Midas (Admin)'s exit on MARA noted, not traded` | **The full EXIT-IGNORED record** (trades.log has only 2). Also the "that's a REPLY quoting an older message" refusals. |
+| `<sent>` | 1,062 | see above | Only a minority are orders — the rest are `ROOMS` / `ROOM HOURS` tab management. Filter on the text starting with `OPEN` or `(Swing) OPEN`. |
+| `<failed>` | 373 | `OPEN RKLB 75C 10/16 @ 3.10 x5 — cranmer00 · ZTRADEZ … — the bridge refused it: HTTP 502 swing trades are paused` | Alert + room + caller + their price + the exact refusal. |
+| `<stopped>` | 209 | `META · 👑KingBeeAri🐝 — bid hit 3.80, at or under your 3.80 stop. Selling 1.` | Stop-outs **with the caller attached** — trades.log's `STOPPED` has no caller. |
 | `<voice>` | 206 | `🎙 (2788) Discord / #☀️｜daytrades-scalps : I'm already even gonna try to` | |
-| `<stopped>` | 171 | `META · 👑KingBeeAri🐝 — bid hit 3.80, at or under your 3.80 stop. Selling 1.` | Stop-outs **with the caller attached** — trades.log's `STOPPED` has no caller. |
-| `<fired>` | 127 | `META · 👑KingBeeAri🐝 — filled 1.0 at 4.11 · META @ 654.77 — cost $411` | Fills **with caller, room and the underlying price at fill**. |
+| `<fired>` | 149 | `META · 👑KingBeeAri🐝 — filled 1.0 at 4.11 · META @ 654.77 — cost $411` | Fills **with caller, room and the underlying price at fill**. |
 
 ### DS Logs traps
 
-- **THE EXPORTS ARE CUMULATIVE.** Each night's file re-exports the whole
-  backlog the extension still holds, so the same message appears in many files.
-  **145,982 raw lines dedupe to 14,713 distinct messages** — an 90% duplication
-  rate. One message repeats up to **571 times**. Always dedupe on
+- **THE EXPORT IS STILL CUMULATIVE — the FILE no longer is.** Each pass hands
+  the bridge the whole retained backlog; the weekly file keeps each line once.
+  The legacy dailies still hold their full backlog, so **136,579 raw lines
+  still dedupe to 19,958 distinct messages**. Always dedupe on
   `(timestamp, room, text)` before counting anything.
-- `signal-room-chat Sep-10-2026 (discord).txt` and
-  `signal-room-chat Sep-11-2026 (discord).txt` are **byte-identical** (6,541,137
-  bytes each). Counting both double-counts a day.
-- **`[this room …]` is a placeholder, not a room.** 26,739 lines. 26,475 carry a
-  `#538…` id and are **Deepgram voice transcripts** of a Discord voice channel —
-  the true channel name is inside the text (`🎙 (2579) Discord | #☀️｜daytrades-scalps | : Morning, guys.`).
-  264 more are bare `this room` and are shadow duplicates of a named row with
+- **THE JS CORPUS READERS MISS EVERY `message_id` LINE.** `parser_gate.js`,
+  `reader_corpus.js` and `local-reader-measure/compare_keys.js` all match
+  `\[(.+?)#(\d+)\]`, which cannot match the v3.8.32 tag
+  `[Room #123 message_id=456]`. The 9/14 capture contributes **zero** rows to
+  the gate corpus for that reason (11,385 messages gated, all from older
+  lines). Python's `RE_MSG` in `replay_check.py` / `audit_history.py` /
+  `scoreboard.py` already allows the tag. **This is a live gap, not a weekly-
+  file effect — it predates 9/15 and is not fixed here**, because the 9/15
+  restructure was proved by the gate count staying identical.
+- **`[this room …]` is a placeholder, not a room.** 27,807 lines. Most carry a
+  `#538…` id and are **Deepgram voice transcripts** of a Discord voice channel
+  — the true channel name is inside the text (`🎙 (2579) Discord | #☀️｜daytrades-scalps | : Morning, guys.`).
+  The rest are bare `this room` and are shadow duplicates of a named row with
   the same timestamp.
 - **Six Discord channel IDs appear under two names**, because the name was
   learned later: `1095502893559316482` = swing-trades / vero-swings ·
@@ -240,8 +297,8 @@ were on which day.
 - **Whop rooms appear under two URL forms for the same room**:
   `Day Trades #whop:/joined/firststeptrading/day-trades-cvgzKYDmcUEDGh/app`
   and `Day Trades #whop:/firststeptrading/exp_cvgzKYDmcUEDGh/app`. The suffix
-  after the last `-`/`exp_` is the stable id. Whop lines: 8,758 raw → **1,920
-  distinct**, one post re-read up to **410 times** by the scraper.
+  after the last `-`/`exp_` is the stable id. One post is re-read up to **410
+  times** by the scraper.
 - The message text has Discord chrome baked in: the author name repeats, the
   server tag, the timestamp in three formats, reaction counts, and trailing
   `Add Reaction`. Strip before parsing.
@@ -572,7 +629,7 @@ a busy day. Dedupe before counting rooms.
 | **What were the caller's own stop and target?** | `days/*.json` `table[].their_stop` (38 rows), then `master_ledger.csv` `their_stop` (25 rows), then `recovered_alerts_chat.csv` `their_stop`/`their_target`. | `their_target` is blank on 977 of 978 ledger rows. Treat targets as not recorded. |
 | **Why was an alert refused?** | `master_alerts.csv` `outcome` + `reason` + `detail` | 136 buying power · 63 other refusal · 51 pullback never hit · 15 futures prop · 10 test room · 10 swings paused · 3 thin. Then `trades.log` `REFUSED`/`ERROR` for the exact broker text. |
 | **Why did a room go quiet?** | `DS Logs/*.txt` `<skipped>` lines | 1,655 detached watcher, 1,080 tab navigated away, 347 audio blocked, 84 no Whop tab. Then `ALERT-AUDIT.html` / `audit_history.py`. |
-| **Which rooms were switched on, on a given day?** | `DS Logs/signal-room-chat <that day>.txt`, CURRENT STATE block | The LIVE / OFF / SHADOW lists are stamped there. `extension/rooms.txt` only shows today. |
+| **Which rooms were switched on, on a given day?** | `DS Logs/signal-room-chat week-of-… (lane).txt`, that day's `===== Mon Sep 14 2026 =====` block, CURRENT STATE | The LIVE / OFF / SHADOW lists are stamped there, one per capture day. `extension/rooms.txt` only shows today. |
 | **What happened after we sold?** | `postmortems/*.md` | Bid at +30s / +1m / +5m / +10m, plus high and low in that window. 11 trades only, 9/9 onward. |
 | **How fast did we read and fire?** | `telemetry.csv` (`sent_at`, `fill_ms`, `slip_pct`) and the `sent in NNNN ms` text on `<sent>` lines. | Ignore every greek column in telemetry — all zero. |
 | **Was the stop where I think it was?** | `trades.log` `STOP-SET` (362 lines) | Each line has the resting price and whether it was born with the order. |
