@@ -140,9 +140,12 @@ Join: same date, same symbol, same strike, same side, our entry within 5 minutes
 |---|---|
 | caller entries the ledger also shows a position in | **70** |
 | of those, rows with book provenance (not Webull-export-only) | 49 |
-| pairs where the caller ALSO posted a first trim (the answerable set) | **23** (17 distinct caller entries) |
-| **bot still in when the caller trimmed** | **7 of 23** |
-| **bot already out before the caller's first trim** | **16 of 23** |
+| pairs where the caller ALSO posted a first trim (the answerable set) | **22** (16 distinct caller entries) |
+| **bot still in when the caller trimmed** | **7 of 22** |
+| **bot already out before the caller's first trim** | **15 of 22** |
+| ... and out at a LOSS - stopped or clipped before their trim | **6** |
+| ... out green, just earlier than them | 7 |
+| pairs excluded because the caller's first trim was on a later day | 2 |
 
 | measure | value |
 |---|---|
@@ -166,7 +169,6 @@ Every answerable pair. Where one caller entry matched several of our positions i
 | 2026-08-20 | INTC 90.0P | The Pawn (The Mark | 3.2 min | 22.2% | 3.5 min | 20.3% | yes |
 | 2026-08-20 | QQQ 710.0P | Vero | 22.6 min | 18.0% | 0.4 min | unavailable | NO - out first |
 | 2026-08-20 | QQQ 710.0P | Vero | 22.6 min | 18.0% | 3.1 min | 23.6% | NO - out first |
-| 2026-08-24 | SNAP 6.0C | The Pawn (The Mark | 1328.0 min | 30.0% | 1.5 min | unavailable | NO - out first |
 | 2026-08-25 | MSFT 485.0P | Unraveller | 0.5 min | 8.0% | 1.6 min | 6.7% | yes |
 | 2026-08-25 | MSFT 485.0P | Unraveller | 0.5 min | 8.0% | 1.6 min | unavailable | yes |
 | 2026-09-03 | WMT 108.0C | 👑KingBeeAri🐝 | 38.0 min | unavailable | 21.4 min | 1.8% | NO - out first |
@@ -200,7 +202,7 @@ Basis on those rows: 37 caller-stated, 5 market-bid-at-caller-exit (measured), 1
 
 ## 7. Per-caller profile (min 5 linked entries), ranked by matchable
 
-`matchable` rewards a first trim that exists, lands the same day at least a minute after entry, sits between +8%% and +80%%, and is not buried under a high silent rate. It is a ranking, not a score with units.
+`matchable` rewards a first trim that exists, lands the same day at least a minute after entry, sits between +8% and +80%, and is not buried under a high silent rate. It is a ranking, not a score with units.
 
 | caller | n entries / linked | median min to 1st trim (same day) | typical 1st-trim % | posts a stop | typical stop | silent | median exit % | matchable |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|

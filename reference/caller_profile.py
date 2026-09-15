@@ -439,7 +439,7 @@ for r in OPT:
             continue
         hold = mins(L["_o"], L["_c"]) if L["_c"] else None
         still = out_first = None
-        if r["first_trim_dt"] and L["_c"]:
+        if r["first_trim_dt"] and L["_c"] and r["ft_same_day"]:
             still = L["_c"] >= r["first_trim_dt"]
             out_first = not still
         matches.append({
@@ -447,6 +447,7 @@ for r in OPT:
             "strike": r["strike"], "caller": r["caller"], "room": r["room"],
             "entry_ts": r["ts"], "gap_min": gap,
             "caller_first_trim_min": r["t_first_trim"],
+            "caller_ft_same_day": r["ft_same_day"],
             "caller_first_trim_pct": r["first_trim_pct"],
             "caller_first_trim_basis": r["first_trim_basis"],
             "bot_hold_min": hold, "bot_pl_pct": num(L["pl_pct"]),
@@ -468,6 +469,9 @@ st_in = [m for m in matches if m["bot_still_in_at_first_trim"] is True]
 st_out = [m for m in matches if m["bot_out_before_first_trim"] is True]
 both = st_in + st_out
 ANSW_ENTRIES = len({m["entry_ts"] for m in both})
+OUT_RED = [m for m in st_out if m["bot_pl_pct"] is not None and m["bot_pl_pct"] < 0]
+OUT_GREEN = [m for m in st_out if m["bot_pl_pct"] is not None and m["bot_pl_pct"] >= 0]
+SWING_FT = sum(1 for m in matches if m["caller_ft_same_day"] is False)
 
 
 # ------------------------------------------------ CALLER-OUTCOMES two days
@@ -794,6 +798,9 @@ A("| pairs where the caller ALSO posted a first trim (the answerable set) | **%d
 A("| **bot still in when the caller trimmed** | **%d of %d** |" % (len(st_in), len(both)))
 A("| **bot already out before the caller's first trim** | **%d of %d** |"
   % (len(st_out), len(both)))
+A("| ... and out at a LOSS - stopped or clipped before their trim | **%d** |" % len(OUT_RED))
+A("| ... out green, just earlier than them | %d |" % len(OUT_GREEN))
+A("| pairs excluded because the caller's first trim was on a later day | %d |" % SWING_FT)
 A("")
 A("| measure | value |")
 A("|---|---|")
@@ -848,7 +855,7 @@ A("")
 A("## 7. Per-caller profile (min %d linked entries), ranked by matchable" % MIN_N)
 A("")
 A("`matchable` rewards a first trim that exists, lands the same day at least a "
-  "minute after entry, sits between +8%% and +80%%, and is not buried under a high "
+  "minute after entry, sits between +8% and +80%, and is not buried under a high "
   "silent rate. It is a ranking, not a score with units.")
 A("")
 A("| caller | n entries / linked | median min to 1st trim (same day) | typical "
