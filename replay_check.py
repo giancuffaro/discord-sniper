@@ -27,9 +27,22 @@ sys.path.insert(0, HERE)
 import jsparse  # noqa: E402  (the PRODUCTION parser via node; Python mirror only as fallback)
 
 DAY = sys.argv[1] if len(sys.argv) > 1 else date.today().isoformat()
-RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)\]  (.*)$")
+RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)(?: message_id=([^\]\s]+))?\]  (.*)$")
 RE_DID = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  <(\w+)>  (.*)$")
 SKIP_ROOMS = ("Sniper HQ", "this room")           # our own output / voice
+
+
+class Message(tuple):
+    """A four-field legacy message tuple with its stable source ID attached.
+
+    Existing replay/report consumers intentionally keep unpacking
+    ``time, room, channel, text``.  Keeping that tuple shape avoids a broad,
+    risky migration while preserving the identifier for evidence-aware code.
+    """
+    def __new__(cls, time, room, channel, text, message_id=""):
+        obj = super().__new__(cls, (time, room, channel, text))
+        obj.message_id = "" if message_id == "legacy-unknown" else str(message_id or "")
+        return obj
 
 
 def room_rules():
@@ -175,13 +188,13 @@ def load(fn):
             if sec in ("m", "p"):
                 m = RE_MSG.match(ln)
                 if m and m.group(1) == DAY:
-                    d, t, room, cid, text = m.groups()
+                    d, t, room, cid, message_id, text = m.groups()
                     # A scroll/backfill is useful parser corpus, but it never
                     # entered the live path and cannot be a silent live drop.
                     if text.startswith("<history> "):
                         continue
                     target = parser_msgs if sec == "p" else msgs
-                    target[(t, cid, text[:100])] = (t, room, cid, text)
+                    target[(t, cid, text[:100])] = Message(t, room, cid, text, message_id)
             elif sec == "d":
                 m = RE_DID.match(ln)
                 if m and m.group(1) == DAY:

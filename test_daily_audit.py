@@ -3,7 +3,7 @@ import tempfile
 import unittest
 
 from daily_audit import summarize_replay
-from daily_report import _reportable_channel, _reason, _caller_room
+from daily_report import _reportable_channel, _reason, _caller_room, _source_message_url
 import replay_check
 from replay_check import find_missed_entries
 
@@ -35,9 +35,15 @@ class DailyAuditTests(unittest.TestCase):
             "OPEN QQQ 710C — that call is 78 seconds old — too stale | EliteOptions | Brando: QQQ call"})
         self.assertEqual((caller, room), ("EliteOptions | Brando", "unavailable"))
 
+    def test_discord_source_url_requires_a_real_message_id(self):
+        self.assertEqual(
+            _source_message_url("1537061197931618344", "123456789012345678"),
+            "https://discord.com/channels/1065277732684058624/1537061197931618344/123456789012345678")
+        self.assertEqual(_source_message_url("1537061197931618344", "legacy-unknown"), "")
+
     def test_load_keeps_raw_messages_when_live_parser_is_partial(self):
         content = """=== RAW MESSAGES ===
-2026-09-11 09:31:00  [Morning #1]  OPEN AAPL 100C @ 1.00
+2026-09-11 09:31:00  [Morning #1 message_id=123456789012345678]  OPEN AAPL 100C @ 1.00
 2026-09-11 09:32:00  [Second #2]  OPEN MSFT 200C @ 2.00
 === LIVE PARSER INPUTS ===
 2026-09-11 09:31:00  [Morning #1]  OPEN AAPL 100C @ 1.00
@@ -56,6 +62,9 @@ class DailyAuditTests(unittest.TestCase):
             messages, decisions = replay_check.load(path)
             self.assertEqual({m[1] for m in messages}, {"Morning", "Second"})
             self.assertEqual(len(messages), 2)
+            first = next(m for m in messages if m[1] == "Morning")
+            self.assertEqual(first.message_id, "123456789012345678")
+            self.assertEqual(next(m for m in messages if m[1] == "Second").message_id, "")
             self.assertEqual(len(decisions), 1)
         finally:
             replay_check.DAY = old_day

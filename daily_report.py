@@ -68,6 +68,43 @@ def _active_channel_ids():
     return out
 
 
+def _discord_room_urls():
+    """Map a watched Discord channel ID to its canonical Discord URL."""
+    out = {}
+    try:
+        with open(os.path.join(HERE, "extension", "rooms.txt"), encoding="utf-8") as fh:
+            for line in fh:
+                if not line.strip() or line.lstrip().startswith("#"):
+                    continue
+                p = [x.strip() for x in line.split("|")]
+                if len(p) >= 2 and re.match(r"^https://discord\.com/channels/\d+/\d+$", p[1]):
+                    out[p[0]] = p[1]
+    except OSError:
+        pass
+    return out
+
+
+def _source_message_url(channel_id, message_id):
+    """Return a Discord deep link only for a retained, verified source ID."""
+    message_id = str(message_id or "")
+    base = _discord_room_urls().get(str(channel_id or ""))
+    if not base or not re.fullmatch(r"\d+", message_id):
+        return ""
+    return base + "/" + message_id
+
+
+def _source_body(text):
+    """The exact captured message copied into an extension verdict, if any."""
+    if " | " not in str(text or ""):
+        return ""
+    return re.sub(r"\s+", " ", str(text).rsplit(" | ", 1)[1]).strip()
+
+
+def _clock_seconds(clock):
+    h, m, s = (int(v) for v in clock.split(":"))
+    return h * 3600 + m * 60 + s
+
+
 def _corrected_non_alert(text):
     low = text.lower()
     return (bool(re.search(r"\bsick\b.*\d+(?:\.\d+)?\s*/\s*con.*\bon\b", low))
@@ -115,6 +152,29 @@ def _decision_rows(day):
                    "kind": kind, "text": text}
             if key not in rows or rank[kind] > rank[rows[key]["kind"]]:
                 rows[key] = row
+    # Verdict rows preserve the original ``author: message`` after `` | ``.
+    # Match that literal evidence back to one captured source row.  A link is
+    # emitted only for an exact message match; repeated text is resolved by
+    # nearest timestamp and a tie stays unavailable rather than guessing.
+    for row in rows.values():
+        source = _source_body(row["text"])
+        if not source:
+            row["source_url"] = ""
+            continue
+        candidates = [m for m in messages.values()
+                      if getattr(m, "message_id", "")
+                      and re.sub(r"\s+", " ", m[3]).strip() == source]
+        if not candidates:
+            row["source_url"] = ""
+            continue
+        candidates.sort(key=lambda m: abs(_clock_seconds(m[0]) - _clock_seconds(row["time"])))
+        nearest = candidates[0]
+        if (len(candidates) > 1 and
+                abs(_clock_seconds(candidates[1][0]) - _clock_seconds(row["time"])) ==
+                abs(_clock_seconds(nearest[0]) - _clock_seconds(row["time"]))):
+            row["source_url"] = ""
+        else:
+            row["source_url"] = _source_message_url(nearest[2], nearest.message_id)
     return list(messages.values()), sorted(rows.values(), key=lambda r: r["time"])
 
 
@@ -287,13 +347,14 @@ def build(day):
         lines.append("- No matched trade is available for a system-versus-caller verdict.")
 
     lines += ["", "## Every recognized decision", "",
-              "| Time | Caller | Room | Alert | Result | Reason |",
-              "|---|---|---|---|---|---|"]
+              "| Time | Caller | Room | Alert | Result | Reason | Source message |",
+              "|---|---|---|---|---|---|---|"]
     for r in decisions:
         caller, room = _caller_room(r)
-        lines.append("| %s | %s | %s | %s %s | %s | %s |" %
+        source = "[Open in Discord](%s)" % r["source_url"] if r.get("source_url") else "unavailable"
+        lines.append("| %s | %s | %s | %s %s | %s | %s | %s |" %
                      (r["time"], caller.replace("|", "\\|"), room.replace("|", "\\|"),
-                      r["action"], r["contract"], r["kind"], _reason(r)))
+                      r["action"], r["contract"], r["kind"], _reason(r), source))
     if recovered_entries or recovered_adds:
         lines += ["", "## Recovered gaps", ""]
         for r in recovered_entries + recovered_adds:

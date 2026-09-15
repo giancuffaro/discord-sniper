@@ -524,8 +524,14 @@ def build():
         if not entry or entry <= 0:
             excluded.append((alert, "no usable entry price"))
             continue
-        gaps = [walk[i + 1][0] - walk[i][0] for i in range(len(walk) - 1)]
+        # The gate that actually matters: how long after we would have OWNED
+        # it does the tape start quoting? A real fill with a 50-minute hole
+        # before its first quote is no more scoreable than a late alert.
+        if walk[0][0] - sim_from > MAX_ENTRY_LAG_S:
+            late = True
         flat = _flat_ts(alert["day"])
+        walk = [r for r in walk if r[0] <= flat] or walk[:1]
+        gaps = [walk[i + 1][0] - walk[i][0] for i in range(len(walk) - 1)]
         row = {
             "alert": alert, "entry": entry, "basis": basis, "path": walk,
             "late": late, "lag": lag, "n_quotes": len(walk),
@@ -699,7 +705,7 @@ def write(trades, excluded):
           % (armed, len(scored)),
           "- Trades that armed the ratchet and still came out at or below "
           "entry: **%d**. That is the population the complaint is about." % gave_back,
-          "- If the bid never reached +3%%, no arm/rung setting could have "
+          "- If the bid never reached +3%, no arm/rung setting could have "
           "changed that trade; only the born stop could.", ""]
 
     L += ["## Named cases", ""]
@@ -789,7 +795,11 @@ def write(trades, excluded):
           "- No slippage, no queue, no partial fills. The entry crosses the ask "
           "and the exit prints at the bid that broke the stop. Real life is worse.",
           "- %d scored trades over two sessions is not a sample that can settle "
-          "a trading rule. It can only rule things out." % len(scored)]
+          "a trading rule. It can only rule things out." % len(scored),
+          "- Midas's SPY 760P posted \"@ 760.40\" — that is SPY's price, not the "
+          "premium. This replay never used it (no bot fill, so the entry is the "
+          "first recorded ask, $1.17). The daily caller reports did use it, "
+          "which is fixed separately."]
     if excluded:
         L += ["", "### Excluded alerts", "",
               "| Day | Time | Contract | Why |", "|---|---|---|---|"]

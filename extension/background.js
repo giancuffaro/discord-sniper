@@ -3097,7 +3097,8 @@ async function autoExportForLearning() {
     // Discord's "♟market-bishop"), so a dead-room cleanup was guesswork.
     // With the id here it's exact.
     stamp(c.t) + "  [" + (roomName(c.channel) || "?") +
-    (c.channel ? " #" + c.channel : "") + "]  " +
+    (c.channel ? " #" + c.channel : "") +
+    " message_id=" + (c.message_id || "legacy-unknown") + "]  " +
     (c.history ? "<history> " : "") + (c.author || "?") + ": " +
     String(c.text || "").replace(/\s+/g, " ").trim());
   // Raw rows preserve embeds and quotes for tuning. Replay uses this exact
@@ -3105,7 +3106,8 @@ async function autoExportForLearning() {
   const parserCaps = captured.filter(c => !c.history && c.parse_text != null)
     .sort((a, b) => a.t - b.t).map(c =>
       stamp(c.t) + "  [" + (roomName(c.channel) || "?") +
-      (c.channel ? " #" + c.channel : "") + "]  " +
+      (c.channel ? " #" + c.channel : "") +
+      " message_id=" + (c.message_id || "legacy-unknown") + "]  " +
       (c.author || "?") + ": " +
       String(c.parse_text || "").replace(/\s+/g, " ").trim());
   const acts = log.slice().reverse().map(e =>

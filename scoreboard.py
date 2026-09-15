@@ -29,7 +29,7 @@ import ledger  # noqa: E402
 DAYS_BACK = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 10
 SINCE = date.today() - timedelta(days=DAYS_BACK)
 
-RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)\]  (.*)$")
+RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)(?: message_id=[^\]\s]+)?\]  (.*)$")
 RE_DID = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  <(\w+)>  (.*)$")
 # a message that names a contract: "SPY 645C", "$57 calls", "255P 9/4", "NVDA 225 call"
 RE_CONTRACT = re.compile(r"\b[A-Z]{1,5}\b[^\n]{0,40}?\$?\d{1,5}(?:\.\d+)?\s*(?:[CP]\b|calls?\b|puts?\b)"

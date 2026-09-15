@@ -19,10 +19,10 @@ Both floors from `ratchet_tiers.py` run in every variant: a rung must clear 4 ti
 
 | Variant | n | Gross $ | Net $ (0 commission) | Win % | Avg/trade | Median hold | Born stop | First lock | Ratchet rung | Close |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **A** LIVE flat 5/3/5 | 17 | -341 | -341 | 18% | -20.06 | 3m 04s | 7 | 7 | 2 | 1 |
-| **B** 9/2 price tiers + anti-clip | 17 | -428 | -428 | 12% | -25.18 | 4m 19s | 14 | 0 | 1 | 2 |
-| **C** 5/3/5 + born-stop floor | 17 | -341 | -341 | 18% | -20.06 | 3m 04s | 7 | 7 | 2 | 1 |
-| **D** 9/2 tiers + anti-clip + floor | 17 | -405 | -405 | 18% | -23.82 | 4m 55s | 13 | 1 | 1 | 2 |
+| **A** LIVE flat 5/3/5 | 16 | -248 | -248 | 19% | -15.50 | 3m 26s | 6 | 7 | 2 | 1 |
+| **B** 9/2 price tiers + anti-clip | 16 | -335 | -335 | 12% | -20.94 | 4m 37s | 13 | 0 | 1 | 2 |
+| **C** 5/3/5 + born-stop floor | 16 | -248 | -248 | 19% | -15.50 | 3m 26s | 6 | 7 | 2 | 1 |
+| **D** 9/2 tiers + anti-clip + floor | 16 | -312 | -312 | 19% | -19.50 | 5m 52s | 12 | 1 | 1 | 2 |
 
 Webull charges $0 commission on options, so net = gross.
 
@@ -30,28 +30,28 @@ One row dominates those dollars: **09-11 NVDA260911C00220000, -188**. Its sweep 
 
 | Variant | n (gap-clean) | Gross $ | Win % | Avg/trade | Born stop | First lock | Ratchet rung | Close |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **A** LIVE flat 5/3/5 | 15 | -160 | 13% | -10.67 | 7 | 6 | 1 | 1 |
-| **B** 9/2 price tiers + anti-clip | 15 | -224 | 13% | -14.93 | 12 | 0 | 1 | 2 |
-| **C** 5/3/5 + born-stop floor | 15 | -160 | 13% | -10.67 | 7 | 6 | 1 | 1 |
-| **D** 9/2 tiers + anti-clip + floor | 15 | -201 | 20% | -13.40 | 11 | 1 | 1 | 2 |
+| **A** LIVE flat 5/3/5 | 14 | -67 | 14% | -4.79 | 6 | 6 | 1 | 1 |
+| **B** 9/2 price tiers + anti-clip | 14 | -131 | 14% | -9.36 | 11 | 0 | 1 | 2 |
+| **C** 5/3/5 + born-stop floor | 14 | -67 | 14% | -4.79 | 6 | 6 | 1 | 1 |
+| **D** 9/2 tiers + anti-clip + floor | 14 | -108 | 21% | -7.71 | 10 | 1 | 1 | 2 |
 
 ## Paired comparison against A (same trades, same paths)
 
-**All 17 scored trades**
+**All 16 scored trades**
 
 | Variant | Mean difference / trade | 95% bootstrap band (4000 resamples) | Resamples above zero | Verdict |
 |---|---:|---|---:|---|
-| B vs A | -5.12 | -15.18 .. +3.18 | 12% | **cannot be decided at this sample** — the band spans zero |
+| B vs A | -5.44 | -15.88 .. +3.50 | 13% | **cannot be decided at this sample** — the band spans zero |
 | C vs A | +0.00 | +0.00 .. +0.00 | 0% | identical to A on **every** trade in this sample |
-| D vs A | -3.76 | -14.06 .. +4.59 | 22% | **cannot be decided at this sample** — the band spans zero |
+| D vs A | -4.00 | -14.44 .. +5.12 | 23% | **cannot be decided at this sample** — the band spans zero |
 
-**Gap-clean subset (15)**
+**Gap-clean subset (14)**
 
 | Variant | Mean difference / trade | 95% bootstrap band (4000 resamples) | Resamples above zero | Verdict |
 |---|---:|---|---:|---|
-| B vs A | -4.27 | -15.73 .. +4.40 | 20% | **cannot be decided at this sample** — the band spans zero |
+| B vs A | -4.57 | -16.71 .. +5.00 | 21% | **cannot be decided at this sample** — the band spans zero |
 | C vs A | +0.00 | +0.00 .. +0.00 | 0% | identical to A on **every** trade in this sample |
-| D vs A | -2.73 | -14.60 .. +6.07 | 32% | **cannot be decided at this sample** — the band spans zero |
+| D vs A | -2.93 | -15.50 .. +6.86 | 33% | **cannot be decided at this sample** — the band spans zero |
 
 The band is the 2.5th-97.5th percentile of the resampled MEAN difference. A band that contains zero means this sample cannot tell the two rules apart, whatever the totals say.
 
@@ -70,7 +70,6 @@ This is the answer to "is it too tight": how far the bid got above the entry bef
 | 09-14 | 10:23 | NVDA260916P00210000 | $2.40 | $2.53 | +5.4% | +0.0% | 5.4 pts |
 | 09-14 | 10:36 | QQQ260914P00704000 | $1.13 | $1.17 | +3.5% | -0.9% | 4.4 pts |
 | 09-14 | 10:41 | QQQ260914P00705000 | $1.41 | $1.43 | +1.4% | -5.0% | 6.4 pts |
-| 09-14 | 10:42 | MU260916P00850000 | $2.10 | $1.32 | -37.1% | -44.3% | 7.1 pts |
 | 09-14 | 11:12 | MSFT260914C00505000 | $0.65 | $0.65 | +0.0% | -4.6% | 4.6 pts |
 | 09-14 | 11:24 | META260918C00670000 | $6.65 | $6.75 | +1.5% | -5.3% | 6.8 pts |
 | 09-14 | 11:52 | TSLA260925P00340000 | $2.38 | $2.55 | +7.1% | -0.4% | 7.6 pts |
@@ -79,9 +78,9 @@ This is the answer to "is it too tight": how far the bid got above the entry bef
 | 09-14 | 14:20 | TSLA260914P00360000 | $0.38 | $0.37 | -2.6% | -7.9% | 5.3 pts |
 | 09-14 | 15:12 | AFRM261016C00080000 | $2.11 | $2.19 | +3.8% | +3.8% | 0.0 pts |
 
-- Trades whose bid ever reached the **+3% arm**: **10 of 17**.
+- Trades whose bid ever reached the **+3% arm**: **10 of 16**.
 - Trades that armed the ratchet and still came out at or below entry: **7**. That is the population the complaint is about.
-- If the bid never reached +3%%, no arm/rung setting could have changed that trade; only the born stop could.
+- If the bid never reached +3%, no arm/rung setting could have changed that trade; only the born stop could.
 
 ## Named cases
 
@@ -99,7 +98,7 @@ This is the answer to "is it too tight": how far the bid got above the entry bef
   - D: born stop $0.62 (clamped to the bid) -> exit $0.62 at 11:15:59 (born stop), -3
   - REAL: bot filled $0.65, out $0.61 at 11:16:02, -4.
 - **QQQ 713 C 2026-09-14** (shabs, Skyy, 14:14) — 0.24 -> 0.22 in seconds
-  - entry $0.24 (real fill), spread at entry $0.01, max bid $0.24 at 14:24:22, 357 quotes, first quote 54s after the alert.
+  - entry $0.24 (real fill), spread at entry $0.01, max bid $0.24 at 14:24:22, 356 quotes, first quote 54s after the alert.
   - A: born stop $0.21 (clamped to the bid) -> exit $0.21 at 14:27:26 (born stop), -3
   - B: born stop $0.21 (clamped to the bid) -> exit $0.21 at 14:27:26 (born stop), -3
   - C: born stop $0.21 (clamped to the bid) -> exit $0.21 at 14:27:26 (born stop), -3
@@ -143,7 +142,6 @@ This is the answer to "is it too tight": how far the bid got above the entry bef
 | 09-14 | 10:23 | Whop Day Trades | Trademorewiser (MOD) | NVDA 210P 9/16 | real fill | $2.40 | $2.40 / +0 | $2.28 / -12 | $2.40 / +0 | $2.28 / -12 | $2.53 | 10:26:42 |
 | 09-14 | 10:36 | Demon day-trades | Demon × LKS | QQQ 704P 9/14 | real fill | $1.13 | $1.12 / -1 | $1.07 / -6 | $1.12 / -1 | $1.07 / -6 | $1.17 | 10:37:34 |
 | 09-14 | 10:41 | Vero 2 | Vero | QQQ 705P 9/14 | real fill | $1.41 | $1.34 / -7 | $1.34 / -7 | $1.34 / -7 | $1.34 / -7 | $1.43 | 10:42:35 |
-| 09-14 | 10:42 | Mugzone Options | MuggZone | MU 850P 9/16 | real fill | $2.10 | $1.17 / -93 | $1.17 / -93 | $1.17 / -93 | $1.17 / -93 | $1.32 | 11:32:11 |
 | 09-14 | 11:12 | OWLS all-alerts | MuggZone | MSFT 505C 2026-09-14 | real fill | $0.65 | $0.62 / -3 | $0.62 / -3 | $0.62 / -3 | $0.62 / -3 | $0.65 | 11:15:50 |
 | 09-14 | 11:24 | Honeydrip daytrades | Unraveller | META 670C 9/18 | real fill | $6.65 | $6.30 / -35 | $6.30 / -35 | $6.30 / -35 | $6.30 / -35 | $6.75 | 11:27:07 |
 | 09-14 | 11:52 | Mugzone Options | MuggZone | TSLA 340P 9/25 | real fill | $2.38 | $2.37 / -1 | $2.71 / +33 | $2.37 / -1 | $2.71 / +33 | $2.55 | 12:14:45 |
@@ -158,6 +156,7 @@ This is the answer to "is it too tight": how far the bid got above the entry bef
 |---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|
 | 09-11 | 10:37 | Platinum nitro | @Owner Alerts | NVDA 220C 2026-09-11 | first ask | $0.24 | $0.21 / -3 | $0.21 / -3 | $0.21 / -3 | $0.21 / -3 | $0.23 | 12:41:33 |
 | 09-11 | 12:01 | Honeydrip daytrades | Brett (Admin) | HOOD 118C 2026-09-11 | first ask | $0.02 | $0.01 / -1 | $0.01 / -1 | $0.01 / -1 | $0.01 / -1 | $0.01 | 12:41:33 |
+| 09-14 | 10:42 | Mugzone Options | MuggZone | MU 850P 9/16 | real fill | $2.10 | $1.17 / -93 | $1.17 / -93 | $1.17 / -93 | $1.17 / -93 | $1.32 | 11:32:11 |
 | 09-14 | 11:07 | OWLS all-alerts | Eva | DRAM 58C 9/18 | first ask `!` | $0.54 | $0.63 / +9 | $0.63 / +9 | $0.63 / +9 | $0.63 / +9 | $0.63 | 14:23:50 |
 | 09-14 | 11:21 | shabs | Skyy | QQQ 708C 2026-09-14 | first ask | $0.87 | $1.30 / +43 | $1.28 / +41 | $1.30 / +43 | $1.28 / +41 | $1.44 | 11:32:38 |
 | 09-14 | 11:28 | Midas | Midas (Admin) | SPY 760P 9/14 | first ask | $1.17 | $0.88 / -29 | $0.88 / -29 | $0.88 / -29 | $0.88 / -29 | $1.16 | 11:31:49 |
@@ -191,7 +190,7 @@ Sweep granularity is the biggest caveat in this file. A stop touched between two
 | 09-14 | 11:21 | QQQ260914C00708000 | 648s | 354 | 5s | 8455s | 1 | 14:32:00 | **no** |
 | 09-14 | 11:24 | META260918C00670000 | 84s | 682 | 5s | 8455s | 1 | 14:32:00 | **no** |
 | 09-14 | 11:28 | SPY260914P00760000 | 229s | 353 | 5s | 8455s | 1 | 14:32:00 | **no** |
-| 09-14 | 11:52 | TSLA260925P00340000 | 608s | 30486 | 1s | 61s | 0 | 21:05:22 | yes |
+| 09-14 | 11:52 | TSLA260925P00340000 | 608s | 13118 | 1s | 61s | 0 | 15:58:59 | yes |
 | 09-14 | 12:13 | WMT260918C00110000 | 7827s | 9 | 61s | 62s | 0 | 14:32:00 | **no** |
 | 09-14 | 12:26 | GOOGL261016C00360000 | 7025s | 9 | 61s | 62s | 0 | 14:32:00 | **no** |
 | 09-14 | 12:46 | AMZN261120C00300000 | 5842s | 9 | 61s | 62s | 0 | 14:32:00 | **no** |
@@ -199,15 +198,16 @@ Sweep granularity is the biggest caveat in this file. A stop touched between two
 | 09-14 | 13:41 | AMZN260918C00260000 | 2539s | 9 | 61s | 62s | 0 | 14:32:00 | **no** |
 | 09-14 | 13:53 | QQQ260917C00715000 | 1799s | 9 | 61s | 62s | 0 | 14:32:00 | **no** |
 | 09-14 | 14:05 | META260918C00700000 | 11s | 378 | 1s | 316s | 2 | 14:32:00 | **no** |
-| 09-14 | 14:14 | QQQ260914C00713000 | 54s | 357 | 1s | 62s | 0 | 15:59:10 | yes |
-| 09-14 | 14:20 | TSLA260914P00360000 | 51s | 97 | 61s | 62s | 0 | 15:59:10 | yes |
-| 09-14 | 15:12 | AFRM261016C00080000 | 34s | 46 | 61s | 62s | 0 | 15:59:10 | yes |
+| 09-14 | 14:14 | QQQ260914C00713000 | 54s | 356 | 1s | 62s | 0 | 15:58:08 | yes |
+| 09-14 | 14:20 | TSLA260914P00360000 | 51s | 96 | 61s | 62s | 0 | 15:58:08 | yes |
+| 09-14 | 15:12 | AFRM261016C00080000 | 34s | 45 | 61s | 62s | 0 | 15:58:08 | yes |
 
-- Replayed and scored: **17**. Replayed but late-start (never totalled): **11**. Excluded outright: **14**.
-- Scored rows with a sweep hole > 2 min before the exit: **2**. Gap-clean scored rows: **15**.
+- Replayed and scored: **16**. Replayed but late-start (never totalled): **12**. Excluded outright: **14**.
+- Scored rows with a sweep hole > 2 min before the exit: **2**. Gap-clean scored rows: **14**.
 - Paths that reach 15:59 ET: **4 of 28**. The rest are marked at the last quote the tape holds, which is not a real exit.
 - No slippage, no queue, no partial fills. The entry crosses the ask and the exit prints at the bid that broke the stop. Real life is worse.
-- 17 scored trades over two sessions is not a sample that can settle a trading rule. It can only rule things out.
+- 16 scored trades over two sessions is not a sample that can settle a trading rule. It can only rule things out.
+- Midas's SPY 760P posted "@ 760.40" — that is SPY's price, not the premium. This replay never used it (no bot fill, so the entry is the first recorded ask, $1.17). The daily caller reports did use it, which is fixed separately.
 
 ### Excluded alerts
 
@@ -245,7 +245,6 @@ Same alerts, same variant-A exit rule. "Take it" crosses the ask at the first qu
 | 09-14 | 10:23 | NVDA260916P00210000 | $2.40 | +0 | never touched $211 in 10 min | — | — |
 | 09-14 | 10:36 | QQQ260914P00704000 | $1.13 | -1 | touched $705 | $1.01 | -76 |
 | 09-14 | 10:41 | QQQ260914P00705000 | $1.41 | -7 | touched $705 | $1.39 | +14 |
-| 09-14 | 10:42 | MU260916P00850000 | $2.10 | -93 | not a round-number symbol (instant entry) | — | — |
 | 09-14 | 11:12 | MSFT260914C00505000 | $0.65 | -3 | never touched $503 in 10 min | — | — |
 | 09-14 | 11:24 | META260918C00670000 | $6.65 | -35 | never touched $656 in 10 min | — | — |
 | 09-14 | 11:52 | TSLA260925P00340000 | $2.38 | -1 | touched $364 | $2.39 | +0 |
@@ -254,7 +253,7 @@ Same alerts, same variant-A exit rule. "Take it" crosses the ask at the first qu
 | 09-14 | 14:20 | TSLA260914P00360000 | $0.38 | -3 | never touched $362 in 10 min | — | — |
 | 09-14 | 15:12 | AFRM261016C00080000 | $2.11 | +8 | not a round-number symbol (instant entry) | — | — |
 
-- Take-it fills: **17**, **-341** under variant A.
+- Take-it fills: **16**, **-248** under variant A.
 - Pullback fills: **7**, **-130** under variant A.
 - On the **13 round-number-eligible alerts only**: take-it **-246**, pullback **-130** — and the pullback simply did not enter 6 of them.
 - A skipped entry is $0, not a loss. Whether that is good depends on the trades it skips, which is the point of the table above.

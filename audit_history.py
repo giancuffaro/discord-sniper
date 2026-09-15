@@ -39,7 +39,7 @@ import replay_check                                     # noqa: E402
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)\]  (.*)$")
+RE_MSG = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  \[(.*?) #(\S+?)(?: message_id=[^\]\s]+)?\]  (.*)$")
 RE_DID = re.compile(r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})  <(\w+)>  (.*)$")
 RE_PRICE = re.compile(r"\b\d{1,4}\.\d{1,2}\b")
 RE_CONFIRMED_FILL = re.compile(
