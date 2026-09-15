@@ -3,11 +3,18 @@ import tempfile
 import unittest
 
 from daily_audit import summarize_replay
+from daily_report import _reportable_channel
 import replay_check
 from replay_check import find_missed_entries
 
 
 class DailyAuditTests(unittest.TestCase):
+    def test_personal_whop_pages_are_not_operating_rooms(self):
+        self.assertFalse(_reportable_channel("whop:/messages"))
+        self.assertFalse(_reportable_channel("whop:/@edlazar"))
+        self.assertTrue(_reportable_channel(
+            "whop:/firststeptrading/example/app"))
+
     def test_load_keeps_raw_messages_when_live_parser_is_partial(self):
         content = """=== RAW MESSAGES ===
 2026-09-11 09:31:00  [Morning #1]  OPEN AAPL 100C @ 1.00

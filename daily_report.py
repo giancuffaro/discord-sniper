@@ -55,6 +55,17 @@ def _corrected_non_alert(text):
             or bool(re.search(r"\d+(?:\.\d+)?\s*[kmb]\s+on\s+flow", low)))
 
 
+def _reportable_channel(channel_id):
+    """Keep personal Whop pages and direct messages out of an ops report.
+
+    They are retained in raw capture for evidence, but neither represents a
+    monitored room nor belongs in reader coverage.  Showing a participant's
+    handle as a room made the report look like an unknown caller was watched.
+    """
+    channel_id = str(channel_id or "").lower()
+    return not (channel_id == "whop:/messages" or channel_id.startswith("whop:/@"))
+
+
 def _decision_rows(day):
     rank = {"ignored": 0, "skipped": 1, "failed": 2, "sent": 3}
     rows = {}
@@ -62,6 +73,8 @@ def _decision_rows(day):
     for fn in replay_check.exports_for_day(day):
         lane_msgs, dids = replay_check.load(fn)
         for t, room, cid, text in lane_msgs:
+            if not _reportable_channel(cid):
+                continue
             messages[(t, cid, text[:100])] = (t, room, cid, text)
         for t, kind, text in dids:
             if kind not in rank:
