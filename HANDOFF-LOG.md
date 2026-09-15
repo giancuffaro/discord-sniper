@@ -12,6 +12,36 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (HANDOFF.md condensed back under 50 KB; G's weekly-log rule pasted verbatim)
+
+- The ROOM-CHAT EXPORTS bullet was replaced by G's own rule text ("RULE: weekly
+  signal-room-chat logs (replaces daily)"), with a three-line note on what the
+  merge left behind (`ds_logs.py`, archive zip).
+- History moved out of these bullets and kept here, state stayed in HANDOFF.md:
+  - PROVIDER KEYS: 9/13 probe — OpenAI/Gemini/Perplexity passed; sanitized
+    result in local-reader-measure/provider-key-check.json; inputs never ride
+    in browser draft persistence.
+  - DEPARTMENTS: Astra and Mini live probes passed; first Astra report for
+    Friday 9/11 and the Mini preflight were generated; up to one minute of
+    context snapshot may be lost on abrupt exit.
+  - READER/UI: Needs You pane/buttons/polling removed; v3.8.27 introduced
+    verified account sightings by channel ID; grabber re-resolves replaced
+    message panes each step, clears failed runs, keeps its tabs; unattended
+    exports retain message_id too.
+  - DAILY SNIPER REPORT: a browser restart used to truncate the day to its
+    final session (fixed: RAW capture retained, LIVE PARSER rows overlay);
+    alert tape restores today's contracts from `alert_meta.csv` after
+    bridge/code restarts, resolves shorthand expiries, records distinct
+    re-entries; the CALLER-OUTCOMES price parser anchors a price to the
+    contract AND an exit word within 80 chars so footers donate nothing.
+  - BROKER RECORD: nothing pulled the export until 9/15 (last hand pull 9/11),
+    so 9/12–9/14 read "broker export missing" and 9/14's 60 legs / −$321 were
+    invisible; 9/10 had 7 price-blind twins (3 FILLED sells the FIFO could
+    mis-pair).
+  - INDEX MIRROR: posts missed upstream are absent from new-day coverage.
+  - FILLS: a closed position's qty can be zero remaining while its entry legs
+    show the original size — that is why the match uses the original size.
+
 ## 2026-09-15 (DS Logs went weekly — one file per week per lane, day blocks, delta)
 
 G: "Naming: `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt` …
