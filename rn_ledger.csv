@@ -94,3 +94,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789484583.838,armed,QQQ,PUTS,703,9/15,,705.0,,Demon × LKS,Demon day-trades
 1789484600.49,submitted,QQQ,PUTS,703,9/15,,705.0,,Demon × LKS,Demon day-trades
 1789484602.498,filled,QQQ,PUTS,703,9/15,,705.0,0.61,Demon × LKS,Demon day-trades
+1789486379.551,armed,AMD,PUTS,490,9/18,,504.0,,Unraveller,Honeydrip daytrades
