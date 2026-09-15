@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-15 — 364fddc1596b91b8a695
+
+The session is active, and multiple Whop tabs (2K Challenge, Day Trades, Futures, High Risk, Swing Trades) are reported as open but without a recent reader heartbeat. This suggests possible reader inactivity or stale updates, but the evidence does not confirm an outage versus an intentionally quiet room.
+
+## Findings
+- in_session: true; issues list says each of the five Whop tabs is "open but its reader hasn't beaten in a while." Verify the last heartbeat timestamps and the expected update cadence for each tab, and confirm whether the readers are intentionally idle or have stopped reporting.
+
+## Limitations
+- No timestamps or heartbeat intervals are provided, so "hasn't beaten in a while" cannot be quantified.
+- The evidence does not distinguish a quiet room from a reader outage.
+- There is no broker-confirmed trade data, only tab-status text.
+- The issue list does not indicate whether the condition affects all tabs equally or only their readers.
+- No parser bug can be confirmed from this evidence alone.
+
+---
+
 # Health — 2026-09-15 — 7c15c343d8f67a266bf6
 
 The session is marked in-session, but many alert sources are reported as ON without a corresponding tab in this browser, and several Whop tabs have readers that "haven't beaten in a while." This looks like a browser/session visibility or stale-reader status issue, not a confirmed outage or confirmed data loss.
