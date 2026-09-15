@@ -720,10 +720,6 @@ def needs_you():
         if os.path.exists(os.path.join(HERE, "STOP")) or os.path.exists(os.path.join(HERE, "STOP.txt")):
             items.append({"what": "the STOP file is in the folder — nothing fires until it's deleted",
                           "fix": None})
-        _as = os.path.join(HERE, "announcer.stop")
-        if os.path.exists(_as) and os.path.getsize(_as) > 0:
-            items.append({"what": "Fill Announcer is paused (nothing posts to your Discord)",
-                          "fix": "announcer_on"})
         if WB is None:
             items.append({"what": "Webull is not connected — check the keys in the Keys tab"
                                   + (" (" + WB_ERROR[:80] + ")" if WB_ERROR else ""),
@@ -4593,16 +4589,6 @@ class Handler(BaseHTTPRequestHandler):
     def _status(self):
         reload_settings()
         keys_in = bool((EXEC.get("webull") or {}).get("app_key"))
-        # ANNOUNCER heartbeat (9/2: it sat stopped 13:27-14:24 and nobody
-        # knew — the 14:07 SPY fill never posted). Age of .announcer.alive.
-        try:
-            _aa = time.time() - os.path.getmtime(os.path.join(HERE, ".announcer.alive"))
-        except OSError:
-            _aa = None
-        try:
-            _as = os.path.getsize(os.path.join(HERE, "announcer.stop")) > 0
-        except OSError:
-            _as = False
         return {"mode": "per-room",
                 # PER-CHANNEL LISTS, SERVED TO THE EXTENSION (9/8). These live
                 # in rooms.txt, but the extension's parser is what applies
@@ -4621,9 +4607,6 @@ class Handler(BaseHTTPRequestHandler):
                     (CFG.get("default_symbol_channels") or {}).items()},
                 "entry_no_verb_channels": [str(x) for x in
                                            (CFG.get("entry_no_verb_channels") or [])],
-                "announcer_alive": (_aa is not None and _aa < 120),
-                "announcer_stopped": _as,       # deliberately off (STOP ANNOUNCER)
-                "announcer_age": (int(_aa) if _aa is not None else None),
                 # No global live any more — rooms go live one by one in the
                 # popup, and each ORDER carries its own flag.
                 "live": False,
@@ -4678,8 +4661,8 @@ class Handler(BaseHTTPRequestHandler):
                 "swings_paused": bool(CFG.get("swings_paused")),
                 # GREEKS FEED HEALTH (9/4). tastytrade silently drops an
                 # account back to DELAYED data if it ever goes unfunded, and
-                # a feed that quietly went stale is the same class of lie as
-                # the announcer being off and nobody knowing. Surface it:
+                # a feed that quietly went stale is the kind of lie that has
+                # to be visible instead of assumed. Surface it:
                 # live True/False, the level tastytrade reports, and whether
                 # events are actually arriving.
                 "greeks": (GREEKS.status() if GREEKS is not None
@@ -5878,29 +5861,16 @@ class Handler(BaseHTTPRequestHandler):
                                                "numbers": strategy_numbers()})
 
     def _fix(self):
-        """POST /fix {"do": "announcer_on"|"announcer_off"|"restart_bridge"}
-        — the buttons beside the needs-you list. Each is something G used
-        to do with a .bat file; the button IS him doing it."""
+        """POST /fix {"do": "restart_bridge"} — the buttons beside the
+        needs-you list. Each is something G used to do with a .bat file;
+        the button IS him doing it."""
         try:
             n = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(n) or b"{}")
         except (ValueError, TypeError):
             return self._json(400, {"ok": False, "why": "bad JSON"})
         do = str(body.get("do") or "")
-        _as = os.path.join(HERE, "announcer.stop")
         try:
-            if do == "announcer_on":
-                if os.path.exists(_as):
-                    os.remove(_as)
-                note("ANNOUNCER on (popup) — the revive task starts it within 30 min; "
-                     "ANNOUNCER.bat starts it now")
-                return self._json(200, {"ok": True, "why": "announcer switched on — it comes up "
-                                        "on its own within 30 min (or run ANNOUNCER.bat now)"})
-            if do == "announcer_off":
-                with open(_as, "w", encoding="utf-8") as f:
-                    f.write("paused from the popup %s\n" % time.strftime("%Y-%m-%d %H:%M"))
-                note("ANNOUNCER paused (popup)")
-                return self._json(200, {"ok": True, "why": "announcer paused — it stops at its next loop"})
             if do == "restart_bridge":
                 with open(os.path.join(HERE, "bridge.restart"), "w", encoding="utf-8") as f:
                     f.write("popup %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
@@ -6504,15 +6474,15 @@ def connect_broker(quiet=False):
             if "webull" in _nm.lower():
                 logging.getLogger(_nm).setLevel(logging.WARNING)
         # 9/3 CLEANUP: the sweeper only knew about webull_trade_sdk rotations,
-        # so everything else piled up unwatched — 187MB of dead logs by today
-        # (bridge.log.1/.2 75MB, announcer.log.1 45MB, webull_api rotations
-        # 32MB, the announcer's own SDK log 20MB). Every audit tool that
+        # so everything else piled up unwatched — 187MB of dead logs by then
+        # (bridge.log.1/.2 75MB, webull_api rotations 32MB, the streaming
+        # SDK's own log 20MB). Every audit tool that
         # scans a log got slower for it. Sweep EVERY rotated family, and
         # retire a live log that has grown past LOG_MAX_MB by rotating it
         # once to .old (never delete a live log — the day's story is in it).
         _cut = time.time() - 2 * 86400
         _ROT = ("webull_trade_sdk.log.", "webull_api.log.2",
-                "bridge.log.", "announcer.log.", "webull_data_streaming_sdk.log.")
+                "bridge.log.", "webull_data_streaming_sdk.log.")
         for _fn in os.listdir(HERE):
             try:
                 if not any(_fn.startswith(x) for x in _ROT):
@@ -6524,8 +6494,8 @@ def connect_broker(quiet=False):
             except OSError:
                 pass
         LOG_MAX_MB = 40
-        for _live in ("bridge.log", "announcer.log", "webull_api.log",
-                      "webull_api-announcer.log", "webull_data_streaming_sdk.log"):
+        for _live in ("bridge.log", "webull_api.log",
+                      "webull_data_streaming_sdk.log"):
             try:
                 _fp = os.path.join(HERE, _live)
                 if os.path.isfile(_fp) and os.path.getsize(_fp) > LOG_MAX_MB * 1048576:
