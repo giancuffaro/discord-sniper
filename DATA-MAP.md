@@ -17,7 +17,7 @@ files move; the shape does not.
 | What the bot decided and why | `DS Logs/*.txt` "WHAT THE BOT DID" block (`<sent>` `<skipped>` `<ignored>` `<failed>`) |
 | The contract the bot resolved | `trades.log` `ORDER IN` lines (181, fully resolved, dated) |
 | What actually filled | `master_broker.csv` (the broker's own record) |
-| What a contract cost minute by minute | `databento_tape_clean.csv` (49 days, 510 contracts), then `option_tape.csv` |
+| What a contract cost minute by minute | `databento_tape.csv` (49 days, 510 contracts), then `option_tape.csv` |
 | What is true right now | Webull itself — `WHAT DO I HOLD.bat`. Never a log. |
 
 **LIVE files change under you.** The bridge is running. These are being written
@@ -195,27 +195,28 @@ alongside it, so an edited message is never dropped), otherwise the whole line
 it; `bridge.py::_export_log` calls `ds_logs.merge_day` on write and
 `extension/background.js` sends the day's delta with `day` and `lane`.
 
-**Legacy dailies are untouched.** `signal-room-chat Aug-18-2026.txt` ..
-`Sep-10-2026.txt` and `signal-room-chat browser-history-*.txt` predate the lane
-split and are NOT merged — they stay exactly as they are, and every reader here
-still finds them by name. The seven lane-tagged dailies that WERE merged
-(Sep 10/11/13/14 discord, Sep 11/13/14 whop — 33.0 MB) are zipped at
-`archive/signal-room-chat-dailies-pre-weekly-2026-09-15.zip` (3.0 MB, archive/
-is gitignored, kept on disk so nothing is lost) and then deleted. The merge was
-asserted line-for-line first: every distinct record in the dailies is in the
-weekly files, none added.
+**A line lives in the week that first captured it.** `merge_day(..., held=)`
+takes the earlier week files of the lane, so a Monday export never re-holds
+last week's backlog (the bridge passes the previous week; the 9/15 merge
+passed every earlier week).
 
-Note `signal-room-chat Sep-10-2026.txt` (no lane tag) is the **whop** lane's
-pre-tag export, not the discord one — its rooms are all `#whop:` URLs. It was
-left in place: the discord Sep 10 block in the weekly file came from
-`Sep-10-2026 (discord).txt`. `exports_for_day` has always preferred the
-lane-tagged file for 9/10, so nothing double-counts.
+**Every daily is merged (9/15).** The seven lane-tagged dailies (Sep 10/11/13/14
+discord, Sep 11/13/14 whop, 33.0 MB) are in
+`archive/signal-room-chat-dailies-pre-weekly-2026-09-15.zip` (3.0 MB); the 19
+untagged dailies `signal-room-chat Aug-18-2026.txt` .. `Sep-10-2026.txt`
+(30.1 MB, CRLF, Aug-18..Sep-9 = discord, Sep-10 = the **whop** lane's pre-tag
+export — its rooms are all `#whop:` URLs) are in
+`archive/signal-room-chat-dailies-legacy-untagged-2026-09-15.zip` (3.4 MB).
+Both merges were asserted first: the set of distinct message lines and of
+parser-gate keys is identical before and after (15,196 lines / 11,790 keys for
+the second one). 40.6 MB in 25 files became 12.1 MB in 7 weekly files. Only
+`signal-room-chat browser-history-*.txt` (a one-off grab) is not a week file.
 
 **Where days come from now:** the `===== Mon Sep 14 2026 =====` headers, not
 the file name. `ds_logs.days_covered(path)`, `ds_logs.all_days(root)` and
 `ds_logs.files_for_day(root, day)` are the one place that is decided;
-`replay_check.exports_for_day` and `audit_history` go through them, and a
-legacy daily is still resolved by its name.
+`replay_check.exports_for_day` and `audit_history` go through them (a
+lane-tagged daily, should one ever appear again, is resolved by its name).
 
 Each day block has the same blocks the daily file had:
 
@@ -241,18 +242,18 @@ a duplicate of it: the two are deduped separately and never suppress each other.
 2026-09-09 09:37:01  <sent>  OPEN GOOGL 345C 8/21 @ 3.40 x1 — Unraveller · Honey Drip … — sent in 3086 ms — waiting for GOOGL to touch $345
 ```
 
-### Counts across all 24 files (4 weekly + 20 legacy dailies, 40.7 MB)
+### Counts across the 7 weekly files (12.1 MB, 9/15 after the merge)
 
 | | Count |
 |---|---|
-| Capture days covered | **22** (2026-08-18 → 2026-09-14) |
-| Raw message lines | **136,579** |
-| Distinct messages (timestamp + room + full text) | **19,958** |
-| Distinct room labels | 294 |
-| Raw lines carrying a real `message_id` | **1,697** (everything else is `legacy-unknown`) |
-| Voice-transcript lines (`[this room …]`) | **27,807** |
+| Capture days covered | **23** (2026-08-18 → 2026-09-15) |
+| RAW MESSAGES lines | **34,996** (4,313 are multi-line continuations) |
+| Distinct messages (timestamp + room + full text) | **17,153** |
+| Distinct room labels | 252 |
+| Raw lines carrying a real `message_id` | **1,836** (everything else is `legacy-unknown`) |
+| Voice-transcript lines (`[this room …]`) | **6,956** |
 | LIVE PARSER INPUTS lines | **1,986** |
-| "WHAT THE BOT DID" lines | **16,775** |
+| "WHAT THE BOT DID" lines | **10,316** |
 
 ### The 8 bot-decision tags
 
@@ -269,11 +270,10 @@ a duplicate of it: the two are deduped separately and never suppress each other.
 
 ### DS Logs traps
 
-- **THE EXPORT IS STILL CUMULATIVE — the FILE no longer is.** Each pass hands
-  the bridge the whole retained backlog; the weekly file keeps each line once.
-  The legacy dailies still hold their full backlog, so **136,579 raw lines
-  still dedupe to 19,958 distinct messages**. Always dedupe on
-  `(timestamp, room, text)` before counting anything.
+- **THE EXPORT IS STILL CUMULATIVE — the FILES no longer are.** Each pass hands
+  the bridge the whole retained backlog; the week files keep each line once,
+  across weeks. Still dedupe on `(timestamp, room, text)` before counting: a
+  voice line can repeat under `this room` and under its named room.
 - **THE JS CORPUS READERS MISS EVERY `message_id` LINE.** `parser_gate.js`,
   `reader_corpus.js` and `local-reader-measure/compare_keys.js` all match
   `\[(.+?)#(\d+)\]`, which cannot match the v3.8.32 tag
@@ -402,8 +402,7 @@ record we will ever have of what a contract was worth at a given minute.
 
 | File | Columns | Rows | Contracts | Range | State |
 |---|---|---|---|---|---|
-| `databento_tape.csv` | `ts,occ,bid,ask` | 1,022,106 | **510** | 2026-06-12 → 2026-09-08, 49 trading days, 56 underlyings | frozen (backfilled) |
-| `databento_tape_clean.csv` | same | 1,022,106 | 510 | same | frozen — **use this one** |
+| `databento_tape.csv` | `ts,occ,bid,ask` | 1,022,106 | **510** | 2026-06-12 → 2026-09-08, 49 trading days, 56 underlyings | backfilled, despiked in place |
 | `option_tape.csv` | `ts,occ,bid,ask` | 161,482 | **31** | 2026-09-02 → 2026-09-10, **6 days only** | LIVE in market hours |
 | `missed_tape.csv` | `ts,occ,bid,ask` | 46,394 | **3** | 2026-08-05, 08-11, 09-03 | frozen |
 | `quote_shadow.csv` | `ts,symbol,bid,ask,mid,bid_size,ask_size` | 29,525 | 27 | 2026-09-08 → 2026-09-10 | LIVE (DXLink shadow) |
@@ -417,10 +416,13 @@ record we will ever have of what a contract was worth at a given minute.
   **31 distinct contracts across 6 days** — the fast bus tapes only contracts we
   actually hold, at ~1/sec, so two long holds (IREN 54k rows, XLF 52k rows)
   are 66% of the file. It is **not** a market tape.
-- **`databento_tape_clean.csv` is the real historical source** — 510 contracts,
-  49 days. `clean_tape.py` only rounds the timestamp to milliseconds and
-  replaces lone bid/ask spikes with the local median; it does **not** dedupe.
-  Both files carry ~54,940 rows that repeat a `(ts, occ)` pair. Dedupe yourself.
+- **`databento_tape.csv` is the real historical source** — 510 contracts,
+  49 days. It is ONE file (9/15): `databento_backfill.py` / `option_tape_pull.py`
+  append raw ticks, then `clean_tape.py` rewrites it in place — timestamps to
+  the millisecond, rows grouped by contract, lone bid/ask spikes replaced by the
+  local median (287 of 967,164 `(ts, occ)` keys). The `_clean` twin held the same
+  ticks and is gone. It does **not** dedupe: ~54,940 rows repeat a `(ts, occ)`
+  pair. Dedupe yourself.
 - **`quote_shadow.csv` uses a different symbol format** — `.MSTR260911P132`
   (DXLink/tastytrade), not OCC `MSTR260911P00132000`. It will not join to the
   other tapes without conversion.
@@ -438,7 +440,7 @@ record we will ever have of what a contract was worth at a given minute.
 # 5. Per-trade and per-day records
 
 ## days/*.json — the book, one file per trading day
-33 `YYYY-MM-DD.json` + 5 `.bak`. 2026-08-05 → 2026-09-11. Today's file is LIVE.
+37 `YYYY-MM-DD.json`, no `.bak` (9/15: only `state.json` keeps a backup — nothing ever read a day file's). 2026-08-05 → today; today's file is LIVE.
 
 Shape: `{"date", "mode", "table": [...], "wallet": {...}}`.
 `mode` is `dryrun` or live. `wallet` = `cash, reserved, open_cost, open_worth,
@@ -506,7 +508,7 @@ The `.~lock.*.xlsx#` files mean a workbook is open in LibreOffice — ignore the
 | `bridge.log.1` | 343,698 | 2026-08-27 → 2026-09-10 | frozen (27 MB) |
 | `reads.log` | 593 | 2026-09-08 → 2026-09-10 | the **reader tape** — what the ears heard and the eyes saw. Format `ts  🎙/📸 room  speaker` then the parser's reading, then what was heard, pipe-separated. 574 voice, 19 screenshot. Read it with `python3 reads.py`. |
 | `deadman.log` | 141 | from 2026-09-07 | **LIVE** — thread deaths |
-| `webull_api.log` + 18 rotated `webull_api.log.<date>_<hh>` | 299 current | 2026-09-09 → 2026-09-11 | **LIVE.** SDK debug. **Contains the Webull app key in plaintext (`x-app-key`). Never paste this file anywhere.** |
+| `webull_api.log` (hourly rotations `webull_api.log.<date>_<hh>` go to `archive/webull-api-logs/`, 28 there) | current | rolling | **LIVE.** SDK debug. **Contains the Webull app key in plaintext (`x-app-key`). Never paste this file anywhere.** |
 | `webull_data_streaming_sdk.log` | 8,797 | to 2026-09-09 | streaming SDK errors; the SDK is not installed on purpose |
 | `announcer.log` | 141 | frozen 2026-09-02 | |
 | `whop-loop.log` | 13 | 2026-09-10 | Whop Chrome restarts |
@@ -592,8 +594,30 @@ a busy day. Dedupe before counting rooms.
   incl. `voice-transcript-week-Aug24-28.txt` and `voice-HARD-lines-for-G.txt`,
   `archive/2026-09-09-cleanup/` 157 retired scripts and docs with a
   `MANIFEST.txt`. Also three `paper-fills-2026-09-0*.csv` — **4 rows each and
-  near-identical; they are not three days of data.** Nothing in `archive/` is
-  read by the running machine.
+  near-identical; they are not three days of data.** 9/15 additions:
+  `signal-room-chat-dailies-legacy-untagged-2026-09-15.zip` (19 dailies),
+  `local-reader-measure-experiments-2026-09-15.zip` (45 files, 95.8 MB → 7.2 MB:
+  the openai-trial review/release/progress snapshots, the June all-channels
+  run outputs, `grabber-audit/`, `rule-fixes/`, the pilot-v1 / haiku / sonnet
+  run leftovers and three 9/13 probe files) and `webull-api-logs/` (the SDK's
+  hourly rotations land here directly now). Nothing in `archive/` is read by
+  the running machine.
+- **`local-reader-measure/`** — 230 MB, all of it read or written by code:
+  `caller-identity/` (`caller_ledger.py` writes, the bridge's /callers reads
+  `callers.sqlite3`, 119 MB), `openai-trial-2026-09-12/` (`budget.sqlite3` is
+  the $5 allowance ledger — never delete it — plus the trial's own corpus /
+  ai-context / disagreements / summary files), `all-channels-2026-06-12/corpus.jsonl`
+  (the trial's SOURCE), `corpus.jsonl` + `ai-context.jsonl` + `pilot-v1-disagreements.csv`
+  (`reader_measure.py`), `live.jsonl` (`shadow_reader.py` appends every observer
+  read, one file, each row carries `day` — replaced `live-<day>.jsonl`, 790 rows
+  merged), `context-cache.json`, `provider-key-check.json`, `compare_keys.js` +
+  its `js-keys.json`.
+- **`department-reports/`** — one living pair per department (9/15):
+  `reader_reviews.jsonl/.md` (23), `health.jsonl/.md` (6), `daily.jsonl/.md` (2),
+  `incidents.jsonl/.md` (2); the `.jsonl` row carries the digest as `md`, the
+  `.md` is newest first. `departments.record()` appends; the old
+  `<role>-<day>-<fingerprint>.json/.md` pairs are gone. `runs.sqlite3` is the
+  reservation ledger, `health-latest.json` / `extension-<lane>.json` are live.
 - **`backups/`** — 28 dated copies, last 5–14 of each master file:
   14 `master_ledger.csv`, 8 `master_broker.csv`, 5 `master_alerts.csv`,
   1 `_whop_loop.bat`. Named `<file>.bak-YYYYMMDD-HHMMSS`. **Use these to see
@@ -619,7 +643,7 @@ a busy day. Dedupe before counting rooms.
 | Question | Read | How |
 |---|---|---|
 | **Which rooms make money?** | `master_ledger.csv` | Use source-linked entry attribution and broker-confirmed fills. `manual` is a manual exit flag, not an entry-owner filter; export-only records need provenance before assigning a caller. Cross-check with the research SQL and SCOREBOARD.html. |
-| **What did a contract cost at a given minute?** | `databento_tape_clean.csv` first (510 contracts, 6/12–9/8), then `option_tape.csv` (31 contracts, 9/2–9/10), then `missed_tape.csv` (3 contracts). | Dedupe `(ts, occ)`. If the contract is in none of them, the price does not exist anywhere — see Known data gaps. |
+| **What did a contract cost at a given minute?** | `databento_tape.csv` first (510 contracts, 6/12–9/8), then `option_tape.csv` (31 contracts, 9/2–9/10), then `missed_tape.csv` (3 contracts). | Dedupe `(ts, occ)`. If the contract is in none of them, the price does not exist anywhere — see Known data gaps. |
 | **What did a caller actually post?** | `DS Logs/signal-room-chat *.txt`, RAW MESSAGES block | Full text, untruncated. Dedupe on `(ts, room, text)`. If the room is a `#538…` voice room, the text is a speech transcript. |
 | **…and if the exports don't cover that day?** | `trades.log` `AI READ` lines | 636 of them carry the message, truncated to 50 chars, plus the bot's full reading after the `->`. |
 | **What did the bot do with an alert, and why?** | `DS Logs/*.txt` WHAT THE BOT DID block | `<sent>` = order out, `<failed>` = bridge refused it (reason included), `<skipped>` = the reader never got to it, `<ignored>` = read and deliberately not traded. |
@@ -643,7 +667,7 @@ a busy day. Dedupe before counting rooms.
    ask "what was this contract worth on August 12". Our own tapes are the whole
    record, and the Databento backfill is the only way to add to it.
 2. **Contracts with no tape have no price, ever.** `option_tape.csv` covers 31
-   contracts over 6 days; `databento_tape_clean.csv` covers 510 over 49 days;
+   contracts over 6 days; `databento_tape.csv` covers 510 over 49 days;
    `missed_tape.csv` covers 3. Everything else alerted before or outside those
    is priceless in the literal sense. `quotes_needed_backfill.txt` lists 413
    such OCCs; `missing_contracts_for_backfill.txt` the 84 that matter most.

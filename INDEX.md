@@ -76,11 +76,13 @@ broker; read it via `ledger.py`) · `master_alerts.csv` (every alert and what ha
 it; `ledger.alerts()`) · `backups/` (dated copies of the master files, last 5 each) ·
 `trades.log` (dated, the raw story) · `bridge.log` (console echo)
 · `days/*.json` (per-day book state — not for analysis) · `journal.csv` (legacy export) ·
-`option_tape.csv` / `databento_tape_clean.csv` / `missed_tape.csv` (price tapes — `tape.py`
-is the one reader) · `journal-*.xlsx` (built 4:45pm weekdays) · `DS Logs/` (extension exports — every
+`option_tape.csv` / `databento_tape.csv` / `missed_tape.csv` (price tapes — `tape.py`
+is the one reader; the databento tape is despiked in place by `clean_tape.py`) · `journal-*.xlsx` (built 4:45pm weekdays) · `DS Logs/` (extension exports — every
 message the reader saw; ONE FILE PER WEEK PER LANE, `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt`, each capture day under a
 `===== Mon Sep 14 2026 =====` header holding only that day's new lines — `ds_logs.py` owns the
-naming, the day blocks and the de-dupe; pre-9/10 dailies are left as they are) · `corpus/` (room language samples) · `futures_mirror_shadow.csv` (one row per SPY/QQQ
+naming, the day blocks and the de-dupe; every daily was merged 9/15 and zipped in `archive/`) ·
+`department-reports/` (one `<role>.jsonl` + `.md` per department, appended) · `local-reader-measure/`
+(reader measurement corpora, `live.jsonl`, caller identity; finished experiments are zipped in `archive/`) · `corpus/` (room language samples) · `futures_mirror_shadow.csv` (one row per SPY/QQQ
 entry the bridge saw, written switch-on or switch-off; the index mirror's input)
 
 ## Documentation
@@ -101,8 +103,9 @@ Retired handoffs are preserved as historical evidence in
 
 - `settings.json` — every API key and webhook. Gitignored. Never commit it,
   never paste its contents anywhere.
-- `archive/` — 9/3 cleanup: 187MB of rotated logs, old broker exports, old
-  journals and one-off docs. `archive/2026-09-09-cleanup/` — 9/9: dead
-  scripts, superseded tools and executed docs (see its MANIFEST.txt for each
-  item and why). Nothing in archive/ is used. **Safe to delete whenever you
-  want the disk back.**
+- `archive/` — where retired things go: rotated SDK logs
+  (`archive/webull-api-logs/`, written there directly), zipped dailies and
+  finished experiments (the 9/15 zips), old broker exports, journals and
+  one-off docs; `archive/2026-09-09-cleanup/` — dead scripts, superseded tools
+  and executed docs (see its MANIFEST.txt). Nothing in archive/ is used.
+  **Safe to delete whenever you want the disk back.**
