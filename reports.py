@@ -21,7 +21,8 @@ Input kinds: whole files by size+mtime (f: code, config; g: globs), dated
 files by the hash of that day's lines or rows (dated: trades.log, csvdate: the
 master csvs, tape: epoch-stamped tapes — the live bridge appends to them all
 day, and a past day must not go stale because today grew), the day's DS Logs
-blocks (dslogs), and the day's block or rows of another report (block:, csv:).
+blocks (dslogs), json files by content minus their heartbeat stamp (json:), and
+the day's block or rows of another report (block:, csv:).
 
     python reports.py status [YYYY-MM-DD]      one line per kind/day
     python reports.py build <kind> <day>       skip if current, else rebuild
@@ -129,7 +130,7 @@ for _k in (
          ("csvdate:master_ledger.csv", "csvdate:master_broker.csv",
           "csvdate:balance_daily.csv", "dated:trades.log",
           "csv:caller-outcomes", "block:caller-vs-ratchet",
-          "block:futures-mirror", "g:department-reports/extension-*.json",
+          "block:futures-mirror", "json:department-reports/extension-*.json",
           "f:HANDOFF.md", "f:daily_brief.py"),
          what="the one screen G reads: day, bot trades, callers, what broke, pending"),
     Kind("audit", "AUDIT", AUDITS, "txt", "daily_audit.py",
@@ -346,6 +347,18 @@ def input_signatures(name, day):
             sig[arg + " (day rows)"] = _csv_date_sig(os.path.join(HERE, arg), day)
         elif tag == "tape":
             sig[arg + " (day rows)"] = _tape_day_sig(os.path.join(HERE, arg), day)
+        elif tag == "json":
+            # Content, not mtime: the lane heartbeats rewrite these every
+            # minute, and only what they SAY (issues, rooms) matters.
+            for p in sorted(glob.glob(os.path.join(HERE, arg))):
+                try:
+                    with open(p, encoding="utf-8") as fh:
+                        doc = json.load(fh)
+                    if isinstance(doc, dict):
+                        doc.pop("received_at", None)
+                    sig[os.path.relpath(p, HERE)] = _h(json.dumps(doc, sort_keys=True))
+                except (OSError, ValueError):
+                    sig[os.path.relpath(p, HERE)] = "missing"
         elif tag == "dslogs":
             for f, s in _dslogs_sig(day).items():
                 sig["DS Logs/" + f + " (day block)"] = s

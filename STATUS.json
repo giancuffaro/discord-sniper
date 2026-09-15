@@ -1,0 +1,119 @@
+{
+ "audit": {
+  "coverage_warnings": 0,
+  "failed_checks": [],
+  "generated_at": "2026-09-14T22:29:35.871054-04:00",
+  "possible_missed": 3,
+  "silent_drops": 11,
+  "status": "attention"
+ },
+ "balance": {
+  "as_of": "2026-09-14",
+  "bp": 1279.86,
+  "day_pl": -333.85,
+  "nlv": 1279.86
+ },
+ "bot": {
+  "losses": 8,
+  "pl": -91.0,
+  "trades": 10,
+  "wins": 1
+ },
+ "bridge": {
+  "buying_power": null,
+  "health": {
+   "checked_at": 1789451487.213863,
+   "issues": [],
+   "lanes": [
+    {
+     "fresh": true,
+     "lane": "discord",
+     "version": "3.8.33"
+    },
+    {
+     "fresh": true,
+     "lane": "whop",
+     "version": "3.8.33"
+    }
+   ]
+  },
+  "probed_at": "2026-09-15T01:52:25-04:00",
+  "up": false
+ },
+ "broke": [
+  {
+   "coverage_warnings": 0,
+   "date": "2026-09-14",
+   "failed_checks": [],
+   "possible_missed": 3,
+   "silent_drops": 11
+  },
+  {
+   "coverage_warnings": 0,
+   "date": "2026-09-14",
+   "failed_checks": [],
+   "possible_missed": 3,
+   "silent_drops": 13
+  },
+  {
+   "coverage_warnings": 0,
+   "date": "2026-09-14",
+   "failed_checks": [
+    "ratchet policy comparison"
+   ],
+   "possible_missed": 3,
+   "silent_drops": 13
+  }
+ ],
+ "date": "2026-09-14",
+ "pending": [
+  "In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project instructions and remove the old uploaded handof\u2026",
+  "Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5\u21922 rung, futures decouple) \u2014 G's call whether Cl\u2026",
+  "NinjaTrader ATM template \"SNIPER\": stop 100 ticks / target 200 (=25/50 MNQ pts), qty 1 \u2014 create in NT8, type \u2026",
+  "Close any old parked Whop tabs. (`--disable-gpu` rides every flagged Chrome launch since 9/10 \u2014 a GPU black t\u2026"
+ ],
+ "reports": [
+  "alert-audit            all        STALE    ALERT-AUDIT.html  [never recorded in reports/INDEX.json]",
+  "alert-history          2026-09-14 MISSING  daily-audits/ALERT-HISTORY week-of-Sep-14-to-Sep-20-2026.txt  [no such file]",
+  "alert-ledger           2026-09-14 MANUAL   daily-reports/ALERT-LEDGER week-of-Sep-14-to-Sep-20-2026.md  [no builder; hand-made]",
+  "audit                  2026-09-14 STALE    daily-audits/AUDIT week-of-Sep-14-to-Sep-20-2026.txt  [never recorded in reports/INDEX.json]",
+  "brief                  2026-09-14 CURRENT  daily-reports/BRIEF week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-15T01:52:21-04:00]",
+  "caller-outcomes        2026-09-14 CURRENT  daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-15T01:51:01-04:00]"
+ ],
+ "rooms": {
+  "discord": {
+   "on": 35,
+   "reads": 1121,
+   "spoke": 29
+  },
+  "whop": {
+   "on": 5,
+   "reads": 708,
+   "spoke": 5
+  }
+ },
+ "verified": {
+  "bridge_code_live": {
+   "at": "2026-09-15T01:52:25-04:00",
+   "bridge_py_mtime": "2026-09-15T01:48:31-04:00",
+   "sha": "77afc8d"
+  },
+  "broker_reconciled": {
+   "at": "2026-09-15T01:52:25-04:00",
+   "broker_legs": 47,
+   "ledger_pl": -321.0,
+   "match": null,
+   "sync_ok": null
+  },
+  "parser_gate": {
+   "at": null,
+   "counts": null
+  },
+  "tests": {
+   "at": null,
+   "failed": null,
+   "passed": null
+  }
+ },
+ "written_at": "2026-09-15T01:52:24-04:00"
+}
