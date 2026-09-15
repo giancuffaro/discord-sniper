@@ -1,11 +1,12 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
-live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; needs a bridge restart). Five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
+live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
+evidence, not current instructions.
+Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; needs a bridge restart). ENTRY SLACK built, OFF and activation blocked. Five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
 
 ## How to update this file (long form: OPERATIONS.md)
-- A STATE, not a story: edit the rule that changed IN PLACE. REPLACE, DON'T
-  STACK — the new rule takes the old one's place, never sits beside it.
+- A STATE, not a story: edit the rule that changed IN PLACE (REPLACE, DON'T
+  STACK, below).
 - ONE RULE, ONE LINE. Numbers, formats, procedures and rationale are MECHANICS:
   one reference doc per subsystem. G's own wording stays verbatim.
 - Bump the one "Last updated:" line; never prepend an essay. Session notes and
@@ -15,11 +16,9 @@ Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; ne
   hit a round number). Past it you are writing history or mechanics: move it
   (history → HANDOFF-LOG.md, how-it-works → reference/).
 - No handoff copies, dated handoffs or upload snapshots; daily performance lives
-  in `daily-reports/`. HANDOFF-LOG.md and the zipped handoffs in `archive/` are
-  evidence, never current instructions.
+  in `daily-reports/`.
 
 ## Where the mechanics live (one per subsystem; see INDEX.md)
-ASK-MAP.md (which file answers which ask) → STATUS.json → reports/INDEX.json.
 reference/: ENTRIES · RATCHET · ROOMS-TABS · OPERATIONS (restarts, the 16:40
 audit, git, autopilot, readers, keys, PC2, caller research, weekly files, house
 rules, watch-item detail, this file's long form) · OPTIONS-BROKER-REFERENCE ·
@@ -41,6 +40,7 @@ machine, accounts, coexistence, north star) · INDEX · HANDOFF-LOG.
 
 ENTRIES · ENTRIES.md
 - PRICE: caller's price or better; pullbacks cross the ask; one contract per entry. RN PULLBACK is ON and global; THE LEVEL STAYS $1 (SETTLED 9/9), never re-opened on a feeling.
+- ENTRY SLACK (G, 9/15) — **OFF and activation blocked**: never chase. `execution.entry_slack_pct` exists only so `reference/entry_slack_replay.py` can measure what crossing the ask would have done; a non-zero value refuses to arm until the replay shows a net gain outside its error bar. 27 of 201 option orders never filled — measured daily, not argued.
 - ONE SWITCH PER ROOM (G, 9/9): ON = tab + read + trades LIVE; OFF = nothing; LAPSED = sub ran out. No paper state. A TAB CLOSED BY HAND IS NOT A BENCH; benched rooms stay.
 - TABS (9/10): the reaper closes only `_OURS`, never a human's; only START HERE, the popup switch and whopSelfHeal() open one; "No Access" → `lapsed` + close; the last tab stays.
 - ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed. CHANNELS: callers inside their verified room, win rate needs evidence, no Callers tab (G).

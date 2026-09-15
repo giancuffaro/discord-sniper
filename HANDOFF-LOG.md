@@ -24,7 +24,7 @@ G, after CRWD 250C: "lets keep it as an option to backtest the alerts, maybe we 
 
 **THE RESULT, and it is one-sided.** The cost side is the well-measured half — 132 of 151 filled orders have a real ask at read time:
 
-| slack | no-fills rescued | gross from rescues | improvement given up | **vs today's rule** | 95% band / order |
+| slack | no-fills rescued | gross from rescues | extra improvement given up vs today | **vs today's rule** | 95% band / order |
 |---|---|---|---|---|---|
 | 0% (today) | 0 of 3 | +$0 | — | baseline | — |
 | 2% | 0 of 3 | +$0 | -$13 | **-$13** | -$0.17 .. -$0.04 |
