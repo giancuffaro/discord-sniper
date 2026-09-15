@@ -12,6 +12,93 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (DS Logs went weekly — one file per week per lane, day blocks, delta)
+
+G: "Naming: `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt` …
+week starts Monday … each day's capture appends to that week's file instead of
+creating a new daily file." Done, and the "concatenate" had to mean something
+sharper than concatenate: the export is CUMULATIVE. Every 30-minute pass hands
+over the whole retained backlog, so 9/13 discord was 8.6 MB and 9/14 was 10 MB
+of overwhelmingly the same messages. Seven lane-tagged dailies held 33.0 MB;
+the four weekly files that replace them hold 10.6 MB with every distinct record
+intact.
+
+WHAT WAS BUILT. `ds_logs.py` is the one owner: week naming (Monday..Sunday,
+Eastern, both years when a week straddles New Year), the
+`===== Mon Sep 14 2026 =====` day header, `merge_day()` (replace that day's
+block, re-dedupe every block against the blocks before it — idempotent and
+self-healing), and the reader-facing `export_files` / `days_covered` /
+`files_for_day` / `all_days`. Identity is the `message_id` when the capture had
+one, with the body alongside so an edited message is never dropped, otherwise
+the whole line. RAW and LIVE PARSER INPUTS dedupe in separate namespaces —
+the parser row is a second VIEW of a message, not a copy of it.
+
+THE TWO HALVES. `extension/background.js` (v3.8.33) names the file by week,
+sends only the day's delta (`export_seen` holds the keys the earlier days of
+that week used; it clears on a week roll, and today's keys join it only on a
+DAY roll, so every pass of the same day rebuilds the same full block), and
+POSTs `day` and `lane` alongside. `bridge.py::_export_log` calls
+`ds_logs.merge_day` and writes the merged file; a post with no `day` (the room
+history grab and its .json twin) is still written whole. The bridge de-dupes
+again on write, so a wiped profile that re-sends everything costs nothing.
+`export_seen` is deliberately NOT advanced on the bridge-down Downloads
+fallback — the next successful pass re-sends that day.
+
+THE MIGRATION, AND THE PROOF. Week of Mon Sep 7: discord 9/10+9/11+9/13,
+whop 9/11+9/13. Week of Mon Sep 14: discord 9/14, whop 9/14. (The brief said
+"week of Sep 8–14"; Sep 14 2026 is a MONDAY — his own header example says so —
+so Monday-start puts 9/10, 9/11 and 9/13 in the week before 9/14's.) Per-day
+lines dropped as already-held: 9/10 8,840 raw / 83 did · 9/11 21,640 / 2,206 ·
+9/13 26,021 / 2,203 · 9/14 12,849 / 100. Before deleting anything the seven
+originals were zipped to
+`archive/signal-room-chat-dailies-pre-weekly-2026-09-15.zip` (3.0 MB, tested)
+and the weekly files were asserted line-for-line against them: per section and
+on the DATA-MAP identity `(ts, room, text)`, dailies == weekly, 0 missing and
+0 extra, four files, every time. `node parser_gate.js` 11,385 messages / 852
+entries / 3,048 actions BEFORE and 11,385 / 852 / 3,048 AFTER.
+
+READERS REPOINTED. `replay_check.exports_for_day` and `newest_export`,
+`audit_history` (its dead private `day_of`/`load` duplicates of replay_check's
+were deleted, and the unused `export_for_day` went with them),
+`scoreboard.load_exports`, `caller_ledger`, `reader_history` — all now go
+through `ds_logs`. `parser_gate.js`, `reader_corpus.js` and
+`local-reader-measure/compare_keys.js` already matched the weekly name and
+ignore a day header, so they took a comment only. The pre-9/10 untagged
+dailies (`Aug-18-2026.txt` .. `Sep-10-2026.txt`, `browser-history-*`) are NOT
+merged and are still found by name.
+
+`signal-room-chat Sep-10-2026.txt` (no lane tag) turned out to be the WHOP
+lane's pre-tag export, not the discord one — every room in it is a `#whop:`
+URL. It was left in place; `exports_for_day` has always preferred the
+lane-tagged file for 9/10, so nothing double-counts.
+
+FOUND AND NOT FIXED HERE. `parser_gate.js`, `reader_corpus.js` and
+`compare_keys.js` all match `\[(.+?)#(\d+)\]`, which cannot match the v3.8.32
+capture tag `[Room #123 message_id=456]`. The whole 9/14 capture contributes
+ZERO rows to the gate corpus, and 9/10–9/13 contribute only their pre-tag
+lines. Python's `RE_MSG` already allows the tag. It is NOT fixed in this change
+because the gate count staying identical is what proves the weekly merge lost
+nothing — fixing the regex would raise the count and destroy that proof. It is
+the next fix, and it is written into DATA-MAP's DS Logs traps.
+
+TESTS. New `test_weekly_export.py`, 16 tests: week naming (Monday start, the
+`Sep-1` no-zero-pad shape, the Dec-29-2025-to-Jan-4-2026 year boundary), name
+round-trip, delta append, an edited message keeping both versions, same-day
+re-export replacing its block and being idempotent, a restarted extension
+re-sending everything, RAW never suppressing its LIVE PARSER twin, cross-week
+rollover, days read from headers not names, a legacy daily still found by name,
+and `reader_history` returning the identical message set from the weekly file
+that it returned from the dailies. It also runs `background.js`'s own week-name
+block under node against `ds_logs.week_tag` for 397 consecutive days, so the
+two can never drift. Every other `test_*.py` and `test_*.js` run: all pass
+except two that already failed and are untouched by this —
+`test_architecture.py` (hand-rolled OCC in `broker_sync.py`) and
+`test_stream_bus.py` (`paho` not installed).
+
+HANDOFF.md is 51,884 bytes after this bullet. It was 51,132 before it — the
+file is already at the 50 KB line, and the next condense pass should start with
+the DAILY SNIPER REPORT bullet, which is by far the longest in it.
+
 ## 2026-09-15 (how the callers actually trade — hold time, first trim, their stop)
 
 G asked the question plainly: "what is the callers' average trade hold time,
