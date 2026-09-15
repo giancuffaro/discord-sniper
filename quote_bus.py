@@ -47,14 +47,8 @@ import os
 import threading
 import time
 
-# WHO-SPENDS tell (9/2) instrumentation, gated behind an env var (2026-09-15
-# fix). It was left permanently live in Budget.take() -- the exact hot path
-# every quote sweep AND every priority order/stop-move passes through --
-# doing a full traceback.extract_stack() + dict update on every single call.
-# That's real latency added to the one place a stop firing on time matters
-# most, for a debug tool that already did its job back in Sept. Set
-# QUOTE_BUS_DEBUG_TELL=1 in the environment (or edit this line) if you ever
-# need to re-run the who-spends diagnostic; leave it off in normal live use.
+# WHO-SPENDS tell: set QUOTE_BUS_DEBUG_TELL=1 to count Budget.take() callers.
+# Off in live use — it walks the stack on the hottest path in the file.
 DEBUG_TELL = os.environ.get("QUOTE_BUS_DEBUG_TELL") == "1"
 
 # Webull: 300 requests / 60 seconds. Keep 5% back so a burst of orders never
@@ -118,11 +112,7 @@ class Budget:
         """
         deadline = time.time() + float(timeout)
         floor = 0.0 if priority else float(reserve)
-        # WHO-SPENDS tell (9/2): the bucket sat pinned at the reserve floor
-        # with nothing visibly calling. Count takes and remember the callers.
-        # GATED behind DEBUG_TELL (2026-09-15) -- see module-level comment;
-        # this ran on every call unconditionally before, adding a
-        # traceback.extract_stack() to the hottest path in the file.
+        # WHO-SPENDS tell: count takes and remember the callers (DEBUG_TELL only).
         if DEBUG_TELL:
             try:
                 import traceback as _tb
