@@ -12,6 +12,8 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+- Added back as a rule the same day: NO DAILY LOSS STOP (G, 9/14 — "No. We are not gonna do a daily daily stop limit. No. We're not."). The cut agent found the decision existed nowhere in the docs, only as a prop-firm setting in props.py. HANDOFF 13,999 -> 14,175 bytes.
+
 ## 2026-09-15 (HANDOFF cut to a rules core — 28,060 → 13,996 bytes)
 
 HANDOFF.md is read by every session at startup, so every byte costs tokens
