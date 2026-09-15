@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — bbf857f4376a0677f12b
+
+The reader proposed a fully confident MNQ SHORT close at 29476, but validation rejected its unsupported context reference. The message identifies a full take-profit level without explicitly identifying an instrument, direction, or completed exit. Review should focus on context eligibility and target-versus-execution interpretation, not a confirmed parser bug.
+
+## Findings
+- The reader cites chat-messages-911390080285962290-1549066374674911277, an earlier 'IN MNQ SHORT @ $28977.50' alert. That ID is not among validation.eligible_prior_ids. Validation returned ok=false with unsupported_context_id and stated that MNQ is absent from the current message. Verify the permitted context-selection rules and original message linkage before assigning MNQ or SHORT. Treat the rejected reader result as unresolved rather than using an ineligible earlier trade to fill missing fields.
+- Later context includes 'MNQ news drop just wicked us out,' followed by distinct setups, including '15min up mnq' and 'Crazy shit we riding till 4hr crt high.' This weakens linkage to the earlier short, but does not establish a new filled position. Verify trade boundaries and caller identity using retained source records. Do not carry an old short direction across intervening setups or infer a confirmed long position from watch/setup commentary.
+- The current wording is '29476 is full TP.' The reader maps this to action=CLOSE and price='29476' with confidence=1.0. The wording does not explicitly say the target was reached or an exit filled. Review whether this should be represented as a target-level update rather than a completed close. Preserve raw 29476 as the stated level; require source clarification before treating it as an exact exit price or realized result.
+- The parser returned fire=false with null action, symbol, and side, while the reader supplied fields that validation rejected. Verify the parser's intended handling of context-dependent target updates before proposing a change. Abstention on an under-specified message is not by itself evidence of a parser defect.
+
+## Limitations
+- Although the supplied evidence is marked untruncated, it does not establish complete channel, stream, attachment, or trade-state coverage.
+- The eligible context messages do not explicitly identify an instrument or direction; broader supplied context is not automatically eligible context.
+- No broker fills, confirmed position quantities, execution records, or performance calculations are supplied. Missing values are not zero, and celebratory messages do not verify profits.
+- The evidence does not establish an outage or justify conclusions about channel coverage from gaps between messages.
+
+---
+
 # Reader Review — 2026-09-15 — af25d7cfed678723c83e
 
 The reader proposed an MNQ SHORT close at 29416, but validation rejected the result because MNQ was absent from the current message and the cited context was ineligible. The wording does not establish an executed exit. These are review candidates requiring source verification, not confirmed parser bugs.
