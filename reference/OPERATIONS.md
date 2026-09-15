@@ -179,3 +179,30 @@ formats and the procedures are here.
 - Discord API is NOT an option (user-token automation = permanent ban risk
   to the account + paid subs; official bots need the server owner).
   Reaffirmed 9/9. Browser reads only.
+
+## Open watch items — the detail (moved from HANDOFF.md 9/15, verbatim)
+
+One line per item stays in HANDOFF.md ("Watch items (open)"); the numbers,
+the history and the open question are here. Close one here when G decides.
+
+## Watch items (open)
+- PULLBACK STOCK TARGET vs THE RATCHET (9/10, G's call): a pullback entry
+  CLOSES at a fixed stock target ($1 past the round number) — a second,
+  earlier exit beside the ratchet (9/10: +$80 taken, +$307 left). (a) delete
+  the target, keep the pullback stock-STOP; (b) keep it. Nothing changes
+  until G says.
+- FUTURES RECORDS (G, 9/9): the moment futures execution works, its fills
+  need pulling into the ledger the way options fills are (a broker export
+  into master_broker.csv). Until then every futures caller — Stormzy 5
+  positions, Market Guru 7, Namrood-BOT — sits on the scoreboard with a
+  count and no money, which is honest but useless for ranking them.
+- Telemetry rows lack room/caller → master_alerts taken-side is anonymous.
+- Deepgram key may be one char short (39) — watch for voice auth errors.
+- First live overnight broker stop on a swing: confirm it survives the night.
+- Market Sniper closed bot positions by MARKET order on 9/2 (FLR, SPY 766C)
+  — policy question still open: should a room's NAMED exit reach adopted
+  positions? (Under entries-only today: no.)
+- bridge.log has no rotation (20 MB).
+- Multi-account "L": verify no orphan positions after mirror exits.
+- Topstep: not executing futures (see HANDOFF-LOG.md for the findings);
+  Webull futures $0 by choice — futures refusals there are intentional.
