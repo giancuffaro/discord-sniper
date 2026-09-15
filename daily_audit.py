@@ -54,6 +54,15 @@ def summarize_replay(output):
     }
 
 
+_KEY_LINE = re.compile(r"^(Ran \d+ tests?|OK\b|FAILED \(|\d+ messages, |\s*entries fired "
+                       r"(?:BEFORE|NOW)|\s*all actions BEFORE/NOW|\s*JUNK TICKERS)")
+
+
+def _key_lines(output):
+    return ["    " + ln.strip() for ln in (output or "").splitlines()
+            if _KEY_LINE.match(ln)]
+
+
 def _reconciled(day, output):
     """True/False from build_ledger's RECONCILIATION line for ``day``, None
     when the day had no export to reconcile against."""
@@ -153,6 +162,10 @@ def run(day):
         lines.append("%s  %s  %.2fs" %
                      ("PASS" if step["ok"] else "FAIL", step["name"],
                       step["seconds"]))
+        # The counts a passing gate / suite printed stay in the record, so
+        # STATUS.json.verified can be rebuilt from this block without
+        # re-running either (VERIFY ONCE).
+        lines.extend(_key_lines(step["output"]))
         if not step["ok"] and step["output"]:
             lines.append(step["output"][-4000:])
     # ONE FILE PER WEEK (9/15): this day's block in AUDIT week-of-….txt,

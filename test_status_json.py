@@ -116,7 +116,10 @@ class TestStatus(StatusFixture):
                           "pass": True})
         self.assertIs(v["broker_reconciled"]["match"], True)
         self.assertTrue(v["bridge_code_live"]["at"])
-        self.assertTrue(any("report" in ln for ln in d["reports"]))
+        # Nothing is built in the fixture, so only the undated kinds appear
+        # (MISSING lines are left out to keep the file small).
+        self.assertTrue(all(" MISSING " not in ln for ln in d["reports"]))
+        self.assertTrue(any(ln.startswith("scoreboard") for ln in d["reports"]))
 
     def test_hand_rebuild_keeps_the_recorded_checks(self):
         status_json.write(DAY, self.summary, self.steps)

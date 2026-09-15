@@ -265,9 +265,11 @@ def _steps_from_audit(day):
     for name in ("Python regression suite", "Historical parser corpus gate"):
         m = re.search(r"^(PASS|FAIL)  %s  [\d.]+s\n(.*?)(?=^(?:PASS|FAIL)  |\Z)"
                       % re.escape(name), text, re.S | re.M)
+        # The audit indents the kept count lines by four spaces.
+        text_block = m.group(2) if m else ""
+        m = m and (m.group(1), "\n".join(ln.strip() for ln in text_block.splitlines()))
         if m:
-            steps.append({"name": name, "ok": m.group(1) == "PASS",
-                          "output": m.group(2)})
+            steps.append({"name": name, "ok": m[0] == "PASS", "output": m[1]})
     for m in re.finditer(r"^(PASS|FAIL)  (JS \S+)", text, re.M):
         steps.append({"name": m.group(2), "ok": m.group(1) == "PASS"})
     return steps
@@ -293,7 +295,8 @@ def build(day, summary, steps, prior=None):
             "verified": verified(day, summary, steps,
                                  (prior or {}).get("verified")),
             "reports": [ln for ln in reports.status_lines(day)
-                        if (" %s " % day) in ln or " all " in ln]}
+                        if ((" %s " % day) in ln or " all " in ln)
+                        and " MISSING " not in ln]}
 
 
 def write(day, summary, steps, path=None):
