@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 9cb20cfff2f5a5224682
+
+The reader interpreted the message as a profit-taking instruction, while the parser produced no action. This is a candidate contextual-recognition issue requiring source verification, not a confirmed parser bug. Validation also flagged unsupported context and removed the inferred strike.
+
+## Findings
+- The current message says "hit 4, take p @here". The parser returned action=null and fire=false; the reader returned TRIM with confidence 0.86. The eligible prior message mentions a limit sell and "cut/take p at good price if u tailed". Verify whether this caller's retained examples support interpreting "take p" as a partial reduction rather than a full exit or general guidance. Do not infer a quantity or confirmed execution.
+- The reader inferred PUT, strike 7580 from the earlier "7580p 3.6 @here" message and cited it as supporting context. That message is absent from validation.eligible_prior_ids. Validation returned ok=true but flagged unsupported_context_id, cleared the strike, and retained PUTS. Review context eligibility and field-level provenance. Confirm whether the earlier entry can legitimately support the current message, including the retained option side. Resolve the missing ticker and expiry before treating the position association as established.
+- The reader extracted price="4", normalized by validation to 4.0. The source says "hit 4", not that a sale filled at 4. The earlier value "3.6" also has no explicit premium units. Preserve the raw values "4" and "3.6" and report unresolved premium units. Verify the instrument, caller-specific convention, and premium multiplier before conversion. Keep a reported level distinct from an executed exit; do not calculate returns from these messages.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not establish the ticker, expiry, quantity, premium units, or broker-confirmed fills.
+- The reason for excluding the earlier entry from eligible context is not provided.
+- The caller's statement that "it freezes" does not establish an application outage.
+- A provider cooldown followed by a successful fallback is recorded; it does not establish a persistent reader outage.
+
+---
+
 # Reader Review — 2026-09-15 — 3f78182bd8f99ff63cc2
 
 The current “Sold @here” message is a candidate contextual close alert: the reader returned CLOSE, while the parser returned no action and fire=false. Source and context-policy verification are required before calling this a parser defect; the exact contract, exit price, and quantity remain unresolved in the validated reader output.
