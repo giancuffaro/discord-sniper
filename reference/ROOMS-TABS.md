@@ -106,6 +106,15 @@ content.js, extension/popup.js, bridge.py (/rooms, /build, apply_room_rules).
   paints; content.js keys SEEN on id+length so the hydrated read re-emits.
 - TAB HEALTH: content/Whop reinjection clears the old observer and heartbeat; background reinjects before any reload and logs every reload. Room opening is paced, memory shedding touches at most one inactive room per cycle, and active/voice tabs are protected. Extension maintenance jobs run in one ordered sweep; normal message delivery stays event-driven. Chrome uses Profile 2 for Discord and Profile 6 for Whop; `whop-profile.txt` pins the folder.
 - WHOP: four `whop.com/<business>/exp_<id>/app/` tabs are read only from Profile 6. The extension is installed there. `whopSelfHeal()` and `_whop_loop.bat` restore missing Whop tabs/profile with bounded strikes; Discord tabs still reopen only from START HERE’s one-shot token. Felony’s Zoom uses the web client in that profile; one manual Sniper-icon click grants tab audio capture.
+- WHOP TRAFFIC — OPEN ITEM (9/15). G: of the Whop rooms, **Day Trades and
+  High Risk carry the most traffic**. Today's export contradicts half of that:
+  3 live messages, ALL from Day Trades (Trademorewiser, NQ), while High Risk,
+  2K Challenge and Swing came through as blank rows (`?:` with no text), and
+  all five Whop rooms report "heartbeat not yet verified". So either those
+  rooms were genuinely quiet or the Whop reader is dropping their text —
+  unresolved. **Do not touch the Whop reader** (G has said twice to leave Whop
+  alone); the next step is evidence, not a code change: compare a High Risk
+  day block in DS Logs against what the room actually posted.
 - VOICE: ears transcribe always (Deepgram, diarized S0/S1). Voice ENTRIES
   ON (9/2); voice EXITS irrelevant under entries-only. Two-stage: "loading
   X" = staged (4-min shelf, per speaker); fires on that speaker's "I'm in /

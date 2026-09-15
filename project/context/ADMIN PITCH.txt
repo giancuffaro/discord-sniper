@@ -47,8 +47,10 @@ room running it.
 
 ---------------------------------------------------------------------
 Notes to self (not part of the message):
-- Send a CLEANED copy of announcer.py. My settings.json, webhooks, and
-  keys never leave this machine.
+- announcer.py no longer exists here (the Fill Announcer was removed 9/15,
+  reinstall when the bot is profitable) — this offer means writing them a
+  small standalone poster first. My settings.json, webhooks and keys never
+  leave this machine.
 - Whop: the API unlock is the admin installing MY app (Account key can't
   read rooms I'm only a member of). Discord: same pattern — official bot
   added by the server owner; never a self-bot on my own account.

@@ -29,8 +29,10 @@ Want it? I'll send you the file.
 
 ---------------------------------------------------------
 Notes to self (not part of the message):
-- Send them a CLEANED copy of announcer.py — my settings.json, webhooks,
-  and keys never leave this machine.
+- announcer.py no longer exists here (the Fill Announcer was removed 9/15,
+  reinstall when the bot is profitable) — so this offer means WRITING them a
+  small standalone poster first; my settings.json, webhooks and keys never
+  leave this machine.
 - Every admin who runs it = a machine-clean feed the sniper reads with
   zero parsing ambiguity. That's the whole recruiting play.
 - Their announcer channel goes in rooms.txt like any other room; ours
