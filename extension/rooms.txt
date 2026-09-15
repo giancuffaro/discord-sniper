@@ -148,7 +148,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # day off-hours and says the moment access comes back.
 642437862930907158|https://discord.com/channels/588137369409159208/642437862930907158|RWGates|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|lapsed
 # CUT 9/9 (G's call)
-1323708708374450247|https://discord.com/channels/725117609275555851/1323708708374450247|Vero 1|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
+1323708708374450247|https://discord.com/channels/725117609275555851/1323708708374450247|Vero 1|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|on
 760694103401955378|https://discord.com/channels/725117609275555851/760694103401955378|Vero 2|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|on
 # CUT 9/9 (G's call) — thinnest of the three Vero rooms, 1 trade ever
 1095502893559316482|https://discord.com/channels/725117609275555851/1095502893559316482|Vero 3|Alert servers (TTT / RWGates / Vero / Insider / Platinum)|off
