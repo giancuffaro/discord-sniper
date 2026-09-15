@@ -5131,11 +5131,20 @@ class Handler(BaseHTTPRequestHandler):
                                     message=" ".join(msgs)))
 
     def _export_log(self):
-        """The extension hands over the day's export and this writes it to
-        <folder>\\DS Logs (his ask, 8/18: "logs download here"). Chrome's
-        download API can't write outside Downloads and kept minting
-        (1)(2)(3) duplicates; a plain file write overwrites properly, one
-        file per day, always current."""
+        """The extension hands over one capture day's export and this files
+        it in <folder>\\DS Logs (his ask, 8/18: "logs download here").
+
+        ONE FILE PER WEEK PER LANE (9/15, his ask). Every export re-writes
+        the whole retained backlog, and one file per ET day meant 9/13 was
+        8.6 MB and 9/14 was 10 MB of overwhelmingly the same messages. The
+        extension now posts `week` in the name and `day` alongside it; this
+        appends that day's block under a "===== Mon Sep 14 2026 =====" header
+        and REPLACES the block on a re-export, so a second header for one day
+        can never stack. Anything the earlier days of that same file already
+        hold is dropped here too, so a restarted extension that re-sends its
+        whole backlog costs nothing. A post with no `day` (the room-history
+        grab and its .json twin) is written whole, exactly as before.
+        """
         try:
             n = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(n) or b"{}")
@@ -5151,13 +5160,26 @@ class Handler(BaseHTTPRequestHandler):
             name += ".txt"
         if not text:
             return self._json(400, {"ok": False, "why": "empty"})
+        day = str(body.get("day") or "").strip()
         try:
             d = os.path.join(HERE, "DS Logs")
             os.makedirs(d, exist_ok=True)
-            with open(os.path.join(d, name), "w", encoding="utf-8") as f:
+            path = os.path.join(d, name)
+            if day:
+                import datetime as _dt
+
+                import ds_logs
+                when = _dt.datetime.strptime(day, "%Y-%m-%d").date()
+                old = ""
+                if os.path.exists(path):
+                    with open(path, encoding="utf-8", errors="replace") as f:
+                        old = f.read()
+                text, _ = ds_logs.merge_day(
+                    old, when, text, str(body.get("lane") or ""))
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(text)
             return self._json(200, {"ok": True, "saved": name})
-        except OSError as e:
+        except (OSError, ValueError) as e:
             return self._json(200, {"ok": False, "why": str(e)[:120]})
 
     def _shadow_read(self):
