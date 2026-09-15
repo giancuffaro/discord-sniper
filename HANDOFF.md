@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — rule-vs-code audit: unbacked claims rewritten, dead code deleted.
+Last updated: 2026-09-15 — five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG for G; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
 
 ## How to update this file (long form: OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. REPLACE, DON'T
@@ -73,7 +73,7 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - GIT: settings.json holds every key and is never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
 - REPLACE, DON'T STACK (G, 9/9). When anything changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place; never left beside it, not commented out, not "superseded", not "legacy", not a dead branch "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md. A fallback that stays is a deliberate design decision.
 - CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (test: DATA-MAP.md). Records that cannot be re-derived — tapes, telemetry, days/ — are APPENDED to, never rewritten.
-- READ DATA-MAP.md WITH INDEX.md every session (INDEX = what a file IS, DATA-MAP = what is IN it). RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump extension/manifest.json on extension changes; never install webullsdkcore into the bridge's Python; sandbox RETIRED, no local sim — a non-LIVE room's call is REFUSED, never faked.
+- READ DATA-MAP.md WITH INDEX.md every session (INDEX = what a file IS, DATA-MAP = what is IN it). RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump the manifest on extension changes; never install webullsdkcore into the bridge's Python; no sandbox, no local sim — a non-LIVE room's call is REFUSED, never faked.
 - DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the owner. Browser reads only.
 - FILL ANNOUNCER REMOVED (G, 9/15): reinstall when the bot is profitable. The daily BRIEF still posts to Sniper HQ through the announcer webhook URL in settings.json — that key stays.
 
@@ -81,6 +81,7 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 - rooms.txt = THE channel list (tabs + trading, one file). START HERE IS FULLY UNATTENDED (G, 9/9); between runs NOTHING opens rooms; the only manual inputs are a Discord/Whop login and Webull keys.
 - Relays: OWLS all-alerts active, RELAY UNWRAP re-books under the real trader; ZTRADEZ, shabs, eli retired 9/9. Never close a human tab; Profile 2 = Discord, Profile 6 = Whop.
 - VOICE: ears always transcribe (Deepgram); voice ENTRIES ON (9/2), exits irrelevant; a typed copy of a voice fire is an echo.
+- CLEAN UP AFTER A LIVE ROOM (G, 9/15: "when the live zoom for felony finishes kill the tab please, clean after yourself"): a Discord-voice or Zoom tab the ears ran on, still silent 10 min AFTER they stopped, gets closed. The ONE exception to "never close a human tab" — scoped to voice/Zoom tabs we listened to, nothing else.
 
 ## DATA — one file per family (9/9); THE APP READS ONLY THESE (inside each: DATA-MAP.md)
 - BROKER RECORD → master_broker.csv; the Webull export is ONE file OVERWRITTEN every run, never dated piles; one balance row a day in balance_daily.csv.
@@ -99,16 +100,15 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 - Multi-account: extras mirror LIVE entries 1:1, own books/stops. SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
 
 ## Pending external setup and decisions
-1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project instructions; remove the old uploaded handoffs (local cleanup does not touch uploads).
-2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call whether Claude does it or he does.
-3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50 MNQ pts), qty 1 — create in NT8, type SNIPER in the popup.
+1. In Claude: PROJECT-INSTRUCTIONS.md as the Project instructions; delete the old uploaded handoffs (local cleanup does not touch uploads).
+2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does it.
+3. NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
 4. Close any old parked Whop tabs (Chrome flags note: reference/OPERATIONS.md).
 5. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension are already up. Run START HERE, or schedule it, by 9:00 on trading days.
 
 ## Watch items (open) — full text: OPERATIONS.md
-- G'S CALL, nothing changes until he says: PULLBACK STOCK TARGET vs THE RATCHET
-  (9/10) — a pullback entry also closes at a fixed stock target, a second exit
-  beside the ratchet. (a) delete it (b) keep it.
+- G'S CALL, nothing moves until he says: PULLBACK STOCK TARGET vs THE RATCHET
+  (9/10) — a second exit beside the ratchet. (a) delete it (b) keep it.
 - Also open: futures fills → the ledger · telemetry has no room/caller · the
   Deepgram key may be one char short · the first overnight swing stop is
   unconfirmed · a room's NAMED exit misses adopted positions · bridge.log has no
@@ -116,4 +116,4 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
   5 Whop rooms export blank rows, no verified heartbeat.
 
 ## Subscriptions
-≈ $1,140/mo rooms + ~$52 infra + ~$30 exchange fees ≈ $1,220/mo before AI usage. Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
+≈ $1,220/mo all-in before AI usage ($1,140 rooms + ~$82 infra/fees). Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
