@@ -34,7 +34,6 @@ import glob
 import json
 import math
 import os
-import sys
 from zoneinfo import ZoneInfo
 
 HERE = os.path.dirname(os.path.abspath(__file__))

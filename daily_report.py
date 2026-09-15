@@ -13,7 +13,6 @@ import json
 import os
 import re
 import subprocess
-import sys
 from collections import Counter, defaultdict
 
 import replay_check

@@ -14,7 +14,6 @@ import datetime as dt
 import json
 import os
 import re
-import sys
 from zoneinfo import ZoneInfo
 
 import daily_report
