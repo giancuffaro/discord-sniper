@@ -219,13 +219,7 @@ def _alert_meta():
     has an answer.
     """
     if not os.path.exists(META):
-        # FIXED 2026-09-15: this used to return a 2-tuple ({}, {}) while every
-        # caller (_apply_meta) unpacks 3 values, and the OSError path 8 lines
-        # below already correctly returns 3 empty dicts. A missing/renamed
-        # alert_meta.csv hit this exact branch and raised ValueError, which
-        # ledger.py's _ensure() then swallowed in a bare except Exception:
-        # pass — so master_alerts.csv silently went stale/missing with zero
-        # error anywhere. Found by static audit (Sonnet review) 2026-09-15.
+        # missing META: same 3-dict shape as the OSError path below.
         return {}, {}, {}
     records = {}
     try:

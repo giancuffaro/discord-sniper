@@ -63,17 +63,7 @@ LOG = os.path.join(HERE, "trades.log")
 DAYS = os.path.join(HERE, "days")
 PORT = 8787
 
-# note() and _BOOT_NOISE MOVED UP HERE (2026-09-15 bug fix). They used to sit
-# ~1,400 lines further down, AFTER the module-top-level paper_trading check
-# below ("if (EXEC.get('webull') or {}).get('paper_trading'): note(...)")
-# that calls note() at IMPORT TIME. Python executes a module top to bottom,
-# so the moment paper_trading is ever set true in settings.json, the bridge
-# would crash on load with NameError: name 'note' is not defined, before a
-# single position or stop could be restored. Moving the definition here (it
-# only needs datetime/ET/LOG, all already defined above) fixes that without
-# changing anything about what note() does. Confirmed via static audit
-# (pyflakes + Gemini/Sonnet code review) 2026-09-15; currently dormant only
-# because paper_trading happens to be false right now.
+# note() lives here, above its first call at import time.
 
 # LINES THAT REPEAT AT EVERY BOOT AND MEAN NOTHING IN THE RECORD (9/4).
 # trades.log is the permanent dated record — every audit tool reads it, the

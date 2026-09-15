@@ -28,7 +28,7 @@ def probe(provider, key, model_override=None):
         body = {'model':model,'max_tokens':16,'messages':[{'role':'user','content':prompt}]}
     else:
         url = {'openai':'https://api.openai.com/v1/chat/completions',
-               'perplexity':'https://api.perplexity.ai/v1/sonar'}[provider]
+               'perplexity':'https://api.perplexity.ai/chat/completions'}[provider]
         headers['Authorization']='Bearer '+key
         body={'model':model,'max_tokens':16,'messages':[{'role':'user','content':prompt}]}
     started=time.monotonic()
