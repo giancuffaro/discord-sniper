@@ -38,11 +38,11 @@ class DailyAuditTests(unittest.TestCase):
     def test_discord_source_url_requires_a_real_message_id(self):
         self.assertEqual(
             _source_message_url("1537061197931618344", "123456789012345678"),
-            "https://discord.com/channels/1065277732684058624/1537061197931618344/123456789012345678")
+            "http://127.0.0.1:8787/open-discord/1065277732684058624/1537061197931618344/123456789012345678")
         self.assertEqual(
             _source_message_url("1537061197931618344",
                                 "chat-messages-1537061197931618344-123456789012345678"),
-            "https://discord.com/channels/1065277732684058624/1537061197931618344/123456789012345678")
+            "http://127.0.0.1:8787/open-discord/1065277732684058624/1537061197931618344/123456789012345678")
         self.assertEqual(_source_message_url("1537061197931618344", "legacy-unknown"), "")
 
     def test_load_keeps_raw_messages_when_live_parser_is_partial(self):

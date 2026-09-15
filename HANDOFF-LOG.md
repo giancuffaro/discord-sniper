@@ -12,6 +12,89 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (manage off the STOCK, not the premium — G's ladder, measured)
+
+MEASUREMENT, NOTHING CHANGED LIVE. G's idea, his words: "alert -> round-number
+pullback -> arm with a $0.25 stock stop; +$0.25 in favor -> stop to breakeven;
+then ratchet every +$0.15 from there", $1.00 on the Mag 7. New
+`reference/stock_stop_replay.py` -> `reference/STOCK-STOP-REPLAY-2026-09-14.md`
++ `.csv`. Stop distances and fixed targets are read from the live
+`pullback.UNDERLYING_EXITS`, the premium ladder from the live `ratchet_tiers`
+and `settings.json`, and the premium simulation is `ratchet_replay_tape.simulate`
+— one implementation, no second copy.
+
+DATA. Stock leg = real 1-second Databento bars. Quoted $0.1538 for the twenty
+symbol-days asked for (9/11 + 9/14 x ten symbols); the 9/11 half ($0.0732)
+delivered and cached, the 9/14 half ($0.0805) came back 403
+license_not_found_unauthorized. EVERY Databento equity dataset — XNAS.ITCH,
+XNAS.BASIC, EQUS.MINI, EQUS.SUMMARY, DBEQ.BASIC, ARCX.PILLAR, XNYS.PILLAR,
+IEXG.TOPS — ends at 2026-09-14T04:00Z, so 9/14's per-second bars are simply not
+released yet. Re-running the script once they are will pay only for that day.
+So the sample moved to where the evidence already is: 8/11-9/8, where
+`bars/stock/` was already populated by the 9/9 pullback study and
+`databento_tape_clean.csv` holds ~1-quote-per-second OPRA for the contracts.
+76 alerts on SPY/QQQ/TSLA/NVDA/META/AAPL/MSFT/AMZN/GOOGL/AMD had both legs;
+the round-number pullback entered 45 of them. That is 3x the 9/14-only sample.
+
+RESULT (45 paired trades, one contract, same entries, same paths):
+
+  S1   G's rule, stop/arm 0.25, rung 0.15 (Mag 7 1.00/0.60)   -299   24% win
+  S1b  S1 with the rounder Mag 7 rung 0.50                    -287   24%
+  S2   stop/arm 0.35 (Mag 7 1.50)                             -512   24%
+  S3   stop/arm 0.45 (Mag 7 2.00)                             -458   24%
+  P0   THE LIVE pullback rule: fixed stop + fixed target      -379   24%
+  A    our premium 5/3/5 on the same entries                  -594   11%
+  H    hybrid: S1 stock stop, then premium 5/3/5 at +3%       -483   20%
+
+Every stock variant beats A. Every paired bootstrap band (4,000 resamples)
+still crosses zero: S1 +6.56/trade (-3.13..+18.93, 89% of resamples above
+zero), S1b +6.82 (-3.09..+19.27, 89%), P0 +4.78 (-5.38..+15.89, 81%), H +2.47
+(-4.40..+10.40, 73%), S2 +1.82, S3 +3.02. A lean, not a verdict. Do not move a
+live setting on 45 trades.
+
+THE DRIVER, AND IT IS NOT THE LADDER. A's median hold is 22 SECONDS, and it
+exits on its born stop 30 of 45 times. Buying at the ask puts the bid a whole
+spread underwater instantly, and -5% of a $1-2 premium is often smaller than
+that spread, so the trade is killed before it does anything. S1's $0.25 stock
+stop is not denominated in premium at all, so the same trade gets a median 3m33s
+and reaches a ratchet rung 11 times against A's 5. Room to exist, not a better
+ladder. Same conclusion as the premium-only replay earlier today, reached from
+the opposite direction.
+
+THE STOP SWEEP SAYS TIGHTER, NOT WIDER. 0.25 beat 0.35 and 0.45 (-299 / -512 /
+-458). "Give it more room" is not what this sample rewards; getting the stop off
+the premium scale is. Rung size barely matters — S1 vs S1b is $12 over 45 trades.
+
+H (Claude's suggestion, not G's) did NOT win: +2.47/trade over A, worse than S1
+alone. Handing back to the premium ratchet at +3% re-imports the thing that was
+killing the trades, just later. Worth recording as a tried-and-rejected idea.
+
+ENTRY, KEPT SEPARATE. On the 40 alerts where both entries exist, same exit rule:
+take-the-alert -643, pullback -587, paired mean +1.40/trade, band -3.82..+7.20 —
+cannot be decided here. The pullback skipped 22 alerts take-it would have taken;
+a skip is $0, not a loss. The $1 level stays settled by the 9/9 study.
+
+LAG. Stock rules fire on the stock clock and the option is sold at the first bid
+at or after that second: median lag 0s, mean 7.2s, worst 124s over 244 measured
+exits; only 5 exits lagged more than a second and those averaged -$7.00 per
+contract against the last bid before the fire. On the OPRA days the lag is
+effectively zero — it is the Webull-sweep days that pay.
+
+NAMED CASES. All eight are 2026-09-14 (or CRWD, outside the ten symbols), so
+none is in the real sample. They are answered in a quarantined appendix built on
+the 5-60s `und` sweep, explicitly not comparable and in no total: Skyy QQQ 708C,
+MSFT 505C, QQQ 713C and both TSLA 357.5 never showed a round-number touch in the
+sweep at all (a 1-second tape might well have). Vero QQQ 705P: every stock
+variant -20 against A's -7. Demon QQQ 704P: -76 everywhere, and that row's
+option path has the 2h sweep hole, so it means nothing.
+
+OTHER CAVEATS. The OPRA backfill bought minutes around each call, not whole
+sessions, so most paths end long before 15:59 and "close" is the end of the
+tape. Alerts dedupe on contract within 60s, so TSLA 350C on 08-18 (11:59 and
+12:04) is one idea counted as two rows — it cancels out of the paired
+comparison but inflates n by one. No slippage, entries cross the ask. The stock
+ladder has never traded a real dollar.
+
 ## 2026-09-15 (is the ratchet too tight? — replay on real quotes; two report fixes)
 
 MEASUREMENT, NOTHING CHANGED LIVE. G: "I think the ratchet is too tight."

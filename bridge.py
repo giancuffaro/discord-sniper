@@ -19,6 +19,7 @@ your wifi, not the internet.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -61,6 +62,39 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(HERE, "trades.log")
 DAYS = os.path.join(HERE, "days")
 PORT = 8787
+
+
+def open_discord_source_in_chrome(guild_id, channel_id, message_id):
+    """Open one configured Discord source post in G's Discord Chrome profile.
+
+    This accepts only a configured channel with matching Discord snowflakes.
+    It is an evidence-viewing helper, never a Discord API or order path.
+    """
+    if not all(re.fullmatch(r"\d{17,20}", str(v or ""))
+               for v in (guild_id, channel_id, message_id)):
+        return False, "invalid Discord source"
+    wanted = "https://discord.com/channels/%s/%s" % (guild_id, channel_id)
+    try:
+        with open(os.path.join(HERE, "extension", "rooms.txt"), encoding="utf-8") as fh:
+            if not any(line.split("|", 2)[1].strip() == wanted
+                       for line in fh if "|" in line and not line.lstrip().startswith("#")):
+                return False, "channel is not configured"
+    except OSError:
+        return False, "room list unavailable"
+    chrome = os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"),
+                          "Google", "Chrome", "Application", "chrome.exe")
+    if not os.path.exists(chrome):
+        return False, "Chrome was not found"
+    url = wanted + "/" + message_id
+    try:
+        # Profile 2 is the user-confirmed Discord profile. This opens a tab in
+        # its existing window when available; it does not close/restart it.
+        subprocess.Popen([chrome, "--profile-directory=Profile 2", url], close_fds=True)
+        note("SOURCE  opened Discord evidence in Chrome: %s/%s" %
+             (channel_id, message_id))
+        return True, "opened in Chrome"
+    except OSError:
+        return False, "Chrome could not be started"
 
 # Second opinion on size. The extension already caps this, but the extension
 # is the part that lives in a browser, so it does not get the last word.
@@ -4649,6 +4683,17 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, {"ok": True, "message": msg})
 
     def do_GET(self):
+        # Report links are often viewed in Codex's browser, whose links cannot
+        # force an external Chrome handoff. This narrow localhost-only route
+        # needs no bridge token because clicked report links cannot attach it.
+        src = re.fullmatch(r"/open-discord/(\d{17,20})/(\d{17,20})/(\d{17,20})",
+                           urlparse(self.path).path)
+        if src:
+            if self.client_address[0] not in ("127.0.0.1", "::1"):
+                return self._reply(403, "local requests only")
+            ok, why = open_discord_source_in_chrome(*src.groups())
+            return self._reply(200 if ok else 400,
+                               "Discord source %s. You can close this page." % why)
         if not self._authorized():
             return self._json(403, {"ok": False, "error": "bad or missing X-Sniper-Token"})
         if self.path.startswith("/departments"):

@@ -96,7 +96,10 @@ def _source_message_url(channel_id, message_id):
     base = _discord_room_urls().get(str(channel_id or ""))
     if not base or not re.fullmatch(r"\d+", message_id):
         return ""
-    return base + "/" + message_id
+    guild, channel = re.fullmatch(r"https://discord\.com/channels/(\d+)/(\d+)", base).groups()
+    # Clicking this route opens the post in Discord's Chrome Profile 2. A
+    # normal Markdown URL remains inside Codex's integrated browser.
+    return "http://127.0.0.1:8787/open-discord/%s/%s/%s" % (guild, channel, message_id)
 
 
 def _source_body(text):
@@ -365,7 +368,7 @@ def build(day):
               "|---|---|---|---|---|---|---|"]
     for r in decisions:
         caller, room = _caller_room(r)
-        source = "[Open in Discord](%s)" % r["source_url"] if r.get("source_url") else "unavailable"
+        source = "[Open in Chrome](%s)" % r["source_url"] if r.get("source_url") else "unavailable"
         lines.append("| %s | %s | %s | %s %s | %s | %s | %s |" %
                      (r["time"], caller.replace("|", "\\|"), room.replace("|", "\\|"),
                       r["action"], r["contract"], r["kind"], _reason(r), source))
