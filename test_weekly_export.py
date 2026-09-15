@@ -118,6 +118,7 @@ class DayBlocks(unittest.TestCase):
             text, tue, export("2026-09-15", [a, b, c],
                               ["2026-09-14 09:30:01  <sent>  OPEN SPY",
                                "2026-09-15 09:30:01  <sent>  OPEN IWM"]), "discord")
+        # stats are what the day DROPPED because an earlier day already held it.
         self.assertEqual(stats["2026-09-15"]["raw"], 2)
         self.assertEqual(stats["2026-09-15"]["did"], 1)
         blocks = dict(ds_logs.split_day_blocks(text))
@@ -186,9 +187,10 @@ class DayBlocks(unittest.TestCase):
         # Sunday's backlog rides along into Monday's export, but Monday is a
         # different FILE, so it is written there in full rather than dropped.
         last, _ = ds_logs.merge_day("", sun, export("2026-09-13", [a]), "discord")
-        new, stats = ds_logs.merge_day("", mon, export("2026-09-14", [a, b]), "discord")
-        self.assertEqual(stats["2026-09-14"]["raw"], 2)
-        self.assertIn(a, new)
+        fresh, stats = ds_logs.merge_day("", mon, export("2026-09-14", [a, b]), "discord")
+        self.assertEqual(stats["2026-09-14"].get("raw", 0), 0)   # nothing dropped
+        self.assertIn(a, fresh)
+        self.assertIn(b, fresh)
         self.assertIn(a, last)
 
 
