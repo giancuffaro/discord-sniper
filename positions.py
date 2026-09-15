@@ -622,8 +622,14 @@ class Book:
                     if p.get("stop_order_id") else "you at Webull")
         if "take-profit" in why:
             return "bot take-profit"
+        # THE EDIT EXCEPTION (9/15). The caller corrected the contract we had
+        # already bought, so the bot closed its own misread — not a room exit.
+        # Named apart from every other exit precisely so the daily report can
+        # count what our own wrong reads cost.
+        if "edit replacement" in why:
+            return "edit-close"
         if st == STOPPED:
-            return "bot stop"
+            return "edit-BE" if p.get("edit_be") else "bot stop"
         if st == FAILED:
             return "failed"
         if "pullback stock exit" in why:
@@ -710,6 +716,18 @@ class Book:
         except Exception:                               # noqa: BLE001
             return False
         return True
+
+    def mark_edit_breakeven(self, key):
+        """AN EDIT MOVED THIS STOP TO BREAKEVEN (9/15, G's call). Written on
+        the position so the journal can say WHY when it finally stops out —
+        `exit_by` reads it as "edit-BE" and the daily report counts them.
+        Records the reason only; stop_to_breakeven() does the moving."""
+        with self._lock:
+            p = self._pos.get(key)
+            if p is None:
+                return False
+            p["edit_be"] = True
+            return True
 
     def set_their_stop(self, key, level):
         """STOPMOVE (8/29): the trader spoke a new stock-level stop; the

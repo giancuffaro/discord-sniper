@@ -2599,6 +2599,137 @@ def pullback_manager():
 _REVISIONS = alert_revision.Revisions()
 
 
+def _edit_bid(p):
+    """The current bid for a position we already hold, for FREE.
+
+    Cache only: the quote bus is already watching this contract (we bought
+    it), so reading its last sweep costs nothing of the 60/min option-snapshot
+    budget and cannot make the edit wait on a network call. Falls back to the
+    last bid the watchdog wrote on the record. Returns None when neither knows
+    — and a None here means the edit is LOGGED ONLY, never guessed at.
+    """
+    try:
+        occ = p.get("occ")
+        qb = getattr(BOOK, "quotes", None) if BOOK is not None else None
+        if occ and qb is not None:
+            _ask, bid, _row = qb.get(occ)      # (ASK, BID, row) — ask first
+            if bid:
+                return float(bid)
+    except Exception:                                   # noqa: BLE001
+        pass
+    try:
+        bid = p.get("last_bid")
+        return float(bid) if bid else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _edit_close(prior, p, why):
+    """Close a position the caller's edit just proved was the wrong contract.
+
+    Goes out through the EXISTING exit path — the same _place_impl CLOSE the
+    pullback stock exit and the underlying hard stop use — so it inherits all
+    of it: claim() pulls the resting stop and waits for the broker to let go
+    before any sell leaves, the double-sell guard holds, a hand trade is
+    refused, and the fill is confirmed before the trade is booked. No new sell
+    routine exists for this, on purpose.
+    """
+    o = {"action": "CLOSE",
+         "symbol": prior.get("symbol"),
+         "side": prior.get("side"),
+         "strike": prior.get("strike"),
+         "expiry": prior.get("expiry"),
+         "trader": prior.get("trader_name"),
+         "kind": p.get("kind") or "option",
+         "live": bool(p.get("live")),
+         "raw": "edit replacement: " + str(why),
+         "source": "edit"}
+    with _DISPATCH_GATE:
+        return _place_impl(o)
+
+
+def _revise_filled(prior, order, key, sym, who, was, now):
+    """THE EDIT EXCEPTION TO ENTRIES-ONLY (9/15, G: "if in profit keep the
+    ratchet and set the stop to breakeven, if it's a losing trade, close it
+    automatically").
+
+    This is the ONE place the bot sells off something a room said, and it is
+    not a room exit at all: the caller corrected the CONTRACT, which means the
+    position we are holding is OUR misread of their call. Entries-only is
+    about never following a caller's trims and stops — it was never about
+    sitting in a contract they never asked for. Green, the trade is left
+    running with its downside taken away; red, it is closed. A price-only edit
+    never reaches here (the contract is unchanged, so it is not a revision at
+    all), and neither does a different message id.
+    """
+    p = {}
+    try:
+        p = BOOK.info(key) or {}
+    except Exception:                                   # noqa: BLE001
+        p = {}
+    try:
+        fill = float(p.get("fill") or 0) or None
+    except (TypeError, ValueError):
+        fill = None
+    bid = _edit_bid(p) if fill else None
+    head = ("EDITED   %s — %s changed %s \u2192 %s, but the %s already filled "
+            "at %s" % (sym, who, was, now, was,
+                       ("%.2f" % fill) if fill else "its entry price"))
+
+    # NO QUOTE, NO ACTION. Without a bid there is no way to know green from
+    # red, and guessing would mean either selling a winner or leaving a loser
+    # on a moved stop. Say so and leave it exactly as it was.
+    if fill is None or bid is None:
+        note(head + " — no live bid to judge it by, so it is LEFT ALONE; "
+                    "position stays, ratchet owns it")
+        return
+    if (p.get("kind") or "option") != "option":
+        note(head + " — not an option, so it is left alone; ratchet owns it")
+        return
+
+    if bid >= fill:
+        ok = False
+        try:
+            ok = bool(BOOK.stop_to_breakeven(key))
+        except Exception:                               # noqa: BLE001
+            ok = False
+        if ok:
+            try:
+                BOOK.mark_edit_breakeven(key)
+            except Exception:                           # noqa: BLE001
+                pass
+            note(head + " and is green (bid %.2f) — stop moved to breakeven, "
+                        "ratchet keeps it" % bid)
+        else:
+            # A swing on the caller's own stock level has no premium stop to
+            # move; so does a position the broker refuses stops on. Left as it
+            # is rather than pretending the downside is gone.
+            note(head + " and is green (bid %.2f), but its stop could not be "
+                        "moved to breakeven — left as it was, ratchet owns it"
+                 % bid)
+        return
+
+    # RED: close it. Resolve-check first — this sells real money, so if the
+    # order we are about to build does not land back on the very position we
+    # measured, nothing goes out.
+    _o_key = tkey({"trader": prior.get("trader_name"),
+                   "symbol": prior.get("symbol"), "strike": prior.get("strike"),
+                   "side": prior.get("side"), "expiry": prior.get("expiry")})
+    if _o_key != key:
+        note(head + " and is red (bid %.2f), but the exit order would not "
+                    "resolve back to that exact position — nothing sold, "
+                    "close it by hand if you want it out" % bid)
+        return
+    ok, msg = _edit_close(prior, p, "%s changed %s -> %s" % (who, was, now))
+    if ok:
+        note(head + " and is red (bid %.2f) — closed at market, wrong contract"
+             % bid)
+    else:
+        note(head + " and is red (bid %.2f) — tried to close it and the broker "
+                    "refused (%s); it is still open, ratchet owns it"
+             % (bid, str(msg)[:90]))
+
+
 def _revision_check(order):
     """An OPEN that revises one already pending stands the earlier one down.
 
@@ -2633,18 +2764,7 @@ def _revise_one(prior, order):
         except Exception:                               # noqa: BLE001
             state = None
     if state == positions.FILLED:
-        fill = None
-        try:
-            fill = (BOOK.info(key) or {}).get("fill")
-        except Exception:                               # noqa: BLE001
-            fill = None
-        try:
-            fill = ("%.2f" % float(fill)) if fill else ""
-        except (TypeError, ValueError):
-            fill = ""
-        note("EDITED   %s — %s changed %s \u2192 %s, but the %s already "
-             "filled at %s — position stays, ratchet owns it"
-             % (sym, who, was, now, was, fill or "its entry price"))
+        _revise_filled(prior, order, key, sym, who, was, now)
         _REVISIONS.drop(prior)
         return
     hunts = 0
