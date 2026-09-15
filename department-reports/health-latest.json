@@ -16,17 +16,17 @@
     {
       "lane": "whop",
       "fresh": true,
-      "version": "3.8.34"
+      "version": "3.8.35"
     }
   ],
   "observer": {
     "queue_remaining": 0,
-    "worker_started": true,
-    "last_finished": 1789486874.4541585,
+    "worker_started": false,
+    "last_finished": 0,
     "last_error": "",
-    "last_provider": "openai",
+    "last_provider": "",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789486992.6266098
+  "checked_at": 1789487257.882755
 }
