@@ -1,0 +1,32 @@
+DISCORD SNIPER DAILY AUDIT — --help
+generated: 2026-09-14T22:28:53.947549-04:00
+status: ATTENTION
+silent drops: 0
+possible missed entries: 0
+coverage warnings: 1
+failed checks: none
+
+MESSAGE REPLAY
+REPLAY CHECK for --help — exports: signal-room-chat Sep-14-2026 (discord).txt
+COVERAGE WARNING: signal-room-chat Sep-14-2026 (discord).txt contains no live parser inputs for --help; a zero-miss result does not audit that lane.
+
+TOTAL silent drops: 0  (actionable per the parser, no verdict, no bridge line)
+POSSIBLE MISSED ENTRIES: 0
+
+REGRESSION CHECKS
+PASS  JS test_bare_entry.js  0.09s
+PASS  JS test_buy_verb.js  0.09s
+PASS  JS test_dotdate.js  0.09s
+PASS  JS test_elite.js  0.08s
+PASS  JS test_exits.js  0.09s
+PASS  JS test_loaded_fill.js  0.08s
+PASS  JS test_optionable.js  0.05s
+PASS  JS test_owls_jonkian.js  0.08s
+PASS  JS test_percon.js  0.08s
+PASS  JS test_pivot.js  0.08s
+PASS  JS test_plan_entry.js  0.08s
+PASS  JS test_spreads.js  0.07s
+PASS  JS test_word_order.js  0.09s
+PASS  JS test_resolve.js  0.09s
+PASS  Historical parser corpus gate  2.50s
+PASS  Python regression suite  30.48s
