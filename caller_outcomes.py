@@ -550,4 +550,5 @@ def build(day):
 
 
 if __name__ == "__main__":
-    build(sys.argv[1] if len(sys.argv) > 1 else dt.date.today().isoformat())
+    import eastern
+    build(eastern.day_arg())

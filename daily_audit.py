@@ -254,5 +254,5 @@ def run(day):
 
 
 if __name__ == "__main__":
-    audit_day = sys.argv[1] if len(sys.argv) > 1 else dt.date.today().isoformat()
-    raise SystemExit(run(audit_day))
+    import eastern
+    raise SystemExit(run(eastern.day_arg()))

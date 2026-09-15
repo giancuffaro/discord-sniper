@@ -503,5 +503,5 @@ def main(day):
 
 
 if __name__ == "__main__":
-    _d = sys.argv[1] if len(sys.argv) > 1 else dt.date.today().isoformat()
-    raise SystemExit(main(_d))
+    import eastern
+    raise SystemExit(main(eastern.day_arg()))

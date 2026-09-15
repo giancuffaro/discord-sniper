@@ -100,6 +100,22 @@ def now():
     return datetime.now(timezone.utc).astimezone(ET)
 
 
+def day_arg(argv=None):
+    """The ISO day a daily script was asked for: argv[1], else today in
+    New York. Anything that is not a YYYY-MM-DD date is refused with a
+    usage line — 9/14 a `--help` went straight into the file name and
+    every daily writer minted an `AUDIT---help.txt` beside the real one."""
+    import sys
+    argv = sys.argv if argv is None else argv
+    if len(argv) < 2:
+        return now().date().isoformat()
+    try:
+        return datetime.strptime(argv[1], "%Y-%m-%d").date().isoformat()
+    except ValueError:
+        raise SystemExit("usage: %s [YYYY-MM-DD]   (got %r)"
+                         % (argv[0], argv[1]))
+
+
 def source():
     """Plain-language note about which clock is in use, for startup messages."""
     if _HAVE_TZDATA:
