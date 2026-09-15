@@ -46,6 +46,7 @@ for _s in (sys.stdout, sys.stderr):
 # out" and "you own it" are two different events, and only this file knows which
 # one has happened. Everything that closes a position asks it first.
 import positions
+import entry_slack
 import index_mirror
 import ratchet_tiers as _rt
 import pullback as _pullback
@@ -2998,6 +2999,21 @@ def _place_impl(order):
     except Exception as _mie:                           # noqa: BLE001
         note("MIRROR   conversion failed (%s) — the option order stands"
              % str(_mie)[:90])
+    # ENTRY SLACK (9/15) — OFF and ACTIVATION BLOCKED, gated like the index
+    # mirror above. execution.entry_slack_pct is the ONE number, read through
+    # the ONE reader (entry_slack.armed); 0 is today's rule and is silent. Any
+    # other value refuses to arm and says so once per order — the entry still
+    # goes out at the caller's price or better, because a setting that is
+    # quietly doing nothing must never look like one that is quietly doing
+    # something. reference/entry_slack_replay.py measures what crossing would
+    # have done, every day, and nothing here crosses until it earns it.
+    try:
+        _slack_armed, _slack_why = entry_slack.armed(CFG)
+        if _slack_why:
+            note(_slack_why)
+    except Exception as _ese:                           # noqa: BLE001
+        note("SLACK    switch unreadable (%s) — the entry rests at the "
+             "caller's price" % str(_ese)[:90])
     key = find_key(order) if BOOK is not None else tkey(order)
 
     # Final session policy lives on the bridge too, at the dispatch boundary.
@@ -4562,6 +4578,15 @@ class Handler(BaseHTTPRequestHandler):
                     "map": index_mirror.symbol_map(CFG),
                     "available": index_mirror.live_exit_ready(),
                 },
+                # The entry-slack measurement switch, read-only here. No
+                # popup control: there is nothing to click while activation
+                # is blocked, and a control that cannot do anything is a
+                # control that will one day be clicked by accident.
+                "entry_slack": {
+                    "pct": entry_slack.slack_pct(CFG),
+                    "armed": entry_slack.armed(CFG)[0],
+                    "available": entry_slack.live_ready(),
+                },
                 "paper": paper_on(),
                 "paper_available": (WB is not None and getattr(WB, "paper", False)),
                 # Why paper isn't running, in plain words (missing sandbox key).
@@ -5378,7 +5403,7 @@ class Handler(BaseHTTPRequestHandler):
         _known = ("futures_enabled", "simulation", "paper_trading",
                   "ai_enabled", "ai_api_key", "ai_model", "ai_provider_keys", "strategy",
                   "futures_brokers", "webull_extra_accounts", "deepgram_key", "pocket_scalps_only",
-                  "swings_paused", "index_mirror")
+                  "swings_paused", "index_mirror", "entry_slack_pct")
         if not any(k in body for k in _known):
             return self._json(400, {"ok": False, "message": "nothing to set"})
         path = os.path.join(HERE, "settings.json")
@@ -5565,6 +5590,25 @@ class Handler(BaseHTTPRequestHandler):
                                   if _want else
                                   "off — SPY/QQQ entries buy the option as "
                                   "usual (the shadow record keeps scoring it)"))
+
+        # ENTRY SLACK (9/15): the same activation block the mirror gets.
+        # Only 0 can be written from anywhere; a non-zero flip is refused
+        # until reference/entry_slack_replay.py earns it.
+        if "entry_slack_pct" in body:
+            try:
+                _want_slack = float(body["entry_slack_pct"] or 0)
+            except (TypeError, ValueError):
+                _want_slack = 0.0
+            if _want_slack > 0 and not entry_slack.live_ready():
+                return self._json(409, {"ok": False,
+                    "why": "entry slack unavailable: activation is blocked "
+                           "until reference/entry_slack_replay.py shows a net "
+                           "gain outside its error bar"})
+            data.setdefault("execution", {})["entry_slack_pct"] = 0
+            CFG.setdefault("execution", {})["entry_slack_pct"] = 0
+            EXEC["entry_slack_pct"] = 0
+            note("SLACK    off — entries rest at the caller's price "
+                 "(the replay keeps measuring what crossing would have done)")
 
         if "swings_paused" in body:
             data["swings_paused"] = bool(body["swings_paused"])
