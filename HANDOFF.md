@@ -1,16 +1,19 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — no-message-id edit needs a correction word or ≥0.9 text match (alert_revision.py); holiday_table_flag() surfaced in STATUS.json + the brief; Perplexity probe URL fixed; two comment essays cut to one line. Prior: REUSE, DON'T REBUILD; ASK-MAP FIRST.
+Last updated: 2026-09-15 — HANDOFF cut to a RULES CORE: one line per rule, every mechanic moved verbatim to its reference doc (28,060 bytes -> this). Ceiling is now 14 KB, not 30. Prior: no-message-id edit needs a correction word or >=0.9 text match (alert_revision.py); holiday_table_flag() surfaced in STATUS.json + the brief.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
   REPLACE, DON'T STACK: the new rule takes the old one's place — never
   leave the old one beside it with a "SUPERSEDED" note.
+- ONE RULE, ONE LINE: `- NAME (G, date): the imperative. reference/DOC.md`.
+  Numbers, thresholds, formats, procedures, worked examples, history and
+  rationale are MECHANICS — they belong in the reference doc, not here.
 - Bump the one "Last updated:" line above. One line. Never prepend an essay.
 - Session notes, findings, post-mortems, numbers-of-the-day go to
   HANDOFF-LOG.md under "SESSION NOTES", newest first, dated. That file may
-  grow forever; this one may not. Hard ceiling: under 30 KB. If you are
+  grow forever; this one may not. Hard ceiling: under 14 KB. If you are
   about to push it past that, you are writing history or mechanics, not a
   rule — move it (history → HANDOFF-LOG.md, how-it-works → reference/).
 - RULES live here; MECHANICS (how a subsystem works, numbers, formats) live
@@ -33,216 +36,78 @@ keys, second machine, caller research) · DATA-MAP.md (what is inside every
 data file, the data families) · reference/OPTIONS-BROKER-REFERENCE.md (Webull
 facts) · MARKET-HOURS.md (hours, holidays) · ARCHITECTURE.md (modules, seams)
 · INDEX.md (what every file is).
+Added 9/15, same map: reference/OPERATIONS.md also holds the weekly-file and
+house file rules · ARCHITECTURE.md also holds the machine in one paragraph,
+the accounts, the Market Sniper coexistence and the north star · DATA-MAP.md
+also holds the CONDENSE AND MERGE test · reference/EOD-BENCHMARK-SPEC.md (the
+report contract) · reference/PULLBACK-LEVELS.md · reference/CALLER-LEDGER.md ·
+reference/CALLER-PROFILE-2026-09-14.md. And the rest: HANDOFF-LOG.md (all
+history) · extension/rooms.txt · settings.json (keys, gitignored) ·
+master_ledger.csv / master_alerts.csv (truth) · days/ (per-day state) ·
+daily-reports/ and daily-audits/ (one file per week per kind) · project/.
 
 ## Who and what
 - G (giancuffaro230@gmail.com) — maintains this code himself (9/13), trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
-- The machine: Chrome MV3 extension source v3.8.33 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot audits and journals after close. Market Sniper shares Webull; this bot never manages its positions.
-- Accounts: `execution.mode=dryrun` does not disable per-room live Webull
-  orders. Verify current buying power and positions at the broker before
-  making claims. Webull options share one API budget with Market Sniper;
-  `futures_brokers.webull` and Topstep/Tradovate remain off. NinjaTrader
-  execution was paused 9/13; its configured account remains untouched.
-- Market Sniper on port 8000 is G's separate tool on the same account. Its
-  positions are visible but never stop-managed or sold by Discord Sniper;
-  Book.is_hand_trade enforces that boundary. The two apps' ratchet spacing
-  differs; changing either is a separate trading-policy decision.
 - Real-money actions are HIS ALONE: placing/canceling orders, flipping rooms
   LIVE, unlocking accounts, funding, questionnaires, accepting ToS, passwords.
+- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live Webull orders; verify buying power and positions AT THE BROKER before any claim; `futures_brokers.webull`, Topstep/Tradovate and NinjaTrader execution stay OFF. ARCHITECTURE.md
+- COEXISTENCE: Market Sniper (port 8000) is G's own tool on the same Webull account and rate budget — its positions are visible, NEVER stop-managed or sold (Book.is_hand_trade); changing either app's ratchet spacing is a separate trading-policy decision. ARCHITECTURE.md
+- PRODUCT NORTH STAR (G, 9/11): every day must leave a complete, auditable alert funnel and enough append-only price/event data to benchmark the caller, the bot policy and the broker-confirmed result; never substitute a later high for a caller exit. reference/EOD-BENCHMARK-SPEC.md
+- AI READS ARE PROPOSALS: the parser and every guard judge them and AI confidence authorizes nothing; a model field that is "" or a range is NO CALL — not a crash, not an order; department output is advisory, never code or orders. reference/OPERATIONS.md
+- CALLER IDENTITY IS CANDIDATE EVIDENCE: win rates stay unavailable until trade attribution exists; a newly observed account never gets an execution key; legacy ID-less rows stay unavailable — re-grab, never infer. reference/CALLER-LEDGER.md
 - Claude exports and project/context/ are historical reference only.
-- PRODUCT NORTH STAR (G, 9/11): every day must leave a complete, auditable
-  alert funnel and enough append-only price/event data to benchmark the
-  caller's documented trade, the versioned bot policy on the same alert, and
-  the broker-confirmed actual result. Daily reports are the readable snapshot;
-  the growing dataset is what earns parser/strategy improvements. Exact caller
-  results require real entry+exit evidence; never substitute a later high.
-  Full contract: reference/EOD-BENCHMARK-SPEC.md.
-- AI reads are PROPOSALS: whatever reads a message (observer, AI READ, IMG
-  READ — provider order in reference/OPERATIONS.md), the parser and every
-  guard judge it and AI confidence authorizes nothing. A model field that is
-  "" or a range ("1.26-1.30") is NO CALL — not a crash, not an order
-  (ai_reader.judge() is the one copy of "validate() can never raise").
-  Department output is advisory, never code or orders. Anthropic is skipped
-  while billing-blocked; DeepSeek removed (G).
-- Caller identity is candidate evidence: win rates stay unavailable until
-  trade attribution exists; a newly observed account never gets an execution
-  key; legacy ID-less rows stay unavailable — re-grab, never infer. Caller
-  behaviour numbers (9/14): reference/CALLER-PROFILE-2026-09-14.md.
 
 ## Rules of the house (current, in force)
-OPTIONALITY REVIEW 9/13: the channel is ON by G's choice (findings in
-HANDOFF-LOG.md). PREMIUM REVIEW: no arbitrary premium range and no automatic
-factor-of-100 correction; missing units stay unresolved pending source evidence.
 
 ENTRIES (mechanics: reference/ENTRIES.md)
-- Bid the caller's price or better; pullback entries cross the ask at the
-  touch. RN (round-number) pullback is global and ON. One contract per entry
-  while the bracket is on. THE LEVEL STAYS $1 — SETTLED 9/9 on 106 beta-name
-  alerts replayed on real 1-second bars (reference/PULLBACK-LEVELS.md). Don't
-  re-open on a feeling — re-run the script when the sample doubles.
-- ROOMS — ONE SWITCH PER ROOM (9/9 evening, G: "a list of all the rooms
-  we've been to and the option to open the tab or not; if I selected to
-  open it I obviously want it live"). ON = tab open + read + trades LIVE;
-  OFF = no tab, nothing read, nothing traded; LAPSED = off because the sub
-  ran out, probed daily. There is NO testing/paper state any more. CLOSING A
-  TAB BY HAND IS NOT A BENCH — the switch is the only bench. Benched rooms
-  are never deleted from the file.
-  WHOSE TABS THE REAPER MAY CLOSE (9/10). ONLY tabs the extension itself
-  opened (`_OURS`). A tab a HUMAN opened is never closed, whatever URL it is
-  on.
-  WHO MAY OPEN A TAB (9/10, G: "get rid of auto opening tabs UNLESS it's
-  the start sniper"). Exactly three things, and nothing else: START HERE.bat's
-  one-shot request, the popup's Channels switch (his click), whopSelfHeal().
-  NO ACCESS = OUT OF SERVICE (9/10, G: "do not open the tab if we don't have
-  access"): a "No Access" title writes the room `lapsed` and closes its tab.
-  Room RULES (6th field: bare, dotdate, pivot=NQ, readonly, sym=SPX) are set
-  from the popup pills; the bridge derives its lists from them, settings.json
-  no longer holds those lists. The `spx` flag was DELETED 9/10 (NO SPX->SPY).
-- ROOM HOURS: `on` rooms use tabs 9:15–16:30 ET on weekdays unless marked
-  `always` (futures rooms). A Discord tab closed by hand stays closed until
-  the next START HERE or a room-switch change. The last browser tab is never
-  closed.
-- CHANNELS / CONTROLS: callers are shown within their verified room, win
-  rate unavailable unless backed by evidence; no separate Callers / Needs You
-  tab (G). Honey Drip caller switches keep their room keys.
-- STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung
-  (quote-verified). 3-ITM translation for SPY/QQQ/Mag7 0DTE. ADD buys the
-  held strike.
-- "ADDED <full contract>" you are not in = an OPEN entry. A bare "added to
-  SPY" refuses.
-- NO SPX→SPY. DELETED 9/10, G: "do not translate any SPX to SPY. Delete any
-  sort of translation between SPX and SPY." SPX/SPXW/XSP/RUT/NDX/VIX entries
-  are HELD with a plain reason until execution.index_broker is set
-  (tastytrade or tradier, a separate funded account).
-- WORD ORDER (9/10, G: "it doesn't matter the order of the expiration or the
-  price or the ticker. It's not relevant. It could be in any order"). In a
-  `bare` room the reader strips the contract's own three tokens wherever each
-  sits and fires if nothing is left over. SCOPED ON PURPOSE to `bare` rooms.
-- TWO CONTRACTS IN ONE MESSAGE = TWO ORDERS (9/10, G: "when you have
-  multistrikes, just buy both of them. Buy two contracts, one of each").
-  ONE contract each, own born stop, own ratchet — not a spread. Same ticker
-  only; call+put is a strangle and the whole line refuses; max 3 extras.
-- EXPIRY (webull_options.expiry_to_date, one place):
-  · NDTE is N CALENDAR days out, rolling BACK over weekends/holidays (G,
-    9/10: "there is no 3DTE if in three days is a Saturday — it would just
-    end in 2DTE"). Never past today.
-  · NO DATE = 0DTE (G, 9/10), and the LISTING is ASKED, never assumed (9/14):
-    today wins if listed, else the nearest listed date. The old "FRIDAY
-    WEEKLIES ONLY" rule is DEAD. Clues still win first ("NEXT WEEK"/"NEXT FRI",
-    a shouted MONTH).
-  · CALLER-PRICE GATE (9/14, execution.price_sanity = 0.4x–2.5x) on an
-    INFERRED expiry: an ask outside the band = wrong contract — take the
-    listed expiry that IS in band, else REFUSE. No posted price = inert.
-  · THE CONTRACT MUST EXIST (9/15, bridge._verify_listed): EVERY entry asks
-    the broker whether that exact contract is listed. Unlisted but siblings
-    are -> REFUSE + BAD-CONTRACT line. NOTHING listed anywhere = the feed, not
-    the contract: goes THROUGH with a LISTING line. Fails open — a guard,
-    never a gate.
-- SPREAD GUARD (entries only): refuse if spread > 20% of mid or > max($0.20,
-  10% of mid). THIN guard: < 250 contracts last session = refused.
-- STALE-ENTRY GATE: entries older than 3 min never fire. Negations ("NOT
-  getting in", "too expensive") hard-veto; "out the gate" is hype.
-- DEDUPE LADDER: extension in-flight lock → bridge echo-lock (20 s) →
-  per-trader "already in" claim → one average-down ADD ≥1% under what was
-  PAID. Position identity is caller+symbol+strike+side+expiry everywhere.
-- AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14): an OPEN whose message
-  id is already pending on a different contract CANCELS the earlier hunt and
-  its resting bid, then arms the new one. Two DIFFERENT message ids are two
-  calls, never an edit. NO message id (voice/vision/legacy): same trader, same
-  ticker, inside 5 min AND the text reads as a fix — a correction word (edit,
-  meant, typo, "*", "not calls/puts") or ≥0.9 similar with the contract
-  stripped. Otherwise it is a SIBLING trade and both arms stand (alert_revision.py).
-- IF THE CORRECTED CONTRACT ALREADY FILLED (9/15, G: "if in profit keep the
-  ratchet and set the stop to breakeven, if it's a losing trade, close it
-  automatically"). Judged on the CURRENT BID vs the fill: bid >= fill -> stop
-  to BREAKEVEN, ratchet keeps running; bid < fill -> CLOSED down the existing
-  exit path. No bid, a non-option, or a stop that will not move = LOGGED ONLY.
-  THE ONE EXCEPTION TO ENTRIES-ONLY, and not a room exit: the caller changed
-  the CONTRACT, so what we hold is OUR misread. Their trims, stop-moves and
-  "all out" stay EXIT-IGNORED.
-- RETRACTION ("not ready / scratch that / cancel / disregard / hold off /
-  nevermind") pulls that trader's resting bids and armed pullback hunts.
-- FUTURES: micros only (NQ→MNQ, ES→MES ...). Their stop/target wins; 25/50
-  fills the gaps. Webull futures OPEN refuses until an exact GTC STOP_LOSS is
-  placed and verified after its fill. No futures quote-driven target/ratchet
-  is operational.
-- INDEX MIRROR (9/13) — **OFF, activation blocked** until a broker-confirmed
-  futures protective exit exists. The shadow records; `futures_mirror_daily.py`
-  measures. Popup switch stays disabled until live exits are verified.
+- REVIEWS IN FORCE (9/13): the optionality channel is ON by G's choice; no arbitrary premium range and no automatic factor-of-100 correction; missing units stay unresolved pending source evidence.
+- PRICE: the caller's price or better; pullback entries cross the ask at the touch; one contract per entry while the bracket is on.
+- RN PULLBACK is global and ON, and THE LEVEL STAYS $1 — SETTLED 9/9. Don't re-open it on a feeling; re-run the script when the sample doubles. reference/PULLBACK-LEVELS.md
+- ROOMS — ONE SWITCH PER ROOM (G, 9/9): ON = tab open + read + trades LIVE; OFF = no tab, nothing read, nothing traded; LAPSED = the sub ran out, probed daily. There is NO testing/paper state. CLOSING A TAB BY HAND IS NOT A BENCH — the switch is the only bench, and benched rooms are never deleted from the file. reference/ROOMS-TABS.md
+- THE REAPER (9/10) closes ONLY tabs the extension itself opened (`_OURS`); a tab a HUMAN opened is never closed, whatever URL it is on.
+- WHO MAY OPEN A TAB (9/10): START HERE's one-shot request, the popup's Channels switch, whopSelfHeal() — exactly those three, nothing else.
+- NO ACCESS = OUT OF SERVICE (9/10): a "No Access" title writes the room `lapsed` and closes its tab.
+- ROOM RULES are rooms.txt's 6th field, set from the popup pills; the bridge derives its lists from them and settings.json holds none. The `spx` flag was DELETED 9/10.
+- ROOM HOURS: `on` rooms use tabs 9:15–16:30 ET on weekdays unless marked `always`; a Discord tab closed by hand stays closed until the next START HERE or room-switch change; the last browser tab is never closed.
+- CHANNELS: callers are shown within their verified room, win rate unavailable unless backed by evidence; no separate Callers / Needs You tab (G); Honey Drip caller switches keep their room keys.
+- STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung (quote-verified). 3-ITM translation for SPY/QQQ/Mag7 0DTE. ADD buys the held strike.
+- "ADDED <full contract>" you are not in = an OPEN entry. A bare "added to SPY" refuses.
+- NO SPX→SPY. DELETED 9/10, G: "do not translate any SPX to SPY. Delete any sort of translation between SPX and SPY." SPX/SPXW/XSP/RUT/NDX/VIX entries are HELD until execution.index_broker is set.
+- WORD ORDER (9/10): the order of ticker, strike and expiry is irrelevant — SCOPED ON PURPOSE to `bare` rooms.
+- TWO CONTRACTS IN ONE MESSAGE = TWO ORDERS (9/10): one contract each, own born stop, own ratchet — not a spread; same ticker only; call+put is a strangle and the whole line refuses; max 3 extras.
+- EXPIRY lives in ONE place: NDTE is N CALENDAR days out rolling BACK over weekends/holidays and never past today; NO DATE = 0DTE (G, 9/10) and the LISTING is ASKED, never assumed; "FRIDAY WEEKLIES ONLY" is DEAD; clues win first.
+- CALLER-PRICE GATE (9/14) on an INFERRED expiry: an ask outside the band is the wrong contract — take the listed expiry that IS in band, else REFUSE. No posted price = inert.
+- THE CONTRACT MUST EXIST (9/15): every entry asks the broker whether that exact contract is listed; unlisted but siblings are → REFUSE; nothing listed anywhere → THROUGH with a LISTING line. Fails open — a guard, never a gate.
+- GUARDS: the SPREAD and THIN guards refuse wide or illiquid entries; the STALE-ENTRY GATE never fires anything older than 3 min; negations hard-veto.
+- DEDUPE LADDER ends at ONE average-down ADD under what was PAID. Position identity is caller+symbol+strike+side+expiry everywhere.
+- AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14): it cancels the earlier hunt and its resting bid, then arms the new one. Two DIFFERENT message ids are two calls, never an edit; with no message id it is an edit only if the same trader's same ticker inside 5 min reads as a fix, else both arms stand.
+- IF THE CORRECTED CONTRACT ALREADY FILLED (9/15, G: "if in profit keep the ratchet and set the stop to breakeven, if it's a losing trade, close it automatically"), judged on the CURRENT BID vs the fill; no bid, a non-option or a stop that will not move = LOGGED ONLY. THE ONE EXCEPTION TO ENTRIES-ONLY, and not a room exit.
+- RETRACTION ("not ready / scratch that / cancel / disregard / hold off / nevermind") pulls that trader's resting bids and armed pullback hunts.
+- FUTURES: micros only; their stop/target wins and 25/50 fills the gaps; a Webull futures OPEN refuses until an exact GTC STOP_LOSS is placed and verified after its fill; no futures quote-driven target/ratchet is operational.
+- INDEX MIRROR (9/13) — OFF, activation blocked until a broker-confirmed futures protective exit exists; the popup switch stays disabled until live exits are verified.
 - THE POCKET (hidden on purpose): settings pocket_scalps_only, default OFF.
 
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
 (mechanics: reference/RATCHET.md)
-- ENTRIES ONLY (G, 9/3; verified live 9/8): the bot follows room ENTRIES
-  (and adds) only. EVERY room-side exit — trim, stop-move, "all out",
-  "stopped out", "closed everything" — is logged "EXIT-IGNORED … entries
-  only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY
-  exit (plus the bridge's own pullback stock-stop / underlying hard-stop).
-  ONE EXCEPTION, and it is not a room exit: an EDIT that changes the CONTRACT
-  we already bought (see ENTRIES). A bot SELL that traces to a room's own exit
-  call is still a BUG: check bridge.py do_POST's EXIT-IGNORED gate,
-  background.js's TRIM/STOPMOVE/CLOSE gate, and that settings
-  execution.exit_policy is absent (default entries_only; "full" is the
-  one-line way back).
-- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to
-  breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one
-  implementation. Stops never loosen. Anti-clip is off. Won the 115-trade
-  sweep; re-run the replays as the sample grows (reference/RATCHET.md).
-- FUTURES RATCHET (9/9): derived from the trade's own risk — arm at ⅔ of the
-  stop distance → BE, then a rung every ~27% of it.
-- SWINGS: 14+ DTE = swing (auto-tagged). Their stock-level stop runs it; no
-  level = wide −25%, re-armed every morning at 9:31 (option SELL orders are
-  DAY-only at Webull). Scalps excluded on purpose.
-- CLOSE path: every bot sell waits for FILLED — an ACCEPTED sell is never
-  booked as filled. A CLOSE for a contract the book does not hold is REFUSED,
-  never sent (his 12-lot scalps live in the same account).
-- 0DTE: ETF options trade to 16:15; auto-exercise at $0.01 ITM — flatten
-  before the close.
+- ENTRIES ONLY (G, 9/3; verified live 9/8): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out", "closed everything" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY exit. ONE EXCEPTION, and it is not a room exit: an EDIT that changes the CONTRACT we already bought. A bot SELL that traces to a room's own exit call is still a BUG.
+- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation. Stops never loosen. Anti-clip is off.
+- FUTURES RATCHET (9/9): derived from the trade's own risk, not a fixed number.
+- SWINGS: 14+ DTE = swing (auto-tagged). Their stock-level stop runs it; no level = wide −25%, re-armed every morning at 9:31. Scalps excluded on purpose.
+- CLOSE path: every bot sell waits for FILLED — an ACCEPTED sell is never booked as filled. A CLOSE for a contract the book does not hold is REFUSED, never sent.
+- 0DTE: ETF options trade to 16:15; auto-exercise at $0.01 ITM — flatten before the close.
 
-RESTARTS / SAFETY (mechanics: reference/OPERATIONS.md)
-- State photo on every event; on boot everything is UNVERIFIED until the
-  broker confirms; expired options = dead paper. Mid-market code updates
-  self-apply at the first safe window. Resting stops at Webull guard every gap.
-- POSTCHECK after every trade: book vs account, stop resting, quote bus
-  fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
-- RULE: weekly signal-room-chat logs (replaces daily) (G, 9/15).
-  `signal-room-chat week-of-<Mon>-to-<Sun>-<year> (discord|whop).txt`, week =
-  Mon–Sun, each capture day under a `===== Mon Sep 14 2026 =====` header in
-  date order, holding only lines no earlier day — or earlier week — already
-  holds. A re-export replaces that day's block. New week → new file, by
-  itself. `ds_logs.py` owns naming, blocks and de-dupe; readers ask it which
-  days a file covers. Every daily (26 of them) is merged and zipped in
-  `archive/`. Never hand-edit a week file.
-- WEEKLY REPORTS (9/15): every report kind is ONE file per week per kind,
-  same naming — `daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md`,
-  `daily-audits/AUDIT week-of-….txt` — a `===== Mon Sep 14 2026 =====` block
-  per day, NEWEST DAY FIRST, a re-run replaces that day's block; the one csv
-  kind is `daily-reports/CALLER-OUTCOMES.csv` with a `date` column.
-  `reports.py` owns naming, blocks and the cache; writers call it, never
-  mint a dated file. `daily-audits/latest.json` stays as is.
-- APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for
-  its kind — the week file, the jsonl, the master csv, the archive folder —
-  never a new dated file beside it. A writer that would create
-  `<name>-<date>` must instead append a dated block/row to `<name>`. Rotated
-  logs land in `archive/`. Finished experiments are zipped in `archive/`, not
-  left as folders. Dated piles found later get merged the same way (see
-  CONDENSE AND MERGE).
+RESTARTS / SAFETY / THE HOUSE RULES (mechanics: reference/OPERATIONS.md)
+- BOOT: state photo on every event; everything is UNVERIFIED until the broker confirms; expired options = dead paper; mid-market code updates self-apply at the first safe window; resting stops at Webull guard every gap.
+- POSTCHECK after every trade: book vs account, stop resting, quote bus fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
+- RULE: weekly signal-room-chat logs (replaces daily) (G, 9/15). `ds_logs.py` owns naming, blocks and de-dupe; readers ask it which days a file covers. Never hand-edit a week file.
+- WEEKLY REPORTS (9/15): every report kind is ONE file per week per kind, newest day first, a re-run replacing that day's block. `reports.py` owns naming, blocks and the cache; writers call it, never mint a dated file.
+- APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for its kind — never a new dated file beside it. Rotated logs and finished experiments land zipped in `archive/`; dated piles found later get merged the same way.
 - REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is — `reports.py status` decides, `reports/INDEX.json` is the memory. Rebuild only when it says stale. Never re-derive by reading logs what a report already states.
 - ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json. Logs are read only when those two cannot answer. Checks recorded in STATUS.json.verified are trusted while their inputs are unchanged (VERIFY ONCE).
-- DAILY SNIPER REPORT: bridge.py runs `daily_audit.py` once per weekday at
-  16:40 ET. Order: broker_sync → replay → JS/Python tests + parser_gate →
-  AUDIT block + latest.json → every report through `reports.build` → the
-  BRIEF posted to Sniper HQ through the Fill Announcer's options webhook (how
-  G gets the day; a failed brief never fails the audit) → STATUS.json LAST.
-  Rules: broker-confirmed actuals override any simulation; RAW capture is
-  retained and LIVE PARSER rows overlay it; relay duplicates count once;
-  expired pullback waits are skips, not orders; the 15-minute Codex guard was
-  deleted at G's request — do not recreate it. Findings become tested
-  fixtures. The date argument is validated (`eastern.day_arg`).
-- GIT: settings.json holds every key and is never committed. AUTO PUSH owns
-  commits (every 45 s); never run git write commands from a sandbox. After
-  suspicious loss check `git reflog` for a "reset:" before rebuilding.
+- DAILY SNIPER REPORT: `daily_audit.py` runs once per weekday at 16:40 ET. Broker-confirmed actuals override any simulation; RAW capture is retained and LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips, not orders; the 15-minute Codex guard was deleted at G's request — do not recreate it. Findings become tested fixtures.
+- GIT: settings.json holds every key and is never committed. AUTO PUSH owns commits (every 45 s); never run git write commands from a sandbox. After suspicious loss check `git reflog` for a "reset:" before rebuilding.
 - REPLACE, DON'T STACK (G, 9/9). When something changes — a rule, a value,
   a function, a setting, a room line, a doc — the new version takes the old
   one's place. Never leave the old beside the new: not commented out, not
@@ -251,114 +116,45 @@ RESTARTS / SAFETY (mechanics: reference/OPERATIONS.md)
   never in the working file. A fallback that must stay is a deliberate
   design decision, written as one — not leftovers. Applies to code,
   settings.json, rooms.txt, every .md, and this file.
-- CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file. Whenever a
-  file, a log line type, a column or a folder duplicates something we already
-  keep, merge it into the existing home and delete the copy — but only when
-  the merge cannot break a reader. The test, in order: (1) name every piece of
-  code that opens it (grep the repo, both halves); (2) if anything reads it,
-  either repoint that reader in the same change or leave the file alone; (3)
-  run the tests AND `node parser_gate.js`; (4) never merge two files whose
-  rows mean different things just because the columns line up. Records that
-  can never be re-derived — the price tapes, telemetry, days/ — are APPENDED
-  to, never rewritten. One-off evidence CSVs from an analysis run get folded
-  into the script that regenerates them and then archived, not left in root.
-  This is REPLACE-DON'T-STACK applied to data instead of code. When in doubt
-  leave it and write the reason in DATA-MAP.md.
-- DATA-MAP.md is the index of what is INSIDE the data files — columns, log
-  line types, row counts, traps, what each file can and cannot answer. Read
-  it WITH INDEX.md at the start of every session. INDEX.md says what a file
-  is; DATA-MAP.md says what is in it.
-- RUN build_ledger.py IN EASTERN. Off his PC:
-  `TZ=America/New_York python3 build_ledger.py` (9/15: a UTC shell wrote
-  `opened` +4h and `closed` −4h on one row; caught and reverted).
-- Compile-check everything touched (python3 -m py_compile / node --check).
-  Extension changes → bump extension/manifest.json so a reload is provable.
-  Never install the streaming SDK family (webullsdkcore) into the bridge's
-  Python. Sandbox trading is RETIRED — paper is LOCAL (SIM tickets).
-- Discord API is NOT an option (user-token automation = permanent ban risk
-  to the account + paid subs; official bots need the server owner).
-  Reaffirmed 9/9. Browser reads only.
+- CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge a duplicate into the existing home and delete the copy, but only when the merge cannot break a reader (the test: DATA-MAP.md). Records that can never be re-derived — the price tapes, telemetry, days/ — are APPENDED to, never rewritten. When in doubt leave it and write the reason in DATA-MAP.md.
+- READ DATA-MAP.md WITH INDEX.md at the start of every session: INDEX.md says what a file IS, DATA-MAP.md says what is IN it.
+- RUN build_ledger.py IN EASTERN — off his PC, `TZ=America/New_York python3 build_ledger.py`.
+- COMPILE-CHECK everything touched (python3 -m py_compile / node --check); extension changes bump extension/manifest.json so a reload is provable; never install the streaming SDK family (webullsdkcore) into the bridge's Python; sandbox trading is RETIRED — paper is LOCAL (SIM tickets).
+- DISCORD API IS NOT AN OPTION (reaffirmed 9/9): user-token automation risks a permanent ban on the account and the paid subs, and official bots need the server owner. Browser reads only.
 
 ROOMS / TABS / READERS (mechanics: reference/ROOMS-TABS.md)
-- rooms.txt = THE channel list (tabs + trading, one file). START HERE IS
-  FULLY UNATTENDED (G, 9/9: "no input from me"). Between runs NOTHING opens
-  rooms — a tab he closes by hand stays closed. The only inputs left are the
-  ones no script may do: a Discord/Whop login if a profile is logged out, and
-  Webull keys in the popup.
-- Relay rooms: ZTRADEZ cut 9/9; OWLS all-alerts is active and RELAY UNWRAP
-  re-books under the real trader; shabs + eli direct rooms retired 9/9.
-- TAB HEALTH: never close a human-owned tab; active/voice tabs are protected;
-  Chrome uses Profile 2 for Discord and Profile 6 for Whop.
-- VOICE: ears transcribe always (Deepgram). Voice ENTRIES ON (9/2); voice
-  EXITS irrelevant under entries-only. Typed copy of a voice fire = echo.
-- Silence alarm: any room quiet 40 min in market hours → desktop
-  notification.
+- rooms.txt = THE channel list (tabs + trading, one file). START HERE IS FULLY UNATTENDED (G, 9/9: "no input from me"); between runs NOTHING opens rooms. The only inputs left are the ones no script may do: a Discord/Whop login, and Webull keys in the popup.
+- Relay rooms: OWLS all-alerts is active and RELAY UNWRAP re-books under the real trader; ZTRADEZ, shabs and eli direct rooms were retired 9/9.
+- TAB HEALTH: never close a human-owned tab; active/voice tabs are protected; Chrome uses Profile 2 for Discord and Profile 6 for Whop.
+- VOICE: ears transcribe always (Deepgram). Voice ENTRIES ON (9/2); voice EXITS irrelevant under entries-only. Typed copy of a voice fire = echo.
+- Silence alarm: any room quiet 40 min in market hours → desktop notification.
 
 FILL ANNOUNCER (announcer.py, read-only; mechanics: reference/OPERATIONS.md)
-- Posts every fill, milestones, stop-outs and the scoreboard to G's Discord
-  webhooks. NEITHER channel ever goes into rooms.txt.
-- STATUS: PAUSED since 9/2 (announcer.stop = "stop", G: "get this app
-  working 100% first"). Its board is computed FROM THE LEDGER (9/9). Its
-  order hunt is paced — the 9/2 429 storm must never come back.
+- Posts every fill, milestones, stop-outs and the scoreboard to G's Discord webhooks. NEITHER channel ever goes into rooms.txt.
+- STATUS: PAUSED since 9/2 (announcer.stop = "stop"). Its board is computed FROM THE LEDGER (9/9). Its order hunt is paced — the 9/2 429 storm must never come back.
 
 ## DATA — one central file per family (9/9). THE APP READS ONLY THESE.
 (what is inside each: DATA-MAP.md)
-- BROKER RECORD → master_broker.csv. `broker_sync.py` — FIRST step of the
-  16:40 audit — pulls the order history into ONE fixed file,
-  Webull_Orders_auto.csv, OVERWRITING it every run (G, 9/10: "have one that
-  overwrites" — no deletes, ever), and one balance row per day in
-  `balance_daily.csv`. Never write dated Webull_Orders_<date> files (G, 9/9:
-  never dated piles). Merge is REPLACE-DON'T-STACK per order.
-- BROKER TRUTH: `master_broker.csv` is the account's own history. Do not
-  quote P&L from book-priced rows when a broker row exists.
-- BOT ATTRIBUTION: a caller name is candidate evidence until the entry is
-  linked to a source alert and the trade to broker fills. `manual` denotes a
-  manual exit; it does not disqualify a bot-origin entry.
-- NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
-  don't want any more confusions"). account="paper" rows stay OUT of
-  master_ledger.csv; account="unknown" is NOT paper. The bridge WARNS at boot
-  if paper_trading is ever switched on.
-- FILLS → master_ledger.csv (build_ledger.py, read via ledger.py). The
-  broker's exit/P&L/state/account WIN over the book's belief. RECONCILIATION
-  prints every run; a DRIFT line = something upstream lied. NOTHING reads
-  days/*.json "table" or journal.csv for analysis anymore.
-- ALERTS → master_alerts.csv (build_alerts.py; ledger.alerts()).
-- PRICE TAPES → tape.py is the ONE registry (webull, tasty_greeks,
-  tasty_quote, databento, missed, alert). Webull has NO historical option
-  prices; the tapes are our own record. databento_backfill.py spends credit —
-  never run its main() casually.
-- HOLIDAYS / HOURS → market_hours.py owns the table (through 2027, UPDATE EVERY
-  YEAR). holiday_table_flag() says "expiring" in the last 60 days and "stale"
-  past it; STATUS.json "broke" and the brief's "What broke" both show it.
-- POST-MORTEMS → master_postmortems.csv + postmortems/ (G 9/9: "analyze every
-  single trade after exiting … be attentive to these"). His own hand trades
-  are never graded.
-- RN LEDGER → rn_ledger.csv (append-only).
+- BROKER RECORD → master_broker.csv; the Webull export is ONE fixed file, OVERWRITTEN every run — never dated Webull_Orders_<date> piles (G, 9/9, 9/10). One balance row per day in balance_daily.csv.
+- FILLS → master_ledger.csv. The broker's exit/P&L/state/account WIN over the book's belief; a DRIFT line in RECONCILIATION means something upstream lied; NOTHING reads days/*.json "table" or journal.csv for analysis anymore.
+- ALERTS → master_alerts.csv. RN LEDGER → rn_ledger.csv (append-only).
+- PRICE TAPES → tape.py is the ONE registry. Webull has NO historical option prices; the tapes are our own record. databento_backfill.py spends credit — never run its main() casually.
+- HOLIDAYS / HOURS → market_hours.py owns the table — UPDATE EVERY YEAR; holiday_table_flag() surfaces it in STATUS.json and the brief.
+- POST-MORTEMS → master_postmortems.csv + postmortems/ (G 9/9: "analyze every single trade after exiting … be attentive to these"). His own hand trades are never graded.
+- NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I don't want any more confusions"): account="paper" rows stay OUT of master_ledger.csv; account="unknown" is NOT paper; the bridge WARNS at boot if paper_trading is ever switched on.
+- BOT ATTRIBUTION: a caller name is candidate evidence until the entry is linked to a source alert and the trade to broker fills; never quote P&L from book-priced rows when a broker row exists.
 
-## Broker facts (Webull OpenAPI — reference/OPTIONS-BROKER-REFERENCE.md first)
-- Limits PER ENDPOINT per app key: option snapshot 60/min (20 symbols/
-  call); Order Detail / Positions / Balance 2 per 2 s. 429 = throttle;
-  417 = business rejection.
-- No option streaming; fills ARE pushed. No MARKET orders on options.
-  Combos = MASTER(LIMIT) + STOP_LOSS on SINGLE only. Option SELL orders are
-  DAY-only → every resting stop dies at the close.
-- Ticks: SPY/QQQ/IWM $0.01 always; Penny Program $0.01 <$3 / $0.05 ≥$3;
-  else $0.05/$0.10.
+## Broker facts — the RULES only (all of them: reference/OPTIONS-BROKER-REFERENCE.md, read it before any broker test)
+- NO MARKET ORDERS ON OPTIONS. Combos = MASTER(LIMIT) + STOP_LOSS on SINGLE only.
+- Option SELL orders are DAY-only → every resting stop dies at the close.
+- Rate limits are PER ENDPOINT per app key and shared with Market Sniper; 429 = throttle, 417 = business rejection. No option streaming; fills ARE pushed.
+- Ticks are symbol-aware (SPY/QQQ/IWM, Penny Program, the rest) — never invent one.
 
-## Operational truths (mechanics: reference/OPERATIONS.md)
-- sniper-autopilot scheduled task: */30 ET. It never places/cancels orders or
-  touches settings.json.
-- THE PAGE (9/9, G: "make the popup an html page — it's super small now"):
-  the SAME popup.html opened as a normal tab. One file, two sizes — never a
-  second dashboard. Claude-in-Chrome CANNOT read the popup; if G reports a
-  broken popup, the red line under the rooms is the diagnosis — ask for it.
+## Operational truths (mechanics: reference/OPERATIONS.md, reference/ROOMS-TABS.md)
+- sniper-autopilot (scheduled */30 ET) never places or cancels orders and never touches settings.json.
+- THE PAGE is the SAME popup.html opened as a normal tab — one file, two sizes, never a second dashboard. Claude-in-Chrome CANNOT read the popup; if G reports a broken popup, the red line under the rooms is the diagnosis — ask for it.
 - Multi-account: extras mirror LIVE entries 1:1 with own books/stops.
-
-## SECOND MACHINE (planned 9/9 — G: "another account on a different computer
-## for other subs"). Built default-off; nothing changes until PC2 exists.
-- ONE bridge, ONE book, ONE rate budget: PC2 runs only Chrome + the extension
-  and sends to THIS PC's bridge over the LAN. Never a second bridge on the
-  same Webull account. Setup steps: reference/OPERATIONS.md.
+- SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — PC2 runs only Chrome + the extension and sends to THIS PC's bridge. Never a second bridge on the same Webull account.
 
 ## Pending external setup and decisions
 1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project
@@ -400,12 +196,3 @@ FILL ANNOUNCER (announcer.py, read-only; mechanics: reference/OPERATIONS.md)
 ## Subscriptions
 ≈ $1,140/mo rooms + ~$52 infra + ~$30 exchange fees ≈ $1,220/mo before AI
 usage. Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
-
-## Where everything lives
-ASK-MAP.md (ask → file) · STATUS.json · HANDOFF-LOG.md (all history) ·
-INDEX.md (folder map) · DATA-MAP.md · ARCHITECTURE.md · MARKET-HOURS.md ·
-reference/ (subsystem mechanics, broker reference, studies) ·
-extension/rooms.txt · settings.json (keys, gitignored) · master_ledger.csv /
-master_alerts.csv (truth) · days/ (per-day state) · daily-reports/ and
-daily-audits/ (one file per week per kind) · reports/INDEX.json ·
-project/ (Claude reference setup).
