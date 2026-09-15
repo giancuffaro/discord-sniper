@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — the 16:40 audit now STARTS by pulling the broker export (nothing ever did) and ENDS by posting the one-screen BRIEF to Sniper HQ; caller reports read a posted exit price and refuse a posted stock price as premium; v3.8.32 retains Discord message IDs and exact report sources hand off to Chrome Profile 2 after the next safe bridge restart; room-chat exports are now ONE FILE PER WEEK PER LANE (v3.8.33), each day a delta block.
+Last updated: 2026-09-15 — the 16:40 audit now STARTS by pulling the broker export (nothing ever did) and ENDS by posting the one-screen BRIEF to Sniper HQ; caller reports read a posted exit price and refuse a posted stock price as premium; v3.8.32 retains Discord message IDs and exact report sources hand off to Chrome Profile 2 after the next safe bridge restart; room-chat exports are ONE FILE PER WEEK PER LANE (v3.8.33).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -309,17 +309,14 @@ RESTARTS / SAFETY
 - POSTCHECK after every trade: book vs account, stop resting, quote bus
   fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
 - ROOM-CHAT EXPORTS ARE WEEKLY (G, 9/15). `DS Logs/` holds ONE FILE PER WEEK
-  PER LANE — `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt`
-  and the `(whop)` twin. Week runs Monday..Sunday, day boundary Eastern; a
-  new week starts a new file by itself. Each capture day appends its own block
-  under `===== Mon Sep 14 2026 =====`, holding ONLY the lines the earlier days
-  of that file do not already hold — the export is cumulative, so 9/14 alone
-  was 10 MB of mostly 9/13's messages. A re-export of the same day REPLACES
-  that day's block; a second header for one day can never stack. `ds_logs.py`
-  owns the naming, the day blocks and the de-dupe, and every reader asks it
-  which days a file covers instead of reading the file NAME. The pre-9/10
-  untagged dailies are left exactly as they are; the seven lane-tagged ones
-  that were merged are zipped in `archive/`. Never hand-edit a weekly file.
+  PER LANE, `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt` and
+  its `(whop)` twin; Monday..Sunday, Eastern, a new week opens its own file.
+  Each day appends a `===== Mon Sep 14 2026 =====` block of ONLY what earlier
+  days of that file lack (the export is cumulative — 9/14 was 10 MB of mostly
+  9/13). A re-export replaces that day's block, never stacks a second header.
+  `ds_logs.py` owns naming, blocks and de-dupe; readers ask it which days a
+  file covers, never the file name. Pre-9/10 dailies untouched; the seven
+  merged lane-tagged ones are zipped in `archive/`. Never hand-edit one.
 - DAILY SNIPER REPORT: bridge.py runs `daily_audit.py` once per weekday at
   16:40 ET, after the 16:30 export/tab sweep. It replays that day's exact
   Discord and Whop inputs with each room's production grammar. `parser_gate.js`
