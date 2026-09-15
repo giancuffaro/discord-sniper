@@ -1,7 +1,7 @@
 DISCORD SNIPER DAILY AUDIT — 2026-09-14
-generated: 2026-09-14T21:05:33.835423-04:00
+generated: 2026-09-14T22:29:35.871054-04:00
 status: ATTENTION
-silent drops: 13
+silent drops: 11
 possible missed entries: 3
 coverage warnings: 0
 failed checks: none
@@ -25,16 +25,12 @@ OWLS Capital: 🌟｜ab — 20 msgs, 5 actionable, 2 judged, 2 SILENT
    15:35:34  OPEN    FUN   $AMZN lotto Size Layering some just for fun 9/25 260c 3.1 No SL Willing to have one more scale on these lottos if we see 245 - 249 @Owls
    15:35:34  ADD     AMZN  Second scale into $AMZN 11/20 300c New AVG: 3.97 @Owls
 
-Low Key Stonks: ⚖chika-alerts — 16 msgs, 8 actionable, 2 judged, 2 SILENT
-   14:18:12  OPEN    NQ    long 275 stop 265 @Chika Alerts
-   14:18:12  OPEN    NQ    long 275 stop 265 @Chika Alerts
-
 OWLS Capital: 🌟｜muggzone-options — 58 msgs, 28 actionable, 18 judged, 1 SILENT
    15:57:51  OPEN    MSFT  RISKY MSFT 505 CALLS .85 @everyone
 
 Platinum Trading: 🟣│futures-alerts — 46 msgs, 6 actionable, 6 judged, 0 SILENT
 
-NGD: ngd-trades — 62 msgs, 62 actionable, 62 judged, 0 SILENT
+NGD: ngd-trades — 60 msgs, 60 actionable, 60 judged, 0 SILENT
 
 Honey Drip Network 🍯💰📈: 👑｜aristotle-trades — 174 msgs, 56 actionable, 8 judged, 0 SILENT
 
@@ -50,7 +46,7 @@ Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps — 50 msgs, 26 actio
 
 Platinum Trading: 🟣│ei-alerts — 8 msgs, 2 actionable, 2 judged, 0 SILENT
 
-VeroTrade: ✅⏐vero-trades — 6 msgs, 6 actionable, 6 judged, 0 SILENT
+VeroTrade: ✅⏐vero-trades — 2 msgs, 2 actionable, 2 judged, 0 SILENT
 
 Low Key Stonks: 😈demon-day-trades — 6 msgs, 4 actionable, 4 judged, 0 SILENT
 
@@ -58,9 +54,11 @@ Low Key Stonks: 🔋nando-alerts — 4 msgs, 1 actionable, 1 judged, 0 SILENT
 
 Low Key Stonks: 🧿ducci-alerts — 4 msgs, 2 actionable, 2 judged, 0 SILENT
 
+Low Key Stonks: ⚖chika-alerts — 8 msgs, 2 actionable, 0 judged, 0 SILENT
+
 Day Trades — 16 msgs, 11 actionable, 7 judged, 0 SILENT
 
-TOTAL silent drops: 13  (actionable per the parser, no verdict, no bridge line)
+TOTAL silent drops: 11  (actionable per the parser, no verdict, no bridge line)
 
 POSSIBLE MISSED ENTRIES (heuristic — parser found NO action at all, but the trader had an unconfirmed LOADING call and this message carries a price):
    10:16:23  Honey Drip Network 🍯 midas (admin)   SPY 761P — Buy 1 contract @here 1.37 add another at 761.15
@@ -73,15 +71,15 @@ PASS  JS test_bare_entry.js  0.08s
 PASS  JS test_buy_verb.js  0.08s
 PASS  JS test_dotdate.js  0.08s
 PASS  JS test_elite.js  0.08s
-PASS  JS test_exits.js  0.08s
+PASS  JS test_exits.js  0.09s
 PASS  JS test_loaded_fill.js  0.08s
 PASS  JS test_optionable.js  0.05s
-PASS  JS test_owls_jonkian.js  0.08s
+PASS  JS test_owls_jonkian.js  0.09s
 PASS  JS test_percon.js  0.08s
 PASS  JS test_pivot.js  0.08s
 PASS  JS test_plan_entry.js  0.08s
-PASS  JS test_spreads.js  0.07s
+PASS  JS test_spreads.js  0.08s
 PASS  JS test_word_order.js  0.09s
 PASS  JS test_resolve.js  0.09s
-PASS  Historical parser corpus gate  2.65s
-PASS  Python regression suite  30.34s
+PASS  Historical parser corpus gate  2.41s
+PASS  Python regression suite  30.45s
