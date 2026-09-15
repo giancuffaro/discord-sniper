@@ -1,5 +1,21 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — bb6a7027e9ed8f5c328c
+
+The message plausibly reports a reduction to runners in AMD calls, but its trade linkage and whether it describes a new trim require source verification. The parser abstained, while the reader inferred TRIM for AMD 515 calls expiring 9/16. Validation retained that interpretation with an unsupported-context warning and a null strike.
+
+## Findings
+- The current message says "Gap filled so down to runners @here" without identifying a contract or quantity. Nearby messages include a repeated AMD 515 C 9/16 watch, "In", "4.2", percentage updates, and "25% out half". The reader inferred AMD TRIM at confidence 0.91; the parser returned null fields and fire=false. Review this as a candidate contextual position-management omission, not a confirmed parser bug. Verify that the entry and subsequent updates refer to AMD rather than the other mentioned trades. Determine whether "down to runners" reports an additional reduction or restates the preceding half-exit before treating it as a distinct trim.
+- Reader supporting ID chat-messages-987515353670221834-1549415624747389070 is present in the supplied history but absent from validation.eligible_prior_ids. Validation reports ok=true alongside safety_flags=["unsupported_context_id"]. The repeated AMD watch, chat-messages-987515353670221834-1549417610981023765, is eligible and explicitly contains "515 C 9/16". Reader strike is "515", whereas validation.read.strike is null. Verify the allowed context window, retained reply linkage, and validation field-mapping rules. Assess whether eligible evidence alone supports the interpretation and why the strike was omitted. Do not treat ok=true as resolving the context warning or proving the contract assignment.
+- The nearby raw value "4.2" has no explicit premium units. The current message provides no exit premium or trim quantity, and both reader price and qty are null. "25% out half" belongs to the preceding message. Preserve "4.2" without unit conversion pending source verification. Keep current exit premium and quantity unknown; do not carry forward the prior half-exit quantity or derive an exit price from reported percentages.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not include reply-target IDs, complete position state, or parser and validator specifications.
+- No broker fills, contemporaneous quotes, or verified performance calculations are supplied. Percentage updates are caller reports, not broker-confirmed results.
+- One reader attempt encountered a provider cooldown and another completed successfully; this does not establish a channel or application outage.
+
+---
+
 # Reader Review — 2026-09-15 — 8a3c9373d8e41aed26b8
 
 The reader proposes an AMD 515 call opening for 9/16 from the context-dependent message “In,” while the parser does not fire. The latest preceding AMD setup supports that interpretation, but nearby NVDA and TSLA setups leave attribution requiring source verification. This is not a confirmed parser bug.
