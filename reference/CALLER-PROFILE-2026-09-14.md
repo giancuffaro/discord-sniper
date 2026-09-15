@@ -145,6 +145,7 @@ Join: same date, same symbol, same strike, same side, our entry within 5 minutes
 | **bot already out before the caller's first trim** | **15 of 22** |
 | ... and out at a LOSS - stopped or clipped before their trim | **6** |
 | ... out green, just earlier than them | 7 |
+| ... our P&L on that row unavailable | 2 |
 | pairs excluded because the caller's first trim was on a later day | 2 |
 
 | measure | value |
@@ -231,7 +232,15 @@ Basis on those rows: 37 caller-stated, 5 market-bid-at-caller-exit (measured), 1
 | VeroTrade: ✅⏐1k-challenge #1323708708374450247 | 11 | 7 | 5.1 | 30.7% | unavailable | 36% |
 | VeroTrade: ✅⏐vero-trades #760694103401955378 | 8 | 6 | 21.0 | 29.5% | unavailable | 25% |
 
-## 9. What this cannot say
+## 9. What the data does support
+
+**1. The gap is not the entry, it is the exit clock.** On options the callers' first trim lands a median 5.4 minutes after their entry, at a median 17% (n=100 / n=96). On the very same contracts our median hold is 3.0 minutes and our median exit is -5.5% (n=57 / n=49). Of the 22 answerable pairs we were already out before their first trim 15 times - 6 of those in the red. Matching "first trim" is a question of staying in about five minutes longer, and of surviving a drawdown the callers routinely sit through, not of picking different alerts.
+
+**2. There is no caller stop to copy on options.** 26 of 530 option entries mention a stop at all; 2 quote one as a premium. What they actually do is revealed by the losing exits they post: a median -17%, p25 -31% (n=27). That is a give-up habit, not a resting order, and it is far wider than any stop the bot carries. Copying it is a risk decision for G, not a measurement - the data says only that their pain tolerance is wide, not that wide pays.
+
+**3. The runner is not the prize; the first trim is.** Of the 22 entries where both the first trim and the final exit are readable, 11 ended BELOW the first trim and 7 added more than +25 points past it. G's instinct - "I am even happy getting to the first trim" - is the part of their behaviour the evidence actually supports.
+
+## 10. What this cannot say
 
 - **No caller win rate, no caller net result.** Most entries never get a posted exit, and an unposted exit is unavailable, not a number. Nothing here is a scoreboard.
 - The hold times describe **callers who post linkable management messages**. Rooms that post an entry and go quiet sit in the silent column, not in the medians.

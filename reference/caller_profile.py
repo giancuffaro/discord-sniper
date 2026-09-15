@@ -800,6 +800,8 @@ A("| **bot already out before the caller's first trim** | **%d of %d** |"
   % (len(st_out), len(both)))
 A("| ... and out at a LOSS - stopped or clipped before their trim | **%d** |" % len(OUT_RED))
 A("| ... out green, just earlier than them | %d |" % len(OUT_GREEN))
+A("| ... our P&L on that row unavailable | %d |"
+  % (len(st_out) - len(OUT_RED) - len(OUT_GREEN)))
 A("| pairs excluded because the caller's first trim was on a later day | %d |" % SWING_FT)
 A("")
 A("| measure | value |")
@@ -891,7 +893,36 @@ for room, rs in sorted(byroom.items(), key=lambda kv: -len(kv[1])):
         fmt(q([r["t_full_exit"] for r in rs if r["ex_same_day"]])[1]),
         fmt(100.0 * sum(1 for r in rs if r["silent"]) / len(rs), 0, "%")))
 A("")
-A("## 9. What this cannot say")
+_botq = q([m["bot_hold_min"] for m in matches])
+_botp = q([m["bot_pl_pct"] for m in matches])
+A("## 9. What the data does support")
+A("")
+A("**1. The gap is not the entry, it is the exit clock.** On options the callers' "
+  "first trim lands a median %s minutes after their entry, at a median %s (n=%d / "
+  "n=%d). On the very same contracts our median hold is %s minutes and our median "
+  "exit is %s (n=%d / n=%d). Of the %d answerable pairs we were already out before "
+  "their first trim %d times - %d of those in the red. Matching \"first trim\" is a "
+  "question of staying in about five minutes longer, and of surviving a drawdown "
+  "the callers routinely sit through, not of picking different alerts."
+  % (fmt(_ftd[1]), fmt(_ftp[1], 0, "%"), _ftd[0], _ftp[0], fmt(_botq[1]),
+     fmt(_botp[1], 1, "%"), _botq[0], _botp[0], len(both), len(st_out), len(OUT_RED)))
+A("")
+A("**2. There is no caller stop to copy on options.** %d of %d option entries mention "
+  "a stop at all; %d quote one as a premium. What they actually do is revealed by the "
+  "losing exits they post: a median %s, p25 %s (n=%d). That is a give-up habit, not a "
+  "resting order, and it is far wider than any stop the bot carries. Copying it is a "
+  "risk decision for G, not a measurement - the data says only that their pain "
+  "tolerance is wide, not that wide pays."
+  % (len(opt_mention), len(OPT), len(opt_prem), fmt(_rev[1], 0, "%"),
+     fmt(_rev[2], 0, "%"), _rev[0]))
+A("")
+A("**3. The runner is not the prize; the first trim is.** Of the %d entries where "
+  "both the first trim and the final exit are readable, %d ended BELOW the first trim "
+  "and %d added more than +%d points past it. G's instinct - \"I am even happy getting "
+  "to the first trim\" - is the part of their behaviour the evidence actually "
+  "supports." % (len(pair), len(gives), len(adds), RUNNER_EDGE))
+A("")
+A("## 10. What this cannot say")
 A("")
 A("- **No caller win rate, no caller net result.** Most entries never get a posted "
   "exit, and an unposted exit is unavailable, not a number. Nothing here is a "
