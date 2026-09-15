@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — f486637fbc6ec29f940f
+
+The reader proposed a contextual SPY 760 PUT opening alert for “Buy 1 at 1.31,” while the parser produced no actionable result and validation rejected the reader output. Review context eligibility and field provenance before classifying this as a parser defect.
+
+## Findings
+- The current message supplies buy intent, quantity 1 and raw price 1.31, but no explicit instrument identity or expiry. The reader returned OPEN, SPY, PUT, strike 760 and expiry “0dtes.” Its supporting sources include “Stay loaded on 760p” and the earlier “Would be loading $SPY 760p 0dtes contracts shortly.” Only the former appears in validation.eligible_prior_ids. Validation flagged unsupported_context_id and expiry_not_literal, with the explanation that SPY is absent from the current message. Verify the intended context window and whether each field may be inherited from retained same-author, same-channel messages. If the earlier setup is ineligible, leave ticker and expiry unresolved rather than accepting the reader's completed contract. If it should be eligible, review reader-validator context alignment as a candidate issue, not a confirmed parser bug.
+- Between the explicit setup and the current message, the caller wrote “Wait on next one,” then “Stay loaded on 760p.” The latter supports renewed interest in the 760 puts, but does not independently restate SPY or expiry. The parser returned null fields and fire=false; no rejection trace for the parser is supplied. Verify how cancellation, missed-entry commentary and renewed setup messages affect context state. Review whether the current buy message should attach to the renewed setup, without carrying forward prior-day contracts or treating preparatory messages as confirmed entries.
+- The reader retained 1.31 as price and 1 as quantity. The current wording does not explicitly specify premium units. No factor-of-100 conversion or discrepant premium is shown. The reader's first provider attempt returned HTTP_503, but its fallback attempt returned a structured result. Preserve raw 1.31 and verify its premium-unit interpretation from source conventions before computing contract cost; do not rescale it based on price magnitude. Treat the HTTP_503 as an individual failed attempt with successful fallback, separate from the subsequent validation rejection.
+
+## Limitations
+- No parser implementation, context-eligibility policy or parser decision trace is provided.
+- The evidence is marked untruncated, but that does not establish complete channel coverage or explain gaps between messages.
+- No broker fills or contemporaneous quotes confirm execution or premium units. Caller-reported fills and gains are not broker-confirmed results.
+- No validated read, exact calendar expiry resolution, exit for the current alert or performance calculation is supplied.
+
+---
+
 # Reader Review — 2026-09-15 — d843d175ccae04fbb45e
 
 The reader interpreted “7580p 3.6 @here” as an option entry, but validation rejected it because no ticker was identified. The evidence supports reviewing shorthand handling, not confirming a parser bug or an executable trade.
