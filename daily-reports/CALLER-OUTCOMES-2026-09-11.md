@@ -13,7 +13,7 @@ Caller claims are separate from broker results and ratchet simulations. Partial 
 | 09:42:00 | 09:56:17 | ☀️｜daytrades-scalps | NVDA 220C 9/16 @ 3.06 | $3.06 | partial trim | +32.0% | implied $4.04 | caller-stated |
 | 09:50:39 | 09:59:45 | 🌟｜muggzone-options | HPE 62C 0DTE | — | partial trim | +92.0% | unavailable | caller-stated |
 | 09:42:00 | 10:00:11 | ☀️｜daytrades-scalps | NVDA 220C 9/16 @ 3.06 | $3.06 | partial trim | +35.0% | implied $4.13 | caller-stated |
-| 10:00:14 | 10:01:16 | MuggZone | MU 990C 0DTE @ 2.86 | $2.86 | partial trim | price unavailable | unavailable | caller trim; price unavailable |
+| 10:00:14 | 10:01:16 | MuggZone | MU 990C 0DTE @ 2.86 | $2.86 | partial trim (1/4 of the position) | price unavailable | unavailable | caller trim; price unavailable |
 | 10:00:14 | 10:04:40 | MuggZone | MU 990C 0DTE @ 2.86 | $2.86 | partial trim | $2.40 | -16.1% | caller-stated |
 | 09:42:00 | 10:05:11 | ☀️｜daytrades-scalps | NVDA 220C 9/16 @ 3.06 | $3.06 | partial trim | +50.0% | implied $4.59 | caller-stated |
 | 10:01:47 | 10:06:49 | @Owner Alerts | NVDA 220C @ 2.15 | $2.15 | full exit | price unavailable | unavailable | caller exit; price unavailable |
