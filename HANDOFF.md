@@ -48,8 +48,7 @@ daily-audits/ (one week file per kind).
 ## Rules of the house (current, in force)
 
 ENTRIES · reference/ENTRIES.md
-- PRICE: caller's price or better; pullbacks cross the ask; one contract per entry.
-- RN PULLBACK is ON and global; THE LEVEL STAYS $1 (SETTLED 9/9) — never re-opened on a feeling.
+- PRICE: caller's price or better; pullbacks cross the ask; one contract per entry. RN PULLBACK is ON and global; THE LEVEL STAYS $1 (SETTLED 9/9) — never re-opened on a feeling.
 - ONE SWITCH PER ROOM (G, 9/9): ON = tab + read + trades LIVE; OFF = nothing; LAPSED = sub ran out. No paper state. A TAB CLOSED BY HAND IS NOT A BENCH; benched rooms stay in the file.
 - TABS (9/10): the reaper closes only `_OURS`, never a human's; only START HERE, the popup switch and whopSelfHeal() open one; "No Access" → `lapsed` + close; the last tab never closes.
 - ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed.
@@ -75,19 +74,12 @@ RESTARTS / SAFETY / HOUSE RULES · reference/OPERATIONS.md
 - RULE: weekly signal-room-chat logs (replaces daily) (G, 9/15). ds_logs.py owns naming, blocks and de-dupe; never hand-edit a week file.
 - WEEKLY REPORTS (9/15): ONE file per week per kind, newest day first; reports.py owns it, writers never mint a dated file.
 - APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for its kind — never a new dated file beside it; rotated logs and finished experiments zip to `archive/`.
-- REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is — `reports.py status` decides, `reports/INDEX.json` is the memory. Rebuild only when it says stale. Never re-derive by reading logs what a report already states.
-- ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json. Logs are read only when those two cannot answer. Checks recorded in STATUS.json.verified are trusted while their inputs are unchanged (VERIFY ONCE).
+- REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is (`reports.py status` decides, `reports/INDEX.json` is the memory). Never re-derive from logs what a report already states.
+- ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json; logs only when those two cannot answer. STATUS.json.verified is trusted while its inputs are unchanged (VERIFY ONCE).
 - THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept, LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the 15-minute Codex guard.
 - GIT: settings.json holds every key and is never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
-- REPLACE, DON'T STACK (G, 9/9). When something changes — a rule, a value,
-  a function, a setting, a room line, a doc — the new version takes the old
-  one's place. Never leave the old beside the new: not commented out, not
-  "superseded", not "legacy/old/deprecated", not a dead branch kept "just
-  in case". One thing, one truth. History lives in git and HANDOFF-LOG.md,
-  never in the working file. A fallback that must stay is a deliberate
-  design decision, written as one — not leftovers. Applies to code,
-  settings.json, rooms.txt, every .md, and this file.
-- CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when the merge cannot break a reader (the test: DATA-MAP.md). Records that can never be re-derived — price tapes, telemetry, days/ — are APPENDED to, never rewritten. In doubt, leave it and write why in DATA-MAP.md.
+- REPLACE, DON'T STACK (G, 9/9). When something changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place. Never leave the old beside the new: not commented out, not "superseded", not "legacy", not a dead branch "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md. A fallback that stays is a deliberate design decision, written as one.
+- CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (the test: DATA-MAP.md). Records that can never be re-derived — price tapes, telemetry, days/ — are APPENDED to, never rewritten.
 - READ DATA-MAP.md WITH INDEX.md every session: INDEX says what a file IS, DATA-MAP what is IN it. RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump extension/manifest.json on extension changes; never install webullsdkcore into the bridge's Python; sandbox is RETIRED, paper is LOCAL (SIM).
 - DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the owner. Browser reads only.
 

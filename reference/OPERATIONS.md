@@ -235,3 +235,18 @@ wording of every clause, with the old 30 KB ceiling now replaced by 14 KB.
   performance belongs in `daily-reports/`; operating rules belong here.
 - `HANDOFF-LOG.md` and the retired handoffs zipped in `archive/` are
   historical evidence, never current instructions.
+
+## The four long-form house rules (moved from HANDOFF.md 9/15, verbatim)
+
+HANDOFF.md carries each rule's imperative in one line; G's full wording is here.
+
+- REPLACE, DON'T STACK (G, 9/9). When something changes — a rule, a value,
+  a function, a setting, a room line, a doc — the new version takes the old
+  one's place. Never leave the old beside the new: not commented out, not
+  "superseded", not "legacy/old/deprecated", not a dead branch kept "just
+  in case". One thing, one truth. History lives in git and HANDOFF-LOG.md,
+  never in the working file. A fallback that must stay is a deliberate
+  design decision, written as one — not leftovers. Applies to code,
+  settings.json, rooms.txt, every .md, and this file.
+- REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is — `reports.py status` decides, `reports/INDEX.json` is the memory. Rebuild only when it says stale. Never re-derive by reading logs what a report already states.
+- ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json. Logs are read only when those two cannot answer. Checks recorded in STATUS.json.verified are trusted while their inputs are unchanged (VERIFY ONCE).
