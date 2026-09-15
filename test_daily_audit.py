@@ -3,7 +3,7 @@ import tempfile
 import unittest
 
 from daily_audit import summarize_replay
-from daily_report import _reportable_channel
+from daily_report import _reportable_channel, _reason
 import replay_check
 from replay_check import find_missed_entries
 
@@ -19,6 +19,11 @@ class DailyAuditTests(unittest.TestCase):
         active = {"123", "whop:/firststeptrading/example/app"}
         self.assertTrue(_reportable_channel("123", active))
         self.assertFalse(_reportable_channel("1548907233490772083", active))
+
+    def test_futures_safety_refusal_has_a_specific_report_reason(self):
+        self.assertEqual(_reason({"kind": "failed", "text":
+                         "Webull futures entry held: broker-confirmed protective stop is not operational"}),
+                         "futures protective exit not operational; no order sent")
 
     def test_load_keeps_raw_messages_when_live_parser_is_partial(self):
         content = """=== RAW MESSAGES ===

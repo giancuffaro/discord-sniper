@@ -122,12 +122,16 @@ def _reason(row):
     low = row["text"].lower()
     if row["kind"] == "sent":
         return "order sent"
+    if "protective stop is not operational" in low:
+        return "futures protective exit not operational; no order sent"
     if "pullback trigger expired" in low:
         return "pullback expired; no order"
     if "too stale" in low:
         return "stale when read"
     if "costs $" in low or "buying power" in low:
-        return "buying power"
+        return "buying-power safety; no order"
+    if "expiry" in low and "expired" in low:
+        return "contract expiry already passed; no order"
     if "too thin" in low:
         return "liquidity floor"
     if "spread" in low:
