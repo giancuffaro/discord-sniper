@@ -1,4 +1,6 @@
-# Daily — 2026-09-14
+# Daily reviews — newest first
+
+# Daily — 2026-09-14 — 81b8904d80cf7db65d0a
 
 The daily evidence reports realized bot P&L of -57.00, but contains unresolved entry provenance, order-to-fill reconciliation, missing-exit, and benchmark consistency issues. The SPY 760.40 entry materially affects the reported replay aggregate and requires original-source verification. These findings are verification proposals, not confirmed parser bugs or evidence that either trading method is superior.
 
@@ -19,3 +21,28 @@ The daily evidence reports realized bot P&L of -57.00, but contains unresolved e
 - Reported calculations are referenced as supplied; no replacement prices, exits, conversions, or numerical results have been invented.
 - Caller percentages, contemporaneous bid proxies, broker results, and quote-path simulations are different evidence classes and do not establish an aggregate performance comparison.
 - No orders, settings changes, code execution, or fixes were performed.
+
+---
+
+# Daily — 2026-09-11 — d33fb6b789ee7b71f7fc
+
+The daily evidence reports 34 observed entries, 27 decisions, and one broker-confirmed CPS trade realizing +5.00. Only 5 of 34 entries have scored ratchet comparisons, so no full-day performance winner is established. Proposed reviews concern premium normalization, recovered gaps, outcome attribution, and benchmark labeling; none establishes a confirmed parser bug.
+
+## Findings
+- REPORT-2026-09-11.md lists the 11:13:20 MU 980C entry at 300.00, while both caller evidence files list the entry at 3.00. CALLER-OUTCOMES reports a $500/contract claim calculated as +166.7%. Verify the original alert, premium units, and normalization records before proposing a correction. Confirm whether $500/contract denotes profit or proceeds before relying on the supplied percentage calculation.
+- The report attributes four recovered entries to Chrome not running. It separately describes the 10:54 AAPL split loading/fill sequence and 13:27 RKLB 'clls' wording as parser gaps, while the 10:35 SPX entry lacks a normal verdict. Verify source messages, reader availability, ingestion timestamps, and decision logs for each event. Review reader outages, possible recognition gaps, and unexplained missing verdicts separately rather than treating all recovered entries as parser failures.
+- The recovered 14:15 RKLB add specifies 70C 10/16, whereas the 13:27 RKLB entry specifies 70C 9/25. The report says the older capture cannot establish whether the add was live or backfilled. Verify the add's exact contract, parent trade, and live/history provenance before linking it to an entry or counting it as a missed live action. Keep it separate from the seven recovered entry gaps.
+- Coverage lists 33 Discord rooms and 4 Whop rooms configured on, with parser inputs from 24 rooms/channels and 303 retained messages. Silence is explicitly classified as quiet or unverified. Verify room identity mappings, source activity, and reader health before assessing coverage. Do not infer either an outage or healthy monitoring solely from absent messages.
+- CALLER-VS-RATCHET reports -19 on four caller-posted-entry paths and -23 across five paths, but includes CPS at broker-confirmed +5. RATCHET-COMPARE instead uses CPS replay P&L of +0 and reports fixed-stop -39 versus ratchet -18, an advantage of +21. Verify calculation inputs and label the caller-entry totals as combining quote-path simulations with a broker-confirmed result. Preserve the different entry bases and keep actual CPS +5 distinct from replay CPS +0; these benchmarks are not interchangeable.
+- CALLER-OUTCOMES records 29 paired claim events and seven full exits, with three numeric exit results and four unavailable. Two numeric full exits use market bids rather than confirmed fills; HOOD supplies only a caller-stated -6.0% without an entry price. Partial trim sizes and final runner exits are not consistently available. Verify original exit messages and quote timestamps, retaining separate labels for caller claims, implied prices, and market-bid proxies. Keep missing values unavailable rather than zero, and do not derive quantity-weighted caller P&L or imply broker-confirmed caller execution.
+- Only 5 of 34 observed entries are scored. Remaining rows include missing expiries, unavailable exact-contract paths, and futures for which the options 5/3/5 rule does not apply. The HOOD replay forces an entry that the live bot refused for a 22% spread. Verify the eligibility and source tape for each comparison. Separate unresolved contracts, missing quote paths, and futures requiring different handling. Present HOOD as a filter-bypass counterfactual, not an actual trade, and restrict the supplied +21 ratchet advantage to the covered replay subset.
+
+## Limitations
+- The supplied evidence is not marked truncated, but underlying alerts, broker records, parser logs, and quote tapes were not provided for independent verification.
+- One broker-confirmed trade and limited replay coverage cannot establish full-day superiority of the bot, caller management, or ratchet rule.
+- Missing caller entries, exit prices, trim quantities, and exact-contract paths prevent a reliable aggregate caller P&L.
+- Recovered historical captures do not consistently establish live versus backfill provenance.
+- All recommendations are proposals requiring source verification; no orders, settings changes, code execution, or fixes were performed.
+
+---
+

@@ -16,6 +16,10 @@ HERE=Path(__file__).resolve().parent
 OUT=HERE/'department-reports'
 MODELS={'health':'gpt-5.4-mini','daily':'gpt-6-astra','reader_review':'gpt-6-astra','incident':'gpt-6-astra'}
 LIMITS={'health':12,'daily':1,'reader_review':20,'incident':2}
+# One living file per department (APPEND, DON'T PILE, 9/15): <stem>.jsonl holds every
+# review row, <stem>.md the digest newest first. This used to mint a
+# <role>-<day>-<fingerprint>.json/.md pair per review (23 reader_review pairs by 9/15).
+STEMS={'health':'health','daily':'daily','reader_review':'reader_reviews','incident':'incidents'}
 _pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='department-review')
 _pending=0
 _lock=threading.Lock()
@@ -94,17 +98,40 @@ def run(role, evidence, report_day=None):
         result={'_error':'invalid_department_schema'}
         row['result']=result
     status='failed' if result.get('_error') else 'completed'
-    target=OUT/(role+'-'+(report_day or day)+'-'+fingerprint+'.json')
-    target.write_text(json.dumps(row,indent=2,ensure_ascii=False),encoding='utf-8')
-    if status=='completed':
-        lines=['# '+role.replace('_',' ').title()+' — '+(report_day or day),
-               '',str(result.get('summary','')),'','## Findings']
-        for finding in result.get('findings',[]):
-            if isinstance(finding,dict):lines.append('- '+str(finding.get('evidence',''))+' '+str(finding.get('recommendation','')))
-        lines+=['','## Limitations']+['- '+str(x) for x in result.get('limitations',[])]
-        target.with_suffix('.md').write_text('\n'.join(lines),encoding='utf-8')
+    row['status']=status
+    row['md']=digest(row) if status=='completed' else ''
+    target=record(row)
     with db() as conn:conn.execute('UPDATE runs SET status=? WHERE day=? AND role=? AND fingerprint=?',(status,day,role,fingerprint))
     return {'status':status,'report':str(target),'model':MODELS[role]}
+
+
+def digest(row):
+    """The one-review markdown block: heading carries day and fingerprint."""
+    result=row.get('result') or {}
+    lines=['# '+row['role'].replace('_',' ').title()+' — '+row['day']+' — '+row['fingerprint'],
+           '',str(result.get('summary','')),'','## Findings']
+    for finding in result.get('findings',[]):
+        if isinstance(finding,dict):lines.append('- '+str(finding.get('evidence',''))+' '+str(finding.get('recommendation','')))
+    lines+=['','## Limitations']+['- '+str(x) for x in result.get('limitations',[])]
+    return '\n'.join(lines)
+
+
+def record(row):
+    """Append the row to <stem>.jsonl; put its digest at the top of <stem>.md
+    (newest first). Returns the jsonl path."""
+    OUT.mkdir(exist_ok=True)
+    stem=STEMS[row['role']]
+    target=OUT/(stem+'.jsonl')
+    with _lock:
+        with target.open('a',encoding='utf-8') as fh:
+            fh.write(json.dumps(row,ensure_ascii=False)+'\n')
+        if row.get('md'):
+            path=OUT/(stem+'.md')
+            head='# '+row['role'].replace('_',' ').title()+' reviews — newest first\n\n'
+            old=path.read_text(encoding='utf-8') if path.exists() else ''
+            body=old[len(head):] if old.startswith(head) else old
+            path.write_text(head+row['md']+'\n\n---\n\n'+body,encoding='utf-8')
+    return target
 
 
 def submit(role,evidence,report_day=None):
