@@ -1,11 +1,12 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
-live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; needs a bridge restart). ENTRY SLACK built, OFF and activation blocked: 27 of 201 option orders never filled, and the replay says every slack level loses. Five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
+live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
+evidence, not current instructions.
+Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; needs a bridge restart). ENTRY SLACK built, OFF and activation blocked. Five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
 
 ## How to update this file (long form: OPERATIONS.md)
-- A STATE, not a story: edit the rule that changed IN PLACE. REPLACE, DON'T
-  STACK — the new rule takes the old one's place, never sits beside it.
+- A STATE, not a story: edit the rule that changed IN PLACE (REPLACE, DON'T
+  STACK, below).
 - ONE RULE, ONE LINE. Numbers, formats, procedures and rationale are MECHANICS:
   one reference doc per subsystem. G's own wording stays verbatim.
 - Bump the one "Last updated:" line; never prepend an essay. Session notes and
@@ -15,8 +16,7 @@ Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; ne
   hit a round number). Past it you are writing history or mechanics: move it
   (history → HANDOFF-LOG.md, how-it-works → reference/).
 - No handoff copies, dated handoffs or upload snapshots; daily performance lives
-  in `daily-reports/`. HANDOFF-LOG.md and the zipped handoffs in `archive/` are
-  evidence, never current instructions.
+  in `daily-reports/`.
 
 ## Where the mechanics live (one per subsystem; see INDEX.md)
 ASK-MAP.md (which file answers which ask) → STATUS.json → reports/INDEX.json.
