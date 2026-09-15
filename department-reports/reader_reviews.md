@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — d843d175ccae04fbb45e
+
+The reader interpreted “7580p 3.6 @here” as an option entry, but validation rejected it because no ticker was identified. The evidence supports reviewing shorthand handling, not confirming a parser bug or an executable trade.
+
+## Findings
+- The parser returned null trade fields and fire=false. The reader proposed OPEN, PUT, strike 7580 and price 3.6 with confidence 0.72. The original message contains no explicit entry verb, ticker or expiry. Verify retained examples from EliSpicy in this channel before treating this shorthand as an opening trade. Preserve the raw message and require source-supported instrument identification and expiry resolution before considering it actionable.
+- Validation returned ok=false with the reason “the reader found an entry with no ticker in the message.” The supplied prior message discusses price levels and a possible downward move but names no ticker; eligible_prior_ids and supporting_ids are empty. Keep the missing-ticker safeguard. Review whether eligible source context can establish the instrument, without inferring a ticker from strike magnitude or borrowing conventions from other callers or channels.
+- The reader assigned the raw value “3.6” to price, but the message does not explicitly state its role or premium units. Report unresolved premium units pending source verification. Preserve 3.6 unchanged; do not rescale it based on an expected price range. If confirmed as a per-share premium, verify the instrument’s premium multiplier before deriving contract cost.
+
+## Limitations
+- Only the current message and one prior message are supplied; no verified caller convention is provided.
+- Ticker, expiry, quantity and explicit premium units are missing, not zero.
+- No broker fills, contemporaneous quotes, exits or performance calculations are provided.
+- A Gemini cooldown was followed by a successful OpenAI reader response; this does not establish a channel outage.
+
+---
+
 # Reader Review — 2026-09-15 — 53ef2d789617b54e63c2
 
 The current message supports a TSLA close alert, but contract attribution requires source verification. The reader inferred the 370 call using a watchlist citation; validation flagged unsupported context and removed the strike while retaining the call side.
