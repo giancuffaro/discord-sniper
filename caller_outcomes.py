@@ -206,6 +206,13 @@ def _enrich_entries(day, entries, parsed_messages):
                         r"@\s*[0-9]+(?:\.[0-9]+)?",
                         "@ %.2f" % entry["entry"],
                         entry["contract_text"])
+        # LAST: a "price" that matches the underlying is the stock, not the
+        # premium. Drop it rather than build percentages on it. The row stays —
+        # the caller's claim is still evidence — it just has no entry price.
+        if is_posted_stock_price(day, entry.get("symbol"), entry.get("entry"),
+                                 entry.get("ts")):
+            entry["entry"] = None
+            entry["entry_basis"] = STOCK_PRICE_BASIS
     return entries
 
 
@@ -228,6 +235,118 @@ def _quote_paths(day):
     return paths
 
 
+# Brando posts an exit as "SOLD | QQQ SEPT 16 710C $4.80 1/2 POSITION" — the
+# price sits straight after the contract with no "at", no "@" and no "STC", so
+# the three patterns below all missed it and two real exits were filed as
+# "price unavailable" (9/14). The contract token anchors the match, which is
+# what keeps the 16 of "SEPT 16", the 710 of "710C" and the 1/2 of the trim
+# size from being read as the exit price. A bare number must carry a decimal
+# point; "$" or "@" is enough on its own.
+_CONTRACT_THEN_PRICE = re.compile(
+    r"\b\d{1,5}(?:\.\d+)?\s*[CP]\b"                 # ... 710C
+    r"(?:\s+(?:calls?|puts?))?"                     # ... 710C CALLS
+    r"\s*"
+    r"(?:\$\s*(?P<dollar>\d{1,4}(?:\.\d{1,2})?)"    # $4.80 / $5
+    r"|@\s*\$?(?P<at>\d{1,4}(?:\.\d{1,2})?)"        # @4.80
+    r"|(?P<bare>\d{1,4}\.\d{1,2}))",                # 4.80
+    flags=re.I)
+# 1/2, 1/4, "half" — how much of the position this exit took. Numerator under
+# denominator and both small, so a date ("9/16", "7/2") can never be read as a
+# trim, and a fraction that is really the start of a contract is skipped.
+_TRIM_FRACTION = re.compile(
+    r"\b([1-3])\s*/\s*([2-4])\b(?!\s*\d{1,5}(?:\.\d+)?\s*[CP]\b)")
+
+
+def _trim_size(text):
+    """The fraction of the position an exit post says it took, or None."""
+    m = _TRIM_FRACTION.search(text or "")
+    if m:
+        num, den = int(m.group(1)), int(m.group(2))
+        if num < den:
+            return round(num / float(den), 4)
+    if re.search(r"\bhalf\b", text or "", flags=re.I):
+        return 0.5
+    return None
+
+
+def _fraction(size):
+    """0.5 -> "1/2". Prints the trim back the way the caller wrote it."""
+    for num, den in ((1, 2), (1, 3), (2, 3), (1, 4), (3, 4), (2, 4), (3, 2)):
+        if abs(size - num / float(den)) < 1e-6:
+            return "%d/%d" % (num, den)
+    return "%.0f%%" % (size * 100.0)
+
+
+# ---------------------------------------------------------------------------
+# A POSTED STOCK PRICE IS NOT A PREMIUM (9/14, Midas SPY 760P "@ 760.40").
+# The live OPEN path has refused this since v3.8.24 — parser.js holds an entry
+# whose limit equals an explicitly dollar-labelled stock quote. The reports had
+# no such guard, so 760.40 was treated as the premium: the caller's +21% and
+# +50% trims implied $920.08 and $1140.60, and the ratchet replay printed
+# -$75,936 on one row, which then owned the whole day's total.
+#
+# Same rule, evidence instead of wording: if the posted price sits within 2% of
+# what the underlying was actually trading at that minute, it is the stock. The
+# `und` column of alert_tape/alert_meta is the contemporaneous record. The
+# second condition keeps a deep-ITM premium safe — a real premium is never
+# several times the contract's own ask.
+STOCK_PRICE_TOLERANCE = 0.02
+STOCK_PRICE_ASK_MULTIPLE = 3.0
+_UND_CACHE = {}
+
+
+def _underlying_path(day, root):
+    """[(ts, price)] for one ticker on one day, from the live `und` column."""
+    key = (day, root)
+    if key in _UND_CACHE:
+        return _UND_CACHE[key]
+    points = {}
+    for name in ("alert_tape.csv", "alert_meta.csv"):
+        try:
+            fh = open(os.path.join(HERE, name), encoding="utf-8-sig", newline="")
+        except OSError:
+            continue
+        with fh:
+            for row in csv.DictReader(fh):
+                und, ts = _f(row.get("und")), _f(row.get("ts"))
+                if not und or und <= 0 or ts is None:
+                    continue
+                parsed = occ_symbol.parse(row.get("occ") or "")
+                if not parsed or parsed[0] != root:
+                    continue
+                if dt.datetime.fromtimestamp(ts, ET).date().isoformat() == day:
+                    points.setdefault(int(ts), (ts, und))
+    out = [points[t] for t in sorted(points)]
+    _UND_CACHE[key] = out
+    return out
+
+
+def _underlying_at(day, symbol, ts, tolerance_s=300.0):
+    """What the stock was trading at around `ts`, or None if nothing recorded."""
+    path = _underlying_path(day, str(symbol or "").upper())
+    if not path:
+        return None
+    nearest = min(path, key=lambda r: abs(r[0] - ts))
+    return nearest[1] if abs(nearest[0] - ts) <= tolerance_s else None
+
+
+def is_posted_stock_price(day, symbol, price, ts, ask=None):
+    """True when a caller's posted 'price' is really the underlying's quote."""
+    if price is None or price <= 0 or ts is None:
+        return False
+    und = _underlying_at(day, symbol, ts)
+    if not und or und <= 0:
+        return False
+    if abs(price - und) / und > STOCK_PRICE_TOLERANCE:
+        return False
+    if ask and ask > 0 and price < ask * STOCK_PRICE_ASK_MULTIPLE:
+        return False            # a real, deep premium near a cheap stock
+    return True
+
+
+STOCK_PRICE_BASIS = "unavailable (stock price posted)"
+
+
 def _claim_values(text, action):
     # Work on the visible post after repeated accessible-card headers.
     price = None
@@ -240,6 +359,11 @@ def _claim_values(text, action):
         if m:
             price = _f(m.group(1))
             break
+    if price is None and re.search(r"\b(sold|sell|stc|trim\w*|out|closed?)\b",
+                                   text or "", flags=re.I):
+        m = _CONTRACT_THEN_PRICE.search(text)
+        if m:
+            price = _f(m.group("dollar") or m.group("at") or m.group("bare"))
     pcts = [_f(x) for x in re.findall(r"(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*%", text)]
     pct = pcts[-1] if pcts else None
     per_contract = None
@@ -249,7 +373,7 @@ def _claim_values(text, action):
         per_contract = _f(m.group(1))
     partial = action == "TRIM" or bool(re.search(
         r"\b(partial|trim|runner|1/\d|half|most)\b", text, flags=re.I))
-    return price, pct, per_contract, partial
+    return price, pct, per_contract, partial, _trim_size(text)
 
 
 def build(day):
@@ -269,7 +393,8 @@ def build(day):
         action = parsed.get("action")
         if action not in ("TRIM", "CLOSE"):
             continue
-        price, pct, per_contract, partial = _claim_values(cleaned, action)
+        price, pct, per_contract, partial, trim_size = _claim_values(
+            cleaned, action)
         symbol = parsed.get("symbol")
         ts = _clock(day, message[0])
         candidates = [e for e in entries if e["ts"] < ts
@@ -313,6 +438,9 @@ def build(day):
                 else:
                     basis = "caller exit; price unavailable"
         entry_px = entry.get("entry")
+        if entry.get("entry_basis") == STOCK_PRICE_BASIS:
+            basis = "caller posted a stock price, not a premium — entry " \
+                    "unavailable"
         calc_pct = ((price - entry_px) / entry_px * 100.0
                     if price is not None and entry_px else None)
         implied = (entry_px * (1.0 + pct / 100.0)
@@ -332,6 +460,7 @@ def build(day):
             "reported_exit": price, "reported_pct": pct,
             "profit_per_contract": per_contract,
             "calculated_pct": calc_pct, "implied_exit": implied,
+            "trim_size": trim_size,
             "basis": basis,
             "raw": message[3],
         })
@@ -359,7 +488,8 @@ def build(day):
     csv_path = os.path.join(OUT_DIR, "CALLER-OUTCOMES-%s.csv" % day)
     fields = ["entry_time", "event_time", "room", "caller", "symbol",
               "contract", "entry", "event", "reported_exit", "reported_pct",
-              "profit_per_contract", "calculated_pct", "implied_exit", "raw"]
+              "profit_per_contract", "calculated_pct", "implied_exit",
+              "trim_size", "raw"]
     fields.insert(-1, "basis")
     with open(csv_path + ".tmp", "w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, fields)
@@ -381,11 +511,14 @@ def build(day):
                 else ("implied $%.2f" % r["implied_exit"]
                       if r["implied_exit"] is not None else "unavailable"))
         source = (r["caller"] or r["room"].split(": ")[-1] or "unknown")
+        event = r["event"]
+        if r.get("trim_size") is not None:
+            event = "%s (%s of the position)" % (event, _fraction(r["trim_size"]))
         lines.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
             r["entry_time"], r["event_time"], source.replace("|", "\\|"),
             r["contract"].replace("|", "\\|"),
             "$%.2f" % r["entry"] if r["entry"] is not None else "—",
-            r["event"], claim, calc, r["basis"]))
+            event, claim, calc, r["basis"]))
     full = [r for r in claims if r["event"] == "full exit"]
     calculable_full = [r for r in full if r["calculated_pct"] is not None
                        or r["reported_pct"] is not None]

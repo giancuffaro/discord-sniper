@@ -129,12 +129,28 @@ def build(day):
             continue
         caller_entry = event.get("caller_entry")
         event["symbol"] = event["label"].split()[-1]
+        # A posted "price" that matches the underlying is the stock quote, not
+        # the premium (9/14 Midas SPY 760P @ 760.40 -> a -$75,936 replay row
+        # that owned the day's total). The live OPEN path has refused this
+        # since v3.8.24; this is the same rule, measured against the recorded
+        # `und` instead of the caller's wording. The row stays and keeps its
+        # caller evidence; only its dollars are withheld.
+        stock_price = (caller_entry is not None
+                       and event.get("fill") is None
+                       and caller_outcomes.is_posted_stock_price(
+                           day, event["symbol"], caller_entry, event["ts"],
+                           ask=path[0][2]))
+        if stock_price:
+            event["caller_entry_raw"] = caller_entry
+            caller_entry = None
+            event["caller_entry"] = None
         entry = event.get("fill") or caller_entry or path[0][2]
         if not entry:
             continue
         ratchet = policy._simulate(path, entry, event["occ"], True)
         caller, evidence = _caller_result(day, event, claims)
-        basis = ("real fill = caller posted" if event.get("fill") is not None
+        basis = (caller_outcomes.STOCK_PRICE_BASIS if stock_price else
+                 "real fill = caller posted" if event.get("fill") is not None
                  and caller_entry is not None
                  and abs(event["fill"] - caller_entry) < 0.005 else
                  "real bot fill" if event.get("fill") is not None else
@@ -143,7 +159,8 @@ def build(day):
         shown_exit, shown_pct, shown_pl, ratchet_basis = _our_result(
             event, entry, ratchet)
         compared.append((event, entry, basis, caller, evidence, ratchet,
-                         shown_exit, shown_pct, shown_pl, ratchet_basis))
+                         shown_exit, shown_pct, shown_pl, ratchet_basis,
+                         stock_price))
 
     total = len(all_entries)
     lines = ["# Caller entry versus our ratchet — %s" % day, "",
@@ -151,11 +168,14 @@ def build(day):
              "| Alert | Source | Hypothetical entry | Entry basis | Caller result | Caller evidence | Our ratchet exit | Our ratchet result |",
              "|---|---|---:|---|---|---|---:|---:|"]
     for (event, entry, basis, caller, evidence, _ratchet, shown_exit,
-         shown_pct, shown_pl, ratchet_basis) in compared:
-        lines.append("| %s | %s | $%.2f | %s | %s | %s | $%.2f | %+.1f%% / %+.0f (%s) |" % (
-            event["label"], event["source"].replace("|", "\\|"), entry,
-            basis, caller, evidence, shown_exit, shown_pct, shown_pl,
-            ratchet_basis))
+         shown_pct, shown_pl, ratchet_basis, stock_price) in compared:
+        result = ("— (excluded from the total)" if stock_price else
+                  "%+.1f%% / %+.0f (%s)" % (shown_pct, shown_pl, ratchet_basis))
+        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s |" % (
+            event["label"], event["source"].replace("|", "\\|"),
+            "—" if stock_price else "$%.2f" % entry,
+            basis, caller, evidence,
+            "—" if stock_price else "$%.2f" % shown_exit, result))
 
     lines += ["", "## Alerts awaiting an exact path", "",
               "These rows are still part of the comparison. Their caller evidence is retained; only our ratchet result waits for contract tape.", "",
@@ -181,17 +201,33 @@ def build(day):
         lines.append("| %s %s | %s | %s | %s | %s |" % (
             entry["time"][:5], entry["contract_text"].replace("|", "\\|"),
             source.replace("|", "\\|"), px, caller, status))
-    ratchet_sum = sum(row[8] for row in compared)
-    strict = [row for row in compared if row[0].get("caller_entry") is not None]
+    # A row whose posted "price" was the underlying carries no honest dollars,
+    # so it is kept in the table and left out of every total.
+    stock_rows = [row for row in compared if row[10]]
+    scorable = [row for row in compared if not row[10]]
+    ratchet_sum = sum(row[8] for row in scorable)
+    strict = [row for row in scorable if row[0].get("caller_entry") is not None]
     strict_sum = sum(row[8] for row in strict)
-    numeric_caller = sum(1 for row in compared
+    numeric_caller = sum(1 for row in scorable
                          if "unavailable" not in row[3])
     lines += ["", "## Result", "",
               "- Comparable ratchet paths: **%d%s**." % (
                   len(compared), " of %d observed" % total if total is not None else ""),
               "- Our ratchet on the **%d paths with a caller-posted entry**: **%+.0f per one-contract replay**." % (len(strict), strict_sum),
-              "- Including the one no-price alert at its first recorded ask: **%+.0f across all %d paths**." % (ratchet_sum, len(compared)),
-              "- Numeric caller full-exit results on this subset: **%d of %d**; missing caller exit prices prevent an honest aggregate caller P&L." % (numeric_caller, len(compared)),
+              "- Including the no-price alerts at their first recorded ask: **%+.0f across %d scorable paths**." % (ratchet_sum, len(scorable)),
+              "- Numeric caller full-exit results on this subset: **%d of %d**; missing caller exit prices prevent an honest aggregate caller P&L." % (numeric_caller, len(scorable)),]
+    if stock_rows:
+        lines.append(
+            "- **%d row%s excluded from every dollar total** because the caller "
+            "posted the STOCK price where the premium belongs (%s). The row "
+            "stays visible; its P&L would be nonsense. Same rule the live OPEN "
+            "path has refused since v3.8.24."
+            % (len(stock_rows), "s" if len(stock_rows) != 1 else "",
+               ", ".join("%s @ %.2f" % (row[0]["label"],
+                                        row[0].get("caller_entry_raw") or 0.0)
+                         if row[0].get("caller_entry_raw") else row[0]["label"]
+                         for row in stock_rows)))
+    lines += [
               "- Broker-confirmed results override quote-path simulations whenever the bot actually traded.",
               "- Every observed entry is listed: **%d scored + %d awaiting tape/futures handling = %d**." %
               (len(compared), len(all_entries) - len(compared), len(all_entries)),
