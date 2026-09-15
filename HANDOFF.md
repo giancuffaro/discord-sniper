@@ -47,7 +47,8 @@ ENTRIES · reference/ENTRIES.md
 - ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed. CHANNELS: callers inside their verified room, win rate needs evidence, no Callers tab (G).
 - STRIKES: max 1 OTM, deeper snaps to the first rung; 3-ITM for SPY/QQQ/Mag7 0DTE; ADD buys the held strike.
 - "ADDED <full contract>" you are not in = an OPEN entry; a bare "added to SPY" refuses. NO SPX→SPY (G, 9/10: "do not translate any SPX to SPY"); index entries are HELD until execution.index_broker is set.
-- WORD ORDER: any order, `bare` rooms only. TWO CONTRACTS = TWO ORDERS (9/10): one each, own stop and ratchet, same ticker; call+put refuses the line. EXPIRY, one place: NDTE = N CALENDAR days rolling BACK, never past today; NO DATE = 0DTE (G, 9/10), the LISTING ASKED never assumed; "FRIDAY WEEKLIES ONLY" is DEAD.
+- WORD ORDER: any order, `bare` rooms only. TWO CONTRACTS = TWO ORDERS (9/10): one each, own stop and ratchet, same ticker; call+put refuses the line.
+- EXPIRY, one place: NDTE = N CALENDAR days rolling BACK, never past today; NO DATE = 0DTE (G, 9/10), the LISTING ASKED never assumed; "FRIDAY WEEKLIES ONLY" is DEAD.
 - CONTRACT MUST EXIST (9/15) AND BE IN PRICE BAND (9/14): siblings listed → REFUSE; nothing listed → THROUGH + LISTING line; fails open, a guard never a gate.
 - GUARDS: SPREAD/THIN refuse wide or illiquid; nothing older than 3 min fires; negations hard-veto; DEDUPE ends at ONE average-down ADD under what was PAID; identity = caller+symbol+strike+side+expiry.
 - AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14): it kills the earlier hunt and its bid; two DIFFERENT message ids are two calls.
@@ -66,14 +67,14 @@ RESTARTS / SAFETY / HOUSE RULES · reference/OPERATIONS.md
 - BOOT: all UNVERIFIED until the broker confirms; expired options = dead paper; updates apply at the first safe window. POSTCHECK logs a PROBLEM when book, stop and quote bus disagree.
 - RULE: weekly signal-room-chat logs (replaces daily) (G, 9/15). ds_logs.py owns naming, blocks and de-dupe; never hand-edit a week file.
 - WEEKLY REPORTS (9/15): ONE file per week per kind, newest day first; reports.py owns it, writers never mint a dated file.
-- APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for its kind — never a new dated file beside it; rotated logs and finished experiments zip to `archive/`.
+- APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for its kind, never a new dated file beside it; rotated logs and finished experiments zip to `archive/`.
 - REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is (`reports.py status` decides, `reports/INDEX.json` is the memory). Never re-derive from logs what a report already states.
 - ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json; logs only when those two cannot answer. STATUS.json.verified is trusted while its inputs are unchanged (VERIFY ONCE).
 - THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept, LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the 15-minute Codex guard.
 - GIT: settings.json holds every key and is never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
-- REPLACE, DON'T STACK (G, 9/9). When something changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place. Never leave the old beside the new: not commented out, not "superseded", not "legacy", not a dead branch "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md. A fallback that stays is a deliberate design decision, written as one.
-- CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (the test: DATA-MAP.md). Records that can never be re-derived — price tapes, telemetry, days/ — are APPENDED to, never rewritten.
-- READ DATA-MAP.md WITH INDEX.md every session: INDEX says what a file IS, DATA-MAP what is IN it. RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump extension/manifest.json on extension changes; never install webullsdkcore into the bridge's Python; sandbox is RETIRED, paper is LOCAL (SIM).
+- REPLACE, DON'T STACK (G, 9/9). When anything changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place; never left beside it, not commented out, not "superseded", not "legacy", not a dead branch "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md. A fallback that stays is a deliberate design decision.
+- CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (test: DATA-MAP.md). Records that cannot be re-derived — tapes, telemetry, days/ — are APPENDED to, never rewritten.
+- READ DATA-MAP.md WITH INDEX.md every session (INDEX = what a file IS, DATA-MAP = what is IN it). RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump extension/manifest.json on extension changes; never install webullsdkcore into the bridge's Python; sandbox is RETIRED, paper is LOCAL (SIM).
 - DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the owner. Browser reads only.
 
 ROOMS / TABS / READERS · reference/ROOMS-TABS.md
@@ -104,17 +105,12 @@ FILL ANNOUNCER (announcer.py, read-only) · reference/OPERATIONS.md
 - Multi-account: extras mirror LIVE entries 1:1 with own books/stops. SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
 
 ## Pending external setup and decisions
-1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project
-   instructions and remove the old uploaded handoffs (local cleanup does not
-   remove what was already uploaded).
-2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung,
-   futures decouple) — G's call whether Claude does it or he does.
-3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50
-   MNQ pts), qty 1 — create in NT8, type SNIPER in the popup.
+1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project instructions and remove the old uploaded handoffs (local cleanup does not remove what was already uploaded).
+2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call whether Claude does it or he does.
+3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50 MNQ pts), qty 1 — create in NT8, type SNIPER in the popup.
 4. Close any old parked Whop tabs (the Chrome flags note: reference/OPERATIONS.md).
 5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
-6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension
-   are already up. Run START HERE, or schedule it, by 9:00 on trading days.
+6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension are already up. Run START HERE, or schedule it, by 9:00 on trading days.
 
 ## Watch items (open) — full text of each: reference/OPERATIONS.md
 - G'S CALL: PULLBACK STOCK TARGET vs THE RATCHET (9/10) — a pullback entry also
@@ -128,5 +124,4 @@ FILL ANNOUNCER (announcer.py, read-only) · reference/OPERATIONS.md
   executing futures and Webull futures is $0 by choice (refusals intentional).
 
 ## Subscriptions
-≈ $1,140/mo rooms + ~$52 infra + ~$30 exchange fees ≈ $1,220/mo before AI
-usage. Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
+≈ $1,140/mo rooms + ~$52 infra + ~$30 exchange fees ≈ $1,220/mo before AI usage. Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
