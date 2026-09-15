@@ -74,3 +74,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789410625.826,missed,TSLA,PUTS,360,0DTE,,362.0,,MuggZone,Mugzone Options
 1789479748.228,armed,AMD,PUTS,490,9/18,,505.0,,Unraveller,Honeydrip daytrades
 1789479751.52,submit_failed,AMD,PUTS,490,9/18,,505.0,,Unraveller,Honeydrip daytrades
+1789480017.414,armed,META,CALLS,690,9/16,,671.0,,Demon × LKS,Demon day-trades
