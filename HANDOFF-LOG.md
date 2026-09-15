@@ -12,6 +12,72 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (APPEND, DON'T PILE — five piles merged, one rule added)
+
+G: "make a rule to append these to continue writing on the files that will be
+created from now on." The rule sits in HANDOFF.md right after the weekly-logs
+rule. Every pile it names was merged the same session, each under the CONDENSE
+AND MERGE test (readers grepped, repointed in the same change, tests + gate).
+
+1. DS Logs — 19 untagged dailies (`Aug-18-2026` .. `Sep-10-2026`, 30,083,591
+   bytes, CRLF; Aug-18..Sep-9 = discord, Sep-10 = whop) merged into their week
+   files with `ds_logs.merge_day`. `merge_day` gained `held=` (earlier weeks of
+   the lane) so a line lives in the week that first captured it: Aug-19 dropped
+   104 raw dups, Sep-9 dropped 17,247 raw + 451 did. The bridge now passes the
+   previous week's file as `held`; the two 9/7 and 9/14 week files were re-held
+   the same way. 25 files / 40,622,287 bytes / 156,182 lines -> 7 files /
+   12,142,766 bytes / 48,151 lines. Proof on the same snapshot: 15,196 distinct
+   message lines and 11,790 parser-gate keys before == after. Originals in
+   `archive/signal-room-chat-dailies-legacy-untagged-2026-09-15.zip` (19
+   members, 3,378,332 bytes), then deleted. parser_gate 11,385 -> 11,386
+   messages (852 / 3,048 unchanged): the dailies were CRLF and a trailing `\r`
+   let the gate's header-strip regex reduce 50 bare timestamp-header lines to
+   49 keys; with the `\r` gone they are 50. Nothing lost, nothing invented
+   (reproduced on the zip: 9,812 keys with CR, 9,813 without).
+2. databento tape — `databento_tape_clean.csv` was the same 1,022,106 ticks
+   (967,164 `(ts,occ)` keys, 0 only-in-either) with 287 keys despiked and ms
+   timestamps. ONE file now: `databento_tape.csv` (the clean content, via
+   rename); `clean_tape.py` rewrites in place (tmp + os.replace) and
+   `databento_backfill.py` / `option_tape_pull.py` call it after every append.
+   Repointed: tape.py (source `databento_clean` removed, `path()` no longer
+   prefers a twin), daily_policy_compare.py:43, reference/caller_profile.py:19,287,
+   reference/stock_stop_replay.py:47,136,504, ratchet_backtest.py:61,
+   ratchet_sweep.py:55, reference/EOD-BENCHMARK-SPEC.md, STOCK-STOP-REPLAY-2026-09-14.md.
+3. local-reader-measure — 321 MB -> 230 MB. Zipped 45 files (95,782,587 bytes
+   -> 7,158,231) into `archive/local-reader-measure-experiments-2026-09-15.zip`:
+   openai-trial `completed-review-2026-09-13/`, `final-release-3.8.14/`,
+   `progress-review/`, `progress-review-latest/`; all-channels run outputs (its
+   `corpus.jsonl` stays — it is `openai_reader_trial.SOURCE`); `grabber-audit/`,
+   `rule-fixes/`, pilot-v1 ai-context/summary, haiku/sonnet/early-run leftovers,
+   `label_pilot.py`, three 9/13 probe files. Stayed: `caller-identity/` (live:
+   caller_ledger.py writes, bridge /callers reads callers.sqlite3 119 MB),
+   openai-trial `budget.sqlite3` (the $5 allowance; the script says never
+   delete it) + its working files, corpus/ai-context/pilot-v1-disagreements
+   (reader_measure.py), context-cache.json, provider-key-check.json,
+   compare_keys.js + js-keys.json. `live-2026-09-13.jsonl` + `live-2026-09-14.jsonl`
+   (790 rows) merged into `live.jsonl`; shadow_reader._write appends there
+   with a `day` field.
+4. Leftovers — five `---help` files (AUDIT, REPORT, CALLER-OUTCOMES .md/.csv,
+   FUTURES-MIRROR) came from `python <daily script> --help`: sys.argv[1] was
+   the date. `eastern.day_arg()` now validates YYYY-MM-DD for daily_audit.py,
+   daily_report.py, caller_outcomes.py, futures_mirror_daily.py; the bogus
+   `--help` row left review_queue.jsonl. 9 `days/*.json.bak`: write_json_atomic
+   kept a .bak for every path but only load_state ever read one — `backup=`
+   is now True for state.json only. 10 rotated `webull_api.log.*` moved to
+   `archive/webull-api-logs/` (28 there); `webull_options._rotate_into_archive`
+   sets the SDK handler's `namer` so rotations land there directly. .gitignore
+   already covers `webull_api.log.*` and `archive/`.
+5. department-reports — 33 `<role>-<day>-<fingerprint>` pairs (23 reader_review,
+   6 health, 2 daily, 2 incident) merged into `reader_reviews`, `health`,
+   `daily`, `incidents` `.jsonl` + `.md` (row carries the digest as `md`; .md
+   newest first). `departments.record()` appends; counts verified, pairs deleted.
+6. HANDOFF.md 50,902 -> 49,783 bytes (history trimmed into this file's earlier
+   entries; rule edits in place). DATA-MAP.md and INDEX.md updated for every
+   file moved. Tests: 18 weekly-export, full suite green; parser_gate
+   11,386 / 852 / 3,048. No extension change, manifest stays 3.8.33.
+   Next pile the rule names: `daily-reports/*-<date>.md` and
+   `daily-audits/AUDIT-<date>.txt` still mint one file per day.
+
 ## 2026-09-15 (a date the CALLER typed is no longer taken on faith — bridge._verify_listed)
 
 WHERE THIS CAME FROM. G pasted a room's daily recap ("OPTIONALITY PRO", 9/14)
