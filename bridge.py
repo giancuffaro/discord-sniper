@@ -63,6 +63,69 @@ LOG = os.path.join(HERE, "trades.log")
 DAYS = os.path.join(HERE, "days")
 PORT = 8787
 
+# note() and _BOOT_NOISE MOVED UP HERE (2026-09-15 bug fix). They used to sit
+# ~1,400 lines further down, AFTER the module-top-level paper_trading check
+# below ("if (EXEC.get('webull') or {}).get('paper_trading'): note(...)")
+# that calls note() at IMPORT TIME. Python executes a module top to bottom,
+# so the moment paper_trading is ever set true in settings.json, the bridge
+# would crash on load with NameError: name 'note' is not defined, before a
+# single position or stop could be restored. Moving the definition here (it
+# only needs datetime/ET/LOG, all already defined above) fixes that without
+# changing anything about what note() does. Confirmed via static audit
+# (pyflakes + Gemini/Sonnet code review) 2026-09-15; currently dormant only
+# because paper_trading happens to be false right now.
+
+# LINES THAT REPEAT AT EVERY BOOT AND MEAN NOTHING IN THE RECORD (9/4).
+# trades.log is the permanent dated record — every audit tool reads it, the
+# journal trues up from it, and it is the ONE thing that survives a git
+# reset. It currently carries ~1,300 lines of startup banner from ~200
+# restarts: 244 "test account: unlimited", 239 "Webull LIVE connected",
+# 226 "paper quotes now come from the LIVE feed", 199 "TOPSTEP key VERIFIED".
+# None of that is an event; it is the same sentence printed again.
+#
+# They still print to the CONSOLE, where they are genuinely useful — you want
+# to see the boot state in the window. They just stop being written to the
+# permanent record. Anything that actually HAPPENED is untouched.
+_BOOT_NOISE = (
+    "test account: unlimited",
+    "paper quotes now come from the LIVE data feed",
+    "key VERIFIED — connected for",
+    "STRATEGY forced ON at bridge start",
+    "AI READ  key verified",
+    "QUOTE BUS on —",
+    "STREAM on —",
+    "Webull PAPER connected",
+    "Webull LIVE connected",
+)
+
+
+def note(line):
+    stamp = datetime.now(ET).strftime("%H:%M:%S")
+    try:
+        print("%s  %s" % (stamp, line), flush=True)
+    except Exception:                                   # noqa: BLE001
+        # A console that can't take a character must never kill the caller —
+        # that's how the 8/25 UBER entries went unrecorded. The UTF-8 file
+        # write below is the record that matters; try an ASCII-safe echo and
+        # move on regardless.
+        try:
+            print(("%s  %s" % (stamp, line)).encode("ascii", "replace")
+                  .decode("ascii"), flush=True)
+        except Exception:                               # noqa: BLE001
+            pass
+    # Boot banner: console yes, permanent record no. See _BOOT_NOISE.
+    try:
+        _l = str(line)
+        if any(n in _l for n in _BOOT_NOISE):
+            return
+    except Exception:                                   # noqa: BLE001
+        pass
+    try:
+        with open(LOG, "a", encoding="utf-8") as f:
+            f.write("%s\t%s\n" % (datetime.now(ET).isoformat(timespec="seconds"), line))
+    except OSError:
+        pass
+
 
 def open_discord_source_in_chrome(guild_id, channel_id, message_id):
     """Open one configured Discord source post in G's Discord Chrome profile.
