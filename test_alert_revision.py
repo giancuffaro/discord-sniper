@@ -38,17 +38,35 @@ PUT = dict(CALL, side="PUTS")
 
 
 class FakeBook(object):
-    def __init__(self, state=None, fill=None):
+    def __init__(self, state=None, fill=None, bid=None, kind="option"):
         self.state = state
         self.fill = fill
+        self.bid = bid
+        self.kind = kind
         self.cancelled = []
         self.sold = []
+        self.be = []
+        self.marked = []
+        self.be_ok = True
+        self.quotes = None
 
     def state_of(self, key):
         return self.state
 
     def info(self, key):
-        return {"fill": self.fill, "state": self.state} if self.state else None
+        if not self.state:
+            return None
+        return {"fill": self.fill, "state": self.state, "kind": self.kind,
+                "live": True, "occ": "TSLA260916C00357500",
+                "last_bid": self.bid}
+
+    def stop_to_breakeven(self, key):
+        self.be.append(key)
+        return self.be_ok
+
+    def mark_edit_breakeven(self, key):
+        self.marked.append(key)
+        return True
 
     def cancel_entry(self, key, why="pulled"):
         self.cancelled.append((key, why))
@@ -121,23 +139,124 @@ class SameMessageEdit(Harness):
 
     def test_resting_entry_order_is_pulled_too(self):
         self.book.state = bridge.positions.WORKING
-        self.arm(CALL, key="pt|TSLA|357.5|CALLS|2026-09-16")
+        self.arm(CALL, key=bridge.tkey(CALL))
         bridge._revision_check(PUT)
         self.assertEqual(len(self.book.cancelled), 1)
         self.assertIn("resting bid pulled", self.log())
 
 
+KEY = bridge.tkey(CALL)          # the real book key, not a hand-written one
+
+
 class AlreadyFilled(Harness):
-    def test_a_filled_position_is_never_sold(self):
+    """THE EDIT EXCEPTION (9/15, G: "if in profit keep the ratchet and set the
+    stop to breakeven, if it's a losing trade, close it automatically"). This
+    is not a room exit: the caller corrected the CONTRACT, so what we are
+    holding is our own misread of their call."""
+
+    def filled(self, fill=7.40, bid=None):
         self.book.state = bridge.positions.FILLED
-        self.book.fill = 7.40
-        self.arm(CALL, key="pt|TSLA|357.5|CALLS|2026-09-16")
-        bridge._revision_check(PUT)
+        self.book.fill = fill
+        self.book.bid = bid
+        self.arm(CALL, key=KEY)
+
+    def test_green_moves_the_stop_to_breakeven_and_sells_nothing(self):
+        self.filled(bid=7.52)
+        with mock.patch.object(bridge, "_place_impl",
+                               side_effect=AssertionError("sold a winner")):
+            bridge._revision_check(PUT)
+        self.assertEqual(self.book.be, [KEY])
+        self.assertEqual(self.book.marked, [KEY])
         self.assertEqual(self.book.sold, [])
-        self.assertEqual(self.book.cancelled, [])
-        self.assertEqual(self.pb.calls, [])
-        self.assertIn("already filled at 7.40", self.log())
-        self.assertIn("position stays, ratchet owns it", self.log())
+        self.assertIn("EDITED   TSLA — PT | ei trades changed 357.5C \u2192 "
+                      "357.5P, but the 357.5C already filled at 7.40 and is "
+                      "green (bid 7.52) — stop moved to breakeven, ratchet "
+                      "keeps it", self.log())
+
+    def test_flat_counts_as_green(self):
+        self.filled(bid=7.40)
+        bridge._revision_check(PUT)
+        self.assertEqual(self.book.be, [KEY])
+
+    def test_red_closes_through_the_existing_exit_path(self):
+        self.filled(bid=7.06)
+        with mock.patch.object(bridge, "_place_impl",
+                               return_value=(True, "sold")) as sell:
+            bridge._revision_check(PUT)
+        self.assertEqual(self.book.be, [])
+        self.assertEqual(sell.call_count, 1)
+        sent = sell.call_args.args[0]
+        self.assertEqual(sent["action"], "CLOSE")
+        self.assertEqual(sent["source"], "edit")
+        self.assertEqual(sent["symbol"], "TSLA")
+        self.assertEqual(sent["strike"], 357.5)
+        self.assertEqual(str(sent["side"]), "CALLS")
+        self.assertIn("edit replacement", sent["raw"])
+        self.assertIn("already filled at 7.40 and is red (bid 7.06) — closed "
+                      "at market, wrong contract", self.log())
+
+    def test_it_is_never_a_new_sell_routine(self):
+        """The resting stop is pulled by claim() inside the same _place_impl
+        CLOSE the pullback stock exit uses. Asserted by the route taken."""
+        import inspect
+        src = inspect.getsource(bridge._edit_close)
+        self.assertIn("_place_impl", src)
+        self.assertNotIn("place_stop", src)
+        self.assertNotIn(".sell(", src)
+
+    def test_a_refused_close_leaves_it_open_and_says_so(self):
+        self.filled(bid=7.06)
+        with mock.patch.object(bridge, "_place_impl",
+                               return_value=(False, "market is closed")):
+            bridge._revision_check(PUT)
+        self.assertIn("the broker refused", self.log())
+        self.assertIn("still open", self.log())
+
+    def test_no_quote_falls_back_to_log_only(self):
+        self.filled(bid=None)
+        with mock.patch.object(bridge, "_place_impl",
+                               side_effect=AssertionError("sold blind")):
+            bridge._revision_check(PUT)
+        self.assertEqual(self.book.be, [])
+        self.assertEqual(self.book.sold, [])
+        self.assertIn("no live bid to judge it by", self.log())
+        self.assertIn("LEFT ALONE", self.log())
+        self.assertIn("ratchet owns it", self.log())
+
+    def test_a_stop_that_cannot_move_is_said_out_loud(self):
+        self.filled(bid=7.52)
+        self.book.be_ok = False
+        bridge._revision_check(PUT)
+        self.assertEqual(self.book.marked, [])
+        self.assertIn("could not be moved to breakeven", self.log())
+
+    def test_a_price_only_edit_touches_nothing(self):
+        """Same contract, new price — not a revision at all, so the filled
+        branch never runs and nothing is sold or moved."""
+        self.filled(bid=7.06)
+        with mock.patch.object(bridge, "_place_impl",
+                               side_effect=AssertionError("sold on a price edit")):
+            bridge._revision_check(dict(CALL, limit=1.55))
+        self.assertEqual(self.book.be, [])
+        self.assertNotIn("EDITED", self.log())
+
+    def test_a_different_message_never_closes_a_filled_position(self):
+        self.filled(bid=7.06)
+        with mock.patch.object(bridge, "_place_impl",
+                               side_effect=AssertionError("sold on another call")):
+            bridge._revision_check(dict(PUT, message_id="chat-messages-1334-1000"))
+        self.assertNotIn("EDITED", self.log())
+
+    def test_the_no_id_fallback_still_reaches_the_filled_branch(self):
+        old = dict(CALL); old.pop("message_id")
+        self.book.state = bridge.positions.FILLED
+        self.book.fill, self.book.bid = 7.40, 7.06
+        self.arm(old, key=bridge.tkey(old))
+        with mock.patch.object(bridge, "_place_impl",
+                               return_value=(True, "sold")) as sell:
+            bridge._revision_check(dict(old, strike=360))
+        self.assertEqual(sell.call_count, 1)
+        self.assertIn("357.5C \u2192 360C", self.log())
 
 
 class NoMessageIdFallback(Harness):
