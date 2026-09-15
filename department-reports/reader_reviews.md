@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 3f78182bd8f99ff63cc2
+
+The current “Sold @here” message is a candidate contextual close alert: the reader returned CLOSE, while the parser returned no action and fire=false. Source and context-policy verification are required before calling this a parser defect; the exact contract, exit price, and quantity remain unresolved in the validated reader output.
+
+## Findings
+- Current message chat-messages-1144369893760831489-1549419853067063317 says “Sold @here.” Immediately preceding message chat-messages-1144369893760831489-1549419795294724217 says “17% profit we’ll take it @here.” The reader classified CLOSE with confidence 0.55, and validation returned ok=true; the parser returned action=null and fire=false. Review whether the parser is intended to recognize context-dependent sale reports separately from executable alerts. Verify the original messages and relevant position state before classifying the discrepancy as a missed close; missing contract details may justify withholding execution eligibility.
+- Earlier same-author, same-channel messages identify “$SPY 760p 0dtes,” then “Stay loaded on 760p” and “Buy 1 at 1.31.” These messages are not among validation.eligible_prior_ids, which contains only the sizing commentary and the immediately preceding profit statement. The reader left ticker, strike, side, expiry, and quantity null. Verify permitted context boundaries and source linkage before associating this sale with the earlier SPY 760 put setup. Preserve unresolved fields unless authorized context or retained position records establishes the association; do not reuse prior-session contracts.
+- “Add one more at 760.40, out stop is going to be above that” describes an add level but does not confirm an add fill. “Buy 1 add 1” is sizing commentary. “17% profit” is caller-reported, and “Sold @here” supplies neither an exit premium nor a sold quantity. Verify whether the add occurred and what quantity was sold. Keep the apparent underlying level 760.40 separate from the raw entry value 1.31, whose premium units are not explicit. Preserve the reported 17% without deriving an exact exit price, dollar profit, or broker-confirmed return.
+- The reader attempt log records a Gemini HTTP_503 followed by an OpenAI attempt with error=null and a validated response. Review provider-fallback telemetry if reliability investigation is needed. Treat this as an individual failed attempt followed by a successful fallback, not evidence of a channel outage or an entirely failed read.
+
+## Limitations
+- Only the current message's parser output is supplied; earlier parser behavior and retained position state are unavailable.
+- Evidence is marked untruncated, but this does not establish complete channel coverage or provide broker fill records.
+- Validation success does not independently confirm trade identity, execution, quantity, premium units, or financial results.
+- No verified exit premium or supporting return calculation is provided; missing values are not zero.
+
+---
+
 # Reader Review — 2026-09-15 — 66d1e1d2ccc6aa1cb778
 
 The current message supports an OPEN alert for SPY 9/16 759 puts, and the reader preserves the quoted value 2.8. Parser and reader agree on the contract and action. The principal review candidate is an ineligible supporting-context reference despite validation reporting success; no confirmed parser bug or executed trade is established.
