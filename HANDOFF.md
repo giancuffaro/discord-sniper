@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-14 — v3.8.31: an EDITED alert cancels the entry it corrects, and BOTH AI readers run OpenAI → Gemini with Anthropic last (billing-blocked).
+Last updated: 2026-09-15 — v3.8.31: an EDITED alert cancels the entry it corrects and, if that entry already filled, takes the downside off a green one or closes a red one; BOTH AI readers run OpenAI → Gemini with Anthropic last (billing-blocked).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -48,7 +48,7 @@ Last updated: 2026-09-14 — v3.8.31: an EDITED alert cancels the entry it corre
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
 - PROVIDER KEYS: the Keys pane saves OpenAI, Gemini and Perplexity under settings.json ai_provider_keys; saved fields hide behind an explicit Replace key, status returns presence flags only, and inputs never ride in browser draft persistence. OpenAI/Gemini feed the observer AND both live readers; Perplexity is stored inactive; DeepSeek was removed at G's request; Anthropic is kept and billing-blocked (9/13 probe: OpenAI/Gemini/Perplexity passed — sanitized local-reader-measure/provider-key-check.json). Saved-key PRESENCE is not a probe RESULT: billing, rate limit, authentication, access and connection failures carry distinct labels, so a failed check is not a missing key.
 - DEPARTMENTS: enabled. Existing bridge audit loop calls health_tick every five minutes; extension maintenance publishes Discord/Whop lane heartbeat and reader issues. GPT-5.4 mini analyzes changed issues (12/day), Astra escalates multi-issue incidents (2/day), reviews selected reader disagreements (20/day), and analyzes existing daily reports after the 16:40 audit (1/day). Results are advisory files in department-reports, never executed as code/orders. Astra and Mini live probes passed; first Astra report for Friday 9/11 and Mini preflight generated. Context snapshots persist at most once/minute (up to one minute may be lost on abrupt exit).
-- READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer enabled: Gemini gemini-3.1-flash-lite primary, OpenAI gpt-5.4 fallback; same prompt, bounded requests and cooldowns; observation only. Needs You pane/buttons/polling removed. Caller controls appear under matching Channels; v3.8.27 shows verified account sightings by channel ID and an unavailable win rate until evidence supports one. Existing Honey Drip controls remain limited to their specific room IDs; newly observed accounts have no execution keys. Historical identity attribution is candidate-only unless the original source supports an account link. Grabber v3.8.22 re-resolves replaced message panes each step, tracks oldest-message progress instead of page height, allows 30 seconds for stalled loads, and clears failed runs; stale-ID recovery and queue advancement fixed; v3.8.23 restores the original one-year target (exceeds requested four months); the Optionality tab already had May 6 loaded and was correctly stopping at the shorter cutoff. Retains tabs and labels stalled history partial. v3.8.25 capture retains message_id, captured_at and observed revisions, dedupes by channel+ID, and exports structured .json beside readable .txt. Legacy ID-less rows remain explicit legacy-unknown; re-grab is needed to obtain IDs, not infer them. Browser full-history completeness remains unverified.
+- READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer enabled: Gemini gemini-3.1-flash-lite primary, OpenAI gpt-5.4 fallback; same prompt, bounded requests and cooldowns; observation only. Needs You pane/buttons/polling removed. Caller controls appear under matching Channels; v3.8.27 shows verified account sightings by channel ID and an unavailable win rate until evidence supports one. Existing Honey Drip controls remain limited to their specific room IDs; newly observed accounts have no execution keys. Historical identity attribution is candidate-only unless the original source supports an account link. Grabber: re-resolves replaced message panes each step, tracks oldest-message progress (not page height), allows 30s for a stalled load, clears failed runs, targets one year back, keeps its tabs and labels stalled history partial. Capture retains message_id, captured_at and observed revisions, dedupes by channel+ID, and exports structured .json beside readable .txt; legacy ID-less rows stay explicit legacy-unknown (re-grab for IDs, never infer them). Browser full-history completeness remains unverified.
 - WHO READS (9/14): BOTH live ai_reader lanes — the one-message reader
   (AI READ) and the screenshot reader (IMG READ) — use the observer's
   providers, keys and cooldown map: OpenAI gpt-5.4, then Gemini, then
@@ -109,30 +109,26 @@ ENTRIES
   switch is the only bench. Benched rooms are never deleted from the file.
   WHOSE TABS THE REAPER MAY CLOSE (9/10). ONLY tabs the extension itself
   opened (`_OURS`). A tab a HUMAN opened is never closed, whatever URL it is
-  on. Written the other way round first — "close any discord.com tab that is
-  not an `on` room" — and within the hour it had eaten the Discord Settings
-  tab G asked Claude to work in, twice, mid-edit. Sparing the ACTIVE tab is
-  not enough: the moment he clicks away, or a tool drives another window, his
-  tab stops being active. If you ever widen this again, that is the failure
-  you are re-inviting.
+  on. Written the other way round first, it ate the Discord Settings tab G
+  was working in, twice, mid-edit — and sparing the ACTIVE tab is no fix,
+  since his tab stops being active the moment he clicks away. Widen this
+  again and that is the failure you are re-inviting.
   WHO MAY OPEN A TAB (9/10, G: "get rid of auto opening tabs UNLESS it's
   the start sniper"). Exactly three things, and nothing else:
     1. START HERE.bat, through its one-shot open-rooms request
     2. the popup's Channels switch (his click)
     3. whopSelfHeal() — kept on his call so the Whop lane can revive its own
-       4 tabs; its dedupe now reads pendingUrl and queries the whole origin,
-       because the old query missed a still-LOADING tab and that is how a
-       heal pass turned 4 Whop tabs into 8
+       4 tabs; its dedupe MUST read pendingUrl and query the whole origin, or
+       a still-LOADING tab is missed and a heal pass turns 4 Whop tabs into 8
   roomSchedule() no longer opens anything — it used to open every `on` room
   at 9:15. It still CLOSES at 4:30, which is what stops the overnight pings.
-  probeOne() opens a lapsed room off-hours to see if access came back and
-  closes that tab seconds later in a finally — a door-knock, not an open.
+  probeOne() opens a lapsed room off-hours, then closes that tab seconds
+  later in a finally — a door-knock, not an open.
   NO ACCESS = OUT OF SERVICE (9/10, G: "do not open the tab if we don't have
   access"). revokeCheck() reads the tab titles it already has; a room whose
   title says "No Access" is now written to rooms.txt as `lapsed` through the
-  bridge and its tab closed, instead of only logging a warning. RWGates
-  proved the warning alone was useless — it fired for three weeks while the
-  room kept opening a blank tab every morning. `lapsed` not `off` on purpose:
+  bridge and its tab closed, not merely warned about (RWGates warned for
+  three weeks while opening a blank tab every morning). `lapsed` not `off`:
   the daily probe keeps knocking, so it un-lapses itself if the sub returns.
   6th field = the room's RULES (9/9 evening): comma flags `bare` (an entry
   with no verb counts, AND its tokens may arrive in any word order — see
@@ -150,7 +146,7 @@ ENTRIES
   every write) — settings.json no longer holds those lists. Rules count
   whatever the room's state (shabs/eli are off but relayed via OWLS).
   Set from the popup: the pills on each Channels row (SPY-proxy / bare /
-  SPX / 24h).
+  24h).
 - ROOM HOURS: `on` rooms use tabs 9:15–16:30 ET on weekdays unless
   marked `always` (futures rooms). roomSchedule closes daytime tabs after
   hours; it does not reopen them at 9:15. START HERE once in the morning
@@ -233,9 +229,24 @@ ENTRIES
   → 357.5P; the earlier pullback is cancelled, only the new one stands"),
   then arms the new one. Two DIFFERENT message ids are two calls, never an
   edit (TWO CONTRACTS still holds); an identical repost stays with the dedupe
-  ladder. Already FILLED = nothing is sold, entries only, and the line says
-  so. Born from PT's TSLA $357.5c edited to 357.5p: both sides armed and the
-  stale CALL arm bought 357.5C at 7.40 ($740). alert_revision.py.
+  ladder. Born from PT's TSLA $357.5c edited to 357.5p: both sides armed and
+  the stale CALL arm bought 357.5C at 7.40 ($740). alert_revision.py.
+- IF THE CORRECTED CONTRACT ALREADY FILLED (9/15, G: "if in profit keep the
+  ratchet and set the stop to breakeven, if it's a losing trade, close it
+  automatically"). Judged on the CURRENT BID vs the fill, read free from the
+  quote bus cache as the edit lands. bid >= fill -> the stop goes to
+  BREAKEVEN by the existing stop_to_breakeven path and the ratchet keeps
+  running. bid < fill -> CLOSED down the existing exit path, the same
+  _place_impl CLOSE the pullback stock exit uses, so claim() pulls the resting
+  stop and waits for the broker first; there is no second sell routine.
+  No bid, a non-option, or a stop that will not move = LOGGED ONLY,
+  never a guess. Journal exit_by "edit-close"; a BE stop that later
+  fires reads "edit-BE".
+  THE ONE EXCEPTION TO ENTRIES-ONLY, and not a room exit: the caller changed
+  the CONTRACT, so what we hold is OUR misread of their call, not a trade
+  they asked us out of. Their trims, stop-moves and "all out" stay
+  EXIT-IGNORED. A price-only edit never reaches it (same contract = no
+  revision), nor does a different message id.
 - RETRACTION ("not ready / scratch that / cancel / disregard / hold off /
   nevermind") pulls that trader's resting bids and armed pullback hunts.
 - FUTURES: micros only (NQ→MNQ, ES→MES ...). Entry snaps to the 25-pt grid
@@ -243,9 +254,9 @@ ENTRIES
   (no price in the alert) gets that bracket off the FILL instead — positions.
   _arm_stop, but these are only recorded levels. Webull futures OPEN now refuses before broker lookup until an exact GTC STOP_LOSS is placed and verified after its fill, and stop/close reconciliation is tested. No futures quote-driven target/ratchet is operational. The 3 historical Webull futures OPEN orders would now be refused; no parser actions changed.
 - INDEX MIRROR (9/13) — **OFF and activation blocked** until a broker-confirmed futures protective exit path exists. The shadow records SPY/QQQ option entries, and `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the daily audit. Reports land in `daily-reports/FUTURES-MIRROR-<date>.md`; the cumulative history is `reference/FUTURES-MIRROR-REPLAY.csv`. The original 149-alert 8/3–9/11 replay lost $721 gross (ZT mashup accounted for $703). The replay's 25/50 stop, target and ratchet are simulated, not current live futures exits. New-day coverage is only bridge shadow rows plus `master_alerts.csv`; posts missed upstream are absent. The popup switch stays disabled until live exits are verified.
-- THE POCKET (hidden from the UI on purpose): a :43-:51 scalp-entry clock
-  gate exists behind settings flag pocket_scalps_only, default OFF. The
-  decision comes from HIS fill data (ledger minute-of-hour), not the QQQ study.
+- THE POCKET (hidden on purpose): a :43-:51 scalp-entry clock gate behind
+  settings pocket_scalps_only, default OFF. Decided from HIS fill data
+  (ledger minute-of-hour), not the QQQ study.
 - Positions record the underlying at fill (und_at_fill); FILLED log lines,
   announcer posts and the journal all carry it.
 
@@ -255,7 +266,9 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   "stopped out", "closed everything" — is logged "EXIT-IGNORED … entries
   only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY
   exit (plus the bridge's own pullback stock-stop / underlying hard-stop).
-  A bot SELL that traces to a room call is a BUG: check bridge.py do_POST's
+  ONE EXCEPTION, and it is not a room exit: an EDIT that changes the CONTRACT
+  we already bought (see ENTRIES). A bot SELL that traces to a room's own exit
+  call is still a BUG: check bridge.py do_POST's
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
@@ -401,8 +414,7 @@ FILL ANNOUNCER (announcer.py, read-only)
   off switch = announcer.stop containing "stop" (STOP ANNOUNCER.bat);
   "Fill Announcer revive" schtask every 30 min; announcer.restart = reload.
 - STATUS: PAUSED since 9/2 (announcer.stop = "stop", G: "get this app
-  working 100% first"). Its board is now computed FROM THE LEDGER (9/9) —
-  the old running tally missed every close it wasn't awake for.
+  working 100% first"). Its board is computed FROM THE LEDGER (9/9).
 - Its order hunt is paced (0.20 s, once per account) — the 9/2 429 storm
   (77k TOO_MANY_REQUESTS on the shared key) must never come back.
 
@@ -488,10 +500,9 @@ FILL ANNOUNCER (announcer.py, read-only)
   17:00-18:00 daily halt.
 - POST-MORTEMS → master_postmortems.csv + postmortems/<date>_<occ>.md
   (postmortem.py; a SECOND round-trip on the same contract the same day is
-  <date>_<occ>-2.md — named by the trade's rank among that day's graded
-  trades on the OCC (9/10, after SPY 758C ×2 overwrote itself twice); the
-  csv row is keyed date+occ+fill+exit; G 9/9: "analyze every single trade after exiting … be
-  attentive to these"). One verdict per exited bot trade — NOISE CLIP /
+  <date>_<occ>-2.md, named by the trade's rank among that day's graded trades
+  on the OCC; the csv row is keyed date+occ+fill+exit. G 9/9: "analyze every
+  single trade after exiting … be attentive to these"). One verdict per exited bot trade — NOISE CLIP /
   ARM CLIP / GOOD STOP / LEFT MONEY / GAVE BACK / GOOD EXIT — with the call vs our fill,
   the RN wait, the ride (MAE/MFE), the bid at +30s/+1m/+5m/+10m after the
   exit, the widest born stop that would have survived, and every machine
@@ -576,14 +587,9 @@ FILL ANNOUNCER (announcer.py, read-only)
   Extension: an optional, gitignored extension/bridge.txt —
   `http://<PC1-LAN-IP>:8787|<secret>` — makes every bridge call carry the
   token (fetch is wrapped once; the popup's askBridge adds it too).
-- PC2 SETUP, when it exists: (1) this PC: put a long random string in
-  bridge_token, bridge_listen "0.0.0.0", allow TCP 8787 in Windows firewall
-  for the LAN only, restart the bridge; (2) PC2: clone the repo, create
-  extension/bridge.txt with PC1's LAN IP + the same secret, add
-  `"http://<PC1-LAN-IP>/*"` to extension/manifest.json host_permissions,
-  Load Unpacked in a Chrome profile logged into the NEW Discord account;
-  (3) Whop: re-link the moved subs to the new Discord account so the paid
-  roles land there.
+- PC2 SETUP, when it exists: the step-by-step (bridge_token + firewall here,
+  extension/bridge.txt + host_permissions there, Whop re-link) is in
+  HANDOFF-LOG.md under 2026-09-15. Nothing to do until PC2 is bought.
 - NOT BUILT YET — LANE TAGS: both PCs read the same rooms.txt, so today they
   would open and trade the same rooms. Next build: a 5th field per line
   (`|pc2`) + a lane name per machine; each extension opens/trades only its
@@ -592,9 +598,9 @@ FILL ANNOUNCER (announcer.py, read-only)
   BEFORE PC2 goes live.
 
 ## Pending external setup and decisions
-1. If continuing in Claude: replace its Project instructions with
-   project/PROJECT-INSTRUCTIONS.md and remove its old uploaded handoffs.
-   Local cleanup does not remove files already uploaded to Claude.
+1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project
+   instructions and remove the old uploaded handoffs (local cleanup does not
+   remove what was already uploaded).
 2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung,
    futures decouple) — G's call whether Claude does it or he does.
 3. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200 (=25/50
@@ -607,9 +613,6 @@ FILL ANNOUNCER (announcer.py, read-only)
 6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension
    are already up (9/11: a 09:49 start missed QCOM/NVDA/MNQ/DELL). Run START
    HERE, or schedule it, by 9:00 on trading days.
-7. Chrome extension for Claude was NOT connected at the 16:35 close-out, so
-   the /stream check (last_sweep_ms, budget_left) was skipped; re-sign-in
-   the "Claude in Chrome" side panel if you want the autopilot to read it.
 
 ## Watch items (open)
 - PULLBACK STOCK TARGET vs THE RATCHET (9/10, G's call): a pullback entry
