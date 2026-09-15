@@ -337,29 +337,29 @@ RESTARTS / SAFETY
   CONDENSE AND MERGE).
 - DAILY SNIPER REPORT: bridge.py runs `daily_audit.py` once per weekday at
   16:40 ET, after the 16:30 export/tab sweep. Order: `broker_sync.py` pulls
-  the Webull export first; the day's exact Discord and Whop inputs replay with
-  each room's production grammar; `parser_gate.js` compares parser.js,
-  rooms.txt and optionable.txt over every retained live message (AUTO PUSH
-  runs that gate before any such rule ships and blocks invented symbols or
-  expiry shifts); every JS/Python test runs; `daily-audits/AUDIT-<date>.txt`
-  + `latest.json` are written; unresolved items are queued. Reports written
-  to `daily-reports/`: the Daily Sniper Report (coverage, decisions, skips,
-  fills, P&L, postmortems), `RATCHET-COMPARE-<date>.md` (live 5/3/5 vs fixed
-  -5% born stop over exact-contract quote paths, coverage stated, never
-  extrapolated), `CALLER-OUTCOMES-<date>.md/.csv` (caller entry, every trim
-  and full exit with price/percent/size; caller P&L only when entry and exit
-  pair with contemporaneous quotes; partials never become full results; a
-  posted price within 2% of that minute's `und` is a STOCK quote -> entry
-  "unavailable (stock price posted)", dollars out of every total),
-  `CALLER-VS-RATCHET-<date>.md` (5/3/5 from caller entry over `tape.py`).
-  LAST step is `daily_brief.py`: the one-screen brief (day · bot trades ·
-  callers right/wrong · what broke · pending) -> `BRIEF-<date>.md`, POSTED TO
-  SNIPER HQ through the Fill Announcer's options webhook. That post is how G
-  gets the day; a failed brief never fails the audit. Rules: broker-confirmed
-  actuals override any simulation; RAW capture is always retained and LIVE
-  PARSER rows overlay it; relay duplicates count once; expired pullback waits
-  are skips, not orders; the 15-minute Codex guard was deleted at G's request
-  — do not recreate it. Findings become tested fixtures.
+  the Webull export; the day's Discord and Whop inputs replay with each room's
+  production grammar; `parser_gate.js` compares parser.js, rooms.txt and
+  optionable.txt over every retained live message (AUTO PUSH runs that gate
+  before any such rule ships and blocks invented symbols or expiry shifts);
+  every JS/Python test runs; `daily-audits/AUDIT-<date>.txt` + `latest.json`
+  are written; unresolved items are queued. Into `daily-reports/`: the Daily
+  Sniper Report (coverage, decisions, skips, fills, P&L, postmortems),
+  `RATCHET-COMPARE-<date>.md` (live 5/3/5 vs fixed -5% born stop over
+  exact-contract quote paths, coverage stated, never extrapolated),
+  `CALLER-OUTCOMES-<date>.md/.csv` (caller entry, every trim and full exit;
+  caller P&L only when entry and exit pair with contemporaneous quotes;
+  partials never become full results; a posted price within 2% of that
+  minute's `und` is a STOCK quote -> entry "unavailable (stock price
+  posted)", dollars out of every total), `CALLER-VS-RATCHET-<date>.md` (5/3/5
+  from caller entry over `tape.py`). LAST: `daily_brief.py` posts the
+  one-screen `BRIEF-<date>.md` to Sniper HQ through the Fill Announcer's
+  options webhook — that post is how G gets the day; a failed brief never
+  fails the audit. Rules: broker-confirmed actuals override any simulation;
+  RAW capture is retained and LIVE PARSER rows overlay it; relay duplicates
+  count once; expired pullback waits are skips, not orders; the 15-minute
+  Codex guard was deleted at G's request — do not recreate it. Findings
+  become tested fixtures. The date argument is validated (`eastern.day_arg`):
+  a `--help` once became `AUDIT---help.txt` and four more like it.
 - GIT: settings.json holds every key and is never committed. AUTO PUSH uses
   a live-owner PID lock, commits every 45 s and retries pushes; it never deletes
   Git locks or rebases. Runtime files remain local. After suspicious loss check
@@ -605,15 +605,14 @@ FILL ANNOUNCER (announcer.py, read-only)
 
 ## SECOND MACHINE (planned 9/9 — G: "another account on a different computer
 ## for other subs"). Built default-off; nothing changes until PC2 exists.
-- WHY: Discord's identify budget and Chrome's RAM are per account / per
-  machine. ONE bridge, ONE book, ONE rate budget — PC2 runs only Chrome + the
-  extension and sends to THIS PC's bridge over the LAN. Never a second bridge
-  on the same Webull account (two books break every dedupe and coexistence
-  rule).
-- SECURITY IS ALREADY IN THE CODE: execution.bridge_listen + bridge_token; the
-  bridge refuses to bind off loopback without a token and off-loopback callers
-  must send X-Sniper-Token; CORS is limited to chrome-extension:// origins. The
-  extension reads an optional gitignored extension/bridge.txt.
+- ONE bridge, ONE book, ONE rate budget: PC2 runs only Chrome + the extension
+  and sends to THIS PC's bridge over the LAN (Discord's identify budget and
+  Chrome's RAM are per account/machine). Never a second bridge on the same
+  Webull account — two books break every dedupe and coexistence rule.
+- Security is in the code: execution.bridge_listen + bridge_token; the bridge
+  refuses to bind off loopback without a token, off-loopback callers must send
+  X-Sniper-Token, CORS is limited to chrome-extension:// origins; the extension
+  reads an optional gitignored extension/bridge.txt.
 - BEFORE PC2 GOES LIVE — LANE TAGS: both PCs read the same rooms.txt, so today
   they would open and trade the same rooms. A 5th `|pc2` field per line plus a
   lane name per machine. Setup steps: HANDOFF-LOG.md under 2026-09-15.
