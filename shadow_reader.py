@@ -36,11 +36,12 @@ def status():
 
 
 def _write(row):
+    """One living file, live.jsonl; every row carries its day (APPEND,
+    DON'T PILE, 9/15 — this used to mint live-<day>.jsonl daily)."""
     os.makedirs(OUT, exist_ok=True)
-    day = datetime.now().strftime("%Y-%m-%d")
+    row["day"] = datetime.now().strftime("%Y-%m-%d")
     with _lock:
-        with open(os.path.join(OUT, "live-%s.jsonl" % day), "a",
-                  encoding="utf-8") as f:
+        with open(os.path.join(OUT, "live.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
 
 
