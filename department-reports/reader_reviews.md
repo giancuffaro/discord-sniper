@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — af25d7cfed678723c83e
+
+The reader proposed an MNQ SHORT close at 29416, but validation rejected the result because MNQ was absent from the current message and the cited context was ineligible. The wording does not establish an executed exit. These are review candidates requiring source verification, not confirmed parser bugs.
+
+## Findings
+- The current message says '@Futures Alerts 29416 accepted = TP' without naming an instrument. The reader supplied ticker MNQ using supporting ID chat-messages-911390080285962290-1549385916370657291, while validation reported eligible_prior_ids: [], unsupported_context_id, and ok: false. Verify why the prior message was ineligible and whether source-backed linkage is permitted. Keep the ticker unresolved unless an eligible source establishes it; do not bypass the validation rejection.
+- The cited prior message from PT | kev says '@Futures Alerts 15min up mnq'. It does not establish a SHORT position. An older explicit MNQ SHORT alert appears under a different author label and is followed by 'news drop just wicked us out'. Verify the intended meaning of the side field and the specific position being referenced. Do not carry the older short position forward or equate different author labels without source evidence. The recent 'up' wording also does not by itself confirm a filled long position.
+- The reader returned action CLOSE, price '29416', and confidence 1.0. The phrase '29416 accepted = TP' could describe a condition or target relationship rather than a completed take-profit execution. The parser returned fire: false with null trade fields. Review retained caller examples and any relevant original stream or thread to distinguish conditional commentary, a target update, and an exit report. Preserve the raw value 29416 without treating it as an exact exit fill. Consider an unresolved interpretation rather than a definite CLOSE until verified.
+
+## Limitations
+- Evidence is marked untruncated, but no stream transcript, reply-target linkage, or position ledger is supplied.
+- No broker fills or simulation results are provided; execution and realized profit cannot be established.
+- Only the current parser output is supplied, so prior alerts' parsing and position-state handling cannot be assessed.
+- Null trade fields represent missing extraction, not zero values. The supplied messages do not establish a service outage.
+
+---
+
 # Reader Review — 2026-09-14 — eef734478e5073fb4531
 
 The MSFT trim interpretation is supported, but the reader's expiry and contextual strike require verification. Validation flags unsupported context while still reporting ok=true; its normalized output also loses the explicit trim fraction. These are review proposals, not confirmed parser bugs.
