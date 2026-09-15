@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 22442366f51a275f29d6
+
+The reader extracted a BE equity entry idea consistent with the supplied text, while the parser returned no signal. This is a candidate coverage difference requiring source and routing verification, not a confirmed parser bug or executed trade.
+
+## Findings
+- The current message states 'NEW ENTRY IDEA Swing Trade Idea $BE Entry: 267' and '1/4 position Pullback and retest.' The reader returned OPEN, LONG, equity, BE, and price 267; validation accepted those fields. The parser returned fire=false with null action and symbol. Verify the original edited message and whether this parser is intended to cover equity swing-entry ideas in this channel. If supported, investigate the no-signal result. Treat OPEN/LONG as an interpretation of the idea, not confirmation of a purchase.
+- The reader preserved qty as '1/4 position,' while validation returned qty=null. The source does not specify a share count or position-sizing baseline. Verify whether relative sizing should be retained in a separate field. Preserve '1/4 position' without converting it to shares or treating the null quantity as zero.
+- The source separately lists Entry: 267, Levels: 270 / 275 / 280 / 285 / 290 / 294 / 300 / 315+, and SL: 247 (cut). The displayed reader and validation outputs retain only the entry price. Check whether the intended schema supports reference levels and a stated stop. If so, verify their extraction against the original source, keeping them separate from actual exits, fills, and option premiums.
+- The reader attempt log records a Gemini cooldown followed by an OpenAI attempt with error=null and a validated result. Classify this record as a provider cooldown with successful fallback, not evidence of a reader or channel outage.
+
+## Limitations
+- The original Discord message and edit history were not independently verified.
+- Parser coverage rules, routing configuration, and downstream field schemas are not provided.
+- No broker fills, executed quantities, actual exits, or performance calculations are supplied.
+- Prior messages show similar equity-entry wording, but their parser outputs are absent; they do not establish a recurring failure.
+
+---
+
 # Reader Review — 2026-09-15 — a95809e415fb80dc6d8b
 
 The source appears to describe a partial option sale. The reader extracted the trade details, while the parser returned no action and validation omitted the strike and partial-sale quantity. These are review candidates, not confirmed parser bugs.
