@@ -87,3 +87,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789481485.737,missed,AAPL,PUTS,330,9/18,,331.0,,Unraveller,Honeydrip daytrades
 1789481828.526,missed,QQQ,PUTS,708,2026-09-15,,708.0,,@Owner Alerts,Platinum nitro
 1789483680.492,armed,QQQ,PUTS,706,9/15,,706.0,,Vero,Vero 1
+1789483914.979,armed,TSLA,PUTS,350,9/18,,357.0,,Mike,Honeydrip daytrades
