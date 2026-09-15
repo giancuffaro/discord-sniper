@@ -3,8 +3,9 @@
 SPY/QQQ room entries replayed as one-contract MES/MNQ, market entry, 25-pt stop / 50-pt target, futures ratchet.
 The switch is OFF: this is a measurement, not a trade.
 
-**bars: unavailable** — BentoClientError: 422 data_end_after_available_end
-The dataset GLBX.MDP3 has data available up to '2026-09-14 20:20:00+00:00'. The `end` in the query ('2026-09-15 00:00:00+00:00') is after the available range. Try requ
+**bars: unavailable** — BentoClientError: 422 dataset_unavailable_range
+Part or all of your request for dataset 'GLBX.MDP3' requires a subscription and/or license to access. Try again with an end time before 2026-09-14T17:05:53.652356000Z.
+do
 
 8 SPY/QQQ alert(s) were found for this date and are NOT scored. Nothing is guessed and nothing is written to the cumulative file; re-run once bars are available.
 
