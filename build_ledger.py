@@ -994,7 +994,7 @@ def _rotate_bak(path=OUT):
 # I don't want any more confusions"). A paper fill is not money: it made the
 # Callers board read "are alerts -$732" when the real number was -$62 live.
 # Paper rows never enter master_ledger.csv now, so nothing downstream — the
-# board, the journal, the scoreboard, the announcer, every backtest — can show
+# board, the journal, the scoreboard, every backtest — can show
 # one again. They are not destroyed: the first build after this rule wrote
 # them to archive/paper-fills-<date>.csv, and days/*.json still holds them.
 # NOTE the account="unknown" rows are NOT paper — those are broker FILLED

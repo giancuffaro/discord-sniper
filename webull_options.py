@@ -677,13 +677,12 @@ class WebullOptions:
         api.add_endpoint(REGION, self.endpoint)
         # Full request/response logging, built into the SDK (v3.5.0 A2):
         # this is what answers a 404 or a crash instead of tea leaves in
-        # bridge.log. *.log is gitignored.
-        # One log file PER PROCESS (9/2): the bridge and the announcer both
-        # opening webull_api.log tripped Windows' file lock 11,795 times in
-        # a morning and buried the announcer's loop in stack traces.
+        # bridge.log. *.log is gitignored. ONE process writes it: two
+        # processes opening webull_api.log trip Windows' file lock (11,795
+        # times in one morning, 9/2), so a second process needs its own name.
         try:
-            api.set_file_logger(getattr(self, "sdk_log_name", "webull_api.log"))
-            _rotate_into_archive(getattr(self, "sdk_log_name", "webull_api.log"))
+            api.set_file_logger("webull_api.log")
+            _rotate_into_archive("webull_api.log")
         except Exception:                               # noqa: BLE001
             pass
         self._api = api

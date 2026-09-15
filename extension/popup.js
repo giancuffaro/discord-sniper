@@ -490,15 +490,6 @@ function paintBridgeLive() {
   dot.style.background = _bridgeLastCheck ? (ok ? "#4ade80" : "#dc2626") : "#52525b";
   // Just the verdict, no clock (his ask, 8/17: "i dont need to know how
   // many seconds passed"). refreshMode refreshes this every 4s regardless.
-  // Announcer rides on the same line (9/2): it was silently stopped for an
-  // hour and a real fill never posted. Red text when its heartbeat is stale.
-  // Deliberately off (STOP ANNOUNCER / G's call 9/2) is grey, not red —
-  // red is only for "should be running and isn't".
-  const annOff = ok && modeStatus.announcer_stopped;
-  const annOk = ok && (modeStatus.announcer_alive || annOff);
-  const annTxt = !ok ? "" : annOff ? " · announcer off (paused)"
-    : modeStatus.announcer_alive ? " · announcer on"
-    : " · ✕ ANNOUNCER OFF — run ANNOUNCER.bat";
   // GREEKS on the same line (9/4). tastytrade drops an account back to
   // DELAYED data the moment it looks unfunded. A delayed feed that reads as
   // live is exactly the kind of quiet lie this line exists to prevent, so
@@ -510,9 +501,9 @@ function paintBridgeLive() {
     : gk.connected ? " · ✕ GREEKS DELAYED — fund tastytrade"
     : gk.level ? " · greeks reconnecting" : "";
   txt.textContent = !_bridgeLastCheck ? "checking bridge…"
-    : ok ? "✓ Bridge connected" + annTxt + gkTxt
+    : ok ? "✓ Bridge connected" + gkTxt
          : "✕ Bridge NOT reachable — run 🎯 START HERE";
-  txt.style.color = _bridgeLastCheck && (!ok || !annOk || gkBad)
+  txt.style.color = _bridgeLastCheck && (!ok || gkBad)
     ? "#fca5a5" : "#9aa3b5";
 }
 

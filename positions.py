@@ -2103,8 +2103,8 @@ class Book:
                 if px is None and p_.get("live"):
                     # TRUE-UP (9/2 journal): the lookup above answered None
                     # SIX times in two days — every one a 429 on the order-
-                    # history door (2 per 2s, shared with the announcer's
-                    # poll), never a missing fill. Each booked $0 and the
+                    # history door (2 per 2s, shared with every other
+                    # poller), never a missing fill. Each booked $0 and the
                     # journal had to correct it by hand (FLR -9, SPY -31
                     # today; S -50, SPY -12, SPY -8 yesterday). Keep asking
                     # in the background and write the real price onto the
@@ -2309,8 +2309,8 @@ class Book:
             money = " — futures: no premium out, the money moves at the exit"
         # UNDERLYING AT FILL (9/1, G: "what price of the underlying are these
         # entries filling at?"): read the stock right now, keep it on the
-        # position, and print it in the FILLED line so the journal and the
-        # announcer can carry it. Best effort — a quote hiccup never blocks.
+        # position, and print it in the FILLED line so the journal can
+        # carry it. Best effort — a quote hiccup never blocks.
         und_s = ""
         if not is_fut:
             try:

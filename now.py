@@ -131,8 +131,6 @@ def main():
                  g.get("level"), g.get("with_greeks", 0), g.get("events", 0)))
         print("   swings : %s" % ("PAUSED" if mode.get("swings_paused")
                                   else "trading"))
-        print("   announcer: %s" % ("on" if mode.get("announcer_alive")
-                                    else "off/paused"))
     except Exception as e:                              # noqa: BLE001
         print("   bridge not reachable (%s)" % str(e)[:80])
 
