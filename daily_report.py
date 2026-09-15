@@ -87,6 +87,12 @@ def _discord_room_urls():
 def _source_message_url(channel_id, message_id):
     """Return a Discord deep link only for a retained, verified source ID."""
     message_id = str(message_id or "")
+    # Discord's DOM labels a row ``chat-messages-<channel>-<message>``.  The
+    # final snowflake is the URL's message ID; accepting that exact wrapper is
+    # safe and keeps captured DOM IDs useful without guessing from text.
+    wrapped = re.fullmatch(r"chat-messages-\d+-(\d+)", message_id)
+    if wrapped:
+        message_id = wrapped.group(1)
     base = _discord_room_urls().get(str(channel_id or ""))
     if not base or not re.fullmatch(r"\d+", message_id):
         return ""

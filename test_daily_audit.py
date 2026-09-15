@@ -39,6 +39,10 @@ class DailyAuditTests(unittest.TestCase):
         self.assertEqual(
             _source_message_url("1537061197931618344", "123456789012345678"),
             "https://discord.com/channels/1065277732684058624/1537061197931618344/123456789012345678")
+        self.assertEqual(
+            _source_message_url("1537061197931618344",
+                                "chat-messages-1537061197931618344-123456789012345678"),
+            "https://discord.com/channels/1065277732684058624/1537061197931618344/123456789012345678")
         self.assertEqual(_source_message_url("1537061197931618344", "legacy-unknown"), "")
 
     def test_load_keeps_raw_messages_when_live_parser_is_partial(self):
