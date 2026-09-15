@@ -496,7 +496,6 @@ The `.~lock.*.xlsx#` files mean a workbook is open in LibreOffice — ignore the
 | `databento_backfill_state.json` | which contract-days are already downloaded | 111 `[occ, date]` pairs | The backfill's to-do list. |
 | `px_day.json` | Topstep daily P&L points | 6 keys | Prop only. |
 | `state.json` / `state.json.bak` | today's date + a small state blob | 2 keys, **LIVE** | |
-| `announcer-scoreboard.json` / `announcer-seen.json` | announcer state | frozen 2026-09-02 | The announcer is paused. |
 
 ---
 
@@ -510,7 +509,6 @@ The `.~lock.*.xlsx#` files mean a workbook is open in LibreOffice — ignore the
 | `deadman.log` | 141 | from 2026-09-07 | **LIVE** — thread deaths |
 | `webull_api.log` (hourly rotations `webull_api.log.<date>_<hh>` go to `archive/webull-api-logs/`, 28 there) | current | rolling | **LIVE.** SDK debug. **Contains the Webull app key in plaintext (`x-app-key`). Never paste this file anywhere.** |
 | `webull_data_streaming_sdk.log` | 8,797 | to 2026-09-09 | streaming SDK errors; the SDK is not installed on purpose |
-| `announcer.log` | 141 | frozen 2026-09-02 | |
 | `whop-loop.log` | 13 | 2026-09-10 | Whop Chrome restarts |
 | `launcher-probe.log` | 26 | from 2026-08-31 | START HERE launches |
 
@@ -800,7 +798,7 @@ mechanics are here, verbatim.
 - BOT ATTRIBUTION: a caller name is candidate evidence until the entry is linked to a source alert and the trade to broker fills. `manual` in the day row denotes a manual exit; it does not disqualify a bot-origin entry. Adopted/export-only rows need separate entry provenance; caller `?` is unknown. The 107-trade contract-matched study is a dated sample, not a current statistic. `option_tape_pull.py` records quote coverage before skipping downloads.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
   don't want any more confusions"). build_ledger keeps account="paper" rows
-  OUT of master_ledger.csv, so the board, journal, scoreboard, announcer and
+  OUT of master_ledger.csv, so the board, journal, scoreboard and
   every backtest are real money only. account="unknown" is NOT paper —
   41 real broker fills with no room row; they stay. execution.webull
   .paper_trading is false and the bridge now WARNS at boot if it is ever

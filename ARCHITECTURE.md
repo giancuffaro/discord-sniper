@@ -83,7 +83,6 @@ Dependency edges below are the REAL import graph.
 | `guards.py` | 608 | pre-trade refusals |
 | `props.py` | 593 | futures brokers (Topstep/ProjectX, NinjaTrader) |
 | `tastytrade.py` | 556 | tastytrade OAuth + REST |
-| `announcer.py` | 532 | posts fills/milestones to G's Discord |
 | `telemetry.py` | 509 | per-fill latency chain + entry math -> telemetry.csv |
 | `webull_futures.py` | 446 | Webull futures leg |
 | `tradier.py` | 404 | Tradier REST |
@@ -303,7 +302,7 @@ are gitignored rather than committed (committing logs put 68 MB in `.git`).
 
 ## THE 21 ENTRY POINTS
 
-Live: `bridge.py` · `announcer.py`
+Live: `bridge.py`
 Setup: `setup_keys` · `setup_tastytrade` · `setup_tradier` · `check_keys`
 Look at results: `caller_report` · `scoreboard` · `now` · `health` ·
 `quote_shadow` · `telemetry`
@@ -336,7 +335,7 @@ Tests: `test_*`
 The rule lines stay in HANDOFF.md ("Who and what"); the paragraph-length
 context is here.
 
-- The machine: Chrome MV3 extension source v3.8.33 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot audits and journals after close. Market Sniper shares Webull; this bot never manages its positions.
+- The machine: Chrome MV3 extension source v3.8.33 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. The weekday autopilot audits and journals after close. Market Sniper shares Webull; this bot never manages its positions.
 - Accounts: `execution.mode=dryrun` does not disable per-room live Webull
   orders. Verify current buying power and positions at the broker before
   making claims. Webull options share one API budget with Market Sniper;

@@ -39,5 +39,8 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   remaining quantity before any retry.
 - A CLOSE for a contract the book does not hold is REFUSED, never sent
   (his 12-lot scalps live in the same account).
-- 0DTE: ETF options trade to 16:15; auto-exercise at $0.01 ITM — flatten
-  before the close.
+- NO PRE-CLOSE FLATTEN (G, 9/15). There is no timed close-out path and none
+  is to be written. ETFs trade to 16:15; a 0DTE left $0.01 ITM auto-exercises
+  into 100 shares. G was shown that risk and chose to run it — closing an
+  expiring position by hand is his call, and the ratchet's resting stop stays
+  the only exit the bot has.

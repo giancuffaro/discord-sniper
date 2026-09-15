@@ -166,8 +166,8 @@ missing units remain unresolved pending original-source evidence.
 - THE POCKET (hidden on purpose): a :43-:51 scalp-entry clock gate behind
   settings pocket_scalps_only, default OFF. Decided from HIS fill data
   (ledger minute-of-hour), not the QQQ study.
-- Positions record the underlying at fill (und_at_fill); FILLED lines,
-  announcer posts and the journal carry it.
+- Positions record the underlying at fill (und_at_fill); FILLED lines and
+  the journal carry it.
 
 ## Open watch item — pullback stock target vs the ratchet
 

@@ -4,8 +4,8 @@ The mechanics behind the rules in HANDOFF.md, moved here 9/15 so HANDOFF stays a
 rules core (under 30 KB). The rule is in HANDOFF; the HOW, the numbers and the
 history-with-numbers are here. REPLACE, DON'T STACK applies: edit in place.
 
-Restarts, POSTCHECK, the 16:40 audit, git/AUTO PUSH, the autopilot, the Fill
-Announcer, departments, the AI readers and keys, caller research, the second machine.
+Restarts, POSTCHECK, the 16:40 audit, git/AUTO PUSH, the autopilot,
+departments, the AI readers and keys, caller research, the second machine.
 The report cache and STATUS.json are documented in reports.py / status_json.py and
 ASK-MAP.md.
 
@@ -46,8 +46,10 @@ every kind → brief → STATUS.json; outputs are weekly files, see reports.py)
   minute's `und` is a STOCK quote -> entry "unavailable (stock price
   posted)", dollars out of every total), `CALLER-VS-RATCHET-<date>.md` (5/3/5
   from caller entry over `tape.py`). LAST: `daily_brief.py` posts the
-  one-screen `BRIEF-<date>.md` to Sniper HQ through the Fill Announcer's
-  options webhook — that post is how G gets the day; a failed brief never
+  one-screen `BRIEF-<date>.md` to Sniper HQ through the webhook URL kept at
+  `settings.json -> announcer.webhook_url` (the Fill Announcer is gone; the
+  KEY stays and is the brief's only way out) — that post is how G gets the
+  day; a failed brief never
   fails the audit. Rules: broker-confirmed actuals override any simulation;
   RAW capture is retained and LIVE PARSER rows overlay it; relay duplicates
   count once; expired pullback waits are skips, not orders; the 15-minute
@@ -67,20 +69,6 @@ every kind → brief → STATUS.json; outputs are weekly files, see reports.py)
   two clocks (9/15, caught and reverted from backups/). Off his PC:
   `TZ=America/New_York python3 build_ledger.py`.
 
-## Fill Announcer
-
-FILL ANNOUNCER (announcer.py, read-only)
-- Posts every fill, +10/+20/… milestones, ⛔ stop-outs to G's Discord:
-  options → announcer.webhook_url, futures → futures_webhook_url,
-  scoreboard → scoreboard_webhook_url (falls back to options). NEITHER
-  channel ever goes into rooms.txt. Single-instance (.announcer.alive);
-  off switch = announcer.stop containing "stop" (STOP ANNOUNCER.bat);
-  "Fill Announcer revive" schtask every 30 min; announcer.restart = reload.
-- STATUS: PAUSED since 9/2 (announcer.stop = "stop", G: "get this app
-  working 100% first"). Its board is computed FROM THE LEDGER (9/9). Its
-  order hunt is paced (0.20 s, once per account) — the 9/2 429 storm must
-  never come back.
-
 ## Autopilot, launchers, logs
 
 - sniper-autopilot scheduled task: */30 ET — preflight ~9:30, sync watch
@@ -91,7 +79,7 @@ FILL ANNOUNCER (announcer.py, read-only)
 - Multi-account: extras mirror LIVE entries 1:1 with own books/stops.
 - START HERE.bat saves+pushes before its reset; RESTART BRIDGE.bat
   pre-flights and warns. Logs: trades.log (the story), bridge.log (raw,
-  20 MB, no rotation yet), webull_api.log, announcer.log, deadman.log.
+  20 MB, no rotation yet), webull_api.log, deadman.log.
 
 ## Readers, keys, departments, AI measurement
 

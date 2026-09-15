@@ -86,7 +86,7 @@ content.js, extension/popup.js, bridge.py (/rooms, /build, apply_room_rules).
   lane, ≤3 per 30 s tick) until a pass opens none, then marks the token
   done. So a warm start (Chrome already open) fills in the missing rooms
   without closing Chrome; a cold start opens them all itself (~2.5 min
-  paced flood; count tabs after, not during) and launches the announcer.
+  paced flood; count tabs after, not during).
   Between runs NOTHING opens rooms — a tab he closes by hand stays closed.
   No prompts: git fails fast instead of asking for a credential
   (GIT_TERMINAL_PROMPT=0 / GCM_INTERACTIVE=never; a failed push keeps
