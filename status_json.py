@@ -128,6 +128,14 @@ def rooms(day):
 
 def broke(day, summary):
     items = []
+    try:
+        import market_hours
+        flag = market_hours.holiday_table_flag()
+        if flag:
+            items.append({"date": day, "holiday_table": flag,
+                          "note": market_hours.holiday_table_line()})
+    except Exception:                                   # noqa: BLE001
+        pass
     if summary.get("failed_checks"):
         items.append({"date": day, "failed_checks": summary["failed_checks"]})
     queue = []

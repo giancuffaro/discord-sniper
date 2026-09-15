@@ -547,6 +547,9 @@ def section_broke(day):
     if mirror:
         lines.append(mirror)
     lines += _lane_faults()
+    table = _holiday_table_fault()
+    if table:
+        lines.append(table)
     if not lines:
         return "## What broke\nnothing broke"
     return "\n".join(["## What broke"] + lines)
@@ -572,6 +575,15 @@ def _mirror_fault(day):
     scored = re.search(r"(\d+) SPY/QQQ alert", text)
     return "- MIRROR — bars unavailable, %s alert(s) unscored: %s" % (
         scored.group(1) if scored else "?", _clip(match.group(1), 90))
+
+
+def _holiday_table_fault():
+    try:
+        import market_hours
+        line = market_hours.holiday_table_line()
+    except Exception:                                   # noqa: BLE001
+        return None
+    return ("- " + line) if line else None
 
 
 def _lane_faults():

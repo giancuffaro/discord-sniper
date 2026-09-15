@@ -57,13 +57,16 @@ FUTURES_HALT = ((17, 0), (18, 0))    # daily maintenance 5:00-6:00 PM ET
 # explicitly and verified against the NYSE calendar. When a new year is needed,
 # regenerate with the dated Python snippet saved in MARKET-HOURS.md and paste
 # the year in below, then bump HOLIDAYS_THROUGH. If the running year is past
-# HOLIDAYS_THROUGH the code treats every weekday as a normal session and
-# status() raises the "holiday_table_stale" flag — so don't let it lapse.
+# HOLIDAYS_THROUGH the code treats every weekday as a normal session, so
+# holiday_table_flag() says "holiday_table_expiring" for the last 60 days of
+# the table and "holiday_table_stale" once it has lapsed; STATUS.json's
+# "broke" list and the brief's "What broke" both carry it. Don't let it lapse.
 #   FULL_CLOSE = market fully closed.
 #   HALF_DAY   = 1:00 PM ET close (SPY/QQQ/IWM + index options 1:15 PM).
 # A date is never in both.
 # ===========================================================================
 HOLIDAYS_THROUGH = 2027
+HOLIDAYS_WARN_DAYS = 60
 FULL_CLOSE = {
     2025: {"2025-01-01", "2025-01-20", "2025-02-17", "2025-04-18",
            "2025-05-26", "2025-06-19", "2025-07-04", "2025-09-01",
@@ -168,6 +171,33 @@ def restart_safe_open(dt=None):
     return (9 * 60 + 20) <= m <= (16 * 60 + 15)
 
 
+def holiday_table_flag(dt=None):
+    """None while the holiday table covers this date; "holiday_table_expiring"
+    inside the last HOLIDAYS_WARN_DAYS of HOLIDAYS_THROUGH; "holiday_table_stale"
+    once the running year has passed it (every weekday then looks open)."""
+    d = dt or _now()
+    if d.year > HOLIDAYS_THROUGH:
+        return "holiday_table_stale"
+    left = (_dt.date(HOLIDAYS_THROUGH, 12, 31) - _dt.date(d.year, d.month, d.day)).days
+    if left <= HOLIDAYS_WARN_DAYS:
+        return "holiday_table_expiring"
+    return None
+
+
+def holiday_table_line(dt=None):
+    """The flag as one sentence for the brief and STATUS.json, or None."""
+    flag = holiday_table_flag(dt)
+    if flag == "holiday_table_stale":
+        return ("HOLIDAY TABLE — market_hours.py only knows holidays through %d; "
+                "every weekday now reads as open. Add %d per MARKET-HOURS.md."
+                % (HOLIDAYS_THROUGH, HOLIDAYS_THROUGH + 1))
+    if flag == "holiday_table_expiring":
+        return ("HOLIDAY TABLE — market_hours.py runs out on %d-12-31; add %d "
+                "per MARKET-HOURS.md before then."
+                % (HOLIDAYS_THROUGH, HOLIDAYS_THROUGH + 1))
+    return None
+
+
 def status(dt=None):
     d = dt or _now()
     return {
@@ -176,6 +206,7 @@ def status(dt=None):
         "futures_open": futures_open(d),
         "holiday": is_holiday(d),
         "half_day": is_half_day(d),
+        "holiday_table_flag": holiday_table_flag(d),
     }
 
 
