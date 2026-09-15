@@ -15,6 +15,11 @@ class DailyAuditTests(unittest.TestCase):
         self.assertTrue(_reportable_channel(
             "whop:/firststeptrading/example/app"))
 
+    def test_room_activity_requires_an_active_configured_channel(self):
+        active = {"123", "whop:/firststeptrading/example/app"}
+        self.assertTrue(_reportable_channel("123", active))
+        self.assertFalse(_reportable_channel("1548907233490772083", active))
+
     def test_load_keeps_raw_messages_when_live_parser_is_partial(self):
         content = """=== RAW MESSAGES ===
 2026-09-11 09:31:00  [Morning #1]  OPEN AAPL 100C @ 1.00

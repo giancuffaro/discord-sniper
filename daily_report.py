@@ -48,6 +48,26 @@ def _on_rooms():
     return discord, whop
 
 
+def _active_channel_ids():
+    """Stable IDs/paths for rooms the extension is meant to operate."""
+    out = set()
+    try:
+        with open(os.path.join(HERE, "extension", "rooms.txt"), encoding="utf-8") as fh:
+            for line in fh:
+                if not line.strip() or line.lstrip().startswith("#"):
+                    continue
+                p = [x.strip() for x in line.split("|")]
+                if len(p) < 5 or p[4].lower() != "on":
+                    continue
+                out.add(p[0])
+                if "whop.com/" in p[1]:
+                    path = re.sub(r"^https?://whop\.com", "whop:", p[1])
+                    out.add(path.rstrip("/"))
+    except OSError:
+        pass
+    return out
+
+
 def _corrected_non_alert(text):
     low = text.lower()
     return (bool(re.search(r"\bsick\b.*\d+(?:\.\d+)?\s*/\s*con.*\bon\b", low))
@@ -55,7 +75,7 @@ def _corrected_non_alert(text):
             or bool(re.search(r"\d+(?:\.\d+)?\s*[kmb]\s+on\s+flow", low)))
 
 
-def _reportable_channel(channel_id):
+def _reportable_channel(channel_id, active_channels=None):
     """Keep personal Whop pages and direct messages out of an ops report.
 
     They are retained in raw capture for evidence, but neither represents a
@@ -63,17 +83,20 @@ def _reportable_channel(channel_id):
     handle as a room made the report look like an unknown caller was watched.
     """
     channel_id = str(channel_id or "").lower()
-    return not (channel_id == "whop:/messages" or channel_id.startswith("whop:/@"))
+    if channel_id == "whop:/messages" or channel_id.startswith("whop:/@"):
+        return False
+    return active_channels is None or channel_id in active_channels
 
 
 def _decision_rows(day):
     rank = {"ignored": 0, "skipped": 1, "failed": 2, "sent": 3}
     rows = {}
     messages = {}
+    active_channels = _active_channel_ids()
     for fn in replay_check.exports_for_day(day):
         lane_msgs, dids = replay_check.load(fn)
         for t, room, cid, text in lane_msgs:
-            if not _reportable_channel(cid):
+            if not _reportable_channel(cid, active_channels):
                 continue
             messages[(t, cid, text[:100])] = (t, room, cid, text)
         for t, kind, text in dids:
