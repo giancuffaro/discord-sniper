@@ -132,11 +132,28 @@ def _observed_total(day):
         return None
 
 
+def _path_after(quotes, event):
+    """Return a same-contract quote path after a timestamped source event.
+
+    Legacy rows without a timestamp cannot be placed honestly on the tape.
+    They are deliberately unavailable, rather than compared against every
+    quote of the day or allowed to crash the whole daily report.
+    """
+    ts = event.get("ts")
+    if ts is None:
+        return []
+    return [row for row in quotes.get(event["occ"], []) if row[0] >= ts]
+
+
 def build(day):
     quotes = _quotes(day)
     compared = []
+    missing_timestamp = 0
     for event in _events(day):
-        path = [r for r in quotes.get(event["occ"], []) if r[0] >= event["ts"]]
+        if event["ts"] is None:
+            missing_timestamp += 1
+            continue
+        path = _path_after(quotes, event)
         if not path:
             continue
         entry = event["fill"] or path[0][2]
@@ -168,6 +185,8 @@ def build(day):
               "- Ratchet advantage on the covered subset: **%+.0f**." % (ratchet_sum - fixed_sum)]
     if total is not None and total > len(compared):
         lines.append("- **%d alerts cannot be scored yet** because no exact-contract bid/ask path was recorded. This subset cannot establish the winner for the entire day." % (total - len(compared)))
+    if missing_timestamp:
+        lines.append("- **%d legacy event%s cannot be scored** because its source timestamp is missing; the report does not guess where it belongs on the price tape." % (missing_timestamp, "s" if missing_timestamp != 1 else ""))
     lines += ["- Every replayed path reached a stop, so none of the values above is an end-of-tape mark." if all(x[2]["stopped"] and x[3]["stopped"] for x in compared) else "- At least one value is marked at the end of its available tape and is not a final exit.",
               "- HOOD is deliberately included because the question asks what happened if every alert were forced through. The live bot refused its 22% spread; bypassing that filter would have produced the replayed loss."]
     actual = [x for x in compared if x[0]["actual"] is not None]
