@@ -17,7 +17,7 @@ Last updated: 2026-09-15 — cut to a RULES CORE (was 28,060 bytes): one line pe
   in `daily-reports/`. HANDOFF-LOG.md and the handoffs zipped in `archive/` are
   historical evidence, never current instructions.
 
-## Where the mechanics live (one per subsystem; described in INDEX.md)
+## Where the mechanics live (one per subsystem; see INDEX.md)
 ASK-MAP.md (which file answers which ask) → STATUS.json → reports/INDEX.json.
 Mechanics in reference/: ENTRIES · RATCHET · ROOMS-TABS ·
 OPERATIONS (restarts, the 16:40 audit, git, autopilot, announcer, readers, keys,
@@ -34,7 +34,7 @@ machine, accounts, coexistence, north star) · INDEX.md · HANDOFF-LOG.md.
 - NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot vs broker truth; a later high is never a caller exit.
 - AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing; "" or a range is NO CALL — not a crash, not an order; department output is advisory.
 - CALLER IDENTITY IS CANDIDATE EVIDENCE: no win rate until attribution exists, a new account never gets an execution key, ID-less rows stay unavailable — re-grab, never infer.
-- Claude exports and project/context/ are historical reference only.
+- Claude exports and project/context/ are reference only.
 
 ## Rules of the house (in force)
 
@@ -87,12 +87,12 @@ FILL ANNOUNCER (announcer.py, read-only) · OPERATIONS.md
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I don't want any more confusions"): account="paper" rows stay OUT of master_ledger.csv, account="unknown" is NOT paper.
 - BOT ATTRIBUTION: a caller name is candidate evidence until the entry links to an alert and the trade to broker fills; never quote P&L from a book-priced row when a broker row exists.
 
-## Broker + operational truths — RULES only · OPTIONS-BROKER-REFERENCE.md first
+## Broker + ops truths — RULES only · OPTIONS-BROKER-REFERENCE.md
 - NO MARKET ORDERS ON OPTIONS; combos = MASTER(LIMIT) + STOP_LOSS on SINGLE only. Option SELL orders are DAY-only → every resting stop dies at the close.
 - Rate limits are PER ENDPOINT per app key, shared with Market Sniper; 429 = throttle, 417 = business rejection. No option streaming; fills ARE pushed.
 - Ticks are symbol-aware — never invent one.
 
-- sniper-autopilot (*/30 ET) never places or cancels orders and never touches settings.json.
+- sniper-autopilot (*/30 ET) never places or cancels orders, never touches settings.json.
 - THE PAGE is the SAME popup.html opened as a tab — never a second dashboard. Claude-in-Chrome CANNOT read it; the red line under the rooms is the diagnosis — ask for it.
 - Multi-account: extras mirror LIVE entries 1:1 with own books/stops. SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
 
@@ -104,14 +104,14 @@ FILL ANNOUNCER (announcer.py, read-only) · OPERATIONS.md
 5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
 6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension are already up. Run START HERE, or schedule it, by 9:00 on trading days.
 
-## Watch items (open) — full text of each: OPERATIONS.md
+## Watch items (open) — full text: OPERATIONS.md
 - G'S CALL, nothing changes until he says: PULLBACK STOCK TARGET vs THE RATCHET
   (9/10) — a pullback entry also closes at a fixed stock target, a second exit
   beside the ratchet. (a) delete it (b) keep it.
 - Also open: futures fills → the ledger · telemetry has no room/caller · the
   Deepgram key may be one char short · the first overnight swing stop is
-  unconfirmed · a room's NAMED exit still misses adopted positions · bridge.log
-  has no rotation · multi-account "L" orphans · Topstep/Webull futures off.
+  unconfirmed · a room's NAMED exit misses adopted positions · bridge.log has no
+  rotation · multi-account "L" orphans · Topstep/Webull futures off.
 
 ## Subscriptions
 ≈ $1,140/mo rooms + ~$52 infra + ~$30 exchange fees ≈ $1,220/mo before AI usage. Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
