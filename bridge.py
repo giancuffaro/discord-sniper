@@ -1437,58 +1437,6 @@ def save_mode(new_mode):
     return True, "saved"
 
 
-# LINES THAT REPEAT AT EVERY BOOT AND MEAN NOTHING IN THE RECORD (9/4).
-# trades.log is the permanent dated record — every audit tool reads it, the
-# journal trues up from it, and it is the ONE thing that survives a git
-# reset. It currently carries ~1,300 lines of startup banner from ~200
-# restarts: 244 "test account: unlimited", 239 "Webull LIVE connected",
-# 226 "paper quotes now come from the LIVE feed", 199 "TOPSTEP key VERIFIED".
-# None of that is an event; it is the same sentence printed again.
-#
-# They still print to the CONSOLE, where they are genuinely useful — you want
-# to see the boot state in the window. They just stop being written to the
-# permanent record. Anything that actually HAPPENED is untouched.
-_BOOT_NOISE = (
-    "test account: unlimited",
-    "paper quotes now come from the LIVE data feed",
-    "key VERIFIED — connected for",
-    "STRATEGY forced ON at bridge start",
-    "AI READ  key verified",
-    "QUOTE BUS on —",
-    "STREAM on —",
-    "Webull PAPER connected",
-    "Webull LIVE connected",
-)
-
-
-def note(line):
-    stamp = datetime.now(ET).strftime("%H:%M:%S")
-    try:
-        print("%s  %s" % (stamp, line), flush=True)
-    except Exception:                                   # noqa: BLE001
-        # A console that can't take a character must never kill the caller —
-        # that's how the 8/25 UBER entries went unrecorded. The UTF-8 file
-        # write below is the record that matters; try an ASCII-safe echo and
-        # move on regardless.
-        try:
-            print(("%s  %s" % (stamp, line)).encode("ascii", "replace")
-                  .decode("ascii"), flush=True)
-        except Exception:                               # noqa: BLE001
-            pass
-    # Boot banner: console yes, permanent record no. See _BOOT_NOISE.
-    try:
-        _l = str(line)
-        if any(n in _l for n in _BOOT_NOISE):
-            return
-    except Exception:                                   # noqa: BLE001
-        pass
-    try:
-        with open(LOG, "a", encoding="utf-8") as f:
-            f.write("%s\t%s\n" % (datetime.now(ET).isoformat(timespec="seconds"), line))
-    except OSError:
-        pass
-
-
 def _restart_onto_disk():
     """Re-exec when possible; let the existing bridge watchdog recover Windows
     execv failures only when that watchdog is actually running. The dispatch
