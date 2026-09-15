@@ -279,15 +279,25 @@ def stock_walk(bars, level, side, plan, entry, opt_path, flat, target=None):
                 locked = want_locked
                 stop = level + dirn * locked
                 rungs += 1
-    return _settle(opt_path, bars[-1][0] if bars else flat, entry, "close",
-                   best, stop, level)
+    # "close" is the end of the tape, not a real exit: fire at the last option
+    # quote so the lag is zero rather than the distance to the last stock bar.
+    return _settle(opt_path, opt_path[-1][0], entry, "close", best, stop, level)
 
 
 def _settle(opt_path, fire_ts, entry, why, best, stop, level):
+    """Sell at the first option BID at or after the second the rule fired.
+
+    When the option tape ends BEFORE the rule fires there is no such quote.
+    That is a coverage hole, not a negative lag: the last bid is used, the lag
+    is recorded as unknown, and the row is flagged so the lag statistics never
+    average a number that does not exist.
+    """
     bid, qts, lag = _bid_at_or_after(opt_path, fire_ts)
-    if bid is None:
-        bid, qts, lag = opt_path[-1][1], opt_path[-1][0], opt_path[-1][0] - fire_ts
+    tape_ended = bid is None
+    if tape_ended:
+        bid, qts, lag = opt_path[-1][1], opt_path[-1][0], None
     return {"why": why, "fire_ts": fire_ts, "ts": qts, "lag": lag, "exit": bid,
+            "tape_ended_first": tape_ended,
             "pl": (bid - entry) * 100.0, "pct": (bid - entry) / entry * 100.0,
             "stock_best": best, "stop": stop, "level": level,
             "held_s": qts - opt_path[0][0],
@@ -320,18 +330,26 @@ def hybrid_walk(bars, level, side, plan, entry, opt_path, root, flat):
         if (adverse - stop) * dirn <= 1e-9:
             return _settle(opt_path, ts, entry, "stop", best, stop, level)
     if handoff is None:
-        return _settle(opt_path, bars[-1][0] if bars else flat, entry, "close",
-                       best, stop, level)
+        return _settle(opt_path, opt_path[-1][0], entry, "close", best, stop,
+                       level)
+    # HANDOFF. The premium is already at the ladder's +3% arm, so the ladder's
+    # own answer is a BREAKEVEN stop — that, subject to the tick and spread
+    # floors, is what the premium ratchet inherits. The stock stop is dropped.
     tail = [q for q in opt_path if q[0] >= handoff]
-    run = prem.simulate(tail, entry, root, prem.TIERS_LIVE, False, False, flat)
-    run["stock_best"] = best
-    run["level"] = level
-    run["fire_ts"] = run["ts"]
-    run["lag"] = 0.0
-    run["bid_before_fire"] = _bid_before(opt_path, run["ts"])
-    run["why"] = {"born stop": "BE", "first lock": "BE",
-                  "ratchet rung": "rung"}.get(run["why"], run["why"])
-    return run
+    prem_stop = prem.stop_price_for(entry, 0.0, tail[0][1], tail[0][2], None, root)
+    if prem_stop is None:                       # the floors refuse breakeven
+        prem_stop = max(0.01, round(entry * (1.0 - prem.BORN_PCT / 100.0), 2))
+    rungs = 0
+    for qts, bid, ask in tail:
+        if bid <= prem_stop + 1e-9:
+            why = "BE" if rungs == 0 else "rung"
+            return _settle(opt_path, qts, entry, why, best, prem_stop, level)
+        gain = (bid - entry) / entry * 100.0
+        want, _k = prem.locked_for(gain, entry, prem.TIERS_LIVE, root, False)
+        moved = prem.stop_price_for(entry, want, bid, ask, prem_stop, root)
+        if moved is not None:
+            prem_stop, rungs = moved, rungs + 1
+    return _settle(opt_path, tail[-1][0], entry, "close", best, prem_stop, level)
 
 
 # ------------------------------------------------------------------- build
@@ -438,11 +456,9 @@ def build():
             a_run["why"] = {"born stop": "stop", "first lock": "BE",
                             "ratchet rung": "rung"}.get(a_run["why"], a_run["why"])
             a_run["fire_ts"] = a_run["ts"]
-            a_run["lag"] = 0.0
-            a_run["stock_best"] = max(
-                (1 if pullback.is_call(alert["side"]) else -1)
-                * ((b[2] if pullback.is_call(alert["side"]) else b[1]) - level)
-                for b in walk) if walk else 0.0
+            a_run["lag"] = 0.0          # A never leaves the option tape
+            a_run["tape_ended_first"] = False
+            a_run["level"] = level
             a_run["bid_before_fire"] = _bid_before(pb_path, a_run["ts"])
             row["runs"]["A"] = a_run
             row["runs"]["H"] = hybrid_walk(
@@ -569,11 +585,16 @@ def write(trades, skipped, cost_note):
           "reopen it.", ""]
 
     # ---- the lag the option tape costs
-    lags, costs = [], []
+    lags, costs, ended = [], [], 0
     for t in scored:
         for code in ALL_VARIANTS:
             r = t["runs"].get(code)
-            if not r or r.get("lag") is None:
+            if not r:
+                continue
+            if r.get("tape_ended_first"):
+                ended += 1
+                continue
+            if r.get("lag") is None:
                 continue
             lags.append(r["lag"])
             if r["lag"] > 1.0 and r.get("bid_before_fire") is not None:
@@ -582,15 +603,18 @@ def write(trades, skipped, cost_note):
           "A stock rule fires on the stock's clock; the option can only be sold "
           "at the next quote the tape holds.", "",
           "- Median lag from fire to the option quote used: **%.0fs**; mean "
-          "**%.1fs**; worst **%.0fs**." % (
+          "**%.1fs**; worst **%.0fs**. (%d exits measured.)" % (
               prem.median(lags) or 0.0, sum(lags) / len(lags) if lags else 0.0,
-              max(lags) if lags else 0.0),
-          "- Exits where the lag was over a second: **%d of %d**. On those, the "
-          "bid actually used differs from the last bid before the fire by "
-          "**%+.2f** on average (%s) — that is the price of the gap."
-          % (len(costs), len(lags),
-             (sum(costs) / len(costs)) if costs else 0.0,
-             "one contract" if costs else "no such exits in this sample"),
+              max(lags) if lags else 0.0, len(lags)),
+          "- Exits where the lag was over a second: **%d**. On those the bid "
+          "actually used differs from the last bid before the fire by "
+          "**%s per contract** on average — that is what the gap costs."
+          % (len(costs),
+             ("%+.2f" % (sum(costs) / len(costs))) if costs
+             else "nothing measurable; there were none"),
+          "- Exits where the option tape simply ENDED before the rule fired: "
+          "**%d**. Those have no lag to measure and are marked in the CSV "
+          "(`tape_ended_first`); their exit is the last bid the tape holds." % ended,
           "- On the OPRA sample the tape is ~1 quote/second, so the lag is "
           "essentially zero. It is the Webull sweep days that pay.", ""]
 
@@ -667,8 +691,8 @@ def write(trades, skipped, cost_note):
                "source", "touch_level", "pb_entry", "pb_entry_basis",
                "pb_option_lag_s", "take_entry", "take_entry_basis",
                "stock_best_favor", "option_max_bid", "take_A_pl"]
-              + sum([["%s_exit" % c, "%s_pl" % c, "%s_why" % c, "%s_lag_s" % c]
-                     for c in ALL_VARIANTS], []))
+              + sum([["%s_exit" % c, "%s_pl" % c, "%s_why" % c, "%s_lag_s" % c,
+                      "%s_tape_ended_first" % c] for c in ALL_VARIANTS], []))
     with open(out_csv + ".tmp", "w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fields)
         w.writeheader()
@@ -691,7 +715,9 @@ def write(trades, skipped, cost_note):
                 rec["%s_exit" % c] = r["exit"]
                 rec["%s_pl" % c] = round(r["pl"], 2)
                 rec["%s_why" % c] = r["why"]
-                rec["%s_lag_s" % c] = round(r.get("lag") or 0.0, 1)
+                rec["%s_lag_s" % c] = ("" if r.get("lag") is None
+                                       else round(r["lag"], 1))
+                rec["%s_tape_ended_first" % c] = bool(r.get("tape_ended_first"))
             w.writerow(rec)
     os.replace(out_csv + ".tmp", out_csv)
     print(out_md)
