@@ -89,7 +89,7 @@ it earns the room for a better one.
 # accumulate — it now reads the LIVE spacing out of this file and
 # settings.json rather than having it typed in, so it can never drift.
 TIERS = (
-    (None, (3.0, 0.0, 5.0)),         # every premium: arm +3%, lock BE, +5% rungs
+    (None, (10.0, 0.0, 10.0)),       # every premium: arm +10%, lock BE, +10% rungs
 )
 
 MIN_RUNG_TICKS = 4.0                 # floor 1
