@@ -12,6 +12,81 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (a date the CALLER typed is no longer taken on faith — bridge._verify_listed)
+
+WHERE THIS CAME FROM. G pasted a room's daily recap ("OPTIONALITY PRO", 9/14)
+and asked for a fact check. I claimed seven of its contracts were impossible
+because "single stocks only expire Friday." That was WRONG, and worth writing
+down so nobody repeats it: effective 2026-01-26, Nasdaq's expanded Short Term
+Option Series Program put MONDAY and WEDNESDAY expirations on nine "Qualifying
+Securities" — AAPL AMZN AVGO GOOGL META MSFT NVDA TSLA + IBIT. Criteria:
+market cap > $700B, > 10M option sides/month, position limit >= 250k, Penny
+Interval Program. RE-CUT QUARTERLY, and the exchanges publish the list on the
+first trading day of each quarter. So MSFT/AMZN/NVDA 9/14 were real contracts.
+INTC 9/14 (mkt cap $514B, never qualified) was not. MU ($1.04T on 9/14) and
+AMD ($805B) both crossed $700B during 2026 and may have been added at a later
+re-cut — no published updated list was findable.
+
+The recap's real problems were arithmetic, not contracts: eight of its
+percentages are wrong (MARA 0.15->0.27 posted as +70.97% when it is +80.00%;
+SPX 0.17->1.50 posted as +757.14% when it is +782.35%), the line items sum to
+4,190.51% against a published 4,230.51%, and "avg +136.47%" only divides if
+the denominator is 31 while 32 option trades are listed and 33 claimed. Swift's
+own footnote ("only trades that gained more than 25% are classified as green
+and included in the stats") is what manufactures the 84% win rate — 14 plays,
+14 winners, no losers in the denominator.
+
+THE ACTUAL GAP IT EXPOSED. _dateless_expiry (9/14) already asks the listing
+instead of assuming it — but ONLY for alerts with no date. An alert that
+SPELLED OUT a date went through expiry_to_date and was trusted. The HANDOFF
+also said the caller-price gate runs "on an expiry the bridge INFERRED", and
+the clue-inferred branch (_expiry_from_clues: "NEXT WEEK", a shouted MONTH)
+never actually called it. Both fixed.
+
+WHAT WAS BUILT. bridge._verify_listed, called on every OPEN/ADD after the
+expiry is settled and before the ticker check:
+  · One listed_expiries call for the ONE date the caller named (the existing
+    per-contract-per-day cache makes re-reads free). Only if that is empty does
+    it spend a second call on the rest of the week.
+  · That second call is the THROTTLE GUARD. Empty first answer + sibling dates
+    that DO answer = the contract is fake -> refuse. Empty first answer and
+    nothing else answers either = the feed is down -> let it through with a
+    LISTING line. A 429 at 9:31 must never become a trading halt.
+  · A GUESSED expiry gets the siblings in the SAME call so _price_sanity has
+    something to switch to (this is what closes the clue-inferred hole). A date
+    the caller TYPED is checked for existence only and never price-switched —
+    per G's call this session: reject and journal, never snap to nearest.
+  · Refusal writes BAD-CONTRACT with symbol, strike, side, date, what IS
+    listed for that strike, the room, and 90 chars of the raw alert. Same shape
+    as the NOT-A-TICKER line, so per-room quality accumulates the same way.
+  · Fails open on: no broker, action != OPEN/ADD, futures, missing
+    strike/expiry, unreadable date, any exception, execution.verify_listed
+    false.
+
+KNOWN LIMIT, deliberate. If the STRIKE itself does not exist (a $252.5 strike
+on a $5-increment name), no date answers, the throttle guard reads that as a
+dead feed and lets it through. Catching that needs a real strike ladder, which
+this SDK does not expose. Fail-open was the right side to err on for a money
+path; the snapshot still comes back empty downstream and no order gets built.
+
+Also of note: webull_options.listed_expiries does NOT use Get Option Contracts
+(the SDK does not expose it). It reads the listing through the OPTION SNAPSHOT
+endpoint — absence of a row IS the answer — which means this check spends the
+60/60s snapshot budget, the SAME one the ratchet uses, not a separate counter.
+One batched call per new contract per day.
+
+TESTS. test_expiry_lookup.py section 7, 20 new cases: listed passes in one
+call, verified orders are never re-asked, unlisted refuses in two calls and
+names the room, dead feed and throttle both fail open, CLOSE and futures are
+skipped at zero cost, the settings switch works, a guessed date price-switches
+in one call, a typed date does not. All green. test_expiry.py,
+test_expiry_comparison.py, test_bridge_restart.py still pass.
+test_architecture.py's one WRONG claim (hand-rolled OCC in broker_sync.py) is
+pre-existing and untouched by this.
+
+HANDOFF.md is at 50,902 bytes against the 50 KB ceiling — it was already at
+49,892 before this edit. The next rule that lands there has to evict something.
+
 ## 2026-09-15 (HANDOFF.md condensed back under 50 KB; G's weekly-log rule pasted verbatim)
 
 - The ROOM-CHAT EXPORTS bullet was replaced by G's own rule text ("RULE: weekly

@@ -216,21 +216,17 @@ ENTRIES
     take the listed expiry that IS in band, else REFUSE the entry and say so.
     No posted price = the gate is inert.
   · THE CONTRACT MUST EXIST (9/15, bridge._verify_listed,
-    execution.verify_listed): a date the caller TYPED OUT used to skip the
-    listing check and be taken on faith. Now every entry asks the broker
-    whether that exact contract is listed — ONE snapshot call for that one
-    date, cached per contract per day, and a second call only when the first
-    comes back empty. Not listed, but sibling dates are -> REFUSE and write
-    BAD-CONTRACT naming the room and the raw alert. NOTHING listed on any
-    date -> that is the feed, not the contract: the order goes THROUGH with a
-    LISTING line. Fails open on no connection, a date it cannot read, or any
-    exception — a guard, never a gate. Why asked and not tabled: Mon/Wed
-    expirations exist on the nine Qualifying Securities (AAPL AMZN AVGO GOOGL
-    META MSFT NVDA TSLA + IBIT, live 2026-01-26) and that list is re-cut
-    QUARTERLY on a $700B market-cap test, so any table we keep goes wrong
-    silently. A GUESSED expiry gets its siblings in the same call and the
-    caller-price gate above; a date the caller typed is checked for existence
-    only, never price-switched.
+    execution.verify_listed): EVERY entry asks the broker whether that exact
+    contract is listed — one snapshot call for the one date, cached per
+    contract per day; a second call only if the first is empty. Unlisted but
+    siblings are -> REFUSE + BAD-CONTRACT line naming the room and the raw
+    alert. NOTHING listed anywhere -> that is the feed, not the contract:
+    goes THROUGH with a LISTING line. Fails open on no connection, an
+    unreadable date, any exception — a guard, never a gate. Asked, not
+    tabled: Mon/Wed expiries exist only on the nine Qualifying Securities
+    (AAPL AMZN AVGO GOOGL META MSFT NVDA TSLA + IBIT) and that list is re-cut
+    QUARTERLY on a $700B test. A GUESSED expiry also gets the price gate
+    above; a date the caller TYPED is checked for existence only.
 - SPREAD GUARD (entries only): refuse if spread > 20% of mid or > max($0.20,
   10% of mid). THIN guard: < 250 contracts last session = refused.
 - STALE-ENTRY GATE: entries older than 3 min never fire. Negations ("NOT

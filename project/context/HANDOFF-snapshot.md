@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — the 16:40 audit now STARTS by pulling the broker export (nothing ever did) and ENDS by posting the one-screen BRIEF to Sniper HQ; caller reports read a posted exit price and refuse a posted stock price as premium; v3.8.32 retains Discord message IDs and exact report sources hand off to Chrome Profile 2 after the next safe bridge restart; room-chat exports are ONE FILE PER WEEK PER LANE (v3.8.33).
+Last updated: 2026-09-15 — EVERY entry now asks the broker whether the contract exists before it is sent (bridge._verify_listed, execution.verify_listed); a date the CALLER typed is no longer taken on faith, and an unlisted one is refused with a BAD-CONTRACT line naming the room. Prior: room-chat exports are ONE FILE PER WEEK PER LANE (v3.8.33 + ds_logs.py); the 16:40 audit starts with the broker export and ends by posting the one-screen BRIEF to Sniper HQ.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -32,7 +32,7 @@ Last updated: 2026-09-15 — the 16:40 audit now STARTS by pulling the broker ex
 - G (giancuffaro230@gmail.com) — maintains this code himself (9/13), trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
-- The machine: Chrome MV3 extension source v3.8.31 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot audits and journals after close. Market Sniper shares Webull; this bot never manages its positions.
+- The machine: Chrome MV3 extension source v3.8.33 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot audits and journals after close. Market Sniper shares Webull; this bot never manages its positions.
 - Accounts: `execution.mode=dryrun` does not disable per-room live Webull
   orders. Verify current buying power and positions at the broker before
   making claims. Webull options share one API budget with Market Sniper;
@@ -50,9 +50,9 @@ Last updated: 2026-09-15 — the 16:40 audit now STARTS by pulling the broker ex
   the growing dataset is what earns parser/strategy improvements. Exact caller
   results require real entry+exit evidence; never substitute a later high.
   Full contract: reference/EOD-BENCHMARK-SPEC.md.
-- PROVIDER KEYS: the Keys pane saves OpenAI, Gemini and Perplexity under settings.json ai_provider_keys; saved fields hide behind an explicit Replace key, status returns presence flags only, and inputs never ride in browser draft persistence. OpenAI/Gemini feed the observer AND both live readers; Perplexity is stored inactive; DeepSeek was removed at G's request; Anthropic is kept and billing-blocked (9/13 probe: OpenAI/Gemini/Perplexity passed — sanitized local-reader-measure/provider-key-check.json). Saved-key PRESENCE is not a probe RESULT: billing, rate limit, authentication, access and connection failures carry distinct labels, so a failed check is not a missing key.
-- DEPARTMENTS: enabled. Existing bridge audit loop calls health_tick every five minutes; extension maintenance publishes Discord/Whop lane heartbeat and reader issues. GPT-5.4 mini analyzes changed issues (12/day), Astra escalates multi-issue incidents (2/day), reviews selected reader disagreements (20/day), and analyzes existing daily reports after the 16:40 audit (1/day). Results are advisory files in department-reports, never executed as code/orders. Astra and Mini live probes passed; first Astra report for Friday 9/11 and Mini preflight generated. Context snapshots persist at most once/minute (up to one minute may be lost on abrupt exit).
-- READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission remains 15 minutes and same-caller field borrowing remains five minutes. AI observer enabled: Gemini gemini-3.1-flash-lite primary, OpenAI gpt-5.4 fallback; same prompt, bounded requests and cooldowns; observation only. Needs You pane/buttons/polling removed. Caller controls appear under matching Channels; v3.8.27 shows verified account sightings by channel ID and an unavailable win rate until evidence supports one. Existing Honey Drip controls remain limited to their specific room IDs; newly observed accounts have no execution keys. Historical identity attribution is candidate-only unless the original source supports an account link. Grabber: re-resolves replaced message panes each step, tracks oldest-message progress (not page height), allows 30s for a stalled load, clears failed runs, targets one year back, keeps its tabs and labels stalled history partial. Capture retains message_id, captured_at and observed revisions, dedupes by channel+ID, and exports structured .json beside readable .txt. Unattended exports retain that ID too; Daily Sniper Reports add an Open in Chrome link only when their verdict has one exact captured source match. The localhost handoff accepts only configured Discord guild/channel/message IDs and opens Chrome Profile 2; it has no broker or Discord API capability. Legacy ID-less rows stay explicit unavailable (re-grab for IDs, never infer them). Browser full-history completeness remains unverified.
+- PROVIDER KEYS: the Keys pane saves OpenAI, Gemini and Perplexity under settings.json ai_provider_keys; saved fields hide behind an explicit Replace key, status returns presence flags only. OpenAI/Gemini feed the observer AND both live readers; Perplexity stored inactive; DeepSeek removed (G); Anthropic kept but billing-blocked. Saved-key PRESENCE is not a probe RESULT: billing, rate-limit, auth, access and connection failures carry distinct labels.
+- DEPARTMENTS: enabled. Bridge audit loop calls health_tick every five minutes; extension maintenance publishes Discord/Whop lane heartbeat and reader issues. GPT-5.4 mini analyzes changed issues (12/day); Astra escalates multi-issue incidents (2/day), reviews selected reader disagreements (20/day) and analyzes the daily reports after the 16:40 audit (1/day). Output is advisory files in department-reports, never code or orders. Context snapshots persist at most once/minute.
+- READER/UI: observer retains 50 prior messages within 72 hours; fresh-post admission 15 minutes, same-caller field borrowing five minutes. AI observer: Gemini gemini-3.1-flash-lite primary, OpenAI gpt-5.4 fallback; observation only. Caller controls appear under matching Channels with verified account sightings by channel ID; win rate shows unavailable until evidence supports one. Honey Drip controls stay limited to their room IDs; newly observed accounts have no execution keys; historical identity attribution is candidate-only. Grabber tracks oldest-message progress, allows 30s for a stalled load, targets one year back, labels stalled history partial. Capture retains message_id, captured_at and revisions, dedupes by channel+ID, exports .json beside .txt. Daily Sniper Reports add an Open in Chrome link only on one exact captured source match; the localhost handoff accepts only configured Discord guild/channel/message IDs and opens Chrome Profile 2 (no broker or Discord API capability). Legacy ID-less rows stay unavailable — re-grab, never infer. Full-history completeness unverified.
 - WHO READS (9/14): BOTH live ai_reader lanes — the one-message reader
   (AI READ) and the screenshot reader (IMG READ) — use the observer's
   providers, keys and cooldown map: OpenAI gpt-5.4, then Gemini, then
@@ -215,6 +215,18 @@ ENTRIES
     that band around the price the caller posted, it is the wrong contract —
     take the listed expiry that IS in band, else REFUSE the entry and say so.
     No posted price = the gate is inert.
+  · THE CONTRACT MUST EXIST (9/15, bridge._verify_listed,
+    execution.verify_listed): EVERY entry asks the broker whether that exact
+    contract is listed — one snapshot call for the one date, cached per
+    contract per day; a second call only if the first is empty. Unlisted but
+    siblings are -> REFUSE + BAD-CONTRACT line naming the room and the raw
+    alert. NOTHING listed anywhere -> that is the feed, not the contract:
+    goes THROUGH with a LISTING line. Fails open on no connection, an
+    unreadable date, any exception — a guard, never a gate. Asked, not
+    tabled: Mon/Wed expiries exist only on the nine Qualifying Securities
+    (AAPL AMZN AVGO GOOGL META MSFT NVDA TSLA + IBIT) and that list is re-cut
+    QUARTERLY on a $700B test. A GUESSED expiry also gets the price gate
+    above; a date the caller TYPED is checked for existence only.
 - SPREAD GUARD (entries only): refuse if spread > 20% of mid or > max($0.20,
   10% of mid). THIN guard: < 250 contracts last session = refused.
 - STALE-ENTRY GATE: entries older than 3 min never fire. Negations ("NOT
@@ -257,7 +269,7 @@ ENTRIES
   in his favour. Their stop/target wins; 25/50 fills the gaps. A MARKET entry
   (no price in the alert) gets that bracket off the FILL instead — positions.
   _arm_stop, but these are only recorded levels. Webull futures OPEN now refuses before broker lookup until an exact GTC STOP_LOSS is placed and verified after its fill, and stop/close reconciliation is tested. No futures quote-driven target/ratchet is operational.
-- INDEX MIRROR (9/13) — **OFF and activation blocked** until a broker-confirmed futures protective exit path exists. The shadow records SPY/QQQ option entries, and `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the daily audit. Reports land in `daily-reports/FUTURES-MIRROR-<date>.md`; the cumulative history is `reference/FUTURES-MIRROR-REPLAY.csv`. The replay's 25/50 stop, target and ratchet are simulated, not current live futures exits. New-day coverage is only bridge shadow rows plus `master_alerts.csv`; posts missed upstream are absent. The popup switch stays disabled until live exits are verified.
+- INDEX MIRROR (9/13) — **OFF, activation blocked** until a broker-confirmed futures protective exit exists. The shadow records SPY/QQQ option entries; `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the audit -> `daily-reports/FUTURES-MIRROR-<date>.md`, cumulative `reference/FUTURES-MIRROR-REPLAY.csv`. Its 25/50 stop/target/ratchet are simulated. Coverage = bridge shadow rows + `master_alerts.csv` only. Popup switch stays disabled until live exits are verified.
 - THE POCKET (hidden on purpose): a :43-:51 scalp-entry clock gate behind
   settings pocket_scalps_only, default OFF. Decided from HIS fill data
   (ledger minute-of-hour), not the QQQ study.
@@ -276,7 +288,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
-- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. It won the 115-trade OPRA sweep, and three later replays failed to beat it outside their error bars — price tiers, a born-stop floor, G's stock ladder (numbers in HANDOFF-LOG.md). Re-run `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py` and `reference/stock_stop_replay.py` as the sample grows; the BORN stop, not the rungs, is what ends these trades.
+- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. Won the 115-trade OPRA sweep; price tiers, a born-stop floor and G's stock ladder all failed to beat it outside error bars (HANDOFF-LOG.md). Re-run `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py`, `reference/stock_stop_replay.py` as the sample grows; the BORN stop, not the rungs, ends these trades.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
@@ -308,49 +320,43 @@ RESTARTS / SAFETY
   lane. Resting stops at Webull guard every gap.
 - POSTCHECK after every trade: book vs account, stop resting, quote bus
   fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
-- ROOM-CHAT EXPORTS ARE WEEKLY (G, 9/15). `DS Logs/` holds ONE FILE PER WEEK
-  PER LANE, `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt` and
-  its `(whop)` twin; Monday..Sunday, Eastern, a new week opens its own file.
-  Each day appends a `===== Mon Sep 14 2026 =====` block of ONLY what earlier
-  days of that file lack (the export is cumulative — 9/14 was 10 MB of mostly
-  9/13). A re-export replaces that day's block, never stacks a second header.
-  `ds_logs.py` owns naming, blocks and de-dupe; readers ask it which days a
-  file covers, never the file name. Pre-9/10 dailies untouched; the seven
-  merged lane-tagged ones are zipped in `archive/`. Never hand-edit one.
+- RULE: weekly signal-room-chat logs (replaces daily) (G, 9/15).
+  Naming: `signal-room-chat week-of-<Mon>-to-<Sun>-<year> (discord).txt` and
+  `(whop).txt` — e.g. `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt`.
+  Week = Mon–Sun. One-time merge: for each existing week, concatenate that
+  week's daily `signal-room-chat <date> (...)` files in date order into the new
+  weekly file, each day under a `===== Mon Sep 14 2026 =====` header. Delete
+  the daily files after merge — REPLACE, not stack. Going forward: each day's
+  capture appends under a new day-header inside the current week's file
+  instead of creating a new daily file. New week → new file, auto-started.
+  (Merge done 9/15: the seven lane-tagged dailies are zipped in `archive/`;
+  `ds_logs.py` owns naming, day blocks and de-dupe — readers ask it which days
+  a file covers. A re-export replaces that day's block. Never hand-edit one.)
 - DAILY SNIPER REPORT: bridge.py runs `daily_audit.py` once per weekday at
-  16:40 ET, after the 16:30 export/tab sweep. It replays that day's exact
-  Discord and Whop inputs with each room's production grammar. `parser_gate.js`
-  also compares parser.js, rooms.txt and optionable.txt over every retained
-  live message; AUTO PUSH runs that gate before any such rule ships and blocks
-  invented symbols or expiry shifts. The audit runs every JS/Python test, writes `daily-audits/AUDIT-<date>.txt`
-  plus `latest.json`, queues unresolved items, and writes the Daily Sniper Report:
-  room coverage, decisions, skips, recovered gaps, fills, P&L and postmortems.
-  DELIVERY (9/15): the audit's LAST step is `daily_brief.py` — the one-screen
-  brief (day · bot trades · callers right/wrong · what broke · pending) written
-  to `daily-reports/BRIEF-<date>.md` and POSTED TO SNIPER HQ as a file through
-  the Fill Announcer's options webhook. That post is how G gets the day. It is
-  wrapped: a brief that fails never fails the audit.
-  Relay duplicates stay raw but count once. The 15-minute Codex guard was
-  deleted at G's request; do not recreate it. Findings become tested fixtures. RAW capture
-  is always retained and session-local LIVE PARSER rows overlay it; a browser
-  restart can no longer truncate the day to its final session. Accepted
-  pullback waits that expire are counted as skips, not broker orders. The same
-  close run writes `daily-reports/RATCHET-COMPARE-<date>.md`, replaying every
-  exact-contract quote path under the live 5/3/5 ratchet and a fixed -5% born
-  stop. It reports coverage and never extrapolates uncovered alerts. Alert
-  tape restores today's contracts from `alert_meta.csv` after bridge/code
-  restarts, resolves shorthand expiries, and records distinct re-entries.
-  `CALLER-OUTCOMES-<date>.md/.csv` preserves caller entry, every trim/full
-  exit, price or percent and trim size; caller P&L only when entry and exit
-  pair with contemporaneous quotes, partials never become full results,
-  absent prices stay absent. A price written straight after the
-  contract is read, anchored to the contract AND an exit word within 80 chars
-  so footers donate nothing; a posted price within 2% of that minute's `und`
-  is a STOCK quote, not a premium -> entry "unavailable (stock price posted)",
-  row kept, dollars out of every total.
-  `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from caller entry over `tape.py`
-  and lists gaps/futures.
-  Broker-confirmed actuals always override a quote-path simulation.
+  16:40 ET, after the 16:30 export/tab sweep. Order: `broker_sync.py` pulls
+  the Webull export first; the day's exact Discord and Whop inputs replay with
+  each room's production grammar; `parser_gate.js` compares parser.js,
+  rooms.txt and optionable.txt over every retained live message (AUTO PUSH
+  runs that gate before any such rule ships and blocks invented symbols or
+  expiry shifts); every JS/Python test runs; `daily-audits/AUDIT-<date>.txt`
+  + `latest.json` are written; unresolved items are queued. Reports written
+  to `daily-reports/`: the Daily Sniper Report (coverage, decisions, skips,
+  fills, P&L, postmortems), `RATCHET-COMPARE-<date>.md` (live 5/3/5 vs fixed
+  -5% born stop over exact-contract quote paths, coverage stated, never
+  extrapolated), `CALLER-OUTCOMES-<date>.md/.csv` (caller entry, every trim
+  and full exit with price/percent/size; caller P&L only when entry and exit
+  pair with contemporaneous quotes; partials never become full results; a
+  posted price within 2% of that minute's `und` is a STOCK quote -> entry
+  "unavailable (stock price posted)", dollars out of every total),
+  `CALLER-VS-RATCHET-<date>.md` (5/3/5 from caller entry over `tape.py`).
+  LAST step is `daily_brief.py`: the one-screen brief (day · bot trades ·
+  callers right/wrong · what broke · pending) -> `BRIEF-<date>.md`, POSTED TO
+  SNIPER HQ through the Fill Announcer's options webhook. That post is how G
+  gets the day; a failed brief never fails the audit. Rules: broker-confirmed
+  actuals override any simulation; RAW capture is always retained and LIVE
+  PARSER rows overlay it; relay duplicates count once; expired pullback waits
+  are skips, not orders; the 15-minute Codex guard was deleted at G's request
+  — do not recreate it. Findings become tested fixtures.
 - GIT: settings.json holds every key and is never committed. AUTO PUSH uses
   a live-owner PID lock, commits every 45 s and retries pushes; it never deletes
   Git locks or rebases. Runtime files remain local. After suspicious loss check
@@ -451,10 +457,8 @@ FILL ANNOUNCER (announcer.py, read-only)
   short page) into ONE fixed file, Webull_Orders_auto.csv, OVERWRITING it every
   run (G, 9/10: "have one that overwrites" — no deletes, ever), and records one
   balance row per day in `balance_daily.csv` (date, nlv, day_pl, bp, read_at) —
-  the brief's only balance source. NOTHING PULLED THIS UNTIL 9/15 (a session
-  did it by hand; last pull 9/11), so 9/12-9/14 all read "broker export
-  missing" and 9/14's 60 legs / -$321 were invisible;
-  build_ledger's absorb_exports() (runs inside every ledger refresh) folds
+  the brief's only balance source (automated 9/15 — nothing pulled it
+  before). build_ledger's absorb_exports() (runs inside every ledger refresh) folds
   it into master_broker.csv and leaves it in place. Never write dated
   Webull_Orders_<date> files — the folder holds the master plus that one
   scratch file (G, 9/9: never dated piles).
@@ -463,13 +467,13 @@ FILL ANNOUNCER (announcer.py, read-only)
   PRICE-BLIND TWINS (9/11): a stop leg has no limit, so one pull may write
   its stop price in "Price" and another nothing; the merge treats a blank-
   price copy of the same placed-time/contract/side/size/snapshot as the SAME
-  order (keeps the priced copy) and collapses any such twins already in the
-  master on load. 9/10 had 7 (3 FILLED sells the FIFO could mis-pair).
+  order (keeps the priced copy) and collapses such twins already in the
+  master on load.
   Webull_Orders_auto.csv "Price" = limit_price, else stop_price.
   Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
   master_ledger and master_alerts; NO .bak files in the root anymore.
 - BROKER TRUTH: `master_broker.csv` is paged across the full Webull order history; 100-row pages must continue with `last_client_order_id` until a short page. `build_ledger.py` computes P&L from broker fills, collapses carryovers by caller+contract+entry, and matches either end date for overnight trades. Do not quote P&L from book-priced rows when a broker row exists.
-- BOT ATTRIBUTION: a caller name is candidate evidence until the entry is linked to a source alert and the trade to broker fills. `manual` in the day row denotes a manual exit; it does not disqualify a bot-origin entry. Adopted/export-only rows need separate entry provenance; caller `?` is unknown. Keep the older 107-trade contract-matched study as a dated sample, not a current all-trade statistic. `option_tape_pull.py` records durable quote coverage before skipping downloads.
+- BOT ATTRIBUTION: a caller name is candidate evidence until the entry is linked to a source alert and the trade to broker fills. `manual` in the day row denotes a manual exit; it does not disqualify a bot-origin entry. Adopted/export-only rows need separate entry provenance; caller `?` is unknown. The 107-trade contract-matched study is a dated sample, not a current statistic. `option_tape_pull.py` records quote coverage before skipping downloads.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
   don't want any more confusions"). build_ledger keeps account="paper" rows
   OUT of master_ledger.csv, so the board, journal, scoreboard, announcer and
@@ -488,12 +492,9 @@ FILL ANNOUNCER (announcer.py, read-only)
   `t` (that's the exit); one FILLED line confirms one row; table/wallet
   twins dedupe on date+caller+contract+fill (no time bucket). Gaps are
   rows, not silence (source=trades.log-only / webull-export-only).
-  A closed position's qty can be zero remaining even when its entry legs
-  show the original size. Match that original size only to one exact OCC,
-  price and near-time (five-minute) broker trip; never relax a nonzero size
-  mismatch. Broker-confirmed exit and P/L replace the book's assertion while
-  store_pl retains it. New day records include entry_qty, the first broker
-  entry_order_id and client coid; the rebuilt ledger carries these fields.
+  Match a closed position's ORIGINAL size only to one exact OCC, price and
+  near-time (five-minute) broker trip; never relax a nonzero size mismatch.
+  Day records carry entry_qty, the first broker entry_order_id and client coid.
   A manual exit is exit provenance, not proof of manual entry. Research SQL
   joins alert and trade only on an explicit shared coid or legacy event key.
   RECONCILIATION prints every run: on any day with an export, ledger(live,
