@@ -471,3 +471,25 @@ Scope: reference for a Python bot trading US equity options on the Webull OpenAP
 - https://www.tradovate.com/trading-products/
 - https://tradovate.zendesk.com/hc/en-us/articles/4403105829523-How-Do-I-Get-Access-to-the-Tradovate-API
 - Team files (non-public observations): `C:\Users\Hulk\Desktop\discord-sniper\webull_options.py` (lines 193, 1045, 1574), `C:\Users\Hulk\Desktop\discord-sniper\HANDOFF.md` (line 321)
+
+---
+
+## Facts in force (moved from HANDOFF.md 9/15)
+
+- Limits PER ENDPOINT per app key: option snapshot 60/min (20 symbols/
+  call); Order Detail / Positions / Balance 2 per 2 s. 429 = throttle;
+  417 = business rejection (DAY_BUYING_POWER_INSUFFICIENT,
+  NOT_SUPPORT_REVERSE_OPTION, STOP_PRICE_MUST_BE_LESS_THAN_MARKET).
+- No option streaming; fills ARE pushed (gRPC TradeEventsClient). No
+  MARKET orders on options. Combos = MASTER(LIMIT) + STOP_LOSS on SINGLE
+  only. Replace needs original client_order_id + legs[].id.
+- Ticks: SPY/QQQ/IWM $0.01 always; Penny Program $0.01 <$3 / $0.05 ≥$3;
+  else $0.05/$0.10 (tick_round/stop_below are symbol-aware).
+- Quote bus sweeps at 1.05 s, 20 symbols per call, fill poll 1.0 s;
+  positions' watchdog reads the bus, direct quote at most every 2 s.
+- FUTURES-ACCOUNT POSITIONS POLL (bridge _FUT_POS_BACKOFF): after 3 empty
+  reads it backs off — capped at 60 s while futures_brokers.webull is on,
+  300 s while it is off (9/10: the 60 s cap alone was 187 of the day's 256
+  429s, all on a flat futures account; the only futures there could be G's
+  own, never managed). Any non-empty read resets it. Exponent clamped
+  (2**(fails-3) overflowed float after ~17 h flat).

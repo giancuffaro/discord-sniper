@@ -109,7 +109,7 @@ Already present:
   RN ledger, telemetry, and per-trade postmortems.
 - Broker-truth reconciliation and separation of manual, bot, paper, and unknown
   records.
-- A weekday 16:40 audit plus `daily-reports/REPORT-<date>.md` with coverage,
+- A weekday 16:40 audit plus that day's block in `daily-reports/REPORT week-of-….md` (one file per week per kind, `reports.py`) with coverage,
   alert flow, decisions, actual outcomes, recovered gaps, and room activity.
 - A common tape registry and a clean Databento historical tape for replay.
 

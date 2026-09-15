@@ -4,7 +4,7 @@
 columns, the line types, the counts, the date range, and the traps. Read it
 before you grep, and before you conclude that something is not recorded.
 
-Every number below was counted on **2026-09-11, 02:12 ET**. Counts in LIVE
+Every number below was counted on **2026-09-11, 02:12 ET** (§9.1 and §14 on 2026-09-15). Counts in LIVE
 files move; the shape does not.
 
 ---
@@ -554,13 +554,70 @@ em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
 | `futures_mirror_shadow.csv` | `ts_iso, date, time_et, sym, dirn, micro, room, caller, their_price, outcome` | **Append-only, gitignored, written live by the bridge** for EVERY SPY/QQQ option entry it sees — filled, refused, pullback-armed, TEST room — whether the mirror switch is on or off. The daily replay's input, so it never waits on a master_alerts rebuild. |
 | `reference/FUTURES-MIRROR-REPLAY.csv` | `status, entry, exit, why, pts, usd, mfe, mae, bars, mode, ts, sym, dirn, room, caller, src, lvl, ref` | **The cumulative record**, one market-mode row per alert (the selection-biased snap variant stays in each day report only). Seeded with the 149 market rows of the 9/13 study; appended daily, deduped on `mode+ts+sym+dirn` so a re-run cannot inflate the running total. |
 | `reference/FUTURES-MIRROR-REPLAY-2026-09-13.csv` | same | Frozen — the original 8/3–9/11 study (298 rows, both modes). The seed. Do not append to it. |
-| `daily-reports/FUTURES-MIRROR-<date>.md` | — | One day's trades, day total, running total since 2026-08-03, win rate, by room, by sym×direction, exits, and what the number is not. |
+| `daily-reports/FUTURES-MIRROR week-of-….md` (that day's `===== Mon Sep 14 2026 =====` block) | — | One day's trades, day total, running total since 2026-08-03, win rate, by room, by sym×direction, exits, and what the number is not. |
 
 `balance_daily.csv` (`broker_sync.py`, appended once per trading day at 16:40) — `date, nlv, day_pl, bp, read_at`. The ONLY place the account's net liquidation, Webull day P&L and option buying power are kept; nothing else on disk records a balance, and `health.csv` stores only whether the read succeeded. `day_pl` is Webull's own figure, NET of fees; `master_broker.csv` round trips are GROSS, so the two differ by the day's fees (9/14: -333.85 net vs -321 gross across 47 filled legs). One row per day — a re-run replaces that day's row, never stacks a second.
 
 **TZ TRAP (9/15):** `build_ledger._hms()` renders epochs in the MACHINE's local timezone, and days-json `closed` values come from stored Eastern strings instead. Rebuild from anything but an Eastern shell and `opened` jumps +4h while `closed` jumps -4h. Always `TZ=America/New_York python3 build_ledger.py` off his PC. Caught the same day it happened and restored from `backups/`.
 
-`daily-reports/BRIEF-<date>.md` (`daily_brief.py`, written last in the 16:40 audit and posted to Sniper HQ) holds NO new data — it is a rendering of master_ledger + master_broker + that day's CALLER-OUTCOMES/CALLER-VS-RATCHET/FUTURES-MIRROR + dated `trades.log` lines + `department-reports/extension-*.json` + HANDOFF's Pending block. Two things in it exist nowhere else as a judgement: the exit-reason words (born stop / ratchet / BE stop, decided from `stop_at_exit` vs `avg_in` — at or above the fill means the ratchet moved it) and the `⚠ journal ≠ broker` flag (the row says it exited and the broker record prices no exit). Never quote a number from it that the source file does not also say.
+`daily-reports/BRIEF week-of-….md`, that day's block (`daily_brief.py`, written near the end of the 16:40 audit and posted to Sniper HQ as the file `BRIEF-<date>.md`) holds NO new data — it is a rendering of master_ledger + master_broker + that day's CALLER-OUTCOMES/CALLER-VS-RATCHET/FUTURES-MIRROR + dated `trades.log` lines + `department-reports/extension-*.json` + HANDOFF's Pending block. Two things in it exist nowhere else as a judgement: the exit-reason words (born stop / ratchet / BE stop, decided from `stop_at_exit` vs `avg_in` — at or above the fill means the ratchet moved it) and the `⚠ journal ≠ broker` flag (the row says it exited and the broker record prices no exit). Never quote a number from it that the source file does not also say.
+
+---
+
+# 9.1 Reports, the report cache and STATUS.json (9/15)
+
+**One file per WEEK per kind** (same naming as DS Logs, `reports.py` owns it):
+`daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md`, `BRIEF week-of-….md`,
+`CALLER-OUTCOMES week-of-….md`, `CALLER-VS-RATCHET week-of-….md`,
+`RATCHET-COMPARE week-of-….md`, `FUTURES-MIRROR week-of-….md`,
+`daily-audits/AUDIT week-of-….txt`, plus the hand-made kinds kept the same way
+(`ALERT-LEDGER`, `NINJAGO-FUTURES-RADAR`, `ALERT-HISTORY`, `PARSER-HISTORY`).
+Inside: a `===== Mon Sep 14 2026 =====` block per day, **newest day first**; a
+re-run for a day replaces that day's block; the line before the first header is
+a preamble that is rewritten every time. `python reports.py show <kind> <day>`
+prints one day; `path` names the file. The 20 dated dailies that existed on 9/15
+(18 md/txt + 2 csv) were folded in and deleted — 18 day blocks, 59 csv rows.
+
+**The one csv:** `daily-reports/CALLER-OUTCOMES.csv` — `date` first, then
+`entry_time, event_time, room, caller, symbol, contract, entry, event,
+reported_exit, reported_pct, profit_per_contract, calculated_pct, implied_exit,
+trim_size, basis, raw`. Replace-by-date: a re-run for a day drops that day's rows
+and appends the new ones (rows stay sorted by date). Readers: `daily_brief`,
+`caller_ratchet_compare`, `research_ledger`, `reference/caller_profile.py` —
+all through `reports.csv_rows("caller-outcomes", day)` or the `date` column.
+
+**Untouched in daily-audits/:** `latest.json` (the last audit's summary; its
+report paths now name the weekly files), `review_queue.jsonl` (append-only
+attention queue, one row per distinct issue shape per day), `.last-run`,
+`PARSER-HISTORY-LATEST.txt` (AUTO PUSH overwrites it every push), and the frozen
+9/11 recovery inputs `raw-2026-09-11-*.json` / `recovered-2026-09-11.json`
+(read by `daily_report`, `caller_outcomes`, `caller_ratchet_compare` as
+`recovered-<day>.json`; a day with no such file simply has no recovered gaps).
+
+**`reports/INDEX.json`** — the report cache's memory: `{kind: {date: {fingerprint,
+inputs: {input name: signature}, output, built_at}}}`. A signature is `size:mtime`
+for a whole file (code, rooms.txt), a 16-hex sha256 of that DAY's lines/rows for
+trades.log, the master csvs and the epoch-stamped tapes, of the day's DS Logs
+block, or of another report's day block. `python reports.py status [day]` prints
+one line per kind/day — CURRENT, STALE (and which inputs moved), MISSING, MANUAL.
+`reports.py build <kind|all> <day>` skips a CURRENT one (`CURRENT <path>`).
+The 16:40 audit builds every kind through it, so the index is always populated;
+the undated kinds (`scoreboard` → SCOREBOARD.html, `alert-audit` →
+ALERT-AUDIT.html) sit under the date key `all`.
+
+**`STATUS.json`** (repo root, < 4 KB, written LAST by the audit; `python
+status_json.py [day]` rebuilds it from disk) — `date`, `balance {nlv, day_pl, bp,
+as_of}` (balance_daily.csv), `bot {trades, pl, wins, losses}` (master_ledger, the
+brief's bot-trade definition), `rooms {discord|whop: {on, spoke, reads}}`
+(rooms.txt + that day's DS Logs block), `audit {status, silent_drops,
+possible_missed, coverage_warnings, failed_checks}`, `broke` (review queue, newest
+5), `pending` (HANDOFF's Pending list), `bridge {up, buying_power, health}`
+(health-latest.json + a 2 s loopback probe), `verified {tests {passed, failed,
+at}, parser_gate {counts {messages, entries, actions, pass}, at},
+broker_reconciled {match, at}, bridge_code_live {sha, bridge_py_mtime, at}}`,
+`reports` (status lines). VERIFY ONCE: a `verified` entry stands while its
+inputs are unchanged — do not re-run the suite, the gate or the reconciliation
+for confidence. A hand rebuild with no fresh test output keeps the recorded one.
 
 ---
 
@@ -658,6 +715,8 @@ a busy day. Dedupe before counting rooms.
 | **How fast did we read and fire?** | `telemetry.csv` (`sent_at`, `fill_ms`, `slip_pct`) and the `sent in NNNN ms` text on `<sent>` lines. | Ignore every greek column in telemetry — all zero. |
 | **Was the stop where I think it was?** | `trades.log` `STOP-SET` (362 lines) | Each line has the resting price and whether it was born with the order. |
 | **Did this trade exist at all?** | `master_broker.csv` | If Webull has no row, it never happened, whatever the logs say. |
+| **How did we do today / what broke / is it verified?** | `STATUS.json`, then ASK-MAP.md | Never a log first. |
+| **Give me the report for a day** | `python reports.py status <day>` then `reports.py show <kind> <day>` | CURRENT = hand it over as is; STALE = `reports.py build`. |
 
 ---
 
@@ -708,6 +767,117 @@ a busy day. Dedupe before counting rooms.
     and never run a git write command — AUTO PUSH sweeps every 45 s on its own.
 
 ---
+
+---
+
+# 14. The data families — one central file per family (moved from HANDOFF.md 9/15)
+
+THE APP READS ONLY THESE. The rule lines stay in HANDOFF.md (DATA section); the
+mechanics are here, verbatim.
+
+- BROKER RECORD → master_broker.csv (one row per Webull order leg, every
+  day). `broker_sync.py` — FIRST step of the 16:40 audit, one read-only client,
+  no loop — pulls the order history (paged on `last_client_order_id` until a
+  short page) into ONE fixed file, Webull_Orders_auto.csv, OVERWRITING it every
+  run (G, 9/10: "have one that overwrites" — no deletes, ever), and records one
+  balance row per day in `balance_daily.csv` (date, nlv, day_pl, bp, read_at) —
+  the brief's only balance source (automated 9/15 — nothing pulled it
+  before). build_ledger's absorb_exports() (runs inside every ledger refresh) folds
+  it into master_broker.csv and leaves it in place. Never write dated
+  Webull_Orders_<date> files — the folder holds the master plus that one
+  scratch file (G, 9/9: never dated piles).
+  Merge is REPLACE-DON'T-STACK per order (placed-time+contract+side+size+
+  limit): a later pull replaces a WORKING snapshot, never duplicates it.
+  PRICE-BLIND TWINS (9/11): a stop leg has no limit, so one pull may write
+  its stop price in "Price" and another nothing; the merge treats a blank-
+  price copy of the same placed-time/contract/side/size/snapshot as the SAME
+  order (keeps the priced copy) and collapses such twins already in the
+  master on load.
+  Webull_Orders_auto.csv "Price" = limit_price, else stop_price.
+  Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
+  master_ledger and master_alerts; NO .bak files in the root anymore.
+- BROKER TRUTH: `master_broker.csv` is paged across the full Webull order history; 100-row pages must continue with `last_client_order_id` until a short page. `build_ledger.py` computes P&L from broker fills, collapses carryovers by caller+contract+entry, and matches either end date for overnight trades. Do not quote P&L from book-priced rows when a broker row exists.
+- BOT ATTRIBUTION: a caller name is candidate evidence until the entry is linked to a source alert and the trade to broker fills. `manual` in the day row denotes a manual exit; it does not disqualify a bot-origin entry. Adopted/export-only rows need separate entry provenance; caller `?` is unknown. The 107-trade contract-matched study is a dated sample, not a current statistic. `option_tape_pull.py` records quote coverage before skipping downloads.
+- NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
+  don't want any more confusions"). build_ledger keeps account="paper" rows
+  OUT of master_ledger.csv, so the board, journal, scoreboard, announcer and
+  every backtest are real money only. account="unknown" is NOT paper —
+  41 real broker fills with no room row; they stay. execution.webull
+  .paper_trading is false and the bridge now WARNS at boot if it is ever
+  switched on, because a paper fill would leave no record at all.
+- FILLS → master_ledger.csv (built by build_ledger.py, read via ledger.py).
+  Sources in trust order: master_broker.csv (the account's own history,
+  FIFO-paired per OCC ACROSS days so a swing meets its own lot; trip date =
+  the buy's day) > trades.log FILLED > days/wallet.trades > days/table.
+  RULES: the broker's exit/P&L/state/account WIN
+  over the book's belief (store_pl keeps the book's number); a fill the
+  broker saw is `filled` even if the book said `failed`; export-confirmed ⇒
+  live; entry time = opened, else the broker's FILLED stamp, NEVER wallet
+  `t` (that's the exit); one FILLED line confirms one row; table/wallet
+  twins dedupe on date+caller+contract+fill (no time bucket). Gaps are
+  rows, not silence (source=trades.log-only / webull-export-only).
+  Match a closed position's ORIGINAL size only to one exact OCC, price and
+  near-time (five-minute) broker trip; never relax a nonzero size mismatch.
+  Day records carry entry_qty, the first broker entry_order_id and client coid.
+  A manual exit is exit provenance, not proof of manual entry. Research SQL
+  joins alert and trade only on an explicit shared coid or legacy event key.
+  RECONCILIATION prints every run: on any day with an export, ledger(live,
+  real) must equal the export to the cent (9/4 +152.00 ✓, 9/8 +77.00 ✓ —
+  the book had 9/8 at −$82). A DRIFT line = something upstream lied.
+  NOTHING reads days/*.json "table" or journal.csv for analysis anymore
+  (table truncates — 9/8 it kept 6 of 12 fills; journal.csv inherits it).
+  journal.csv is a legacy export the bridge still writes.
+- ALERTS → master_alerts.csv (build_alerts.py; ledger.alerts()): every
+  alert and its fate — taken side from telemetry.csv (posted/seen/sent/
+  filled, slip, greeks), declined side from trades.log via misses.py
+  (BUYING POWER / THIN / PULLBACK never hit / SWINGS paused / TEST room /
+  FUTURES prop …), filled ones linked to their ledger row. Thin spot:
+  telemetry rows carry no room/caller (bridge doesn't populate them).
+- PRICE TAPES → tape.py is the ONE registry. Six sources: webull,
+  tasty_greeks, tasty_quote, databento (`databento_tape.csv`, despiked IN
+  PLACE by clean_tape.py after every backfill — the `_clean` twin is gone
+  9/15), missed, and alert. `alert` is `alert_tape.csv`, the slow all-alert lane used for
+  refused/missed-call outcomes and caller-exit comparisons; it was wired
+  into the registry 9/11 after its writer existed but the common reader did
+  not know about it.
+  NOT bars/ — that and bars_capture.py were archived 9/9 and tape.py never
+  registered them. tape.path(
+  "databento") = the despiked clean file when it exists — every backtest
+  replays the same prices. Webull has NO historical option prices; the
+  tapes are our own record. Databento key (settings execution.databento)
+  works from the sandbox; databento_backfill.py spends credit — never run
+  its main() casually.
+- HOLIDAYS / HOURS → market_hours.py owns the table (through 2027 —
+  UPDATE EVERY YEAR, bump HOLIDAYS_THROUGH); webull_options.HOLIDAYS
+  derives from it. MARKET-HOURS.md is the human copy. Options 9:30-16:00
+  (SPY/QQQ/IWM + index to 16:15); futures Sun 18:00 → Fri 17:00 with the
+  17:00-18:00 daily halt.
+- POST-MORTEMS → master_postmortems.csv + postmortems/<date>_<occ>.md
+  (postmortem.py; a SECOND round-trip on the same contract the same day is
+  <date>_<occ>-2.md, named by the trade's rank among that day's graded trades
+  on the OCC; the csv row is keyed date+occ+fill+exit. G 9/9: "analyze every
+  single trade after exiting … be attentive to these"). One verdict per exited bot trade — NOISE CLIP /
+  ARM CLIP / GOOD STOP / LEFT MONEY / GAVE BACK / GOOD EXIT — with the call vs our fill,
+  the RN wait, the ride (MAE/MFE), the bid at +30s/+1m/+5m/+10m after the
+  exit, the widest born stop that would have survived, and every machine
+  fault line in the window. The bridge's POSTCHECK loop schedules it 10.5
+  min after each close/stop; quote_bus keeps taping an exited contract for
+  10 min (LINGER_S) so the after-exit half exists. The autopilot reads new
+  ones every 30 min (faults = bugs to fix same day) and tallies them at the
+  close (the 0DTE stop question is decided from that tally, by G). His own
+  hand trades (Gian / manual) are never graded.
+- RN LEDGER → rn_ledger.csv (pullback.log_ledger, append-only): every
+  armed/filled/missed/cancelled round-number hunt — the forward tracker
+  for "is my RN rule beating their entry" (so far: RN fill vs caller
+  price on the same contracts ≈ +$123 edge on 11 → 34 trades; misses
+  cost ≈ −$38 on the 2 priced).
+- Both central files rebuild inside bridge.py save_day() (never-raise
+  guards, ~110 ms, atomic swap) and on demand: python3 build_ledger.py /
+  build_alerts.py (keeps 5 .baks, prints summary + reconciliation).
+- ANALYSIS TOOLS (all read-only, all on the ledger): caller_report.py,
+  scoreboard.py (→ SCOREBOARD.html), journal_full.py (taken+missed xlsx),
+  misses.py, errors.py, entry_compare.py, missed_dollarize.py,
+  ratchet_sweep*.py, ratchet_backtest.py, chart_contracts.py, telemetry.py.
 
 ## Rules for whoever edits this file
 

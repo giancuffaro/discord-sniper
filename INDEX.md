@@ -1,7 +1,8 @@
 # Discord Sniper — what every file in this folder is
 
 Written 9/3/26 during the cleanup. If you're looking for *how the machine
-works*, open `MAP.html`. This is the file directory.
+works*, open `MAP.html`. This is the file directory. If you're looking for
+*the answer to a question G asks*, open `ASK-MAP.md`.
 
 **Nothing here moves.** The Python modules import each other flat
 (`import positions`), and the .bat files use plain names — putting the code
@@ -62,8 +63,10 @@ down until you delete it.
 | `test_brokers.py` | Runs the Tradier/tastytrade adapters against a FAKE local server — proves the parsing with no credentials needed. |
 | `test_tape.py` | "Did this trade leave a price record?" Proves a managed contract still gets taped when the batched sweep is completely blind, and that the bus says so out loud. |
 | `broker_sync.py` | **The broker pull that never existed.** First step of the 16:40 audit: one read-only WebullOptions, the day's order history (paged) → `Webull_Orders_auto.csv` OVERWRITTEN, one balance read → `balance_daily.csv`, then `build_ledger`. Until 9/15 nothing pulled it — a Claude session did it by hand, last on 9/11, so 9/12–9/14 reported "broker export missing". |
-| `daily_brief.py` | **The one screen G reads.** Last step of the 16:40 audit: day / bot trades / callers right-wrong / what broke / pending, built only from records already on disk → `daily-reports/BRIEF-<date>.md`, posted to Sniper HQ as a file through the Fill Announcer webhook. `python daily_brief.py [YYYY-MM-DD]` re-renders it without posting; `--post` posts. |
-| `futures_mirror_daily.py` | Every evening (called by `daily_audit.py` after the audit): replays the day's SPY/QQQ entries as MES/MNQ on real ES/NQ 1-min bars (bars/ cache, else Databento) → `daily-reports/FUTURES-MIRROR-<date>.md` + cumulative `reference/FUTURES-MIRROR-REPLAY.csv`. 9/13 baseline: −$721 over 149 alerts. |
+| `daily_brief.py` | **The one screen G reads.** Near the end of the 16:40 audit: day / bot trades / callers right-wrong / what broke / pending, built only from records already on disk → that day's block in `daily-reports/BRIEF week-of-….md`, posted to Sniper HQ as a file through the Fill Announcer webhook. `python daily_brief.py [YYYY-MM-DD]` re-renders it without posting; `--post` posts. |
+| `reports.py` | **The report registry and the REUSE-DON'T-REBUILD cache** (9/15). Every report kind, its builder script, its inputs and its weekly file; `python reports.py status [day]` says CURRENT or STALE and why, `build <kind|all> <day>` skips a CURRENT one, `show <kind> <day>` prints one day's block, `path` names the file. Memory: `reports/INDEX.json`. Writers call `reports.write_day` / `write_csv_rows`; readers `day_text` / `csv_rows`. |
+| `status_json.py` | Writes `STATUS.json` (root, < 4 KB) as the audit's LAST step: balance, bot trades, rooms per lane, what broke, pending, bridge health, and the `verified` block (tests, parser_gate, broker reconciliation, bridge code). `python status_json.py [day]` rebuilds it from disk. Read it before any log — ASK-MAP.md. |
+| `futures_mirror_daily.py` | Every evening (called by `daily_audit.py` through `reports.py` after the audit): replays the day's SPY/QQQ entries as MES/MNQ on real ES/NQ 1-min bars (bars/ cache, else Databento) → that day's block in `daily-reports/FUTURES-MIRROR week-of-….md` + cumulative `reference/FUTURES-MIRROR-REPLAY.csv`. 9/13 baseline: −$721 over 149 alerts. |
 | `test_positions.py`, `test_architecture.py`, `test_brokers.py`, `test_phantom_exit.py`, `test_tape.py`, `test_alert_tape.py`, `test_expiry.py`, `test_index_mirror.py`, `test_resolve.js`, `extension/test_*.js` | The suite. `test_expiry.py` holds every date shape the rooms actually write — a date this reader can't take is not a skipped trade, it's this Friday bought silently. |
 | `samples.txt` | Parser samples (fed to `extension/parser.js` by the JS tests). |
 
@@ -81,14 +84,18 @@ is the one reader; the databento tape is despiked in place by `clean_tape.py`) �
 message the reader saw; ONE FILE PER WEEK PER LANE, `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt`, each capture day under a
 `===== Mon Sep 14 2026 =====` header holding only that day's new lines — `ds_logs.py` owns the
 naming, the day blocks and the de-dupe; every daily was merged 9/15 and zipped in `archive/`) ·
+`daily-reports/` and `daily-audits/` (**one file per WEEK per kind**, `REPORT week-of-Sep-14-to-Sep-20-2026.md`, `AUDIT week-of-….txt`, a `===== Mon Sep 14 2026 =====` block per day newest first, `reports.py` owns them; the one csv is `daily-reports/CALLER-OUTCOMES.csv` with a `date` column; `daily-audits/latest.json` is the last audit's summary) · `reports/INDEX.json` (the report cache's memory) · `STATUS.json` (the day in < 4 KB) ·
 `department-reports/` (one `<role>.jsonl` + `.md` per department, appended) · `local-reader-measure/`
 (reader measurement corpora, `live.jsonl`, caller identity; finished experiments are zipped in `archive/`) · `corpus/` (room language samples) · `futures_mirror_shadow.csv` (one row per SPY/QQQ
 entry the bridge saw, written switch-on or switch-off; the index mirror's input)
 
 ## Documentation
 
-`HANDOFF.md` — **the living memory. Read this first.** Every rule in force,
-compact (<50 KB). · `HANDOFF-LOG.md` — the full history behind every rule
+`ASK-MAP.md` — **when G asks X, read THIS file / run THIS command.** Start here. ·
+`HANDOFF.md` — **the living memory. Read this second.** Every rule in force,
+compact (<30 KB); the mechanics live in one `reference/` doc per subsystem
+(ENTRIES, RATCHET, ROOMS-TABS, OPERATIONS) plus DATA-MAP and the broker
+reference. · `HANDOFF-LOG.md` — the full history behind every rule
 (every session's notes, newest first; grows forever, HANDOFF.md may not) ·
 `MAP.html` — how the machine works · `INDEX.md` — this file ·
 `README.md` — original setup notes · `reference/` — the shelf: **OPTIONS-BROKER-REFERENCE.md** (broker facts — read
