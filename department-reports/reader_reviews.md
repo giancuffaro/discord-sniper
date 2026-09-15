@@ -1,5 +1,39 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 8a3c9373d8e41aed26b8
+
+The reader proposes an AMD 515 call opening for 9/16 from the context-dependent message “In,” while the parser does not fire. The latest preceding AMD setup supports that interpretation, but nearby NVDA and TSLA setups leave attribution requiring source verification. This is not a confirmed parser bug.
+
+## Findings
+- The current message says “In @here (edited)” without a ticker or contract. The immediately preceding message, chat-messages-987515353670221834-1549417610981023765, repeats “Eyes on AMD above 507.4 for the 515 C 9/16” and is the reader’s sole supporting ID. The reader returns OPEN AMD CALL 515, expiry 9/16, confidence 0.72; the parser returns null fields and fire=false. Review the original current message, its edit history, and the preceding AMD reply’s target to verify whether “In” confirms that setup. If verified, consider this a candidate contextual-entry recognition gap rather than treating the reader’s interpretation as established.
+- Validation accepts three eligible preceding messages: NVDA 215 C 9/16, TSLA 370 C 9/16, and AMD 515 C 9/16. It reports ok=true and no safety flags, but the current message has reply=false and does not explicitly select one of these contracts. Verify how source linkage and competing active setups are handled. Treat validation acceptance as an eligibility check, not independent proof that AMD is the intended trade.
+- The AMD setup separates an underlying trigger of “above 507.4” from the option strike “515 C.” No entry premium or quantity is supplied for the current entry; the reader preserves price=null and qty=null. Retain missing premium and quantity as unknown, not zero. Do not use 507.4 or 515 as an entry premium, and do not borrow the prior META value “2.6” for AMD.
+
+## Limitations
+- Although the evidence is marked untruncated, it does not include original Discord rendering, reply-target metadata, or edit history.
+- No broker fills or contemporaneous quotes establish execution, entry premium, or whether the AMD trigger was crossed.
+- The evidence does not expose the parser’s contextual rules or explain its non-firing decision.
+- The Gemini cooldown followed by a successful OpenAI response does not establish an overall reader outage.
+
+---
+
+# Reader Review — 2026-09-15 — 0725939266950e2259cf
+
+The reader identified a contextual ADD of one 760 put contract, but validation rejected it because no ticker was resolved. The evidence suggests a context-linking issue worth verifying, not a confirmed parser bug. The current message supplies an apparent underlying-price trigger, not an explicit option premium or completed fill.
+
+## Findings
+- The current message says, "Add one more at 760.40, out stop is going to be above that". Eligible prior messages include "Stay loaded on 760p" and "Buy 1 at 1.31". The reader returned ADD, qty 1, PUT, strike 760, with ticker and expiry null; the parser returned null fields and fire=false. Validation reported: "the reader found an entry with no ticker in the message". Verify whether the source sequence links this message to the immediately preceding entry and whether conditional adds are supported. Review contextual action recognition separately from execution eligibility; the available evidence does not justify forcing an actionable alert.
+- Earlier same-author, same-channel wording explicitly identifies "$SPY 760p 0dtes", but that message is absent from validation.eligible_prior_ids. Between it and the eligible context, the author says, "Wait on next one", followed by "Stay loaded on 760p". This leaves a possible continuity or reset boundary to resolve. Verify the context-window and reset rules against retained source messages before proposing ticker or expiry inheritance. If continuity is established, consider preserving verified instrument identity through the later entry and add; otherwise retain unresolved fields. Resolve 0dte using the verified source trading date and timezone, not older 9/14 trades.
+- The same-session setup describes a "759.90 - 760.50 zone" for puts, supporting interpretation of 760.40 as an underlying trigger. The current stop wording is only "above that". The preceding "Buy 1 at 1.31" concerns the initial entry, not an add fill. The reader leaves price null. Verify the level's role from source context and keep the underlying trigger separate from strike, option premium, and stop. Do not reuse 1.31 as the add premium, convert 760.40 into a premium, or assign an exact stop. Preserve the raw wording and distinguish a conditional add instruction from a reported fill.
+
+## Limitations
+- Although the evidence is marked untruncated, only three prior messages are listed as eligible context; the eligibility policy and detailed parser trace are not supplied.
+- No broker confirmations, contemporaneous option quotes, or add-fill evidence are provided. Caller messages are not broker-confirmed executions.
+- The current message contains no explicit option premium or exact stop price. Missing values are not zero.
+- The Gemini cooldown was followed by a successful OpenAI reader response; this does not establish an application outage.
+
+---
+
 # Reader Review — 2026-09-15 — f486637fbc6ec29f940f
 
 The reader proposed a contextual SPY 760 PUT opening alert for “Buy 1 at 1.31,” while the parser produced no actionable result and validation rejected the reader output. Review context eligibility and field provenance before classifying this as a parser defect.

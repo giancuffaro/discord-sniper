@@ -79,3 +79,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789480048.355,filled,META,CALLS,690,9/16,,671.0,1.88,Demon × LKS,Demon day-trades
 1789480235.462,armed,TSLA,CALLS,370,2026-09-16,,361.0,,Nitro Trades,Platinum nitro
 1789480411.741,submitted,TSLA,CALLS,370,2026-09-16,,361.0,,Nitro Trades,Platinum nitro
+1789480413.744,filled,TSLA,CALLS,370,2026-09-16,,361.0,1.19,Nitro Trades,Platinum nitro
