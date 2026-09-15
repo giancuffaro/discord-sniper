@@ -371,11 +371,12 @@ bid, ask, spread_pct, delta, iv, live, coid, ledger_key, in_ledger, source, raw`
 3 THIN / no open interest · 1 NO buying connection.
 `source`: 289 `trades.log` · 42 `telemetry`. `in_ledger` is True on only 18.
 
-- **Trap — 60 of the 331 rows are not alerts.** They are startup banners
-  (30), Topstep/ProjectX prop status (15), swing-switch settings (10) and
-  duplicate-guard notices (5). They are itemised in
-  `master_alerts_noise_to_purge.csv` **and they are still present in
-  master_alerts.csv** — the purge has not been applied. **Real alert count: 271.**
+- **The 60 non-alert rows are GONE (checked 9/15).** They were startup
+  banners, Topstep/ProjectX prop status, swing-switch settings and
+  duplicate-guard notices. `build_alerts.NOISE` now drops them at the door, the
+  rebuilt file carries none of them, and the worklist that itemised them was
+  deleted 9/15. Re-check with `build_alerts._noise_reason` over the `raw`
+  column — it matched 0 of today's rows.
 - **Trap — `delta` and `iv` are zero on all 331 rows.** Not "mostly": all of them.
   So is `dte`. Do not build a greeks study on this file.
 - Also near-empty: `slip_abs`/`slip_pct` (309/331), `posted_at`, `seen_at`,
@@ -492,7 +493,6 @@ The `.~lock.*.xlsx#` files mean a workbook is open in LibreOffice — ignore the
 | `ratchet_sweep_results.csv` | 50 born-stop / arm combinations | 50 rows | `born_stop_pct, arm_to_be_pct, total_pl_dollars, avg_pl_dollars, win_rate_pct, resolved_of` |
 | `ratchet_fine_results.csv` | 294 fine-grained combinations | 294 rows | `born, arm, step, total, win_pct, n` |
 | `reproductions.json` / `js-reproductions.json` | which known bugs still reproduce | 20 / 2 entries, **LIVE** | `{name, reproduced, detail}` |
-| `liquidity_cache.json` | today's open-interest / spread screen | `{day, map}`, 9/8 | One day only; stale. |
 | `databento_backfill_state.json` | which contract-days are already downloaded | 111 `[occ, date]` pairs | The backfill's to-do list. |
 | `px_day.json` | Topstep daily P&L points | 6 keys | Prop only. |
 | `state.json` / `state.json.bak` | today's date + a small state blob | 2 keys, **LIVE** | |
@@ -629,10 +629,8 @@ These were produced by the history rebuild. They are snapshots, not live.
 | `recovered_alerts_chat.csv` | **2,681** | Alerts reconstructed from the DS Logs exports. 22 columns incl. `their_stop, their_target, msg_type, links_to, confidence, clue, source_message_verbatim`. `msg_type`: 1,018 entry · 577 trim · 504 commentary · 477 exit · 105 add. Confidence: 979 high / 843 medium / 859 low. **Only 340 of the 2,681 were already in master_alerts.csv.** |
 | `unrecoverable_alerts.csv` | 44 | Alerts from trades.log that could not be resolved — 27 because no expiry could be determined, the rest because the originating call is not in the log. |
 | `unrecoverable_chat_messages.csv` | 179 | Chat messages that look like alerts but are not resolvable — **170 are "ticker and a bare number only"**. |
-| `master_alerts_noise_to_purge.csv` | 60 | The non-alert rows sitting in master_alerts.csv. Not yet removed. |
-| `alert_rebuild_2026-09-11.csv` | 29 | A tape-replay of rebuilt alerts. `status`: 16 OK, 7 "NO TAPE that day", 6 skipped for gaps. |
-| `quotes_needed_backfill.txt` | 413 OCCs | Contracts with no price record, wanted from Databento. |
-| `missing_contracts_for_backfill.txt` | 84 OCCs | The shorter, prioritised version. |
+| `quotes_needed_backfill.txt` | 251 OCCs | Contracts alerted with no row in ANY tape, wanted from Databento. Rebuilt 9/15 from master_alerts.csv vs the four tapes; most-alerted first. |
+| `missing_contracts_for_backfill.txt` | 47 OCCs | The prioritised slice: alerted more than once, or the alert became an order. |
 
 **Trap:** `recovered_alerts_chat.csv` is dominated by whichever export files were
 biggest — 1,007 of its 2,681 rows come from one file
@@ -726,8 +724,8 @@ a busy day. Dedupe before counting rooms.
 2. **Contracts with no tape have no price, ever.** `option_tape.csv` covers 31
    contracts over 6 days; `databento_tape.csv` covers 510 over 49 days;
    `missed_tape.csv` covers 3. Everything else alerted before or outside those
-   is priceless in the literal sense. `quotes_needed_backfill.txt` lists 413
-   such OCCs; `missing_contracts_for_backfill.txt` the 84 that matter most.
+   is priceless in the literal sense. `quotes_needed_backfill.txt` lists 251
+   such OCCs (9/15); `missing_contracts_for_backfill.txt` the 47 that matter most.
    They can only be recovered by paying Databento for them.
 3. **`alert_tape.csv` and `alert_meta.csv` started from zero on 2026-09-11.**
    They now record the "what did the contracts we didn't buy cost" lane, but
