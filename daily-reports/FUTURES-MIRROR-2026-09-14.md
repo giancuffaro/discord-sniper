@@ -4,7 +4,7 @@ SPY/QQQ room entries replayed as one-contract MES/MNQ, market entry, 25-pt stop 
 The switch is OFF: this is a measurement, not a trade.
 
 **bars: unavailable** — BentoClientError: 422 dataset_unavailable_range
-Part or all of your request for dataset 'GLBX.MDP3' requires a subscription and/or license to access. Try again with an end time before 2026-09-14T17:05:53.652356000Z.
+Part or all of your request for dataset 'GLBX.MDP3' requires a subscription and/or license to access. Try again with an end time before 2026-09-14T18:29:57.071583000Z.
 do
 
 8 SPY/QQQ alert(s) were found for this date and are NOT scored. Nothing is guessed and nothing is written to the cumulative file; re-run once bars are available.
