@@ -2,9 +2,9 @@
 
 ## Method
 
-Source alerts: `daily-audits/raw-2026-09-11-discord-log.json`, deduplicated by the literal instrument, direction, entry, target, and stop. Price source: retained `bars/NQ_1m_2026-08-03_2026-09-12.csv` one-minute NQ continuous bars.
+Source alerts: `daily-audits/raw-2026-09-11-discord-log.json`, deduplicated by literal instrument, direction, entry, target, and stop. Price sources: retained one-minute continuous futures bars: `bars/NQ_1m_2026-08-03_2026-09-12.csv` and `bars/MGC_1m_2026-09-11.csv` (Databento GLBX.MDP3).
 
-A trade is counted only when the stated MNQ entry is on MNQ's $0.25 tick grid and that price trades after the post. The stated target or stop determines the exit. If both occurred in one one-minute bar, the trade would be `unavailable`; none of the counted trades has that ambiguity. This is a market-data replay, not a broker fill: it excludes spread, slippage, and commissions.
+A trade is counted only when the stated entry is on that contract's tick grid and the price trades after the post. The stated target or stop determines the exit. If both occurred in one one-minute bar, the trade would be `unavailable`; none of the counted trades has that ambiguity. This is a market-data replay, not a broker fill: it excludes spread, slippage, and commissions.
 
 ## Result
 
@@ -16,12 +16,12 @@ A trade is counted only when the stated MNQ entry is on MNQ's $0.25 tick grid an
 
 **Literal, valid, filled MNQ signals: 3. Win rate: 33.3%. Gross result: -10 points / -$20 per MNQ contract.**
 
-## Not scored
+## Not filled / not scored
 
 | Posted ET | Signal | Why |
 |---|---|---|
 | 09:54 | MNQ short 29483.875 | The quoted entry is not a valid MNQ tick ($0.25 grid). Rounding it would change the caller's signal, so it is excluded. |
-| 10:56 | MGC long 4422.60 | No retained MGC bar tape for Sep 11. |
-| 11:16 | MNQ long 29377.50 | The entry did not trade again during regular hours after the alert. It first touched after 16:00 ET, so it is treated as unfilled rather than an overnight trade. |
+| 10:56 | MGC long 4422.60 | MGC bars are now retained. From 10:57 AM–4:00 PM ET, the highest print was 4383.80, so the stated entry never filled. |
+| 11:16 | MNQ long 29377.50 | The entry did not trade again during regular hours after the alert. It first touched after 4:00 PM ET, so it is treated as unfilled rather than an overnight trade. |
 
-The unscored rows mean this does not grade the channel as a whole. It only answers whether the alerts with literal, time-aligned evidence were profitable.
+The unfilled rows do not affect P&L. This scores only literal, time-aligned fills and does not grade the channel as a whole.
