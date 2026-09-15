@@ -138,10 +138,18 @@ def _decision_rows(day):
     active_channels = _active_channel_ids()
     for fn in replay_check.exports_for_day(day):
         lane_msgs, dids = replay_check.load(fn)
-        for t, room, cid, text in lane_msgs:
+        for message in lane_msgs:
+            t, room, cid, text = message
             if not _reportable_channel(cid, active_channels):
                 continue
-            messages[(t, cid, text[:100])] = (t, room, cid, text)
+            key = (t, cid, text[:100])
+            prior = messages.get(key)
+            # A legacy capture and an ID-bearing re-capture can describe the
+            # same displayed row.  Never let the legacy copy overwrite the
+            # source ID needed for an auditable Discord link.
+            if prior and getattr(prior, "message_id", "") and not getattr(message, "message_id", ""):
+                continue
+            messages[key] = message
         for t, kind, text in dids:
             if kind not in rank:
                 continue
