@@ -2,7 +2,7 @@
 
 G's idea: "alert -> round-number pullback -> arm with a $0.25 stock stop; +$0.25 in favor -> stop to breakeven; then ratchet every +$0.15 from there", $1.00 on the Mag 7. This replays it against the live pullback stop+target rule and against our premium 5/3/5 ratchet, on the SAME pullback entries and the same real quotes. Nothing changed; no order was placed.
 
-Built by `reference/stock_stop_replay.py`. Stock leg: real 1-second Databento bars in `bars/stock/`. Option leg: Databento OPRA (`databento_tape_clean.csv`, ~1 quote/second) where it exists, else the Webull tapes. Entries and levels come from the live `pullback.py`.
+Built by `reference/stock_stop_replay.py`. Stock leg: real 1-second Databento bars in `bars/stock/`. Option leg: Databento OPRA (`databento_tape.csv`, ~1 quote/second) where it exists, else the Webull tapes. Entries and levels come from the live `pullback.py`.
 
 Stock bars: Databento quoted **$0.1538** for the twenty symbol-days asked for (2026-09-11 and 2026-09-14). The 9/11 half ($0.0732 quoted) delivered and is cached; the 9/14 half ($0.0805 quoted) was refused with a 403 before any data was returned. Everything from 2026-08-11 to 2026-09-08 was already in `bars/stock/` from the 9/9 pullback study and cost nothing.
 

@@ -44,7 +44,7 @@ CONSERVATIVE BY CONSTRUCTION
 
 HONEST LIMITS
   * Two different option tapes, never interleaved inside one contract-day:
-    Databento OPRA (`databento_tape_clean.csv`, ~1 quote/second) for 8/11-9/8,
+    Databento OPRA (`databento_tape.csv`, ~1 quote/second) for 8/11-9/8,
     and the Webull tapes (`alert_tape.csv` + `option_tape.csv`, 5-60s sweeps)
     for 9/11. The OPRA windows are SHORT — the backfill bought the minutes
     around each call, not the whole session — so most paths end long before
@@ -133,7 +133,7 @@ def option_paths():
     the same vendor at different cadences and so may be merged with each other.
     """
     out, webull = {}, defaultdict(dict)
-    for name, source in (("databento_tape_clean.csv", "OPRA 1s"),
+    for name, source in (("databento_tape.csv", "OPRA 1s"),
                          ("alert_tape.csv", "Webull sweep"),
                          ("option_tape.csv", "Webull sweep")):
         path = os.path.join(ROOT, name)
@@ -501,7 +501,7 @@ def write(trades, skipped, cost_note):
          "no order was placed.", "",
          "Built by `reference/stock_stop_replay.py`. Stock leg: real 1-second "
          "Databento bars in `bars/stock/`. Option leg: Databento OPRA "
-         "(`databento_tape_clean.csv`, ~1 quote/second) where it exists, else "
+         "(`databento_tape.csv`, ~1 quote/second) where it exists, else "
          "the Webull tapes. Entries and levels come from the live `pullback.py`.",
          "", cost_note, "",
          "## The rules", "",

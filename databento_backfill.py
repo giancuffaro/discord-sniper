@@ -249,6 +249,9 @@ def main():
     print("Done. %d contract-days fetched, %d empty, %d errors, %d rows written to %s"
           % (done_n, empty_n, err_n, rows_n, os.path.basename(OUT_CSV)))
     print("Re-run any time — already-fetched (occ, day) pairs are skipped.")
+    if rows_n:
+        import clean_tape
+        clean_tape.main()          # the one tape is always the despiked one
 
 
 if __name__ == "__main__":

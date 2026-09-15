@@ -7,13 +7,12 @@ print, then recovers (the "-96% low" seen in the mover analysis). Those aren't
 tradeable levels; they falsely trigger stops in every ratchet replay. This walks
 each contract's series and replaces any bid/ask that deviates hard from its LOCAL
 median (a real move persists across ticks and moves the median with it; a bad
-tick is a lone spike). Writes databento_tape_clean.csv — the ORIGINAL is never
-touched (the bridge still writes the raw tape).
+tick is a lone spike). Rewrites databento_tape.csv IN PLACE (9/15: one file,
+not a raw/clean twin) — timestamps rounded to the millisecond, rows grouped
+by contract in time order. databento_backfill.py and option_tape_pull.py run
+this after every append, so the file is always the despiked one.
 
     python3 clean_tape.py
-
-Read-only w.r.t. the raw tape; writes the clean copy. After it runs, the sweeps
-auto-use the clean file (ratchet_sweep.load_tape prefers it).
 """
 import csv
 import os
@@ -21,8 +20,7 @@ import statistics as st
 from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-RAW = os.path.join(HERE, "databento_tape.csv")
-CLEAN = os.path.join(HERE, "databento_tape_clean.csv")
+TAPE = os.path.join(HERE, "databento_tape.csv")
 
 WIN = 2          # look ±2 ticks for the local median (5-point window)
 LO = 0.4         # bid below 40% of local median = bad drop
@@ -53,7 +51,7 @@ def despike(vals):
 def main():
     rows = defaultdict(list)   # occ -> [(ts, bid, ask, raw_line_index)]
     order = []
-    with open(RAW, encoding="utf-8") as f:
+    with open(TAPE, encoding="utf-8") as f:
         rd = csv.DictReader(f)
         for r in rd:
             try:
@@ -82,19 +80,21 @@ def main():
         fixed_ask += fa
         contracts += 1
 
-    with open(CLEAN, "w", newline="", encoding="utf-8") as f:
+    tmp = "%s.%d.tmp" % (TAPE, os.getpid())
+    with open(tmp, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["ts", "occ", "bid", "ask"])
         for occ, series in rows.items():
             for ts, b, a in series:
                 w.writerow(["%.3f" % ts, occ, b, a])
+    os.replace(tmp, TAPE)
 
     print("cleaned %d contracts, %d ticks" % (contracts, total))
     print("  bad BID ticks replaced: %d  (%.3f%%)"
           % (fixed_bid, 100.0 * fixed_bid / total if total else 0))
     print("  bad ASK ticks replaced: %d  (%.3f%%)"
           % (fixed_ask, 100.0 * fixed_ask / total if total else 0))
-    print("wrote %s" % os.path.basename(CLEAN))
+    print("rewrote %s in place" % os.path.basename(TAPE))
 
 
 if __name__ == "__main__":

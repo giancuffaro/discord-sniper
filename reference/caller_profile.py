@@ -16,7 +16,7 @@ SOURCES (read-only)
   daily-reports/CALLER-OUTCOMES-2026-09-14.csv
                                already-paired claim events for two days.
   master_ledger.csv            what WE did, for the side-by-side.
-  databento_tape_clean.csv / option_tape.csv / missed_tape.csv / alert_tape.csv
+  databento_tape.csv / option_tape.csv / missed_tape.csv / alert_tape.csv
                                real bids, used only to price a caller exit that
                                carries no stated percent.
 
@@ -284,7 +284,7 @@ def load_tape(want):
     out = defaultdict(list)
     if not want:
         return out
-    for f in ("databento_tape_clean.csv", "option_tape.csv",
+    for f in ("databento_tape.csv", "option_tape.csv",
               "missed_tape.csv", "alert_tape.csv"):
         p = os.path.join(ROOT, f)
         if not os.path.exists(p):

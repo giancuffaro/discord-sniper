@@ -137,7 +137,7 @@ Remaining work, in order:
 
 ## Databento scope on 2026-09-11
 
-`databento_tape_clean.csv` is cached locally and usable without another API
+`databento_tape.csv` is cached locally and usable without another API
 purchase: 1,022,106 quote rows, 510 distinct option contracts, 49 trading days,
 2026-06-12 through 2026-09-08. It is market bid/ask history for requested
 contracts, not one caller's alerts. The covered universe is mixed: 479 distinct

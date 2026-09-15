@@ -52,7 +52,7 @@ sys.path.insert(0, HERE)
 import ledger  # noqa: E402
 import occ  # noqa: E402
 
-# Prefer the despiked tape (clean_tape.py) when it exists — junk bid ticks
+# The tape is despiked in place by clean_tape.py — junk bid ticks
 # fire phantom stops in every replay. Falls back to the raw backfill.
 # 9/9: ONE registry decides which tape is canonical — tape.path("databento")
 # is the despiked clean file when it exists. Same answer for every backtest.

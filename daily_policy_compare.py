@@ -40,7 +40,7 @@ def _quotes(day):
     # otherwise use the live shadow/all-alert/open-position tapes. Never
     # interleave vendors—the resulting artificial price jumps can trigger a
     # stop that existed on neither feed.
-    for source in ("databento_clean", "databento", "missed",
+    for source in ("databento", "missed",
                    "tasty_quote", "alert", "webull"):
         grouped = defaultdict(list)
         for row in tape.rows(since=start, until=end, sources=[source]):

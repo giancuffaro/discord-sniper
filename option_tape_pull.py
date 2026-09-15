@@ -261,6 +261,9 @@ def main():
               % (done_n, len(win)), flush=True)
     fh.close()
     print("wrote %d tape rows to %s" % (wrote, os.path.basename(OUT_CSV)))
+    if wrote:
+        import clean_tape
+        clean_tape.main()          # the one tape is always the despiked one
 
 
 if __name__ == "__main__":

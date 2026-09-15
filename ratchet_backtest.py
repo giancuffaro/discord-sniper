@@ -58,7 +58,7 @@ def _nan(x):
 def load_tape():
     tape = {}
     if not os.path.exists(TAPE_CSV):
-        sys.exit("No databento tape — run databento_backfill.py (then clean_tape.py) first.")
+        sys.exit("No databento tape — run databento_backfill.py first.")
     with open(TAPE_CSV, encoding="utf-8") as f:
         for r in csv.DictReader(f):
             try:

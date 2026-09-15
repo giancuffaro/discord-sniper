@@ -57,12 +57,10 @@ SOURCES = {
     "tasty_quote": ("quote_shadow.csv", "dx"),
     # Real OPRA history (9/8), backfilled by databento_backfill.py for every
     # call in days/*.json — including refused/nofill ones the other three
-    # feeds never saw, because nothing here ever quoted them live.
+    # feeds never saw, because nothing here ever quoted them live. ONE file
+    # (9/15): the writers append raw ticks and clean_tape.py despikes it IN
+    # PLACE, so every backtest replays the same prices from the same file.
     "databento": ("databento_tape.csv", "occ"),
-    # 9/9: the SAME ticks, despiked by clean_tape.py (7 bad prints in 329k).
-    # This is the CANONICAL historical tape — path("databento") returns it
-    # whenever it exists, so every backtest replays the same prices.
-    "databento_clean": ("databento_tape_clean.csv", "occ"),
     # 9/9: OPRA history for the MISSED / nofill calls (scoped_missed_pull.py).
     "missed": ("missed_tape.csv", "occ"),
     # Slow, rate-budgeted snapshots for every alerted contract, including
@@ -71,22 +69,16 @@ SOURCES = {
     "alert": ("alert_tape.csv", "occ"),
 }
 
-# Raw and clean are the same observations; never replay both at once.
-_DEFAULT_SOURCES = ("webull", "tasty_greeks", "tasty_quote", "databento_clean",
+_DEFAULT_SOURCES = ("webull", "tasty_greeks", "tasty_quote", "databento",
                     "missed", "alert")
 BARS_DIR = os.path.join(HERE, "bars")      # Tradier minute bars, <OCC>_<date>.json
 
 
 def path(name="databento", root=None):
-    """THE file for a tape source. path("databento") is the despiked clean
-    tape when it exists, else the raw one — so no script hard-codes which.
+    """THE file for a tape source, so no script hard-codes a file name.
     9/9: ratchet_backtest replayed RAW while ratchet_sweep replayed CLEAN;
     two backtests, two tapes. Now one call, one answer."""
     root = root or HERE
-    if name == "databento":
-        clean = os.path.join(root, SOURCES["databento_clean"][0])
-        if os.path.exists(clean):
-            return clean
     return os.path.join(root, SOURCES[name][0])
 
 
@@ -155,16 +147,7 @@ def rows(occ=None, since=None, until=None, sources=None, root=None):
     since/until  unix timestamps
     sources  subset of SOURCES keys
     """
-    # default = every feed once: clean databento stands in for raw (same
-    # ticks), so a replay never double-counts. Ask for "databento" explicitly
-    # to get the raw file.
-    if sources:
-        want = list(sources)
-    else:
-        want = [n for n in _DEFAULT_SOURCES
-                if n != "databento_clean" or os.path.exists(path("databento_clean"))]
-        if "databento_clean" not in want:
-            want.append("databento")
+    want = list(sources) if sources else list(_DEFAULT_SOURCES)
     out = []
     for name in want:
         fname, keykind = SOURCES[name]
