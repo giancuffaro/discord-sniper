@@ -482,7 +482,8 @@ Scope: reference for a Python bot trading US equity options on the Webull OpenAP
   NOT_SUPPORT_REVERSE_OPTION, STOP_PRICE_MUST_BE_LESS_THAN_MARKET).
 - No option streaming; fills ARE pushed (gRPC TradeEventsClient). No
   MARKET orders on options. Combos = MASTER(LIMIT) + STOP_LOSS on SINGLE
-  only. Replace needs original client_order_id + legs[].id.
+  only. Option SELL orders are DAY-only, so every resting stop dies at the
+  close. Replace needs original client_order_id + legs[].id.
 - Ticks: SPY/QQQ/IWM $0.01 always; Penny Program $0.01 <$3 / $0.05 ≥$3;
   else $0.05/$0.10 (tick_round/stop_below are symbol-aware).
 - Quote bus sweeps at 1.05 s, 20 symbols per call, fill poll 1.0 s;
