@@ -507,19 +507,19 @@ def build():
             excluded.append((alert, "no quote path for this exact contract"))
             continue
         lag = after[0][0] - alert["ts"]
-        if lag > MAX_ENTRY_LAG_S:
-            excluded.append((alert, "first quote %.0fs after the alert (> %.0fs)"
-                             % (lag, MAX_ENTRY_LAG_S)))
-            continue
         fill = fills.get(key)
         if fill and fill.get("opened_ts") is not None and abs(
                 fill["opened_ts"] - alert["ts"]) <= FILL_MATCH_WINDOW_S:
-            entry, basis = fill["fill"], "real fill"
+            # A real fill IS the entry evidence — an exact price and an exact
+            # time from the broker. The 3-minute tape gate exists to stop us
+            # inventing an entry from a stale quote, so it does not apply here.
+            entry, basis, late = fill["fill"], "real fill", False
             sim_from = max(alert["ts"], fill["opened_ts"])
         else:
             fill = None
             entry, basis = after[0][2], "first ask"
             sim_from = after[0][0]
+            late = lag > MAX_ENTRY_LAG_S
         walk = [r for r in after if r[0] >= sim_from] or after[:1]
         if not entry or entry <= 0:
             excluded.append((alert, "no usable entry price"))
@@ -528,7 +528,7 @@ def build():
         flat = _flat_ts(alert["day"])
         row = {
             "alert": alert, "entry": entry, "basis": basis, "path": walk,
-            "lag": lag, "n_quotes": len(walk),
+            "late": late, "lag": lag, "n_quotes": len(walk),
             "median_gap": median(gaps) or 0.0,
             "big_gaps": sum(1 for g in gaps if g > GAP_ALARM_S),
             "max_gap": max(gaps) if gaps else 0.0,
@@ -541,6 +541,13 @@ def build():
         for code, _label, tiers, anticlip, floored in VARIANTS:
             row["runs"][code] = simulate(walk, entry, alert["root"], tiers,
                                          anticlip, floored, flat)
+        # A hole in the sweep before the exit means the stop was probably hit
+        # inside it and we never saw the price that did it. Those rows keep
+        # their place in the table but are quarantined out of the clean total.
+        row["gap_before_exit"] = any(
+            walk[i + 1][0] - walk[i][0] > GAP_ALARM_S
+            and walk[i][0] <= max(row["runs"][c]["ts"] for c in row["runs"])
+            for i in range(len(walk) - 1))
         pb_why, pb_ts, pb_ask = pullback_entry(
             alert, unders.get((alert["day"], alert["root"])) or [], walk)
         row["pullback_why"] = pb_why
@@ -580,8 +587,15 @@ def hhmm(ts):
 def write(trades, excluded):
     out_md = os.path.join(HERE, "RATCHET-REPLAY-TAPE-2026-09-14.md")
     out_csv = os.path.join(HERE, "RATCHET-REPLAY-TAPE-2026-09-14.csv")
-    stats = {code: summarise(trades, code) for code, _l, _t, _a, _f in VARIANTS}
-    base = [t["runs"]["A"]["pl"] for t in trades]
+    # SCORED is the honest sample: the tape quoted the contract within 3
+    # minutes of the alert, or the bot really filled it. LATE rows are
+    # replayed and shown, but their entry is a quote from minutes after the
+    # call, so they answer a different question and never enter a total.
+    scored = [t for t in trades if not t["late"]]
+    late = [t for t in trades if t["late"]]
+    clean = [t for t in scored if not t["gap_before_exit"]]
+    stats = {code: summarise(scored, code) for code, _l, _t, _a, _f in VARIANTS}
+    clean_stats = {code: summarise(clean, code) for code, _l, _t, _a, _f in VARIANTS}
 
     L = ["# Ratchet replay on real quotes — 2026-09-11 and 2026-09-14", "",
          "G asked whether the live ratchet is too tight. This replays four exit "
@@ -623,26 +637,70 @@ def write(trades, excluded):
                     s["why"].get("born stop", 0), s["why"].get("first lock", 0),
                     s["why"].get("ratchet rung", 0), s["why"].get("close", 0)))
     L += ["", "Webull charges $0 commission on options, so net = gross.", "",
-          "## Paired comparison against A (same trades, same paths)", "",
-          "| Variant | Mean difference / trade | 95%% bootstrap band (%d resamples) | "
-          "Resamples above zero | Verdict |" % BOOTSTRAP_N,
-          "|---|---:|---|---:|---|"]
+          "One row dominates those dollars: **%s**. Its sweep has a hole of "
+          "more than two minutes before the exit, so the price that broke its "
+          "stop was never recorded and every variant marks it at whatever the "
+          "tape showed next. Same subset, gap-damaged rows dropped:" % _worst(scored),
+          "",
+          "| Variant | n (gap-clean) | Gross $ | Win % | Avg/trade | Born stop | "
+          "First lock | Ratchet rung | Close |",
+          "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for code, label, _t, _a, _f in VARIANTS:
-        if code == "A":
-            continue
-        diffs = [t["runs"][code]["pl"] - t["runs"]["A"]["pl"] for t in trades]
-        b = bootstrap(diffs)
-        if b is None:
-            continue
-        decisive = b["lo"] > 0 or b["hi"] < 0
-        L.append("| %s vs A | %+.2f | %+.2f .. %+.2f | %.0f%% | %s |"
-                 % (code, b["mean"], b["lo"], b["hi"],
-                    100.0 * b["share_above_zero"],
-                    "real at this sample" if decisive
-                    else "**cannot be decided at this sample** — the band spans zero"))
-    L += ["", "The band is the 2.5th-97.5th percentile of the resampled MEAN "
+        s = clean_stats[code]
+        L.append("| **%s** %s | %d | %+.0f | %.0f%% | %+.2f | %d | %d | %d | %d |"
+                 % (code, label, s["n"], s["gross"], s["win_pct"], s["avg"],
+                    s["why"].get("born stop", 0), s["why"].get("first lock", 0),
+                    s["why"].get("ratchet rung", 0), s["why"].get("close", 0)))
+    L += ["", "## Paired comparison against A (same trades, same paths)", ""]
+    for label, sample in (("All %d scored trades" % len(scored), scored),
+                          ("Gap-clean subset (%d)" % len(clean), clean)):
+        L += ["**%s**" % label, ""]
+        L += ["| Variant | Mean difference / trade | 95%% bootstrap band (%d resamples) | "
+              "Resamples above zero | Verdict |" % BOOTSTRAP_N,
+              "|---|---:|---|---:|---|"]
+        for code, _lab, _t, _a, _f in VARIANTS:
+            if code == "A":
+                continue
+            diffs = [t["runs"][code]["pl"] - t["runs"]["A"]["pl"] for t in sample]
+            b = bootstrap(diffs)
+            if b is None:
+                continue
+            if all(abs(d) < 1e-9 for d in diffs):
+                verdict = "identical to A on **every** trade in this sample"
+            elif b["lo"] > 0 or b["hi"] < 0:
+                verdict = "real at this sample"
+            else:
+                verdict = ("**cannot be decided at this sample** — the band "
+                           "spans zero")
+            L.append("| %s vs A | %+.2f | %+.2f .. %+.2f | %.0f%% | %s |"
+                     % (code, b["mean"], b["lo"], b["hi"],
+                        100.0 * b["share_above_zero"], verdict))
+        L.append("")
+    L += ["The band is the 2.5th-97.5th percentile of the resampled MEAN "
           "difference. A band that contains zero means this sample cannot tell "
-          "the two rules apart, whatever the totals say.", ""]
+          "the two rules apart, whatever the totals say.", "",
+          "## Where the money actually was", "",
+          "This is the answer to \"is it too tight\": how far the bid got above "
+          "the entry before the exit rule took it off, per trade, under A.", "",
+          "| Day | Time | Contract | Entry | Best bid | Peak gain | A took | Gave back |",
+          "|---|---|---|---:|---:|---:|---:|---:|"]
+    gave_back = 0
+    for t in sorted(scored, key=lambda r: (r["alert"]["day"], r["alert"]["ts"])):
+        a, r = t["alert"], t["runs"]["A"]
+        peak_pct = (r["peak_bid"] - t["entry"]) / t["entry"] * 100.0
+        if peak_pct >= 3.0 and r["pct"] <= 0.0:
+            gave_back += 1
+        L.append("| %s | %s | %s | $%.2f | $%.2f | %+.1f%% | %+.1f%% | %.1f pts |"
+                 % (a["day"][5:], a["time"][:5], a["occ"], t["entry"],
+                    r["peak_bid"], peak_pct, r["pct"], peak_pct - r["pct"]))
+    armed = sum(1 for t in scored
+                if (t["runs"]["A"]["peak_bid"] - t["entry"]) / t["entry"] * 100.0 >= 3.0)
+    L += ["", "- Trades whose bid ever reached the **+3%% arm**: **%d of %d**."
+          % (armed, len(scored)),
+          "- Trades that armed the ratchet and still came out at or below "
+          "entry: **%d**. That is the population the complaint is about." % gave_back,
+          "- If the bid never reached +3%%, no arm/rung setting could have "
+          "changed that trade; only the born stop could.", ""]
 
     L += ["## Named cases", ""]
     for occ_want, note in NAMED:
@@ -653,14 +711,20 @@ def write(trades, excluded):
             continue
         t = hit[0]
         a = t["alert"]
-        L.append("- **%s %s %s %s** (%s, %s, %s) — %s" % (
+        L.append("- **%s %s %s %s** (%s, %s, %s) — %s%s" % (
             a["symbol"], _strike(a), a["side"][0], a["expiry"],
-            a["room"] or "?", a["caller"] or "?", a["time"][:5], note))
+            a["room"] or "?", a["caller"] or "?", a["time"][:5], note,
+            "  **LATE START — not in any total.** The tape's first quote for "
+            "this contract is %.0f minutes after the call, so the entry below "
+            "is a price from that later moment, not the one the alert offered."
+            % (t["lag"] / 60.0) if t["late"] else ""))
         L.append("  - entry $%.2f (%s), spread at entry $%.2f, max bid $%.2f at %s, "
-                 "%d quotes, first quote %.0fs after the alert."
+                 "%d quotes, first quote %.0fs after the alert.%s"
                  % (t["entry"], t["basis"], t["spread_at_entry"],
                     t["runs"]["A"]["peak_bid"], hhmm(t["runs"]["A"]["peak_ts"]),
-                    t["n_quotes"], t["lag"]))
+                    t["n_quotes"], t["lag"],
+                    "  Sweep hole > 2 min before the exit: the price that broke "
+                    "the stop was never recorded." if t["gap_before_exit"] else ""))
         for code, _label, _tt, _aa, _ff in VARIANTS:
             r = t["runs"][code]
             L.append("  - %s: born stop $%.2f%s -> exit $%.2f at %s (%s), %+.0f"
@@ -677,20 +741,30 @@ def write(trades, excluded):
     L.append("")
 
     L += ["## Every replayed alert", "",
-          "| Day | Time | Room | Caller | Contract | Entry basis | Entry | "
-          "A exit / $ | B exit / $ | C exit / $ | D exit / $ | Max bid | Max bid at |",
-          "|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|"]
-    for t in sorted(trades, key=lambda r: (r["alert"]["day"], r["alert"]["ts"])):
-        a = t["alert"]
-        cells = ["$%.2f / %+.0f" % (t["runs"][c]["exit"], t["runs"][c]["pl"])
-                 for c in ("A", "B", "C", "D")]
-        L.append("| %s | %s | %s | %s | %s %s%s %s | %s | $%.2f | %s | $%.2f | %s |"
-                 % (a["day"][5:], a["time"][:5], _md(a["room"]), _md(a["caller"]),
-                    a["symbol"], _strike(a), a["side"][0], a["expiry"],
-                    t["basis"], t["entry"], " | ".join(cells),
-                    t["runs"]["A"]["peak_bid"], hhmm(t["runs"]["A"]["peak_ts"])))
+          "`!` marks a sweep hole longer than two minutes before the exit — "
+          "that row's exit price is the next thing the tape saw, not the price "
+          "that broke the stop.", ""]
+    for heading, sample in (("### Scored", scored),
+                            ("### Late start — shown, never totalled", late)):
+        if not sample:
+            continue
+        L += [heading, "",
+              "| Day | Time | Room | Caller | Contract | Entry basis | Entry | "
+              "A exit / $ | B exit / $ | C exit / $ | D exit / $ | Max bid | Max bid at |",
+              "|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|"]
+        for t in sorted(sample, key=lambda r: (r["alert"]["day"], r["alert"]["ts"])):
+            a = t["alert"]
+            cells = ["$%.2f / %+.0f" % (t["runs"][c]["exit"], t["runs"][c]["pl"])
+                     for c in ("A", "B", "C", "D")]
+            L.append("| %s | %s | %s | %s | %s %s%s %s | %s%s | $%.2f | %s | $%.2f | %s |"
+                     % (a["day"][5:], a["time"][:5], _md(a["room"]), _md(a["caller"]),
+                        a["symbol"], _strike(a), a["side"][0], a["expiry"],
+                        t["basis"], " `!`" if t["gap_before_exit"] else "",
+                        t["entry"], " | ".join(cells),
+                        t["runs"]["A"]["peak_bid"], hhmm(t["runs"]["A"]["peak_ts"])))
+        L.append("")
 
-    L += ["", "## Tape coverage, per alert", "",
+    L += ["## Tape coverage, per alert", "",
           "Sweep granularity is the biggest caveat in this file. A stop touched "
           "between two sweeps is invisible, so every stop-out count below is a "
           "FLOOR and every P&L an over-estimate.", "",
@@ -703,10 +777,19 @@ def write(trades, excluded):
                  % (a["day"][5:], a["time"][:5], a["occ"], t["lag"], t["n_quotes"],
                     t["median_gap"], t["max_gap"], t["big_gaps"],
                     hhmm(t["last_ts"]), "yes" if t["reaches_close"] else "**no**"))
-    L += ["", "- Replayed: **%d**. Excluded: **%d**." % (len(trades), len(excluded)),
+    L += ["", "- Replayed and scored: **%d**. Replayed but late-start (never "
+          "totalled): **%d**. Excluded outright: **%d**."
+          % (len(scored), len(late), len(excluded)),
+          "- Scored rows with a sweep hole > 2 min before the exit: **%d**. "
+          "Gap-clean scored rows: **%d**."
+          % (len(scored) - len(clean), len(clean)),
           "- Paths that reach 15:59 ET: **%d of %d**. The rest are marked at the "
           "last quote the tape holds, which is not a real exit."
-          % (sum(1 for t in trades if t["reaches_close"]), len(trades))]
+          % (sum(1 for t in trades if t["reaches_close"]), len(trades)),
+          "- No slippage, no queue, no partial fills. The entry crosses the ask "
+          "and the exit prints at the bid that broke the stop. Real life is worse.",
+          "- %d scored trades over two sessions is not a sample that can settle "
+          "a trading rule. It can only rule things out." % len(scored)]
     if excluded:
         L += ["", "### Excluded alerts", "",
               "| Day | Time | Contract | Why |", "|---|---|---|---|"]
@@ -731,7 +814,7 @@ def write(trades, excluded):
           "Pullback entry | Pullback $ (A) |",
           "|---|---|---|---:|---:|---|---:|---:|"]
     take_n = take_sum = pb_n = pb_sum = 0
-    for t in sorted(trades, key=lambda r: (r["alert"]["day"], r["alert"]["ts"])):
+    for t in sorted(scored, key=lambda r: (r["alert"]["day"], r["alert"]["ts"])):
         a = t["alert"]
         take_n += 1
         take_sum += t["runs"]["A"]["pl"]
@@ -744,7 +827,7 @@ def write(trades, excluded):
                     t["runs"]["A"]["pl"], t["pullback_why"],
                     ("$%.2f" % t["pullback_entry"]) if t["pullback_entry"] else "—",
                     ("%+.0f" % pr["pl"]) if pr else "—"))
-    managed = [t for t in trades if t["alert"]["root"] in MANAGED]
+    managed = [t for t in scored if t["alert"]["root"] in MANAGED]
     m_take = sum(t["runs"]["A"]["pl"] for t in managed)
     m_pb = sum(t["pullback_run"]["pl"] for t in managed if t["pullback_run"])
     L += ["", "- Take-it fills: **%d**, **%+.0f** under variant A." % (take_n, take_sum),
@@ -753,14 +836,21 @@ def write(trades, excluded):
           "pullback **%+.0f** — and the pullback simply did not enter %d of them."
           % (len(managed), m_take, m_pb, len(managed) - pb_n),
           "- A skipped entry is $0, not a loss. Whether that is good depends on "
-          "the trades it skips, which is the point of the table above."]
+          "the trades it skips, which is the point of the table above.",
+          "- **Skyy's QQQ 708C is the case in point and it is not in this table**: "
+          "its tape path starts 10.8 minutes after the call, so neither entry "
+          "rule can be scored on it. What is recorded is that the contract was "
+          "$0.75 at the call and the caller posted out at $3.92 (+423%) at "
+          "13:14 — a move the $1 pullback wait would have had to be standing in "
+          "front of, and QQQ's next round number below 706.95 is 706."]
 
     with open(out_md + ".tmp", "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(L).rstrip() + "\n")
     os.replace(out_md + ".tmp", out_md)
 
     fields = ["day", "time", "room", "caller", "occ", "symbol", "side", "strike",
-              "expiry", "their_price", "entry", "entry_basis", "spread_at_entry",
+              "expiry", "their_price", "entry", "entry_basis", "scored",
+              "gap_before_exit", "spread_at_entry",
               "first_quote_lag_s", "quotes", "median_gap_s", "max_gap_s",
               "gaps_over_2min", "last_quote", "reaches_close", "peak_bid",
               "peak_bid_at", "pullback_why", "pullback_entry", "pullback_pl_A"]
@@ -777,7 +867,8 @@ def write(trades, excluded):
                    "caller": a["caller"], "occ": a["occ"], "symbol": a["symbol"],
                    "side": a["side"], "strike": a["strike"], "expiry": a["expiry"],
                    "their_price": a["their_price"], "entry": round(t["entry"], 4),
-                   "entry_basis": t["basis"],
+                   "entry_basis": t["basis"], "scored": not t["late"],
+                   "gap_before_exit": t["gap_before_exit"],
                    "spread_at_entry": round(t["spread_at_entry"], 4),
                    "first_quote_lag_s": round(t["lag"], 1),
                    "quotes": t["n_quotes"], "median_gap_s": round(t["median_gap"], 1),
@@ -813,6 +904,16 @@ NAMED = (
     ("QQQ260914P00705000", "Vero's QQQ 705P"),
     ("QQQ260914P00704000", "Demon's QQQ 704P"),
 )
+
+
+def _worst(trades):
+    """The single row carrying the most dollars under A — the one a reader
+    must know about before trusting the total."""
+    if not trades:
+        return "none"
+    t = max(trades, key=lambda r: abs(r["runs"]["A"]["pl"]))
+    return "%s %s, %+.0f" % (t["alert"]["day"][5:], t["alert"]["occ"],
+                             t["runs"]["A"]["pl"])
 
 
 def _why_excluded(contract, excluded):
