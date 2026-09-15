@@ -752,6 +752,20 @@ rb.auto_ratchet(RKEY, 2.40)          # exactly +20%
 ok(rb.state_of(RKEY) == positions.FILLED,
    "hitting +20%% does NOT close the position — the ratchet moves the stop, "
    "it never sells outright")
+
+# THE LADDER IS READ, NEVER TYPED (9/15). These four checks used to hard-code
+# the spacing of the day, so every respacing "failed" a correct machine. They
+# now derive the expected stop from ratchet_tiers.live_spacing() — the one
+# configuration reader — so the ladder can move without lying to the tests.
+def _ladder_stop(fill, gain_pct):
+    """Where the plain ladder rests after `gain_pct` of gain on `fill`."""
+    from ratchet_tiers import live_spacing
+    _born, arm, step = live_spacing()
+    if gain_pct < arm:
+        return None                      # not armed yet
+    k = int((gain_pct - arm) // step)     # rungs cleared past the arm
+    return round(fill * (1.0 + (k * step) / 100.0), 2)
+
 stops_after = [c for c in RWB.calls if c[0] == "stop"]
 ok(len(stops_after) == len(stops_before) + 1,
    "the ratchet cancels the old resting stop and places exactly one new one")
@@ -762,8 +776,10 @@ new_stop = stops_after[-1][3]
 # fill, +20% gain is k=(20-3)//5=3 -> locked +15% -> a 2.30 stop. ANTI-CLIP
 # (60% of the gain = +12%) does not bind here (it's OFF by default anyway,
 # see below), so the plain ladder number stands.
-ok(abs(new_stop - 2.30) < 0.005,
-   "at +20%% a $2.00 fill locks +15%% (9/10 arm-3/step-5 ladder) — 2.30, got %s" % new_stop)
+_want20 = _ladder_stop(2.00, 20.0)
+ok(abs(new_stop - _want20) < 0.005,
+   "at +20%% a $2.00 fill rests where the live ladder says (%s), got %s"
+   % (_want20, new_stop))
 ok(any(c[0] == "cancel" for c in RWB.calls),
    "the old stop order gets cancelled before the new one goes in")
 # Price keeps climbing to +30% — the stop should walk up again, to +10%.
@@ -779,8 +795,10 @@ ok(len(stops_30) == len(stops_after) + 1,
 # used to assert 2.36 — the anti-clipped number — so it is the one check
 # that proves the switch actually changes behaviour rather than just
 # existing in settings.
-ok(abs(stops_30[-1][3] - 2.50) < 0.005,
-   "anti-clip OFF: at +30%% the plain ladder locks +25%% — a 2.50 stop, got %s" % stops_30[-1][3])
+_want30 = _ladder_stop(2.00, 30.0)
+ok(abs(stops_30[-1][3] - _want30) < 0.005,
+   "anti-clip OFF: at +30%% the plain ladder rests at %s, got %s"
+   % (_want30, stops_30[-1][3]))
 
 # ...and with it ON, the SAME trade caps at 60% of the gain = +18% -> 2.36.
 # Built the same way as the trade above — a real entry and a real fill —
@@ -822,8 +840,8 @@ settle(_zb, _ZKEY)
 _zb.auto_ratchet(_ZKEY, 2.40)        # +20% -> lock +15% (9/8: k=(20-5)//5=3)
 _zb.auto_ratchet(_ZKEY, 2.60)        # +30% -> lock +25% (the plain ladder, uncapped)
 _zstops = [c for c in _ZWB.calls if c[0] == "stop"]
-ok(_zstops and abs(_zstops[-1][3] - 2.50) < 0.005,
-   "0DTE at +30%%: the plain ladder locks the full +25%% (2.50) — anti-clip "
+ok(_zstops and abs(_zstops[-1][3] - _ladder_stop(2.00, 30.0)) < 0.005,
+   "0DTE at +30%%: the plain ladder rests where it does on any other day — anti-clip "
    "does NOT apply to same-day expiries, got %s" % (_zstops[-1][3] if _zstops else None))
 
 # ---- THE TSLA 8/26 FAILURE (found 9/3 by auditing every filled trade for
@@ -845,9 +863,9 @@ settle(_fb, _FKEY)
 _FWB.refuse_stop_moves = True                 # broker says no from here on
 _fb.auto_ratchet(_FKEY, 2.40)                 # +20% -> wants the stop at +15% (9/8 spacing)
 _soft = (_fb.info(_FKEY) or {}).get("soft_stop")
-ok(_soft is not None and abs(float(_soft) - 2.30) < 0.005,
+ok(_soft is not None and abs(float(_soft) - _ladder_stop(2.00, 20.0)) < 0.005,
    "when the broker REFUSES the ratchet's stop move, the level it wanted is "
-   "still recorded as a soft stop the watchdog enforces (2.30), got %s" % _soft)
+   "still recorded as a soft stop the watchdog enforces, got %s" % _soft)
 ok(float(_soft) > float((_fb.info(_FKEY) or {}).get("stop") or 0),
    "the soft stop sits ABOVE the stale resting stop — that gap is exactly "
    "what cost $45 on TSLA 8/26")
@@ -863,7 +881,10 @@ ok(len(stops_dip) == len(stops_30),
 if bad:
     print("\n%d ratchet check(s) failed." % bad)
     raise SystemExit(1)
-print("Ratchet (9/10 spacing): below +3% the position is untouched; +3% "
-      "walks the stop to BREAKEVEN instead of closing; every further +5% "
-      "locks another +5%; a dip that's still above the last-hit rung never "
-      "loosens the stop back down.")
+from ratchet_tiers import live_spacing as _live_spacing
+_LS = _live_spacing()
+print("Ratchet (live %.0f/%.0f/%.0f): below +%.0f%% the position is untouched; "
+      "+%.0f%% walks the stop to BREAKEVEN instead of closing; every further "
+      "+%.0f%% locks another +%.0f%%; a dip that's still above the last-hit rung "
+      "never loosens the stop back down."
+      % (_LS[0], _LS[1], _LS[2], _LS[1], _LS[1], _LS[2], _LS[2]))
