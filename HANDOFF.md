@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — the 16:40 audit ends by posting the one-screen BRIEF to Sniper HQ; caller reports read a posted exit price and refuse a posted stock price as premium; v3.8.32 retains Discord message IDs and exact report sources hand off to Chrome Profile 2 after the next safe bridge restart.
+Last updated: 2026-09-15 — the 16:40 audit now STARTS by pulling the broker export (nothing ever did) and ENDS by posting the one-screen BRIEF to Sniper HQ; caller reports read a posted exit price and refuse a posted stock price as premium; v3.8.32 retains Discord message IDs and exact report sources hand off to Chrome Profile 2 after the next safe bridge restart.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -252,7 +252,7 @@ ENTRIES
 - FUTURES: micros only (NQ→MNQ, ES→MES ...). Entry snaps to the 25-pt grid
   in his favour. Their stop/target wins; 25/50 fills the gaps. A MARKET entry
   (no price in the alert) gets that bracket off the FILL instead — positions.
-  _arm_stop, but these are only recorded levels. Webull futures OPEN now refuses before broker lookup until an exact GTC STOP_LOSS is placed and verified after its fill, and stop/close reconciliation is tested. No futures quote-driven target/ratchet is operational. The 3 historical Webull futures OPEN orders would now be refused; no parser actions changed.
+  _arm_stop, but these are only recorded levels. Webull futures OPEN now refuses before broker lookup until an exact GTC STOP_LOSS is placed and verified after its fill, and stop/close reconciliation is tested. No futures quote-driven target/ratchet is operational.
 - INDEX MIRROR (9/13) — **OFF and activation blocked** until a broker-confirmed futures protective exit path exists. The shadow records SPY/QQQ option entries, and `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the daily audit. Reports land in `daily-reports/FUTURES-MIRROR-<date>.md`; the cumulative history is `reference/FUTURES-MIRROR-REPLAY.csv`. The replay's 25/50 stop, target and ratchet are simulated, not current live futures exits. New-day coverage is only bridge shadow rows plus `master_alerts.csv`; posts missed upstream are absent. The popup switch stays disabled until live exits are verified.
 - THE POCKET (hidden on purpose): a :43-:51 scalp-entry clock gate behind
   settings pocket_scalps_only, default OFF. Decided from HIS fill data
@@ -330,13 +330,11 @@ RESTARTS / SAFETY
   `CALLER-OUTCOMES-<date>.md/.csv` preserves caller entry, every trim/full
   exit, price or percent and trim size; caller P&L only when entry and exit
   pair with contemporaneous quotes, partials never become full results,
-  absent prices stay absent. TWO FIXES 9/14: a price written straight after
-  the contract is read, anchored to the contract AND an exit word within 80
-  chars so footers donate nothing (Brando's SOLD lines: +39%/+59%, were
-  "price unavailable"); and a posted price within 2% of that minute's `und`
-  is a STOCK quote, not a premium -> entry "unavailable (stock price
-  posted)", row kept, dollars out of every total (Midas SPY 760P @ 760.40:
-  9/14 read -74,960, now +976).
+  absent prices stay absent. A price written straight after the
+  contract is read, anchored to the contract AND an exit word within 80 chars
+  so footers donate nothing; a posted price within 2% of that minute's `und`
+  is a STOCK quote, not a premium -> entry "unavailable (stock price posted)",
+  row kept, dollars out of every total.
   `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from caller entry over `tape.py`
   and lists gaps/futures.
   Broker-confirmed actuals always override a quote-path simulation.
@@ -369,6 +367,11 @@ RESTARTS / SAFETY
   line types, row counts, traps, what each file can and cannot answer. Read
   it WITH INDEX.md at the start of every session. INDEX.md says what a file
   is; DATA-MAP.md says what is in it.
+- RUN build_ledger.py IN EASTERN. Its clocks come from the machine's local
+  timezone, so a rebuild from a UTC shell rewrites `opened` four hours forward
+  while `closed`, parsed from a stored string, moves the other way — one row,
+  two clocks (9/15, caught and reverted from backups/). Off his PC:
+  `TZ=America/New_York python3 build_ledger.py`.
 - Compile-check everything touched (python3 -m py_compile / node --check).
   Extension changes → bump extension/manifest.json so a reload is provable.
   Never install the streaming SDK family (webullsdkcore) into the bridge's
@@ -430,9 +433,14 @@ FILL ANNOUNCER (announcer.py, read-only)
 
 ## DATA — one central file per family (9/9). THE APP READS ONLY THESE.
 - BROKER RECORD → master_broker.csv (one row per Webull order leg, every
-  day). The autopilot pulls the account's order history every Mode B run
-  and writes it to ONE fixed file, Webull_Orders_auto.csv, OVERWRITING it
-  every run (G, 9/10: "have one that overwrites" — no deletes, ever);
+  day). `broker_sync.py` — FIRST step of the 16:40 audit, one read-only client,
+  no loop — pulls the order history (paged on `last_client_order_id` until a
+  short page) into ONE fixed file, Webull_Orders_auto.csv, OVERWRITING it every
+  run (G, 9/10: "have one that overwrites" — no deletes, ever), and records one
+  balance row per day in `balance_daily.csv` (date, nlv, day_pl, bp, read_at) —
+  the brief's only balance source. NOTHING PULLED THIS UNTIL 9/15 (a session
+  did it by hand; last pull 9/11), so 9/12-9/14 all read "broker export
+  missing" and 9/14's 60 legs / -$321 were invisible;
   build_ledger's absorb_exports() (runs inside every ledger refresh) folds
   it into master_broker.csv and leaves it in place. Never write dated
   Webull_Orders_<date> files — the folder holds the master plus that one
@@ -580,29 +588,17 @@ FILL ANNOUNCER (announcer.py, read-only)
 ## SECOND MACHINE (planned 9/9 — G: "another account on a different computer
 ## for other subs"). Built default-off; nothing changes until PC2 exists.
 - WHY: Discord's identify budget and Chrome's RAM are per account / per
-  machine. A second Discord account on a second PC doubles both.
-- ARCHITECTURE: ONE bridge, ONE book, ONE rate budget — PC2 runs only Chrome
-  + the extension and sends to THIS PC's bridge over the LAN. Never a second
-  bridge on the same Webull account (two books break every dedupe and
-  coexistence rule).
-- SECURITY (in the code now): settings execution.bridge_listen (default
-  127.0.0.1) + execution.bridge_token (default ""). The bridge refuses to
-  bind off loopback without a token. Off-loopback callers must send
-  X-Sniper-Token (constant-time compare). Loopback accepts the Chrome
-  extension or local no-Origin utilities; ordinary web-page Origins are
-  refused and CORS is limited to chrome-extension:// origins.
-  Extension: an optional, gitignored extension/bridge.txt —
-  `http://<PC1-LAN-IP>:8787|<secret>` — makes every bridge call carry the
-  token (fetch is wrapped once; the popup's askBridge adds it too).
-- PC2 SETUP, when it exists: the step-by-step (bridge_token + firewall here,
-  extension/bridge.txt + host_permissions there, Whop re-link) is in
-  HANDOFF-LOG.md under 2026-09-15. Nothing to do until PC2 is bought.
-- NOT BUILT YET — LANE TAGS: both PCs read the same rooms.txt, so today they
-  would open and trade the same rooms. Next build: a 5th field per line
-  (`|pc2`) + a lane name per machine; each extension opens/trades only its
-  own lane, START HERE's cold-start loop honours it too. Relay rooms both
-  accounts can see stay protected by the bridge's 20 s echo-lock. Do this
-  BEFORE PC2 goes live.
+  machine. ONE bridge, ONE book, ONE rate budget — PC2 runs only Chrome + the
+  extension and sends to THIS PC's bridge over the LAN. Never a second bridge
+  on the same Webull account (two books break every dedupe and coexistence
+  rule).
+- SECURITY IS ALREADY IN THE CODE: execution.bridge_listen + bridge_token; the
+  bridge refuses to bind off loopback without a token and off-loopback callers
+  must send X-Sniper-Token; CORS is limited to chrome-extension:// origins. The
+  extension reads an optional gitignored extension/bridge.txt.
+- BEFORE PC2 GOES LIVE — LANE TAGS: both PCs read the same rooms.txt, so today
+  they would open and trade the same rooms. A 5th `|pc2` field per line plus a
+  lane name per machine. Setup steps: HANDOFF-LOG.md under 2026-09-15.
 
 ## Pending external setup and decisions
 1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project
@@ -618,7 +614,7 @@ FILL ANNOUNCER (announcer.py, read-only)
    on a cold start, so a Chrome already running ignores them.)
 5. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
 6. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension
-   are already up (9/11: a 09:49 start missed QCOM/NVDA/MNQ/DELL). Run START
+   are already up. Run START
    HERE, or schedule it, by 9:00 on trading days.
 
 ## Watch items (open)
@@ -647,8 +643,7 @@ FILL ANNOUNCER (announcer.py, read-only)
 
 ## Subscriptions
 ≈ $1,140/mo rooms + ~$52 infra + ~$30 exchange fees ≈ $1,220/mo before AI
-usage. Break-even ≈ $60+/trading day. The 8/28 room-by-room audit is in
-HANDOFF-LOG.md. Next audit: cost vs ledger P&L per room.
+usage. Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
 
 ## Where everything lives
 HANDOFF-LOG.md (all history) · INDEX.md (folder map) · ARCHITECTURE.md ·

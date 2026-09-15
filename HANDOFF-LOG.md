@@ -12,6 +12,108 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (the broker export was never automated — found, fixed, backfilled)
+
+WHY 9/14 HAD NO BROKER TRUTH. Not a restart, not a 429. **No code has ever
+pulled it.** `build_ledger.absorb_exports()` only folds a `Webull_Orders_auto.csv`
+that something else must have written, and nothing in the repo writes one —
+grep every .py/.bat/.js: build_ledger is the only file that names it, and it
+only READS. `now.py` says it outright: "no order_history() on the adapter — use
+the journal, or ask Claude to pull it from the Webull connector". That was the
+process: a session pulled it by hand through the connector. The last hand pull
+was 2026-09-11 (root file: 66 rows dated 9/10, 4 dated 9/11). So 9/12, 9/13 and
+9/14 all reported "broker export missing", every hand trade was invisible, and
+HANDOFF's "the autopilot pulls the account's order history every Mode B run"
+described a process that did not exist. The 10:36/10:38/23:11 bridge restarts on
+9/14 are a red herring — there was no export step for a restart to kill, and the
+audit runs in a SUBPROCESS (`_daily_audit_loop` → `subprocess.run`), not inside
+the bridge, so it never had the bridge's Webull client to begin with.
+
+FIXED. New `broker_sync.py` + two additive read-only methods on the ONE adapter
+(`webull_options.order_history()`, paged on `last_client_order_id` until a short
+page, and `account_snapshot()` for NLV / day P&L / option BP). It is the FIRST
+step of `daily_audit.py`, before the reports, so they see the day's real fills;
+wrapped, because a broker that will not answer must not stop a parser audit that
+needs no broker. One short-lived client built health.py's way, two reads, exit —
+not a second client and not a poll loop.
+
+BACKFILLED 9/14 through the Webull connector (the documented method, read-only):
+60 option order legs, 47 filled → `Webull_Orders_auto.csv` → `master_broker.csv`.
+RECONCILIATION now says `2026-09-14 export -321.00 ledger -321.00 MATCH`. The
+ledger went 11 rows → 25: bot 10 trades -$91, his hand 15 trades / 142 contracts
+-$230. Webull's own day P&L is -$333.85; the $12.85 gap is the day's fees, and
+the brief now prints both and says which is which.
+
+THE ⚠ FLAG PAID FOR ITSELF. Yesterday's brief flagged PT | ei trades TSLA 357.5C
+as "journal ≠ broker" — state `stopped`, no exit price, no P&L. With the export
+in, the broker prices it: 7.40 → 7.06, **-$34**. The flag was pointing at a real
+$34 hole in the books, and it is gone now because the hole is filled.
+
+BALANCE. `balance_daily.csv` (date, nlv, day_pl, bp, read_at), one row per day,
+written by broker_sync. The brief reads today's row (which the same audit wrote
+minutes earlier — that IS the live read, with its timestamp on it), else the
+running bridge's own cached buying power over loopback (the client that trades,
+never a second one), else the newest older row LABELLED as older, else
+`unavailable`. 9/14 seeded from the connector: NLV $1,279.86, option BP
+$1,279.86. Day-over-day NLV change prints as soon as there are two rows.
+
+MY OWN MISTAKE, CAUGHT AND UNDONE. I ran `build_ledger.py` from a UTC shell.
+`_hms()` formats epochs in the MACHINE's local timezone, so every days-json row's
+`opened` moved +4h (10:23 → 14:23) while `closed`, parsed from a stored Eastern
+string, stayed put. I then "fixed" `_hms` to force Eastern, which moved `closed`
+-4h instead — one row, two clocks, worse. Reverted the patch, restored
+`master_ledger.csv` from `backups/master_ledger.csv.bak-20260915-031908`, and
+rebuilt with `TZ=America/New_York`. Clocks verified back to 10:23:16 / 10:28:50
+and consistent across both row sources. The rule is now in HANDOFF and DATA-MAP:
+build the ledger in Eastern or not at all. The latent bug in `_hms` is real but
+it only bites off his PC, so it stays unpatched rather than risk the string path
+again — that is a deliberate decision, not leftovers.
+
+PRE-EXISTING, NOT MINE, WORTH A LOOK: reconciliation still shows DRIFT on
+2026-08-26 (-123), 08-31 (+34) and 09-01 (+15). Those days predate this pull and
+sit in the overlapping historical exports DATA-MAP already warns about (38 rows
+share occ+placed_time+side+qty; some may be double-absorbed). Not investigated.
+
+TESTS. `test_broker_sync.py` 20 new (fake client that raises on anything that
+trades; OCC building, UTC→Eastern stamping, stop-leg pricing, contract-less rows
+dropped not guessed, overwrite-never-stack, one balance row per day, a refused
+balance recording nothing). `test_daily_brief.py` 32 → 39 (net vs gross, the
+balance line and its read stamp, day-over-day change, an older row labelled
+older, the bridge fallback, and all three missing → `unavailable`). All 59 green
+on his machine, plus `test_daily_audit.py` 11.
+
+MOVED OUT OF HANDOFF.md for the ceiling (history, not state): - WHY: Discord's identify budget and Chrome's RAM are per account / per
+  machine. A second Discord account on a second PC doubles both.
+- ARCHITECTURE: ONE bridge, ONE book, ONE rate budget — PC2 runs only Chrome
+  + the extension and sends to THIS PC's bridge over the LAN. Never a second
+  bridge on the same Webull account (two books break every dedupe and
+  coexistence rule).
+- SECURITY (in the code now): settings execution.bridge_listen (default
+  127.0.0.1) + execution.bridge_token (default ""). The bridge refuses to
+  bind off loopback without a token. Off-loopback callers must send
+  X-Sniper-Token (constant-time compare). Loopback accepts the Chrome
+  extension or local no-Origin utilities; ordinary web-page Origins are
+  refused and CORS is limited to chrome-extension:// origins.
+  Extension: an optional, gitignored extension/bridge.txt —
+  `http://<PC1-LAN-IP>:8787|<secret>` — makes every bridge call carry the
+  token (fetch is wrapped once; the popup's askBridge adds it too).
+- PC2 SETUP, when it exists: the step-by-step (bridge_token + firewall here,
+  extension/bridge.txt + host_permissions there, Whop re-link) is in
+  HANDOFF-LOG.md under 2026-09-15. Nothing to do until PC2 is bought.
+- NOT BUILT YET — LANE TAGS: both PCs read the same rooms.txt, so today they
+  would open and trade the same rooms. Next build: a 5th field per line
+  (`|pc2`) + a lane name per machine; each extension opens/trades only its
+  own lane, START HERE's cold-start loop honours it too. Relay rooms both
+  accounts can see stay protected by the bridge's 20 s echo-lock. Do this
+  BEFORE PC2 goes live. · TWO FIXES 9/14: a price written straight after
+  the contract is read, anchored to the contract AND an exit word within 80
+  chars so footers donate nothing (Brando's SOLD lines: +39%/+59%, were
+  "price unavailable"); and a posted price within 2% of that minute's `und`
+  is a STOCK quote, not a premium -> entry "unavailable (stock price
+  posted)", row kept, dollars out of every total (Midas SPY 760P @ 760.40:
+  9/14 read -74,960, now +976). · The 8/28 room-by-room audit is in
+HANDOFF-LOG.md. · The 3 historical Webull futures OPEN orders would now be refused; no parser actions changed. · (9/11: a 09:49 start missed QCOM/NVDA/MNQ/DELL)
+
 ## 2026-09-15 (the one-screen daily brief — built, tested, posting to Sniper HQ)
 
 NEW `daily_brief.py` + `test_daily_brief.py` (32 tests, all green). `python

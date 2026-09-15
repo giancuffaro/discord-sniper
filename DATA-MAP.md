@@ -497,6 +497,10 @@ em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
 | `reference/FUTURES-MIRROR-REPLAY-2026-09-13.csv` | same | Frozen — the original 8/3–9/11 study (298 rows, both modes). The seed. Do not append to it. |
 | `daily-reports/FUTURES-MIRROR-<date>.md` | — | One day's trades, day total, running total since 2026-08-03, win rate, by room, by sym×direction, exits, and what the number is not. |
 
+`balance_daily.csv` (`broker_sync.py`, appended once per trading day at 16:40) — `date, nlv, day_pl, bp, read_at`. The ONLY place the account's net liquidation, Webull day P&L and option buying power are kept; nothing else on disk records a balance, and `health.csv` stores only whether the read succeeded. `day_pl` is Webull's own figure, NET of fees; `master_broker.csv` round trips are GROSS, so the two differ by the day's fees (9/14: -333.85 net vs -321 gross across 47 filled legs). One row per day — a re-run replaces that day's row, never stacks a second.
+
+**TZ TRAP (9/15):** `build_ledger._hms()` renders epochs in the MACHINE's local timezone, and days-json `closed` values come from stored Eastern strings instead. Rebuild from anything but an Eastern shell and `opened` jumps +4h while `closed` jumps -4h. Always `TZ=America/New_York python3 build_ledger.py` off his PC. Caught the same day it happened and restored from `backups/`.
+
 `daily-reports/BRIEF-<date>.md` (`daily_brief.py`, written last in the 16:40 audit and posted to Sniper HQ) holds NO new data — it is a rendering of master_ledger + master_broker + that day's CALLER-OUTCOMES/CALLER-VS-RATCHET/FUTURES-MIRROR + dated `trades.log` lines + `department-reports/extension-*.json` + HANDOFF's Pending block. Two things in it exist nowhere else as a judgement: the exit-reason words (born stop / ratchet / BE stop, decided from `stop_at_exit` vs `avg_in` — at or above the fill means the ratchet moved it) and the `⚠ journal ≠ broker` flag (the row says it exited and the broker record prices no exit). Never quote a number from it that the source file does not also say.
 
 ---
