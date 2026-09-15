@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — caller reports read a posted exit price and refuse a posted stock price as premium; v3.8.32 retains Discord message IDs and exact report sources hand off to Chrome Profile 2 after the next safe bridge restart.
+Last updated: 2026-09-15 — the 16:40 audit ends by posting the one-screen BRIEF to Sniper HQ; caller reports read a posted exit price and refuse a posted stock price as premium; v3.8.32 retains Discord message IDs and exact report sources hand off to Chrome Profile 2 after the next safe bridge restart.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -253,7 +253,7 @@ ENTRIES
   in his favour. Their stop/target wins; 25/50 fills the gaps. A MARKET entry
   (no price in the alert) gets that bracket off the FILL instead — positions.
   _arm_stop, but these are only recorded levels. Webull futures OPEN now refuses before broker lookup until an exact GTC STOP_LOSS is placed and verified after its fill, and stop/close reconciliation is tested. No futures quote-driven target/ratchet is operational. The 3 historical Webull futures OPEN orders would now be refused; no parser actions changed.
-- INDEX MIRROR (9/13) — **OFF and activation blocked** until a broker-confirmed futures protective exit path exists. The shadow records SPY/QQQ option entries, and `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the daily audit. Reports land in `daily-reports/FUTURES-MIRROR-<date>.md`; the cumulative history is `reference/FUTURES-MIRROR-REPLAY.csv`. The original 149-alert 8/3–9/11 replay lost $721 gross (ZT mashup accounted for $703). The replay's 25/50 stop, target and ratchet are simulated, not current live futures exits. New-day coverage is only bridge shadow rows plus `master_alerts.csv`; posts missed upstream are absent. The popup switch stays disabled until live exits are verified.
+- INDEX MIRROR (9/13) — **OFF and activation blocked** until a broker-confirmed futures protective exit path exists. The shadow records SPY/QQQ option entries, and `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the daily audit. Reports land in `daily-reports/FUTURES-MIRROR-<date>.md`; the cumulative history is `reference/FUTURES-MIRROR-REPLAY.csv`. The replay's 25/50 stop, target and ratchet are simulated, not current live futures exits. New-day coverage is only bridge shadow rows plus `master_alerts.csv`; posts missed upstream are absent. The popup switch stays disabled until live exits are verified.
 - THE POCKET (hidden on purpose): a :43-:51 scalp-entry clock gate behind
   settings pocket_scalps_only, default OFF. Decided from HIS fill data
   (ledger minute-of-hour), not the QQQ study.
@@ -312,6 +312,11 @@ RESTARTS / SAFETY
   invented symbols or expiry shifts. The audit runs every JS/Python test, writes `daily-audits/AUDIT-<date>.txt`
   plus `latest.json`, queues unresolved items, and writes the Daily Sniper Report:
   room coverage, decisions, skips, recovered gaps, fills, P&L and postmortems.
+  DELIVERY (9/15): the audit's LAST step is `daily_brief.py` — the one-screen
+  brief (day · bot trades · callers right/wrong · what broke · pending) written
+  to `daily-reports/BRIEF-<date>.md` and POSTED TO SNIPER HQ as a file through
+  the Fill Announcer's options webhook. That post is how G gets the day. It is
+  wrapped: a brief that fails never fails the audit.
   Relay duplicates stay raw but count once. The 15-minute Codex guard was
   deleted at G's request; do not recreate it. Findings become tested fixtures. RAW capture
   is always retained and session-local LIVE PARSER rows overlay it; a browser
@@ -363,8 +368,7 @@ RESTARTS / SAFETY
 - DATA-MAP.md is the index of what is INSIDE the data files — columns, log
   line types, row counts, traps, what each file can and cannot answer. Read
   it WITH INDEX.md at the start of every session. INDEX.md says what a file
-  is; DATA-MAP.md says what is in it. A session that skipped DATA-MAP.md on
-  9/11 concluded only 16 of 331 alerts were recoverable and missed 425.
+  is; DATA-MAP.md says what is in it.
 - Compile-check everything touched (python3 -m py_compile / node --check).
   Extension changes → bump extension/manifest.json so a reload is provable.
   Never install the streaming SDK family (webullsdkcore) into the bridge's
@@ -443,15 +447,12 @@ FILL ANNOUNCER (announcer.py, read-only)
   Webull_Orders_auto.csv "Price" = limit_price, else stop_price.
   Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
   master_ledger and master_alerts; NO .bak files in the root anymore.
-- BROKER TRUTH: `master_broker.csv` is paged across the full Webull order history; 100-row pages must continue with `last_client_order_id` until a short page. `build_ledger.py` computes P&L from broker fills, collapses carryovers by caller+contract+entry, and matches either end date for overnight trades. Do not quote P&L from book-priced rows when a broker row exists. Current historical split recorded 9/10: 705 completed round trips, −$4,228 total; G’s hand trading −$4,332; bot +$301 by the broad broker attribution.
+- BROKER TRUTH: `master_broker.csv` is paged across the full Webull order history; 100-row pages must continue with `last_client_order_id` until a short page. `build_ledger.py` computes P&L from broker fills, collapses carryovers by caller+contract+entry, and matches either end date for overnight trades. Do not quote P&L from book-priced rows when a broker row exists.
 - BOT ATTRIBUTION: a caller name is candidate evidence until the entry is linked to a source alert and the trade to broker fills. `manual` in the day row denotes a manual exit; it does not disqualify a bot-origin entry. Adopted/export-only rows need separate entry provenance; caller `?` is unknown. Keep the older 107-trade contract-matched study as a dated sample, not a current all-trade statistic. `option_tape_pull.py` records durable quote coverage before skipping downloads.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
   don't want any more confusions"). build_ledger keeps account="paper" rows
   OUT of master_ledger.csv, so the board, journal, scoreboard, announcer and
-  every backtest are real money only. The 4 rows that existed were archived
-  once to archive/paper-fills-2026-09-09.csv (−$686, all August; the twin
-  HPE pair alone made the Callers board read "are alerts −$732" instead of
-  −$62) and days/*.json still holds them. account="unknown" is NOT paper —
+  every backtest are real money only. account="unknown" is NOT paper —
   41 real broker fills with no room row; they stay. execution.webull
   .paper_trading is false and the bridge now WARNS at boot if it is ever
   switched on, because a paper fill would leave no record at all.

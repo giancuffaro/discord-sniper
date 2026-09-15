@@ -12,6 +12,64 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (the one-screen daily brief — built, tested, posting to Sniper HQ)
+
+NEW `daily_brief.py` + `test_daily_brief.py` (32 tests, all green). `python
+daily_brief.py [YYYY-MM-DD]` renders `daily-reports/BRIEF-<date>.md` and prints
+it; `--post` also uploads it to Sniper HQ as a FILE attachment through the Fill
+Announcer's existing `announcer.webhook_url` (no new secret, no new channel) with
+a one-line content summary, because a Discord message caps at 2000 characters and
+the brief does not. No webhook, or a webhook that refuses, writes the file anyway
+and says so on stdout. Hooked into `daily_audit.py` as the LAST step, after the
+reports, the futures-mirror replay and the departments analyst, inside try/except:
+a brief that cannot be built can never cost him the audit. Re-running the same
+date overwrites the file; only `--post` posts, so manual runs never spam Discord.
+
+SIX SECTIONS, his order: Day (broker-export state, balance, bot net vs his hand
+net) · Bot trades (time · channel · trader · ticker · contract · in · out · $ ·
+why exited) · Callers right/wrong · What broke · Pending (his action only) ·
+a footer naming every file it was built from.
+
+TWO JUDGEMENTS THE BRIEF MAKES THAT NO FILE HOLDS. (1) The exit words. `exit_by`
+and `why` name pullback / hand / room-call / edit-close / edit-BE exits outright;
+for a stop that fired, born-vs-ratcheted is decided from `stop_at_exit` against
+`avg_in` — at or above the fill means the ratchet had already walked it up, below
+means it was still the stop born with the order, and exactly at the fill is a BE
+stop. Nothing else in the row separates those three. (2) `⚠ journal ≠ broker` —
+the row says it exited and the broker record prices no exit. 9/14 flags exactly
+one: PT | ei trades TSLA 357.5C 9/18, state `stopped`, why "the resting stop at
+Webull sold it first", `exit_from=store`, `export_confirmed` false, no exit price
+and no P&L. The book believes an exit the account never confirmed.
+
+NOTHING IS ESTIMATED. A missing exit price, a missing export or a missing report
+renders `unavailable`. Caller rows the outcomes report marks `stock price posted`
+are excluded from every list (9/14: Midas SPY 760P @ 760.40); rows with no price
+at all go to the `unscored` line by name. 9/14 had no broker export (last one
+9/11), so the Day line says "broker export missing" rather than inventing a
+margin P&L, and balance says `unavailable` — nothing on disk records it.
+
+9/14 AS BUILT: bot −$57 on 10 trades, his own hand row 1 trade / 2 contracts with
+no P&L, 8 things broke (1 REFUSED, 7 POSTCHECK PROBLEM, 5 STOP-WARN, 3 EXPIRY,
+3 IMG READ, 242 AI READ — all HTTP 400 on a dead Anthropic credit balance — the
+mirror's Databento bars, and 2 Discord rooms ON with no tab). Callers: 7 right,
+1 wrong (Trademorewiser NVDA 210P −37.5%, which the bot also took for −$2), 5
+unscored. Posted to Sniper HQ, HTTP 200. INDEX.md and DATA-MAP.md each got one
+line.
+
+MOVED OUT OF HANDOFF.md to keep it under the 50 KB ceiling (history, not state):
+
+- NO PAPER: the 4 paper rows that existed were archived once to
+  `archive/paper-fills-2026-09-09.csv` (−$686, all August; the twin HPE pair
+  alone made the Callers board read "are alerts −$732" instead of −$62) and
+  `days/*.json` still holds them.
+- BROKER TRUTH: the historical split recorded 9/10 — 705 completed round trips,
+  −$4,228 total; G's hand trading −$4,332; bot +$301 by the broad broker
+  attribution.
+- INDEX MIRROR: the original 149-alert 8/3–9/11 replay lost $721 gross (the ZT
+  mashup accounted for $703).
+- DATA-MAP: the session that skipped DATA-MAP.md on 9/11 concluded only 16 of
+  331 alerts were recoverable and missed 425.
+
 ## 2026-09-15 (manage off the STOCK, not the premium — G's ladder, measured)
 
 MEASUREMENT, NOTHING CHANGED LIVE. G's idea, his words: "alert -> round-number
