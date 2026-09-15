@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-15 — c512fd208f809dee240a
+
+The evidence indicates a browser coverage gap: many alert sources are reported as ON but have no tab in this browser. A smaller set of Whop tabs are open but their readers have not beaten in a while, which may indicate stale updates or inactivity, but this is not confirmed from the provided data.
+
+## Findings
+- Multiple sources are listed as "ON but has no tab in this browser" (for example: AbTrades Alert Bot, Aristotle, Brando Alerts, Brick Alerts, Demon day-trades, Ducci Alerts, FloridaManFinance, Hog Alerts, Honeydrip daytrades, Jon Tran Alerts, Maguro Alerts, Midas, Mugzone Options, Nando Alerts, OWLS all-alerts, OWLS jon-and-kian, Option Alerts, Optionality free-trades, PhiccDuck Alerts, Platinum day-trades, Platinum ei-alerts, Platinum equity, Platinum nitro, Quantum Alerts, Shoof Alerts, TTT Lotto, Vero 1, Vero 2, Xephyr Alerts, eli, shabs). Verify whether these sources are intentionally absent from the current browser session or whether tabs failed to load; treat this as missing source coverage, not as a confirmed outage.
+- Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, and Whop Swing Trades are reported as open but their reader "hasn't beaten in a while." Check the reader heartbeat or refresh status for these tabs to determine whether the room is quiet, stale, or experiencing an update failure; do not assume an outage without source confirmation.
+
+## Limitations
+- The evidence only describes browser/tab state and reader heartbeat status; it does not confirm whether the underlying alert rooms are live, quiet, or down.
+- No timestamps, heartbeat thresholds, or last-seen values are provided, so staleness cannot be quantified.
+- The word "ON" indicates source state in the input, but the data do not prove active delivery to this browser session.
+- This report does not verify any broker, market, or trading results.
+
+---
+
 # Health — 2026-09-15 — ba422a747837657445e7
 
 The session is reported as active, but the evidence lists many alert sources as ON while also saying they have no tab in this browser. This is a source-verification issue: the report does not confirm whether the tabs are hidden, open in another browser/profile, intentionally closed, or whether the alert inventory is stale.
