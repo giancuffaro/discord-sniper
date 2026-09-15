@@ -140,3 +140,42 @@ FILL ANNOUNCER (announcer.py, read-only)
 - BEFORE PC2 GOES LIVE — LANE TAGS: both PCs read the same rooms.txt, so today
   they would open and trade the same rooms. A 5th `|pc2` field per line plus a
   lane name per machine. Setup steps: HANDOFF-LOG.md under 2026-09-15.
+
+## Weekly files and the house file rules (moved from HANDOFF.md 9/15, verbatim)
+
+The rule lines stay in HANDOFF.md ("Rules of the house"); the naming, the
+formats and the procedures are here.
+
+- RULE: weekly signal-room-chat logs (replaces daily) (G, 9/15).
+  `signal-room-chat week-of-<Mon>-to-<Sun>-<year> (discord|whop).txt`, week =
+  Mon–Sun, each capture day under a `===== Mon Sep 14 2026 =====` header in
+  date order, holding only lines no earlier day — or earlier week — already
+  holds. A re-export replaces that day's block. New week → new file, by
+  itself. `ds_logs.py` owns naming, blocks and de-dupe; readers ask it which
+  days a file covers. Every daily (26 of them) is merged and zipped in
+  `archive/`. Never hand-edit a week file.
+- WEEKLY REPORTS (9/15): every report kind is ONE file per week per kind,
+  same naming — `daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md`,
+  `daily-audits/AUDIT week-of-….txt` — a `===== Mon Sep 14 2026 =====` block
+  per day, NEWEST DAY FIRST, a re-run replaces that day's block; the one csv
+  kind is `daily-reports/CALLER-OUTCOMES.csv` with a `date` column.
+  `reports.py` owns naming, blocks and the cache; writers call it, never
+  mint a dated file. `daily-audits/latest.json` stays as is.
+- APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for
+  its kind — the week file, the jsonl, the master csv, the archive folder —
+  never a new dated file beside it. A writer that would create
+  `<name>-<date>` must instead append a dated block/row to `<name>`. Rotated
+  logs land in `archive/`. Finished experiments are zipped in `archive/`, not
+  left as folders. Dated piles found later get merged the same way (see
+  CONDENSE AND MERGE).
+- DATA-MAP.md is the index of what is INSIDE the data files — columns, log
+  line types, row counts, traps, what each file can and cannot answer. Read
+  it WITH INDEX.md at the start of every session. INDEX.md says what a file
+  is; DATA-MAP.md says what is in it.
+- Compile-check everything touched (python3 -m py_compile / node --check).
+  Extension changes → bump extension/manifest.json so a reload is provable.
+  Never install the streaming SDK family (webullsdkcore) into the bridge's
+  Python. Sandbox trading is RETIRED — paper is LOCAL (SIM tickets).
+- Discord API is NOT an option (user-token automation = permanent ban risk
+  to the account + paid subs; official bots need the server owner).
+  Reaffirmed 9/9. Browser reads only.

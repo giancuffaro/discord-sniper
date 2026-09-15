@@ -879,6 +879,24 @@ mechanics are here, verbatim.
   misses.py, errors.py, entry_compare.py, missed_dollarize.py,
   ratchet_sweep*.py, ratchet_backtest.py, chart_contracts.py, telemetry.py.
 
+## CONDENSE AND MERGE — the test (moved from HANDOFF.md 9/15, verbatim)
+
+The rule stays in HANDOFF.md; the procedure is here.
+
+- CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file. Whenever a
+  file, a log line type, a column or a folder duplicates something we already
+  keep, merge it into the existing home and delete the copy — but only when
+  the merge cannot break a reader. The test, in order: (1) name every piece of
+  code that opens it (grep the repo, both halves); (2) if anything reads it,
+  either repoint that reader in the same change or leave the file alone; (3)
+  run the tests AND `node parser_gate.js`; (4) never merge two files whose
+  rows mean different things just because the columns line up. Records that
+  can never be re-derived — the price tapes, telemetry, days/ — are APPENDED
+  to, never rewritten. One-off evidence CSVs from an analysis run get folded
+  into the script that regenerates them and then archived, not left in root.
+  This is REPLACE-DON'T-STACK applied to data instead of code. When in doubt
+  leave it and write the reason in DATA-MAP.md.
+
 ## Rules for whoever edits this file
 
 Same house rule as everywhere else: **replace, don't stack.** When a count
