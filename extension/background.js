@@ -3080,16 +3080,28 @@ async function autoExportForLearning() {
       day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
       hour12: false }).format(new Date(t)).replace(",", ""); } catch (e) { return ""; } };
   const day = (stamp(Date.now()).slice(0, 10) || "today");
-  // The filename he wants: "signal-room-chat Aug-6-2026.txt". One file per ET
-  // day — the same day overwrites itself (conflictAction below), a new day is a
-  // new file, so no day's log ever clobbers another's.
-  const fileDay = (() => {
+  // ONE FILE PER WEEK PER LANE (9/15, his ask). The name he wants is
+  // "signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt": the
+  // Monday..Sunday week the ET capture day falls in, month abbreviated, no
+  // zero padding. A week that straddles New Year carries both years
+  // ("week-of-Dec-29-2025-to-Jan-4-2026") so the name can never be read two
+  // ways. Anchoring on UTC midnight keeps the arithmetic clear of DST — the
+  // ET calendar day is already decided by `day` above.
+  const MON3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const weekTag = (() => {
     try {
-      const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York",
-        month: "short", day: "numeric", year: "numeric" }).formatToParts(new Date());
-      const g = t => (parts.find(p => p.type === t) || {}).value || "";
-      return g("month") + "-" + g("day") + "-" + g("year");   // Aug-6-2026
-    } catch (e) { return day; }
+      const [Y, M, D] = day.split("-").map(Number);
+      const today = new Date(Date.UTC(Y, M - 1, D));
+      const backToMonday = (today.getUTCDay() + 6) % 7;      // Mon = 0
+      const mon = new Date(today.getTime() - backToMonday * 86400000);
+      const sun = new Date(mon.getTime() + 6 * 86400000);
+      let start = MON3[mon.getUTCMonth()] + "-" + mon.getUTCDate();
+      if (mon.getUTCFullYear() !== sun.getUTCFullYear())
+        start += "-" + mon.getUTCFullYear();
+      return "week-of-" + start + "-to-" + MON3[sun.getUTCMonth()] + "-" +
+        sun.getUTCDate() + "-" + sun.getUTCFullYear();
+    } catch (e) { return "week-of-" + day; }
   })();
   const caps = captured.slice().sort((a, b) => a.t - b.t).map(c =>
     // The channel ID rides along in the tag now. The display name alone can't
@@ -3114,6 +3126,58 @@ async function autoExportForLearning() {
     stamp(e.t) + "  <" + (e.kind || "?") + ">  " +
     (e.what ? e.what + " — " : "") + String(e.why || "").replace(/\s+/g, " ").trim() +
     (e.text ? "  |  " + (e.author || "") + ": " + String(e.text).replace(/\s+/g, " ").trim() : ""));
+
+  // THE DAY'S DELTA (9/15). The file is the WEEK now, so a day writes only
+  // what the earlier days of that same file do not already hold — the export
+  // is cumulative, and 9/14 was 10 MB of which 12,849 raw lines were already
+  // in the 9/13 file. `export_seen` is the key set the earlier days used. It
+  // is cleared when the week rolls; today's own keys join it only when the
+  // DAY rolls, so every pass of the same day rebuilds the same full block and
+  // the bridge replaces that block instead of stacking a second header. The
+  // bridge de-dupes against the file again on write, so a wiped profile that
+  // re-sends its whole backlog costs nothing but bytes.
+  const hash64 = s => {
+    let a = 0x811c9dc5, b = 0x9e3779b9;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      a = Math.imul(a ^ c, 0x01000193) >>> 0;
+      b = Math.imul(b ^ c, 0x85ebca6b) >>> 0;
+      b = (b ^ (b >>> 13)) >>> 0;
+    }
+    return a.toString(36) + "." + b.toString(36);
+  };
+  // Same identity rule the bridge uses (ds_logs.line_key): the message id
+  // when the capture carried one, with the body alongside so an edited
+  // message is never silently dropped; otherwise the whole line, which
+  // already spells out timestamp, room and text.
+  const idOf = s => {
+    const m = /\smessage_id=([^\]\s]+)\]/.exec(s);
+    if (m && m[1] !== "legacy-unknown") {
+      const cut = s.indexOf("]  ");
+      return m[1] + "\u0001" + (cut >= 0 ? s.slice(cut + 3) : s);
+    }
+    return s;
+  };
+  let seenState = {};
+  try { seenState = (await chrome.storage.local.get("export_seen")).export_seen || {}; }
+  catch (e) {}
+  if (seenState.week !== weekTag)
+    seenState = { week: weekTag, day: day, prior: [], today: [] };
+  else if (seenState.day !== day)
+    seenState = { week: weekTag, day: day,
+      prior: Array.from(new Set((seenState.prior || []).concat(seenState.today || []))),
+      today: [] };
+  const priorKeys = new Set(seenState.prior || []);
+  const sentKeys = [];
+  const delta = (kind, lines) => lines.filter(s => {
+    const k = hash64(kind + "\u0000" + idOf(s));
+    if (priorKeys.has(k)) return false;
+    sentKeys.push(k);
+    return true;
+  });
+  const capsDay = delta("raw", caps);
+  const parserCapsDay = delta("parser", parserCaps);
+  const actsDay = delta("did", acts);
 
   // The whole popup state, so a remote read of this file sees exactly what's on
   // and off without reaching the PC: connections, keys, toggles, LIVE rooms, and
@@ -3194,37 +3258,48 @@ async function autoExportForLearning() {
   const text =
     "Discord Sniper — self-learning export (" + day + ", refreshed " + stamp(Date.now()) + " ET)\n\n" +
     state +
-    "=== RAW MESSAGES THE READER SAW (" + caps.length + ") ===\n" + caps.join("\n") +
-    "\n\n=== LIVE PARSER INPUTS (" + parserCaps.length + ") ===\n" + parserCaps.join("\n") +
-    "\n\n=== WHAT THE BOT DID (" + acts.length + ") ===\n" + acts.join("\n") + "\n";
+    "=== RAW MESSAGES THE READER SAW (" + capsDay.length + ") ===\n" + capsDay.join("\n") +
+    "\n\n=== LIVE PARSER INPUTS (" + parserCapsDay.length + ") ===\n" + parserCapsDay.join("\n") +
+    "\n\n=== WHAT THE BOT DID (" + actsDay.length + ") ===\n" + actsDay.join("\n") + "\n";
   // Through the BRIDGE now, into <folder>\DS Logs (his ask, 8/18: "logs
   // download here"). Chrome's download API can't write outside Downloads
   // and kept minting "(1)(2)(3)" duplicates instead of overwriting — the
   // bridge writes the real file properly, same name all day. Chrome
   // download stays as the fallback for a bridge-down moment.
-  // ONE FILE PER DAY **PER LANE** (9/10). Both Chrome profiles run this same
-  // code and both wrote "signal-room-chat <day>.txt", so whichever exported
-  // LAST wiped the other's whole day. Measured across three days: 9/8 kept
-  // 103 Whop lines and ZERO Discord, 9/9 kept 373 Discord and 22 Whop, 9/10
-  // kept 16 Whop and ZERO Discord. Half the corpus was being destroyed daily
-  // — and the corpus is the entire point of the export. The lane goes in the
-  // NAME so the two can never collide again.
-  const fname = "signal-room-chat " + fileDay + " (" + lane + ").txt";
+  // ONE FILE PER WEEK **PER LANE** (9/10, 9/15). Both Chrome profiles run this
+  // same code and both wrote "signal-room-chat <day>.txt", so whichever
+  // exported LAST wiped the other's whole day. Measured across three days:
+  // 9/8 kept 103 Whop lines and ZERO Discord, 9/9 kept 373 Discord and 22
+  // Whop, 9/10 kept 16 Whop and ZERO Discord. Half the corpus was being
+  // destroyed daily — and the corpus is the entire point of the export. The
+  // lane goes in the NAME so the two can never collide again. The WEEK is the
+  // file: `day` tells the bridge which "===== Mon Sep 14 2026 =====" block
+  // this text belongs under, and a re-export of the same day replaces that
+  // block instead of stacking a second header.
+  const fname = "signal-room-chat " + weekTag + " (" + lane + ").txt";
   try {
     const c2 = await cfg();
     const r = await fetch(bridgeBaseFrom(c2.bridge_url) + "/exportlog", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: fname, text: text })
+      body: JSON.stringify({ name: fname, text: text, day: day, lane: lane })
     });
     if (r.ok) {
-      try { await chrome.storage.local.set({ last_export: Date.now() }); } catch (e) {}
+      seenState.today = sentKeys;
+      try { await chrome.storage.local.set({ last_export: Date.now(),
+        export_seen: seenState }); } catch (e) {}
       return;
     }
   } catch (e) { /* bridge down — fall through to the old Downloads path */ }
+  // BRIDGE DOWN: a rescue copy only. Downloads cannot append to the weekly
+  // file, so this goes out under its own day-stamped name and `export_seen`
+  // is deliberately NOT advanced — the next successful pass re-sends this
+  // day so the weekly file still ends up holding it.
   const url = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
   try {
     await chrome.downloads.download({
-      url, filename: fname, conflictAction: "overwrite", saveAs: false
+      url, filename: "signal-room-chat " + weekTag + " (" + lane + ") " + day +
+        " (bridge down).txt",
+      conflictAction: "overwrite", saveAs: false
     });
     try { await chrome.storage.local.set({ last_export: Date.now() }); } catch (e) {}
   } catch (e) { /* downloads busy or blocked — next pass tries again */ }
