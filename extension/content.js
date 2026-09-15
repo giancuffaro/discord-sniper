@@ -565,8 +565,8 @@ timer = setInterval(function () {
   liveScan();        // and notice when the server goes LIVE on voice/stage
 }, 5000);
 
-/* HEARTBEAT (v3.5.0 A3.1, 9/2). A dead reader and a quiet room look
- * identical for 40 minutes today — the silence alert even says so. But a
+/* HEARTBEAT (v3.5.0 A3.1, 9/2). A dead reader and a quiet room used to look
+ * identical, and waiting 40 minutes to tell them apart was useless. A
  * merely-quiet room still has a living content script in it, and a living
  * script can say so. Every 30s: rows on screen, watcher attached, whether
  * Chrome discarded/hid us. Background reloads a room that stops answering. */

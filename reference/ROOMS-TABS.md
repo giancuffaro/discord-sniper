@@ -112,8 +112,9 @@ content.js, extension/popup.js, bridge.py (/rooms, /build, apply_room_rules).
   filled / average is X". AUTO-JOIN clicks a LIVE badge's voice/stage
   channel (one join per 10 min). Glossary in ai_reader (pulls=puts,
   Qs=QQQ, one-d-t=1DTE …). Typed copy of a voice fire = echo, skipped 5 min.
-- Silence alarm: any room quiet 40 min in market hours → desktop
-  notification. Watchdog reloads stale/black-shell tabs.
+- No timed quiet-room alarm (removed 9/15): the content-script heartbeat
+  (3 missed beats ≈ 90s → reload), departments.health_tick() and deadman.py
+  are the checks. Watchdog reloads stale/black-shell tabs.
 
 ## The page and the popup
 

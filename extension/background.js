@@ -2832,22 +2832,17 @@ async function whopWatchdog() {
   }
 }
 
-/* ROOM SILENCE ALARM (his ask, 8/25: "alert me if a channel is not putting
- * out alerts"). Every 5 minutes during market hours, any watched room that
- * hasn't produced a single message in 40 minutes gets a desktop
- * notification and an amber log line — that's either a dead reader (F5 the
- * tab) or a room that's gone quiet; both are worth knowing about. One alert
- * per quiet spell, again at the 2-hour mark if it's still dead. Also barks
- * if NO whop tab is open at all. The map persists across service-worker
- * naps so an idle restart can't fake a full board of silence. */
+/* WHEN DID EACH ROOM LAST SPEAK. Two maps the popup reads: the last row the
+ * reader handed us, and the newest message's own timestamp. They persist
+ * across service-worker naps so an idle restart can't fake an empty board.
+ * Health is judged by readerHealth()'s heartbeat, departments.health_tick()
+ * and deadman.py — these maps only report, they never alarm. */
 const OFF_SAID = {};        // "off|<cid>" -> last time we said the room is OFF
 const ROOM_MSG_AT = {};          // channelId -> last time the reader handed us a row
 // channelId -> the newest message's OWN timestamp (postedAt), max-merged —
 // "when did this room last post", survives reloads and history re-reads
 // (9/9, G: "I want to know what time was the last message from each channel")
 const ROOM_POST_AT = {};
-const ROOM_ALERTED = {};         // channelId -> last-msg ts we alerted on
-let _pulseBoot = Date.now();
 (async () => { try {
   const got = await chrome.storage.local.get(["room_msg_at", "room_post_at"]);
   const st = got.room_msg_at;
@@ -2859,6 +2854,13 @@ function notePost(cid, postedAt) {
   const t = Number(postedAt) || 0;
   if (!cid || !t || t > Date.now() + 60000) return;
   if (t > (ROOM_POST_AT[cid] || 0)) ROOM_POST_AT[cid] = t;
+}
+
+/* Flush both maps to storage. Runs on the watch-build tick (every 30s) so a
+ * service-worker nap never loses "when did this room last post". */
+async function persistRoomTimes() {
+  try { await chrome.storage.local.set({ room_msg_at: ROOM_MSG_AT,
+                                         room_post_at: ROOM_POST_AT }); } catch (e) {}
 }
 
 function _marketOpenNow() {
@@ -2873,70 +2875,6 @@ function _marketOpenNow() {
   } catch (e) { return false; }
 }
 
-async function roomSilenceCheck() {
-  try { await chrome.storage.local.set({ room_msg_at: ROOM_MSG_AT, room_post_at: ROOM_POST_AT }); } catch (e) {}
-  if (!_marketOpenNow()) return;
-  const now = Date.now();
-  const QUIET = 40 * 60 * 1000;
-  // LIVE rooms only (9/9). This used to walk Object.keys(ROOM_LABELS) — the
-  // hand-typed name map, which carries every room ever wired: all the cut ZT
-  // rooms, the asleep Boka ones, Vero 1/3, Options Watchlist, TTT ids that
-  // were never in rooms.txt. None of them have a tab, so every one of them
-  // tripped "silent 40 min" every session — roughly 40 false alarms a day,
-  // which is how a real dead reader gets lost in the noise.
-  try { await loadRoomsFile(); } catch (e) {}
-  let lane = "";
-  try { lane = (await chrome.storage.local.get("profile_lane")).profile_lane || ""; } catch (e) {}
-  const _watch = LIVE_ROOM_IDS.size ? LIVE_ROOM_IDS : Object.keys(ROOM_LABELS);
-  for (const id of _watch) {
-    if (lane && (lane === "whop") !== String(id).startsWith("whop:")) continue;
-    // A fresh heartbeat proves the reader is answering even when nobody posts.
-    if (readerHealth(id, now) === "quiet (heartbeat current)") continue;
-    const last = ROOM_MSG_AT[id] || _pulseBoot;
-    const quiet = now - last;
-    if (quiet < QUIET) continue;
-    const already = ROOM_ALERTED[id];
-    // once per spell, and once more if it crosses two hours
-    if (already === last && quiet < 120 * 60 * 1000) continue;
-    if (already === "2h:" + last) continue;
-    ROOM_ALERTED[id] = quiet >= 120 * 60 * 1000 ? "2h:" + last : last;
-    const mins = Math.round(quiet / 60000);
-    const label = ROOM_LABELS[id] || id;
-    try {
-      chrome.notifications.create("quiet-" + id, {
-        type: "basic", iconUrl: "icon128.png",
-        title: "🔇 " + label + " — silent " + mins + " min",
-        message: "Not one message during market hours. Dead reader (F5 its " +
-                 "tab) or the room's just asleep — worth a look either way."
-      });
-    } catch (e) {}
-    await addLog({ kind: "skipped",
-                   why: "🔇 " + label + " has been silent " + mins + " min " +
-                        "during market hours — dead reader or sleeping room. " +
-                        "Check its tab.", text: "", author: label });
-  }
-  // Each profile can see only its own tabs. Discord cannot diagnose Whop.
-  if (lane !== "whop") return;
-  // No whop tab open at all — nothing can be read, say so plainly.
-  try {
-    let wt = await chrome.tabs.query({ url: ["https://whop.com/*"] });
-    wt = wt.filter(t => /\/app(\/|$)|\/joined\//.test(t.url || ""));
-    if (!wt.length && WHOP_ROOMS.length &&
-        (now - (ROOM_ALERTED["_nowhop"] || 0)) > 30 * 60 * 1000) {
-      ROOM_ALERTED["_nowhop"] = now;
-      chrome.notifications.create("no-whop", {
-        type: "basic", iconUrl: "icon128.png",
-        title: "🔇 No Whop tab is open",
-        message: "Every Whop room is unwatched right now — open the rooms " +
-                 "(START HERE does it) or Felony trades without you." });
-      await addLog({ kind: "skipped",
-                     why: "🔇 no Whop tab open — every Whop room is unwatched",
-                     text: "", author: "whop" });
-    }
-  } catch (e) {}
-}
-
-chrome.alarms.create("room-silence", { periodInMinutes: 5 });
 // ACCESS PROBE (9/7): every 30 min it CONSIDERS probing; accessCheck()
 // itself enforces once-a-day, one room, and never during market hours.
 chrome.alarms.create("access-check", { periodInMinutes: 30 });
@@ -3054,9 +2992,8 @@ chrome.alarms.onAlarm.addListener(a => {
   // once at startup; after that nothing reopens a tab he closed. Function left
   // defined-but-uncalled below in case it's ever wanted back.
   // whopSelfHeal() ADDED BACK 9/10, whop lane only — see its own comment.
-  if (a.name === "watch-build") watchBuildSweep();
+  if (a.name === "watch-build") { watchBuildSweep(); persistRoomTimes(); }
   if (a.name === "whop-watchdog") whopWatchdog();
-  if (a.name === "room-silence") roomSilenceCheck();
   if (a.name === "access-check") { accessCheck(false); revokeCheck(); }
   if (a.name === "auto-export") autoExportForLearning();
 });
@@ -4907,8 +4844,8 @@ async function memoryShed() {
  * nothing. Two answers: (1) pin autoDiscardable=false on every room tab,
  * re-applied every tick because Chrome resets it whenever Discord
  * navigates; (2) content.js now heartbeats every 30s — a room that stops
- * answering for 3 beats gets reloaded in ~90s instead of the 40-minute
- * silence alarm wondering. */
+ * answering for 3 beats gets reloaded in ~90s, which is the whole reason
+ * no timed quiet-room alarm is needed. */
 const READER_BEAT = {};        // channelId -> last heartbeat ts
 const READER_TAB = {};         // channelId -> tabId
 const BEAT_DEAD_MS = 95000;    // 3 missed beats. Reload, don't wonder.
