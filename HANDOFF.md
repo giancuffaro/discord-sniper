@@ -3,39 +3,37 @@ Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
 Last updated: 2026-09-15 — cut to a RULES CORE (was 28,060 bytes): one line per rule, mechanics moved verbatim to the reference docs. Ceiling now 14 KB.
 
-## How to update this file (READ BEFORE EDITING — long form: reference/OPERATIONS.md)
-- A STATE, not a story. Edit the rule that changed, IN PLACE. REPLACE, DON'T
-  STACK: the new rule takes the old one's place, never sits beside it.
-- ONE RULE, ONE LINE. Numbers, formats, procedures and rationale are MECHANICS
-  and live in one reference doc per subsystem. G's own wording stays verbatim.
-- Bump the one "Last updated:" line. One line. Never prepend an essay.
-- Session notes, findings, post-mortems and numbers-of-the-day go to
-  HANDOFF-LOG.md ("SESSION NOTES", newest first, dated) — it may grow forever,
-  this file may not. Hard ceiling: under 14 KB. Past it you are writing history
-  or mechanics: move it (history → HANDOFF-LOG.md, how-it-works → reference/).
+## How to update this file (long form: reference/OPERATIONS.md)
+- A STATE, not a story: edit the rule that changed IN PLACE. REPLACE, DON'T
+  STACK — the new rule takes the old one's place, never sits beside it.
+- ONE RULE, ONE LINE. Numbers, formats, procedures and rationale are MECHANICS:
+  one reference doc per subsystem. G's own wording stays verbatim.
+- Bump the one "Last updated:" line; never prepend an essay. Session notes,
+  findings and post-mortems go to HANDOFF-LOG.md ("SESSION NOTES", newest first,
+  dated) — that file grows forever, this one may not.
+- HARD CEILING: UNDER 14 KB. Past it you are writing history or mechanics: move
+  it (history → HANDOFF-LOG.md, how-it-works → reference/).
 - No handoff copies, dated handoffs or upload snapshots; daily performance lives
   in `daily-reports/`. HANDOFF-LOG.md and the handoffs zipped in `archive/` are
   historical evidence, never current instructions.
 
 ## Where the mechanics live (one pointer per subsystem — described in INDEX.md)
 ASK-MAP.md (which file answers which ask) → STATUS.json (today's numbers) →
-reports/INDEX.json. Mechanics: reference/ENTRIES.md · RATCHET.md · ROOMS-TABS.md
-· OPERATIONS.md (restarts, the 16:40 audit, git, autopilot, announcer, readers,
-keys, PC2, caller research, weekly files, the house file rules, the watch-item
-detail, this file's long form) · OPTIONS-BROKER-REFERENCE.md · PULLBACK-LEVELS.md
-· CALLER-LEDGER.md · EOD-BENCHMARK-SPEC.md · DATA-MAP.md · MARKET-HOURS.md ·
-ARCHITECTURE.md (modules, the machine, accounts, coexistence, north star) ·
-INDEX.md · HANDOFF-LOG.md (history). Live state: extension/rooms.txt ·
-settings.json (keys, gitignored) · master_ledger.csv / master_alerts.csv · days/
-· daily-reports/ + daily-audits/ (one week file per kind).
+reports/INDEX.json. Mechanics in reference/: ENTRIES · RATCHET · ROOMS-TABS ·
+OPERATIONS (restarts, the 16:40 audit, git, autopilot, announcer, readers, keys,
+PC2, caller research, weekly files, house file rules, watch-item detail, this
+file's long form) · OPTIONS-BROKER-REFERENCE · PULLBACK-LEVELS · CALLER-LEDGER ·
+EOD-BENCHMARK-SPEC. Also DATA-MAP.md · MARKET-HOURS.md · ARCHITECTURE.md (the
+machine, accounts, coexistence, north star) · INDEX.md · HANDOFF-LOG.md.
 
 ## Who and what
-- G (giancuffaro230@gmail.com) maintains this code himself (9/13) and trades options + futures live, real money. Wants it CONDENSED. "Fix everything is default always" — bugs get fixed without asking, same day. "Fix errors every day after journaling."
+- G (giancuffaro230@gmail.com) maintains this code himself (9/13), trades options + futures live, real money, wants it CONDENSED. "Fix everything is default always" — bugs get fixed without asking, same day. "Fix errors every day after journaling."
 - Real-money actions are HIS ALONE: placing/canceling orders, flipping rooms LIVE, unlocking accounts, funding, questionnaires, accepting ToS, passwords.
 - ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; check buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate and NinjaTrader stay OFF.
 - COEXISTENCE: Market Sniper (port 8000) shares the account and the rate budget — its positions are visible, NEVER stop-managed or sold.
 - NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot vs broker truth; a later high is never a caller exit.
-- AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing; "" or a range is NO CALL — not a crash, not an order; department output is advisory. CALLER IDENTITY IS CANDIDATE EVIDENCE: no win rate until attribution exists, a new account never gets an execution key, ID-less rows stay unavailable — re-grab, never infer.
+- AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing; "" or a range is NO CALL — not a crash, not an order; department output is advisory.
+- CALLER IDENTITY IS CANDIDATE EVIDENCE: no win rate until attribution exists, a new account never gets an execution key, ID-less rows stay unavailable — re-grab, never infer.
 - Claude exports and project/context/ are historical reference only.
 
 ## Rules of the house (current, in force)
