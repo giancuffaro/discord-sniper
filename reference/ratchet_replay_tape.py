@@ -486,6 +486,14 @@ def bootstrap(diffs, n=BOOTSTRAP_N, seed=20260914):
     }
 
 
+def gap_before(walk, until_ts, limit=GAP_ALARM_S):
+    """Did the sweep go dark for longer than `limit` at any point up to
+    `until_ts`? If it did, the price that ended this trade was never recorded
+    and the exit below is only the next thing the tape happened to see."""
+    return any(walk[i + 1][0] - walk[i][0] > limit and walk[i][0] <= until_ts
+               for i in range(len(walk) - 1))
+
+
 def median(values):
     if not values:
         return None
@@ -550,10 +558,8 @@ def build():
         # A hole in the sweep before the exit means the stop was probably hit
         # inside it and we never saw the price that did it. Those rows keep
         # their place in the table but are quarantined out of the clean total.
-        row["gap_before_exit"] = any(
-            walk[i + 1][0] - walk[i][0] > GAP_ALARM_S
-            and walk[i][0] <= max(row["runs"][c]["ts"] for c in row["runs"])
-            for i in range(len(walk) - 1))
+        row["gap_before_exit"] = gap_before(
+            walk, max(row["runs"][c]["ts"] for c in row["runs"]))
         pb_why, pb_ts, pb_ask = pullback_entry(
             alert, unders.get((alert["day"], alert["root"])) or [], walk)
         row["pullback_why"] = pb_why
@@ -561,10 +567,13 @@ def build():
         row["pullback_entry"] = pb_ask
         if pb_ask:
             pb_path = [r for r in walk if r[0] >= pb_ts]
-            row["pullback_run"] = simulate(pb_path, pb_ask, alert["root"],
-                                           TIERS_LIVE, False, False, flat)
+            run = simulate(pb_path, pb_ask, alert["root"], TIERS_LIVE,
+                           False, False, flat)
+            row["pullback_run"] = run
+            row["pullback_gap"] = gap_before(pb_path, run["ts"])
         else:
             row["pullback_run"] = None
+            row["pullback_gap"] = False
         trades.append(row)
     return trades, excluded
 
@@ -832,19 +841,42 @@ def write(trades, excluded):
         if pr:
             pb_n += 1
             pb_sum += pr["pl"]
-        L.append("| %s | %s | %s | $%.2f | %+.0f | %s | %s | %s |"
+        L.append("| %s | %s | %s | $%.2f | %+.0f%s | %s | %s | %s%s |"
                  % (a["day"][5:], a["time"][:5], a["occ"], t["entry"],
-                    t["runs"]["A"]["pl"], t["pullback_why"],
+                    t["runs"]["A"]["pl"], " `!`" if t["gap_before_exit"] else "",
+                    t["pullback_why"],
                     ("$%.2f" % t["pullback_entry"]) if t["pullback_entry"] else "—",
-                    ("%+.0f" % pr["pl"]) if pr else "—"))
+                    ("%+.0f" % pr["pl"]) if pr else "—",
+                    " `!`" if t["pullback_gap"] else ""))
     managed = [t for t in scored if t["alert"]["root"] in MANAGED]
     m_take = sum(t["runs"]["A"]["pl"] for t in managed)
     m_pb = sum(t["pullback_run"]["pl"] for t in managed if t["pullback_run"])
-    L += ["", "- Take-it fills: **%d**, **%+.0f** under variant A." % (take_n, take_sum),
+    paired = [t for t in managed if t["pullback_run"]
+              and not t["gap_before_exit"] and not t["pullback_gap"]]
+    p_take = sum(t["runs"]["A"]["pl"] for t in paired)
+    p_pb = sum(t["pullback_run"]["pl"] for t in paired)
+    pb_boot = bootstrap([t["pullback_run"]["pl"] - t["runs"]["A"]["pl"]
+                         for t in paired])
+    L += ["", "`!` again marks a sweep hole before that exit.", "",
+          "- Take-it fills: **%d**, **%+.0f** under variant A." % (take_n, take_sum),
           "- Pullback fills: **%d**, **%+.0f** under variant A." % (pb_n, pb_sum),
           "- On the **%d round-number-eligible alerts only**: take-it **%+.0f**, "
           "pullback **%+.0f** — and the pullback simply did not enter %d of them."
           % (len(managed), m_take, m_pb, len(managed) - pb_n),
+          "- **The only honest paired comparison** is the %d alerts where BOTH "
+          "rules entered and neither exit fell in a sweep hole: take-it "
+          "**%+.0f**, pullback **%+.0f**, mean difference **%s/trade**, "
+          "95%% band **%s**. %s"
+          % (len(paired), p_take, p_pb,
+             ("%+.2f" % pb_boot["mean"]) if pb_boot else "n/a",
+             ("%+.2f .. %+.2f" % (pb_boot["lo"], pb_boot["hi"])) if pb_boot else "n/a",
+             "Nothing in this sample separates them." if pb_boot
+             and pb_boot["lo"] < 0 < pb_boot["hi"] else
+             "The band clears zero — but on %d trades, read it as a hint."
+             % len(paired) if pb_boot else ""),
+          "- For contrast, the 9/9 study that SETTLED the $1 level "
+          "(`reference/PULLBACK-LEVELS.md`) used 65 paired trades on real "
+          "1-second stock bars. This is not that. It does not overturn it.",
           "- A skipped entry is $0, not a loss. Whether that is good depends on "
           "the trades it skips, which is the point of the table above.",
           "- **Skyy's QQQ 708C is the case in point and it is not in this table**: "

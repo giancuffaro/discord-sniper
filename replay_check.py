@@ -203,7 +203,15 @@ def load(fn):
     # latest browser session.  RAW is the durable full-day capture, so keep it
     # and overlay parser-enriched copies of matching messages when available.
     combined = dict(msgs)
-    combined.update(parser_msgs)
+    for key, parser_row in parser_msgs.items():
+        raw_row = combined.get(key)
+        # The live-parser copy is cleaner, but a pre-v3.8.32 parser row can
+        # lack the source ID the durable RAW row already has.  Keep that ID
+        # instead of silently downgrading an auditable message to legacy.
+        if raw_row and getattr(raw_row, "message_id", "") and not getattr(parser_row, "message_id", ""):
+            parser_row = Message(parser_row[0], parser_row[1], parser_row[2],
+                                 parser_row[3], raw_row.message_id)
+        combined[key] = parser_row
     return list(combined.values()), dids
 
 

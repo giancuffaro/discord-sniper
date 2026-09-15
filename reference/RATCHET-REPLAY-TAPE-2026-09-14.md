@@ -236,25 +236,29 @@ Same alerts, same variant-A exit rule. "Take it" crosses the ask at the first qu
 
 | Day | Time | Contract | Take-it entry | Take-it $ (A) | Pullback | Pullback entry | Pullback $ (A) |
 |---|---|---|---:|---:|---|---:|---:|
-| 09-11 | 10:01 | NVDA260911C00220000 | $2.11 | -188 | never touched $221 in 10 min | — | — |
+| 09-11 | 10:01 | NVDA260911C00220000 | $2.11 | -188 `!` | never touched $221 in 10 min | — | — |
 | 09-11 | 10:25 | TSLA260911P00362500 | $1.82 | -7 | touched $364 | $1.41 | -13 |
 | 09-11 | 12:41 | CPS260918C00025000 | $0.65 | -5 | not a round-number symbol (instant entry) | — | — |
 | 09-14 | 10:13 | CRWD260918C00245000 | $2.50 | -5 | not a round-number symbol (instant entry) | — | — |
 | 09-14 | 10:21 | TSLA260918C00357500 | $7.40 | -35 | touched $358 | $7.35 | -35 |
 | 09-14 | 10:22 | TSLA260918P00357500 | $6.50 | +30 | never touched $359 in 10 min | — | — |
 | 09-14 | 10:23 | NVDA260916P00210000 | $2.40 | +0 | never touched $211 in 10 min | — | — |
-| 09-14 | 10:36 | QQQ260914P00704000 | $1.13 | -1 | touched $705 | $1.01 | -76 |
+| 09-14 | 10:36 | QQQ260914P00704000 | $1.13 | -1 | touched $705 | $1.01 | -76 `!` |
 | 09-14 | 10:41 | QQQ260914P00705000 | $1.41 | -7 | touched $705 | $1.39 | +14 |
 | 09-14 | 11:12 | MSFT260914C00505000 | $0.65 | -3 | never touched $503 in 10 min | — | — |
 | 09-14 | 11:24 | META260918C00670000 | $6.65 | -35 | never touched $656 in 10 min | — | — |
 | 09-14 | 11:52 | TSLA260925P00340000 | $2.38 | -1 | touched $364 | $2.39 | +0 |
-| 09-14 | 14:05 | META260918C00700000 | $2.61 | +7 | touched $667 | $2.64 | -19 |
+| 09-14 | 14:05 | META260918C00700000 | $2.61 | +7 `!` | touched $667 | $2.64 | -19 `!` |
 | 09-14 | 14:14 | QQQ260914C00713000 | $0.24 | -3 | touched $712 | $0.23 | -1 |
 | 09-14 | 14:20 | TSLA260914P00360000 | $0.38 | -3 | never touched $362 in 10 min | — | — |
 | 09-14 | 15:12 | AFRM261016C00080000 | $2.11 | +8 | not a round-number symbol (instant entry) | — | — |
 
+`!` again marks a sweep hole before that exit.
+
 - Take-it fills: **16**, **-248** under variant A.
 - Pullback fills: **7**, **-130** under variant A.
 - On the **13 round-number-eligible alerts only**: take-it **-246**, pullback **-130** — and the pullback simply did not enter 6 of them.
+- **The only honest paired comparison** is the 5 alerts where BOTH rules entered and neither exit fell in a sweep hole: take-it **-53**, pullback **-35**, mean difference **+3.60/trade**, 95% band **-3.00 .. +12.80**. Nothing in this sample separates them.
+- For contrast, the 9/9 study that SETTLED the $1 level (`reference/PULLBACK-LEVELS.md`) used 65 paired trades on real 1-second stock bars. This is not that. It does not overturn it.
 - A skipped entry is $0, not a loss. Whether that is good depends on the trades it skips, which is the point of the table above.
 - **Skyy's QQQ 708C is the case in point and it is not in this table**: its tape path starts 10.8 minutes after the call, so neither entry rule can be scored on it. What is recorded is that the contract was $0.75 at the call and the caller posted out at $3.92 (+423%) at 13:14 — a move the $1 pullback wait would have had to be standing in front of, and QQQ's next round number below 706.95 is 706.
