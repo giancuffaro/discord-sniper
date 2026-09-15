@@ -32,7 +32,7 @@ Last updated: 2026-09-15 — room-chat exports are ONE FILE PER WEEK PER LANE (G
 - G (giancuffaro230@gmail.com) — maintains this code himself (9/13), trades options + futures live,
   real money. Wants it CONDENSED. "Fix everything is default always" — bugs
   get fixed without asking, same day. "Fix errors every day after journaling."
-- The machine: Chrome MV3 extension source v3.8.31 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot audits and journals after close. Market Sniper shares Webull; this bot never manages its positions.
+- The machine: Chrome MV3 extension source v3.8.33 reads Discord in Profile 2 and Whop in Profile 6 (display name “Whop Profile”). Typed, voice, and image alerts go to the Python bridge on 127.0.0.1:8787. Webull options use caller price or better, optional round-number pullback, a bracket stop born with the entry, and the flat 5/3/5 ratchet. Fill Announcer may be paused. The weekday autopilot audits and journals after close. Market Sniper shares Webull; this bot never manages its positions.
 - Accounts: `execution.mode=dryrun` does not disable per-room live Webull
   orders. Verify current buying power and positions at the broker before
   making claims. Webull options share one API budget with Market Sniper;
@@ -257,7 +257,7 @@ ENTRIES
   in his favour. Their stop/target wins; 25/50 fills the gaps. A MARKET entry
   (no price in the alert) gets that bracket off the FILL instead — positions.
   _arm_stop, but these are only recorded levels. Webull futures OPEN now refuses before broker lookup until an exact GTC STOP_LOSS is placed and verified after its fill, and stop/close reconciliation is tested. No futures quote-driven target/ratchet is operational.
-- INDEX MIRROR (9/13) — **OFF and activation blocked** until a broker-confirmed futures protective exit path exists. The shadow records SPY/QQQ option entries, and `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the daily audit. Reports land in `daily-reports/FUTURES-MIRROR-<date>.md`; the cumulative history is `reference/FUTURES-MIRROR-REPLAY.csv`. The replay's 25/50 stop, target and ratchet are simulated, not current live futures exits. New-day coverage is only bridge shadow rows plus `master_alerts.csv`; posts missed upstream are absent. The popup switch stays disabled until live exits are verified.
+- INDEX MIRROR (9/13) — **OFF, activation blocked** until a broker-confirmed futures protective exit exists. The shadow records SPY/QQQ option entries; `futures_mirror_daily.py` replays a hypothetical MES/MNQ market entry on ES/NQ 1-minute bars after the audit -> `daily-reports/FUTURES-MIRROR-<date>.md`, cumulative `reference/FUTURES-MIRROR-REPLAY.csv`. Its 25/50 stop/target/ratchet are simulated. Coverage = bridge shadow rows + `master_alerts.csv` only. Popup switch stays disabled until live exits are verified.
 - THE POCKET (hidden on purpose): a :43-:51 scalp-entry clock gate behind
   settings pocket_scalps_only, default OFF. Decided from HIS fill data
   (ledger minute-of-hour), not the QQQ study.
@@ -276,7 +276,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
-- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. It won the 115-trade OPRA sweep, and three later replays failed to beat it outside their error bars — price tiers, a born-stop floor, G's stock ladder (numbers in HANDOFF-LOG.md). Re-run `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py` and `reference/stock_stop_replay.py` as the sample grows; the BORN stop, not the rungs, is what ends these trades.
+- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. Won the 115-trade OPRA sweep; price tiers, a born-stop floor and G's stock ladder all failed to beat it outside error bars (HANDOFF-LOG.md). Re-run `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py`, `reference/stock_stop_replay.py` as the sample grows; the BORN stop, not the rungs, ends these trades.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
@@ -445,10 +445,8 @@ FILL ANNOUNCER (announcer.py, read-only)
   short page) into ONE fixed file, Webull_Orders_auto.csv, OVERWRITING it every
   run (G, 9/10: "have one that overwrites" — no deletes, ever), and records one
   balance row per day in `balance_daily.csv` (date, nlv, day_pl, bp, read_at) —
-  the brief's only balance source. NOTHING PULLED THIS UNTIL 9/15 (a session
-  did it by hand; last pull 9/11), so 9/12-9/14 all read "broker export
-  missing" and 9/14's 60 legs / -$321 were invisible;
-  build_ledger's absorb_exports() (runs inside every ledger refresh) folds
+  the brief's only balance source (automated 9/15 — nothing pulled it
+  before). build_ledger's absorb_exports() (runs inside every ledger refresh) folds
   it into master_broker.csv and leaves it in place. Never write dated
   Webull_Orders_<date> files — the folder holds the master plus that one
   scratch file (G, 9/9: never dated piles).
@@ -457,13 +455,13 @@ FILL ANNOUNCER (announcer.py, read-only)
   PRICE-BLIND TWINS (9/11): a stop leg has no limit, so one pull may write
   its stop price in "Price" and another nothing; the merge treats a blank-
   price copy of the same placed-time/contract/side/size/snapshot as the SAME
-  order (keeps the priced copy) and collapses any such twins already in the
-  master on load. 9/10 had 7 (3 FILLED sells the FIFO could mis-pair).
+  order (keeps the priced copy) and collapses such twins already in the
+  master on load.
   Webull_Orders_auto.csv "Price" = limit_price, else stop_price.
   Backups: backups/<file>.bak-<stamp> (last 5) — for master_broker,
   master_ledger and master_alerts; NO .bak files in the root anymore.
 - BROKER TRUTH: `master_broker.csv` is paged across the full Webull order history; 100-row pages must continue with `last_client_order_id` until a short page. `build_ledger.py` computes P&L from broker fills, collapses carryovers by caller+contract+entry, and matches either end date for overnight trades. Do not quote P&L from book-priced rows when a broker row exists.
-- BOT ATTRIBUTION: a caller name is candidate evidence until the entry is linked to a source alert and the trade to broker fills. `manual` in the day row denotes a manual exit; it does not disqualify a bot-origin entry. Adopted/export-only rows need separate entry provenance; caller `?` is unknown. Keep the older 107-trade contract-matched study as a dated sample, not a current all-trade statistic. `option_tape_pull.py` records durable quote coverage before skipping downloads.
+- BOT ATTRIBUTION: a caller name is candidate evidence until the entry is linked to a source alert and the trade to broker fills. `manual` in the day row denotes a manual exit; it does not disqualify a bot-origin entry. Adopted/export-only rows need separate entry provenance; caller `?` is unknown. The 107-trade contract-matched study is a dated sample, not a current statistic. `option_tape_pull.py` records quote coverage before skipping downloads.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I
   don't want any more confusions"). build_ledger keeps account="paper" rows
   OUT of master_ledger.csv, so the board, journal, scoreboard, announcer and
@@ -482,12 +480,9 @@ FILL ANNOUNCER (announcer.py, read-only)
   `t` (that's the exit); one FILLED line confirms one row; table/wallet
   twins dedupe on date+caller+contract+fill (no time bucket). Gaps are
   rows, not silence (source=trades.log-only / webull-export-only).
-  A closed position's qty can be zero remaining even when its entry legs
-  show the original size. Match that original size only to one exact OCC,
-  price and near-time (five-minute) broker trip; never relax a nonzero size
-  mismatch. Broker-confirmed exit and P/L replace the book's assertion while
-  store_pl retains it. New day records include entry_qty, the first broker
-  entry_order_id and client coid; the rebuilt ledger carries these fields.
+  Match a closed position's ORIGINAL size only to one exact OCC, price and
+  near-time (five-minute) broker trip; never relax a nonzero size mismatch.
+  Day records carry entry_qty, the first broker entry_order_id and client coid.
   A manual exit is exit provenance, not proof of manual entry. Research SQL
   joins alert and trade only on an explicit shared coid or legacy event key.
   RECONCILIATION prints every run: on any day with an export, ledger(live,
