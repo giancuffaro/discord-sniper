@@ -238,18 +238,37 @@ def _quote_paths(day):
 # Brando posts an exit as "SOLD | QQQ SEPT 16 710C $4.80 1/2 POSITION" — the
 # price sits straight after the contract with no "at", no "@" and no "STC", so
 # the three patterns below all missed it and two real exits were filed as
-# "price unavailable" (9/14). The contract token anchors the match, which is
-# what keeps the 16 of "SEPT 16", the 710 of "710C" and the 1/2 of the trim
-# size from being read as the exit price. A bare number must carry a decimal
-# point; "$" or "@" is enough on its own.
+# "price unavailable" (9/14). Two anchors keep this honest:
+#   1. the CONTRACT token (710C) must come first, which is what stops the 16 of
+#      "SEPT 16", the 710 of "710C" and the 1/2 of the trim size being read as
+#      a price, and requires the strike and side to be written together;
+#   2. the whole thing must sit within 80 characters after an exit WORD, which
+#      is what keeps a bot footer, a promo line or a paragraph of commentary
+#      inside a long accessible card from donating a number.
+# Over the 45,871 retained room lines, anchor 1 alone matched 181 times with
+# visible junk; both anchors match 123 times, and the sample inspected was all
+# genuine exits (Brando, Shoof, Jpm, 0DTE trim cards).
+# A bare number must carry a decimal point; "$" or "@" is enough on its own.
+_EXIT_WORD = re.compile(r"\b(sold|sell|stc|trim\w*|out|closed?)\b", flags=re.I)
 _CONTRACT_THEN_PRICE = re.compile(
-    r"\b\d{1,5}(?:\.\d+)?\s*[CP]\b"                 # ... 710C
+    r"\b\d{1,5}(?:\.\d+)?[CP]\b"                    # ... 710C
     r"(?:\s+(?:calls?|puts?))?"                     # ... 710C CALLS
     r"\s*"
     r"(?:\$\s*(?P<dollar>\d{1,4}(?:\.\d{1,2})?)"    # $4.80 / $5
     r"|@\s*\$?(?P<at>\d{1,4}(?:\.\d{1,2})?)"        # @4.80
     r"|(?P<bare>\d{1,4}\.\d{1,2}))",                # 4.80
     flags=re.I)
+_EXIT_WORD_REACH = 80
+
+
+def _price_after_contract(text):
+    """The exit price a "SOLD | <contract> $4.80" post is reporting, or None."""
+    for word in _EXIT_WORD.finditer(text or ""):
+        m = _CONTRACT_THEN_PRICE.search(text, word.end(),
+                                        word.end() + _EXIT_WORD_REACH)
+        if m:
+            return _f(m.group("dollar") or m.group("at") or m.group("bare"))
+    return None
 # 1/2, 1/4, "half" — how much of the position this exit took. Numerator under
 # denominator and both small, so a date ("9/16", "7/2") can never be read as a
 # trim, and a fraction that is really the start of a contract is skipped.
@@ -359,11 +378,8 @@ def _claim_values(text, action):
         if m:
             price = _f(m.group(1))
             break
-    if price is None and re.search(r"\b(sold|sell|stc|trim\w*|out|closed?)\b",
-                                   text or "", flags=re.I):
-        m = _CONTRACT_THEN_PRICE.search(text)
-        if m:
-            price = _f(m.group("dollar") or m.group("at") or m.group("bare"))
+    if price is None:
+        price = _price_after_contract(text)
     pcts = [_f(x) for x in re.findall(r"(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*%", text)]
     pct = pcts[-1] if pcts else None
     per_contract = None

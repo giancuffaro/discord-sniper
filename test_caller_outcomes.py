@@ -63,6 +63,14 @@ class CallerOutcomeEvidenceTests(unittest.TestCase):
         self.assertEqual(caller_outcomes._claim_values(
             "SOLD | DELL 7/2 450C 1.25 all out", "CLOSE")[0], 1.25)
 
+    def test_a_price_far_from_any_exit_word_is_ignored(self):
+        # Bot footers and promo lines ride inside the same accessible card as
+        # a real post. Only a price within 80 characters of an exit word counts.
+        self.assertIsNone(caller_outcomes._price_after_contract(
+            "sold nothing here. " + "x" * 120 + " QQQ 710C $4.80"))
+        self.assertIsNone(caller_outcomes._price_after_contract(
+            "Informational purposes only. Bot Version 6.7 -- 09/14/26 3.10"))
+
     def test_expiry_and_strike_are_never_read_as_the_exit_price(self):
         price, _pct, _pc, _partial, trim = caller_outcomes._claim_values(
             "trimming QQQ SEPT 16 710C 1/2 here", "TRIM")
