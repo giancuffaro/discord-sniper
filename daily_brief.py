@@ -237,8 +237,7 @@ def section_day(day, bot, hand, broker):
     def side(label, rows, net, blind):
         if not rows:
             return "- %s: none" % label
-        tail = "" if not blind else "  (%d of %d row%s carries no P&L)" % (
-            blind, len(rows), "" if blind == 1 else "s")
+        tail = "" if not blind else "  (%d with no P&L)" % blind
         return "- %s: %s · %d trade%s, %d contract%s%s" % (
             label, _money(net), len(rows), "" if len(rows) == 1 else "s",
             _contracts(rows), "" if _contracts(rows) == 1 else "s", tail)
@@ -255,27 +254,28 @@ def section_day(day, bot, hand, broker):
 def section_bot_trades(bot):
     if not bot:
         return "## Bot trades\nNo bot trades on this date."
-    head = ("%-5s  %-18s  %-16s  %-5s  %-11s  %6s  %6s  %8s  %s"
-            % ("time", "channel", "trader", "tkr", "contract",
-               "in", "out", "$", "why exited"))
+    fmt = "%-5s  %-18s  %-15s  %-5s  %-12s  %5s  %5s  %7s  %s"
+    head = fmt % ("time", "channel", "trader", "tkr", "contract",
+                  "in", "out", "$", "why exited")
     out = ["## Bot trades", "```", head, "-" * len(head)]
     flagged = 0
     for row in sorted(bot, key=lambda r: (r.get("opened") or "~")):
         entry = _num(row.get("avg_in")) or _num(row.get("fill"))
         exit_at = _num(row.get("exit_avg"))
+        dollars = _num(row.get("pl"))
         why = exit_words(row)
         if journal_disagrees(row):
             why += "  ⚠ journal ≠ broker"
             flagged += 1
-        out.append("%-5s  %-18s  %-16s  %-5s  %-11s  %6s  %6s  %8s  %s"
-                   % ((row.get("opened") or "--:--")[:5],
-                      _clip(row.get("room"), 18),
-                      _clip(row.get("caller"), 16),
-                      _clip(row.get("symbol"), 5),
-                      _clip(_contract(row), 11),
-                      ("%.2f" % entry) if entry is not None else "  ?  ",
-                      ("%.2f" % exit_at) if exit_at is not None else "  ?  ",
-                      _money(_num(row.get("pl"))), why))
+        out.append(fmt % ((row.get("opened") or "--:--")[:5],
+                          _clip(row.get("room"), 18),
+                          _clip(row.get("caller") or row.get("room"), 15),
+                          _clip(row.get("symbol"), 5),
+                          _clip(_contract(row), 12),
+                          ("%.2f" % entry) if entry is not None else "?",
+                          ("%.2f" % exit_at) if exit_at is not None else "?",
+                          _money(dollars) if dollars is not None else "?",
+                          why))
     out.append("```")
     if flagged:
         out.append("⚠ %d row%s: the journal says it exited, the broker record "
@@ -308,16 +308,17 @@ def section_callers(day, bot):
     csv_path = os.path.join(REPORTS, "CALLER-OUTCOMES-%s.csv" % day)
     rows = _read_csv(csv_path)
     if rows is None:
-        return ("## Callers right / wrong\nCALLER-OUTCOMES-%s.csv %s."
-                % (day, UNAVAILABLE))
+        return "\n".join(["## Callers right / wrong",
+                          "CALLER-OUTCOMES-%s.csv %s." % (day, UNAVAILABLE),
+                          _ratchet_line(day) or ""]).rstrip()
 
     claims = {}
     for row in rows:
         basis = (row.get("basis") or "").lower()
         if "stock price" in basis:            # excluded from every total
             continue
-        key = ((row.get("caller") or "?").strip(),
-               (row.get("contract") or "?").strip())
+        name = (row.get("caller") or "").strip() or _room_name(row.get("room"))
+        key = (name or "?", (row.get("contract") or "?").strip())
         slot = claims.setdefault(key, {"pct": None, "when": "", "kind": ""})
         value = _scored(row)
         if value is not None and (row.get("event_time") or "") >= slot["when"]:
@@ -329,11 +330,11 @@ def section_callers(day, bot):
     for (caller, contract), slot in sorted(claims.items(),
                                            key=lambda kv: kv[0][0].lower()):
         if slot["pct"] is None:
-            unscored.append(caller)
+            unscored.append("%s %s" % (caller, contract.split(" @")[0]))
             continue
         line = "- %s %s %s (%s) — %s" % (
-            caller, _clip(contract, 26), _pct(slot["pct"]), slot["kind"],
-            _bot_took(caller, contract, bot))
+            caller, _clip(contract.split(" @")[0], 22), _pct(slot["pct"]),
+            slot["kind"], _bot_took(caller, contract, bot))
         (right if slot["pct"] > 0 else wrong).append(line)
 
     out = ["## Callers right / wrong", "**Right**"]
@@ -341,11 +342,18 @@ def section_callers(day, bot):
     out.append("**Wrong**")
     out += wrong or ["- none scored"]
     seen = sorted(set(unscored), key=str.lower)
-    out.append("unscored: %s" % (", ".join(seen) if seen else "none"))
+    out.append("unscored (no exit price — never estimated): %s"
+               % (", ".join(seen) if seen else "none"))
     ratchet = _ratchet_line(day)
     if ratchet:
         out.append(ratchet)
     return "\n".join(out)
+
+
+def _room_name(room):
+    """The room's short half, for the rows the outcomes report leaves
+    caller-less (a relay footer named the room, not the trader)."""
+    return _clip((room or "").split(":")[-1].strip(), 24)
 
 
 def _bot_took(caller, contract, bot):
@@ -423,9 +431,9 @@ def section_broke(day):
     for label, _ in BROKE_TAGS:
         hits = found[label]
         if hits:
-            lines.append("- %s %d — %s" % (label, len(hits), _clip(
-                re.sub(r"^%s\s*" % re.escape(_tag_of(hits[0])), "", hits[0]),
-                120)))
+            lines.append("- %s %d — %s" % (label, len(hits),
+                                           _clip(_strip_label(label, hits[0]),
+                                                 120)))
     mirror = _mirror_fault(day)
     if mirror:
         lines.append(mirror)
@@ -433,6 +441,16 @@ def section_broke(day):
     if not lines:
         return "## What broke\nnothing broke"
     return "\n".join(["## What broke"] + lines)
+
+
+def _strip_label(label, body):
+    """Drop the log tag from the front so the line reads as the fault itself.
+    POSTCHECK keeps its subject ("FILLED TSLA — PROBLEM: …") — that is the
+    useful half."""
+    for prefix in (label, label.split()[0], _tag_of(body)):
+        if body.upper().startswith(prefix.upper()):
+            return body[len(prefix):].strip(" :-")
+    return body.strip()
 
 
 def _mirror_fault(day):
@@ -505,8 +523,9 @@ def build(day):
     bot, hand = split_day(ledger, day)
 
     day_block, bot_net, hand_net = section_day(day, bot, hand, broker)
+    broke = section_broke(day)
     blocks = [day_block, section_bot_trades(bot), section_callers(day, bot),
-              section_broke(day), section_pending()]
+              broke, section_pending()]
 
     sources = ["master_ledger.csv", "master_broker.csv", "trades.log",
                "daily-reports/CALLER-OUTCOMES-%s.csv" % day,
@@ -516,9 +535,8 @@ def build(day):
     stamp = dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z")
     footer = "built from %s · %s" % (", ".join(sources), stamp)
 
-    broke = section_broke(day)
-    faults = max(0, len([l for l in broke.splitlines()
-                         if l.startswith("- ")]))
+    faults = len([line for line in broke.splitlines()
+                  if line.startswith("- ")])
     summary = ("%s — day %s · bot %d trade%s %s · hand %d trade%s %s · "
                "%d thing%s broke"
                % (_short(day), _day_headline(day, broker),
