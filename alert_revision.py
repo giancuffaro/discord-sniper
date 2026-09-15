@@ -29,8 +29,8 @@ IDENTITY, in order:
      means either an explicit correction word ("edit", "edited",
      "correction", "meant", "typo", a leading "*", "not calls/puts") or a
      near-duplicate: with the contract tokens (ticker, strike, side, expiry,
-     price) stripped, the two texts are >= 0.9 similar (difflib ratio; two
-     bare contract lines are compared whole instead). A same-trader,
+     price) stripped, the two texts are >= 0.9 similar (difflib ratio; bare
+     contract lines with no prose to speak of are compared whole). A same-trader,
      same-ticker alert that reads differently is a SIBLING trade (TSLA calls
      at 10:00, TSLA puts as a new idea at 10:03) and the earlier arm stays.
      No text on either side is no evidence, so it is never an edit.
@@ -133,12 +133,13 @@ def _prose(text, symbol):
 
 
 def similarity(a, b, symbol=""):
-    """How alike two alerts read once the contract itself is removed. Two bare
-    contract lines ("TSLA 357.5c 1.42") have no prose left, so they are
-    compared whole: a one-letter side flip still scores ~0.94, a different
-    strike and price ~0.73."""
+    """How alike two alerts read once the contract itself is removed. A bare
+    contract line ("TSLA 357.5c 1.42", or one with a one-word tag like
+    "lotto") leaves too little prose to judge by, so those are compared
+    whole: a one-letter side flip still scores ~0.94, a different strike and
+    price ~0.73."""
     pa, pb = _prose(a, symbol), _prose(b, symbol)
-    if pa and pb:
+    if len(pa.split()) >= 3 and len(pb.split()) >= 3:
         return difflib.SequenceMatcher(None, pa, pb).ratio()
     ta, tb = " ".join(_text(a).lower().split()), " ".join(_text(b).lower().split())
     if not ta or not tb:

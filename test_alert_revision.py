@@ -35,6 +35,10 @@ CALL = {"action": "OPEN", "trader": "PT | ei trades", "symbol": "TSLA",
         "limit": 1.42, "entry_mode": "pullback",
         "message_id": "chat-messages-1334-999"}
 PUT = dict(CALL, side="PUTS")
+# The 9/14 row as the room formats it, and the two edits the tests replay.
+ROW_C = "Entry \u2014 Contract: TSLA $357.5c \u2014 Price: $1.42"
+ROW_P = "Entry \u2014 Contract: TSLA $357.5p \u2014 Price: $1.42"
+ROW_360C = "Entry \u2014 Contract: TSLA $360c \u2014 Price: $1.42"
 
 
 class FakeBook(object):
@@ -248,37 +252,73 @@ class AlreadyFilled(Harness):
         self.assertNotIn("EDITED", self.log())
 
     def test_the_no_id_fallback_still_reaches_the_filled_branch(self):
-        old = dict(CALL); old.pop("message_id")
+        old = dict(CALL, raw=ROW_C); old.pop("message_id")
         self.book.state = bridge.positions.FILLED
         self.book.fill, self.book.bid = 7.40, 7.06
         self.arm(old, key=bridge.tkey(old))
         with mock.patch.object(bridge, "_place_impl",
                                return_value=(True, "sold")) as sell:
-            bridge._revision_check(dict(old, strike=360))
+            bridge._revision_check(dict(old, strike=360, raw=ROW_360C))
         self.assertEqual(sell.call_count, 1)
         self.assertIn("357.5C \u2192 360C", self.log())
 
 
 class NoMessageIdFallback(Harness):
-    """A legacy build (or voice/vision) sends no message id. Then the only
-    evidence of a correction is the same caller, the same ticker, a different
-    contract, inside five minutes."""
+    """A legacy build (or voice/vision) sends no message id. Then a correction
+    is the same caller, the same ticker, a different contract, inside five
+    minutes, AND text that reads as a fix of the pending one: a near-duplicate
+    with the contract tokens stripped, or a correction word."""
 
     def test_same_trader_same_symbol_new_strike_replaces(self):
-        old = dict(CALL); old.pop("message_id")
-        new = dict(old, strike=360)
+        old = dict(CALL, raw=ROW_C); old.pop("message_id")
+        new = dict(old, strike=360, raw=ROW_360C)
         self.arm(old)
         bridge._revision_check(new)
         self.assertEqual(len(self.pb.calls), 1)
         self.assertIn("357.5C → 360C", self.log())
 
     def test_beyond_five_minutes_is_a_fresh_call(self):
-        old = dict(CALL); old.pop("message_id")
-        new = dict(old, strike=360)
+        old = dict(CALL, raw=ROW_C); old.pop("message_id")
+        new = dict(old, strike=360, raw=ROW_360C)
         self.arm(old, now=time.time() - 400)
         bridge._revision_check(new)
         self.assertEqual(self.pb.calls, [])
         self.assertNotIn("EDITED", self.log())
+
+    def test_a_legit_second_trade_keeps_the_first_arm(self):
+        """TSLA calls, then three minutes later TSLA puts as a NEW idea: the
+        text reads nothing like the first alert, so both arms stand."""
+        old = dict(CALL, raw="TSLA 357.5c @ 1.42 lotto, small size here")
+        old.pop("message_id")
+        new = dict(old, side="PUTS", strike=355,
+                   raw="flipping — TSLA 355p @ 1.10 hedge into the close")
+        self.arm(old, now=time.time() - 180)
+        bridge._revision_check(new)
+        self.assertEqual(self.pb.calls, [])
+        self.assertNotIn("EDITED", self.log())
+        self.assertEqual(len(bridge._REVISIONS.pending()), 1)
+
+    def test_a_near_duplicate_without_an_id_is_an_edit(self):
+        old = dict(CALL, raw=ROW_C); old.pop("message_id")
+        new = dict(old, side="PUTS", raw=ROW_P)
+        self.arm(old)
+        bridge._revision_check(new)
+        self.assertEqual(len(self.pb.calls), 1)
+        self.assertIn("357.5C → 357.5P", self.log())
+
+    def test_meant_puts_is_an_edit(self):
+        old = dict(CALL, raw=ROW_C); old.pop("message_id")
+        new = dict(old, side="PUTS", raw="meant puts")
+        self.arm(old)
+        bridge._revision_check(new)
+        self.assertEqual(len(self.pb.calls), 1)
+        self.assertIn("357.5C → 357.5P", self.log())
+
+    def test_no_text_on_either_side_is_no_evidence(self):
+        old = dict(CALL); old.pop("message_id")
+        self.arm(old)
+        bridge._revision_check(dict(old, strike=360))
+        self.assertEqual(self.pb.calls, [])
 
 
 class NotRevisions(Harness):
