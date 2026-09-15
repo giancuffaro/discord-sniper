@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — v3.8.32: daily exports retain Discord message IDs end-to-end, so reports deep-link only exact source matches; edited-alert correction and OpenAI → Gemini → billing-blocked Anthropic reader order remain unchanged.
+Last updated: 2026-09-15 — caller reports now read an exit price written straight after the contract and refuse a posted stock price as a premium; v3.8.32: daily exports retain Discord message IDs end-to-end, so reports deep-link only exact source matches.
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -272,7 +272,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
-- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. It won the 115-trade OPRA sweep (`ratchet_sweep_fine.py`; numbers in HANDOFF-LOG.md). Re-run it, and `reference/ratchet_replay_tape.py` (16 real alert-tape paths, 9/14), as the sample grows: neither the 9/2 price tiers nor a 2x-spread born-stop floor beat 5/3/5 there, and no difference cleared its error bar, so nothing changed.
+- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. It won the 115-trade OPRA sweep (`ratchet_sweep_fine.py`; numbers in HANDOFF-LOG.md). Re-run that and `reference/ratchet_replay_tape.py` as the sample grows: on 16 real alert-tape paths (9/14) neither the 9/2 price tiers nor a 2x-spread born-stop floor beat 5/3/5, no difference cleared its error bar, nothing changed.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
@@ -323,15 +323,15 @@ RESTARTS / SAFETY
   tape restores today's contracts from `alert_meta.csv` after bridge/code
   restarts, resolves shorthand expiries, and records distinct re-entries.
   `CALLER-OUTCOMES-<date>.md/.csv` preserves caller entry, every trim/full
-  exit, price or percent and trim size; caller P&L is shown only when entry
-  and exit pair with contemporaneous quotes, partials never become full
-  results, absent prices stay absent. TWO FIXES 9/14: an exit price written
-  straight after the contract is now read ("SOLD | QQQ SEPT 16 710C $4.80 1/2"
-  -> Brando +39%/+59%, was "price unavailable"), anchored to the contract AND
-  an exit word within 80 chars so footers donate nothing; and a posted price
-  within 2% of that minute's `und` is a STOCK quote, not a premium -> entry
-  "unavailable (stock price posted)", row kept, its dollars out of every total
-  (Midas SPY 760P @ 760.40 alone had made 9/14 read -74,960; it reads +976).
+  exit, price or percent and trim size; caller P&L only when entry and exit
+  pair with contemporaneous quotes, partials never become full results,
+  absent prices stay absent. TWO FIXES 9/14: a price written straight after
+  the contract is read ("SOLD | QQQ SEPT 16 710C $4.80 1/2" -> Brando
+  +39%/+59%, was "price unavailable"), anchored to the contract AND an exit
+  word within 80 chars so footers donate nothing; and a posted price within
+  2% of that minute's `und` is a STOCK quote, not a premium -> entry
+  "unavailable (stock price posted)", row kept, dollars out of every total
+  (Midas SPY 760P @ 760.40 alone had made 9/14 read -74,960; now +976).
   `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from caller entry over `tape.py`
   and lists gaps/futures.
   Broker-confirmed actuals always override a quote-path simulation.
