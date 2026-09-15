@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — G retired five rules: the 0DTE pre-close flatten, the optionality review, the room silence alarm, the Fill Announcer, its heading.
+Last updated: 2026-09-15 — rule-vs-code audit: unbacked claims rewritten, dead code deleted.
 
 ## How to update this file (long form: OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. REPLACE, DON'T
@@ -43,7 +43,7 @@ ENTRIES · ENTRIES.md
 - ONE SWITCH PER ROOM (G, 9/9): ON = tab + read + trades LIVE; OFF = nothing; LAPSED = sub ran out. No paper state. A TAB CLOSED BY HAND IS NOT A BENCH; benched rooms stay.
 - TABS (9/10): the reaper closes only `_OURS`, never a human's; only START HERE, the popup switch and whopSelfHeal() open one; "No Access" → `lapsed` + close; the last tab stays.
 - ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed. CHANNELS: callers inside their verified room, win rate needs evidence, no Callers tab (G).
-- STRIKES: max 1 OTM, deeper snaps to the first rung; 3-ITM for SPY/QQQ/Mag7 0DTE; ADD buys the held strike.
+- STRIKES: max 1 OTM, deeper snaps to the first rung; ADD buys the held strike.
 - "ADDED <full contract>" you are not in = an OPEN entry; a bare "added to SPY" refuses. NO SPX→SPY (G, 9/10: "do not translate any SPX to SPY"); index entries are HELD until execution.index_broker is set.
 - WORD ORDER: any order, `bare` rooms only. TWO CONTRACTS = TWO ORDERS (9/10): one each, own stop and ratchet, same ticker; call+put refuses the line.
 - EXPIRY, one place: NDTE = N CALENDAR days rolling BACK, never past today; NO DATE = 0DTE (G, 9/10), the LISTING ASKED never assumed, clues win first; "FRIDAY WEEKLIES ONLY" is DEAD.
@@ -73,7 +73,7 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - GIT: settings.json holds every key and is never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
 - REPLACE, DON'T STACK (G, 9/9). When anything changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place; never left beside it, not commented out, not "superseded", not "legacy", not a dead branch "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md. A fallback that stays is a deliberate design decision.
 - CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (test: DATA-MAP.md). Records that cannot be re-derived — tapes, telemetry, days/ — are APPENDED to, never rewritten.
-- READ DATA-MAP.md WITH INDEX.md every session (INDEX = what a file IS, DATA-MAP = what is IN it). RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump extension/manifest.json on extension changes; never install webullsdkcore into the bridge's Python; sandbox is RETIRED, paper is LOCAL (SIM).
+- READ DATA-MAP.md WITH INDEX.md every session (INDEX = what a file IS, DATA-MAP = what is IN it). RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump extension/manifest.json on extension changes; never install webullsdkcore into the bridge's Python; sandbox RETIRED, no local sim — a non-LIVE room's call is REFUSED, never faked.
 - DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the owner. Browser reads only.
 - FILL ANNOUNCER REMOVED (G, 9/15): reinstall when the bot is profitable. The daily BRIEF still posts to Sniper HQ through the announcer webhook URL in settings.json — that key stays.
 
@@ -112,7 +112,8 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 - Also open: futures fills → the ledger · telemetry has no room/caller · the
   Deepgram key may be one char short · the first overnight swing stop is
   unconfirmed · a room's NAMED exit misses adopted positions · bridge.log has no
-  rotation · multi-account "L" orphans · Topstep/Webull futures off.
+  rotation · multi-account "L" orphans · Topstep/Webull futures off ·
+  5 Whop rooms export blank rows, no verified heartbeat.
 
 ## Subscriptions
 ≈ $1,140/mo rooms + ~$52 infra + ~$30 exchange fees ≈ $1,220/mo before AI usage. Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.

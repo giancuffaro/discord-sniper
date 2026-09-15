@@ -12,6 +12,108 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (rule-vs-code audit: 191 rules walked, 2 unbacked claims killed, dead code deleted)
+
+G's ask, after the five-rule retirement exposed two rules with no code behind
+them (the 0DTE flatten, the premium-range guards): find every rule the machine
+does NOT actually keep, and delete what the department agents already cover.
+
+**JOB 1 — all 191 rules in HANDOFF.md checked against the code.**
+116 ENFORCED · 2 UNBACKED · 67 DECISION-ONLY · 6 DRIFTED. The full map is
+`reference/RULES-INDEX.md` (rule -> file:line, or why no code is expected), so
+no future session has to re-derive it. Being adversarial about ENFORCED was the
+point: a comment naming a rule is not enforcement, a settings key read but never
+acted on is not enforcement, and a test asserting a rule only proves the code
+exists, not that it runs.
+
+UNBACKED (the dangerous ones — HANDOFF rewritten the same day):
+- **"3-ITM for SPY/QQQ/Mag7 0DTE"** — no code anywhere. bridge.py's own header
+  records that the 8/19 "3 strikes ITM" rule was REPLACED on 8/20 by the no-OTM
+  rule; the 3-ITM half was never rebuilt. Clause deleted from HANDOFF line 46.
+- **"paper is LOCAL (SIM)"** — there is no local sim. It was deleted on his word
+  ("kill all the fake simulations"), and bridge.py now REFUSES a non-LIVE order
+  instead of faking one, with execution.webull.paper_trading = false. HANDOFF
+  line 76 now reads "sandbox RETIRED, no local sim — a non-LIVE room's call is
+  REFUSED, never faked."
+
+DRIFTED (code exists, does something else — reported to G, NOT changed, because
+a behaviour change is his call): futures_brokers.webull is ON while the rule
+says OFF · the max-1-OTM strike rule and its "ADD buys the held strike" clause
+both live inside `_no_otm_translate`, which returns immediately because
+`execution.translate_strikes` is not in settings.json · a call+put line is not
+refused, the call still fires · the stale-message guard is 20s Discord / 90s
+Whop, not 3 minutes · journal.csv is still written by the bridge and still read
+by caller_report.py, against "nothing reads journal.csv for analysis."
+
+**JOB 2 — dead code deleted** (each proved by grepping py/js/bat/vbs/html/md for
+the name, watching for getattr, string-keyed dicts, chrome.alarms names and
+HTTP route tables):
+- bridge.py `dry_entry()` (69 lines) — the whole dry-run book-tracking path, no
+  caller left; and `_set_mode_retired()` (43 lines), the OLD master-switch
+  handler kept beside the one-line stub that replaced it.
+- The `spx` room-rule flag — the parser's SPX->SPY retarget was deleted 9/10 but
+  the flag survived in `ROOM_RULE_FLAGS`, in three docstrings, and as a clickable
+  "SPY-proxy" pill in the popup that wrote a flag nothing read. Gone from both.
+- liquidity.py `warm()` / `load_cache()` / `_expiries()` / `_today()` and the
+  CACHE constant — the morning warm-cache was never called from anywhere, so
+  `liquidity_cache.json` was written by nothing and read by nothing. The live
+  path (volume_of -> _chain -> check) is untouched; the file is deleted.
+- market_hours.py `now_et()`, `session_bounds()`, `restart_safe_open()` and
+  symbols.py `reload_list()` — all uncalled. Note for G: the bridge duplicates
+  restart_safe_open inline at bridge.py:6552, and its copy does NOT check
+  holidays, while the dead one did.
+- extension/background.js `bridgeMode()` (asks /mode, which now answers
+  "per-room") and `marketOpenNow()` (a duplicate of the live `_marketOpenNow()`).
+  Two stale comments deleted with them: one claiming "a tab closed by hand during
+  hours comes back" (roomSchedule only CLOSES) and one calling openMissingRooms()
+  "defined-but-uncalled" (it is called twice).
+- extension/popup.js `_toggleKeyGroup()`, `channelOf()`, `creditLine()`.
+- Orphan files: `.announcer-board-sig` (the Fill Announcer's board state,
+  removed 9/15), `_probe_del.tmp`, `_rmprobe.tmp`,
+  `extension/test_percon.js.tmp`, the empty `handoffs/` and `reader-measure/`
+  directories, and `Claude outputs/ASK-MAP.md` — a stale copy of the live
+  ASK-MAP, exactly the kind of second truth the house rule forbids.
+- `master_alerts_noise_to_purge.csv` and `alert_rebuild_2026-09-11.csv` were
+  deleted as finished 9/11 artifacts. The noise worklist was verifiably spent:
+  `build_alerts._noise_reason` matches 0 of today's 558 master_alerts rows,
+  because build_alerts now drops those rows at the door. DATA-MAP's "they are
+  still present in master_alerts.csv" trap was stale and has been corrected.
+- `quotes_needed_backfill.txt` / `missing_contracts_for_backfill.txt` were
+  deleted in the same sweep, which was a mistake — DATA-MAP treats them as a
+  live worklist and they were never in git. They were REBUILT from
+  master_alerts.csv against all four tapes: 251 OCCs with no price record
+  anywhere (was 413 on 9/11 — the tapes have grown), 47 prioritised. DATA-MAP
+  carries the new counts.
+
+NOT deleted, and why: `trade_simulator.py` and `pullback_lookback.py` have zero
+references but were both built TODAY at G's own request — new tools, not
+leftovers. `health.py` looks superseded by departments.health_tick() but is a
+hand-run latency/reliability probe with a rule of its own (never open a second
+DXLink session) and its own record in health.csv. `eastern.py`'s `tzname()` is
+reached by datetime, not by name. `openMissingRooms()` reads dead from the alarm
+sweep but is called by START HERE and by the popup switch. The extension's
+notification paths are trade events, not watchdogs, so none of them duplicate a
+department report. Records were left alone throughout: tapes, telemetry, days/,
+the 9/11 recovery CSVs.
+
+**JOB 3 — recorded:** G's statement that Day Trades and High Risk carry the most
+Whop traffic, set against today's export (3 live messages, all Day Trades; High
+Risk / 2K Challenge / Swing blank `?:` rows; all five rooms "heartbeat not yet
+verified"), is an OPEN ITEM in reference/ROOMS-TABS.md with the next step named
+as evidence, not a code change — the Whop reader was not touched, twice told.
+A one-line watch item went into HANDOFF. `ANNOUNCER PITCH.txt` and
+`ADMIN PITCH.txt` no longer offer to send a cleaned copy of announcer.py, which
+does not exist; both now say the offer means writing a standalone poster first.
+
+Also corrected: INDEX.md described the ratchet as born −7.5% / +5% → BE / +2%
+with anti-clip on 2+ DTE. The code has run 5/3/5 flat with anti-clip OFF since
+9/10. A file whose job is to say what every file IS may not describe a ladder
+nobody runs.
+
+Tests 290 passed / 1 pre-existing paho collection error, before and after.
+parser_gate 11,386 / 852 / 3,048 unchanged. manifest 3.8.34 -> 3.8.35.
+HANDOFF 13,984 -> 13,989 bytes.
+
 ## 2026-09-15 (five rules retired on G's own review — HANDOFF 14,175 → 13,984 bytes)
 
 G read his own rule list and ordered five removals. Each was applied end to end:
