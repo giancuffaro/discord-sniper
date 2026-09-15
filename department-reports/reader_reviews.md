@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 79e0a3689613da3b3934
+
+The current SLV alert supports review of a possible parser extraction gap: the parser returned null fields and fire=false, while the reader extracted an OPEN call alert and validation accepted it. This is a source-verification proposal, not a confirmed parser bug.
+
+## Findings
+- Message chat-messages-728711121128652851-1549420792683696168 contains 'RegardedTrader (Jon) ... OPEN: SLV 65C 11/20 Exp. at 2.17'. The parser returned null action, expiry, side, strike, and symbol. The reader extracted OPEN, SLV, CALL, strike 65, expiry '11/20 Exp.', and price 2.17; validation returned ok=true. Verify the original Discord message and intended parser coverage for this relay format. Investigate whether caller attribution, the edited-message wrapper, or repeated boilerplate affected extraction, or whether the parser intentionally abstained. Preserve the raw expiry; its year is not explicit in the trade clause.
+- The source says 'at 2.17' without explicit premium units or quantity. The reader preserved price=2.17 and qty=null. No broker fill, premium multiplier, or source-backed unit convention is supplied. Preserve 2.17 as the raw reported entry value and leave quantity unknown, not zero. Report premium units as unresolved pending source verification. Do not rescale the value or infer contract cost, position cost, or an exact fill.
+- The reader attempt log records a Gemini 'cooldown', followed by an OpenAI attempt with error=null and an accepted reader result. Treat this as a recorded provider cooldown with a successful fallback for this message, not evidence of a channel outage or overall reader failure. Verify broader operational logs before proposing an availability finding.
+
+## Limitations
+- No original Discord view, edit history, parser diagnostics, or intended coverage rules are provided.
+- Validation acceptance and reader confidence do not independently confirm source accuracy or establish a parser defect.
+- Prior messages have no corresponding parser results, so they do not establish a recurring extraction failure.
+- The supplied evidence contains no broker-confirmed execution, simulation results, SLV exit, or return calculations.
+
+---
+
 # Reader Review — 2026-09-15 — 0fcce9fcdc37529f605c
 
 The current META message appears to be performance commentary, not an explicit close or new trim instruction. The reader's CLOSE classification and inherited contract details warrant source verification. The parser reports TRIM with fire=false; no execution or broker-confirmed outcome is established.
