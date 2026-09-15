@@ -139,25 +139,44 @@ def _normalise(sym, kind):
     return _occ.from_dx(sym)
 
 
-def rows(occ=None, since=None, until=None, sources=None, root=None):
+def rows(occ=None, since=None, until=None, sources=None, root=None,
+         occs=None):
     """Every recorded observation, oldest first, as Row objects.
 
     occ      one contract (OCC form) — or None for all
+    occs     MANY contracts (OCC form), answered in ONE streaming pass per
+             tape instead of one pass per contract. A study of 27 no-fills
+             used to mean 27 walks of a 46 MB file; this makes it one.
     root     e.g. "SPY" to get every contract on that underlying
     since/until  unix timestamps
     sources  subset of SOURCES keys
     """
     want = list(sources) if sources else list(_DEFAULT_SOURCES)
+    wanted = set()
+    if occ:
+        wanted.add(occ)
+    if occs:
+        wanted.update(o for o in occs if o)
+    wanted = wanted or None
     out = []
     for name in want:
         fname, keykind = SOURCES[name]
         fpath = os.path.join(HERE, fname)
+        # Match on the symbol AS THE FILE SPELLS IT, so a dxfeed tape is not
+        # translated a million times to throw the row away.
+        keys = None
+        if wanted is not None:
+            keys = (set(wanted) if keykind == "occ"
+                    else {_occ.to_dx(o) for o in wanted})
         try:
             fh = open(fpath, encoding="utf-8", errors="replace")
         except OSError:
             continue
         with fh:
             for r in csv.DictReader(fh):
+                raw = r.get("occ") or r.get("symbol")
+                if keys is not None and raw not in keys:
+                    continue
                 ts = _f(r.get("ts"))
                 if ts is None:
                     continue
@@ -165,11 +184,8 @@ def rows(occ=None, since=None, until=None, sources=None, root=None):
                     continue
                 if until and ts > until:
                     continue
-                raw = r.get("occ") or r.get("symbol")
                 o = _normalise(raw, keykind)
                 if not o:
-                    continue
-                if occ and o != occ:
                     continue
                 if root:
                     p = _occ.parse(o)

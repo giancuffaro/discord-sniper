@@ -148,9 +148,23 @@ class TheSwitchRefusesToArm(unittest.TestCase):
             src = fh.read()
         self.assertIn("import entry_slack", src)
         self.assertIn("entry_slack.armed(CFG)", src)
-        # No second reader: nothing else may pull the number out of settings.
-        self.assertNotIn('"entry_slack_pct"', src.replace(
-            'body["entry_slack_pct"]', ""))
+        self.assertIn("entry_slack.live_ready()", src)
+        # The gate runs before the order reaches the book, same as the
+        # mirror's — if it ever moved below the dispatch, a future armed
+        # slack would price an order nobody had checked.
+        self.assertLess(src.index("entry_slack.armed(CFG)"),
+                        src.index("key = find_key(order) if BOOK is not None"))
+
+    def test_there_is_no_second_reader_of_the_raw_setting(self):
+        """ONE reader. Anything that pulls execution.entry_slack_pct out of
+        settings on its own is a copy of the rule, and copies drift."""
+        for name in ("webull_options.py", "pullback.py", "positions.py",
+                     "ratchet_tiers.py", "daily_brief.py"):
+            path = os.path.join(HERE, name)
+            if not os.path.exists(path):
+                continue
+            with open(path, encoding="utf-8") as fh:
+                self.assertNotIn("entry_slack_pct", fh.read(), name)
 
 
 if __name__ == "__main__":
