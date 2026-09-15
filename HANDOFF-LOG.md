@@ -12,6 +12,48 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (HANDOFF cut to a rules core — 28,060 → 13,996 bytes)
+
+HANDOFF.md is read by every session at startup, so every byte costs tokens
+forever. It was cut to a RULES CORE: ONE LINE PER RULE, nothing else. No rule
+was dropped — every sentence removed was moved VERBATIM into the reference doc
+that owns that subsystem, or was already there in an expanded form.
+
+Sections, before → after (bytes): Rules of the house 15,817 → 7,100 · Who and
+what 2,937 → 1,359 · DATA 2,175 → 1,215 · Watch items 1,364 → 571 · How to
+update 1,193 → 921 · Where the mechanics live 855 → 614 · Broker facts +
+Operational truths + Where everything lives → one 919-byte "Broker + ops
+truths" pointer section · Pending 909 → 793 · Subscriptions unchanged.
+Self-referential ceiling changed from "under 30 KB" to "under 14 KB".
+
+What moved where (all verbatim):
+- ARCHITECTURE.md, new "WHO AND WHAT — the standing context": the machine in one
+  paragraph, the Accounts bullet, the Market Sniper coexistence bullet, the
+  Claude-exports line and the PRODUCT NORTH STAR.
+- reference/OPERATIONS.md, four new sections: "Weekly files and the house file
+  rules" (the weekly signal-room-chat log naming/blocks/de-dupe, WEEKLY REPORTS,
+  APPEND DON'T PILE, the DATA-MAP/INDEX reading rule, the compile-check/manifest/
+  SDK/sandbox bullet, the Discord-API bullet) · "Open watch items — the detail"
+  (all nine, with their numbers and history) · "Pending item 4 — the Chrome flags
+  note" · "How to update HANDOFF.md — the long form" · "The four long-form house
+  rules" (REPLACE DON'T STACK and REUSE/ASK-MAP as G wrote them).
+- DATA-MAP.md: the CONDENSE AND MERGE test (the four numbered steps and the
+  append-only/one-off-CSV clauses); holiday_table_flag()'s "expiring"/"stale"
+  behaviour folded into the HOLIDAYS/HOURS family entry in place.
+- INDEX.md: the long-form "Where the mechanics live" pointer map.
+- reference/OPTIONS-BROKER-REFERENCE.md: "Option SELL orders are DAY-only, so
+  every resting stop dies at the close" added to Facts in force (it was missing).
+- reference/ENTRIES.md: the 9/15 no-message-id edit test (correction word, or
+  ≥0.9 similarity with the contract stripped, otherwise a SIBLING trade and both
+  arms stand) — it existed only in HANDOFF.
+
+Proof run: of the 376 lines of 25+ characters in the pre-cut HANDOFF, 236 are
+still present byte-for-byte in HANDOFF.md or a reference doc; the other 140 are
+rules deliberately compressed into their one-line form, and a token-level check
+found no content word that survives nowhere. AGENTS.md and INDEX.md were updated
+from "under 30 KB" to "under 14 KB"; ASK-MAP's rule row now says one line per
+rule. The pre-cut file is commit e647aa9.
+
 ## 2026-09-15 (no-id edits stop killing sibling trades; holiday-table flag; Perplexity URL; two essays cut)
 
 1. alert_revision.py — the NO-message-id fallback (AI/voice/image reads)
