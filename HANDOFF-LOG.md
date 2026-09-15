@@ -12,6 +12,100 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (REUSE, DON'T REBUILD — report cache, STATUS.json, ASK-MAP, weekly reports, HANDOFF cut to a rules core)
+
+G: "If I ask for a report and then another day ask again I'd like you to not
+remake it but use the old instead if it's the same data. Modify this whole
+folder and make rules and organize everything for token savings and make you
+have the least amount of effort when I ask for something." Two rules landed in
+HANDOFF.md beside CONDENSE AND MERGE / APPEND DON'T PILE: REUSE, DON'T REBUILD
+and ASK-MAP FIRST (with VERIFY ONCE). Six jobs, all under the CONDENSE AND
+MERGE test (readers grepped, repointed in the same change, tests + gate).
+
+1. REPORT CACHE — `reports.py` (new): the registry of every report kind (report,
+   ratchet-compare, caller-outcomes [+ the one csv], caller-vs-ratchet,
+   futures-mirror, brief, audit, scoreboard, alert-audit, and the four hand-made
+   kinds alert-ledger / ninjago-futures-radar / alert-history / parser-history)
+   with its builder script, its inputs and its weekly output. Fingerprint =
+   sha256 over per-input signatures: size+mtime for code/config, that DAY's
+   lines/rows for trades.log, the master csvs and the epoch tapes (a past day
+   never goes stale because today grew), the day's DS Logs blocks, other
+   reports' day blocks, json content minus the heartbeat stamp. Memory:
+   `reports/INDEX.json`. `build` prints `CURRENT <path>` and runs nothing when
+   unchanged; `status` says stale and which input moved; `show`/`path` hand a
+   day over. `daily_audit.py` now builds every kind through `reports.build`
+   (subprocess, same timeouts as before) and records its own AUDIT block, so the
+   index is populated by every 16:40 run. A builder that writes its block but
+   exits non-zero (the mirror's "bars unavailable") is PARTIAL: written, not
+   recorded, retried next time. Tests: `test_reports.py` (11).
+2. STATUS.json — `status_json.py` (new), written LAST by the audit (< 4 KB):
+   date, balance (balance_daily.csv), bot trades/P&L (the brief's own bot-trade
+   filter), rooms per lane (on / spoke / reads from rooms.txt + the day's DS Logs
+   block), the audit counts, what broke (review queue, newest 5), pending
+   (HANDOFF's list), bridge (health-latest.json + a 2 s loopback probe), and
+   `verified` {tests, parser_gate counts, broker_reconciled (build_ledger's
+   MATCH/DRIFT line, now parsed by the audit into latest.json), bridge_code_live
+   (git sha + bridge.py mtime)}. The AUDIT block now keeps a passing gate's and
+   suite's count lines, so a hand rebuild (`python status_json.py <day>`) reads
+   them instead of re-running; with no fresh output the recorded check stands
+   with its original `at` (VERIFY ONCE). Tests: `test_status_json.py` (3).
+   Seeded 9/15 02:02 ET from this session's real runs: tests 261 pass / 1
+   pre-existing paho import error (262 run); gate 11,386 / 852 / 3,048 PASS.
+3. ASK-MAP.md (new, root): 22 rows "when G asks … → read THIS file / run THIS
+   command → quote THIS field", plus the command list. AGENTS.md got the 3-line
+   pointer at the top ("ASK-MAP.md first. STATUS.json second. Logs last…") and
+   the VERIFY ONCE rule; INDEX.md and DATA-MAP.md (§12 table) point at it.
+4. HANDOFF.md 49,783 → 27,673 bytes (ceiling now "under 30 KB"). Every bullet
+   was sorted RULE (stays, G's words verbatim) or MECHANICS (moved). Moved,
+   verbatim, to one doc per subsystem — new: reference/ENTRIES.md (the $1
+   pullback study numbers, strikes/ADD/SPX detail, word-order and two-contract
+   guards, the whole EXPIRY block incl. listing lookup / caller-price gate /
+   _verify_listed detail, spread/thin/stale/dedupe numbers, edit and
+   corrected-contract mechanics, retraction, futures entry mechanics, index
+   mirror, pocket, und_at_fill, the pullback-stock-target watch item),
+   reference/RATCHET.md (the EXITS section: ratchet numbers and studies, futures
+   ratchet formula, swings re-arm, _sell_confirmed close path, 0DTE),
+   reference/ROOMS-TABS.md (rooms.txt fields and the popup, reaper/open/probe/
+   revoke mechanics, room hours, channels/controls, START HERE unattended
+   detail, relay slug map, embed race, tab health, Whop, voice, silence alarm,
+   THE PAGE, POPUP), reference/OPERATIONS.md (restart/boot mechanics, POSTCHECK,
+   the pre-9/15 audit order, git/AUTO PUSH detail, build_ledger TZ, Fill
+   Announcer webhooks, autopilot/launchers/logs, PROVIDER KEYS, DEPARTMENTS,
+   READER/UI, WHO READS, AI MEASUREMENT, caller research catalog + behaviour,
+   SECOND MACHINE security/lane tags); existing: DATA-MAP.md §14 (the whole
+   DATA families section: broker record merge rules, fills trust order,
+   alerts, tapes, holidays, post-mortems, RN ledger, save_day rebuild, analysis
+   tools) and reference/OPTIONS-BROKER-REFERENCE.md ("Facts in force": the
+   broker facts incl. quote-bus cadence and _FUT_POS_BACKOFF). Proof: every
+   line of the old HANDOFF ≥ 25 chars is found verbatim in the new HANDOFF or
+   those docs except the 15 lines rewritten on purpose (header, size rule,
+   footer). Nothing lost.
+5. WEEKLY REPORTS — daily-reports/ and daily-audits/ went from one file per day
+   per kind to one file per week per kind, DS Logs naming, newest day first, a
+   re-run replaces the day's block (`ds_logs.put_day` / `get_day` /
+   `weekly_file` — the generic half of merge_day, added to ds_logs.py, not
+   copied). 20 dated files (18 md/txt + 2 csv) → 16 weekly files + 1 csv: 18 day
+   blocks and 59 CALLER-OUTCOMES rows verified equal before deletion; the
+   dailies deleted. Writers repointed: daily_report, daily_policy_compare,
+   caller_outcomes (csv + md), caller_ratchet_compare, futures_mirror_daily,
+   daily_brief (reads + write; the Discord attachment is still named
+   BRIEF-<date>.md), daily_audit (AUDIT block, latest.json paths, review queue
+   path). Readers repointed: departments.daily, research_ledger (the one csv),
+   reference/caller_profile.py (date column), test_daily_brief fixtures.
+   Untouched on purpose: latest.json (shape), review_queue.jsonl (append-only
+   evidence; old rows name the deleted dailies), PARSER-HISTORY-LATEST.txt
+   (AUTO PUSH.bat), the frozen raw-/recovered-2026-09-11 inputs, the Open in
+   Chrome link logic (daily_report → bridge /open-discord, unchanged), bridge.py
+   (only the .last-run marker lives there). Root-level AUDIT-2026-09-15-*.md and
+   journal-*.xlsx are not report kinds and were left alone.
+6. Docs: DATA-MAP §9.1 (weekly files, the one csv, INDEX.json, STATUS.json),
+   §12 rows, §14; INDEX.md rows for reports.py / status_json.py / ASK-MAP and
+   the records line; EOD-BENCHMARK-SPEC path; HANDOFF-snapshot copied.
+   Numbers: tests 248 run (247 pass + paho) → 262 run (261 pass + paho);
+   `node parser_gate.js` 11,386 / 852 / 3,048 before and after, identical;
+   `reports.py build all 2026-09-14` end-to-end on the VM: 4 BUILT, mirror
+   PARTIAL (no bars from that box), brief BUILT, second run all CURRENT.
+
 ## 2026-09-15 (APPEND, DON'T PILE — five piles merged, one rule added)
 
 G: "make a rule to append these to continue writing on the files that will be
