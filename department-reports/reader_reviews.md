@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 53ef2d789617b54e63c2
+
+The current message supports a TSLA close alert, but contract attribution requires source verification. The reader inferred the 370 call using a watchlist citation; validation flagged unsupported context and removed the strike while retaining the call side.
+
+## Findings
+- The current message says "Closed TSLA there couldnt rip more off the HOD break" without a strike, side, expiry, quantity, or exit premium. The parser returns CLOSE for TSLA with fire=true and null contract fields. Verify how symbol-only closes are linked to an active position before treating this as an actionable contract-specific close. CLOSE is supported by the wording, but fire=true is not evidence of execution.
+- The reader returns CALL, strike "370", and cites message 1549413878432014367, which says "TSLA $370c on watch instead". A later supplied message, 1549414843029917849, explicitly states "Entry Contract: TSLA $370c Price: $1.71", but is not cited. Older context also includes a TSLA $357.5p entry and partial exits. Verify whether the later entry is eligible supporting context and whether it links to this close. Prefer verified entry and position context over a watchlist mention; do not treat a watchlist as an entry or assume older positions are fully closed.
+- Validation reports ok=true alongside eligible_prior_ids=[], safety_flags=["unsupported_context_id"], and a normalized result retaining side="CALLS" but setting strike=null. Review source-eligibility and downstream acceptance rules. Determine whether ok=true indicates structural validity only, and whether retaining a context-derived side after rejecting its supporting context is intended. This is a verification proposal, not a confirmed validation bug.
+
+## Limitations
+- No position ledger, broker fills, execution confirmation, or simulation results are supplied.
+- Expiry, close quantity, and exit premium are missing, not zero; no realized return can be established.
+- The entry's raw "Price: $1.71" does not explicitly identify premium units. No conversion or unit-error conclusion is supported here.
+- The supplied evidence is marked untruncated, but it does not establish complete channel history or explain why no prior IDs were eligible.
+- The reader attempt log shows a Gemini cooldown followed by an OpenAI response; it does not establish a channel outage.
+
+---
+
 # Reader Review — 2026-09-15 — 22442366f51a275f29d6
 
 The reader extracted a BE equity entry idea consistent with the supplied text, while the parser returned no signal. This is a candidate coverage difference requiring source and routing verification, not a confirmed parser bug or executed trade.
