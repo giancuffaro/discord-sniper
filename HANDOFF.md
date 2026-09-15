@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — EVERY entry now asks the broker whether the contract exists before it is sent (bridge._verify_listed, execution.verify_listed); a date the CALLER typed is no longer taken on faith, and an unlisted one is refused with a BAD-CONTRACT line naming the room. Prior: room-chat exports are ONE FILE PER WEEK PER LANE (v3.8.33 + ds_logs.py); the 16:40 audit starts with the broker export and ends by posting the one-screen BRIEF to Sniper HQ.
+Last updated: 2026-09-15 — APPEND, DON'T PILE is a rule; the 19 legacy room-chat dailies, the databento twin tape, live-<day>.jsonl, the department report pairs and the rotated SDK logs were all merged into their one living file or archive/ (numbers in HANDOFF-LOG.md). Prior: every entry asks the broker whether the contract exists before it is sent (bridge._verify_listed).
 
 ## How to update this file (READ BEFORE EDITING — the old way broke things)
 - This file is a STATE, not a story. Edit the rule that changed, in place.
@@ -321,17 +321,20 @@ RESTARTS / SAFETY
 - POSTCHECK after every trade: book vs account, stop resting, quote bus
   fresh — logged as "POSTCHECK … PROBLEM" when they disagree.
 - RULE: weekly signal-room-chat logs (replaces daily) (G, 9/15).
-  Naming: `signal-room-chat week-of-<Mon>-to-<Sun>-<year> (discord).txt` and
-  `(whop).txt` — e.g. `signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt`.
-  Week = Mon–Sun. One-time merge: for each existing week, concatenate that
-  week's daily `signal-room-chat <date> (...)` files in date order into the new
-  weekly file, each day under a `===== Mon Sep 14 2026 =====` header. Delete
-  the daily files after merge — REPLACE, not stack. Going forward: each day's
-  capture appends under a new day-header inside the current week's file
-  instead of creating a new daily file. New week → new file, auto-started.
-  (Merge done 9/15: the seven lane-tagged dailies are zipped in `archive/`;
-  `ds_logs.py` owns naming, day blocks and de-dupe — readers ask it which days
-  a file covers. A re-export replaces that day's block. Never hand-edit one.)
+  `signal-room-chat week-of-<Mon>-to-<Sun>-<year> (discord|whop).txt`, week =
+  Mon–Sun, each capture day under a `===== Mon Sep 14 2026 =====` header in
+  date order, holding only lines no earlier day — or earlier week — already
+  holds. A re-export replaces that day's block. New week → new file, by
+  itself. `ds_logs.py` owns naming, blocks and de-dupe; readers ask it which
+  days a file covers. Every daily (26 of them) is merged and zipped in
+  `archive/`. Never hand-edit a week file.
+- APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for
+  its kind — the week file, the jsonl, the master csv, the archive folder —
+  never a new dated file beside it. A writer that would create
+  `<name>-<date>` must instead append a dated block/row to `<name>`. Rotated
+  logs land in `archive/`. Finished experiments are zipped in `archive/`, not
+  left as folders. Dated piles found later get merged the same way (see
+  CONDENSE AND MERGE).
 - DAILY SNIPER REPORT: bridge.py runs `daily_audit.py` once per weekday at
   16:40 ET, after the 16:30 export/tab sweep. Order: `broker_sync.py` pulls
   the Webull export first; the day's exact Discord and Whop inputs replay with
@@ -509,9 +512,10 @@ FILL ANNOUNCER (announcer.py, read-only)
   (BUYING POWER / THIN / PULLBACK never hit / SWINGS paused / TEST room /
   FUTURES prop …), filled ones linked to their ledger row. Thin spot:
   telemetry rows carry no room/caller (bridge doesn't populate them).
-- PRICE TAPES → tape.py is the ONE registry. Seven sources:
-  webull, tasty_greeks, tasty_quote, databento, databento_clean, missed,
-  and alert. `alert` is `alert_tape.csv`, the slow all-alert lane used for
+- PRICE TAPES → tape.py is the ONE registry. Six sources: webull,
+  tasty_greeks, tasty_quote, databento (`databento_tape.csv`, despiked IN
+  PLACE by clean_tape.py after every backfill — the `_clean` twin is gone
+  9/15), missed, and alert. `alert` is `alert_tape.csv`, the slow all-alert lane used for
   refused/missed-call outcomes and caller-exit comparisons; it was wired
   into the registry 9/11 after its writer existed but the common reader did
   not know about it.
