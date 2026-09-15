@@ -6,8 +6,8 @@
 ' goes into whop-loop.log in this folder instead.
 '
 ' Not meant to be double-clicked. "START HERE.bat" runs it for you, and the
-' Startup-folder entry + revive task (installed the same way as the Fill
-' Announcer's) bring it back at logon or if it's ever killed.
+' Startup-folder entry + revive task it installs bring it back at logon or
+' if it's ever killed.
 
 Dim shell, cmd
 Set shell = CreateObject("WScript.Shell")

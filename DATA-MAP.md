@@ -99,7 +99,7 @@ The 636 span 442 in August and 194 in September.
 | `UNDER-STOP` | 2 | `UNDER-STOP SPCX: watching the STOCK — the option closes if SPCX prints at/under 135.00` | The caller's own hard stop, on the stock. |
 | `PHANTOM` | 8 | `PHANTOM  NVDA — the book recorded 'closed' but the broker STILL holds it` | Book-vs-broker disagreements. |
 | `POSTCHECK` | 81 | `POSTCHECK FILLED C — PROBLEM: C stop 3b88fc80 is 'unknown' at Webull` | Post-order verification. |
-| `FLATTEN` | 17 | `FLATTEN  FCX FAILED -> HTTP 417 …` | End-of-day flattens. |
+| `FLATTEN` | 17 | `FLATTEN  FCX FAILED -> HTTP 417 …` | The popup's ✕ — G closing a position by hand. There is no automatic flatten (9/15). |
 | `BRACKET` | 2 | `BRACKET  SNAP — Webull wouldn't take the linked group (HTTP 417 …)` | |
 
 ### Position book

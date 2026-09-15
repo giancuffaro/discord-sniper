@@ -112,7 +112,7 @@ Best use: the ratchet's stop move, and any entry where buying power is tight.
 
 `TradeCalendar.get_trade_calendar(market, start, end)`.
 
-The bot works out market hours from the clock. That's wrong on holidays and half-days — the 1pm close on the day after Thanksgiving, for one. Consequences today: the 40-minute silence alarm barks on a holiday, and the boot logic decides what counts as an expired option using a guess about what day it is.
+The bot works out market hours from the clock. That's wrong on holidays and half-days — the 1pm close on the day after Thanksgiving, for one. Consequences today: the boot logic decides what counts as an expired option using a guess about what day it is.
 
 Small change, removes a whole category of "why did it do that at 1:15."
 

@@ -110,7 +110,7 @@ HANDOFF = """# HANDOFF
 1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project
    instructions.
 2. NinjaTrader ATM template "SNIPER": stop 100 ticks / target 200.
-3. Announcer: paused since 9/2 — the Needs-you tab has the on/off button.
+3. Close any old parked Whop tabs.
 
 ## Watch items (open)
 - not pending, must not appear.

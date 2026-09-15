@@ -12,7 +12,8 @@ feed wasn't reaching the bridge, not because of the hour.
   existing rule "ETF options trade to 16:15"). Most other single-name equity
   options stop at 4:00 PM.
 - **No overnight for options.** After 4:15 PM ET nothing options-side can fill.
-- 0DTE reminder (unchanged): auto-exercises at $0.01 ITM — flatten before close.
+- 0DTE fact: auto-exercises at $0.01 ITM. The bot does NOT flatten before the
+  close (G, 9/15) — closing an expiring position is his call (HANDOFF.md).
 - Half-days (day after Thanksgiving, Christmas Eve, etc.): **1:00 PM ET** close
   (index/ETF options 1:15 PM).
 
