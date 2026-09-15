@@ -1,5 +1,5 @@
 DISCORD SNIPER DAILY AUDIT — 2026-09-14
-generated: 2026-09-14T16:41:28.625812-04:00
+generated: 2026-09-14T21:04:56.350202-04:00
 status: ATTENTION
 silent drops: 13
 possible missed entries: 3
@@ -25,16 +25,16 @@ OWLS Capital: 🌟｜ab — 20 msgs, 5 actionable, 2 judged, 2 SILENT
    15:35:34  OPEN    FUN   $AMZN lotto Size Layering some just for fun 9/25 260c 3.1 No SL Willing to have one more scale on these lottos if we see 245 - 249 @Owls
    15:35:34  ADD     AMZN  Second scale into $AMZN 11/20 300c New AVG: 3.97 @Owls
 
-Low Key Stonks: ⚖chika-alerts — 14 msgs, 8 actionable, 2 judged, 2 SILENT
+Low Key Stonks: ⚖chika-alerts — 16 msgs, 8 actionable, 2 judged, 2 SILENT
    14:18:12  OPEN    NQ    long 275 stop 265 @Chika Alerts
    14:18:12  OPEN    NQ    long 275 stop 265 @Chika Alerts
 
 OWLS Capital: 🌟｜muggzone-options — 58 msgs, 28 actionable, 18 judged, 1 SILENT
    15:57:51  OPEN    MSFT  RISKY MSFT 505 CALLS .85 @everyone
 
-Platinum Trading: 🟣│futures-alerts — 28 msgs, 6 actionable, 6 judged, 0 SILENT
+Platinum Trading: 🟣│futures-alerts — 46 msgs, 6 actionable, 6 judged, 0 SILENT
 
-NGD: ngd-trades — 63 msgs, 63 actionable, 63 judged, 0 SILENT
+NGD: ngd-trades — 62 msgs, 62 actionable, 62 judged, 0 SILENT
 
 Honey Drip Network 🍯💰📈: 👑｜aristotle-trades — 174 msgs, 56 actionable, 8 judged, 0 SILENT
 
@@ -74,7 +74,7 @@ PASS  JS test_buy_verb.js  0.08s
 PASS  JS test_dotdate.js  0.08s
 PASS  JS test_elite.js  0.08s
 PASS  JS test_exits.js  0.08s
-PASS  JS test_loaded_fill.js  0.09s
+PASS  JS test_loaded_fill.js  0.08s
 PASS  JS test_optionable.js  0.05s
 PASS  JS test_owls_jonkian.js  0.08s
 PASS  JS test_percon.js  0.08s
@@ -82,6 +82,6 @@ PASS  JS test_pivot.js  0.08s
 PASS  JS test_plan_entry.js  0.08s
 PASS  JS test_spreads.js  0.07s
 PASS  JS test_word_order.js  0.08s
-PASS  JS test_resolve.js  0.12s
-PASS  Historical parser corpus gate  2.64s
-PASS  Python regression suite  30.70s
+PASS  JS test_resolve.js  0.09s
+PASS  Historical parser corpus gate  2.63s
+PASS  Python regression suite  30.58s
