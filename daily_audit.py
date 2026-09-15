@@ -213,6 +213,19 @@ def run(day):
         summary["daily_analyst"] = departments.daily(day)
     except Exception:
         summary["daily_analyst"] = {"status": "failed"}
+    # THE BRIEF (9/15) — the one screen G reads on his phone, built from every
+    # report above and posted to Sniper HQ through the Fill Announcer webhook.
+    # It runs LAST so the reports it summarises already exist, and it is
+    # wrapped: a brief that cannot be built must never cost him the audit.
+    try:
+        import daily_brief
+        daily_brief.main(day, do_post=True)
+        summary["brief"] = os.path.relpath(
+            os.path.join(HERE, "daily-reports", "BRIEF-%s.md" % day), HERE)
+    except Exception as _brief_error:                   # noqa: BLE001
+        summary["brief"] = {"status": "failed",
+                            "why": str(_brief_error)[:200]}
+        print("DAILY BRIEF failed: %s" % str(_brief_error)[:200])
     _write_atomic(os.path.join(OUT_DIR, "latest.json"), json.dumps(summary, indent=2, sort_keys=True) + "\n")
     if attention:
         _queue_attention(day, summary, report_path)

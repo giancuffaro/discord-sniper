@@ -497,6 +497,8 @@ em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
 | `reference/FUTURES-MIRROR-REPLAY-2026-09-13.csv` | same | Frozen — the original 8/3–9/11 study (298 rows, both modes). The seed. Do not append to it. |
 | `daily-reports/FUTURES-MIRROR-<date>.md` | — | One day's trades, day total, running total since 2026-08-03, win rate, by room, by sym×direction, exits, and what the number is not. |
 
+`daily-reports/BRIEF-<date>.md` (`daily_brief.py`, written last in the 16:40 audit and posted to Sniper HQ) holds NO new data — it is a rendering of master_ledger + master_broker + that day's CALLER-OUTCOMES/CALLER-VS-RATCHET/FUTURES-MIRROR + dated `trades.log` lines + `department-reports/extension-*.json` + HANDOFF's Pending block. Two things in it exist nowhere else as a judgement: the exit-reason words (born stop / ratchet / BE stop, decided from `stop_at_exit` vs `avg_in` — at or above the fill means the ratchet moved it) and the `⚠ journal ≠ broker` flag (the row says it exited and the broker record prices no exit). Never quote a number from it that the source file does not also say.
+
 ---
 
 # 10. The 2026-09-11 recovery run (frozen artifacts)
