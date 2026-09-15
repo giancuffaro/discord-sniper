@@ -272,7 +272,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
-- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. The setting won the 115-trade OPRA replay ($504, rank 1/294; paired improvement +$3.01/trade, 95% band +$0.72..+$4.91). Re-run `ratchet_sweep_fine.py` as the sample grows.
+- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. It won the 115-trade OPRA sweep (`ratchet_sweep_fine.py`; numbers in HANDOFF-LOG.md). Re-run it, and `reference/ratchet_replay_tape.py` (16 real alert-tape paths, 9/14), as the sample grows: neither the 9/2 price tiers nor a 2x-spread born-stop floor beat 5/3/5 there, and no difference cleared its error bar, so nothing changed.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
@@ -313,9 +313,7 @@ RESTARTS / SAFETY
   plus `latest.json`, queues unresolved items, and writes the Daily Sniper Report:
   room coverage, decisions, skips, recovered gaps, fills, P&L and postmortems.
   Relay duplicates stay raw but count once. The 15-minute Codex guard was
-  deleted at G's request; do not recreate it. Findings become tested fixtures. Caller-vs-system P&L is shown
-  only when caller entry and exit can be paired with contemporaneous option
-  quotes; missing exits remain unavailable rather than estimated. RAW capture
+  deleted at G's request; do not recreate it. Findings become tested fixtures. RAW capture
   is always retained and session-local LIVE PARSER rows overlay it; a browser
   restart can no longer truncate the day to its final session. Accepted
   pullback waits that expire are counted as skips, not broker orders. The same
@@ -324,10 +322,18 @@ RESTARTS / SAFETY
   stop. It reports coverage and never extrapolates uncovered alerts. Alert
   tape restores today's contracts from `alert_meta.csv` after bridge/code
   restarts, resolves shorthand expiries, and records distinct re-entries.
-  `CALLER-OUTCOMES-<date>.md/.csv` separately preserves caller entry, every
-  supported trim/full exit, exact or implied price and calculated percent;
-  partial trims never become full-trade results and absent prices stay absent.
-  `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from caller entry over `tape.py` and lists gaps/futures.
+  `CALLER-OUTCOMES-<date>.md/.csv` preserves caller entry, every trim/full
+  exit, price or percent and trim size; caller P&L is shown only when entry
+  and exit pair with contemporaneous quotes, partials never become full
+  results, absent prices stay absent. TWO FIXES 9/14: an exit price written
+  straight after the contract is now read ("SOLD | QQQ SEPT 16 710C $4.80 1/2"
+  -> Brando +39%/+59%, was "price unavailable"), anchored to the contract AND
+  an exit word within 80 chars so footers donate nothing; and a posted price
+  within 2% of that minute's `und` is a STOCK quote, not a premium -> entry
+  "unavailable (stock price posted)", row kept, its dollars out of every total
+  (Midas SPY 760P @ 760.40 alone had made 9/14 read -74,960; it reads +976).
+  `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from caller entry over `tape.py`
+  and lists gaps/futures.
   Broker-confirmed actuals always override a quote-path simulation.
 - GIT: settings.json holds every key and is never committed. AUTO PUSH uses
   a live-owner PID lock, commits every 45 s and retries pushes; it never deletes
