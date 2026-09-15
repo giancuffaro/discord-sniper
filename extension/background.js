@@ -116,6 +116,15 @@ const VOICE_TOOK_MS = 5 * 60 * 1000;
 // first-word-of-a-call costs the entire edge.
 const VOICE_QUIET = new Map();          // tabId -> pending stop timer
 const VOICE_QUIET_GRACE_MS = 60 * 1000;
+/* CLEAN UP AFTER THE LIVE ROOM (G, 9/15: "when the live zoom for felony
+ * finishes kill the tab please, clean after yourself"). A live voice room or
+ * Zoom call we were listening to leaves its tab open all day once the host
+ * stops talking. Stopping the ears is not enough. Ten more minutes of silence
+ * after the ears stop means the session is OVER, not between segments, and the
+ * tab is closed. Scoped to voice/Zoom tabs the ears actually ran on — his
+ * explicit exception to "never close a human's tab"; no other tab qualifies. */
+const VOICE_CLOSE = new Map();          // tabId -> pending close timer
+const VOICE_CLOSE_AFTER_MS = 10 * 60 * 1000;
 /* WARM-UP BEFORE THE EARS OPEN (9/10, G: "voice is listening to 4 channels??
  * so we're getting lots of voice?"). A tab going `audible` is NOT the same as
  * a trader talking. Discord plays a notification blip in a TEXT channel and
@@ -2576,7 +2585,8 @@ const _NOT_A_ROOM_STRIKES = {};      // tabId -> consecutive bad sweeps
 const _OURS = new Set();
 function _rememberOurTab(t) { try { if (t && t.id) _OURS.add(t.id); } catch (e) {} }
 try {
-  chrome.tabs.onRemoved.addListener((id) => { _OURS.delete(id); delete _NOT_A_ROOM_STRIKES[id]; });
+  chrome.tabs.onRemoved.addListener((id) => { _OURS.delete(id); delete _NOT_A_ROOM_STRIKES[id];
+    const vc = VOICE_CLOSE.get(id); if (vc) { clearTimeout(vc); VOICE_CLOSE.delete(id); } });
 } catch (e) {}
 
 async function closeNonRoomTabs() {
@@ -3592,6 +3602,24 @@ chrome.tabs.onActivated.addListener(({ tabId }) => { retryEars(tabId, "in front"
 /* Start the ears on a tab that is STILL making noise after the warm-up.
  * Split out of the onUpdated listener 9/10 so the warm-up timer and the
  * listener share one copy of the start logic. */
+function armVoiceTabClose(tabId, label) {
+  if (VOICE_CLOSE.has(tabId)) return;
+  VOICE_CLOSE.set(tabId, setTimeout(async () => {
+    VOICE_CLOSE.delete(tabId);
+    try {
+      if (LISTENING.has(tabId)) return;            // talking again — leave it
+      const tab = await chrome.tabs.get(tabId);    // throws if already gone
+      if (!tab || tab.audible) return;
+      if (!/https:\/\/([^/]*\.)?(discord\.com|zoom\.us)\//.test(tab.url || "")) return;
+      await chrome.tabs.remove(tabId);
+      _OURS.delete(tabId);
+      await addLog({ kind: "sent", what: "LIVE ROOM OVER",
+        why: "\u{1F399} " + label + " stayed silent ten minutes after the ears "
+           + "stopped — closed its tab.", text: "" });
+    } catch (e) { /* tab already closed by hand — nothing to clean */ }
+  }, VOICE_CLOSE_AFTER_MS));
+}
+
 async function startEarsIfStillTalking(tabId) {
   let tab;
   try { tab = await chrome.tabs.get(tabId); } catch (e) { return; }
@@ -3645,6 +3673,8 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
         // Sound again — cancel any pending "quiet" stop and keep the session.
         const t = VOICE_QUIET.get(tabId);
         if (t) { clearTimeout(t); VOICE_QUIET.delete(tabId); }
+        const k = VOICE_CLOSE.get(tabId);
+        if (k) { clearTimeout(k); VOICE_CLOSE.delete(tabId); }   // it came back
         if (LISTENING.has(tabId)) return;   // the grace held; nothing to start
         if (!(await dgKey())) return;               // no Deepgram key = no ears
         // WARM-UP: a notification blip is audible for about a second. Only a
@@ -3674,6 +3704,7 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
             await addLog({ kind: "update",
               why: "🎙 " + (cur.label || "voice") + " has been quiet a full "
                  + "minute — stopped listening.", text: "" });
+            armVoiceTabClose(tabId, cur.label || "voice");
           } catch (e) {}
         }, VOICE_QUIET_GRACE_MS));
       }
