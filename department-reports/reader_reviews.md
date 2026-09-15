@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 5c58b28ebfe2aec09b4c
+
+The current message contains a conditional trim instruction. Recent context plausibly links it to AMD 515 calls expiring 9/16, but that attribution requires source verification. The parser returned no action, while the reader proposed TRIM; validation retained the action but flagged an unsupported context ID and omitted the strike.
+
+## Findings
+- Current message: "35% @here trim if you haven’t". The parser returned action=null and fire=false. The reader returned TRIM for AMD 515 CALL, expiry 9/16. Recent same-author, same-channel messages include a repeated AMD 515 C 9/16 setup, "In", "4.2", successive percentage updates, "25% out half", and "Gap filled so down to runners". Review this as a candidate contextual management-message miss, not a confirmed parser bug. Verify the source sequence and reply target before linking the trim to AMD. Preserve "if you haven’t" as conditional wording rather than treating it as an unconditional additional reduction.
+- The reader cited chat-messages-987515353670221834-1549415624747389070, which is supplied in prior history but absent from eligible_prior_ids. Validation reported ok=true alongside safety_flags=["unsupported_context_id"]. An eligible repeated AMD setup exists at chat-messages-987515353670221834-1549417610981023765, but the reader did not cite it. The reader's strike="515" became strike=null in validation.read. Verify the context-eligibility rules, original reply linkage, and validation transformation. Consider requiring eligible supporting evidence or an explicit unresolved attribution status. Investigate whether strike removal was intentional safety behavior; do not assume it was a parsing defect or that ok=true clears the safety flag.
+- The reader assigned confidence=1.0 despite an unnamed current instrument and nearby META, NVDA, and TSLA discussions. The current "35%" supplies neither an exit premium nor a trim quantity. Both reader price and qty are null. Earlier "4.2" is bare numeric text without explicit premium units. Review confidence calibration against the verified conversation linkage. Keep price and quantity unresolved; do not interpret 35% as the portion to sell or carry forward the earlier "half" automatically. Preserve raw "4.2" with unresolved premium units and do not derive an exact exit or realized return from the percentage commentary.
+
+## Limitations
+- Evidence is marked untruncated, but reply targets, edit history, parser rules, and authoritative position state are not supplied.
+- Null fields indicate missing or unresolved data, not zero values.
+- No broker fills, contemporaneous quotes, or supplied return calculations verify the caller's reported percentages or executions.
+- This snapshot does not establish a service outage, downstream execution, or a confirmed parser defect.
+
+---
+
 # Reader Review — 2026-09-15 — bb6a7027e9ed8f5c328c
 
 The message plausibly reports a reduction to runners in AMD calls, but its trade linkage and whether it describes a new trim require source verification. The parser abstained, while the reader inferred TRIM for AMD 515 calls expiring 9/16. Validation retained that interpretation with an unsupported-context warning and a null strike.
