@@ -34,7 +34,7 @@ newest first; `python reports.py show <kind> <day>` prints just that day.
 | What did a caller actually post? | `DS Logs/signal-room-chat week-of-… (lane).txt`, that day's block, RAW MESSAGES | the line (`[Server: channel #id message_id=…]  text`) | — |
 | Are the tests / gate / broker reconciliation green? | `STATUS.json` → `verified.tests`, `verified.parser_gate.counts` (messages / entries / actions), `verified.broker_reconciled.match`, `verified.bridge_code_live.sha` | the recorded numbers and their `at` | VERIFY ONCE: re-run only when a touched input changed (code, rooms.txt, the day's data) |
 | Is a report current or stale, and why? | `python reports.py status [day]` | `CURRENT` / `STALE [changed: …]` | — |
-| What rule applies to …? | HANDOFF.md (rules) → the `reference/` doc it points to (mechanics) | the bullet, verbatim | not HANDOFF-LOG.md (history, not instructions) |
+| What rule applies to …? | HANDOFF.md (one line per rule) → the `reference/` doc it points to (the mechanics behind it) | the rule line, then the reference doc's detail | not HANDOFF-LOG.md (history, not instructions) |
 | What is file X / what is in it? | INDEX.md (what it is) → DATA-MAP.md (what is inside) | the row | — |
 
 Commands, all read-only and local:

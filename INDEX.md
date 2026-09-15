@@ -92,10 +92,13 @@ entry the bridge saw, written switch-on or switch-off; the index mirror's input)
 ## Documentation
 
 `ASK-MAP.md` — **when G asks X, read THIS file / run THIS command.** Start here. ·
-`HANDOFF.md` — **the living memory. Read this second.** Every rule in force,
-compact (<30 KB); the mechanics live in one `reference/` doc per subsystem
-(ENTRIES, RATCHET, ROOMS-TABS, OPERATIONS) plus DATA-MAP and the broker
-reference. · `HANDOFF-LOG.md` — the full history behind every rule
+`HANDOFF.md` — **the living memory. Read this second.** Every rule in force, one
+line each, under 14 KB (cut from 28 KB on 9/15); every mechanic lives in one
+`reference/` doc per subsystem — ENTRIES, RATCHET, ROOMS-TABS, OPERATIONS (which
+also holds the weekly-file and house file rules, the open watch-item detail and
+HANDOFF's own long-form update rules) — plus DATA-MAP (data families + the
+CONDENSE AND MERGE test), ARCHITECTURE (the machine, accounts, coexistence, the
+north star) and the broker reference. · `HANDOFF-LOG.md` — the full history behind every rule
 (every session's notes, newest first; grows forever, HANDOFF.md may not) ·
 `MAP.html` — how the machine works · `INDEX.md` — this file ·
 `README.md` — original setup notes · `reference/` — the shelf: **OPTIONS-BROKER-REFERENCE.md** (broker facts — read

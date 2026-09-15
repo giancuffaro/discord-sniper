@@ -36,7 +36,7 @@ machine, accounts, coexistence, north star) · INDEX.md · HANDOFF-LOG.md.
 - CALLER IDENTITY IS CANDIDATE EVIDENCE: no win rate until attribution exists, a new account never gets an execution key, ID-less rows stay unavailable — re-grab, never infer.
 - Claude exports and project/context/ are reference only.
 
-## Rules of the house (in force)
+## Rules of the house
 
 ENTRIES · ENTRIES.md
 - PRICE: caller's price or better; pullbacks cross the ask; one contract per entry. RN PULLBACK is ON and global; THE LEVEL STAYS $1 (SETTLED 9/9), never re-opened on a feeling.
@@ -46,7 +46,7 @@ ENTRIES · ENTRIES.md
 - STRIKES: max 1 OTM, deeper snaps to the first rung; 3-ITM for SPY/QQQ/Mag7 0DTE; ADD buys the held strike.
 - "ADDED <full contract>" you are not in = an OPEN entry; a bare "added to SPY" refuses. NO SPX→SPY (G, 9/10: "do not translate any SPX to SPY"); index entries are HELD until execution.index_broker is set.
 - WORD ORDER: any order, `bare` rooms only. TWO CONTRACTS = TWO ORDERS (9/10): one each, own stop and ratchet, same ticker; call+put refuses the line.
-- EXPIRY, one place: NDTE = N CALENDAR days rolling BACK, never past today; NO DATE = 0DTE (G, 9/10), the LISTING ASKED never assumed; "FRIDAY WEEKLIES ONLY" is DEAD.
+- EXPIRY, one place: NDTE = N CALENDAR days rolling BACK, never past today; NO DATE = 0DTE (G, 9/10), the LISTING ASKED never assumed, clues win first; "FRIDAY WEEKLIES ONLY" is DEAD.
 - CONTRACT MUST EXIST (9/15) AND BE IN PRICE BAND (9/14): siblings listed → REFUSE; nothing listed → THROUGH + LISTING line; fails open, a guard never a gate.
 - GUARDS: SPREAD/THIN refuse wide or illiquid; nothing older than 3 min fires; negations hard-veto; DEDUPE ends at ONE average-down ADD under what was PAID; identity = caller+symbol+strike+side+expiry.
 - AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14): it kills the earlier hunt and its bid; two DIFFERENT message ids are two calls.
@@ -90,11 +90,11 @@ FILL ANNOUNCER (announcer.py, read-only) · OPERATIONS.md
 ## Broker + ops truths — RULES only · OPTIONS-BROKER-REFERENCE.md
 - NO MARKET ORDERS ON OPTIONS; combos = MASTER(LIMIT) + STOP_LOSS on SINGLE only. Option SELL orders are DAY-only → every resting stop dies at the close.
 - Rate limits are PER ENDPOINT per app key, shared with Market Sniper; 429 = throttle, 417 = business rejection. No option streaming; fills ARE pushed.
-- Ticks are symbol-aware — never invent one.
+- Ticks are symbol-aware; never invent one.
 
 - sniper-autopilot (*/30 ET) never places or cancels orders, never touches settings.json.
 - THE PAGE is the SAME popup.html opened as a tab — never a second dashboard. Claude-in-Chrome CANNOT read it; the red line under the rooms is the diagnosis — ask for it.
-- Multi-account: extras mirror LIVE entries 1:1 with own books/stops. SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
+- Multi-account: extras mirror LIVE entries 1:1, own books/stops. SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
 
 ## Pending external setup and decisions
 1. In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project instructions and remove the old uploaded handoffs (local cleanup does not remove what was already uploaded).
