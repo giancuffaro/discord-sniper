@@ -829,8 +829,8 @@ function roomWantsTab(room) { return room.state === "on" && (roomAlways(room) ||
 /* Closing happens at the BOUNDARY (the moment the window shuts, and once at
  * startup if it is already shut) — not on every pass. So a room G opens by
  * hand at night to read stays open; it is only the 4:30 sweep that clears
- * the day's tabs. Opening happens on every pass inside the window (the
- * switch is the bench, a tab closed by hand during hours comes back). */
+ * the day's tabs. NOTHING here opens a tab: a tab closed by hand stays
+ * closed until START HERE asks or the popup switch is flipped. */
 let _schedState = null;             // last seen window state; null = first pass
 async function _keepWindowAlive(tab) {
   /* Never let a close take the window's LAST tab — that closes the window,
@@ -1779,30 +1779,6 @@ async function markPosition(symbol, trader, c) {
   }
 }
 
-/* Which mode the bridge is actually in. TEST and REAL follow different rules
- * on this side — test plays the room's full pattern (5 in, add 5, trim 3),
- * real stays on the conservative settings — so the answer has to come from
- * the one program that knows. /fills keeps it fresh; this is the cold start. */
-async function bridgeMode(c) {
-  const { bridge_mode } = await chrome.storage.local.get("bridge_mode");
-  if (bridge_mode) return bridge_mode;
-  try {
-    const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/mode",
-                          { cache: "no-store" });
-    if (r.ok) {
-      const j = await r.json();
-      if (j.mode) {
-        await chrome.storage.local.set({ bridge_mode: j.mode });
-        return j.mode;
-      }
-    }
-  } catch (e) { /* bridge down; fall through */ }
-  // No bridge to ask means no order can send anyway. Defaulting to test keeps
-  // every rule on the cautious-for-real-money side: the test pattern only
-  // ever fires pretend trades.
-  return "dryrun";
-}
-
 /* ---- finding out what actually happened ------------------------------------
  *
  * Sending an order and owning contracts used to be the same event. They aren't
@@ -2192,23 +2168,6 @@ async function aiVerify(text, sig, c) {
     const sOk = !a.side || !sig.side || String(a.side).toUpperCase() === String(sig.side).toUpperCase();
     return { agree: tOk && kOk && sOk, ai: a };
   } catch (e) { return null; }
-}
-
-/* Is New York trading right now? Used only to decide when a reload is safe.
- * The bot is ON 24/7 by design, so "waits until you turn it OFF" would mean
- * updates wait forever — instead they land the moment the session isn't on.
- * A few minutes of margin either side so an update never blinks the reader
- * right at the bell. */
-function marketOpenNow() {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York", hour12: false,
-    weekday: "short", hour: "2-digit", minute: "2-digit"
-  }).formatToParts(new Date());
-  const g = {};
-  for (const p of parts) g[p.type] = p.value;
-  if (g.weekday === "Sat" || g.weekday === "Sun") return false;
-  const mins = parseInt(g.hour, 10) * 60 + parseInt(g.minute, 10);
-  return mins >= 9 * 60 + 15 && mins <= 16 * 60 + 10;
 }
 
 // Market holidays (NYSE closed all day) — same list as the bridge's own
@@ -2989,8 +2948,7 @@ chrome.alarms.onAlarm.addListener(a => {
   // browser and open missing tabs, because if i close one it wont stop opening
   // them"). His 8/23 rule stands: an OPEN TAB is the on switch, and CLOSING a
   // tab is how he turns a room off. The launcher (START HERE) opens the tabs
-  // once at startup; after that nothing reopens a tab he closed. Function left
-  // defined-but-uncalled below in case it's ever wanted back.
+  // once at startup; after that nothing reopens a tab he closed.
   // whopSelfHeal() ADDED BACK 9/10, whop lane only — see its own comment.
   if (a.name === "watch-build") { watchBuildSweep(); persistRoomTimes(); }
   if (a.name === "whop-watchdog") whopWatchdog();

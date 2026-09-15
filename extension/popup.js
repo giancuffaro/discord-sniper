@@ -162,31 +162,6 @@ function paintProps() {
   });
 }
 
-/* Show the paste boxes only when they're needed. Keys already saved? Collapse
- * to a one-line summary with a Replace link — his ask: "only let paste keys if
- * they are needed, otherwise hide the entry key areas." */
-function _toggleKeyGroup(entryId, savedId, saved, summaryHtml) {
-  const entry = $(entryId), box = $(savedId);
-  if (!entry || !box) return false;
-  if (saved && !entry.dataset.forceOpen) {
-    entry.style.display = "none";
-    box.style.display = "";
-    box.innerHTML = summaryHtml +
-      ' &nbsp;<a href="#" data-openkeys="' + entryId + '" ' +
-      'style="color:#60a5fa;text-decoration:none">Replace</a>';
-    const a = box.querySelector("a[data-openkeys]");
-    if (a) a.onclick = (e) => {
-      e.preventDefault();
-      entry.dataset.forceOpen = "1";
-      entry.style.display = ""; box.style.display = "none";
-    };
-    return true;
-  }
-  entry.style.display = "";
-  box.style.display = "none";
-  return false;
-}
-
 function paintKeys() {
   const has = !!(modeStatus && modeStatus.has_keys);
   _okbox("keySaved", has, "Webull connected");
@@ -1326,8 +1301,8 @@ function renderRoomToggles() {
   });
 }
 
-/* The three per-room rules as tiny pills: SPY-proxy (index calls trade as
- * SPY), bare (entries with no verb), SPX (default symbol). Lit = on. */
+/* The per-room rules as tiny pills: bare (entries with no verb), SPX
+ * (default symbol), 24h (tab stays open). Lit = on. */
 function rulePills(r) {
   const rules = new Set((r.rules || []).map(x => String(x).toLowerCase()));
   const pill = (flag, label, on, tip) =>
@@ -1335,7 +1310,6 @@ function rulePills(r) {
     'style="font-size:9px;letter-spacing:.04em;padding:1px 5px;border-radius:8px;margin-right:4px;cursor:pointer;' +
     'border:1px solid ' + (on ? "#7dd3fc" : "#2a303c") + ';color:' + (on ? "#7dd3fc" : "#4b5563") + '">' + label + '</span>';
   return '<span style="white-space:nowrap">' +
-    pill("spx", "SPY-proxy", rules.has("spx"), "index calls in this room trade as SPY (strike/10, premium dropped)") +
     pill("bare", "bare", rules.has("bare"), "an entry with no verb still counts here (\"SPY 650c 1.20\")") +
     pill("sym=SPX", "SPX", rules.has("sym=spx"), "assume SPX when a call names no symbol") +
     pill("always", "24h", rules.has("always"), "tab stays open round the clock (futures rooms); others open 9:15, close 4:30 PM ET") +
@@ -1769,13 +1743,6 @@ async function renderRest(s) {
       }
       return "";
     };
-    // Its own line under the trade, his call 8/12: "put their name either
-    // under or on top - I just need to SEE it". An inline tail was getting
-    // lost at the end of a long row.
-    const creditLine = (b) => {
-      const c = creditFor(b);
-      return c ? '<div class="poscredit">\u21b3 ' + c + "</div>" : "";
-    };
     // 1) REAL Webull positions — live price and P&L, straight from the broker.
     for (const b of bpos) {
       const sym = String(b.symbol || "").toUpperCase();
@@ -2204,10 +2171,6 @@ showVersion();
 async function activeTab() {
   try { const [t] = await chrome.tabs.query({ active: true, currentWindow: true }); return t; }
   catch (e) { return null; }
-}
-function channelOf(tab) {
-  const m = ((tab && tab.url) || "").match(/channels\/[^/]+\/(\d+)/);
-  return m ? m[1] : "";
 }
 // Grab ADDS this room to the queue. The background works the line one room at a
 // time — brings each to the front, scrolls its history, saves to Downloads,
