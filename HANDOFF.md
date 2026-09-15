@@ -1,7 +1,7 @@
 # DISCORD SNIPER — THE HANDOFF
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md; they are evidence, not current instructions.
-Last updated: 2026-09-15 — five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG for G; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
+Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; needs a bridge restart). Five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
 
 ## How to update this file (long form: OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. REPLACE, DON'T
@@ -58,7 +58,7 @@ ENTRIES · ENTRIES.md
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · RATCHET.md
 - NO DAILY LOSS STOP (G, 9/14: "No. We are not gonna do a daily daily stop limit. No. We're not."). Never propose one, never wire one. The per-trade born stop is the only cap.
 - ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
-- THE RATCHET (5/3/5 since 9/10, flat): born −5%, +3% → breakeven, each +5% locks +5%; ratchet_tiers.py is the one implementation; stops never loosen; anti-clip off.
+- THE RATCHET (10/10/10 since 9/15, flat — G: "go back to 10", the August spacing): born stop −10%; +10% moves the stop to breakeven; each further +10% locks another +10%; `ratchet_tiers.py` is the one implementation, `live_spacing()` the one reader (born from settings strategy.stop_loss_pct, arm/step from TIERS); stops never loosen; anti-clip off. The 9/8 sweep ranked this 30/50 and 5/3/5 first — G's call against that evidence, on the two days it made money. Re-measure as the sample grows: `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py`.
 - FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number. SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
 - CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent.
 - NO PRE-CLOSE FLATTEN (G, 9/15, told the risk and chose it): the bot does NOT close 0DTE before the bell. A 0DTE left $0.01 ITM auto-exercises into 100 shares; that is HIS risk to run, HIS to close by hand. Never re-add an auto-flatten. ETFs trade to 16:15.

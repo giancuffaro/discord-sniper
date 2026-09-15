@@ -24,7 +24,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
-- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. Won the 115-trade OPRA sweep; nothing else beat it outside error bars (HANDOFF-LOG.md). Re-run `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py`, `reference/stock_stop_replay.py` as the sample grows; the BORN stop, not the rungs, ends these trades.
+- THE RATCHET (10/10/10 since 9/15, flat — G: "go back to 10", the August spacing): born stop −10%; +10% moves the stop to breakeven; each further +10% locks another +10%; `ratchet_tiers.py` is the one implementation, `live_spacing()` the one reader (born from settings strategy.stop_loss_pct, arm/step from TIERS); stops never loosen; anti-clip off. The 9/8 sweep ranked this 30/50 and 5/3/5 first — G's call against that evidence, on the two days it made money. Re-measure as the sample grows: `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py`.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
