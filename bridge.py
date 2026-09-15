@@ -1484,7 +1484,7 @@ _WRITE_SEQ = 0
 _REQUEST_JOURNAL = RequestJournal(os.path.join(HERE, "requests.sqlite3"))
 
 
-def write_json_atomic(path, payload):
+def write_json_atomic(path, payload, backup=False):
     """Write JSON so a crash can never leave a HALF file. (9/7)
 
     `open(path, "w")` TRUNCATES FIRST. Every state file here was written that
@@ -1499,8 +1499,9 @@ def write_json_atomic(path, payload):
     `os.replace` is atomic on Windows and POSIX: readers see either the old
     complete file or the new complete file, never a torn one.
 
-    Keeps ONE backup. A file that fails to parse is worth more as evidence
-    than as a blank slate.
+    ``backup=True`` keeps ONE ``.bak`` beside the file — only state.json,
+    because load_state reads it back. Day files never got read back from a
+    .bak, so they minted nine days/*.json.bak for nothing (9/15).
 
     F11 (9/11 audit): the temp file used to be one fixed name, path+".tmp",
     shared by EVERY writer of that path with no lock between them. Two
@@ -1521,7 +1522,7 @@ def write_json_atomic(path, payload):
             f.flush()
             os.fsync(f.fileno())    # the rename is only atomic if it landed
         try:
-            if os.path.exists(path):
+            if backup and os.path.exists(path):
                 _bak = path + ".bak"
                 _bak_tmp = "%s.tmp.%d.%d" % (
                     _bak, threading.get_ident(), _WRITE_SEQ)
@@ -1546,7 +1547,8 @@ def save_state():
         return
     try:
         write_json_atomic(STATE_PATH,
-                          {"date": today_str(), "state": BOOK.export_state()})
+                          {"date": today_str(), "state": BOOK.export_state()},
+                          backup=True)
     except OSError:
         pass
     # Every extra account's book remembers its own swings the same way.
@@ -1554,7 +1556,8 @@ def save_state():
         try:
             write_json_atomic(_extra_state_path(_x["name"]),
                               {"date": today_str(),
-                               "state": _x["book"].export_state()})
+                               "state": _x["book"].export_state()},
+                              backup=True)
         except Exception:                               # noqa: BLE001
             pass
 
