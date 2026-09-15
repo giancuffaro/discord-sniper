@@ -272,7 +272,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT
   EXIT-IGNORED gate, background.js's TRIM/STOPMOVE/CLOSE gate, and that
   settings execution.exit_policy is absent (default entries_only; "full" is
   the one-line way back).
-- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. It won the 115-trade OPRA sweep (`ratchet_sweep_fine.py`; numbers in HANDOFF-LOG.md). Re-run that, `reference/ratchet_replay_tape.py` and `reference/stock_stop_replay.py` as the sample grows: neither the 9/2 price tiers, a 2x-spread born-stop floor, nor G's stock-price ladder ($0.25/$1.00 stop, rungs off the round number) beat 5/3/5 outside its error bar, so nothing changed — but the stock ladder leans ahead and the born stop, not the rungs, is what ends these trades.
+- THE RATCHET (5/3/5 since 9/10, flat): born stop −5%; +3% moves the stop to breakeven; each further +5% locks another +5%. `ratchet_tiers.py` is the one implementation and `live_spacing()` is the one configuration reader. Stops respect tick/spread floors and never loosen. Anti-clip is off. It won the 115-trade OPRA sweep, and three later replays failed to beat it outside their error bars — price tiers, a born-stop floor, G's stock ladder (numbers in HANDOFF-LOG.md). Re-run `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py` and `reference/stock_stop_replay.py` as the sample grows; the BORN stop, not the rungs, is what ends these trades.
 - FUTURES RATCHET (9/9): derived from the trade's own risk — arm at
   ⅔ of the stop distance in profit → BE, then a rung every ~27% of it
   (FUT_ARM_FRACTION = 5/7.5, FUT_STEP_FRACTION = 2/7.5). 30-pt NQ stop →
@@ -326,12 +326,12 @@ RESTARTS / SAFETY
   exit, price or percent and trim size; caller P&L only when entry and exit
   pair with contemporaneous quotes, partials never become full results,
   absent prices stay absent. TWO FIXES 9/14: a price written straight after
-  the contract is read ("SOLD | QQQ SEPT 16 710C $4.80 1/2" -> Brando
-  +39%/+59%, was "price unavailable"), anchored to the contract AND an exit
-  word within 80 chars so footers donate nothing; and a posted price within
-  2% of that minute's `und` is a STOCK quote, not a premium -> entry
-  "unavailable (stock price posted)", row kept, dollars out of every total
-  (Midas SPY 760P @ 760.40 alone had made 9/14 read -74,960; now +976).
+  the contract is read, anchored to the contract AND an exit word within 80
+  chars so footers donate nothing (Brando's SOLD lines: +39%/+59%, were
+  "price unavailable"); and a posted price within 2% of that minute's `und`
+  is a STOCK quote, not a premium -> entry "unavailable (stock price
+  posted)", row kept, dollars out of every total (Midas SPY 760P @ 760.40:
+  9/14 read -74,960, now +976).
   `CALLER-VS-RATCHET-<date>.md` replays 5/3/5 from caller entry over `tape.py`
   and lists gaps/futures.
   Broker-confirmed actuals always override a quote-path simulation.
