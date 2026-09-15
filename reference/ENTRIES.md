@@ -74,7 +74,9 @@ missing units remain unresolved pending original-source evidence.
     contract. Against today's rule, 2% costs -$13, 3% -$40, 5% -$127,
     7.5% -$286, 10% -$291, and the paired bootstrap band (135 orders, 4000
     resamples) CLEARS zero on the LOSS side from 2% up.
-  · THE BENEFIT SIDE is 3 trades and all three lose. Crossing pays the offer
+  · THE BENEFIT SIDE is 3 trades and not one of them makes money: two stop
+    out and the third arms at +11.9%, locks breakeven and exits at its own
+    entry for $0. Crossing pays the offer
     and the born stop is then clamped one tick under the live BID (Webull
     417s a stop at or above it), so a cross on a wide spread starts far
     tighter than -10% — and it puts the +10% arm out of reach. CRWD 250C

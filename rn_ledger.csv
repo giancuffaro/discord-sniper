@@ -99,3 +99,6 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789486394.516,filled,AMD,PUTS,490,9/18,,504.0,5.45,Unraveller,Honeydrip daytrades
 1789492858.207,armed,NVDA,CALLS,220,2026-09-16,,211.0,,Eva,OWLS all-alerts
 1789493458.321,missed,NVDA,CALLS,220,2026-09-16,,211.0,,Eva,OWLS all-alerts
+1789493773.854,armed,TSLA,PUTS,350,2026-09-18,,356.0,,Mike (Admin),Honeydrip daytrades
+1789493792.326,submitted,TSLA,PUTS,350,2026-09-18,,356.0,,Mike (Admin),Honeydrip daytrades
+1789493794.34,filled,TSLA,PUTS,350,2026-09-18,,356.0,3.78,Mike (Admin),Honeydrip daytrades
