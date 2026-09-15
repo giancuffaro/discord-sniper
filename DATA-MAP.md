@@ -847,9 +847,10 @@ mechanics are here, verbatim.
   tapes are our own record. Databento key (settings execution.databento)
   works from the sandbox; databento_backfill.py spends credit — never run
   its main() casually.
-- HOLIDAYS / HOURS → market_hours.py owns the table (through 2027 —
-  UPDATE EVERY YEAR, bump HOLIDAYS_THROUGH); webull_options.HOLIDAYS
-  derives from it. MARKET-HOURS.md is the human copy. Options 9:30-16:00
+- HOLIDAYS / HOURS → market_hours.py owns the table (through 2027, UPDATE EVERY
+  YEAR). holiday_table_flag() says "expiring" in the last 60 days and "stale"
+  past it; STATUS.json "broke" and the brief's "What broke" both show it.
+  Bump HOLIDAYS_THROUGH; webull_options.HOLIDAYS derives from it. MARKET-HOURS.md is the human copy. Options 9:30-16:00
   (SPY/QQQ/IWM + index to 16:15); futures Sun 18:00 → Fri 17:00 with the
   17:00-18:00 daily halt.
 - POST-MORTEMS → master_postmortems.csv + postmortems/<date>_<occ>.md

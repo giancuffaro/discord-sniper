@@ -49,11 +49,11 @@
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789478520.4804056,
+    "last_finished": 1789478825.0451388,
     "last_error": "",
-    "last_provider": "gemini",
+    "last_provider": "openai",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789478563.2265344
+  "checked_at": 1789478863.2322986
 }

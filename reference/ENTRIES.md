@@ -125,13 +125,18 @@ missing units remain unresolved pending original-source evidence.
 - AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14). Discord keeps ONE
   message id when a caller EDITS a call, so an OPEN whose message id is
   already pending — or, with no id, the same trader's same ticker inside
-  5 min on a different contract — CANCELS the earlier pullback hunt and its
+  5 min on a different contract that reads as a fix — CANCELS the earlier
+  pullback hunt and its
   resting bid, logs one line ("EDITED  TSLA — PT | ei trades changed 357.5C
   → 357.5P; the earlier pullback is cancelled, only the new one stands"),
   then arms the new one. Two DIFFERENT message ids are two calls, never an
   edit (TWO CONTRACTS still holds); an identical repost stays with the dedupe
   ladder. Born from PT's TSLA $357.5c edited to 357.5p: both sides armed and
   the stale CALL arm bought 357.5C at 7.40 ($740). alert_revision.py.
+  NO message id (9/15, verbatim from HANDOFF): NO message id (voice/vision/legacy): same trader, same
+  ticker, inside 5 min AND the text reads as a fix — a correction word (edit,
+  meant, typo, "*", "not calls/puts") or ≥0.9 similar with the contract
+  stripped. Otherwise it is a SIBLING trade and both arms stand (alert_revision.py).
 - IF THE CORRECTED CONTRACT ALREADY FILLED (9/15, G: "if in profit keep the
   ratchet and set the stop to breakeven, if it's a losing trade, close it
   automatically"). Judged on the CURRENT BID vs the fill, read free from the
