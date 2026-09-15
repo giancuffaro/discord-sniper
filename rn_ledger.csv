@@ -90,3 +90,4 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789483914.979,armed,TSLA,PUTS,350,9/18,,357.0,,Mike,Honeydrip daytrades
 1789484207.907,submitted,TSLA,PUTS,350,9/18,,357.0,,Mike,Honeydrip daytrades
 1789484209.919,filled,TSLA,PUTS,350,9/18,,357.0,3.25,Mike,Honeydrip daytrades
+1789484280.549,missed,QQQ,PUTS,706,9/15,,706.0,,Vero,Vero 1

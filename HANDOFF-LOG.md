@@ -12,6 +12,84 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (five rules retired on G's own review — HANDOFF 14,175 → 13,984 bytes)
+
+G read his own rule list and ordered five removals. Each was applied end to end:
+the HANDOFF line, the behaviour in code, the tests and the reference docs.
+
+1. THE 0DTE PRE-CLOSE FLATTEN IS DEAD — and there was never any code for it.
+   Shown the assignment risk explicitly (a 0DTE ending $0.01 ITM auto-exercises
+   into 100 shares in a ~$1,000 margin account), G chose to stop flattening.
+   The search found NO live pre-close/auto-close path anywhere: `/flatten` in
+   bridge.py is the popup's ✕, a manual close G presses himself, and it stays.
+   `pullback_levels.py` FLATTEN=(15,55) and `orb_backtest.py` flatten_hour=16
+   are BACKTEST exit assumptions on historical bars, not bot behaviour; both
+   stay. So the rule was pure documentation, and it was carried in three docs:
+   HANDOFF (replaced with the decision + the risk, so nobody re-adds it),
+   reference/RATCHET.md (behaviour replaced by the same decision) and
+   reference/OPTIONS-BROKER-REFERENCE.md (the FACTS — 16:15 close, $0.01 ITM
+   auto-exercise — stay; the "Bot rule: flatten 0DTE before 16:00" line went).
+
+2. THE OPTIONALITY REVIEW LINE IS OUT OF HANDOFF. The room is whatever
+   rooms.txt says (it is `on`, extension/rooms.txt line 433) and rule 31 —
+   one switch per room — already covers it. "No arbitrary premium range" and
+   "no automatic x100 correction" are NOT code guards: they record a decision
+   NOT to add global guards, and no such code exists. What DOES exist is
+   narrowly scoped and stays untouched: parser.js blocks an OPEN whose premium
+   matched an explicitly labelled stock quote (v3.8.24), and the shabs/SPX
+   cents-to-dollars normalisations ("300/con" → 3.00) are per-room, not global.
+   The description lives on in reference/ENTRIES.md ("PREMIUM REVIEW").
+
+3. THE ROOM SILENCE ALARM IS GONE. extension/background.js lost
+   roomSilenceCheck() (61 lines), `chrome.alarms.create("room-silence", …)`
+   and its dispatch branch — 76 lines deleted, 13 added. ROOM_ALERTED and
+   _pulseBoot existed only for it and went with it. KEPT, because the popup
+   reads them: ROOM_MSG_AT / ROOM_POST_AT / notePost (last-message times),
+   OFF_SAID, _marketOpenNow (another caller) and readerHealth(). The one thing
+   that had to move: the maps' `chrome.storage.local.set` lived INSIDE the
+   deleted function, so a new persistRoomTimes() now flushes them on the
+   watch-build tick (every 30 s) — without it "when did this room last post"
+   would have stopped surviving a service-worker nap. No settings.json key was
+   involved and no test covered it. What also went with the function: the
+   "No Whop tab is open" desktop bark, which shared its body. The checks that
+   replace all of it — departments.health_tick(), deadman.py and the 90-second
+   content-script heartbeat — were not touched.
+
+4. THE FILL ANNOUNCER IS REMOVED (G: "remove announcer and will install again
+   when bot profitable"; paused since 9/2). Deleted: announcer.py (578 lines),
+   ANNOUNCER.bat (40), STOP ANNOUNCER.bat (17), _announcer_hidden.vbs (24),
+   _announcer_loop.bat (21), announcer.log, announcer.stop,
+   announcer-scoreboard.json, announcer-seen.json. bridge.py lost the needs-you
+   item, the .announcer.alive heartbeat block and its three /mode keys, the
+   /fix actions announcer_on / announcer_off, and announcer.log from the log
+   sweeper. popup.js lost the bridge-line announcer status; now.py lost its
+   FEEDS line; START HERE.bat lost step [4.5/5]; test_audit_regressions.py
+   lost `import announcer`, its tearDown and
+   test_cached_recent_orders_refreshes_date_window. webull_options.py lost the
+   sdk_log_name hook, which only announcer.py ever set.
+   THE WEBHOOK KEY STAYS. daily_brief.py reads settings.json ->
+   announcer.webhook_url and that is still how the daily BRIEF reaches Sniper
+   HQ. daily_brief.py was not edited at all; its 30 tests pass unchanged.
+   STILL ON THE MACHINE, G has to clear these by hand — this session's shell
+   is a Linux VM with the folder mounted, so it has no cmd.exe / schtasks and
+   no reach outside the connected folders:
+     - %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\fill-announcer.vbs
+       (inert — it checks FileExists first — but delete it)
+     - the scheduled task "Fill Announcer revive" (every 30 min), which WILL
+       pop "Can not find script file" now: `schtasks /delete /tn "Fill
+       Announcer revive" /f` in a cmd window.
+
+5. HOUSEKEEPING. The FILL ANNOUNCER heading in "Rules of the house" was down
+   to one line, so it folded into the OPERATIONS section. Pending item 5
+   (the announcer on/off button) went and the list renumbered.
+
+Docs swept for the same four rules: INDEX.md, DATA-MAP.md, ASK-MAP.md,
+ARCHITECTURE.md, MAP.html, reference/OPERATIONS.md, reference/RATCHET.md,
+reference/ROOMS-TABS.md, reference/ENTRIES.md, reference/OPTIONS-BROKER-REFERENCE.md.
+extension/manifest.json 3.8.33 → 3.8.34. Tests 291 passed before and after
+(plus the pre-existing paho collection error in test_stream_bus.py).
+~/handoff-rules.txt regenerated from the new HANDOFF.md: 191 rules, 68 bullets.
+
 - Added back as a rule the same day: NO DAILY LOSS STOP (G, 9/14 — "No. We are not gonna do a daily daily stop limit. No. We're not."). The cut agent found the decision existed nowhere in the docs, only as a prop-firm setting in props.py. HANDOFF 13,999 -> 14,175 bytes.
 
 ## 2026-09-15 (HANDOFF cut to a rules core — 28,060 → 13,996 bytes)
