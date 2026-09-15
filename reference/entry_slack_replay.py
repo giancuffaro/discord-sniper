@@ -370,6 +370,13 @@ def _money(value):
     return "%s$%.0f" % ("-" if value < 0 else "+", abs(value))
 
 
+def _cents(value):
+    """Per-order and per-contract money, where a penny is the whole point."""
+    if value is None:
+        return "—"
+    return "%s$%.2f" % ("-" if value < 0 else "+", abs(value))
+
+
 def _pct(value):
     return "%g%%" % value
 
@@ -382,130 +389,229 @@ def _table(header, rows):
     return out
 
 
-def verdict_line(day, nofills, agg, band):
+def best_slack(agg):
+    """The slack level with the best difference against today's rule. Ties go
+    to the SMALLER slack, so 0 (today) wins unless something really beats it."""
+    return min(SLACKS, key=lambda s: (-agg[s]["delta"], s))
+
+
+def verdict_line(day, nofills, agg, bands):
     today = [r for r in nofills if _day_of(r["ts"]) == day]
-    best = max(SLACKS, key=lambda s: agg[s]["net"])
-    clears = band and (band["lo"] > 0 or band["hi"] < 0)
-    return ("VERDICT — %d no-fill%s today; best slack %s nets %s all-time on "
-            "%d scored order%s; 95%% band %s %s"
+    best = best_slack(agg)
+    if best == 0.0:
+        return ("VERDICT — %d no-fill%s today; nothing beats today's rule: "
+                "every slack level from %s to %s comes out behind it "
+                "(%s to %s), and %s"
+                % (len(today), "" if len(today) == 1 else "s",
+                   _pct(SLACKS[1]), _pct(SLACKS[-1]),
+                   _money(agg[SLACKS[1]]["delta"]),
+                   _money(agg[SLACKS[-1]]["delta"]),
+                   _band_words(bands.get(SLACKS[-1]))))
+    return ("VERDICT — %d no-fill%s today; best slack %s is %s against "
+            "today's rule, and %s"
             % (len(today), "" if len(today) == 1 else "s", _pct(best),
-               _money(agg[best]["net"]), band["n"] if band else 0,
-               "" if band and band["n"] == 1 else "s",
-               ("%s..%s" % (_money(band["lo"]), _money(band["hi"])))
-               if band else "n/a",
-               "CLEARS zero" if clears else "SPANS zero — undecidable"))
+               _money(agg[best]["delta"]), _band_words(bands.get(best))))
 
 
-def render(day, nofills, fills):
+def _band_words(band):
+    if band is None:
+        return "there is no paired sample to put an error bar on"
+    if band["lo"] > 0 or band["hi"] < 0:
+        return ("the 95%% band on %d paired orders (%s .. %s per order) "
+                "CLEARS zero" % (band["n"], _cents(band["lo"]),
+                                 _cents(band["hi"])))
+    return ("the 95%% band on %d paired orders (%s .. %s per order) SPANS "
+            "zero — undecidable at this n" % (band["n"], _cents(band["lo"]),
+                                              _cents(band["hi"])))
+
+
+def render(day, nofills, fills, n_orders):
     agg, scored_nf, scored_f = totals(nofills, fills)
-    best = max(SLACKS, key=lambda s: agg[s]["net"])
-    band = bootstrap(paired_diffs(scored_nf, scored_f, best)) if best else None
+    bands = {}
+    for slack in SLACKS:
+        if slack == 0.0:
+            continue
+        bands[slack] = bootstrap(paired_diffs(scored_nf, scored_f, slack))
+    best = best_slack(agg)
     born, arm, step = rt.live_spacing()
+    quarantined = [r for r in nofills if r["status"] == "quarantined"]
+    unscored = [r for r in nofills if r["status"] == "unscored"]
 
     lines = ["# ENTRY SLACK — would crossing the ask have paid?", "",
              "Measurement only. `execution.entry_slack_pct` is 0 and its "
              "activation is BLOCKED: the bot bids the caller's price or better "
              "and never chases. This file exists to tell G, every day, what "
              "that rule costs and what it saves.", "",
-             verdict_line(day, nofills, agg, band), ""]
+             verdict_line(day, nofills, agg, bands), ""]
 
     lines += ["## The population", "",
               "| | n | note |", "|---|---:|---|",
-              "| Option ORDER IN lines | %d | the orders this rule could ever "
-              "have changed |" % len(nofills + fills),
+              "| option ORDER IN lines, all time | %d | every option order the "
+              "bot has ever sent |" % n_orders,
+              "| with a recorded outcome | %d | a FILLED or NOFILL line after "
+              "it; the rest were cancelled, edited or never resolved |"
+              % len(nofills + fills),
               "| never filled | %d | the 90-second window expired with the bid "
-              "unhit |" % len(nofills),
-              "| filled | %d | every one of these is where the cost side lives |"
-              % len(fills),
-              "| no-fills SCORED | %d | a real recorded bid/ask within %ds of "
-              "the order |" % (len(scored_nf), int(QUOTE_TOL_S)),
+              "unhit — the population this rule is about |" % len(nofills),
+              "| filled | %d | where the cost side lives |" % len(fills),
+              "| no-fills SCORED | **%d** | a real recorded bid/ask within %ds "
+              "of the order |" % (len(scored_nf), int(QUOTE_TOL_S)),
               "| no-fills QUARANTINED | %d | the tape says the ask was already "
-              "at or under our bid — it disagrees with the broker, so it "
-              "cannot score this |"
-              % len([r for r in nofills if r["status"] == "quarantined"]),
+              "at or under our bid, so at slack 0 the model contradicts the "
+              "broker. Counted nowhere |" % len(quarantined),
               "| no-fills UNSCORED | %d | no quote at read time. Not estimated, "
-              "not extrapolated, not counted |"
-              % len([r for r in nofills if r["status"] == "unscored"]),
-              "| fills SCORED | %d of %d | the cost side is only charged where "
-              "a real ask was recorded |" % (len(scored_f), len(fills)), "",
-              "`grep -c NOFILL trades.log` says 52. Five are POSTCHECK lines "
-              "about a no-fill; 20 of the remaining 47 are FUTURES (16 MNQ, "
-              "4 MGC), which have no ask to cross on this rule. The option "
-              "population is %d." % len(nofills), ""]
+              "not extrapolated, not counted |" % len(unscored),
+              "| fills SCORED | %d of %d | the cost is only charged where a "
+              "real ask was recorded |" % (len(scored_f), len(fills)), "",
+              "COVERAGE, said plainly: **%d of the %d option no-fills can be "
+              "scored**. %d are quarantined and %d have no quote at read time. "
+              "The benefit side of this question rests on %d trade%s; the cost "
+              "side on %d. They are not measured to the same standard and the "
+              "table below must be read that way."
+              % (len(scored_nf), len(nofills), len(quarantined), len(unscored),
+                 len(scored_nf), "" if len(scored_nf) == 1 else "s",
+                 len(scored_f)), "",
+              "`grep -c NOFILL trades.log` says 52. Five of those are POSTCHECK "
+              "lines about a no-fill; 20 of the remaining 47 are FUTURES "
+              "(16 MNQ, 4 MGC), which have no ask to cross on this rule. The "
+              "option population is %d of %d ORDER INs (%.0f%%), not 52 of 204."
+              % (len(nofills), n_orders, 100.0 * len(nofills) / max(1, n_orders)),
+              ""]
 
     lines += ["## Slack level → what it buys, what it costs", "",
-              "Exits are the LIVE ratchet read from `ratchet_tiers."
-              "live_spacing()`: born stop -%g%%, arms at +%g%%, %g%% rungs, "
-              "sold at observed bids, flat at 15:59 ET. Money is per order "
-              "(qty x 100)." % (born, arm, step), ""]
-    lines += _table(["slack", "no-fills rescued", "gross from rescues",
-                     "fills that would cross", "improvement given up", "NET"],
-                    [[_pct(s) + (" (today's rule)" if s == 0 else ""),
+              "Exits are the LIVE ratchet, read from `ratchet_tiers."
+              "live_spacing()` and never typed in here: born stop -%g%%, arms "
+              "at +%g%%, %g%% rungs, the tick and spread floors, the broker's "
+              "stop-under-the-bid clamp, sold at observed bids, flat at 15:59 "
+              "ET. Money is per order (qty x 100)." % (born, arm, step), ""]
+    lines += _table(["slack", "no-fills rescued", "gross from the rescues",
+                     "fills that would cross", "improvement given up",
+                     "model net", "**vs today**"],
+                    [[_pct(s) + (" — today's rule" if s == 0 else ""),
                       "%d of %d" % (agg[s]["rescued"], len(scored_nf)),
                       _money(agg[s]["gross"]),
                       "%d of %d" % (agg[s]["crossed_fills"], len(scored_f)),
                       _money(-agg[s]["given_up"]),
-                      "**%s**" % _money(agg[s]["net"])] for s in SLACKS])
+                      _money(agg[s]["net"]),
+                      "**%s**" % (_money(agg[s]["delta"]) if s else "baseline")]
+                     for s in SLACKS])
+    lines += ["", "**Read the last column, not the one before it.** The model "
+              "prices a cross at the recorded ask, and our real fills came in "
+              "BETTER than that ask — so the slack-0 column is already %s "
+              "against the broker's own prices on %d of %d scored fills. That "
+              "bias is the same at every slack level, so it cancels in the "
+              "difference and poisons the absolute."
+              % (_money(agg[0.0]["net"]), agg[0.0]["crossed_fills"],
+                 len(scored_f)), ""]
     improvement = sum(r["improvement"] for r in fills)
-    lines += ["", "Across ALL %d filled orders in the record — scored or not — "
-              "resting at the caller's price earned **%s** better than the "
-              "price we bid. That is the thing crossing spends."
-              % (len(fills), _money(improvement)), ""]
-
-    lines += ["## Paired bootstrap against slack 0 (same orders, both times)", ""]
-    rows = []
-    for slack in SLACKS:
-        if slack == 0:
-            continue
-        b = bootstrap(paired_diffs(scored_nf, scored_f, slack))
-        if b is None:
-            continue
-        if all(abs(d) < 1e-9 for d in paired_diffs(scored_nf, scored_f, slack)):
-            call = "identical to today on **every** scored order"
-        elif b["lo"] > 0 or b["hi"] < 0:
-            call = "real at this sample"
-        else:
-            call = "**undecidable at this n** — the band spans zero"
-        rows.append([_pct(slack), b["n"], _money(b["mean"]),
-                     "%s .. %s" % (_money(b["lo"]), _money(b["hi"])),
-                     "%.0f%%" % (100.0 * b["share_above_zero"]), call])
-    lines += _table(["slack", "n", "mean diff / order", "95% band (4000 "
-                     "resamples)", "resamples above zero", "verdict"], rows)
-    lines += ["", "The band is the 2.5th-97.5th percentile of the resampled "
-              "MEAN difference. A band containing zero means this sample "
-              "cannot tell the rules apart, whatever the totals say — and with "
-              "%d scored orders it mostly will." % (len(scored_nf) + len(scored_f)),
+    lines += ["Across ALL %d filled orders in the record — scored or not — "
+              "resting at the caller's price filled **%s** better than the "
+              "price we bid, about %s a contract. That is the thing crossing "
+              "spends."
+              % (len(fills), _money(improvement),
+                 _cents(improvement / max(1, len(fills)) / CONTRACT_MULTIPLIER)),
               ""]
 
-    scored_today = [r for r in nofills if _day_of(r["ts"]) == day]
+    lines += ["## Paired bootstrap against today's rule (same orders, both "
+              "times)", ""]
+    rows = []
+    for slack in SLACKS:
+        if slack == 0.0:
+            continue
+        band = bands.get(slack)
+        if band is None:
+            continue
+        diffs = paired_diffs(scored_nf, scored_f, slack)
+        if all(abs(d) < 1e-9 for d in diffs):
+            call = "identical to today on **every** scored order"
+        elif band["lo"] > 0 or band["hi"] < 0:
+            call = ("real at this sample — and it is on the **%s** side"
+                    % ("gain" if band["mean"] > 0 else "LOSS"))
+        else:
+            call = "**undecidable at this n** — the band spans zero"
+        rows.append([_pct(slack), band["n"], _cents(band["mean"]),
+                     "%s .. %s" % (_cents(band["lo"]), _cents(band["hi"])),
+                     "%.0f%%" % (100.0 * band["share_above_zero"]), call])
+    lines += _table(["slack", "n paired orders", "mean diff / order",
+                     "95% band (4000 resamples)", "resamples above zero",
+                     "verdict"], rows)
+    lines += ["", "The band is the 2.5th-97.5th percentile of the resampled "
+              "MEAN difference, the same method the 9/10 ratchet sweep used. A "
+              "band containing zero means this sample cannot tell the rules "
+              "apart, whatever the totals say.", "",
+              "One asymmetry matters more than the band: the %d fills give the "
+              "cost side a real sample, while the benefit side has %d trade%s. "
+              "So a band that clears zero here is evidence about the COST of "
+              "crossing, not proof about its upside."
+              % (len(scored_f), len(scored_nf),
+                 "" if len(scored_nf) == 1 else "s"), ""]
+
+    today_rows = [r for r in nofills if _day_of(r["ts"]) == day]
     lines += ["## Today's no-fills (%s)" % day, ""]
-    if not scored_today:
+    if not today_rows:
         lines += ["None.", ""]
     else:
         rows = []
-        for row in sorted(scored_today, key=lambda r: r["ts"]):
+        for row in sorted(today_rows, key=lambda r: r["ts"]):
             quote = row["quote"]
-            crossed = [_pct(s) for s in SLACKS
-                       if row["status"] == "scored" and row["runs"][s]["filled"]]
+            cells = []
+            for slack in SLACKS:
+                run = (row.get("runs") or {}).get(slack) or {}
+                if run.get("filled"):
+                    cells.append("%s at $%.2f -> %s" % (
+                        _pct(slack), run["entry"],
+                        _money(run["pl"]) if run.get("pl") is not None else "?"))
             rows.append([row["iso"][11:16], row["occ"], "$%.2f" % row["limit"],
                          ("%.2f x %.2f" % (quote[1], quote[2])) if quote else "—",
                          row["status"],
-                         ", ".join(crossed) if crossed else "—",
+                         "; ".join(cells) if cells else "no slack level crosses",
                          row["why"] or ""])
         lines += _table(["time", "contract", "our bid", "market at read",
-                         "status", "would cross at", "note"], rows)
+                         "status", "what crossing would have done", "note"],
+                        rows)
         lines += [""]
 
-    quarantined = [r for r in nofills if r["status"] == "quarantined"]
+    rescued_any = [(r, s) for r in scored_nf for s in SLACKS
+                   if r["runs"][s].get("filled")
+                   and r["runs"][s].get("pl") is not None]
+    if rescued_any:
+        lines += ["## Why the rescues still lost", "",
+                  "This is the part the complaint cannot see from the chart. "
+                  "Crossing pays the offer, and the born stop is then clamped "
+                  "one tick under the live BID (Webull 417s a resting stop at "
+                  "or above the bid), so a cross on a wide spread starts with "
+                  "a stop far tighter than -%g%%. It also moves the +%g%% arm "
+                  "out of reach: a contract bought 15c higher has to run 15c "
+                  "further before the ratchet locks anything."
+                  % (born, arm), ""]
+        seen = set()
+        rows = []
+        for row, slack in rescued_any:
+            key = (row["occ"], row["iso"])
+            if key in seen:
+                continue
+            seen.add(key)
+            first = min(s for s in SLACKS if row["runs"][s].get("filled"))
+            run = row["runs"][first]
+            rows.append([_day_of(row["ts"]), row["occ"], "$%.2f" % row["limit"],
+                         "$%.2f" % run["entry"], "$%.2f" % run["peak_bid"],
+                         "%+.1f%%" % (100.0 * (run["peak_bid"] - run["entry"])
+                                      / run["entry"]),
+                         run["why"], "$%.2f" % run["exit"], _money(run["pl"])])
+        lines += _table(["date", "contract", "our bid", "crossed at",
+                         "best bid after", "peak gain", "how it ended",
+                         "exit", "P&L"], rows)
+        lines += [""]
+
     if quarantined:
         lines += ["## Quarantined — the tape disagrees with the broker", "",
-                  "These rows came back with a recorded ask at or UNDER the "
-                  "price we bid, so at slack 0 the model says they filled and "
-                  "the broker says they did not. That is a real disagreement "
-                  "(a different venue's offer, or — on the August orders, "
-                  "which were qty 5 — more size at the offer than the tape "
-                  "shows), and it means the row cannot answer this question. "
-                  "None of them is counted anywhere above.", ""]
+                  "These came back with a recorded ask at or UNDER the price we "
+                  "bid, so at slack 0 the model says they filled and the broker "
+                  "says they did not. That is a real disagreement — a different "
+                  "venue's offer, or (the August orders were qty 5) more size "
+                  "wanted than the offer held — and it means the row cannot "
+                  "answer this question. None of them is counted anywhere "
+                  "above, in either direction.", ""]
         lines += _table(["date", "contract", "our bid", "recorded market", "qty"],
                         [[_day_of(r["ts"]), r["occ"], "$%.2f" % r["limit"],
                           "%.2f x %.2f" % (r["quote"][1], r["quote"][2]),
@@ -513,7 +619,6 @@ def render(day, nofills, fills):
                          for r in sorted(quarantined, key=lambda x: x["ts"])])
         lines += [""]
 
-    unscored = [r for r in nofills if r["status"] == "unscored"]
     if unscored:
         lines += ["## Unscored no-fills — never estimated", ""]
         lines += _table(["date", "contract", "our bid", "why"],
@@ -524,29 +629,33 @@ def render(day, nofills, fills):
 
     lines += ["## Honest limits", "",
               "- %d scored orders cannot settle a trading rule. They can rule "
-              "things out." % (len(scored_nf) + len(scored_f)),
+              "things out, and they can price a cost."
+              % (len(scored_nf) + len(scored_f)),
+              "- The benefit side is %d trade%s. Nothing here is a verdict on "
+              "the upside of crossing; it is a verdict on what the record can "
+              "see." % (len(scored_nf), "" if len(scored_nf) == 1 else "s"),
               "- The quote at read time is the nearest recorded print inside "
-              "%ds, not a tick-by-tick book. A price that existed between two "
+              "%ds, not a tick-by-tick book. A price that lived between two "
               "prints is invisible here." % int(QUOTE_TOL_S),
-              "- The tapes carry no SIZE on most feeds, so an ask with one "
-              "contract behind it looks exactly like an ask with fifty. The "
-              "August orders were qty 5.",
+              "- Most feeds carry no SIZE, so an ask with one contract behind "
+              "it looks exactly like an ask with fifty. The August orders were "
+              "qty 5, which is the likeliest reason for the quarantine above.",
               "- The forward replay has no slippage, no queue and no partial "
               "fills: the entry pays the offer and the exit prints at the bid "
               "that broke the stop. Real life is worse.",
-              "- The anchor is the price the bot BID (the ORDER IN line), "
-              "which is the caller's price or better after the tick floor — "
-              "not the caller's raw post.",
+              "- The anchor is the price the bot BID (the ORDER IN line) — the "
+              "caller's price or better after the tick floor, not the caller's "
+              "raw post.",
               "- Coverage is stated, never inferred. An unscored order is "
-              "absent from every total above, in both directions.",
-              "",
+              "absent from every total above, in both directions.", "",
               "Built by `reference/entry_slack_replay.py` from `trades.log` "
               "(population) and `tape.py` (quotes: alert_tape, quote_shadow, "
-              "option_tape, databento_tape, missed_tape, greeks_tape). The "
-              "rule is `entry_slack.decide()`; the exits are "
+              "option_tape, databento_tape, missed_tape, greeks_tape). The rule "
+              "is `entry_slack.decide()`; the exits are "
               "`reference/ratchet_replay_tape.simulate()` on "
-              "`ratchet_tiers.live_spacing()`."]
-    return "\n".join(lines).rstrip() + "\n", agg, band
+              "`ratchet_tiers.live_spacing()`. Per-order rows: "
+              "`reference/ENTRY-SLACK-REPLAY.csv`."]
+    return "\n".join(lines).rstrip() + "\n", agg, bands
 
 
 FIELDS = ["date", "time", "kind", "occ", "symbol", "qty", "our_bid",
@@ -596,18 +705,19 @@ def write_csv(nofills, fills):
 
 
 def main(day):
-    nofills, fills = build()
-    text, agg, band = render(day, nofills, fills)
+    nofills, fills, n_orders = build()
+    text, agg, bands = render(day, nofills, fills, n_orders)
     path = reports.write_day(KIND, day, text)
     write_csv(nofills, fills)
-    best = max(SLACKS, key=lambda s: agg[s]["net"])
-    print("ENTRY SLACK %s — %d option no-fills, %d scored; best slack %g%% "
-          "net %s; band %s"
-          % (day, len(nofills),
+    best = best_slack(agg)
+    widest = bands.get(SLACKS[-1])
+    print("ENTRY SLACK %s — %d option no-fills of %d orders, %d scored; best "
+          "slack %g%% is %s vs today; %g%% band %s"
+          % (day, len(nofills), n_orders,
              len([r for r in nofills if r["status"] == "scored"]), best,
-             _money(agg[best]["net"]),
-             ("%s..%s" % (_money(band["lo"]), _money(band["hi"])))
-             if band else "n/a"))
+             _money(agg[best]["delta"]), SLACKS[-1],
+             ("%s..%s per order" % (_cents(widest["lo"]), _cents(widest["hi"])))
+             if widest else "n/a"))
     print(path)
     print(CUMULATIVE)
     return 0

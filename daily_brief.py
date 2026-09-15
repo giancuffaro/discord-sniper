@@ -361,9 +361,25 @@ def _balance_line(day, balance):
     return "%s · %s" % (" · ".join(bits), balance.get("basis") or "")
 
 
-def section_bot_trades(bot):
+def _slack_line(day):
+    """ONE sentence on the entry-slack measurement (HANDOFF: ENTRY SLACK is
+    OFF and activation blocked). The verdict line is minted by
+    reference/entry_slack_replay.py; this only carries it."""
+    text = reports.day_text("entry-slack", day)
+    if text is None:
+        return "entry slack: %s (no ENTRY-SLACK block for %s)" % (UNAVAILABLE,
+                                                                  day)
+    match = re.search(r"^VERDICT — (.+)$", text, re.M)
+    if not match:
+        return None
+    return "entry slack (OFF, measured): %s" % match.group(1).strip()
+
+
+def section_bot_trades(bot, day=None):
+    slack = _slack_line(day) if day else None
     if not bot:
-        return "## Bot trades\nNo bot trades on this date."
+        return "\n".join(["## Bot trades", "No bot trades on this date."]
+                         + ([slack] if slack else []))
     fmt = "%-5s  %-18s  %-15s  %-5s  %-12s  %5s  %5s  %7s  %s"
     head = fmt % ("time", "channel", "trader", "tkr", "contract",
                   "in", "out", "$", "why exited")
@@ -390,6 +406,8 @@ def section_bot_trades(bot):
     if flagged:
         out.append("⚠ %d row%s: the journal says it exited, the broker record "
                    "prices no exit." % (flagged, "" if flagged == 1 else "s"))
+    if slack:
+        out.append(slack)
     return "\n".join(out)
 
 
@@ -645,13 +663,14 @@ def build(day):
 
     day_block, bot_net, hand_net = section_day(day, bot, hand, broker)
     broke = section_broke(day)
-    blocks = [day_block, section_bot_trades(bot), section_callers(day, bot),
-              broke, section_pending()]
+    blocks = [day_block, section_bot_trades(bot, day),
+              section_callers(day, bot), broke, section_pending()]
 
     sources = ["master_ledger.csv", "master_broker.csv", "balance_daily.csv",
                "trades.log", "daily-reports/CALLER-OUTCOMES.csv",
                reports.KINDS["caller-vs-ratchet"].rel_path(day).replace("\\", "/"),
                reports.KINDS["futures-mirror"].rel_path(day).replace("\\", "/"),
+               reports.KINDS["entry-slack"].rel_path(day).replace("\\", "/"),
                "department-reports/extension-*.json", "HANDOFF.md"]
     stamp = dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z")
     footer = "built from %s · %s" % (", ".join(sources), stamp)

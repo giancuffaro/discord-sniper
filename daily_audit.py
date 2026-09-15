@@ -218,6 +218,16 @@ def run(day):
         print("INDEX MIRROR replay failed: %s" % res["output"][-200:])
     else:
         summary["index_mirror"] = res["path"]
+    # ENTRY SLACK (9/15) — the same shape as the mirror above: a switch that
+    # is OFF, measured every day so the decision is never argued. It runs
+    # after the reports and can never fail the audit.
+    res = reports.build("entry-slack", day, quiet=True)
+    if res["status"] == "failed":
+        summary["entry_slack"] = {"status": "failed",
+                                  "why": res["output"][-200:]}
+        print("ENTRY SLACK replay failed: %s" % res["output"][-200:])
+    else:
+        summary["entry_slack"] = res["path"]
 
     try:
         import departments
