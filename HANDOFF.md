@@ -19,7 +19,6 @@ Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; ne
   in `daily-reports/`.
 
 ## Where the mechanics live (one per subsystem; see INDEX.md)
-ASK-MAP.md (which file answers which ask) → STATUS.json → reports/INDEX.json.
 reference/: ENTRIES · RATCHET · ROOMS-TABS · OPERATIONS (restarts, the 16:40
 audit, git, autopilot, readers, keys, PC2, caller research, weekly files, house
 rules, watch-item detail, this file's long form) · OPTIONS-BROKER-REFERENCE ·
@@ -41,7 +40,7 @@ machine, accounts, coexistence, north star) · INDEX · HANDOFF-LOG.
 
 ENTRIES · ENTRIES.md
 - PRICE: caller's price or better; pullbacks cross the ask; one contract per entry. RN PULLBACK is ON and global; THE LEVEL STAYS $1 (SETTLED 9/9), never re-opened on a feeling.
-- ENTRY SLACK (G, 9/15) — **OFF and activation blocked**: the bot bids the caller's price or better and never chases. `execution.entry_slack_pct` exists only so `reference/entry_slack_replay.py` can measure what crossing the ask would have done; a non-zero value refuses to arm until the replay shows a net gain outside its error bar. 27 of 201 option orders never filled — measured daily, not argued.
+- ENTRY SLACK (G, 9/15) — **OFF and activation blocked**: never chase. `execution.entry_slack_pct` exists only so `reference/entry_slack_replay.py` can measure what crossing the ask would have done; a non-zero value refuses to arm until the replay shows a net gain outside its error bar. 27 of 201 option orders never filled — measured daily, not argued.
 - ONE SWITCH PER ROOM (G, 9/9): ON = tab + read + trades LIVE; OFF = nothing; LAPSED = sub ran out. No paper state. A TAB CLOSED BY HAND IS NOT A BENCH; benched rooms stay.
 - TABS (9/10): the reaper closes only `_OURS`, never a human's; only START HERE, the popup switch and whopSelfHeal() open one; "No Access" → `lapsed` + close; the last tab stays.
 - ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed. CHANNELS: callers inside their verified room, win rate needs evidence, no Callers tab (G).

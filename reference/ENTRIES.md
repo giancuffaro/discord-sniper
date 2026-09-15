@@ -35,6 +35,60 @@ missing units remain unresolved pending original-source evidence.
   is false in this sample: $5 lines held 31%, $2.50 36%, a random x.25 line
   38%. Don't re-open on a feeling — re-run the script when the sample doubles.
 
+## Entry slack — OFF, activation blocked (9/15)
+
+- THE RULE, one implementation, `entry_slack.decide()`:
+
+      if ask <= caller_price * (1 + slack)  ->  cross, pay the ask on a
+                                                legal tick (tick_ceil)
+      otherwise                             ->  rest at the caller's price
+                                                floored to the tick, as today
+
+  slack = 0 IS today's behaviour — a resting limit at the caller's price is
+  already marketable once the ask comes to it, which is where every
+  better-than-posted fill comes from. Missing, zero or crossed quotes never
+  cross: a price we did not record is not a price we can claim to have paid.
+- THE SWITCH: `execution.entry_slack_pct`, default 0, read ONLY through
+  `entry_slack.slack_pct()` / `armed()`. Gated exactly like INDEX MIRROR —
+  `live_ready()` returns False, so a non-zero value REFUSES TO ARM: the
+  bridge logs one `SLACK` line per order saying it did not arm and what
+  would unblock it, and the entry still rests at the caller's price. The
+  `/config` endpoint 409s an attempt to raise it. NO popup control: a
+  control that cannot do anything is a control that gets clicked by
+  accident, so the switch appears in `/status` (`entry_slack`) and nowhere
+  clickable.
+- WHY IT SHIPS BLOCKED, measured daily by `reference/entry_slack_replay.py`
+  (`reports.py` kind `entry-slack`, run by `daily_audit.py` after the other
+  reports; the brief carries its `VERDICT —` line):
+  · POPULATION, corrected: `grep -c NOFILL trades.log` says 52, but five are
+    POSTCHECK lines and 20 of the remaining 47 are FUTURES (16 MNQ, 4 MGC),
+    which have no ask to cross. It is **27 option no-fills of 201 ORDER INs
+    (13%)**, not 52 of 204 (25%).
+  · COVERAGE, 9/15: **3 of the 27 are scorable**. 7 are QUARANTINED — the
+    tape's recorded ask was at or under the price we bid, so at slack 0 the
+    model contradicts the broker (a different venue's offer, or the August
+    orders' qty 5 against a one-lot offer) — and 17 have no quote within 90s
+    of the order. Unscored is unscored; nothing is estimated.
+  · THE COST SIDE is the well-measured half: across all 151 filled orders,
+    resting filled **+$1,235** better than the price we bid, ~$0.08 a
+    contract. Against today's rule, 2% costs -$13, 3% -$40, 5% -$127,
+    7.5% -$286, 10% -$291, and the paired bootstrap band (135 orders, 4000
+    resamples) CLEARS zero on the LOSS side from 2% up.
+  · THE BENEFIT SIDE is 3 trades and all three lose. Crossing pays the offer
+    and the born stop is then clamped one tick under the live BID (Webull
+    417s a stop at or above it), so a cross on a wide spread starts far
+    tighter than -10% — and it puts the +10% arm out of reach. CRWD 250C
+    9/15: bid 3.50, market 3.55 x 3.65, crossing at 3.65 peaks at a 3.80 bid
+    (+4.1%, never arms) and stops at 3.30 for -$35. Entered at the caller's
+    3.50 the same path is +8.6%.
+  · SO: the cost of crossing is real and priced; its upside is not
+    measurable at n=3. Nothing in the record supports loosening, and the
+    switch stays blocked until the replay says otherwise.
+- HONEST LIMITS live in the report itself and must be repeated with any
+  number from it: no size on most feeds, no queue, no slippage, no partial
+  fills, and the anchor is the price the bot BID (the ORDER IN line), not
+  the caller's raw post.
+
 ## Strikes, ADDs, SPX
 
 - STRIKES: never more than 1 strike OTM; deeper snaps to the first OTM rung
