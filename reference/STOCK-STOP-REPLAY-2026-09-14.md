@@ -168,6 +168,7 @@ A stock rule fires on the stock's clock; the option can only be sold at the next
 - The OPRA backfill bought the minutes around each call, not whole sessions, so most paths end long before 15:59 and "close" means the end of the tape, not a real exit.
 - **2026-09-14 is missing and cannot be bought.** Every Databento equity dataset ends at 2026-09-14T04:00Z, so that session's per-second bars are not released yet. Re-run this script when they are; the cache means it will only pay for the new day.
 - No slippage, no queue, no partial fills; entries cross the ask.
+- Alerts are deduplicated on contract within 60 seconds, so a genuine re-entry is kept — and a relay that lands minutes late is counted twice. TSLA 350C on 08-18 (11:59 and 12:04) is one idea appearing as two rows in every column, so it cancels out of the paired comparison but does inflate n by one.
 - The stock ladder has never traded a real dollar. This is a replay.
 
 ### Alerts not replayed

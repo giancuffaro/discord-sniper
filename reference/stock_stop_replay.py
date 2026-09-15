@@ -743,6 +743,11 @@ def write(trades, skipped, cost_note):
           "per-second bars are not released yet. Re-run this script when they "
           "are; the cache means it will only pay for the new day.",
           "- No slippage, no queue, no partial fills; entries cross the ask.",
+          "- Alerts are deduplicated on contract within 60 seconds, so a "
+          "genuine re-entry is kept — and a relay that lands minutes late is "
+          "counted twice. TSLA 350C on 08-18 (11:59 and 12:04) is one idea "
+          "appearing as two rows in every column, so it cancels out of the "
+          "paired comparison but does inflate n by one.",
           "- The stock ladder has never traded a real dollar. This is a replay."]
     if skipped:
         L += ["", "### Alerts not replayed", "", "| Why | n |", "|---|---:|"]
