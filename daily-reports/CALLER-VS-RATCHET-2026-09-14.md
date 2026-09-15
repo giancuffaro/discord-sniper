@@ -15,7 +15,7 @@ The caller's posted premium is the hypothetical fill when available. Our 5/3/5 r
 | 11:12 MSFT | OWLS all-alerts | $0.85 | caller posted | partial exit posted; price unavailable | caller trim; price unavailable | $0.93 | +9.4% / +8 (quote-path replay) |
 | 11:21 QQQ | shabs | $0.75 | caller posted | full $3.92 (+422.7%) | market bid at caller exit | $0.65 | -13.3% / -10 (quote-path replay) |
 | 11:24 META | Honeydrip daytrades | $6.50 | caller posted | full exit posted; price unavailable | caller exit; price unavailable | $6.45 | -0.8% / -5 (quote-path replay) |
-| 11:28 SPY | Midas | $760.40 | caller posted | partial +50.0% | caller-stated | $1.04 | -99.9% / -75936 (quote-path replay) |
+| 11:28 SPY | Midas | — | unavailable (stock price posted) | partial +50.0% | caller posted a stock price, not a premium — entry unavailable | — | — (excluded from the total) |
 | 11:52 TSLA | Mugzone Options | $2.40 | caller posted | unavailable | no paired caller exit | $2.40 | +0.0% / +0 (quote-path replay) |
 | 12:13 WMT | Demon day-trades | $0.96 | caller posted | unavailable | no paired caller exit | $0.96 | +0.0% / +0 (quote-path replay) |
 | 12:26 GOOGL | OWLS all-alerts | $7.20 | caller posted | partial +26.0% | caller-stated | $7.20 | +0.0% / +0 (quote-path replay) |
@@ -42,7 +42,7 @@ These rows are still part of the comparison. Their caller evidence is retained; 
 | 09:24 MGC @ 4312.80 | Ninjago Futures Radar | $4312.80 | unavailable | futures path; options 5/3/5 does not apply |
 | 10:07 MGC @ 4308.10 | Ninjago Futures Radar | $4308.10 | unavailable | futures path; options 5/3/5 does not apply |
 | 10:10 MGC @ 4308.60 | Ninjago Futures Radar | $4308.60 | unavailable | futures path; options 5/3/5 does not apply |
-| 10:11 QQQ 710C 9/16 @ 3.45 | ELITE OPTIONS: brando-alerts | $3.45 | partial exit posted; price unavailable | exact bid/ask path unavailable |
+| 10:11 QQQ 710C 9/16 @ 3.45 | ELITE OPTIONS: brando-alerts | $3.45 | partial $5.50 (+59.4%) | exact bid/ask path unavailable |
 | 10:18 MNQ @ 29049.75 | Ninjago Futures Radar | $29049.75 | unavailable | futures path; options 5/3/5 does not apply |
 | 10:23 MNQ @ 29023.00 | Ninjago Futures Radar | $29023.00 | unavailable | futures path; options 5/3/5 does not apply |
 | 10:28 MNQ @ 28998.25 | Ninjago Futures Radar | $28998.25 | unavailable | futures path; options 5/3/5 does not apply |
@@ -68,9 +68,10 @@ These rows are still part of the comparison. Their caller evidence is retained; 
 ## Result
 
 - Comparable ratchet paths: **25 of 53 observed**.
-- Our ratchet on the **21 paths with a caller-posted entry**: **-74960 per one-contract replay**.
-- Including the one no-price alert at its first recorded ask: **-74965 across all 25 paths**.
-- Numeric caller full-exit results on this subset: **8 of 25**; missing caller exit prices prevent an honest aggregate caller P&L.
+- Our ratchet on the **20 paths with a caller-posted entry**: **+976 per one-contract replay**.
+- Including the no-price alerts at their first recorded ask: **+971 across 24 scorable paths**.
+- Numeric caller full-exit results on this subset: **7 of 24**; missing caller exit prices prevent an honest aggregate caller P&L.
+- **1 row excluded from every dollar total** because the caller posted the STOCK price where the premium belongs (11:28 SPY @ 760.40). The row stays visible; its P&L would be nonsense. Same rule the live OPEN path has refused since v3.8.24.
 - Broker-confirmed results override quote-path simulations whenever the bot actually traded.
 - Every observed entry is listed: **25 scored + 28 awaiting tape/futures handling = 53**.
 - This assumes the caller's posted price filled. It measures trade management from their original entry, not whether that fill was executable for us.
