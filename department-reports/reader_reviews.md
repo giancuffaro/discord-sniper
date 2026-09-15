@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-15 — 4b3457e05f382447d048
+
+The current message plausibly expresses profit-taking intent, which the reader classified as TRIM while the parser returned no action. AMD 515 calls expiring 9/16 are a plausible contextual target, but source linkage requires verification. Validation also omitted the reader's strike. These are review proposals, not confirmed parser bugs.
+
+## Findings
+- The current message says "Take profits and feel free to leave runners @here". The parser returned action=null and fire=false; the reader returned action="TRIM" with price=null and qty=null. Verify whether contextual profit-taking messages are within the parser's intended scope. Consider preserving the management intent for review without treating this as a confirmed fill, a full exit, or an instruction to sell a specified fraction.
+- The reader cites the repeated "Eyes on AMD above 507.4 for the 515 C 9/16" message and the subsequent "In" message. Later messages describe taking half off and leaving runners. This supports an AMD interpretation, but the current message does not name a contract; TSLA, NVDA, and META also appear in the supplied history, and the AMD message marked reply=true has no supplied reply target. Verify the original reply linkage, edited entry message, and same-author/channel trade sequence before confirming AMD 515 calls expiring 9/16 as the target. Do not rely solely on proximity or the reader's confidence of 0.93.
+- The reader returned strike="515" and side="CALL". validation.read retained AMD and expiry="9/16", normalized side to "CALLS", but returned strike=null despite validation.ok=true and no safety flags. Review the validation schema and transformation trace to determine whether omitting strike is intentional or an unintended loss of contract identity. Verify downstream requirements before proposing a change.
+- The nearby entry-like message is only "4.2", without explicit premium units. Subsequent "35%" and "40%" messages are caller-reported updates, not exact exit prices. The current reader output appropriately leaves price and quantity null. Preserve "4.2" as raw text with unresolved premium units unless retained source examples establish this caller's convention. Keep reported performance separate from premiums and realized results; do not derive an exit price or reuse the earlier "out half" quantity for the current message.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not include original reply targets, full edit history, parser specifications, or validation implementation details.
+- No broker fills, contemporaneous quotes, or simulation results are supplied; reported percentages do not establish realized returns.
+- Missing price, quantity, and strike values are not zero.
+- A Gemini cooldown followed by an OpenAI response is shown; this does not establish a channel or application outage.
+
+---
+
 # Reader Review — 2026-09-15 — 5c58b28ebfe2aec09b4c
 
 The current message contains a conditional trim instruction. Recent context plausibly links it to AMD 515 calls expiring 9/16, but that attribution requires source verification. The parser returned no action, while the reader proposed TRIM; validation retained the action but flagged an unsupported context ID and omitted the strike.
