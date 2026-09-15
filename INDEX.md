@@ -106,6 +106,23 @@ with instructions pointing to the live files. Daily performance lives in `daily-
 Retired handoffs are preserved as historical evidence in
 `archive/retired-handoff-documents-2026-09-12.zip`; their rules must not be applied.
 
+## Where the mechanics live — the pointer map (moved from HANDOFF.md 9/15, verbatim)
+
+HANDOFF.md carries the compact version; this is the long form.
+
+## Where the mechanics live (one pointer per subsystem)
+ASK-MAP.md (what to read for which question) · STATUS.json (the day's numbers,
+what broke, verified checks) · reports/INDEX.json (report cache) ·
+reference/ENTRIES.md (entry mechanics: pullback, strikes, expiry, guards,
+dedupe, edits, futures, index mirror) · reference/RATCHET.md (ratchet, futures
+ratchet, swings, close path, 0DTE) · reference/ROOMS-TABS.md (rooms.txt fields,
+tabs, hours, relays, Whop, voice, popup) · reference/OPERATIONS.md (restarts,
+POSTCHECK, the 16:40 audit, git, autopilot, announcer, departments, readers,
+keys, second machine, caller research) · DATA-MAP.md (what is inside every
+data file, the data families) · reference/OPTIONS-BROKER-REFERENCE.md (Webull
+facts) · MARKET-HOURS.md (hours, holidays) · ARCHITECTURE.md (modules, seams)
+· INDEX.md (what every file is).
+
 ## Never touch
 
 - `settings.json` — every API key and webhook. Gitignored. Never commit it,
