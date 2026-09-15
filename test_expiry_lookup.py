@@ -223,6 +223,106 @@ q2.listed_expiries("ZZZZ", 5, "CALL", CANDS)
 check("and is NOT cached (a throttle must not blind the day)", q2.calls, 2)
 
 # --------------------------------------------------------------------------
+print("\n7. _verify_listed — a date the CALLER typed still has to be real")
+# 9/14's recap posted "INTC 9/14 97C" — a MONDAY expiry on a stock that has no
+# Monday expirations. Mon/Wed exist on the nine Qualifying Securities only.
+# The next Monday that is not today — a real future date the broker will
+# not list for a stock outside the nine Qualifying Securities.
+_t = dt.date.today()
+MON = (_t + dt.timedelta(days=((7 - _t.weekday()) % 7) or 7)).isoformat()
+
+
+def vorder(sym, strike, expiry, side="CALLS", limit=0.90, guessed=False):
+    o = order(sym=sym, strike=strike, side=side, limit=limit)
+    o["expiry"] = expiry
+    if guessed:
+        o["_expiry_guessed"] = True
+    return o
+
+
+# The contract is listed -> silence, and exactly one call.
+wb = FakeWB({FRIDAY: 0.95})
+o = vorder("INTC", 97, FRIDAY)
+check("a listed date passes", with_wb(wb, lambda: bridge._verify_listed("INTC", o)), "")
+check("one call to check it", wb.calls, 1)
+check("and it is marked verified", o.get("_expiry_verified"), True)
+
+# Verified once, never asked again.
+wb2 = FakeWB({FRIDAY: 0.95})
+check("an already-verified order is not re-asked",
+      with_wb(wb2, lambda: bridge._verify_listed("INTC", o)), "")
+check("so no call was spent", wb2.calls, 0)
+
+# The contract is NOT listed, but siblings are -> REFUSE, and say who said it.
+wb3 = FakeWB({FRIDAY: 0.95})
+o3 = vorder("INTC", 97, MON)
+msg = with_wb(wb3, lambda: bridge._verify_listed("INTC", o3))
+check_in("an unlisted date is refused", "BAD-CONTRACT INTC 97C %s" % MON, msg)
+check_in("names what IS listed", FRIDAY, msg)
+check_in("names the room and the raw alert", "the room said:", msg)
+check("two calls: the date, then the rest of the week", wb3.calls, 2)
+check("and it is NOT marked verified", o3.get("_expiry_verified"), None)
+
+# NOTHING answers -> that is the feed, not the contract. Fail OPEN.
+wb4 = FakeWB({})
+o4 = vorder("INTC", 97, MON)
+check("a dead feed never becomes a trading halt",
+      with_wb(wb4, lambda: bridge._verify_listed("INTC", o4)), "")
+
+# An exception is a guard failing, not a trade failing.
+wb5 = FakeWB({FRIDAY: 0.95}, blow_up=True)
+check("a throttle lets the order through",
+      with_wb(wb5, lambda: bridge._verify_listed("INTC", 
+              vorder("INTC", 97, MON))), "")
+
+# No connection at all.
+check("no broker, no opinion",
+      with_wb(None, lambda: bridge._verify_listed("INTC", vorder("INTC", 97, MON))), "")
+
+# Only entries. A close uses the contract you hold, never a guess.
+wb6 = FakeWB({FRIDAY: 0.95})
+oc = vorder("INTC", 97, MON)
+oc["action"] = "CLOSE"
+check("a CLOSE is never second-guessed",
+      with_wb(wb6, lambda: bridge._verify_listed("INTC", oc)), "")
+check("and costs nothing", wb6.calls, 0)
+
+# Futures have no OCC symbol.
+wb7 = FakeWB({})
+of = vorder("MNQ", 24000, MON)
+of["kind"] = "future"
+check("futures are skipped",
+      with_wb(wb7, lambda: bridge._verify_listed("MNQ", of)), "")
+
+# The switch.
+_old = bridge.EXEC
+try:
+    bridge.EXEC = dict(_old or {})
+    bridge.EXEC["verify_listed"] = False
+    wb8 = FakeWB({FRIDAY: 0.95})
+    check("execution.verify_listed=false turns it off",
+          with_wb(wb8, lambda: bridge._verify_listed("INTC", vorder("INTC", 97, MON))), "")
+    check("and spends nothing", wb8.calls, 0)
+finally:
+    bridge.EXEC = _old
+
+# A GUESSED date gets the siblings in the SAME call, so the price gate can
+# switch to the one that matches what the caller actually posted.
+wb9 = FakeWB({TODAY: 1.45, FRIDAY: 7.40})
+og = vorder("TSLA", 357.5, FRIDAY, limit=1.42, guessed=True)
+msg9 = with_wb(wb9, lambda: bridge._verify_listed("TSLA", og))
+check("a guessed date is price-checked too", msg9, "")
+check("and switched to the one the caller priced", og["expiry"], TODAY)
+check("in one call, not two", wb9.calls, 1)
+
+# A date the caller TYPED is never second-guessed on price — only on existence.
+wb10 = FakeWB({FRIDAY: 7.40})
+ot = vorder("TSLA", 357.5, FRIDAY, limit=1.42)
+check("a stated date is not price-switched",
+      with_wb(wb10, lambda: bridge._verify_listed("TSLA", ot)), "")
+check("and keeps the date the caller typed", ot["expiry"], FRIDAY)
+
+# --------------------------------------------------------------------------
 print("")
 if FAILED:
     print("FAILED (%d): %s" % (len(FAILED), ", ".join(FAILED)))
