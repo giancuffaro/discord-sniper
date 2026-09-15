@@ -12,6 +12,36 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-15 (ENTRY SLACK built, OFF and activation blocked — 27 of 201 option orders never filled, and crossing loses)
+
+G, after CRWD 250C: "lets keep it as an option to backtest the alerts, maybe we have to loosen up in that aspect." So the idea got built as a measurement, gated like INDEX MIRROR, and switched nowhere. Live entry behaviour is byte-for-byte unchanged.
+
+**THE CASE THAT STARTED IT.** 9/15 12:50:34, MuggZone posts "BOUGHT CRWD 250C at 3.50". ORDER IN at 3.50 two seconds later. The recorded market at read time was **3.55 x 3.65** and stayed there; the 90-second window expired unhit. Same shape at 10:14 (bid 4.25, market 4.40 x 4.50) and on CRWD 9/14 (bid 2.35, market 2.41 x 2.52). Against that, every one of the day's six fills came in BETTER than the caller's price (META 1.88 vs 1.94, TSLA 1.19 vs 1.34, TSLA 3.25 vs 3.40, QQQ 0.61 vs 0.64, AMD 5.45 vs 5.60).
+
+**TWO CORRECTIONS TO THE HEADLINE NUMBER, both against the idea.** The brief for this work said 52 NOFILLs of 204 ORDER INs (25%). `grep -c NOFILL trades.log` does say 52 — but five of those are POSTCHECK lines ABOUT a no-fill, not no-fills, and 20 of the remaining 47 are FUTURES (16 MNQ, 4 MGC), which snap to the 25-point grid and have no ask to cross on this rule. The real population is **27 option no-fills out of 201 ORDER IN lines, 13%**. Every table in the new report counts the 27 and says so on its face.
+
+**COVERAGE, which is the real answer.** Of the 27, only **3** have a recorded bid/ask within 90 seconds of the order (the bid's own resting window). **7 are QUARANTINED**: the tape's ask at read time was at or UNDER the price we bid, so at slack 0 the model says "filled" and the broker says it did not — a genuine disagreement (a different venue's offer, or the August orders' qty 5 against a one-lot offer, and most feeds carry no size). **17 have no quote at read time at all.** Quarantined and unscored rows are named in the report and counted nowhere, in either direction. Nothing is estimated.
+
+**THE RESULT, and it is one-sided.** The cost side is the well-measured half — 132 of 151 filled orders have a real ask at read time:
+
+| slack | no-fills rescued | gross from rescues | improvement given up | **vs today's rule** | 95% band / order |
+|---|---|---|---|---|---|
+| 0% (today) | 0 of 3 | +$0 | — | baseline | — |
+| 2% | 0 of 3 | +$0 | -$13 | **-$13** | -$0.17 .. -$0.04 |
+| 3% | 0 of 3 | +$0 | -$40 | **-$40** | -$0.64 .. -$0.07 |
+| 5% | 1 of 3 | -$35 | -$92 | **-$127** | -$1.76 .. -$0.32 |
+| 7.5% | 3 of 3 | -$80 | -$206 | **-$286** | -$3.43 .. -$0.99 |
+| 10% | 3 of 3 | -$80 | -$211 | **-$291** | -$3.47 .. -$1.01 |
+
+Paired bootstrap, 135 orders, 4000 resamples, same method as the 9/10 ratchet sweep. The band CLEARS zero from 2% up — on the LOSS side. Across all 151 fills, resting at the caller's price filled **+$1,235** better than the price we bid, about $0.08 a contract; that is what crossing spends.
+
+**WHY THE RESCUES STILL LOST, which the chart cannot show.** Crossing pays the offer, and the born stop is then clamped one tick under the live BID (Webull 417s a resting stop at or above the bid), so a cross on a wide spread starts far tighter than -10%. It also pushes the +10% arm out of reach. CRWD 250C: crossing at 3.65 peaks at a 3.80 bid (+4.1% — never arms the ratchet) and stops at 3.30, -$35. The same path entered at the caller's 3.50 is +8.6%. The 4.25 miss is worse: crossing at 4.50 stops out in 265 seconds for -$45. All three "rescues" lose money under the live ladder.
+
+**HONEST READ.** The COST of crossing is real, priced, and outside its error bar. The BENEFIT is three trades and cannot be measured at that n. So there is no evidence for loosening and some against it — and the honest framing is that the record can price the downside and cannot see the upside. The switch stays blocked. Re-read the report as the sample grows; alert_tape + quote_shadow have only been recording alerted contracts since 9/11, so coverage improves from here on its own.
+
+**WHAT WAS BUILT.** `entry_slack.py` (the ONE rule, pure, legal ticks via webull_options.tick_ceil/tick_floor, plus `slack_pct`/`armed`/`live_ready`), `test_entry_slack.py` (22 tests: ask exactly on the line, a penny over, zero slack = today, missing/zero/crossed quotes never cross, tick grids, the switch refusing to arm, no second reader of the setting). `reference/entry_slack_replay.py` reuses `reference/ratchet_replay_tape.simulate()` for the exits and `ratchet_tiers.live_spacing()` for the numbers, so the 10/10/10 move arrived without a retype. `tape.py` gained an `occs=` filter so a 27-contract study is one streaming pass instead of 27 walks of a 46 MB file. `reports.py` kind `entry-slack` (fingerprinted on trades.log's day lines and five tapes), run by `daily_audit.py` after the other reports, weekly file `daily-reports/ENTRY-SLACK week-of-….md`, per-order rows in `reference/ENTRY-SLACK-REPLAY.csv`, one `VERDICT —` line carried into `daily_brief.py`. `bridge.py`: the gate sits beside the mirror's at the dispatch boundary and only LOGS (a refused slack must never cost a trade), `/status` exposes `entry_slack`, `/config` 409s an attempt to raise it. **No popup control** — a control that cannot do anything is a control that gets clicked by accident, so no extension change and no manifest bump. HANDOFF came back at 15,289 bytes and was trimmed to 14,963 by deleting three genuine duplicates (the archive/evidence sentence, the second copy of REPLACE-DON'T-STACK, the ASK-MAP pointer that its own rule already states) rather than shaving the new rule.
+
+
 - **RATCHET RESPACED 5/3/5 -> 10/10/10 (G, 9/15: "i kind of want to widen it a bit more... i mean go back to 10").** settings.json strategy.stop_loss_pct 5 -> 10 and ratchet_tiers.TIERS (3.0, 0.0, 5.0) -> (10.0, 0.0, 10.0); live_spacing() now returns (10.0, 10.0, 10.0). NEEDS A BRIDGE RESTART to go live; positions already holding a stop keep the stop they were born with. What he was shown first, so this is a decision and not a drift: the bot's only two green days were 8/10 (+$132) and 8/11 (+$241), both on 10/10/10, and both carried by one runner each (AMD 485C 1.00->2.46 +146%; SKHY 150C 6.01->8.50 +41%); against that, the 9/8 50-spacing sweep on real fills ranked born-10/arm-10 **30th of 50, -$434 total, 28.8% win**, and the 9/10 fine sweep ranked 5/3/5 first of 294 (+$504 vs +$158) with a paired bootstrap band of +$0.72..+$4.91 a trade. He chose the wide ladder anyway; his money, his call, recorded here so nobody quietly reverts it.
 - test_positions.py's four ratchet checks used to hard-code the spacing of the day (2.30 / 2.50), so a correct machine "failed" them the moment the ladder moved. They now derive the expected rest from `ratchet_tiers.live_spacing()` via a local `_ladder_stop(fill, gain_pct)`, and the closing banner prints the live numbers instead of "9/10 spacing". Same principle as live_spacing itself: one reader, no copies. 290 pass.
 
