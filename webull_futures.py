@@ -597,8 +597,8 @@ def execute(wb, book, order, key, note):
         # dead the moment this file changes. It is PER SYMBOL: an MNQ call is
         # refused while only MES is proven, and vice versa, and a root the
         # bridge maps to a micro (ES -> MES, NQ -> MNQ) is judged on the micro
-        # it would actually buy. protection_proof_state() says why in English
-        # so the refusal, /status and the popup all say the same thing.
+        # it would actually buy. protection_proof_state(symbol) says why in
+        # English, so the refusal, /status and the popup all say the same thing.
         _ready, _why = protection_proof_state(sym)
         if not _ready:
             return False, ("Webull futures entry held: %s; no order was sent"
