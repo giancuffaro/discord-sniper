@@ -1,5 +1,20 @@
 # Health reviews — newest first
 
+# Health — 2026-09-16 — 087380cfdff6c952081c
+
+The session is marked in_session=true, and the evidence reports multiple alert sources as ON while having no corresponding tab in this browser. This suggests a source-availability or browser-association discrepancy that should be verified, but it does not by itself confirm an outage, error, or intentional configuration.
+
+## Findings
+- in_session=true; issues list includes many entries of the form "<alert source> is ON but has no tab in this browser" (for example: AbTrades Alert Bot, Brick Alerts, Demon day-trades, Ducci Alerts, FloridaManFinance, Hog Alerts, Jon Tran Alerts, Maguro Alerts, Mugzone Options, Nando Alerts, OWLS all-alerts, OWLS jon-and-kian, Optionality free-trades, PhiccDuck Alerts, Quantum Alerts, Xephyr Alerts, eli). Verify the source inventory against the browser/tab inventory to determine whether these ON statuses reflect missing tabs, intentionally detached/hidden sources, or stale status data. Do not assume a confirmed parser or system bug without source-side confirmation.
+
+## Limitations
+- The evidence only reports browser tab presence/absence for alert sources; it does not show alert delivery, message contents, or broker-confirmed outcomes.
+- There is no baseline provided for how many tabs should exist in this browser, so absence cannot be treated as zero or as a confirmed outage.
+- The evidence does not distinguish between quiet rooms, hidden tabs, disconnected sessions, and actual source failures.
+- No numerical trade results, prices, fills, or premium units are provided, so none can be inferred.
+
+---
+
 # Health — 2026-09-16 — ba422a747837657445e7
 
 The evidence shows the session is active, but 32 alert channels are reported as ON while having no tab in this browser. This is a visibility/mapping issue to verify, not a confirmed outage or parser defect.

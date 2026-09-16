@@ -1,5 +1,20 @@
 # Incident reviews — newest first
 
+# Incident — 2026-09-16 — 087380cfdff6c952081c
+
+During an active session, 17 sources are reported ON without corresponding tabs in this browser. This suggests a monitoring coverage concern requiring verification, not a confirmed outage or parser bug.
+
+## Findings
+- The evidence reports in_session=true and missing browser tabs for these ON sources: AbTrades Alert Bot, Brick Alerts, Demon day-trades, Ducci Alerts, FloridaManFinance, Hog Alerts, Jon Tran Alerts, Maguro Alerts, Mugzone Options, Nando Alerts, OWLS all-alerts, OWLS jon-and-kian, Optionality free-trades, PhiccDuck Alerts, Quantum Alerts, Xephyr Alerts, and eli. Verify the reported ON states and browser-tab inventory against the source configuration. Determine whether each source requires a tab in this browser or is monitored through another browser, session, or ingestion path. For sources that require local tabs, compare source message history with ingestion logs to establish whether coverage gaps or missed alerts occurred.
+
+## Limitations
+- The evidence is marked untruncated, but contains only session status and reported issues.
+- No timestamps, ingestion logs, source message history, or alternate monitoring inventory are provided.
+- A missing tab does not by itself establish an outage, missed alerts, or a quiet room.
+- The duration and operational impact of any coverage gap are unknown.
+
+---
+
 # Incident — 2026-09-16 — ba422a747837657445e7
 
 During an active session, the evidence reports 32 alert sources as ON with no corresponding tab in this browser. This is a potential browser-coverage gap requiring verification, not proof of an ingestion outage or missed alerts.
