@@ -15,8 +15,8 @@ Last updated: 2026-09-16 — START HERE now checks the DISCORD PROFILE, not "any
   `daily-reports/`.
 
 ## Where the mechanics live
-ASK-MAP.md (which file answers which ask) → STATUS.json → reports/INDEX.json.
-Every subsystem's mechanics sit in one `reference/` doc; INDEX.md is the map and
+ASK-MAP.md (which ask → which file) → STATUS.json → reports/INDEX.json. Each
+subsystem's mechanics sit in one `reference/` doc; INDEX.md is the map,
 RULES-INDEX.md says which code enforces each rule below.
 
 ## Who and what
@@ -65,7 +65,7 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json; logs only when those two cannot answer. STATUS.json.verified is trusted while its inputs are unchanged (VERIFY ONCE).
 - SPEND (G, 9/16). A SUB-AGENT IS THE EXPENSIVE TOOL — 100-350k each; eight of them cost ~1.9M on 9/15-16, more than every read and reply combined. Spawn one only for genuinely large or parallel work, and give it the whole job in one prompt. Otherwise: read the slice not the file, one clean edit not twenty shaves, and answer from ASK-MAP/STATUS.json instead of re-deriving. Full list: AGENTS.md.
 - THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept, LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the 15-min Codex guard.
-- GIT: settings.json holds every key and is never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
+- GIT: settings.json holds every key, never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
 - REPLACE, DON'T STACK (G, 9/9). When anything changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place; never beside it, not commented out, not "superseded", not "legacy", not "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md.
 - CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (test: DATA-MAP.md). Records that cannot be re-derived — tapes, telemetry, days/ — are APPENDED to, never rewritten.
 - RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump the manifest on extension changes; never install webullsdkcore into the bridge's Python; no sandbox, no local sim — a non-LIVE room's call is REFUSED, never faked.

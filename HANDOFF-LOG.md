@@ -12,6 +12,8 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+- 9/16, G: "tell me how to use yourself properly." Measured where the tokens actually went on 9/15-16 instead of guessing: EIGHT sub-agent runs at 111k-349k each, ~1.9M total — more than every file read, log grep and reply of those two days combined. So the SPEND rule in AGENTS.md is ranked by that, not by intuition: (1) a sub-agent is the expensive tool — only for genuinely large or parallel work, and give it the whole job in one prompt because a follow-up round-trip costs another full agent; (2) don't re-derive what ASK-MAP/STATUS.json/reports.py already answer; (3) one clean cut, not twenty shaves (9/16 burned a dozen calls trimming HANDOFF 20 bytes at a time against a ceiling I set myself); (4) read the slice, not the file; (5) answer short, reasoning goes here where it costs nothing to skip. One-line pointer in HANDOFF. GitHub was asked about and does not help — the same bytes cost the same whether they come from a repo or the device bridge.
+
 ## 2026-09-16 pm (why START HERE has been opening nothing for Discord — found and fixed)
 
 G ran START HERE and reported "discord profile isnt opening". health-latest.json:
