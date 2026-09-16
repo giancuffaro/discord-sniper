@@ -104,7 +104,7 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does it.
 3. NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
 4. Close any old parked Whop tabs (Chrome flags note: reference/OPERATIONS.md).
-5. NOTHING REOPENS A DISCORD ROOM TAB: `roomSchedule()` only CLOSES (16:30) and `openMissingRooms()` runs on the START HERE token only (G, 9/8). Whop self-heals every tick, Discord does not — a morning without START HERE reads NOTHING all day, visible only in health-latest.json. Weekday 8:55 task "Discord Sniper - START HERE 8:55" installed 9/16 (`INSTALL MORNING SCHEDULE.bat`); it cannot wake a sleeping PC.
+5. NOTHING REOPENS A DISCORD ROOM TAB: `roomSchedule()` only CLOSES (16:30) and `openMissingRooms()` runs on the START HERE token only (G, 9/8). Whop self-heals every tick, Discord does not — a morning without START HERE reads NOTHING all day, visible only in health-latest.json. Weekday 8:55 task "Discord Sniper - START HERE 8:55" installed 9/16 (`FIX WINDOWS LEFTOVERS.bat`); it cannot wake a sleeping PC.
 
 ## Watch items (open) — full text: OPERATIONS.md
 - G'S CALL, nothing moves until he says: PULLBACK STOCK TARGET vs THE RATCHET

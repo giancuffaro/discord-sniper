@@ -12,6 +12,8 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+- 9/16: G hit the "Can not find script file ...\\_announcer_hidden.vbs" popup twice — the Fill Announcer's 30-minute revive task, still firing a day after announcer.py was deleted. The two one-job .bats (CLEANUP ANNOUNCER, INSTALL MORNING SCHEDULE) were MERGED into one `FIX WINDOWS LEFTOVERS.bat` and both deleted (replace, don't stack; two clicks for one morning's chores is how a chore gets skipped). It deletes the Startup shortcut, deletes the revive task, installs the weekday 08:55 "Discord Sniper - START HERE 8:55" task, prints its next run time, and is safe to run twice. A Linux VM has no schtasks, so this is his double-click, not ours — stated rather than pretended.
+
 ## 2026-09-16 (no Discord tabs at the open, again — the morning is now a scheduled task)
 
 G at 09:19 ET: "the tabs should be open and their not." Verified before saying a
