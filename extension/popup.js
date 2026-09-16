@@ -425,6 +425,7 @@ async function refreshMode() {
     bookPos = (fr && fr.positions) || {};
   } catch (e) { /* keep the last book we saw */ }
   paintMode();
+  paintTrading();
   paintKeys();
   paintProps();
   paintSim();
@@ -481,6 +482,102 @@ function paintBridgeLive() {
   txt.style.color = _bridgeLastCheck && (!ok || gkBad)
     ? "#fca5a5" : "#9aa3b5";
 }
+
+/* ---- TRADING / NOT TRADING (G, 9/16) ------------------------------------
+ * "can you just put a toggle in the popup? like.. trading now / not trading"
+ *
+ * The ONE master switch that is allowed back, because it can only ever make
+ * things safer. NOT TRADING = execution.mode "webhook" on the bridge, which
+ * forces live_order False at the dispatch boundary: every room still reads,
+ * every alert is still parsed, judged and LOGGED, and nothing is sent. Held
+ * positions are untouched — their resting stops stay at Webull.
+ *
+ * Asymmetric on purpose. Stopping is one tap. Starting is two, inside four
+ * seconds, because the second tap is the one that can lose money. There is no
+ * confirm() — a modal dialog in a popup can take the whole popup with it.
+ *
+ * The truth is the BRIDGE's (modeStatus.read_only). _tradingBusy only stops a
+ * status refresh from repainting over an in-flight click.
+ */
+let _tradingBusy = false;
+let _tradingArmed = 0;          // timestamp of the first tap of "start"
+
+function paintTrading() {
+  const b = $("tradingTgl"), t = $("tradingTxt"), sub = $("tradingSub");
+  if (!b || !t) return;
+  if (_tradingBusy) return;
+  if (!modeStatus) {                       // bridge not answering
+    b.className = "tgl money safe";
+    b.disabled = true;
+    t.textContent = "Bridge not reachable";
+    t.style.color = "#fca5a5";
+    if (sub) sub.textContent = "nothing can trade while it is down — run START HERE";
+    return;
+  }
+  b.disabled = false;
+  const ro = !!modeStatus.read_only;
+  const arming = _tradingArmed && (Date.now() - _tradingArmed < 4000);
+  b.className = "tgl money " + (ro ? "safe" : "live");
+  if (arming) {
+    t.textContent = "Tap again to trade";
+    t.style.color = "#fbbf24";
+    if (sub) sub.textContent = "real orders — every room switched ON will fire";
+    return;
+  }
+  t.textContent = ro ? "NOT TRADING" : "TRADING NOW";
+  t.style.color = ro ? "#9aa3b5" : "#fca5a5";
+  if (sub) {
+    sub.textContent = ro
+      ? "rooms still read and log — no orders are sent"
+      : "each room's own switch decides — tap to stop sending orders";
+  }
+}
+
+async function _setTrading(readOnly) {
+  const b = $("tradingTgl"), t = $("tradingTxt"), sub = $("tradingSub");
+  _tradingBusy = true;
+  if (b) b.disabled = true;
+  if (t) { t.textContent = "…"; t.style.color = "#9aa3b5"; }
+  let res;
+  try {
+    res = await askBridge("/fix", { do: readOnly ? "read_only_on" : "read_only_off" });
+  } catch (e) {
+    res = null;
+  }
+  _tradingBusy = false;
+  if (b) b.disabled = false;
+  if (!res || !res.ok) {
+    // LOUD on failure. A kill switch that fails quietly is worse than none.
+    if (t) {
+      t.textContent = readOnly ? "DID NOT STOP — still trading" : "Did not resume";
+      t.style.color = "#fca5a5";
+    }
+    if (sub) {
+      sub.textContent = (res && res.why)
+        ? String(res.why).slice(0, 90)
+        : "the bridge did not answer — turn the rooms OFF in Channels instead";
+    }
+    return;
+  }
+  if (modeStatus) modeStatus.read_only = !!res.read_only;
+  paintTrading();
+}
+
+if ($("tradingTgl")) $("tradingTgl").onclick = () => {
+  if (_tradingBusy || !modeStatus) return;
+  const ro = !!modeStatus.read_only;
+  if (!ro) { _tradingArmed = 0; _setTrading(true); return; }   // stopping: one tap
+  if (_tradingArmed && Date.now() - _tradingArmed < 4000) {    // starting: second tap
+    _tradingArmed = 0;
+    _setTrading(false);
+    return;
+  }
+  _tradingArmed = Date.now();
+  paintTrading();
+  setTimeout(() => {
+    if (_tradingArmed && Date.now() - _tradingArmed >= 4000) { _tradingArmed = 0; paintTrading(); }
+  }, 4100);
+};
 
 /* ---- where futures trade: Webull / NinjaTrader / Topstep -----------------
  * Independent toggles, saved on the bridge. An alert fans out to every one

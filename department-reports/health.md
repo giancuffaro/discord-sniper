@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-16 — 4637d4008d6bbdfa3080
+
+The session is reported as active, but two extensions are flagged with missing or stale heartbeats: Discord and Whop. This is a signal requiring source verification; the provided evidence does not confirm whether this is an outage, an expected idle period, or a reporting gap.
+
+## Findings
+- in_session: true; issues includes "discord extension heartbeat missing or stale" Verify the Discord extension source data and heartbeat timestamps before treating this as a confirmed outage or parser defect. Confirm whether the extension is expected to be silent in this state.
+- in_session: true; issues includes "whop extension heartbeat missing or stale" Verify the Whop extension source data and heartbeat timestamps before treating this as a confirmed outage or parser defect. Confirm whether the extension is expected to be silent in this state.
+
+## Limitations
+- No heartbeat timestamps, thresholds, or last-seen values were provided.
+- No baseline for expected extension activity was provided, so silence cannot be distinguished from an outage.
+- The evidence does not include logs, error messages, or broker-confirmed outcomes.
+- The truncated/summary-style issue list is insufficient to confirm a parser bug or service failure.
+
+---
+
 # Health — 2026-09-16 — bc7fe64024ce93a191f7
 
 The session is active. One source is reported ON but has no visible browser tab, and several Whop tabs are open but their readers have not sent recent beats. This suggests unresolved source visibility or heartbeat freshness, but the evidence does not confirm a parser bug or outage.

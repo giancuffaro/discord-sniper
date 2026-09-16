@@ -224,6 +224,26 @@
          background:#52525b"></span>
     <span id="bridgeLiveText" style="flex:1">checking bridge…</span>
   </div>
+  <!-- TRADING / NOT TRADING (G, 9/16: "can you just put a toggle in the
+       popup? like.. trading now / not trading button"). The one master
+       switch that IS allowed to exist, because it only ever makes things
+       safer: NOT TRADING sets execution.mode=webhook on the bridge, which
+       forces live_order False at the dispatch boundary. Rooms keep reading
+       and logging; nothing reaches the broker; held positions keep their
+       resting stops. Going back to TRADING takes two taps on purpose. -->
+  <div id="tradingBar" class="row" style="align-items:center;gap:8px;
+       margin-bottom:8px;padding:8px 9px;border-radius:8px;
+       border:1px solid #2a2f3a;background:#151922">
+    <button id="tradingTgl" class="tgl money safe" style="flex:none"
+            title="Stop sending orders (rooms keep reading)"></button>
+    <div style="flex:1;min-width:0">
+      <div id="tradingTxt" style="font-size:12.5px;font-weight:600;
+           color:#9aa3b5">checking…</div>
+      <div id="tradingSub" style="font-size:10.5px;color:#6b7280;
+           margin-top:1px"></div>
+    </div>
+  </div>
+
   <div class="state" id="state">Loading…</div>
 
   <!-- ===== TABS ===== -->

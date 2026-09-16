@@ -1,33 +1,29 @@
 {
   "in_session": true,
   "issues": [
-    "Aristotle is ON but has no tab in this browser",
-    "Whop Day Trades tab is open but its reader hasn't beaten in a while",
-    "Whop Futures tab is open but its reader hasn't beaten in a while",
-    "Whop High Risk tab is open but its reader hasn't beaten in a while",
-    "Whop 2K Challenge tab is open but its reader hasn't beaten in a while",
-    "Whop Swing Trades tab is open but its reader hasn't beaten in a while"
+    "discord extension heartbeat missing or stale",
+    "whop extension heartbeat missing or stale"
   ],
   "lanes": [
     {
       "lane": "discord",
-      "fresh": true,
+      "fresh": false,
       "version": "3.8.38"
     },
     {
       "lane": "whop",
-      "fresh": true,
+      "fresh": false,
       "version": "3.8.38"
     }
   ],
   "observer": {
     "queue_remaining": 0,
-    "worker_started": true,
-    "last_finished": 1789568447.9014864,
+    "worker_started": false,
+    "last_finished": 0,
     "last_error": "",
-    "last_provider": "openai",
+    "last_provider": "",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789568548.9598086
+  "checked_at": 1789580052.1580732
 }

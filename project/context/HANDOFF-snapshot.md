@@ -51,7 +51,7 @@ ENTRIES · ENTRIES.md
 - FUTURES: micros only; their stop/target wins; a Webull OPEN refuses until THAT MICRO's block of `futures_protection_proof.json` proves the fill→stop→verify→cancel loop AT THE BROKER — MES proven is NOT MNQ proven, ES/NQ gate on the micro they become, the proof dies when webull_futures.py changes, and running it is HIS one-lot trade per micro (`PROVE FUTURES STOPS.bat`). INDEX MIRROR OFF until a broker-confirmed futures exit exists; THE POCKET OFF.
 
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · RATCHET.md
-- READ ONLY BUTTON (G, 9/16): `READ ONLY - NO ORDERS.bat` sets execution.mode=webhook at the running bridge — rooms keep reading and logging, `live_order` is forced False at the dispatch boundary, nothing reaches the broker, survives a restart. Held positions keep their resting stops. `RESUME TRADING.bat` needs a typed YES. /mode reports `read_only`.
+- TRADING / NOT TRADING (G, 9/16) — the ONE master switch allowed back: it only makes things safer. The popup toggle (or `READ ONLY - NO ORDERS.bat`) sets execution.mode=webhook — rooms keep reading and logging, `live_order` forced False at the dispatch boundary, nothing reaches the broker, survives a restart. HELD POSITIONS UNTOUCHED: their resting stops stay at Webull. Stopping is one tap, starting two within 4s; a failed switch says so LOUDLY and assumes it is still trading. /mode reports `read_only`.
 - NO DAILY LOSS STOP (G, 9/14: "No. We are not gonna do a daily daily stop limit. No. We're not."). Never propose one, never wire one. The per-trade born stop is the only cap.
 - ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
 - THE RATCHET (10/10/10 since 9/15, flat — G: "go back to 10", the August spacing): born −10%; +10% → breakeven; each further +10% locks +10%. `ratchet_tiers.py` is the one implementation, `live_spacing()` the one reader. Stops never loosen; anti-clip off. The sweeps ranked this below 5/3/5 — G's call against that evidence (HANDOFF-LOG). Re-measure as the sample grows.
@@ -97,11 +97,9 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 - Multi-account: extras mirror LIVE entries 1:1, own books/stops. SECOND MACHINE (planned 9/9, default-off until PC2 exists): ONE bridge, ONE book, ONE rate budget — never a second bridge on the same Webull account.
 
 ## Pending external setup and decisions
-1. In Claude: PROJECT-INSTRUCTIONS.md as the Project instructions; delete the old uploaded handoffs (local cleanup does not touch uploads).
-2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does it.
-3. NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
-4. Close any old parked Whop tabs (Chrome flags note: reference/OPERATIONS.md).
-5. NOTHING REOPENS A DISCORD ROOM TAB — only START HERE does (G, 9/8; mechanics in ROOMS-TABS.md), so a morning without it reads NOTHING all day. Weekday 8:55 task "Discord Sniper - START HERE 8:55" installed 9/16 (`FIX WINDOWS LEFTOVERS.bat`); it cannot wake a sleeping PC.
+1. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does it.
+2. NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
+3. NOTHING REOPENS A DISCORD ROOM TAB — only START HERE does (G, 9/8; mechanics in ROOMS-TABS.md), so a morning without it reads NOTHING all day. Weekday 8:55 task "Discord Sniper - START HERE 8:55" installed 9/16 (`FIX WINDOWS LEFTOVERS.bat`); it cannot wake a sleeping PC.
 
 ## Watch items (open) — full text: OPERATIONS.md
 - G'S CALL, nothing moves until he says: PULLBACK STOCK TARGET vs THE RATCHET
