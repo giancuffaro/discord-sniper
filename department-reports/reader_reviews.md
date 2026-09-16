@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — cc50ae7eea77a8d073d4
+
+The current '90% @here' message plausibly continues TEM performance commentary, but does not explicitly request a trim. Review the TRIM classification and historical contract attribution; these are verification proposals, not confirmed parser bugs.
+
+## Findings
+- Both parser and reader label '90% @here' as TRIM. The preceding messages are 'TEM 75% banger @everyone' and '80% down to runners @everyone'. The current message contains no sale instruction or quantity, while retained examples distinguish percentage updates from explicit instructions such as 'Take 1st trim' and '43% out of half'. Verify this caller's same-channel convention before treating a bare percentage update as a new trim. Consider a non-actionable performance-update interpretation rather than carrying the preceding trim instruction forward. Do not interpret 90% as the fraction to sell or as a confirmed realized return.
+- The reader assigns TEM 66 CALL expiring 10/2 with confidence 1.0, citing the older '$TEM,Bull flag,above 63.5 for calls,66 C 10/2' message. That message is absent from validation.eligible_prior_ids. Validation reports 'expiry_not_literal' and 'unsupported_context_id'; its normalized read retains 10/2 and CALLS but sets strike to null. Verify whether the older setup is permitted context and whether retained source links establish continuity to the current TEM runners. Recent eligible context supports TEM as a plausible ticker, but does not state the contract terms. Review confidence and unresolved contract fields rather than treating validation.ok as proof of complete attribution.
+- The parser has fire=false and null contract fields. The reader has null price and qty. Validation returns ok=true despite its safety flags and a null normalized strike. Review the validation and downstream interpretation rules to ensure an accepted review record is not mistaken for an executable or fully specified trim. Preserve missing price, quantity and contract details as unknown, not zero.
+
+## Limitations
+- No broker fills, execution records or verified return calculations are supplied; the percentages are caller-reported commentary.
+- The retained '4.05 avg' and '4.2' messages do not explicitly establish premium units. No premium conversion or inferred exit price is warranted.
+- Evidence is marked untruncated, but it does not include reply targets, complete position state, parser rules or downstream execution behavior.
+- The supplied timestamps and history flags do not establish an outage or complete channel coverage.
+
+---
+
 # Reader Review — 2026-09-16 — beff62a5496334aee36b
 
 The source suggests a partial SLV sale. Review the parser's CLOSE versus the reader's TRIM classification and the loss of the raw quantity during validation. These are source-verification proposals, not confirmed parser bugs.
