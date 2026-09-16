@@ -2,7 +2,11 @@
   "in_session": true,
   "issues": [
     "discord extension heartbeat missing or stale",
-    "whop extension heartbeat missing or stale"
+    "Whop Day Trades tab is open but its reader hasn't beaten in a while",
+    "Whop Futures tab is open but its reader hasn't beaten in a while",
+    "Whop High Risk tab is open but its reader hasn't beaten in a while",
+    "Whop 2K Challenge tab is open but its reader hasn't beaten in a while",
+    "Whop Swing Trades tab is open but its reader hasn't beaten in a while"
   ],
   "lanes": [
     {
@@ -12,8 +16,8 @@
     },
     {
       "lane": "whop",
-      "fresh": false,
-      "version": "3.8.38"
+      "fresh": true,
+      "version": "3.8.39"
     }
   ],
   "observer": {
@@ -25,5 +29,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789580052.1580732
+  "checked_at": 1789580352.1663673
 }
