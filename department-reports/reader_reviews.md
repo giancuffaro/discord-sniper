@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — beff62a5496334aee36b
+
+The source suggests a partial SLV sale. Review the parser's CLOSE versus the reader's TRIM classification and the loss of the raw quantity during validation. These are source-verification proposals, not confirmed parser bugs.
+
+## Findings
+- The current Jon message says "CLOSE: sold 6/10 SLV at 2.35". The parser returns CLOSE with fire=true; the reader returns TRIM with qty="6/10". The wording suggests a partial sale despite the CLOSE label. Verify that "6/10" means six out of ten units sold using Jon's original position history. Check whether CLOSE is a broad exit category or implies full liquidation downstream before classifying the action difference as a defect.
+- The reader retains qty="6/10", but validation.read changes qty to null while reporting ok=true and no safety flags. Review the quantity schema and validation transformation. Preserve the raw fraction and distinguish unsupported quantity representation from missing source quantity. Do not interpret null as zero or a full-position exit.
+- The current message omits strike, option side, and expiry; all remain null. No eligible prior IDs or supporting IDs are supplied. Eva's prior "SLV 75C 10/16" is from a different caller and does not establish Jon's contract. Verify the instrument and position against Jon-specific source history before linking this sale to a contract. Do not fill missing identifiers from Eva's alert merely because the ticker and aggregate channel match.
+- The reader records price=2.35 from "at 2.35", but the source does not explicitly state premium units. The parser excerpt has no price field for comparison. Preserve raw 2.35 and report unresolved premium units pending instrument and Jon-specific convention verification. Do not rescale by 100 or claim a price-parsing error. For a verified per-share option quote, contract premium equals the quote times the confirmed premium multiplier, excluding fees.
+
+## Limitations
+- Only the current message has parser, reader, and validation outputs; downstream position handling is not shown.
+- The supplied evidence is marked untruncated, but it does not include Jon's SLV entry or position ledger.
+- No broker fills, contemporaneous quotes, or performance calculations are supplied; the reported sale is not a broker-confirmed result.
+- The Gemini cooldown was followed by an OpenAI response; this does not establish an application outage.
+
+---
+
 # Reader Review — 2026-09-16 — fb9ce0189b0b09a3db99
 
 The reader interprets the SLV message as a partial close, consistent with “sold 6/10.” Validation drops that quantity, and contract details remain unresolved. These are review candidates, not confirmed parser bugs or evidence of executed trades.
