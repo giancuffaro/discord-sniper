@@ -22,6 +22,9 @@ Deliberate choices, written down so they're not rediscovered the hard way:
     trading the wrong month is a real position in the wrong thing.
 """
 
+import hashlib
+import json
+import os
 from datetime import datetime
 
 import positions
@@ -206,7 +209,7 @@ def _business_stop(text, contract):
             raise FuturesRefused(msg.format(contract=contract))
 
 
-def _place(wb, contract, side, qty, limit=None):
+def _place(wb, contract, side, qty, limit=None, client_order_id=None):
     """Send one futures order. The old code passed a bare dict as the only
     argument and every endpoint 'answered' with a TypeError — 'no endpoint
     answered'. The options path proves the SDK wants place_order(account_id,
@@ -223,7 +226,12 @@ def _place(wb, contract, side, qty, limit=None):
             "no Webull FUTURES account is set, so nothing was sent. Set "
             "execution.webull.futures_account_id to your futures account "
             "number so MNQ/MES route there instead of your options account.")
-    cid = uuid.uuid4().hex[:32]
+    # The client order id is the ONLY durable handle on this order: it is what
+    # get_order_detail is asked about afterwards. A caller that must reconcile
+    # the fill (futures_protection_proof.py) reserves its own id BEFORE the
+    # send, so an ambiguous response can still be looked up. Everything else
+    # keeps the random one.
+    cid = str(client_order_id) if client_order_id else uuid.uuid4().hex[:32]
     otype = "LIMIT" if limit else "MARKET"
 
     # Two order shapes, tried in order. The FIRST mirrors the OPTIONS order this
@@ -486,7 +494,8 @@ def submit_protective_stop(wb, payload):
     Never probe alternate submit methods after an ambiguous response: the
     first request may already have created a working stop. The client ID is
     caller-supplied and must be durably reserved before invoking this method.
-    No live path calls it until fill/exit reconciliation is implemented.
+    Its one live caller is futures_protection_proof.py — the supervised one-lot
+    run that writes the proof the entry gate reads.
     """
     account, api = _stop_api(wb)
     try:
@@ -549,13 +558,16 @@ def execute(wb, book, order, key, note):
     sym = str(order.get("symbol", "")).upper()
     direction = str(order.get("direction") or "").upper()
     if action == "OPEN":
-        # The current market-entry -> fill-watch path cannot yet guarantee a
-        # broker-confirmed stop. A numeric plan in Book is NOT a protective
-        # order. Refuse the entry until the standalone stop lifecycle is
-        # implemented and verified, including unknown-acceptance recovery.
-        if not protective_entries_ready():
-            return False, ("Webull futures entry held: broker-confirmed protective "
-                           "stop is not operational; no order was sent")
+        # A numeric plan in Book is NOT a protective order. The door opens on
+        # EVIDENCE — futures_protection_proof.json, written only by a clean
+        # live run of the fill -> stop -> verify -> cancel -> flat loop, and
+        # dead the moment this file changes. protection_proof_state() says why
+        # in English so the refusal, /status and the popup all say the same
+        # thing instead of "not operational".
+        _ready, _why = protection_proof_state()
+        if not _ready:
+            return False, ("Webull futures entry held: %s; no order was sent"
+                           % _why)
     contract = front_month(wb, sym)
 
     if action == "OPEN":
@@ -621,6 +633,99 @@ def execute(wb, book, order, key, note):
     return False, "nothing to do for futures action %r" % action
 
 
+# ---------------------------------------------------------------------------
+# THE GATE. A Webull futures OPEN is refused until the fill -> stop -> verify ->
+# cancel -> flat loop has been RUN against the live broker and left evidence.
+#
+# The evidence is futures_protection_proof.json, written only by a clean full
+# pass of futures_protection_proof.py (G runs it; it is his own one-lot MES
+# trade). It carries the sha256 of THIS file as it was when proven, so any
+# later edit to the futures path invalidates the proof and the door closes
+# again until it is re-proven. That is the point: the gate cannot be opened by
+# flipping a boolean, and it cannot stay open across a change nobody re-tested.
+PROOF_FILE = "futures_protection_proof.json"
+PROOF_VERSION = 1
+# Every one of these must be recorded ok=true. A proof missing a step is not a
+# proof of that step.
+PROOF_STEPS = ("preflight", "entry_sent", "entry_filled", "stop_placed",
+               "stop_verified", "stop_cancelled", "cancel_confirmed",
+               "position_flattened", "flat_confirmed")
+
+
+def _repo_file(name):
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+
+
+def module_sha256(path=None):
+    """sha256 of webull_futures.py exactly as it sits on disk right now."""
+    h = hashlib.sha256()
+    with open(path or _repo_file("webull_futures.py"), "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def protection_proof_state(proof_path=None, module_path=None):
+    """(ready, reason) — may a Webull futures OPEN go out at all?
+
+    `reason` is one plain sentence a human can act on; it reaches the refusal
+    message in execute(), /status and the popup. Anything unexpected reads as
+    NOT proven — an unreadable proof is not a proof.
+    """
+    path = proof_path or _repo_file(PROOF_FILE)
+    if not os.path.exists(path):
+        return False, ("there is no %s — the fill/stop/verify/cancel loop has "
+                       "never been run against the live broker (double-click "
+                       "PROVE FUTURES STOPS.bat)" % PROOF_FILE)
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except Exception as e:                                  # noqa: BLE001
+        return False, ("%s cannot be read (%s) — re-run the proof"
+                       % (PROOF_FILE, str(e)[:80]))
+    if not isinstance(doc, dict):
+        return False, "%s is not a proof document — re-run the proof" % PROOF_FILE
+    if doc.get("proof_version") != PROOF_VERSION:
+        return False, ("%s was written by a different proof version (%r, this "
+                       "code wants %d) — re-run the proof"
+                       % (PROOF_FILE, doc.get("proof_version"), PROOF_VERSION))
+    steps = doc.get("steps")
+    if not isinstance(steps, list) or not steps:
+        return False, "%s records no steps — re-run the proof" % PROOF_FILE
+    seen = {}
+    for st in steps:
+        if not isinstance(st, dict) or not st.get("name"):
+            return False, ("%s has a malformed step entry — re-run the proof"
+                           % PROOF_FILE)
+        seen[str(st.get("name"))] = st.get("ok") is True
+    failed = [n for n in PROOF_STEPS if n in seen and not seen[n]]
+    if failed:
+        return False, ("the proof records a FAILED step (%s) — the loop is not "
+                       "proven; re-run it" % ", ".join(failed))
+    missing = [n for n in PROOF_STEPS if n not in seen]
+    if missing:
+        return False, ("the proof never got as far as %s — re-run it"
+                       % ", ".join(missing))
+    recorded = str(doc.get("module_sha256") or "")
+    try:
+        current = module_sha256(module_path)
+    except Exception as e:                                  # noqa: BLE001
+        return False, ("cannot hash webull_futures.py to check the proof "
+                       "(%s)" % str(e)[:60])
+    if recorded != current:
+        return False, ("webull_futures.py has changed since the proof was "
+                       "taken (proved %s, now %s) — the futures path is "
+                       "unproven again; re-run the proof"
+                       % (recorded[:12] or "nothing", current[:12]))
+    return True, ("proved %s on %s" % (doc.get("contract") or "a micro future",
+                                       doc.get("written_at") or "an unknown date"))
+
+
 def protective_entries_ready():
-    """Remain fail-closed until exact fill/stop/cancel reconciliation is proven."""
-    return False
+    """True only when the live-broker proof exists, passed and still applies."""
+    return protection_proof_state()[0]
+
+
+def protective_entries_reason():
+    """The one sentence behind protective_entries_ready(), for humans."""
+    return protection_proof_state()[1]

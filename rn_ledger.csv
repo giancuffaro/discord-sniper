@@ -108,3 +108,5 @@ ts,outcome,symbol,side,strike,expiry,caller_price,rn_target,fill_price,trader,ro
 1789565953.922,armed,TSLA,PUTS,350,9/18,,358.0,,Mike,Honeydrip daytrades
 aytrades
 1789565955.923,filled,TSLA,PUTS,355,9/18,,357.0,4.8,Unraveller,Honeydrip daytrades
+1789566006.05,submitted,TSLA,PUTS,350,9/18,,358.0,,Mike,Honeydrip daytrades
+1789566008.108,filled,TSLA,PUTS,350,9/18,,358.0,2.65,Mike,Honeydrip daytrades
