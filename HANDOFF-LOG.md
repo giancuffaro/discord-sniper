@@ -12,6 +12,29 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-16 (no Discord tabs at the open, again — the morning is now a scheduled task)
+
+G at 09:19 ET: "the tabs should be open and their not." Verified before saying a
+word: bridge alive (bridge.log writing at 13:19 UTC), Discord extension alive and
+fresh at v3.8.36 — and `department-reports/health-latest.json` listing all 32 ON
+rooms as "is ON but has no tab in this browser", 0 reads in reads.log for the day.
+Whop clean. CAUSE, from the code, not a guess: `roomSchedule()` only CLOSES tabs
+(16:30); `openMissingRooms()` runs on the START HERE one-shot token, and the
+watch-build alarm dropped it on 9/8 at G's request ("if i close one it wont stop
+opening them"). `whopSelfHeal()` calls it every tick for the whop lane ONLY, which
+is exactly why Whop had its tabs and Discord had none. `launcher-probe.log`
+confirms the last launcher hit was 9/15 09:34 — START HERE had not run.
+FIX (G picked it over an extension change): `INSTALL MORNING SCHEDULE.bat`, a
+double-click that creates the weekday 08:55 task "Discord Sniper - START HERE 8:55"
+pointing at `launch-sniper.bat` (ASCII name, finds the emoji file by wildcard, and
+leaves the launcher-probe breadcrumb so a firing is provable). It cannot wake a
+sleeping PC — stated in the .bat and in HANDOFF. The option NOT taken, kept here in
+case the task proves unreliable: have the Discord lane open missing tabs ONCE at
+9:15 and never again that day, which preserves the 9/8 rule since a tab closed
+after that stays closed.
+Also seen this morning and not yet chased: Webull returning 429 TOO_MANY_REQUESTS
+at 09:19, the same error stream POSTCHECK has been counting at 23-29 per trade.
+
 ## 2026-09-15 (ENTRY SLACK built, OFF and activation blocked — 27 of 201 option orders never filled, and crossing loses)
 
 G, after CRWD 250C: "lets keep it as an option to backtest the alerts, maybe we have to loosen up in that aspect." So the idea got built as a measurement, gated like INDEX MIRROR, and switched nowhere. Live entry behaviour is byte-for-byte unchanged.

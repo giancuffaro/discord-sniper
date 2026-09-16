@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; needs a bridge restart). ENTRY SLACK built, OFF and activation blocked. Five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
+Last updated: 2026-09-16 — the Discord lane opened no tabs at the bell again (START HERE had not run); a weekday 8:55 task now runs it and the rule says plainly nothing else reopens a Discord room tab. Ratchet 10/10/10 since 9/15; entry slack measured daily, blocked.
 
 ## How to update this file (long form: OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE (REPLACE, DON'T
@@ -105,7 +105,7 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does it.
 3. NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
 4. Close any old parked Whop tabs (Chrome flags note: reference/OPERATIONS.md).
-5. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension are already up. Run START HERE, or schedule it, by 9:00 on trading days.
+5. NOTHING REOPENS A DISCORD ROOM TAB: `roomSchedule()` only CLOSES (16:30) and `openMissingRooms()` runs on the START HERE token only (G, 9/8). Whop self-heals every tick, Discord does not — a morning without START HERE reads NOTHING all day, visible only in health-latest.json. Weekday 8:55 task "Discord Sniper - START HERE 8:55" installed 9/16 (`INSTALL MORNING SCHEDULE.bat`); it cannot wake a sleeping PC.
 
 ## Watch items (open) — full text: OPERATIONS.md
 - G'S CALL, nothing moves until he says: PULLBACK STOCK TARGET vs THE RATCHET

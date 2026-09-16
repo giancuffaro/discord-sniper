@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-15 — RATCHET BACK TO 10/10/10 (G, the August spacing; needs a bridge restart). ENTRY SLACK built, OFF and activation blocked. Five rules retired, 2 unbacked rewritten, 6 drifted listed in HANDOFF-LOG; dead code swept; a finished live-voice/Zoom tab closes itself (v3.8.36).
+Last updated: 2026-09-16 — the Discord lane opened no tabs at the bell again (START HERE had not run); a weekday 8:55 task now runs it and the rule says plainly nothing else reopens a Discord room tab. Ratchet 10/10/10 since 9/15; entry slack measured daily, blocked.
 
 ## How to update this file (long form: OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE (REPLACE, DON'T
@@ -58,7 +58,7 @@ ENTRIES · ENTRIES.md
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · RATCHET.md
 - NO DAILY LOSS STOP (G, 9/14: "No. We are not gonna do a daily daily stop limit. No. We're not."). Never propose one, never wire one. The per-trade born stop is the only cap.
 - ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
-- THE RATCHET (10/10/10 since 9/15, flat — G: "go back to 10", the August spacing): born stop −10%; +10% moves the stop to breakeven; each further +10% locks another +10%; `ratchet_tiers.py` is the one implementation, `live_spacing()` the one reader (born from settings strategy.stop_loss_pct, arm/step from TIERS); stops never loosen; anti-clip off. The 9/8 sweep ranked this 30/50 and 5/3/5 first — G's call against that evidence, on the two days it made money. Re-measure as the sample grows: `ratchet_sweep_fine.py`, `reference/ratchet_replay_tape.py`.
+- THE RATCHET (10/10/10 since 9/15, flat — G: "go back to 10", the August spacing): born stop −10%; +10% → breakeven; each further +10% locks +10%. `ratchet_tiers.py` is the one implementation, `live_spacing()` the one reader (born from settings strategy.stop_loss_pct, arm/step from TIERS). Stops never loosen; anti-clip off. The sweeps ranked this well below 5/3/5 — G's call against that evidence (numbers in HANDOFF-LOG). Re-measure as the sample grows.
 - FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number. SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
 - CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent.
 - NO PRE-CLOSE FLATTEN (G, 9/15, told the risk and chose it): the bot does NOT close 0DTE before the bell. A 0DTE left $0.01 ITM auto-exercises into 100 shares; that is HIS risk to run, HIS to close by hand. Never re-add an auto-flatten. ETFs trade to 16:15.
@@ -105,7 +105,7 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 2. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does it.
 3. NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
 4. Close any old parked Whop tabs (Chrome flags note: reference/OPERATIONS.md).
-5. CHROME BEFORE 9:15: rooms open at 9:15 only if Chrome + the extension are already up. Run START HERE, or schedule it, by 9:00 on trading days.
+5. NOTHING REOPENS A DISCORD ROOM TAB: `roomSchedule()` only CLOSES (16:30) and `openMissingRooms()` runs on the START HERE token only (G, 9/8). Whop self-heals every tick, Discord does not — a morning without START HERE reads NOTHING all day, visible only in health-latest.json. Weekday 8:55 task "Discord Sniper - START HERE 8:55" installed 9/16 (`INSTALL MORNING SCHEDULE.bat`); it cannot wake a sleeping PC.
 
 ## Watch items (open) — full text: OPERATIONS.md
 - G'S CALL, nothing moves until he says: PULLBACK STOCK TARGET vs THE RATCHET
