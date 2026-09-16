@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — cd39e75bb77b6ce84dd0
+
+The current message supports an MSFT trim. The reader links it to a retained same-channel, same-attributed-caller MSFT entry, but validation marks that context unsupported and removes the strike. This warrants source and context-eligibility verification, not a confirmed parser-bug finding.
+
+## Findings
+- The current message says '@Unraveller (Admin)🔮 trimming MSFT @ 10% @everyone'. Prior message chat-messages-829754942817828884-1549783556442824796 says '@Unraveller (Admin)🔮 in MSFT 9/18 495P @5.22 @everyone'. The reader cites this exact ID and supplies expiry 9/18, PUT, and strike 495; the parser leaves these contract fields null. Verify the retained entry and its eligibility to resolve this trim. If permitted, associate context by channel, attributed admin, ticker, and position lifecycle rather than the shared Scribe author or the most recent unrelated trade. Treat the contract details as context-derived, not literal in the current message.
+- Validation reports eligible_prior_ids=[], safety_flags=['expiry_not_literal', 'unsupported_context_id'], and ok=true. Its read retains expiry 9/18 and side PUTS but sets strike to null, despite the reader citing a supplied prior entry. Review context-eligibility rules and field-level validation provenance. Determine why the cited entry is ineligible and why expiry and side survive while strike does not. Verify what ok=true and parser fire=false mean before inferring acceptance, suppression, or a defect.
+- The current message contains '@ 10%' but no explicit exit premium or quantity. The reader appropriately leaves price and qty null. The nearby 'Sitting in 10 cons' message is from Brett following an AAPL entry, not Unraveller's MSFT trade. Preserve '10%' as raw percentage commentary pending clarification of its meaning; do not treat it as an exit price or a 10% trim quantity. Do not transfer Brett's quantity to MSFT or calculate an exact exit or realized return from the reported entry.
+
+## Limitations
+- No broker fills, execution records, position ledger, or numerical performance calculations are supplied; chat statements are not broker-confirmed results.
+- The supplied evidence is marked untruncated, but that does not establish complete channel or position history.
+- The original MSFT entry preserves '@5.22' without explicit premium units; no premium conversion is established here.
+- One reader-provider attempt returned HTTP_503 and a fallback attempt returned a result. This does not establish a channel outage or a failed overall read.
+
+---
+
 # Reader Review — 2026-09-16 — 22bfbfe6a49db41db3e2
 
 The current message supports an AAPL 9/18 335-call OPEN classification and preserves the reported price as 2.7. The principal review candidate is an ineligible supporting-context reference despite validation reporting success; no confirmed parser bug or execution result is established.
