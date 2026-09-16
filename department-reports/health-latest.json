@@ -14,7 +14,7 @@
     }
   ],
   "observer": {
-    "queue_remaining": 0,
+    "queue_remaining": 2,
     "worker_started": true,
     "last_finished": 1789552318.4604042,
     "last_error": "",
@@ -22,5 +22,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789552733.5555713
+  "checked_at": 1789553033.5624218
 }
