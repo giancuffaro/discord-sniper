@@ -15,12 +15,12 @@ Last updated: 2026-09-16 — a READ ONLY button (no orders, rooms still read) an
   `daily-reports/`.
 
 ## Where the mechanics live (one per subsystem; see INDEX.md)
-reference/: ENTRIES · RATCHET · ROOMS-TABS · OPERATIONS (restarts, the 16:40 audit,
-git, autopilot, readers, keys, PC2, weekly files, house rules, watch-item
-detail, this file's long form) · OPTIONS-BROKER-REFERENCE ·
-PULLBACK-LEVELS · CALLER-LEDGER · EOD-BENCHMARK-SPEC · RULES-INDEX (rule →
-the code that enforces it). Also DATA-MAP · MARKET-HOURS · ARCHITECTURE (the
-machine, accounts, coexistence, north star) · INDEX · HANDOFF-LOG.
+reference/: ENTRIES · RATCHET · ROOMS-TABS · OPERATIONS (restarts, the 16:40
+audit, git, autopilot, readers, keys, PC2, weekly files, house rules, watch
+items, futures proof, this file's long form) · OPTIONS-BROKER-REFERENCE ·
+PULLBACK-LEVELS · CALLER-LEDGER · EOD-BENCHMARK-SPEC · RULES-INDEX (rule → the
+code that enforces it). Also DATA-MAP · MARKET-HOURS · ARCHITECTURE · INDEX ·
+HANDOFF-LOG.
 
 ## Who and what
 - G (giancuffaro230@gmail.com) maintains this code himself (9/13), trades options + futures live, real money, wants it CONDENSED. "Fix everything is default always" — bugs get fixed without asking, same day. "Fix errors every day after journaling."
@@ -38,7 +38,7 @@ ENTRIES · ENTRIES.md
 - ENTRY SLACK (G, 9/15) — **OFF, activation blocked**: bid the caller's price or better, never chase. `execution.entry_slack_pct` exists only so `reference/entry_slack_replay.py` can measure crossing the ask; non-zero refuses to arm until the replay nets a gain outside its error bar. Measured daily, not argued.
 - ONE SWITCH PER ROOM (G, 9/9): ON = tab + read + trades LIVE; OFF = nothing; LAPSED = sub ran out. No paper state. A TAB CLOSED BY HAND IS NOT A BENCH; benched rooms stay.
 - TABS (9/10): the reaper closes only `_OURS`, never a human's; only START HERE, the popup switch and whopSelfHeal() open one; "No Access" → `lapsed` + close; the last tab stays.
-- ROOM RULES = rooms.txt 6th field (popup pills), not settings.json; `spx` DELETED 9/10. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed. CHANNELS: callers inside their verified room, win rate needs evidence, no Callers tab (G).
+- ROOM RULES = rooms.txt 6th field (popup pills), not settings.json. HOURS 9:15–16:30 ET unless `always`; hand-closed tabs stay closed. CHANNELS: callers inside their verified room, win rate needs evidence, no Callers tab (G).
 - STRIKES: max 1 OTM, deeper snaps to the first rung; ADD buys the held strike.
 - "ADDED <full contract>" you are not in = an OPEN entry; a bare "added to SPY" refuses. NO SPX→SPY (G, 9/10: "do not translate any SPX to SPY"); index entries are HELD until execution.index_broker is set.
 - WORD ORDER: any order, `bare` rooms only. TWO CONTRACTS = TWO ORDERS (9/10): one each, own stop and ratchet, same ticker; call+put refuses the line.
@@ -66,7 +66,7 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for its kind, never a new dated file beside it; rotated logs and finished experiments zip to `archive/`.
 - REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is (`reports.py status` decides, `reports/INDEX.json` is the memory). Never re-derive from logs what a report already states.
 - ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json; logs only when those two cannot answer. STATUS.json.verified is trusted while its inputs are unchanged (VERIFY ONCE).
-- THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept, LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the 15-minute Codex guard.
+- THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept, LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the 15-min Codex guard.
 - GIT: settings.json holds every key and is never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
 - REPLACE, DON'T STACK (G, 9/9). When anything changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place; never beside it, not commented out, not "superseded", not "legacy", not "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md.
 - CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (test: DATA-MAP.md). Records that cannot be re-derived — tapes, telemetry, days/ — are APPENDED to, never rewritten.
@@ -76,7 +76,7 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 
 ROOMS / TABS / READERS · ROOMS-TABS.md
 - rooms.txt = THE channel list (tabs + trading, one file). START HERE IS FULLY UNATTENDED (G, 9/9); between runs NOTHING opens rooms; the only manual inputs are a Discord/Whop login and Webull keys.
-- Relays: OWLS all-alerts active, RELAY UNWRAP re-books under the real trader; ZTRADEZ, shabs, eli retired 9/9. Never close a human tab; Profile 2 = Discord, Profile 6 = Whop.
+- Relays: OWLS all-alerts active, RELAY UNWRAP re-books under the real trader; ZTRADEZ, shabs, eli retired 9/9. Never close a human tab. Profile 2 = Discord, Profile 6 = Whop, pinned by chrome-profile.txt / whop-profile.txt.
 - VOICE: ears always transcribe (Deepgram); voice ENTRIES ON (9/2), exits irrelevant; a typed copy of a voice fire is an echo.
 - CLEAN UP AFTER A LIVE ROOM (G, 9/15: "when the live zoom for felony finishes kill the tab please"): a Discord-voice or Zoom tab the ears ran on, still silent 10 min AFTER they stop, gets closed. The ONE exception to "never close a human tab", scoped to tabs we listened to.
 
@@ -109,6 +109,3 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
   a room's NAMED exit misses adopted positions · bridge.log has no rotation ·
   multi-account "L" orphans · 5 Whop rooms export blank rows · Webull 429s at
   23-29 per trade · G's round-number exit thesis untested (see HANDOFF-LOG 9/16).
-
-## Subscriptions
-≈ $1,220/mo all-in before AI usage ($1,140 rooms + ~$82 infra/fees). Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.

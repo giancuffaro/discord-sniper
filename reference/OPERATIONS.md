@@ -335,3 +335,7 @@ HANDOFF.md carries each rule's imperative in one line; G's full wording is here.
   settings.json, rooms.txt, every .md, and this file.
 - REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is — `reports.py status` decides, `reports/INDEX.json` is the memory. Rebuild only when it says stale. Never re-derive by reading logs what a report already states.
 - ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json. Logs are read only when those two cannot answer. Checks recorded in STATUS.json.verified are trusted while their inputs are unchanged (VERIFY ONCE).
+
+## Subscriptions and break-even (moved out of HANDOFF 9/16 — a cost note, not a rule)
+
+≈ $1,220/mo all-in before AI usage ($1,140 rooms + ~$82 infra/fees). Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
