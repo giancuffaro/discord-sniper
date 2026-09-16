@@ -529,13 +529,21 @@ function _fbPaintToggles() {
 
 function paintFuturesBrokers() {
   const fb = (modeStatus || {}).futures_brokers || {};
-  if ($("fbProtection")) $("fbProtection").textContent =
-    modeStatus && modeStatus.webull_futures_entry_ready === false
-      ? ("Webull futures entries paused: " +
-         (modeStatus.webull_futures_entry_reason ||
-          "the broker-confirmed protective stop is unproven") +
-         ". Run PROVE FUTURES STOPS.bat. Mirror stays off.")
-      : "";
+  // The futures entry gate is PER MICRO: MES and MNQ are proven on separate
+  // real one-lot trades, so name the one that is shut instead of implying both.
+  if ($("fbProtection")) {
+    const bySym = (modeStatus || {}).webull_futures_entry_by_symbol || {};
+    const shut = Object.keys(bySym)
+      .filter(s => bySym[s] && bySym[s].ready === false).sort();
+    $("fbProtection").textContent =
+      modeStatus && modeStatus.webull_futures_entry_ready === false
+        ? ("Webull futures entries held for " +
+           (shut.length ? shut.join(" and ") : "MES and MNQ") + ": " +
+           (modeStatus.webull_futures_entry_reason ||
+            "the broker-confirmed protective stop is unproven") +
+           ". Each micro is proven on its own. Mirror stays off.")
+        : "";
+  }
   const nt = fb.ninjatrader || {}, ts = fb.topstep || {};
   // Seed toggles from the bridge ONCE, only if the browser never stored an
   // intent of its own. After that the browser copy wins — a refresh can't turn

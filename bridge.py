@@ -189,18 +189,9 @@ FUT_MULT = {"NQ": 20.0, "MNQ": 2.0, "ES": 50.0, "MES": 5.0,
             "CL": 1000.0, "MCL": 100.0, "GC": 100.0, "MGC": 10.0,
             "SI": 5000.0, "SIL": 1000.0, "NG": 10000.0}
 
-def _wf_proof():
-    """(both micros proven, one sentence) for /mode. Per-symbol truth lives in
-    webull_futures.protective_entries_ready(symbol)."""
-    try:
-        import webull_futures
-        return webull_futures.protection_proof_summary()
-    except Exception as e:                              # noqa: BLE001
-        return False, "the futures proof could not be read (%s)" % str(e)[:80]
-
-
 def _wf_proof_by_symbol():
-    """{micro: {ready, reason}} — what the popup needs to say which one is shut."""
+    """{micro: {ready, reason}} — the futures entry gate, per micro, for /mode
+    and the popup. Every sentence here is the one execute() refuses with."""
     try:
         import webull_futures
         return {s: dict(zip(("ready", "reason"),
@@ -208,6 +199,17 @@ def _wf_proof_by_symbol():
                 for s in sorted(webull_futures.FUT_SPECS)}
     except Exception:                                   # noqa: BLE001
         return {}
+
+
+def _wf_proof():
+    """(both micros proven, one sentence) — what the popup shows when it has
+    room for one line. The wording lives in webull_futures so the popup can
+    never say something the refusal does not."""
+    try:
+        import webull_futures
+        return webull_futures.protection_proof_summary()
+    except Exception as e:                              # noqa: BLE001
+        return False, "the futures proof could not be read (%s)" % str(e)[:80]
 
 
 # The micro this bridge actually trades when a room calls the full-size root
@@ -4556,6 +4558,8 @@ class Handler(BaseHTTPRequestHandler):
     def _status(self):
         reload_settings()
         keys_in = bool((EXEC.get("webull") or {}).get("app_key"))
+        fut_gate = _wf_proof_by_symbol()
+        fut_ready, fut_why = _wf_proof()
         return {"mode": "per-room",
                 # PER-CHANNEL LISTS, SERVED TO THE EXTENSION (9/8). These live
                 # in rooms.txt, but the extension's parser is what applies
@@ -4598,9 +4602,9 @@ class Handler(BaseHTTPRequestHandler):
                 # popup gets the summary (ready only when BOTH are proven) plus
                 # the per-symbol map, and every sentence here is the same one
                 # the refusal returns.
-                "webull_futures_entry_ready": _wf_proof()[0],
-                "webull_futures_entry_reason": _wf_proof()[1],
-                "webull_futures_entry_by_symbol": _wf_proof_by_symbol(),
+                "webull_futures_entry_ready": fut_ready,
+                "webull_futures_entry_reason": fut_why,
+                "webull_futures_entry_by_symbol": fut_gate,
                 # The SPY/QQQ -> MES/MNQ mirror switch, so the popup toggle
                 # shows its true state after a reload. On/off and the map only.
                 "index_mirror": {
