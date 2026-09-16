@@ -12,6 +12,63 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-16 (the futures proof is now per micro: MNQ and MES each earn their own door)
+
+G: "use nnq and the other equivalent for es please." He trades the micros — MNQ
+(micro Nasdaq, $2 a point) and MES (micro S&P, $5) — and the proof built hours
+earlier covered MES only, with the gate a single global boolean-by-evidence.
+One proof opening both doors would have been the same lie as the hardcoded
+`False` it replaced, one step further along: nobody would have watched a stop
+work on MNQ.
+
+WHAT SHIPPED
+- `webull_futures.FUT_SPECS` — the ONE place the futures path reads a micro's
+  tick and point value ({MES: 0.25/$5, MNQ: 0.25/$2}). `protective_stop_order()`
+  rounds to that tick and builds its contract regex from those keys instead of
+  a hardcoded `MES|MNQ`, the harness prints its dollar risk from it, and a new
+  test pins both rows to `bridge.FUT_MULT` so the two tables can never drift
+  into a 2.5x mispricing.
+- `proof_symbol()` — derives the micro from a full-size root (an "M" in front:
+  ES→MES, NQ→MNQ) instead of a third copy of the micro table. Anything that is
+  not one of the two micros (MGC, MCL…) answers None and stays refused.
+- THE GATE IS PER SYMBOL. `protective_entries_ready(symbol)` /
+  `protective_entries_reason(symbol)` / `protection_proof_state(symbol, …)`.
+  There is no symbol-less form: MES proven is not MNQ proven. An MNQ alert is
+  refused by name while only MES is proven and vice versa, and an ES/NQ call is
+  judged on the micro it would actually buy, with the refusal saying so ("an NQ
+  call trades as MNQ here (micros only, always), and …"). `PROOF_VERSION` 1 → 2:
+  the file's shape changed, so a v1 document is refused rather than
+  misinterpreted.
+- `futures_protection_proof.json` is now a map, one block per micro
+  (`{"MES": {…}, "MNQ": {…}}`), and a run MERGES into it — proving MNQ carries
+  the MES block across byte for byte. An old file that cannot be read is
+  replaced with a warning that says so out loud (it proved nothing anyway).
+- The harness is symbol-driven: `--symbol MES` / `--symbol MNQ` / `--symbol all`
+  (both in sequence, a fresh typed YES before each, and fail-stop — a failure on
+  the first micro never starts the second trade). Front month, the position and
+  working-order preflight, the stop tick, the plan, the cost line and the risk
+  line all follow the symbol. Stop distance stays 10 points for both, and the
+  plan now says what that is worth: $50 on MES, $20 on MNQ.
+- `PROVE FUTURES STOPS.bat` dry-runs BOTH micros (`--symbol all`), prints both
+  plans, and prints the exact two commands with their dollar risk. It still
+  never passes `--live` itself — a test now reads the .bat and asserts that.
+- bridge.py `/mode` ships `webull_futures_entry_by_symbol` ({micro: {ready,
+  reason}}) alongside the both-micros summary (`protection_proof_summary()`,
+  ready only when BOTH are proven), and the popup (v3.8.38) names the micro that
+  is shut instead of implying both are.
+- Tests 18 → 31 in `test_futures_protection.py`: the per-symbol gate (MES proven
+  ⇒ MES open, MNQ still refused by name), the merge (MNQ's run leaves MES's
+  block identical), a stale module hash killing BOTH proofs, a malformed
+  per-micro block shutting only that micro, a block that records the other
+  micro's root, the ES/NQ mapping in the reason, the summary line, and the
+  harness walked against a fake broker for MNQ the way it already was for MES
+  (stop at 24990.25, 10 points under a 25000.25 fill). Suite 322 → 335 pass; the
+  paho collection error is unchanged and pre-existing. Every fixture is built in
+  a temp dir — no `futures_protection_proof.json` exists in the repo.
+
+STILL BLOCKED, BOTH: no proof file exists, so MES and MNQ futures OPENs are
+both refused today. Each opens only when G runs its own trade.
+
 ## 2026-09-16 (futures: the door now opens on evidence, and the evidence has not been earned yet)
 
 G funded futures and his alerts would not trade. The cause was one line:

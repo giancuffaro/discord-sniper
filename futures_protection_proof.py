@@ -790,16 +790,20 @@ def main(argv=None):
            _stamp()))
     say(BAR)
 
+    worst = 0
     for root in roots:
         code = prove(root, live)
-        if code:
-            # Fail-stop: a run that ended badly may have left something to sort
-            # out by hand, and the second micro can wait until it is sorted.
+        if code and live:
+            # Fail-stop, but only when something real was sent: a run that ended
+            # badly may have left something to sort out by hand, and the second
+            # micro can wait until it is sorted. A dry run just carries on and
+            # prints the other plan.
             if len(roots) > 1:
                 say("  Stopped after %s (exit %d). The other micro was NOT "
                     "attempted." % (root, code))
                 say("")
             return code
+        worst = worst or code
 
     if not live:
         say(BAR)
@@ -813,7 +817,7 @@ def main(argv=None):
                    STOP_POINTS * point_value(root)))
         say(BAR)
         say("")
-    return 0
+    return worst
 
 
 if __name__ == "__main__":
