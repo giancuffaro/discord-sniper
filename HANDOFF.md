@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-16 — a READ ONLY button (no orders, rooms still read) and its typed-YES resume; futures gated per micro on a live-broker stop proof (MNQ + MES, neither proven yet); 8:55 START HERE task; ratchet 10/10/10.
+Last updated: 2026-09-16 — START HERE now checks the DISCORD PROFILE, not "any Chrome" (that is why Discord opened nothing for days); TRADING/NOT TRADING toggle in the popup; a SPEND rule after eight sub-agents cost ~1.9M tokens in two days.
 
 ## How to update this file (long form: reference/OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. ONE RULE, ONE LINE
@@ -14,13 +14,10 @@ Last updated: 2026-09-16 — a READ ONLY button (no orders, rooms still read) an
   move it out. No handoff copies or dated handoffs; performance lives in
   `daily-reports/`.
 
-## Where the mechanics live (one per subsystem; see INDEX.md)
-reference/: ENTRIES · RATCHET · ROOMS-TABS · OPERATIONS (restarts, the 16:40
-audit, git, autopilot, readers, keys, PC2, weekly files, house rules, watch
-items, futures proof, this file's long form) · OPTIONS-BROKER-REFERENCE ·
-PULLBACK-LEVELS · CALLER-LEDGER · EOD-BENCHMARK-SPEC · RULES-INDEX (rule → the
-code that enforces it). Also DATA-MAP · MARKET-HOURS · ARCHITECTURE · INDEX ·
-HANDOFF-LOG.
+## Where the mechanics live
+ASK-MAP.md (which file answers which ask) → STATUS.json → reports/INDEX.json.
+Every subsystem's mechanics sit in one `reference/` doc; INDEX.md is the map and
+RULES-INDEX.md says which code enforces each rule below.
 
 ## Who and what
 - G (giancuffaro230@gmail.com) maintains this code himself (9/13), trades options + futures live, real money, wants it CONDENSED. "Fix everything is default always" — bugs get fixed without asking, same day. "Fix errors every day after journaling."
@@ -66,11 +63,12 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for its kind, never a new dated file beside it; rotated logs and finished experiments zip to `archive/`.
 - REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is (`reports.py status` decides, `reports/INDEX.json` is the memory). Never re-derive from logs what a report already states.
 - ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json; logs only when those two cannot answer. STATUS.json.verified is trusted while its inputs are unchanged (VERIFY ONCE).
+- SPEND (G, 9/16). A SUB-AGENT IS THE EXPENSIVE TOOL — 100-350k each; eight of them cost ~1.9M on 9/15-16, more than every read and reply combined. Spawn one only for genuinely large or parallel work, and give it the whole job in one prompt. Otherwise: read the slice not the file, one clean edit not twenty shaves, and answer from ASK-MAP/STATUS.json instead of re-deriving. Full list: AGENTS.md.
 - THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept, LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the 15-min Codex guard.
 - GIT: settings.json holds every key and is never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
 - REPLACE, DON'T STACK (G, 9/9). When anything changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place; never beside it, not commented out, not "superseded", not "legacy", not "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md.
 - CONDENSE AND MERGE (G, 9/11). Sibling data belongs in ONE file: merge the duplicate into the existing home and delete the copy, but only when it cannot break a reader (test: DATA-MAP.md). Records that cannot be re-derived — tapes, telemetry, days/ — are APPENDED to, never rewritten.
-- READ DATA-MAP.md WITH INDEX.md every session (INDEX = what a file IS, DATA-MAP = what is IN it). RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump the manifest on extension changes; never install webullsdkcore into the bridge's Python; no sandbox, no local sim — a non-LIVE room's call is REFUSED, never faked.
+- RUN build_ledger.py IN EASTERN. COMPILE-CHECK everything touched; bump the manifest on extension changes; never install webullsdkcore into the bridge's Python; no sandbox, no local sim — a non-LIVE room's call is REFUSED, never faked.
 - DISCORD API IS NOT AN OPTION (9/9): user-token automation risks a permanent ban on the account and the subs; official bots need the owner. Browser reads only.
 - FILL ANNOUNCER REMOVED (G, 9/15): reinstall when the bot is profitable. The daily BRIEF still posts to Sniper HQ through the announcer webhook URL in settings.json — that key stays.
 
