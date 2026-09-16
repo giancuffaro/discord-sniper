@@ -1,5 +1,21 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — 8b58caf3ab5db0977804
+
+The reader plausibly links the current fill update to the preceding SPY 759 call alert, while the parser returns no action. This warrants source-verified review of contextual fill handling, not a confirmed parser-bug classification.
+
+## Findings
+- The current message says "2.32 fill on 1 contract @here". The preceding same-author, same-channel message says "Loaded SPY 759c 9/16 @here" and is included in validation.eligible_prior_ids. The reader returns OPEN, SPY, CALL, strike 759, expiry 9/16, price 2.32 and quantity 1; validation reports ok=true. The parser returns null trade fields and fire=false. Verify the original messages and intended parser scope to determine whether contextual fill updates should be recognized. Check whether the preceding loaded alert already generated an event so this fill update can enrich that event rather than create a duplicate opening alert. Preserve 9/16 as supplied unless the expiry year is independently verified.
+- The raw fill value is "2.32", without explicit per-share or per-contract units. Retained same-caller examples include "Buy 1 at 1.31" followed by "Made $29 off $131", supporting a per-share quote convention but not independently confirming the current fill's units. Neither component reports a competing scaled price. Preserve raw 2.32 and verify the caller-specific premium convention and instrument multiplier before converting to contract cost. Treat current premium units as unresolved pending that verification; there is no demonstrated factor-of-100 discrepancy or unit-conversion bug.
+
+## Limitations
+- Only the current parser result is supplied; prior parser outputs and alert state are unavailable.
+- The fill is caller-reported, not broker-confirmed. No broker executions or contemporaneous quotes are supplied.
+- Validation success establishes internal acceptance, not independent confirmation of the trade or premium units.
+- Evidence is marked untruncated, but complete channel coverage is not established. Historical comments about Discord downtime do not independently establish an outage affecting this event.
+
+---
+
 # Reader Review — 2026-09-16 — cc50ae7eea77a8d073d4
 
 The current '90% @here' message plausibly continues TEM performance commentary, but does not explicitly request a trim. Review the TRIM classification and historical contract attribution; these are verification proposals, not confirmed parser bugs.
