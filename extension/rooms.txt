@@ -114,9 +114,9 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # cut 8/30 — redundant: this trader flows through the mashup
 1179200811650252850|https://discord.com/channels/496871546963492874/1179200811650252850|ZT swing-4|ZTRADEZ|off
 # REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 18 real signals since reopening. CUT 9/9 — ZTRADEZ sub lapsing in 1 day, not a performance cut.
-1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ|off|always
+1525120298075029554|https://discord.com/channels/496871546963492874/1525120298075029554|ZT fut-1|ZTRADEZ|off
 # REOPENED 9/7, live since the 9/8 ALL_LIVE_GEN migration — 19 real signals since reopening. CUT 9/9 — ZTRADEZ sub lapsing in 1 day, not a performance cut.
-1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ|off|always
+1251181965252755517|https://discord.com/channels/496871546963492874/1251181965252755517|ZT fut-2|ZTRADEZ|off
 
 # SUBSCRIPTION LAPSED (checked on whop.com 9/7/26). A room whose
 # subscription has expired shows nothing, so the tab is dead weight:
@@ -179,7 +179,7 @@ whop:swing|https://whop.com/firststeptrading/exp_6Q7acPPpFb6CyZ/app/|Whop Swing 
 # same signal twice (8/23).
 
 # CUT 9/9 — 0 rows in master_ledger.csv, no signal since it was added.
-1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|NGD ngd-trades (Ninjago Futures Radar)|NGD|on|always
+1537061197931618344|https://discord.com/channels/1065277732684058624/1537061197931618344|NGD ngd-trades (Ninjago Futures Radar)|NGD|on
 
 # ELITE OPTIONS. Both callers (Brando, Shoof) were wired 9/7 off 148 real
 # alerts pulled from scrollback — full grammar notes (their pipe-delimited
