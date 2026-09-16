@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — 22bfbfe6a49db41db3e2
+
+The current message supports an AAPL 9/18 335-call OPEN classification and preserves the reported price as 2.7. The principal review candidate is an ineligible supporting-context reference despite validation reporting success; no confirmed parser bug or execution result is established.
+
+## Findings
+- The reader cites chat-messages-829754942817828884-1549782457468067951, the prior Brett 'loading AAPL 9/18 335C' message. Validation has eligible_prior_ids: [], flags unsupported_context_id, and nevertheless reports ok: true. Verify the context-eligibility and validation contracts against the retained source and processing logs. Determine whether this reference should be omitted or validation should reject it. The current message independently supplies the contract and 'in' wording, so an unsupported citation does not by itself invalidate the OPEN extraction.
+- The current source says '@Brett (Admin) in AAPL 9/18 335C @ 2.7'. Earlier retained messages report Brett 'all out of AAPL', then 'loading AAPL 9/18 335C'. Reader and parser agree on OPEN and the contract fields. Verify that this is tracked as a new reported entry following the earlier reported close, rather than merged with the prior entry at 3.17. Preserve Brett as the attributed caller and HoneyDrip as the publishing scribe; do not treat the intervening 'loading' message as an entry.
+- The reader retains price '2.7' and validation normalizes it to numeric 2.7. The displayed parser object has no price field. The source does not explicitly state per-share or per-contract units. Preserve raw '@ 2.7' and verify the intended price-field schema before proposing a price-omission issue. Report premium units as unresolved until source evidence or a supported caller/channel convention establishes them. Do not rescale the value or substitute the earlier 3.17.
+
+## Limitations
+- Only the current message has parser, reader, and validation outputs; prior-message processing behavior is not shown.
+- No explicit premium-unit confirmation, instrument multiplier, broker fills, or contemporaneous quotes are supplied.
+- Quantity is missing, not zero. Earlier trim percentages and 'all out' wording do not establish exact exit premiums or realized returns.
+- The evidence contains reported trading activity, not broker-confirmed execution or a documented simulation.
+- Evidence truncated: False does not establish complete channel coverage or system availability.
+
+---
+
 # Reader Review — 2026-09-16 — ca58e62ab667aaa33020
 
 Source verification is needed for the reader's unsupported SPY assignment and its treatment of an existing-position report as OPEN. The current message supports a 7650 call reference, but omits the ticker, expiry, premium and quantity. Validation rejected the reader output; the parser did not fire.
