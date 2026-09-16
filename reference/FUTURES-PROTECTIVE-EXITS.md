@@ -1,8 +1,14 @@
 # Futures protective exits (Webull, MES/MNQ)
 
-Current state: **Webull futures entries and the index mirror are blocked.**
-No stop, target, or ratchet currently manages a Webull futures fill. A number
-stored in the position book is not an exit order.
+Current state: **Webull futures entries are gated on a live-broker proof, and
+the index mirror is blocked.** A number stored in the position book is not an
+exit order. `webull_futures.protective_entries_ready()` opens only while
+`futures_protection_proof.json` records a clean run of the fill → stop →
+verify → cancel loop against Webull itself AND still matches
+`webull_futures.py`'s sha256 — mechanics and the failure playbook in
+`OPERATIONS.md`, the harness is `futures_protection_proof.py`
+(`PROVE FUTURES STOPS.bat`). Until that proof exists every OPEN is refused
+with the reason in English.
 
 Webull supports standalone `STOP_LOSS` orders with `GTC` time in force, but
 its futures API does not support OTO/OCO/OTOCO. Two independent exits (stop
@@ -33,10 +39,13 @@ therefore uses **one broker-held exit order**:
 
 The offline payload, exact order-detail verification and same-order
 stop-to-market replacement helpers are in `webull_futures.py` with fake-broker
-tests. They are intentionally not connected to live entries. Before lifting
-the hard entry gate, the remaining work is: durable ID reservation before
-submission, exact futures-account fill reconciliation, stop placement from
-that confirmed fill, restart recovery, and a supervised broker execution
-test proving a working stop, replacement, cancellation/partial-fill races,
-and a flat end state. The mirror's 25/50 replay also needs to be rerun against
-the actual exit policy; its present historical result is hypothetical.
+tests. `futures_protection_proof.py` is the supervised broker execution test:
+it reserves durable client IDs before each send, reconciles the entry fill in
+the futures account, places the stop from that confirmed fill, matches it
+exactly, cancels it, confirms the cancel and proves a flat end state — and
+writes the proof the gate reads. STILL UNPROVEN, and still outside that proof:
+restart recovery (a GTC stop that outlives the bridge), a partial-fill or
+cancel/fill race, the stop-to-market replacement on a live order, and the
+ratchet tightening a live futures stop. The mirror's 25/50 replay also needs to
+be rerun against the actual exit policy; its present historical result is
+hypothetical.

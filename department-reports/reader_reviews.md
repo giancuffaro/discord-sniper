@@ -1,5 +1,39 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — 67623a4565532952c105
+
+The reader treated the ambiguous update "20% 195" as a QCOM call trim and placed "20%" in the price field. Validation rejected the output for a nonnumeric price and flagged an unsupported context ID. These observations warrant source-verified review, not a confirmed parser-bug classification.
+
+## Findings
+- The current message says only "20% 195". The immediately preceding substantive message is "Qcom 195s are greeeeen". The reader returned action "TRIM", price "20%", qty null and confidence 1.0. Validation reports: "invalid model field: could not convert string to float: '20%'". Review whether this is a performance update or an instruction to trim a position. Do not use the percentage as an entry or exit premium, or assume it is a quantity fraction. Preserve the raw text and leave price unresolved unless retained source evidence establishes its meaning.
+- The reader cited chat-messages-1513300726141419550-1549484690895933584, containing "still full size in qcom 190s and added 195s at 190", but that ID is absent from validation.eligible_prior_ids. Validation flagged "unsupported_context_id" and returned ok false with read null. Verify the intended context-eligibility rules and restrict supporting references accordingly. The eligible message "Qcom 195s are greeeeen" supports a candidate QCOM 195 reference, but does not independently establish option side, expiry or trim intent.
+- Earlier context includes "Qcom 195s down to 186 we should sell it all", followed later by "Qcom 195s are greeeeen". Neither statement supplies broker fills. The current parser has fire false and null contract-identification fields, while the reader supplies QCOM, CALL and strike 195. Verify position continuity and contract identity before associating this update with an actionable open position. Do not treat the earlier sell language as a confirmed execution or the later green update as proof of a retained or reopened position. Review the reader's certainty against these ambiguities.
+- The historical phrase "added 195s at 190" separates a candidate strike from an entry value, but does not explicitly state premium units. Other callers' per-contract wording does not establish Skyy's convention. Keep raw 190 and strike 195 separate. Report unresolved premium units rather than automatically converting 190 to 1.90. Verify Skyy's retained source convention and the instrument's premium multiplier before any conversion.
+
+## Limitations
+- No broker fills, confirmed executions, contemporaneous quotes or verified position ledger are supplied.
+- The current message has no explicit action verb, premium, option side or expiry; missing values are not zero.
+- Only the supplied reader output, parser output and validation result are available; no downstream execution outcome is established.
+- Although the evidence is marked untruncated, it does not establish complete channel history or application coverage. Message gaps and historical service comments do not prove an outage.
+
+---
+
+# Reader Review — 2026-09-16 — 6127cfaa734f86675ba6
+
+The current message supports an OPEN alert for META 9/18 665 puts with raw entry value 5.25. Parser and reader agree on the contract and action. The main review candidate is the reader's unsupported context reference; no confirmed parser bug is established.
+
+## Findings
+- The reader cites chat-messages-829754942817828884-1549775987590307965, the earlier 'loading META 9/18 665P' message. That ID exists in the supplied history but is absent from validation.eligible_prior_ids. Validation reports ok: true alongside the safety flag unsupported_context_id. The current message independently supplies 'in META 9/18 665P @ 5.25'. Verify the context-eligibility and validation rules against the original records. Determine whether this reference should be excluded or flagged without rejecting the independently supported current alert. Preserve the distinction between an existing but ineligible reference and a fabricated reference.
+- The earlier META message says 'loading', while the current message says 'in' and supplies 5.25. A retained same-channel explanation explicitly distinguishes loading contracts from entering a position. No parser or reader result for the earlier loading message is provided. Verify that the earlier loading message is treated only as preparation and that the current explicit entry is not suppressed as a duplicate. This is a source-backed test proposal, not evidence that a premature or duplicate alert occurred.
+
+## Limitations
+- Only the current message has supplied parser and reader outputs; historical processing behavior cannot be established.
+- The source preserves '@ 5.25' but does not explicitly state premium units. Retain the raw value; verify units and the instrument's premium multiplier before converting to contract cost. No unit mismatch is demonstrated.
+- Quantity, broker fills, execution records, and a META exit are not supplied. Missing values are not zero, and fire: true does not establish an executed order.
+- The historical Discord outage statement is a source report, not proof of outage duration, missing-message coverage, or a current outage.
+
+---
+
 # Reader Review — 2026-09-16 — 4656acfc151983b18398
 
 The TSLA CLOSE interpretation is supported by the current message. Retained caller-specific context supports Unraveller’s 9/18 355 puts, not Mike’s 350 puts. Review is proposed for contract resolution and validation provenance; the evidence does not establish a confirmed parser bug.
