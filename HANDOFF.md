@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-16 — the Discord lane opened no tabs at the bell again (START HERE had not run); a weekday 8:55 task now runs it and the rule says plainly nothing else reopens a Discord room tab. Ratchet 10/10/10 since 9/15; entry slack measured daily, blocked.
+Last updated: 2026-09-16 — the futures door now opens on EVIDENCE: `futures_protection_proof.json` (PROVE FUTURES STOPS.bat, his own one-lot MES trade), never a hardcoded False. Discord tabs: weekday 8:55 START HERE task. Ratchet 10/10/10 since 9/15.
 
 ## How to update this file (long form: OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE (REPLACE, DON'T
@@ -52,7 +52,7 @@ ENTRIES · ENTRIES.md
 - AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14): it kills the earlier hunt and its bid; two DIFFERENT message ids are two calls.
 - IF THE CORRECTED CONTRACT ALREADY FILLED (9/15, G: "if in profit keep the ratchet and set the stop to breakeven, if it's a losing trade, close it automatically"), on CURRENT BID vs fill. THE ONE EXCEPTION TO ENTRIES-ONLY, not a room exit.
 - RETRACTION ("not ready / scratch that / cancel / disregard / hold off / nevermind") pulls that trader's bids and armed hunts.
-- FUTURES: micros only; their stop/target wins; a Webull futures OPEN refuses until an exact GTC STOP_LOSS is verified after its fill. INDEX MIRROR (9/13) OFF until a broker-confirmed futures exit exists; THE POCKET default OFF.
+- FUTURES: micros only; their stop/target wins; a Webull futures OPEN refuses until `futures_protection_proof.json` proves the fill→stop→verify→cancel loop AT THE BROKER — the proof carries webull_futures.py's sha256 and DIES the moment that file changes, and running it is HIS own one-lot MES trade (`PROVE FUTURES STOPS.bat`; dry by default, `--live` + typed YES sends). INDEX MIRROR (9/13) OFF until a broker-confirmed futures exit exists; THE POCKET default OFF.
 
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · RATCHET.md
 - NO DAILY LOSS STOP (G, 9/14: "No. We are not gonna do a daily daily stop limit. No. We're not."). Never propose one, never wire one. The per-trade born stop is the only cap.
