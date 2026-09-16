@@ -1,5 +1,34 @@
 # CALLER-OUTCOMES — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Wed Sep 16 2026 =====
+
+# Caller outcome evidence — 2026-09-16
+
+Caller claims are separate from broker results and ratchet simulations. Partial trims remain partial; percentages imply a price only when the caller's entry is known.
+
+| Entry | Event | Trader / room | Contract | Caller entry | Caller event | Exit/claim | Calculated | Evidence |
+|---|---|---|---|---:|---|---:|---:|---|
+| 09:40:57 | 09:41:21 | Brett | AAPL 335C 9/18 @ 3.17 | $3.17 | partial trim | +13.0% | implied $3.58 | caller-stated |
+| 09:39:13 | 09:42:52 | Mike | TSLA 350P 9/18 @ 3.00 | $3.00 | full exit | $2.34 | -22.0% | market bid at caller exit |
+| 09:39:13 | 09:43:14 | Mike | TSLA 350P 9/18 @ 3.00 | $3.00 | full exit | price unavailable | unavailable | caller exit; price unavailable |
+| 09:45:49 | 09:46:34 | ☀️｜daytrades-scalps | META 665P 9/18 @ 5.25 | $5.25 | partial trim | price unavailable | unavailable | caller trim; price unavailable |
+| 09:40:57 | 09:46:47 | Brett | AAPL 335C 9/18 @ 3.17 | $3.17 | partial trim | +6.0% | implied $3.36 | caller-stated |
+| 09:40:57 | 09:47:30 | Brett | AAPL 335C 9/18 @ 3.17 | $3.17 | partial trim | +14.0% | implied $3.61 | caller-stated |
+| 09:45:49 | 09:47:34 | ☀️｜daytrades-scalps | META 665P 9/18 @ 5.25 | $5.25 | partial trim | +14.0% | implied $5.99 | caller-stated |
+| 09:45:49 | 09:47:46 | ☀️｜daytrades-scalps | META 665P 9/18 @ 5.25 | $5.25 | partial trim | +15.0% | implied $6.04 | caller-stated |
+| 09:45:49 | 09:50:15 | ☀️｜daytrades-scalps | META 665P 9/18 @ 5.25 | $5.25 | full exit | price unavailable | unavailable | caller exit; price unavailable |
+| 09:40:57 | 09:54:21 | Brett | AAPL 335C 9/18 @ 3.17 | $3.17 | full exit | $2.33 | -26.5% | market bid at caller exit |
+| 10:06:33 | 10:11:44 | ☀️｜daytrades-scalps | MSFT 495P 9/18 @ 5.22 | $5.22 | partial trim | +10.0% | implied $5.74 | caller-stated |
+| 10:06:33 | 10:13:39 | ☀️｜daytrades-scalps | MSFT 495P 9/18 @ 5.22 | $5.22 | partial trim | +15.0% | implied $6.00 | caller-stated |
+| 10:06:33 | 10:14:39 | ☀️｜daytrades-scalps | MSFT 495P 9/18 @ 5.22 | $5.22 | partial trim | +20.0% | implied $6.26 | caller-stated |
+| 10:08:43 | 10:19:33 | Skyy | QQQ 713C @ 112.00 | $112.00 | partial trim | +15.0% | implied $128.80 | caller-stated |
+| 14:09:59 | 14:37:10 | 🇳🇬｜midas-small-account-challenge | SPY 761C 9/16 @ 2.00 | $2.00 | full exit | $160/contract | +80.0% | caller-stated |
+| 15:33:25 | 15:49:23 | AbTrades | SPY 760C 9/25 @ 2.66 | $2.66 | partial trim | +25.0% | implied $3.33 | caller-stated |
+
+- Claim events paired: **16**.
+- Full exits recorded: **5**; calculable: **3**; price/percent unavailable: **2**.
+- Quantity-weighted caller P&L stays unavailable when trim size or the final runner exit is missing.
+
 ===== Tue Sep 15 2026 =====
 
 # Caller outcome evidence — 2026-09-15

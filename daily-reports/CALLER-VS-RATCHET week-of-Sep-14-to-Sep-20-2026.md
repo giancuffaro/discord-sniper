@@ -1,5 +1,97 @@
 # CALLER-VS-RATCHET — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Wed Sep 16 2026 =====
+
+# Caller entry versus our ratchet — 2026-09-16
+
+The caller's posted premium is the hypothetical fill when available. Our 5/3/5 ratchet is replayed against the best available exact-contract bid path: historical OPRA when present, otherwise the live Tastytrade/Webull tapes. Caller exits use their posted price/percentage, or the contemporaneous bid when they posted only the exit time.
+
+| Alert | Source | Hypothetical entry | Entry basis | Caller result | Caller evidence | Our ratchet exit | Our ratchet result |
+|---|---|---:|---|---|---|---:|---:|
+| 09:34 GOOGL | Honeydrip daytrades | $9.00 | caller posted | unavailable | no paired caller exit | $2.87 | -68.1% / -613 (quote-path replay) |
+| 09:38 TSLA | Honeydrip daytrades | $4.96 | caller posted | unavailable | no paired caller exit | $4.50 | -9.3% / -46 (quote-path replay) |
+| 09:39 TSLA | Honeydrip daytrades | $3.00 | caller posted | full exit posted; price unavailable | caller exit; price unavailable | $2.70 | -10.0% / -30 (quote-path replay) |
+| 09:40 AAPL | Honeydrip daytrades | $3.17 | caller posted | full $2.33 (-26.5%) | market bid at caller exit | $3.15 | -0.6% / -2 (quote-path replay) |
+| 09:46 QQQ | Demon day-trades | $1.00 | caller posted | unavailable | no paired caller exit | $1.00 | +0.0% / +0 (quote-path replay) |
+| 10:09 AAPL | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | $2.70 | caller posted | unavailable | no paired caller exit | $2.45 | -9.3% / -25 (quote-path replay) |
+| 10:10 AAPL | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | $10.00 | caller posted | unavailable | no paired caller exit | $2.60 | -74.0% / -740 (quote-path replay) |
+| 10:15 NVDA | TTT Lotto | $0.23 | caller posted | unavailable | no paired caller exit | $0.27 | +17.4% / +4 (quote-path replay) |
+| 15:33 SPY | OWLS all-alerts | $2.66 | caller posted | partial +25.0% | caller-stated | $3.51 | +32.0% / +85 (quote-path replay) |
+| 15:50 SPY | AbTrades Alert Bot | $3.34 | first recorded ask; caller price absent | unavailable | no paired caller exit | $3.51 | +5.1% / +17 (quote-path replay) |
+| 15:52 SMH | OWLS all-alerts | $0.72 | caller posted | unavailable | no paired caller exit | $0.78 | +8.3% / +6 (quote-path replay) |
+
+## Alerts awaiting an exact path
+
+These rows are still part of the comparison. Their caller evidence is retained; only our ratchet result waits for contract tape.
+
+| Alert | Trader / room | Original entry | Caller result | Ratchet status |
+|---|---|---:|---|---|
+| 09:18 MGC @ 4396.60 | Ninjago Futures Radar | $4396.60 | unavailable | futures path; options 5/3/5 does not apply |
+| 09:19 MGC @ 4397.10 | NGD: ngd-trades | $4397.10 | unavailable | futures path; options 5/3/5 does not apply |
+| 09:22 MGC @ 4395.10 | Ninjago Futures Radar | $4395.10 | unavailable | futures path; options 5/3/5 does not apply |
+| 09:27 MNQ @ 29418.00 | Ninjago Futures Radar | $29418.00 | unavailable | futures path; options 5/3/5 does not apply |
+| 09:28 MGC @ 4398.95 | Ninjago Futures Radar | $4398.95 | unavailable | futures path; options 5/3/5 does not apply |
+| 09:29 MNQ @ 29414.13 | NGD: ngd-trades | $29414.13 | unavailable | futures path; options 5/3/5 does not apply |
+| 09:45 META 665P 9/18 @ 5.25 | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | $5.25 | full exit posted; price unavailable | exact bid/ask path unavailable |
+| 09:55 QQQ 713C 9/18 @ 3.66 | EliteOptions \| Brando | $3.66 | unavailable | exact bid/ask path unavailable |
+| 10:04 MNQ @ 29449.13 | Ninjago Futures Radar | $29449.13 | unavailable | futures path; options 5/3/5 does not apply |
+| 10:05 MNQ @ 29448.50 | NGD: ngd-trades | $29448.50 | unavailable | futures path; options 5/3/5 does not apply |
+| 10:06 MNQ @ 29450.88 | Ninjago Futures Radar | $29450.88 | unavailable | futures path; options 5/3/5 does not apply |
+| 10:06 MSFT 495P 9/18 @ 5.22 | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | $5.22 | partial +20.0% | exact bid/ask path unavailable |
+| 10:08 MNQ @ 29450.38 | NGD: ngd-trades | $29450.38 | unavailable | futures path; options 5/3/5 does not apply |
+| 10:08 QQQ 713C @ 112.00 | Skyy | $112.00 | partial +15.0% | expiry missing; exact contract unresolved |
+| 10:09 MNQ @ 29468.88 | Ninjago Futures Radar | $29468.88 | unavailable | futures path; options 5/3/5 does not apply |
+| 10:12 MGC @ 4381.05 | Ninjago Futures Radar | $4381.05 | unavailable | futures path; options 5/3/5 does not apply |
+| 10:12 MNQ @ 29445.88 | Ninjago Futures Radar | $29445.88 | unavailable | futures path; options 5/3/5 does not apply |
+| 10:14 MNQ @ 29436.88 | NGD: ngd-trades | $29436.88 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:09 SPY 761C 9/16 @ 2.00 | Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | $2.00 | full $160/contract (+80.0%) | exact bid/ask path unavailable |
+| 14:10 MNQ @ 29508.00 | Ninjago Futures Radar | $29508.00 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:16 MNQ @ 29491.13 | Ninjago Futures Radar | $29491.13 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:22 MNQ @ 29491.50 | Ninjago Futures Radar | $29491.50 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:27 MNQ @ 29453.13 | Ninjago Futures Radar | $29453.13 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:28 MNQ @ 29426.50 | NGD: ngd-trades | $29426.50 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:29 MNQ @ 29433.13 | NGD: ngd-trades | $29433.13 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:30 MNQ @ 29494.88 | Ninjago Futures Radar | $29494.88 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:32 MNQ @ 29488.63 | Ninjago Futures Radar | $29488.63 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:33 MNQ @ 29402.38 | NGD: ngd-trades | $29402.38 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:35 MNQ @ 29401.50 | Ninjago Futures Radar | $29401.50 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:36 MNQ @ 29358.13 | NGD: ngd-trades | $29358.13 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:37 MNQ @ 29360.75 | Ninjago Futures Radar | $29360.75 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:41 MNQ @ 29430.00 | Ninjago Futures Radar | $29430.00 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:42 MNQ @ 29431.38 | NGD: ngd-trades | $29431.38 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:45 MNQ @ 29454.75 | Ninjago Futures Radar | $29454.75 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:46 MNQ @ 29433.75 | NGD: ngd-trades | $29433.75 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:48 MNQ @ 29413.25 | Ninjago Futures Radar | $29413.25 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:49 MNQ @ 29417.63 | NGD: ngd-trades | $29417.63 | unavailable | futures path; options 5/3/5 does not apply |
+| 14:50 MNQ @ 29421.50 | NGD: ngd-trades | $29421.50 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:03 MNQ @ 29299.75 | Ninjago Futures Radar | $29299.75 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:04 MNQ @ 29289.25 | NGD: ngd-trades | $29289.25 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:07 MNQ @ 29375.75 | Ninjago Futures Radar | $29375.75 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:08 MNQ @ 29251.13 | NGD: ngd-trades | $29251.13 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:09 MNQ @ 29218.63 | NGD: ngd-trades | $29218.63 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:10 MNQ @ 29217.63 | Ninjago Futures Radar | $29217.63 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:11 MNQ @ 29221.38 | NGD: ngd-trades | $29221.38 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:12 MNQ @ 29216.50 | NGD: ngd-trades | $29216.50 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:13 MNQ @ 29172.00 | Ninjago Futures Radar | $29172.00 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:14 MNQ @ 29162.88 | NGD: ngd-trades | $29162.88 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:18 MNQ @ 29192.63 | Ninjago Futures Radar | $29192.63 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:20 MNQ @ 29178.25 | Ninjago Futures Radar | $29178.25 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:26 MNQ @ 29077.00 | Ninjago Futures Radar | $29077.00 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:27 MNQ @ 29077.13 | NGD: ngd-trades | $29077.13 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:29 MNQ @ 29175.50 | Ninjago Futures Radar | $29175.50 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:31 MNQ @ 29137.25 | Ninjago Futures Radar | $29137.25 | unavailable | futures path; options 5/3/5 does not apply |
+| 15:50 MNQ @ 29341.00 | Ninjago Futures Radar | $29341.00 | unavailable | futures path; options 5/3/5 does not apply |
+
+## Result
+
+- Comparable ratchet paths: **11 of 66 observed**.
+- Our ratchet on the **10 paths with a caller-posted entry**: **-1361 per one-contract replay**.
+- Including the no-price alerts at their first recorded ask: **-1344 across 11 scorable paths**.
+- Numeric caller full-exit results on this subset: **2 of 11**; missing caller exit prices prevent an honest aggregate caller P&L.
+- Broker-confirmed results override quote-path simulations whenever the bot actually traded.
+- Every observed entry is listed: **11 scored + 55 awaiting tape/futures handling = 66**.
+- This assumes the caller's posted price filled. It measures trade management from their original entry, not whether that fill was executable for us.
+
 ===== Mon Sep 14 2026 =====
 
 # Caller entry versus our ratchet — 2026-09-14

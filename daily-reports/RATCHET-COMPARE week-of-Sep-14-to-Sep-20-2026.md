@@ -1,5 +1,43 @@
 # RATCHET-COMPARE — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Wed Sep 16 2026 =====
+
+# Ratchet comparison — 2026-09-16
+
+This replay isolates the exit rule. Both versions buy **one contract** at the first recorded ask (the actual fill for a filled bot trade) and use the same initial broker-compatible **-10% born stop**. The fixed version never moves that stop. The live version arms at **+10%** and then advances in **+10%** rungs, subject to tick and spread floors.
+
+| Alert | Source | Entry | Fixed stop P&L | Ratchet P&L | Ratchet advantage |
+|---|---|---:|---:|---:|---:|
+| 09:34 GOOGL | Honeydrip daytrades | $3.25 | -38 | -38 | +0 |
+| 09:38 TSLA | Honeydrip daytrades | $4.95 | -45 | -45 | +0 |
+| 09:39 TSLA | Honeydrip daytrades | $2.91 | -31 | -31 | +0 |
+| 09:39 TSLA | Honeydrip daytrades | $4.80 | -50 | -50 | +0 |
+| 09:40 TSLA | Honeydrip daytrades | $2.65 | -25 | -25 | +0 |
+| 09:40 AAPL | Honeydrip daytrades | $3.45 | -35 | -35 | +0 |
+| 09:41 AAPL | Honeydrip daytrades | $3.40 | -30 | -30 | +0 |
+| 09:41 TSLA | Honeydrip daytrades | $2.64 | -24 | -24 | +0 |
+| 09:46 QQQ | Demon day-trades | $1.11 | -11 | -11 | +0 |
+| 10:15 NVDA | TTT Lotto | $0.24 | -4 | +4 | +8 |
+| 15:33 SPY | OWLS all-alerts | $2.91 | +60 | +60 | +0 |
+| 15:50 SPY | AbTrades Alert Bot | $3.34 | +17 | +17 | +0 |
+| 15:52 SMH | OWLS all-alerts | $0.80 | -2 | -2 | +0 |
+
+## Result
+
+- Price-replayable alerts: **13 of 66 observed**.
+- Fixed born stop: **-218** total per one-contract replay.
+- Live ratchet: **-210** total per one-contract replay.
+- Ratchet advantage on the covered subset: **+8**.
+- **53 alerts cannot be scored yet** because no exact-contract bid/ask path was recorded. This subset cannot establish the winner for the entire day.
+- At least one value is marked at the end of its available tape and is not a final exit.
+- HOOD is deliberately included because the question asks what happened if every alert were forced through. The live bot refused its 22% spread; bypassing that filter would have produced the replayed loss.
+
+## Actual bot trade
+
+- 09:39 TSLA realized **-50**. The quote replay gives fixed **-50** versus ratchet **-50**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 09:40 TSLA realized **-32**. The quote replay gives fixed **-25** versus ratchet **-25**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 09:41 AAPL realized **-47**. The quote replay gives fixed **-30** versus ratchet **-30**; the real ratchet fill was better because the market sell completed above the trigger bid.
+
 ===== Tue Sep 15 2026 =====
 
 # Ratchet comparison — 2026-09-15
