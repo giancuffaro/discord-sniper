@@ -54,6 +54,35 @@ _QUARTERLY = {3, 6, 9, 12}
 # own cycle and is left to the SDK — guessing there could pick the wrong month.
 _INDEX_ROOTS = {"NQ", "MNQ", "ES", "MES", "RTY", "M2K", "YM", "MYM"}
 
+# THE TWO MICROS THIS PATH TRADES, and the only two numbers about them that
+# matter here: the tick they price on and what one point pays. ONE place —
+# protective_stop_order() rounds the stop to this tick, the gate below is keyed
+# on these symbols, and futures_protection_proof.py prints its dollar risk from
+# them instead of carrying its own copy. bridge.FUT_MULT holds the same
+# per-point value for every futures product the bridge knows; these two rows
+# must agree with it, and test_futures_protection.py pins them together so a
+# change to either side fails a test instead of mispricing a trade.
+FUT_SPECS = {"MES": {"tick": 0.25, "point_value": 5.0},
+             "MNQ": {"tick": 0.25, "point_value": 2.0}}
+
+
+def proof_symbol(symbol):
+    """The micro whose proof governs this call, or None.
+
+    MICROS ONLY, ALWAYS: the bridge already rewrites a room's ES/NQ to MES/MNQ
+    before this module sees it. The same mapping is derived here — an "M" in
+    front of the full-size root IS the micro — so a call that reaches the gate
+    by any other road is still measured against the contract it would actually
+    buy. Anything that is not one of these two (MGC, MCL, MYM…) answers None:
+    the stop loop has never been proven for it.
+    """
+    s = str(symbol or "").upper()
+    if s in FUT_SPECS:
+        return s
+    if "M" + s in FUT_SPECS:
+        return "M" + s
+    return None
+
 
 def _fut_rows(wb, root):
     """Pull this root's contract list from the SDK. The futures-instrument call
@@ -428,8 +457,10 @@ def protective_stop_order(contract, direction, qty, fill, stop, client_order_id)
     import re
     contract = str(contract or '').upper()
     direction = str(direction or '').upper()
-    if not re.fullmatch(r'(?:MES|MNQ)[FGHJKMNQUVXZ]\d{1,2}', contract):
-        raise FuturesRefused('protective stop needs the exact filled MES/MNQ contract')
+    _roots = '|'.join(sorted(FUT_SPECS))
+    if not re.fullmatch(r'(?:%s)[FGHJKMNQUVXZ]\d{1,2}' % _roots, contract):
+        raise FuturesRefused('protective stop needs the exact filled %s contract'
+                             % _roots.replace('|', '/'))
     if direction not in ('LONG', 'SHORT') or int(qty) != 1:
         raise FuturesRefused('protective stop needs an exact one-lot direction and size')
     if not re.fullmatch(r'[A-Za-z0-9]{1,32}', str(client_order_id or '')):
@@ -442,8 +473,10 @@ def protective_stop_order(contract, direction, qty, fill, stop, client_order_id)
         raise FuturesRefused('protective stop prices must be finite and positive')
     if (direction == 'LONG' and stop >= fill) or (direction == 'SHORT' and stop <= fill):
         raise FuturesRefused('protective stop is on the wrong side of the fill')
-    if abs(stop * 4 - round(stop * 4)) > 1e-8:
-        raise FuturesRefused('MES/MNQ stop must be on a quarter-point tick')
+    _tick = FUT_SPECS[contract[:3]]['tick']
+    if abs(stop / _tick - round(stop / _tick)) > 1e-8:
+        raise FuturesRefused('%s stop must be on a %g-point tick'
+                             % (contract[:3], _tick))
     return {'combo_type': 'NORMAL', 'client_order_id': str(client_order_id),
             'symbol': contract, 'instrument_type': 'FUTURES', 'market': 'US',
             'order_type': 'STOP_LOSS', 'stop_price': f'{stop:.2f}'.rstrip('0').rstrip('.'),
@@ -564,7 +597,7 @@ def execute(wb, book, order, key, note):
         # dead the moment this file changes. protection_proof_state() says why
         # in English so the refusal, /status and the popup all say the same
         # thing instead of "not operational".
-        _ready, _why = protection_proof_state()
+        _ready, _why = protection_proof_state(sym)
         if not _ready:
             return False, ("Webull futures entry held: %s; no order was sent"
                            % _why)
@@ -644,9 +677,9 @@ def execute(wb, book, order, key, note):
 # again until it is re-proven. That is the point: the gate cannot be opened by
 # flipping a boolean, and it cannot stay open across a change nobody re-tested.
 PROOF_FILE = "futures_protection_proof.json"
-PROOF_VERSION = 1
-# Every one of these must be recorded ok=true. A proof missing a step is not a
-# proof of that step.
+PROOF_VERSION = 2
+# Every one of these must be recorded ok=true, for that symbol. A proof missing
+# a step is not a proof of that step.
 PROOF_STEPS = ("preflight", "entry_sent", "entry_filled", "stop_placed",
                "stop_verified", "stop_cancelled", "cancel_confirmed",
                "position_flattened", "flat_confirmed")
@@ -665,67 +698,132 @@ def module_sha256(path=None):
     return h.hexdigest()
 
 
-def protection_proof_state(proof_path=None, module_path=None):
-    """(ready, reason) — may a Webull futures OPEN go out at all?
+def proof_command(symbol):
+    """The exact line G types to prove one micro. Said the same way everywhere."""
+    return "python futures_protection_proof.py --symbol %s --live" % symbol
 
-    `reason` is one plain sentence a human can act on; it reaches the refusal
-    message in execute(), /status and the popup. Anything unexpected reads as
-    NOT proven — an unreadable proof is not a proof.
+
+def read_proof(proof_path=None):
+    """(doc, why_unreadable) — the whole proof file as a map of micro -> proof.
+
+    The file holds ONE block per symbol, so proving MNQ never disturbs the MES
+    block and vice versa. Anything unexpected reads as no proof at all.
     """
     path = proof_path or _repo_file(PROOF_FILE)
     if not os.path.exists(path):
-        return False, ("there is no %s — the fill/stop/verify/cancel loop has "
-                       "never been run against the live broker (double-click "
-                       "PROVE FUTURES STOPS.bat)" % PROOF_FILE)
+        return {}, "missing"
     try:
         with open(path, "r", encoding="utf-8") as fh:
             doc = json.load(fh)
     except Exception as e:                                  # noqa: BLE001
-        return False, ("%s cannot be read (%s) — re-run the proof"
-                       % (PROOF_FILE, str(e)[:80]))
+        return {}, "%s cannot be read (%s)" % (PROOF_FILE, str(e)[:80])
     if not isinstance(doc, dict):
-        return False, "%s is not a proof document — re-run the proof" % PROOF_FILE
-    if doc.get("proof_version") != PROOF_VERSION:
-        return False, ("%s was written by a different proof version (%r, this "
-                       "code wants %d) — re-run the proof"
-                       % (PROOF_FILE, doc.get("proof_version"), PROOF_VERSION))
-    steps = doc.get("steps")
+        return {}, "%s is not a proof document" % PROOF_FILE
+    return doc, ""
+
+
+def protection_proof_state(symbol, proof_path=None, module_path=None):
+    """(ready, reason) — may a Webull futures OPEN go out in THIS symbol?
+
+    The proof is per symbol: MES being proven says nothing about MNQ. `reason`
+    is one plain sentence a human can act on, naming the symbol and the command
+    that proves it; it reaches the refusal in execute(), /mode and the popup.
+    Anything unexpected reads as NOT proven — an unreadable proof is not a
+    proof.
+    """
+    asked = str(symbol or "").upper()
+    sym = proof_symbol(asked)
+    if sym is None:
+        return False, ("%s is not one of the two micros this loop has ever "
+                       "been proven on (%s) — the protective stop path is "
+                       "unproven for it"
+                       % (asked or "that symbol", ", ".join(sorted(FUT_SPECS))))
+    lead = ""
+    if sym != asked:
+        lead = "an %s call trades as %s here (micros only, always), and " % (asked, sym)
+
+    doc, why = read_proof(proof_path)
+    if why == "missing":
+        return False, (lead + "there is no %s — the fill/stop/verify/cancel "
+                       "loop has never been run against the live broker for %s "
+                       "(double-click PROVE FUTURES STOPS.bat, then %s)"
+                       % (PROOF_FILE, sym, proof_command(sym)))
+    if why:
+        return False, lead + why + " — re-run the proof (%s)" % proof_command(sym)
+
+    block = doc.get(sym)
+    if block is None:
+        proven = sorted(k for k in doc if isinstance(doc.get(k), dict))
+        return False, (lead + "%s records no %s proof (it has %s) — %s"
+                       % (PROOF_FILE, sym,
+                          ", ".join(proven) if proven else "nothing",
+                          proof_command(sym)))
+    if not isinstance(block, dict):
+        return False, (lead + "the %s entry in %s is not a proof document — %s"
+                       % (sym, PROOF_FILE, proof_command(sym)))
+    if block.get("proof_version") != PROOF_VERSION:
+        return False, (lead + "the %s proof was written by a different proof "
+                       "version (%r, this code wants %d) — %s"
+                       % (sym, block.get("proof_version"), PROOF_VERSION,
+                          proof_command(sym)))
+    if str(block.get("root") or sym).upper() != sym:
+        return False, (lead + "the %s entry in %s records a %s run — %s"
+                       % (sym, PROOF_FILE, block.get("root"), proof_command(sym)))
+    steps = block.get("steps")
     if not isinstance(steps, list) or not steps:
-        return False, "%s records no steps — re-run the proof" % PROOF_FILE
+        return False, (lead + "the %s proof records no steps — %s"
+                       % (sym, proof_command(sym)))
     seen = {}
     for st in steps:
         if not isinstance(st, dict) or not st.get("name"):
-            return False, ("%s has a malformed step entry — re-run the proof"
-                           % PROOF_FILE)
+            return False, (lead + "the %s proof has a malformed step entry — %s"
+                           % (sym, proof_command(sym)))
         seen[str(st.get("name"))] = st.get("ok") is True
     failed = [n for n in PROOF_STEPS if n in seen and not seen[n]]
     if failed:
-        return False, ("the proof records a FAILED step (%s) — the loop is not "
-                       "proven; re-run it" % ", ".join(failed))
+        return False, (lead + "the %s proof records a FAILED step (%s) — the "
+                       "loop is not proven; %s"
+                       % (sym, ", ".join(failed), proof_command(sym)))
     missing = [n for n in PROOF_STEPS if n not in seen]
     if missing:
-        return False, ("the proof never got as far as %s — re-run it"
-                       % ", ".join(missing))
-    recorded = str(doc.get("module_sha256") or "")
+        return False, (lead + "the %s proof never got as far as %s — %s"
+                       % (sym, ", ".join(missing), proof_command(sym)))
+    recorded = str(block.get("module_sha256") or "")
     try:
         current = module_sha256(module_path)
     except Exception as e:                                  # noqa: BLE001
-        return False, ("cannot hash webull_futures.py to check the proof "
-                       "(%s)" % str(e)[:60])
+        return False, (lead + "cannot hash webull_futures.py to check the %s "
+                       "proof (%s)" % (sym, str(e)[:60]))
     if recorded != current:
-        return False, ("webull_futures.py has changed since the proof was "
-                       "taken (proved %s, now %s) — the futures path is "
-                       "unproven again; re-run the proof"
-                       % (recorded[:12] or "nothing", current[:12]))
-    return True, ("proved %s on %s" % (doc.get("contract") or "a micro future",
-                                       doc.get("written_at") or "an unknown date"))
+        return False, (lead + "webull_futures.py has changed since the %s proof "
+                       "was taken (proved %s, now %s) — the futures path is "
+                       "unproven again; %s"
+                       % (sym, recorded[:12] or "nothing", current[:12],
+                          proof_command(sym)))
+    return True, (lead + "%s proved on %s (%s)"
+                  % (sym, block.get("written_at") or "an unknown date",
+                     block.get("contract") or "a front-month contract"))
 
 
-def protective_entries_ready():
-    """True only when the live-broker proof exists, passed and still applies."""
-    return protection_proof_state()[0]
+def protective_entries_ready(symbol):
+    """True only when THIS micro's live-broker proof exists, passed and still
+    applies. There is no symbol-less form: MES proven is not MNQ proven."""
+    return protection_proof_state(symbol)[0]
 
 
-def protective_entries_reason():
-    """The one sentence behind protective_entries_ready(), for humans."""
-    return protection_proof_state()[1]
+def protective_entries_reason(symbol):
+    """The one sentence behind protective_entries_ready(symbol), for humans."""
+    return protection_proof_state(symbol)[1]
+
+
+def protection_proof_summary(proof_path=None, module_path=None):
+    """(both_micros_ready, one sentence about both) — the read-only status line
+    /mode ships and the popup shows. Per-symbol truth stays in
+    protective_entries_ready(symbol); this only reports it in one string."""
+    states = [(s, protection_proof_state(s, proof_path, module_path))
+              for s in sorted(FUT_SPECS)]
+    shut = [(s, why) for s, (ok, why) in states if not ok]
+    if not shut:
+        return True, "; ".join(why for _s, (_ok, why) in states)
+    return False, "%s unproven — %s" % ("/".join(s for s, _w in shut),
+                                        "; ".join(w for _s, w in shut))

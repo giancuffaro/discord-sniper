@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — 0b95fedf306c4daa9860
+
+The current message supports a reported NVDA partial exit, but the full option contract and premium units require verification. The reader inferred contract details from an ineligible prior message, and validation retained the inferred expiry despite flagging its support. These are review candidates, not confirmed parser bugs.
+
+## Findings
+- TT wrote, "Took some more nvda off at 2.7 Bout 100 a con." The parser returned null fields and fire=false, while the reader returned TRIM and NVDA. The wording supports a reported partial exit, but does not state strike, expiry, option side, or quantity. Verify whether the parser is intended to capture incomplete position updates separately from actionable alerts. Consider retaining the explicit NVDA partial-exit meaning for review while leaving unsupported contract fields and quantity unresolved; fire=false alone does not establish an error.
+- The reader supplied CALL, strike 220, expiry 9/25, and confidence 1.0 using supporting ID chat-messages-1449226651064991806-1549464667166867557, whose text says "Navidad 220c 9/25 1.75." Validation lists only chat-messages-1449226651064991806-1549780485415112825 as eligible, flags unsupported_context_id and expiry_not_literal, removes the strike, but retains expiry 9/25 and side CALLS with ok=true. The eligible message merely says "Trimmed 1.85." Review context eligibility and the meaning of validation.ok. Verify TT's "Navidad" reference against original sources and the intervening "Trim some navidad 220c 1.75 -> 2.20" update before linking the contract. Do not use the nearby META entry or an unspecified trim to establish NVDA details. Consider marking unsupported inherited fields unresolved and reducing certainty until linkage is verified.
+- The reader preserves 2.7 as price, but the source does not explicitly identify its premium units. "Bout 100 a con" is approximate and does not establish whether 100 refers to profit or proceeds. No broker fills or verified unit calculations are supplied. Preserve both raw expressions and verify TT-specific unit conventions from retained source examples. Keep the reported exit value separate from the ambiguous per-contract amount. Do not normalize by 100, infer an exact exit from "100 a con," or calculate returns to make the figures agree. Any later conversion should state the verified premium multiplier and units.
+
+## Limitations
+- The evidence is marked untruncated, but it does not establish complete position history or provide original-source confirmation of the Navidad-to-NVDA interpretation.
+- Only the current message has a supplied parser result; prior-message parsing behavior cannot be assessed.
+- No broker-confirmed executions, position quantities, contemporaneous quotes, or performance calculations are provided. These are caller-reported updates, not verified trading results.
+- Null fields represent missing or unresolved data, not zero. Historical ingestion flags and message gaps alone do not establish an outage.
+
+---
+
 # Reader Review — 2026-09-16 — 6f111dc40b0e7bf8b998
 
 The reader proposed a contextual close of SPY 759 calls expiring 9/16, while the parser returned no action and validation rejected the reader output. The supplied history supports this as a review candidate, but the contract-identifying message was outside the validator's eligible context. This is not a confirmed parser bug or broker-confirmed exit.
