@@ -1,5 +1,40 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — cbc1c0f9935a4c301635
+
+The current message supports TRIM AAPL. The reader's 9/18 335 CALL attribution matches Brett's supplied entry, but that entry is not in validation's eligible prior IDs. This is a context-eligibility review candidate, not a confirmed parser bug.
+
+## Findings
+- The current source says '@Brett (Admin) trimming AAPL @ 14%'. Parser and reader agree on TRIM and AAPL. The reader cites entry 1549777098892255293: '@Brett (Admin) in AAPL 9/18 335C @ 3.17'. A separate Unraveller AAPL loading message specifies 332.5C. Verify whether Brett's entry is eligible for contract inheritance. Preserve the distinction between the scribe and attributed caller; do not associate Brett's trim with Unraveller's contract merely because the ticker and channel match.
+- Validation lists only 1549778582597931089, Brett's preceding AAPL trim without contract details, as an eligible prior ID. It reports ok=true alongside expiry_not_literal and unsupported_context_id, clears strike to null, but retains expiry 9/18 and side CALLS. Review the source-eligibility rules and field-level provenance to determine why the cited entry is excluded and why expiry and side remain while strike is removed. Verify whether ok=true denotes structural acceptance rather than fully supported contract attribution.
+- Brett's entry has history=true and was enqueued after the first live AAPL trim despite being posted before it. It was enqueued before the current trim. The parser returns fire=false, but no decision reason is supplied. Verify historical-message availability, ordering, and context-replay policy at the current decision point. Do not conclude that fire=false is erroneous without the gating reason and position-state evidence.
+- The current message supplies '14%' but no exit premium or trim quantity. Reader price and qty are null. Earlier AAPL trims report 13% and 6%, without quantities or exact exit premiums. Retain 14% as a source-reported percentage with its meaning verified from source context; do not interpret it as a premium or fraction sold. Keep missing price and quantity distinct from zero, and do not derive an exact exit or realized return.
+
+## Limitations
+- Only the current parser, reader, and validation outputs are supplied; implementation rules and position state are unavailable.
+- The evidence is marked untruncated, but complete channel history and context coverage are not established.
+- No broker fills or performance calculations are supplied; chat-reported trims and percentages are not broker-confirmed results.
+- A prior message reports a Discord outage, but its duration and impact on this AAPL sequence are not established.
+
+---
+
+# Reader Review — 2026-09-16 — 18624b88fb32e3e746dd
+
+The current message supports an AAPL trim attributed to Brett. The reader links it to Brett’s earlier AAPL 9/18 335C entry, but validation reports unsupported context, clears the strike, and retains the inferred expiry. This warrants source and eligibility verification, not a confirmed parser-bug classification.
+
+## Findings
+- The current text is '@Brett (Admin) trimming AAPL @ 6% @everyone'. The parser identifies TRIM and AAPL with fire=false and no contract details. The reader supplies 9/18 CALL 335, citing Brett’s earlier 'in AAPL 9/18 335C @ 3.17' and subsequent AAPL trim. A separate Unraveller AAPL 9/18 332.5C loading message is also present. Verify that Brett’s cited entry is eligible context for this trim. Resolve the referenced admin rather than treating the shared scribe author as the position owner; do not substitute Unraveller’s loading contract. Keep contract details unresolved if the entry cannot be verified as eligible.
+- Validation has eligible_prior_ids=[], safety flags expiry_not_literal and unsupported_context_id, and ok=true. Its read retains expiry='9/18' and side='CALLS' but changes strike='335' to null. Review context-eligibility rules and field-level validation provenance to explain why expiry and side survive while strike is removed. Verify the meaning of ok=true before interpreting it as approval of a complete contract resolution.
+- The current message supplies '6%' but no exit premium or trim quantity. The reader leaves price and qty null. The earlier trim says '13%'; neither message supplies a broker-confirmed execution. Preserve the percentages as source-reported annotations pending verification of their meaning. Do not treat 6% as a premium or position fraction, infer an exact exit from the earlier entry, or classify the later lower percentage as an error.
+
+## Limitations
+- Only the current parser output is supplied; prior parser outputs, position state, context-eligibility rules, and the reason for fire=false are unavailable.
+- Evidence is marked untruncated, but this does not establish complete channel coverage or access to all original source messages.
+- No broker fills, contemporaneous quotes, simulations, or return calculations are provided.
+- An earlier message reports a Discord outage, but it does not establish an outage during the current alert. The reader attempt metadata shows a Gemini cooldown followed by an OpenAI response, not a total reader failure.
+
+---
+
 # Reader Review — 2026-09-16 — 20eb7ba0041a955d8b6f
 
 The current TT message supports review of a possible missed option-alert extraction: the parser returned no fields, while the reader identified a META 690 call with 0dte wording. Validation retained those details but omitted the reader's raw price. Neither discrepancy is a confirmed parser bug.
