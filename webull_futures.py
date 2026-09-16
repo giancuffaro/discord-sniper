@@ -594,9 +594,11 @@ def execute(wb, book, order, key, note):
         # A numeric plan in Book is NOT a protective order. The door opens on
         # EVIDENCE — futures_protection_proof.json, written only by a clean
         # live run of the fill -> stop -> verify -> cancel -> flat loop, and
-        # dead the moment this file changes. protection_proof_state() says why
-        # in English so the refusal, /status and the popup all say the same
-        # thing instead of "not operational".
+        # dead the moment this file changes. It is PER SYMBOL: an MNQ call is
+        # refused while only MES is proven, and vice versa, and a root the
+        # bridge maps to a micro (ES -> MES, NQ -> MNQ) is judged on the micro
+        # it would actually buy. protection_proof_state() says why in English
+        # so the refusal, /status and the popup all say the same thing.
         _ready, _why = protection_proof_state(sym)
         if not _ready:
             return False, ("Webull futures entry held: %s; no order was sent"
@@ -671,11 +673,16 @@ def execute(wb, book, order, key, note):
 # cancel -> flat loop has been RUN against the live broker and left evidence.
 #
 # The evidence is futures_protection_proof.json, written only by a clean full
-# pass of futures_protection_proof.py (G runs it; it is his own one-lot MES
-# trade). It carries the sha256 of THIS file as it was when proven, so any
-# later edit to the futures path invalidates the proof and the door closes
-# again until it is re-proven. That is the point: the gate cannot be opened by
-# flipping a boolean, and it cannot stay open across a change nobody re-tested.
+# pass of futures_protection_proof.py (G runs it; it is his own one-lot trade).
+# It carries the sha256 of THIS file as it was when proven, so any later edit to
+# the futures path invalidates the proof and the door closes again until it is
+# re-proven. That is the point: the gate cannot be opened by flipping a boolean,
+# and it cannot stay open across a change nobody re-tested.
+#
+# PER SYMBOL. He trades both micros — MES ($5 a point) and MNQ ($2 a point) —
+# and each one is proven on its own real contract. The file holds one block per
+# micro; proving MNQ leaves the MES block untouched, and a symbol with no block
+# of its own is refused however well the other one went.
 PROOF_FILE = "futures_protection_proof.json"
 PROOF_VERSION = 2
 # Every one of these must be recorded ok=true, for that symbol. A proof missing
@@ -817,13 +824,20 @@ def protective_entries_reason(symbol):
 
 
 def protection_proof_summary(proof_path=None, module_path=None):
-    """(both_micros_ready, one sentence about both) — the read-only status line
+    """(both micros ready, one short sentence about both) — the read-only line
     /mode ships and the popup shows. Per-symbol truth stays in
-    protective_entries_ready(symbol); this only reports it in one string."""
+    protective_entries_ready(symbol); this only reports it in one string, so a
+    popup can never mean something the refusal does not."""
+    syms = sorted(FUT_SPECS)
     states = [(s, protection_proof_state(s, proof_path, module_path))
-              for s in sorted(FUT_SPECS)]
-    shut = [(s, why) for s, (ok, why) in states if not ok]
+              for s in syms]
+    shut = [s for s, (ok, _why) in states if not ok]
     if not shut:
-        return True, "; ".join(why for _s, (_ok, why) in states)
-    return False, "%s unproven — %s" % ("/".join(s for s, _w in shut),
-                                        "; ".join(w for _s, w in shut))
+        return True, "; ".join("%s: %s" % (s, why) for s, (_ok, why) in states)
+    if read_proof(proof_path)[1] == "missing":
+        return False, ("neither %s is proven — there is no %s; double-click "
+                       "PROVE FUTURES STOPS.bat, then %s and %s"
+                       % (" nor ".join(syms), PROOF_FILE,
+                          proof_command(syms[0]), proof_command(syms[1])))
+    return False, "; ".join("%s: %s" % (s, why) for s, (ok, why) in states
+                            if not ok)

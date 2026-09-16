@@ -189,6 +189,27 @@ FUT_MULT = {"NQ": 20.0, "MNQ": 2.0, "ES": 50.0, "MES": 5.0,
             "CL": 1000.0, "MCL": 100.0, "GC": 100.0, "MGC": 10.0,
             "SI": 5000.0, "SIL": 1000.0, "NG": 10000.0}
 
+def _wf_proof():
+    """(both micros proven, one sentence) for /mode. Per-symbol truth lives in
+    webull_futures.protective_entries_ready(symbol)."""
+    try:
+        import webull_futures
+        return webull_futures.protection_proof_summary()
+    except Exception as e:                              # noqa: BLE001
+        return False, "the futures proof could not be read (%s)" % str(e)[:80]
+
+
+def _wf_proof_by_symbol():
+    """{micro: {ready, reason}} — what the popup needs to say which one is shut."""
+    try:
+        import webull_futures
+        return {s: dict(zip(("ready", "reason"),
+                            webull_futures.protection_proof_state(s)))
+                for s in sorted(webull_futures.FUT_SPECS)}
+    except Exception:                                   # noqa: BLE001
+        return {}
+
+
 # The micro this bridge actually trades when a room calls the full-size root
 # ("when felony mentions NQ and ES, we shoot the diminutive"). Same table the
 # extension uses; kept here so an exit can find the position the entry made.
@@ -4573,10 +4594,13 @@ class Handler(BaseHTTPRequestHandler):
                 # The futures entry gate: open only while
                 # futures_protection_proof.json proves the live fill -> stop ->
                 # verify -> cancel loop AND still matches webull_futures.py.
-                # The reason ships with it so the popup says the same sentence
-                # the refusal does.
-                "webull_futures_entry_ready": __import__('webull_futures').protective_entries_ready(),
-                "webull_futures_entry_reason": __import__('webull_futures').protective_entries_reason(),
+                # It is PER MICRO — MES and MNQ are proven separately — so the
+                # popup gets the summary (ready only when BOTH are proven) plus
+                # the per-symbol map, and every sentence here is the same one
+                # the refusal returns.
+                "webull_futures_entry_ready": _wf_proof()[0],
+                "webull_futures_entry_reason": _wf_proof()[1],
+                "webull_futures_entry_by_symbol": _wf_proof_by_symbol(),
                 # The SPY/QQQ -> MES/MNQ mirror switch, so the popup toggle
                 # shows its true state after a reload. On/off and the map only.
                 "index_mirror": {
