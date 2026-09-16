@@ -1,5 +1,41 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — fb9ce0189b0b09a3db99
+
+The reader interprets the SLV message as a partial close, consistent with “sold 6/10.” Validation drops that quantity, and contract details remain unresolved. These are review candidates, not confirmed parser bugs or evidence of executed trades.
+
+## Findings
+- The current source says “CLOSE: sold 6/10 SLV at 2.35.” The parser returns CLOSE with fire=true, while the reader returns TRIM and qty="6/10". Validation retains TRIM but changes qty to null. Verify the quantity-normalization rules and downstream meaning of CLOSE and TRIM. Preserve the raw “6/10” wording and confirm whether it means six contracts out of ten before assigning an executable quantity. Missing validated quantity must not be treated as zero or a full-position close.
+- A supplied prior message attributed to RegardedTrader (Jon) says “OPEN: SLV 65C 11/20 Exp. at 2.17.” The current message is also attributed to Jon within the relay text, but reader supporting_ids and validation eligible_prior_ids are empty; strike, side and expiry remain null. Review why this prior source was not eligible for linkage. Verify original caller attribution, contract identity and intervening position history before associating the trim with that opening alert. Do not automatically fill contract details from a ticker-only match.
+- The source repeats “sold 6/10 SLV at 2.35” within one message. The reader preserves price=2.35, but the wording does not explicitly specify premium units. No retained example establishes Jon’s unit convention. Preserve the raw 2.35 value and report unresolved premium units pending source verification. Do not rescale it based on plausibility. If confirmed as a per-share option quote, use the verified instrument premium multiplier for any contract-premium conversion. Verify that repeated relay text is treated as one alert rather than multiple sales.
+- The first reader attempt reports HTTP_503 from Gemini; the subsequent OpenAI attempt has no reported error and produces the reader result. Treat this as a recorded provider-attempt failure followed by a successful fallback, not evidence of a quiet channel or a sustained application outage. Verify retry and alert-delivery records if assessing operational impact.
+
+## Limitations
+- Only the current message has supplied parser, reader and validation outputs; prior-message processing cannot be assessed.
+- Evidence is marked untruncated, but complete position history, source-link eligibility rules and downstream execution behavior are not provided.
+- No broker fills, contemporaneous quotes, verified premium multiplier or return calculations are supplied. Caller-reported sales are not broker-confirmed results.
+- validation.ok=true does not independently verify quantity, contract identity or premium units.
+
+---
+
+# Reader Review — 2026-09-16 — 4d400795d2602f3d0219
+
+The current message supports a partial-trim interpretation and a 220 call reference, but the underlying ticker remains unverified. The reader inferred NVDA and a prior expiry despite validation rejecting that context; the parser instead returned TT, which appears in source branding. These are review candidates, not confirmed parser bugs.
+
+## Findings
+- The current body says 'Trim some navidad 220c 1.75 -> 2.20'. The parser returned action TRIM, symbol TT, and null strike and side. TT appears in the author and repeated bot branding, whereas '220c' appears in the alert body. Verify the original alert and review whether wrapper text influenced symbol extraction. Test extraction of strike 220 and CALL from '220c' independently of ticker resolution. Keep 'navidad' unresolved rather than substituting TT or an assumed ticker.
+- The reader returned ticker NVDA with confidence 1.0. Neither the current message nor its cited TT prior explicitly says NVDA. Eva separately mentioned 'NVDA 220C 9/25s', but that is a different caller. Validation states that NVDA is absent from the current message. Require retained TT/Inkedcapital source evidence establishing that 'navidad' refers to NVDA before accepting the mapping. Do not use Eva's matching contract reference to establish TT's convention. Review the reader's certainty when ticker identity depends on an unverified alias.
+- The reader supplied expiry '9/25' and cited chat-messages-1449226651064991806-1549464667166867557, whose TT body is 'Navidad 220c 9/25 1.75'. This is a plausible same-caller antecedent, but validation lists no eligible prior IDs and flags 'expiry_not_literal' and 'unsupported_context_id'. Verify whether this prior is permitted context and refers to the same position. Review the reader-validator context eligibility contract before classifying the discrepancy. If context is allowed, preserve the expiry as inherited with provenance; otherwise leave it unresolved rather than treating it as literal current-message content.
+- The reader returned price '2.20' and null quantity. The source preserves the sequence '1.75 -> 2.20' and says only 'Trim some'; it does not explicitly state premium units, a contract count, or a completed fill. Retain both raw values and verify their entry/current-or-trim-price roles and premium units using the original source and supported same-caller examples. Do not rescale either value, infer a trim quantity, or record 2.20 as a broker-confirmed exit.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not establish complete source history or include original attachments.
+- Only the current parser output is supplied; prior parser behavior and internal context-selection rules are unavailable.
+- Validation failed and parser fire is false; the evidence does not establish why fire is false or show downstream execution.
+- No broker fills, contemporaneous quotes, verified premium multiplier, or return calculations are provided. Missing values are not zero, and no realized performance can be established.
+
+---
+
 # Reader Review — 2026-09-16 — 0b3784fe8b428fc994c5
 
 The current message plausibly reports a stop-loss outcome, but the reader's MNQ ticker, SHORT side, and 1.0 confidence are not supported by the eligible evidence. Validation rejected the reading; the parser's non-firing result is not a confirmed bug.
