@@ -1,29 +1,6 @@
 {
   "in_session": true,
   "issues": [
-    "Platinum equity tab is open but its reader hasn't beaten in a while",
-    "NGD ngd-trades (Ninjago Futures Radar) is ON but has no tab in this browser",
-    "Brando Alerts is ON but has no tab in this browser",
-    "Shoof Alerts is ON but has no tab in this browser",
-    "shabs is ON but has no tab in this browser",
-    "eli is ON but has no tab in this browser",
-    "OWLS all-alerts is ON but has no tab in this browser",
-    "Mugzone Options is ON but has no tab in this browser",
-    "FloridaManFinance is ON but has no tab in this browser",
-    "AbTrades Alert Bot is ON but has no tab in this browser",
-    "OWLS jon-and-kian is ON but has no tab in this browser",
-    "Demon day-trades is ON but has no tab in this browser",
-    "Nando Alerts is ON but has no tab in this browser",
-    "Brick Alerts is ON but has no tab in this browser",
-    "Maguro Alerts is ON but has no tab in this browser",
-    "PhiccDuck Alerts is ON but has no tab in this browser",
-    "Xephyr Alerts is ON but has no tab in this browser",
-    "Chika Alerts is ON but has no tab in this browser",
-    "Ducci Alerts is ON but has no tab in this browser",
-    "Jon Tran Alerts is ON but has no tab in this browser",
-    "Hog Alerts is ON but has no tab in this browser",
-    "Quantum Alerts is ON but has no tab in this browser",
-    "Optionality free-trades is ON but has no tab in this browser",
     "Whop Day Trades tab is open but its reader hasn't beaten in a while",
     "Whop Futures tab is open but its reader hasn't beaten in a while",
     "Whop High Risk tab is open but its reader hasn't beaten in a while",
@@ -51,5 +28,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789580952.179149
+  "checked_at": 1789581252.183301
 }
