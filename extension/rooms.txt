@@ -39,7 +39,7 @@
 # History of every cut and re-add lives in HANDOFF-LOG.md; this file keeps
 # only the one-line reason above each benched room.
 
-829754942817828884|https://discord.com/channels/525113944239767562/829754942817828884|Honeydrip daytrades|Honeydrip / Aristotle (main)|on
+829754942817828884|https://discord.com/channels/525113944239767562/829754942817828884|Honeydrip daytrades|Honeydrip / Aristotle (main)|off
 987515353670221834|https://discord.com/channels/525113944239767562/987515353670221834|Aristotle|Honeydrip / Aristotle (main)|on
 # RE-ADDED 9/9 (G's call, wants 15-20 tabs total). Was cut same day for 0
 # rows in master_ledger.csv — untested, not proven dead the way some of the
