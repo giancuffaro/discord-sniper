@@ -4570,7 +4570,13 @@ class Handler(BaseHTTPRequestHandler):
                 # popup toggles show their true state after a reload. Passwords
                 # are stripped — never send a credential back to a browser.
                 "futures_brokers": _futures_brokers_safe(),
+                # The futures entry gate: open only while
+                # futures_protection_proof.json proves the live fill -> stop ->
+                # verify -> cancel loop AND still matches webull_futures.py.
+                # The reason ships with it so the popup says the same sentence
+                # the refusal does.
                 "webull_futures_entry_ready": __import__('webull_futures').protective_entries_ready(),
+                "webull_futures_entry_reason": __import__('webull_futures').protective_entries_reason(),
                 # The SPY/QQQ -> MES/MNQ mirror switch, so the popup toggle
                 # shows its true state after a reload. On/off and the map only.
                 "index_mirror": {

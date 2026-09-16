@@ -1,5 +1,39 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — 4656acfc151983b18398
+
+The TSLA CLOSE interpretation is supported by the current message. Retained caller-specific context supports Unraveller’s 9/18 355 puts, not Mike’s 350 puts. Review is proposed for contract resolution and validation provenance; the evidence does not establish a confirmed parser bug.
+
+## Findings
+- The current message attributes 'all out of TSLA -keep same cons loaded' to Unraveller. Unraveller’s prior entry specifies 'TSLA 9/18 355P @ 4.96', followed by 'added to TSLA new avg is 4.80'. Mike separately entered TSLA 9/18 350P. The parser returns CLOSE with null expiry, side and strike; the reader resolves 9/18 PUT 355. Verify that downstream contract resolution uses the attributed caller and channel, rather than the shared scribe author or ticker alone. Confirm that this close maps to Unraveller’s 355 puts without affecting Mike’s 350 puts.
+- The reader cites three supporting IDs, including the loading message ending 1549776249260347403. Validation lists only the entry and average-update IDs as eligible, flags 'unsupported_context_id', reports ok=true, and returns strike=null despite the reader’s strike='355'. Inspect source eligibility rules and validation transformation logs to establish why the loading ID was unsupported, why the strike was removed, and what ok=true guarantees. The eligible entry itself explicitly supplies 355P; verify whether that evidence should preserve the contract identity.
+- 'All out' supports a close, while 'keep same cons loaded' refers to continued readiness. A retained channel explanation defines LOADING as getting contracts ready rather than buying. Both parser and reader return CLOSE. Verify against the original edited message that readiness remains distinct from an entry or continued holding. Preserve the close interpretation unless additional source evidence changes it; do not infer a new position from 'loaded'.
+
+## Limitations
+- No exit premium, quantity, broker fills or realized-result calculations are supplied. Missing values are not zero, and prior entry averages are not exit prices.
+- Only one parser/reader/validation snapshot is shown; no downstream position resolution or execution outcome is available.
+- The current message is marked edited, but no edit history is supplied.
+- Evidence is marked untruncated, but that does not establish complete channel coverage. A prior message reports a Discord outage; its scope and any missing alerts are not independently verified.
+
+---
+
+# Reader Review — 2026-09-16 — 6d93224de37e86103794
+
+The CLOSE interpretation is supported by “all out of TSLA.” Caller-specific context supports Unraveller’s TSLA 9/18 355P, not Mike’s 350P. Review is warranted for contract-field loss and inconsistent context validation; these are verification proposals, not confirmed parser bugs.
+
+## Findings
+- The current message names Unraveller. His entry states “in TSLA 9/18 355P @ 4.96,” followed by “added to TSLA new avg is 4.80.” Mike separately entered “TSLA 9/18 350P @ 3.0.” The reader resolves 355 PUT, while the parser returns null expiry, side and strike. Verify whether contract resolution occurs downstream of the parser and whether attribution is scoped to the named caller within this channel, rather than the shared scribe author or latest TSLA entry. Use the retained Unraveller entry and add as the candidate linkage; do not associate this close with Mike’s position.
+- The reader returns strike “355,” but validation.read changes it to null while retaining expiry “9/18” and normalizing PUT to PUTS. Validation reports ok=true alongside safety_flags=[“unsupported_context_id”]. The reader cites a loading message that is absent from eligible_prior_ids, plus the entry and add messages that are eligible. Inspect validation rules and transformation traces to explain the removed strike and the coexistence of ok=true with the safety flag. Verify whether the loading reference alone triggers the flag and whether eligible entry evidence independently supports retaining the contract fields.
+- The current wording is “all out of TSLA -keep same cons loaded.” A retained channel explanation distinguishes loading contracts from buying them. The reader returns CLOSE with null price and qty. Verify that the trailing preparation language does not create a new entry or negate the close. Preserve the missing exit premium and quantity rather than inferring them from the earlier entry or average.
+
+## Limitations
+- No downstream position state, routing rules or execution records are supplied, so an incorrect position closure is not established.
+- The reported entry and average are source claims, not broker-confirmed fills. No exit premium or realized-return calculation is provided.
+- The supplied evidence is marked untruncated, but that does not establish complete channel coverage.
+- A prior message reports a Discord outage, but its scope and duration are unverified. The reader’s initial model timeout followed by a successful fallback does not establish a channel outage.
+
+---
+
 # Reader Review — 2026-09-16 — 8b58caf3ab5db0977804
 
 The reader plausibly links the current fill update to the preceding SPY 759 call alert, while the parser returns no action. This warrants source-verified review of contextual fill handling, not a confirmed parser-bug classification.

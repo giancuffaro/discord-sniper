@@ -200,10 +200,84 @@ class TheEntryGate(unittest.TestCase):
         self.assertTrue(ok)
         self.assertIn('MESZ6', why)
 
-    def test_the_shipped_repo_has_no_proof_file_checked_in(self):
-        """Nobody hand-writes this file. It is written by a live run only."""
-        self.assertFalse(futures.protective_entries_ready())
-        self.assertIn('PROVE FUTURES STOPS', futures.protective_entries_reason())
+
+class TheProofHarness(unittest.TestCase):
+    """futures_protection_proof.py walked end to end against a fake broker.
+    The proof it writes lands in a temp dir — never in the repo."""
+
+    def setUp(self):
+        import futures_protection_proof as fpp
+        self.fpp = fpp
+        self.dir = tempfile.mkdtemp(prefix='futproofrun')
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        self.here = patch.object(fpp, 'HERE', self.dir)
+        self.here.start()
+        self.addCleanup(self.here.stop)
+
+    def _broker(self, contract='MESZ6', stop_symbol=None):
+        placed, state = {}, {'stop': 'SUBMITTED'}
+        wb = Mock(futures_account_id='F1')
+        api = wb.trade.order_v3
+
+        def place(account, orders):
+            o = orders[0]
+            placed[o['client_order_id']] = o
+            return Mock(status_code=200, **{'json.return_value':
+                        {'data': {'order_id': 'B%d' % len(placed)}}})
+
+        def detail(account, cid):
+            if cid.startswith('proofstop'):
+                row = dict(placed.get(cid, {}), status=state['stop'])
+                if stop_symbol:
+                    row['symbol'] = stop_symbol
+            else:
+                row = {'client_order_id': cid, 'symbol': contract,
+                       'side': 'BUY' if cid.startswith('proofentry') else 'SELL',
+                       'status': 'FILLED', 'quantity': '1',
+                       'filled_quantity': '1',
+                       'avg_fill_price': '6800.25' if
+                       cid.startswith('proofentry') else '6800.00'}
+            return Mock(status_code=200, **{'json.return_value': {'orders': [row]}})
+
+        def cancel(account, cid):
+            state['stop'] = 'CANCELLED'
+            return Mock(status_code=200)
+
+        api.place_order.side_effect = place
+        api.get_order_detail.side_effect = detail
+        api.cancel_order.side_effect = cancel
+        wb._try_calls.side_effect = lambda *a, **k: ({'positions': []}, 'fake')
+        return wb, api, state
+
+    def test_a_clean_run_records_every_step_and_writes_a_proof_that_opens_the_gate(self):
+        wb, api, _state = self._broker()
+        proof = self.fpp.Proof('MESZ6', 'F1')
+        proof.step('preflight', True, 'fake')
+        code = self.fpp.run_live(wb, 'F1', api, 'MESZ6', proof)
+        self.assertEqual(code, 0)
+        self.assertTrue(proof.clean())
+        names = [s['name'] for s in proof.doc['steps']]
+        self.assertEqual(names, list(futures.PROOF_STEPS))
+        path = proof.write()
+        self.assertEqual(os.path.dirname(path), self.dir)
+        ok, why = futures.protection_proof_state(path)
+        self.assertTrue(ok, why)
+        # One entry, one stop, one flatten. Never a second exit.
+        self.assertEqual(api.place_order.call_count, 3)
+        self.assertEqual(api.cancel_order.call_count, 1)
+
+    def test_a_stop_that_does_not_match_stops_the_run_and_writes_nothing(self):
+        wb, api, _state = self._broker(stop_symbol='MNQZ6')
+        proof = self.fpp.Proof('MESZ6', 'F1')
+        proof.step('preflight', True, 'fake')
+        code = self.fpp.run_live(wb, 'F1', api, 'MESZ6', proof)
+        self.assertEqual(code, 5)
+        self.assertFalse(proof.clean())
+        # entry + the one stop attempt, and nothing after it
+        self.assertEqual(api.place_order.call_count, 2)
+        api.cancel_order.assert_not_called()
+        self.assertFalse(os.path.exists(os.path.join(self.dir,
+                                                     futures.PROOF_FILE)))
 
 
 if __name__ == '__main__':
