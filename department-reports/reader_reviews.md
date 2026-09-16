@@ -1,5 +1,41 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — 20eb7ba0041a955d8b6f
+
+The current TT message supports review of a possible missed option-alert extraction: the parser returned no fields, while the reader identified a META 690 call with 0dte wording. Validation retained those details but omitted the reader's raw price. Neither discrepancy is a confirmed parser bug.
+
+## Findings
+- Current message chat-messages-1449226651064991806-1549778470140121231 says "Lotto sized meta 0dte 690c .95". The parser returned fire=false and null action, symbol, side, strike, and expiry. The reader returned OPEN, META, CALL, strike "690", and expiry "0dte"; validation accepted these as META CALLS with strike 690.0. Verify the original TT alert and intended parser eligibility rules, then review whether this shorthand should yield a candidate opening alert. META, 690c, and 0dte are directly supported tokens; OPEN is an interpretation of the lotto wording rather than an explicit buy statement. Confirm the source trading date, timezone, and listed contract before resolving 0dte to an absolute expiry. Do not infer a contract quantity from "Lotto sized".
+- The source contains raw ".95", and reader.price is ".95", but validation.read.price is null despite validation.ok=true and no safety flags. The supplied text does not explicitly state premium units, and no instrument multiplier or verified TT unit convention is provided. Review the validation schema and transformation to determine whether price omission is intentional or a candidate data-loss issue. Preserve ".95" as raw evidence and report unresolved premium units rather than treating null as zero. Verify units from original-source evidence or retained TT-specific examples before normalization; if a per-share quote is established, contract premium equals that quote times the verified premium multiplier, excluding fees.
+- Reader attempts show a Gemini "cooldown" followed by an OpenAI attempt with error=null and a populated reader result. Several prior messages are marked history=true, while the current message is history=false. Treat this as evidence of a provider cooldown with a completed fallback attempt, not a demonstrated reader outage. If reliability or timeliness is under review, verify provider and ingestion logs separately; history flags and message gaps alone do not establish lost alerts or an outage.
+
+## Limitations
+- Only the current message has parser, reader, and validation outputs; prior-message parsing performance cannot be assessed.
+- Evidence is marked untruncated, but original Discord content, attachments, parser rules, and validation schema are not supplied.
+- No verified premium-unit convention, contract listing, contemporaneous quote, or broker fill is provided.
+- No broker-confirmed execution, simulation result, or performance calculation is supplied; caller-reported gains do not establish realized results.
+- The findings are proposals requiring source verification, not confirmed defects or completed changes.
+
+---
+
+# Reader Review — 2026-09-16 — 9f2d326e86b5b50a35f0
+
+The current message is a plausible contextual close alert for the caller's SPY 759 call, but the parser returned no action and validation rejected the reader's interpretation. This is a candidate context-handling issue requiring source and eligibility-policy verification, not a confirmed parser bug.
+
+## Findings
+- Midas posted "Sold @herr" after "Loaded SPY 759c 9/16 @here", "2.32 fill on 1 contract @here", and two stop-loss messages. The reader proposed CLOSE for SPY 759 CALL, expiry "9/16", with no exit price or quantity; the parser returned null fields and fire=false. Verify the original messages and position linkage, then review whether symbol-less close language can be associated with an eligible, unambiguous same-caller position. Test the malformed mention "@herr" without assuming it caused the parser result. Do not treat the proposed close as an executed trade.
+- The reader cited the contract-identifying message ending 1549776924711190659, which is marked history=true and is absent from eligible_prior_ids. Validation reported unsupported_context_id and expiry_not_literal, and stated that SPY was not in the current message. The eligible messages contain a fill and stop commentary but no explicit contract identity. Review historical-message eligibility and event ordering against the retained source. The contract message was posted before the fill but enqueued afterward. Determine whether verified backfilled context should be eligible under the intended policy; otherwise preserve an unresolved close reference rather than bypassing validation or borrowing an older trade's identity.
+- "2.32 fill on 1 contract" describes an entry claim, while "Stop loss is 758.60" follows commentary about a SPY bounce at 758.60. The current sale message supplies no exit premium. The caller also says followers may not receive the caller's exact average. Keep entry premium, quantity, underlying stop level, and exit premium separate. Verify premium units and the instrument multiplier before any dollar conversion; do not derive an exit from the underlying stop or treat missing exit data as zero. Preserve the reader's unknown exit price and verify the closed quantity separately.
+
+## Limitations
+- Only the current parser result is supplied; prior parser outputs, position state, and the complete context-eligibility policy are unavailable.
+- The supplied evidence is marked untruncated, but that does not establish complete channel coverage.
+- No broker fills or contemporaneous quotes are provided. Caller statements do not establish broker-confirmed execution or realized returns.
+- The expiry is written as "9/16" without a year; no normalized expiration date is verified.
+- A provider timeout followed by a successful fallback is recorded. This does not establish a Discord outage or explain the parser's no-action result.
+
+---
+
 # Reader Review — 2026-09-16 — 67623a4565532952c105
 
 The reader treated the ambiguous update "20% 195" as a QCOM call trim and placed "20%" in the price field. Validation rejected the output for a nonnumeric price and flagged an unsupported context ID. These observations warrant source-verified review, not a confirmed parser-bug classification.

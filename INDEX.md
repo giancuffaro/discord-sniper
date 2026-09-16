@@ -21,6 +21,7 @@ was archived.
 | `EXTRAS.bat` | Stop the bridge, tail its log, check the keys, list what the reader missed today. |
 | `FIX SDK DEPS.bat` | Repairs the bridge's Python packages if the Webull SDK pins break. |
 | `MAKE DESKTOP ICON.bat` | Desktop / taskbar shortcut for START HERE. |
+| `PROVE FUTURES STOPS.bat` | **The one real trade that opens futures.** Runs `futures_protection_proof.py` in DRY RUN (preflight + the plan, nothing sent) and tells him to re-run with `--live` himself. A live run places ONE real MES order, proves the fill → stop → verify → cancel → flat loop at the broker and writes `futures_protection_proof.json`. It never passes `--live` for him. |
 | `SETUP TRADIER.bat` | Connects Tradier read-only. Fund the account BEFORE generating the key — Tradier revokes API access on unfunded accounts and you would have to make it twice. |
 | `SETUP TASTYTRADE.bat` | Connects tastytrade read-only. OAuth: you make a client secret + refresh token in your browser, paste them here. Your password is never asked for. Places no orders, does not switch the bot off Webull. |
 
@@ -52,6 +53,7 @@ down until you delete it.
 | File | Answers |
 |---|---|
 | `now.py` | Behind WHAT DO I HOLD.bat. Exists because a log line was read as current state (9/4 SPY x5) — logs are past tense, the account is the present. |
+| `futures_protection_proof.py` | The harness behind that .bat, and the only thing that can open the Webull futures entry gate. One MES contract, every step verified at the broker, loud and specific on every failure (which client order id to look up, what to close by hand), no retries, no proof file unless every step passed. Reading the gate: `webull_futures.protection_proof_state()`. |
 | `replay_check.py` | "What did we miss TODAY?" Replays the day's real messages, flags silent drops and possible missed entries. |
 | `audit_history.py` | "What have we missed EVER, and why was a room quiet?" → `ALERT-AUDIT.html` |
 | `scoreboard.py` | Per-room signal/trade scoreboard → `SCOREBOARD.html` |

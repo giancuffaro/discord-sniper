@@ -552,6 +552,24 @@ em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
 | `reference/ENTRY-SLACK-REPLAY.csv` | `date, time, kind, occ, symbol, qty, our_bid, actual_fill, improvement, status, bid_at_read, ask_at_read, quote_gap_s, why` + `slack_<0/2/3/5/7.5/10>_cross / _entry / _pl` | One row per option order with a recorded outcome (178 of 201 ORDER INs): `kind=nofill` rows carry what each slack level would have crossed at and what the trade would have been worth under the live ratchet; `kind=fill` rows carry the price improvement resting earned and what each slack would have handed back (`_pl` negative = cost). `status` is `scored` / `quarantined` (the tape's ask was at or under our bid, so it disagrees with the broker) / `unscored` (no quote within 90s of the order — never estimated). **Derived, rewritten from `trades.log` + `tape.py` every run** — nothing in it is irreplaceable. |
 | `daily-reports/ENTRY-SLACK week-of-….md` (that day's `===== Tue Sep 15 2026 =====` block) | — | One `VERDICT —` line (the brief carries it verbatim), the population and its COVERAGE, the slack→cost/benefit table read as a DIFFERENCE against today's rule, the paired bootstrap band, today's no-fills, why the rescues still lost, and the quarantined and unscored rows by name. |
 
+## The futures protection proof (9/16)
+
+**`futures_protection_proof.json`** (repo root, written ONLY by a clean full
+run of `futures_protection_proof.py --live`, never by hand, never by the
+bridge) — `proof_version`, `written_at` (ET, ISO), `root`/`contract`
+(e.g. `MESZ6`), `account_tail` (last 4 only — never the whole futures account
+number), `module` + `module_sha256` (sha256 of `webull_futures.py` as it was
+when proven), `stop_points`, `fill`, `orders {entry, stop, flatten}` (each with
+its reserved `client_order_id`, the broker's own order id, timestamps, side,
+quantity, order type, fill price), and `steps` — one row per verification
+(`name`, `ok`, `at`, `detail`) for all nine of
+`webull_futures.PROOF_STEPS`. **It is the futures entry gate**: missing,
+malformed, one `ok:false`, one step short, or a sha256 that no longer matches
+`webull_futures.py` → every Webull futures OPEN is refused with the reason in
+English. Not derived and not rebuildable from anything on disk — the only way
+to make another one is to run the trade again. If it is absent from the repo,
+the loop has never been run.
+
 ## The index mirror (9/13)
 
 | File | Columns | What it is |

@@ -12,6 +12,66 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-16 (futures: the door now opens on evidence, and the evidence has not been earned yet)
+
+G funded futures and his alerts would not trade. The cause was one line:
+`webull_futures.protective_entries_ready()` returned a hardcoded `False`, so
+every Webull futures OPEN was refused before any broker call. That `False` was
+right, and the reason was in its own docstring — "until exact fill/stop/cancel
+reconciliation is proven". Webull has no OCO for futures, so the protective
+stop is a SEPARATE GTC `STOP_LOSS` sent after the fill; if that second leg
+silently fails he is long a micro with no stop on a ~$600 account. The stop
+machinery was already built and unit-tested against a fake broker (8 tests).
+Nobody had ever run the loop against Webull itself.
+
+"Fix it" therefore did not mean flip the bool. It meant build the proof and let
+a passing proof open the door.
+
+WHAT SHIPPED
+- `futures_protection_proof.py` (≈640 lines) — the harness G runs. DRY RUN by
+  default; sending needs BOTH `--live` and a typed `YES`. Preflight: futures
+  session open now and in 20 minutes, SDK + keys connect, futures account and
+  `order_v3` stop API present, futures buying power ≥ $500, `front_month("MES")`
+  returns an exact contract code, no MES position, no working MES orders — an
+  UNREADABLE positions or orders read counts as a failure, because an
+  unreadable read is not a flat account (F02's lesson). Then it prints exactly
+  what it is about to do, what it costs normally (~$3.75 of spread and
+  commission) and what it risks (seconds long with no stop; $50 of intended
+  risk at 10 MES points).
+- The sequence, one MES contract, verified at the broker at every step: entry
+  sent with a client id reserved BEFORE the send → that exact id polled until
+  Webull says FILLED with a price → GTC STOP_LOSS placed under the confirmed
+  fill → re-read and matched exactly → cancelled → re-read and required
+  CANCELLED → flattened → flat confirmed by a positions read.
+- FAILURE IS THE PATH THAT MATTERS. Nine exit codes, each with a loud block
+  naming the client order id and the order of operations by hand — always
+  cancel the stop BEFORE flattening, because a flatten under a live stop can
+  leave a resting order that opens a SHORT. It never retries and it never
+  writes a proof unless every step passed.
+- `protective_entries_ready()` now reads `futures_protection_proof.json`:
+  exists, parses, right version, all nine steps `ok:true`, and its recorded
+  sha256 still equals `webull_futures.py`'s. Anything else is False with a
+  sentence a human can act on, and that sentence reaches `execute()`'s refusal,
+  `/mode` (`webull_futures_entry_reason`) and the popup (v3.8.37). ANY edit to
+  `webull_futures.py` invalidates the proof and shuts the door again.
+- `PROVE FUTURES STOPS.bat` — double-click, dry run, and it never passes
+  `--live` for him.
+- Tests: 8 → 18 in `test_futures_protection.py`. The new ones build their own
+  proof files in a temp dir (no file, malformed, wrong version, failed step,
+  stopped-early, stale hash, good proof) and walk the harness end to end
+  against a fake broker — one clean pass that writes a proof the gate then
+  accepts, and one mismatched stop that stops the run at code 5, sends no
+  further orders and writes nothing. Suite 312 → 322 pass (the paho collection
+  error is unchanged and pre-existing).
+
+WHAT IS STILL NOT PROVEN, said plainly: the proof has NOT been run. There is no
+`futures_protection_proof.json` in the repo and this session did not create one
+— fabricating it would be the same lie as flipping the bool. Futures OPENs are
+still refused today, and stay refused until G runs the trade himself. Beyond
+that one loop, still outside any proof: restart recovery of a GTC stop, a
+partial-fill or cancel/fill race, the stop-to-market replacement on a live
+order, and the ratchet tightening a live futures stop.
+
 - 9/16: G hit the "Can not find script file ...\\_announcer_hidden.vbs" popup twice — the Fill Announcer's 30-minute revive task, still firing a day after announcer.py was deleted. The two one-job .bats (CLEANUP ANNOUNCER, INSTALL MORNING SCHEDULE) were MERGED into one `FIX WINDOWS LEFTOVERS.bat` and both deleted (replace, don't stack; two clicks for one morning's chores is how a chore gets skipped). It deletes the Startup shortcut, deletes the revive task, installs the weekday 08:55 "Discord Sniper - START HERE 8:55" task, prints its next run time, and is safe to run twice. A Linux VM has no schtasks, so this is his double-click, not ours — stated rather than pretended.
 
 ## 2026-09-16 (no Discord tabs at the open, again — the morning is now a scheduled task)
