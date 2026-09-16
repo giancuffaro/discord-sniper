@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — 6f111dc40b0e7bf8b998
+
+The reader proposed a contextual close of SPY 759 calls expiring 9/16, while the parser returned no action and validation rejected the reader output. The supplied history supports this as a review candidate, but the contract-identifying message was outside the validator's eligible context. This is not a confirmed parser bug or broker-confirmed exit.
+
+## Findings
+- The current message says only "Sold @here" followed by edit/display metadata. The same caller previously posted "Loaded SPY 759c 9/16 @here" and "2.32 fill on 1 contract @here". These support the reader's proposed CLOSE interpretation, but the current message does not independently identify a contract, exit price, or quantity. Verify the original message, edit history, and same-caller position continuity before classifying this as a missed contextual close. Preserve the missing exit price and quantity rather than deriving them from the entry.
+- The reader cited contract-identifying message 1549776924711190659, which is marked history=true and is absent from eligible_prior_ids. Its other cited message, 1549777200461516891, is eligible but supplies only a fill and quantity. Validation returned expiry_not_literal and unsupported_context_id, explaining that SPY is absent from the current message. Review the intended context-eligibility policy and confirm which source messages were available and authorized at decision time. Determine whether the rejection correctly enforces that policy or whether verified historical entry context should be eligible; do not bypass validation solely because the full supplied history makes the interpretation plausible.
+- The contract-identifying entry was posted before the fill but enqueued after it, and the current message was also enqueued later than its posted timestamp. The surrounding messages include "Stop loss is 758.60" and "Stop loss is strict", but no exit premium. Earlier profit claims concern other trades. Inspect retrieval and event-ordering records for possible context-availability effects without declaring an outage. Keep the apparent underlying stop level separate from option premium, preserve the raw entry value 2.32, and verify premium units before conversion. Do not infer a stop fill, exit premium, or return from "Sold" or prior trades' profit claims.
+
+## Limitations
+- Although the evidence is marked untruncated, it does not establish complete channel coverage or complete position history.
+- No broker fills, contemporaneous quotes, or execution ledger are supplied; caller statements and reader confidence do not establish actual execution.
+- The original edited-message versions, parser context policy, and validator implementation are unavailable.
+- No exit-price or return calculation is provided, and no simulation result is shown.
+
+---
+
 # Reader Review — 2026-09-16 — cbc1c0f9935a4c301635
 
 The current message supports TRIM AAPL. The reader's 9/18 335 CALL attribution matches Brett's supplied entry, but that entry is not in validation's eligible prior IDs. This is a context-eligibility review candidate, not a confirmed parser bug.
