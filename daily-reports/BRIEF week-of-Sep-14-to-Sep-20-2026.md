@@ -1,5 +1,53 @@
 # BRIEF — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Wed Sep 16 2026 =====
+
+# SNIPER BRIEF — 2026-09-16
+
+## Day
+- Webull margin day P&L: +$43 on 49 broker legs (gross of fees)
+- Balance: NLV $938.81 (-$465.41 vs 2026-09-15) · read 2026-09-16T16:40:17
+- Bot: -$129 · 3 trades, 3 contracts
+- Hand (G): +$172 · 22 trades, 106 contracts
+- Ledger day total: +$43
+
+## Bot trades
+```
+time   channel             trader           tkr    contract         in    out        $  why exited
+--------------------------------------------------------------------------------------------------
+09:39  Honeydrip daytrad…  Unraveller       TSLA   355P 9/18      4.80   4.30     -$50  born stop
+09:40  Honeydrip daytrad…  Mike             TSLA   350P 9/18      2.65   2.33     -$32  born stop
+09:41  Honeydrip daytrad…  Brett            AAPL   335C 9/18      3.40   2.93     -$47  born stop
+```
+entry slack (OFF, measured): 0 no-fills today; nothing beats today's rule: every slack level from 2% to 10% comes out behind it (-$13 to -$266), and the 95% band on 140 paired orders (-$3.24 .. -$0.74 per order) CLEARS zero
+
+## Callers right / wrong
+**Right**
+- AbTrades SPY 760C 9/25 +25.0% (trim) — bot: no
+- Skyy QQQ 713C +15.0% (trim) — bot: no
+- ☀️｜daytrades-scalps META 665P 9/18 +15.0% (trim) — bot: no
+- ☀️｜daytrades-scalps MSFT 495P 9/18 +20.0% (trim) — bot: no
+- 🇳🇬｜midas-small-account-… SPY 761C 9/16 +80.0% (full) — bot: no
+**Wrong**
+- Brett AAPL 335C 9/18 -26.5% (full) — bot took it: -$47
+- Mike TSLA 350P 9/18 -22.0% (full) — bot took it: -$32
+unscored (no exit price — never estimated): none
+ratchet on those 10 caller-priced paths: -1361 per 1-contract replay
+
+## What broke
+- REFUSED 3 — OPEN GOOGL (Unraveller's call) 347.5C 9/18 x1 @ 9.00 -> GOOGL260918C00347500 is too thin to trade: only 66 contracts tr…
+- POSTCHECK PROBLEM 1 — FILLED TSLA — PROBLEM: book holds QQQ, the account doesn't
+- EXPIRY 2 — QQQ 713C had no date — using 2026-09-16: today (2026-09-16) IS a listed expiration for QQQ, so 0DTE it is
+- AI READ 8 — saved key check: verified (HTTP 200)
+- MIRROR — bars unavailable, 3 alert(s) unscored: BentoClientError: 422 data_end_after_available_end
+
+## Pending (G's action)
+- Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does i…
+- NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
+- NOTHING REOPENS A DISCORD ROOM TAB — only START HERE does (G, 9/8), and it starts the DISCORD BROWSER only wh…
+
+built from master_ledger.csv, master_broker.csv, balance_daily.csv, trades.log, daily-reports/CALLER-OUTCOMES.csv, daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md, daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md, daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md, department-reports/extension-*.json, HANDOFF.md · 2026-09-16 16:42 Eastern Daylight Time
+
 ===== Tue Sep 15 2026 =====
 
 # SNIPER BRIEF — 2026-09-15
