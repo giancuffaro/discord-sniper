@@ -1,5 +1,22 @@
 # Health reviews — newest first
 
+# Health — 2026-09-16 — be083d675e2ba7fd2970
+
+The evidence shows many alert sources marked ON but with no corresponding browser tab, alongside several open tabs whose reader heartbeat has not been seen for a while. This suggests incomplete browser-side coverage or stale/inactive readers, but the source data does not confirm an outage versus a quiet room or an intentional detached setup.
+
+## Findings
+- Multiple entries state "is ON but has no tab in this browser" including AbTrades Alert Bot, Brando Alerts, Brick Alerts, Chika Alerts, Demon day-trades, Ducci Alerts, FloridaManFinance, Hog Alerts, Jon Tran Alerts, Maguro Alerts, Mugzone Options, NGD ngd-trades (Ninjago Futures Radar), Nando Alerts, OWLS all-alerts, OWLS jon-and-kian, Optionality free-trades, PhiccDuck Alerts, Quantum Alerts, Shoof Alerts, Whop 2K Challenge, Xephyr Alerts, eli, and shabs. Verify whether these sources are intentionally running without browser tabs, or whether browser tabs/feeds are missing and need to be restored or reconnected.
+- Several tabs are described as open but their reader "hasn't beaten in a while": Platinum equity tab, Whop 2K Challenge tab, Whop Day Trades tab, Whop Futures tab, Whop High Risk tab, and Whop Swing Trades tab. Check whether these readers are merely quiet/inactive or whether their heartbeat/refresh mechanism is stalled. Confirm expected heartbeat timing before treating them as outages.
+- The session is marked "in_session": true while the browser-side alerts and tabs are not fully aligned. Perform a source-by-source inventory to separate active monitored feeds from missing browser tabs and from quiet-but-healthy channels.
+
+## Limitations
+- No timestamps are provided, so "hasn't beaten in a while" cannot be measured against an expected interval.
+- The evidence does not confirm whether any source is actually down; quiet feeds and outages are not distinguishable from the provided text alone.
+- "ON but has no tab" indicates a coverage mismatch in the browser, but does not by itself prove a parser bug or a failed upstream source.
+- No prices, fills, or numerical trade results are present, so no monetary validation is possible.
+
+---
+
 # Health — 2026-09-16 — ce64520035f2aeedbffd
 
 The provided snapshot shows an active session, but several Whop tab readers are reported as stale and the Discord extension heartbeat is missing or stale. This suggests possible monitoring silence or a heartbeat problem, but the source does not confirm whether this is an outage, an intentional quiet period, or a parser issue.
