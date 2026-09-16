@@ -1,5 +1,21 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — ca58e62ab667aaa33020
+
+Source verification is needed for the reader's unsupported SPY assignment and its treatment of an existing-position report as OPEN. The current message supports a 7650 call reference, but omits the ticker, expiry, premium and quantity. Validation rejected the reader output; the parser did not fire.
+
+## Findings
+- The reader assigned ticker SPY with confidence 1.0 and no supporting_ids. The current text is "im in 7650c @here, bought early jumped but now back to entry" and contains no ticker. Validation returned ok=false because "the reader named SPY but it isn't in the message"; eligible_prior_ids is empty. Earlier commentary mentions both SPX and SPY. Review ticker attribution against the original source and context-eligibility rules. Leave the ticker unresolved unless permitted, retained evidence identifies it. Do not substitute SPX solely from the strike level or earlier commentary.
+- The reader returned OPEN, CALL and strike 7650, while the parser returned null action, side and strike with fire=false. "7650c" supports a call/strike interpretation, but "bought early" describes an earlier purchase rather than clearly announcing a fresh entry. Verify how the application distinguishes delayed position disclosures from new-entry alerts and whether descriptive contract fields can be retained without firing. Treat this as a review proposal, not a confirmed parser omission; missing contract identity may justify abstention.
+- The current message provides no numeric entry premium, expiry or quantity. "Back to entry" supplies neither an entry amount nor an exact exit. The reader appropriately left price, expiry and qty null. Preserve these fields as missing, not zero. Keep 7650 as the stated strike rather than a premium or underlying quote. Do not borrow prices from earlier put trades or infer a fill, return or premium unit from this wording.
+
+## Limitations
+- Although the supplied evidence is marked untruncated, it does not establish the complete original conversation, contract identity or permitted context policy.
+- No broker fills, contemporaneous quotes or verified premium-unit convention are supplied. Caller statements are not broker-confirmed results.
+- The parser's abstention rationale and downstream handling are not provided, so the evidence does not establish a confirmed parser bug or any executed trade.
+
+---
+
 # Reader Review — 2026-09-16 — 0b95fedf306c4daa9860
 
 The current message supports a reported NVDA partial exit, but the full option contract and premium units require verification. The reader inferred contract details from an ineligible prior message, and validation retained the inferred expiry despite flagging its support. These are review candidates, not confirmed parser bugs.
