@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — 0b3784fe8b428fc994c5
+
+The current message plausibly reports a stop-loss outcome, but the reader's MNQ ticker, SHORT side, and 1.0 confidence are not supported by the eligible evidence. Validation rejected the reading; the parser's non-firing result is not a confirmed bug.
+
+## Findings
+- The current text is '@Futures Alerts SL. All good, can't win them all'. The reader returned CLOSE with confidence 1.0, but the message contains no instrument, position identifier, quantity, or exit price. Verify the original trade linkage before treating this as a position-specific close. Consider retaining it as an unlinked, caller-reported stop-loss outcome pending verification, rather than an executable instruction or confirmed fill.
+- The reader returned ticker MNQ and side SHORT. Its sole supporting message says 'This looking doomed... Selling pressure looks like its too high for rn', which establishes neither ticker nor position side. Validation reported: 'the reader named MNQ but it isn't in the message'. Review whether contextual inference exceeded the eligible source evidence. Require explicit instrument and side evidence or a verified position link; selling pressure alone does not establish a SHORT position.
+- Earlier history includes 'IN MNQ SHORT @ $29400.75 SL @ $29428.50 TP @ $29372', followed by 'MNQ BANG FULL TP'. Later setup commentary lacks explicit instrument and entry levels in the supplied text, and involves both PT | kev and @Futures Alerts. Verify session, trade, and author linkage before carrying earlier MNQ SHORT details into the current outcome. The earlier full-TP report is a reason not to assume that earlier trade remains open, although it is not broker confirmation.
+
+## Limitations
+- The evidence is marked untruncated, but no verified position ledger, reply linkage for the current message, or underlying stream content is supplied.
+- No broker fills or simulation results are supplied; SL and FULL TP are caller reports only.
+- The current trade's instrument, side, entry, exact exit, quantity, and realized result remain unresolved. Missing values are not zero.
+- The '1.5rr' commentary does not establish a realized return. No supplied calculation supports a numerical profit or loss.
+- These findings are review proposals requiring source verification, not confirmed parser defects.
+
+---
+
 # Reader Review — 2026-09-15 — 79e0a3689613da3b3934
 
 The current SLV alert supports review of a possible parser extraction gap: the parser returned null fields and fire=false, while the reader extracted an OPEN call alert and validation accepted it. This is a source-verification proposal, not a confirmed parser bug.
