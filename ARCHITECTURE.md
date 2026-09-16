@@ -79,12 +79,13 @@ Dependency edges below are the REAL import graph.
 | `positions.py` | 3983 | the Book: position state, ratchet, stops, trims, P&L |
 | `signals.py` | 2350 | the PYTHON MIRROR of the JS parser (parity-tested, not in the live path) |
 | `webull_options.py` | 2283 | every Webull call. Nothing else may talk to the broker |
+| `webull_futures.py` | 731 | Webull futures leg, and the entry gate that reads the live-broker proof |
+| `futures_protection_proof.py` | 731 | the supervised one-lot MES run that writes that proof. Never called by the bridge |
 | `dxlink.py` | 712 | stdlib WebSocket + GreeksBus + shadow quote stream |
 | `guards.py` | 608 | pre-trade refusals |
 | `props.py` | 593 | futures brokers (Topstep/ProjectX, NinjaTrader) |
 | `tastytrade.py` | 556 | tastytrade OAuth + REST |
 | `telemetry.py` | 509 | per-fill latency chain + entry math -> telemetry.csv |
-| `webull_futures.py` | 446 | Webull futures leg |
 | `tradier.py` | 404 | Tradier REST |
 | `quote_bus.py` | 385 | the 1/sec option quote poller + rate Budget |
 | `health.py` | 377 | connection health, measured |
