@@ -1,5 +1,19 @@
 # Health reviews — newest first
 
+# Health — 2026-09-16 — ba422a747837657445e7
+
+The evidence shows the session is active, but 32 alert channels are reported as ON while having no tab in this browser. This is a visibility/mapping issue to verify, not a confirmed outage or parser defect.
+
+## Findings
+- in_session=true; issues list contains 32 entries of the form "<channel> is ON but has no tab in this browser" (for example: AbTrades Alert Bot, Aristotle, Mugzone Options, Platinum equity, Quantum Alerts, Xephyr Alerts, shabs). Verify the source of truth for browser/tab inventory and confirm whether these channels are expected to exist in a different window, profile, or device. If they are meant to be present here, reconcile the tab mapping before treating the missing-tab state as an outage.
+
+## Limitations
+- The evidence provides only presence/absence flags for tabs; it does not include tab IDs, timestamps, or the underlying alert content.
+- Missing tab information is not the same as zero alerts, and the data does not establish whether the tabs are closed, hidden, in another browser context, or whether the inventory is stale.
+- No broker-confirmed fills, quotes, or trade outcomes are present, so no performance or execution conclusions can be drawn.
+
+---
+
 # Health — 2026-09-15 — 364fddc1596b91b8a695
 
 The session is active, and multiple Whop tabs (2K Challenge, Day Trades, Futures, High Risk, Swing Trades) are reported as open but without a recent reader heartbeat. This suggests possible reader inactivity or stale updates, but the evidence does not confirm an outage versus an intentionally quiet room.

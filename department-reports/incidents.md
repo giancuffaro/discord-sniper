@@ -1,5 +1,21 @@
 # Incident reviews — newest first
 
+# Incident — 2026-09-16 — ba422a747837657445e7
+
+During an active session, the evidence reports 32 alert sources as ON with no corresponding tab in this browser. This is a potential browser-coverage gap requiring verification, not proof of an ingestion outage or missed alerts.
+
+## Findings
+- The supplied snapshot has in_session=true and lists 32 sources with the status 'is ON but has no tab in this browser.' These include AbTrades Alert Bot, Aristotle, multiple OWLS and Platinum channels, Vero 1, Vero 2, eli, and shabs. Verify the snapshot against current browser-tab inventory, source-to-tab mappings, and the intended monitoring architecture. Determine whether these sources require tabs in this browser or are covered by another browser, session, or ingestion service before classifying a coverage incident.
+- The evidence contains configuration and tab-presence warnings but no source-message timestamps, ingestion logs, heartbeats, or delivery records. Compare recent source activity with ingestion and delivery records for each listed source. Distinguish quiet channels from collection failures; classify missed alerts only when source messages and absent downstream records are verified.
+
+## Limitations
+- Evidence is marked untruncated, but its scope is limited to the supplied issue list.
+- No observation timestamp, browser identity, or duration of the reported condition is provided.
+- Missing tabs in this browser do not establish missing coverage across all collectors.
+- No missed-alert count, outage duration, or trading impact can be established from this evidence.
+
+---
+
 # Incident — 2026-09-15 — c512fd208f809dee240a
 
 The supplied in-session snapshot reports enabled sources without tabs in this browser and five open Whop tabs with stale reader heartbeats. These are potential monitoring gaps requiring verification, not confirmed outages or parser bugs.
