@@ -4561,6 +4561,10 @@ class Handler(BaseHTTPRequestHandler):
         fut_gate = _wf_proof_by_symbol()
         fut_ready, fut_why = _wf_proof()
         return {"mode": "per-room",
+                # READ ONLY (9/16): execution.mode == "webhook" forces
+                # live_order False at the dispatch boundary. Rooms still
+                # read and log; nothing reaches the broker.
+                "read_only": MODE == "webhook",
                 # PER-CHANNEL LISTS, SERVED TO THE EXTENSION (9/8). These live
                 # in rooms.txt, but the extension's parser is what applies
                 # them, and it reads its config from chrome.storage — which
@@ -5826,9 +5830,17 @@ class Handler(BaseHTTPRequestHandler):
                                                "numbers": strategy_numbers()})
 
     def _fix(self):
-        """POST /fix {"do": "restart_bridge"} — the buttons beside the
-        needs-you list. Each is something G used to do with a .bat file;
-        the button IS him doing it."""
+        """POST /fix {"do": "restart_bridge"|"read_only_on"|"read_only_off"}
+        — the buttons beside the needs-you list. Each is something G used to
+        do with a .bat file; the button IS him doing it.
+
+        READ ONLY (G, 9/16: "make me a read only no execute button") is
+        execution.mode = "webhook": every room keeps reading, every alert is
+        still parsed, judged and logged, and `live_order` at the dispatch
+        boundary is forced False, so NOTHING is sent to the broker. Positions
+        already open keep their resting stops at Webull — this stops new
+        orders, it does not abandon what is held. Off is instant; back on
+        needs the caller to mean it (read_only_off)."""
         try:
             n = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(n) or b"{}")
@@ -5841,6 +5853,18 @@ class Handler(BaseHTTPRequestHandler):
                     f.write("popup %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
                 note("CODE     restart requested from the popup")
                 return self._json(200, {"ok": True, "why": "restart queued — it goes the moment nothing is in flight"})
+            if do in ("read_only_on", "read_only_off"):
+                want = "webhook" if do == "read_only_on" else "dryrun"
+                if MODE == want:
+                    return self._json(200, {"ok": True, "read_only": MODE == "webhook",
+                                            "why": "already %s" % ("READ ONLY — no orders"
+                                                   if want == "webhook" else "able to trade")})
+                ok, why = save_mode(want)
+                note("MODE     %s (%s)"
+                     % ("READ ONLY — no orders will be sent" if want == "webhook"
+                        else "able to trade again; each room's own toggle still decides",
+                        why))
+                return self._json(200, {"ok": ok, "read_only": MODE == "webhook", "why": why})
         except OSError as e:
             return self._json(200, {"ok": False, "why": str(e)[:120]})
         return self._json(400, {"ok": False, "why": "unknown fix %r" % do})

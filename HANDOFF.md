@@ -2,26 +2,22 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-16 — the futures door opens on EVIDENCE, PER MICRO: `futures_protection_proof.json` carries a block for MES and one for MNQ (PROVE FUTURES STOPS.bat, his own one-lot trades). Ratchet 10/10/10 since 9/15.
+Last updated: 2026-09-16 — a READ ONLY button (no orders, rooms still read) and its typed-YES resume; futures gated per micro on a live-broker stop proof (MNQ + MES, neither proven yet); 8:55 START HERE task; ratchet 10/10/10.
 
-## How to update this file (long form: OPERATIONS.md)
-- A STATE, not a story: edit the rule that changed IN PLACE (REPLACE, DON'T
-  STACK, below).
-- ONE RULE, ONE LINE. Numbers, formats, procedures and rationale are MECHANICS:
-  one reference doc per subsystem. G's own wording stays verbatim.
-- Bump the one "Last updated:" line; never prepend an essay. Session notes and
-  post-mortems go to HANDOFF-LOG.md ("SESSION NOTES", newest first, dated) —
-  that file grows forever, this one may not.
-- HARD CEILING: UNDER 15 KB (was 14; raised 9/15 rather than cut real rules to
-  hit a round number). Past it you are writing history or mechanics: move it
-  (history → HANDOFF-LOG.md, how-it-works → reference/).
-- No handoff copies, dated handoffs or upload snapshots; daily performance lives
-  in `daily-reports/`.
+## How to update this file (long form: reference/OPERATIONS.md)
+- A STATE, not a story: edit the rule that changed IN PLACE. ONE RULE, ONE LINE
+  — numbers, formats, procedures and rationale are MECHANICS and live in one
+  reference doc per subsystem. G's own wording stays verbatim.
+- Bump the one "Last updated:" line; never prepend an essay. Session notes go
+  to HANDOFF-LOG.md ("SESSION NOTES", newest first, dated).
+- HARD CEILING: UNDER 15 KB. Past it you are writing history or mechanics —
+  move it out. No handoff copies or dated handoffs; performance lives in
+  `daily-reports/`.
 
 ## Where the mechanics live (one per subsystem; see INDEX.md)
-reference/: ENTRIES · RATCHET · ROOMS-TABS · OPERATIONS (restarts, the 16:40
-audit, git, autopilot, readers, keys, PC2, caller research, weekly files, house
-rules, watch-item detail, this file's long form) · OPTIONS-BROKER-REFERENCE ·
+reference/: ENTRIES · RATCHET · ROOMS-TABS · OPERATIONS (restarts, the 16:40 audit,
+git, autopilot, readers, keys, PC2, weekly files, house rules, watch-item
+detail, this file's long form) · OPTIONS-BROKER-REFERENCE ·
 PULLBACK-LEVELS · CALLER-LEDGER · EOD-BENCHMARK-SPEC · RULES-INDEX (rule →
 the code that enforces it). Also DATA-MAP · MARKET-HOURS · ARCHITECTURE (the
 machine, accounts, coexistence, north star) · INDEX · HANDOFF-LOG.
@@ -48,15 +44,16 @@ ENTRIES · ENTRIES.md
 - WORD ORDER: any order, `bare` rooms only. TWO CONTRACTS = TWO ORDERS (9/10): one each, own stop and ratchet, same ticker; call+put refuses the line.
 - EXPIRY, one place: NDTE = N CALENDAR days rolling BACK, never past today; NO DATE = 0DTE (G, 9/10), the LISTING ASKED never assumed, clues win first; "FRIDAY WEEKLIES ONLY" is DEAD.
 - CONTRACT MUST EXIST (9/15) AND BE IN PRICE BAND (9/14): siblings listed → REFUSE; nothing listed → THROUGH + LISTING line; fails open, a guard never a gate.
-- GUARDS: SPREAD/THIN refuse wide or illiquid; nothing older than 3 min fires; negations hard-veto; DEDUPE ends at ONE average-down ADD under what was PAID; identity = caller+symbol+strike+side+expiry.
+- GUARDS: SPREAD/THIN refuse wide or illiquid; nothing stale fires; negations hard-veto; DEDUPE ends at ONE average-down ADD under what was PAID; identity = caller+symbol+strike+side+expiry.
 - AN EDIT IS A REPLACEMENT, NOT A SECOND TRADE (9/14): it kills the earlier hunt and its bid; two DIFFERENT message ids are two calls.
 - IF THE CORRECTED CONTRACT ALREADY FILLED (9/15, G: "if in profit keep the ratchet and set the stop to breakeven, if it's a losing trade, close it automatically"), on CURRENT BID vs fill. THE ONE EXCEPTION TO ENTRIES-ONLY, not a room exit.
 - RETRACTION ("not ready / scratch that / cancel / disregard / hold off / nevermind") pulls that trader's bids and armed hunts.
-- FUTURES: micros only; their stop/target wins; a Webull OPEN refuses until THAT MICRO's block of `futures_protection_proof.json` proves the fill→stop→verify→cancel loop AT THE BROKER — MES proven is NOT MNQ proven, ES/NQ are gated on the micro they become, the proof holds webull_futures.py's sha256 and dies when that file changes, and running it is HIS one-lot trade per micro (`PROVE FUTURES STOPS.bat`). INDEX MIRROR OFF until a broker-confirmed futures exit exists; THE POCKET default OFF.
+- FUTURES: micros only; their stop/target wins; a Webull OPEN refuses until THAT MICRO's block of `futures_protection_proof.json` proves the fill→stop→verify→cancel loop AT THE BROKER — MES proven is NOT MNQ proven, ES/NQ gate on the micro they become, the proof dies when webull_futures.py changes, and running it is HIS one-lot trade per micro (`PROVE FUTURES STOPS.bat`). INDEX MIRROR OFF until a broker-confirmed futures exit exists; THE POCKET OFF.
 
 EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · RATCHET.md
+- READ ONLY BUTTON (G, 9/16): `READ ONLY - NO ORDERS.bat` sets execution.mode=webhook at the running bridge — rooms keep reading and logging, `live_order` is forced False at the dispatch boundary, nothing reaches the broker, survives a restart. Held positions keep their resting stops. `RESUME TRADING.bat` needs a typed YES. /mode reports `read_only`.
 - NO DAILY LOSS STOP (G, 9/14: "No. We are not gonna do a daily daily stop limit. No. We're not."). Never propose one, never wire one. The per-trade born stop is the only cap.
-- ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop at Webull is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
+- ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
 - THE RATCHET (10/10/10 since 9/15, flat — G: "go back to 10", the August spacing): born −10%; +10% → breakeven; each further +10% locks +10%. `ratchet_tiers.py` is the one implementation, `live_spacing()` the one reader. Stops never loosen; anti-clip off. The sweeps ranked this below 5/3/5 — G's call against that evidence (HANDOFF-LOG). Re-measure as the sample grows.
 - FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number. SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
 - CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent.
@@ -110,10 +107,10 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 - G'S CALL, nothing moves until he says: PULLBACK STOCK TARGET vs THE RATCHET
   (9/10) — a second exit beside the ratchet. (a) delete it (b) keep it.
 - Also open: futures fills → the ledger · telemetry has no room/caller ·
-  the Deepgram key may be one char short · the first overnight swing stop is
-  unconfirmed · a room's NAMED exit misses adopted positions · bridge.log has no
-  rotation · multi-account "L" orphans · Topstep/Webull futures off · 5 Whop rooms
-  export blank rows · Webull 429s at 23-29 per trade, uninvestigated.
+  Deepgram key may be one char short · first overnight swing stop unconfirmed ·
+  a room's NAMED exit misses adopted positions · bridge.log has no rotation ·
+  multi-account "L" orphans · 5 Whop rooms export blank rows · Webull 429s at
+  23-29 per trade · G's round-number exit thesis untested (see HANDOFF-LOG 9/16).
 
 ## Subscriptions
 ≈ $1,220/mo all-in before AI usage ($1,140 rooms + ~$82 infra/fees). Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
