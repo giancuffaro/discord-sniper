@@ -296,7 +296,22 @@ rem  a warm start, from the one-shot request token below. This file only
 rem  seeds each browser with one tab so the extension is running to do it.
 rem  It opens one room every 6 s, in its own lane, and only the rooms whose
 rem  hours are open - 9:15-4:30 PM ET, or any hour for rooms marked `always`.
-powershell -NoProfile -Command "$w = Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle }; if ($w) { exit 0 } else { exit 1 }"
+rem  PER-PROFILE, NOT ANY-CHROME (9/16, G: "discord profile isnt opening").
+rem  This asked "is ANY Chrome window open?" - and the Whop browser IS a
+rem  Chrome window. So with only the Whop profile up, the answer was yes,
+rem  this jumped straight to launch_whop, and the DISCORD browser was never
+rem  started. The open-rooms token it drops is read by the EXTENSION, which
+rem  only exists inside a browser that is already running - no Discord
+rem  browser, nobody to read it, no tabs, and the only trace was
+rem  "discord extension heartbeat missing" in health-latest.json. Now the
+rem  question is "is the DISCORD PROFILE's Chrome running?" - so the Whop
+rem  browser being up no longer answers for it. A profile launched with no
+rem  --profile-directory flag at all IS Default, which is why that case is
+rem  matched separately.
+set "SNIPER_PROFILE=Default"
+if exist "chrome-profile.txt" set /p SNIPER_PROFILE=<"chrome-profile.txt"
+call :resolve_profile "!SNIPER_PROFILE!" SNIPER_PROFILE
+powershell -NoProfile -Command "$t='--profile-directory=!SNIPER_PROFILE!'; $d=('!SNIPER_PROFILE!' -eq 'Default'); $c = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq 'chrome.exe' }; $m = $c | Where-Object { $_.CommandLine -like ('*'+$t+'*') -or ($d -and $_.CommandLine -notlike '*--profile-directory=*') }; if ($m) { exit 0 } else { exit 1 }"
 if not errorlevel 1 (
   rem  HIS CALL 9/8 - "check which are open and open the ones that are
   rem  missing" - REVERSES the 9/2 close-everything rule. Closing Chrome to
@@ -312,7 +327,7 @@ if not errorlevel 1 (
   rem  NOTE - keep these rem lines free of round brackets: a close bracket in a
   rem  rem inside this bracketed block ends the block early in cmd. Known trap.
   echo.
-  echo   [5/5] Chrome is already open - leaving your Discord tabs as they are.
+  echo   [5/5] The Discord browser is already open - leaving its tabs alone.
   echo         Asking the extension to open any missing rooms, one every 6s.
   echo         Still making sure the Whop browser is up...
   rem  The one-shot request: the bridge hands this token to the extension on
@@ -327,7 +342,7 @@ if not errorlevel 1 (
   rem  already running. The Discord side is left untouched.
   goto launch_whop
 )
-echo   [5/5] Chrome isn't running - cold start, seeding both browsers...
+echo   [5/5] The Discord browser is NOT running - starting it, then Whop...
 rem  Dedicated Discord profile (8/23): chrome-profile.txt holds the
 rem  profile-directory name (chrome://version -> Profile Path, last part).
 set "SNIPER_PROFILE=Default"

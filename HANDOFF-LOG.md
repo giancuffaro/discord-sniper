@@ -12,6 +12,33 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-16 pm (why START HERE has been opening nothing for Discord — found and fixed)
+
+G ran START HERE and reported "discord profile isnt opening". health-latest.json:
+0 rooms without a tab but `discord extension heartbeat missing or stale`, lane
+discord fresh=false, lane whop fresh=true — i.e. the Discord BROWSER was not
+running at all, so there were no rooms to be missing tabs for.
+
+ROOT CAUSE, read out of the launcher, not guessed. The warm-start test was
+`Get-Process chrome | Where MainWindowTitle` — "is ANY Chrome window open?".
+The Whop lane runs in its own Chrome profile, so once Whop is up the answer is
+always yes: START HERE writes `open-rooms.request` and `goto launch_whop`,
+leaving "the Discord side untouched" exactly as its comment says. But that token
+is read by the EXTENSION, which only exists inside a browser that is already
+running — no Discord browser, nobody to read the token, no tabs, all day, and the
+only trace is a heartbeat line in a JSON file nobody opens. This is the same
+failure as 9/14 and this morning; the 8:55 scheduled task would NOT have fixed it,
+because it runs the same code path.
+
+FIX: the test is now per-profile — resolve `chrome-profile.txt` first, then ask
+whether a chrome.exe exists whose command line carries
+`--profile-directory=<that profile>` (with a separate clause for Default, which is
+launched with no such flag). The Whop browser being up no longer answers for
+Discord. The failure direction is deliberate: if that PowerShell ever errors it
+exits non-zero, which reads as "not running" and COLD-STARTS the Discord browser —
+the safe mistake. Nothing in the launcher kills Chrome, so a cold start with the
+Whop browser already up just adds the Discord window beside it.
+
 - Two stale pending items pulled out of HANDOFF 9/16 so they stop costing a read every session: (1) "In Claude: use project/PROJECT-INSTRUCTIONS.md as the Project instructions and remove the old uploaded handoffs" — a Claude-side chore, not a machine rule; do it when convenient. (2) "Close any old parked Whop tabs (Chrome flags note)" — Whop has self-healed its tabs every tick since 9/10 and reported no issues all of 9/15 and 9/16, so the parked-tab cleanup is done in practice; the Chrome flags note lives on in reference/OPERATIONS.md if it is ever needed again.
 
 - 9/16, same hour: G asked for the read-only switch as a POPUP toggle rather than a .bat ("trading now / not trading button"), so v3.8.39 puts it at the top of the popup, under the bridge line and above the tabs — a `.tgl.money` switch reading TRADING NOW (red) or NOT TRADING (grey) with a sub-line saying what that means. It posts the same `/fix read_only_on|off` the .bats use; the BRIDGE's `/mode.read_only` is the truth and `_tradingBusy` only stops a 4-second status refresh repainting over an in-flight click. Asymmetric: stopping is ONE tap, starting needs a SECOND tap within 4 seconds (the button says "Tap again to trade"). No confirm() — a modal in an MV3 popup can take the popup with it. Bridge unreachable disables the toggle and says nothing can trade anyway; a failed switch prints "DID NOT STOP — still trading" and points at turning rooms off in Channels. The .bats stay: they work when the popup is closed or Chrome is not running, which is exactly when you most want a kill switch.

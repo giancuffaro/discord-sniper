@@ -99,7 +99,7 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 ## Pending external setup and decisions
 1. Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does it.
 2. NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
-3. NOTHING REOPENS A DISCORD ROOM TAB — only START HERE does (G, 9/8; mechanics in ROOMS-TABS.md), so a morning without it reads NOTHING all day. Weekday 8:55 task "Discord Sniper - START HERE 8:55" installed 9/16 (`FIX WINDOWS LEFTOVERS.bat`); it cannot wake a sleeping PC.
+3. NOTHING REOPENS A DISCORD ROOM TAB — only START HERE does (G, 9/8), and it starts the DISCORD BROWSER only when THAT PROFILE's Chrome is down (fixed 9/16: it asked "is ANY Chrome open?" and the Whop browser answered yes, so Discord never started). A morning without it reads NOTHING all day; the only trace is "discord extension heartbeat missing" in health-latest.json. Weekday 8:55 task installed 9/16; it cannot wake a sleeping PC.
 
 ## Watch items (open) — full text: OPERATIONS.md
 - G'S CALL, nothing moves until he says: PULLBACK STOCK TARGET vs THE RATCHET
