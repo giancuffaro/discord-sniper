@@ -555,20 +555,25 @@ em-dashes to `?`. For anything you can get from `trades.log`, use `trades.log`.
 ## The futures protection proof (9/16)
 
 **`futures_protection_proof.json`** (repo root, written ONLY by a clean full
-run of `futures_protection_proof.py --live`, never by hand, never by the
-bridge) — `proof_version`, `written_at` (ET, ISO), `root`/`contract`
-(e.g. `MESZ6`), `account_tail` (last 4 only — never the whole futures account
-number), `module` + `module_sha256` (sha256 of `webull_futures.py` as it was
-when proven), `stop_points`, `fill`, `orders {entry, stop, flatten}` (each with
-its reserved `client_order_id`, the broker's own order id, timestamps, side,
-quantity, order type, fill price), and `steps` — one row per verification
-(`name`, `ok`, `at`, `detail`) for all nine of
-`webull_futures.PROOF_STEPS`. **It is the futures entry gate**: missing,
-malformed, one `ok:false`, one step short, or a sha256 that no longer matches
-`webull_futures.py` → every Webull futures OPEN is refused with the reason in
-English. Not derived and not rebuildable from anything on disk — the only way
-to make another one is to run the trade again. If it is absent from the repo,
-the loop has never been run.
+run of `futures_protection_proof.py --symbol <MES|MNQ> --live`, never by hand,
+never by the bridge) — **one block per micro**, keyed by root:
+`{"MES": {…}, "MNQ": {…}}`. Each block holds `proof_version` (2), `written_at`
+(ET, ISO), `root` + `contract` (e.g. `MESZ6`), `account_tail` (last 4 only —
+never the whole futures account number), `module` + `module_sha256` (sha256 of
+`webull_futures.py` as it was when proven), `stop_points`, `point_value`,
+`fill`, `orders {entry, stop, flatten}` (each with its reserved
+`client_order_id`, the broker's own order id, timestamps, side, quantity, order
+type, fill price), and `steps` — one row per verification (`name`, `ok`, `at`,
+`detail`) for all nine of `webull_futures.PROOF_STEPS`. **It is the futures
+entry gate, per symbol**: for THAT micro — missing file, no block of its own, a
+block that is malformed or records another root, one `ok:false`, one step
+short, or a sha256 that no longer matches `webull_futures.py` → that micro's
+Webull futures OPENs are refused with the reason in English, while the other
+micro's block still stands on its own. Proving one micro MERGES into this file
+and never rewrites the other's block. Not derived and not rebuildable from
+anything on disk — the only way to make another block is to run that trade
+again. If the file is absent from the repo, the loop has never been run at
+all.
 
 ## The index mirror (9/13)
 

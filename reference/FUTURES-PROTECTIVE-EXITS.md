@@ -1,14 +1,16 @@
 # Futures protective exits (Webull, MES/MNQ)
 
-Current state: **Webull futures entries are gated on a live-broker proof, and
-the index mirror is blocked.** A number stored in the position book is not an
-exit order. `webull_futures.protective_entries_ready()` opens only while
-`futures_protection_proof.json` records a clean run of the fill → stop →
-verify → cancel loop against Webull itself AND still matches
-`webull_futures.py`'s sha256 — mechanics and the failure playbook in
-`OPERATIONS.md`, the harness is `futures_protection_proof.py`
-(`PROVE FUTURES STOPS.bat`). Until that proof exists every OPEN is refused
-with the reason in English.
+Current state: **Webull futures entries are gated on a live-broker proof, PER
+MICRO, and the index mirror is blocked.** A number stored in the position book
+is not an exit order. `webull_futures.protective_entries_ready(symbol)` opens
+only while that symbol's block of `futures_protection_proof.json` records a
+clean run of the fill → stop → verify → cancel loop against Webull itself AND
+still matches `webull_futures.py`'s sha256 — mechanics and the failure playbook
+in `OPERATIONS.md`, the harness is `futures_protection_proof.py`
+(`PROVE FUTURES STOPS.bat`, then `--symbol MES --live` and `--symbol MNQ
+--live`). MES proven is not MNQ proven, and a room's ES/NQ is judged on the
+micro it would actually buy. Until that symbol's proof exists every OPEN in it
+is refused with the reason in English.
 
 Webull supports standalone `STOP_LOSS` orders with `GTC` time in force, but
 its futures API does not support OTO/OCO/OTOCO. Two independent exits (stop
@@ -39,7 +41,10 @@ therefore uses **one broker-held exit order**:
 
 The offline payload, exact order-detail verification and same-order
 stop-to-market replacement helpers are in `webull_futures.py` with fake-broker
-tests. `futures_protection_proof.py` is the supervised broker execution test:
+tests, and the tick and point value of each micro live in one place there
+(`FUT_SPECS`, pinned by test to `bridge.FUT_MULT`).
+`futures_protection_proof.py` is the supervised broker execution test, run once
+per micro:
 it reserves durable client IDs before each send, reconciles the entry fill in
 the futures account, places the stop from that confirmed fill, matches it
 exactly, cancels it, confirms the cancel and proves a flat end state — and

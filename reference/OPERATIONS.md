@@ -29,7 +29,9 @@ ASK-MAP.md.
 
 THE RULE (HANDOFF): a Webull futures OPEN is refused until
 `futures_protection_proof.json` proves the live fill → stop → verify → cancel
-loop, and that proof dies when `webull_futures.py` changes. This is the how.
+loop FOR THAT MICRO, and both proofs die when `webull_futures.py` changes. He
+trades MES ($5 a point) and MNQ ($2 a point); each is proven on its own real
+one-lot trade. This is the how.
 
 WHY A PROOF AND NOT A SWITCH. Webull has no OCO/OTOCO for futures, so the
 protective stop is a SEPARATE GTC `STOP_LOSS` sent AFTER the entry fills. If
@@ -41,42 +43,59 @@ conversation. Until the loop had been run against Webull itself the honest
 answer was "unproven", so `protective_entries_ready()` returned a hardcoded
 `False`. It now returns evidence instead.
 
-THE GATE (`webull_futures.protection_proof_state()`) returns `(ready, reason)`
-and is True only when ALL of these hold:
+THE GATE (`webull_futures.protection_proof_state(symbol)`) returns
+`(ready, reason)` FOR ONE MICRO and is True only when ALL of these hold:
+- the symbol is one of the two micros the loop has ever been proven on
+  (`webull_futures.FUT_SPECS` — MES, MNQ; a room’s ES/NQ is judged on the micro
+  it would actually buy, and MGC/MCL and friends are simply unproven);
 - `futures_protection_proof.json` exists in the repo root and parses;
-- `proof_version` matches `webull_futures.PROOF_VERSION`;
-- every step in `webull_futures.PROOF_STEPS` is present and `ok: true`
+- it holds a block for THAT symbol (`{"MES": {…}, "MNQ": {…}}`) whose `root`
+  is that symbol;
+- that block’s `proof_version` matches `webull_futures.PROOF_VERSION` (2);
+- every step in `webull_futures.PROOF_STEPS` is present in it and `ok: true`
   (preflight, entry_sent, entry_filled, stop_placed, stop_verified,
   stop_cancelled, cancel_confirmed, position_flattened, flat_confirmed);
-- the `module_sha256` in the proof equals the sha256 of `webull_futures.py` as
-  it is on disk right now.
-Anything else is False WITH A REASON in English, and that same sentence reaches
-the refusal `execute()` returns, `/mode`’s `webull_futures_entry_reason`, and
-the popup’s futures line. Editing `webull_futures.py` — any edit — shuts the
-door again until the proof is re-run. That is deliberate: a change nobody
-re-tested is an unproven futures path.
+- the block’s `module_sha256` equals the sha256 of `webull_futures.py` as it
+  is on disk right now.
+Anything else is False WITH A REASON in English that names the symbol and the
+command that proves it, and that same sentence reaches the refusal `execute()`
+returns, `/mode`’s `webull_futures_entry_by_symbol`, and the popup’s futures
+line. `protection_proof_summary()` is the one-line both-micros form `/mode` and
+the popup show; there is no symbol-less `protective_entries_ready()` — MES
+proven is not MNQ proven. Editing `webull_futures.py` — any edit — shuts BOTH
+doors until each proof is re-run. That is deliberate: a change nobody re-tested
+is an unproven futures path.
 
 RUNNING IT IS HIS TRADE, NOT OURS. `PROVE FUTURES STOPS.bat` runs
-`futures_protection_proof.py` in DRY RUN (the default): preflight, then the
-plan in plain words, nothing sent. Sending needs BOTH `--live` and a typed
-`YES`. Nothing in the bridge, the autopilot or a scheduled task ever runs it.
+`futures_protection_proof.py --symbol all` in DRY RUN (the default): preflight
+and a plan in plain words for each micro, nothing sent, and it never passes
+`--live` itself. The two real runs are his, one at a time:
+`python futures_protection_proof.py --symbol MES --live` (10 points = $50 of
+intended risk) and `python futures_protection_proof.py --symbol MNQ --live`
+($20). Sending needs BOTH `--live` and a typed `YES`, per symbol; `--symbol all
+--live` asks again before the second one and stops for good if the first ends
+on anything but a clean pass. Nothing in the bridge, the autopilot or a
+scheduled task ever runs it.
 
-PREFLIGHT — all of it must pass before a YES is even offered: the CME session
-is open now and still open in 20 minutes; the Webull SDK loads and the keys
-connect; `futures_account_id` resolves and `order_v3` exposes place_order /
-get_order_detail / cancel_order; futures buying power reads and is at least
-$500; `front_month("MES")` returns an exact `MES<month><year>` code; the
-futures account holds no MES position; it has no working MES orders. An
-unreadable positions or orders read counts as a FAIL — an unreadable read is
-not a flat account.
+PREFLIGHT — run per symbol, and all of it must pass before a YES is even
+offered: the CME session is open now and still open in 20 minutes; the Webull
+SDK loads and the keys connect; `futures_account_id` resolves and `order_v3`
+exposes place_order / get_order_detail / cancel_order; futures buying power
+reads and is at least $500; `front_month(<micro>)` returns an exact
+`<micro><month><year>` code; the futures account holds no position in THAT
+root; it has no working orders in it. An unreadable positions or orders read
+counts as a FAIL — an unreadable read is not a flat account.
 
-THE SEQUENCE, one MES contract ($5 a point), verified at the broker every step:
+THE SEQUENCE, one contract of that micro, verified at the broker every step:
 buy 1 at market with a client id reserved BEFORE the send → poll that exact id
 until the broker says FILLED with a price (never assumed) → one GTC STOP_LOSS
-10 points under the fill ($50 of intended risk) → read it back and match
-contract, side, size, stop price, STOP_LOSS and working status exactly →
-cancel → read back and require CANCELLED → sell 1 at market → require FILLED
-and then a positions read showing flat. Only then is the proof written.
+10 points under the fill, rounded to that micro’s quarter-point tick ($50 of
+intended risk on MES, $20 on MNQ) → read it back and match contract, side,
+size, stop price, STOP_LOSS and working status exactly → cancel → read back and
+require CANCELLED → sell 1 at market → require FILLED and then a positions read
+showing flat. Only then is that symbol’s block written — MERGED into the file,
+so the other micro’s block is carried across untouched, and an unreadable old
+file is replaced with a warning that says so (it proved nothing anyway).
 
 THE FAILURE PLAYBOOK. Every failure stops the run, names the client order id,
 and never retries. Exit codes: 2 preflight, 3 entry not sent, 4 fill not
@@ -92,13 +111,16 @@ cancelling, 8 flatten/flat not confirmed. What HE does:
   stop client id FIRST, then close the position. Never the other way round: a
   flatten under a live stop can leave a resting order that opens a SHORT.
 - 6 — same order of operations: cancel the stop by hand, then flatten.
-- 7 — the market reached the stop and it did its job (~$50). He is flat, but a
-  cancel was never confirmed, so no proof is written; run it again on a calmer
-  tape.
+- 7 — the market reached the stop and it did its job (~$50 on MES, ~$20 on
+  MNQ). He is flat, but a cancel was never confirmed, so no proof is written;
+  run it again on a calmer tape.
 - 8 — he may still be long with NO stop (it was cancelled two steps earlier).
   Close it by hand now.
-No proof file is written unless every step passed. After a clean pass, restart
-the bridge so `/mode` and the popup pick the open gate up.
+Every failure is per symbol: no block is written for that micro unless every
+step passed, a micro already proven keeps its block, and a `--symbol all` run
+stops at the first failure instead of starting the second trade. After a clean
+pass, restart the bridge so `/mode` and the popup pick THAT micro’s open gate
+up — the other stays shut until it has a run of its own.
 
 ## The daily audit and git (as they were written before reports.py, 9/15 — the
 order is now broker_sync → replay → tests + gate → AUDIT block → reports.build for
