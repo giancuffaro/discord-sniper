@@ -1,5 +1,21 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-16 — b6072c450bed84a38740
+
+The current message explicitly supports TRIM MSFT. The reader links it to a prior MSFT 9/18 495P entry, but validation excludes that supporting message and removes the strike. This is a context-eligibility review candidate, not a confirmed parser bug.
+
+## Findings
+- The current text is '@Unraveller (Admin)🔮 trimming MSFT @ 15% @everyone'. The parser returns TRIM and MSFT with contract fields null and fire=false. The reader supplies expiry 9/18, PUT, and strike 495 using entry message chat-messages-829754942817828884-1549783556442824796: '@Unraveller (Admin)🔮 in MSFT 9/18 495P @5.22 @everyone'. Both messages are scribed for the same named admin in the same channel. Verify the original entry and position-lifecycle linkage before accepting inherited contract details. Review whether context resolution is intended at the parser or reader stage; the parser's null fields alone do not establish a defect.
+- Validation reports ok=true while flagging expiry_not_literal and unsupported_context_id. Its only eligible prior ID is chat-messages-829754942817828884-1549784861844308031, the earlier 'trimming MSFT @ 10%' message, which contains no expiry, strike, or option side. The validated output retains expiry 9/18 and side PUTS but changes strike to null. Verify the eligibility rules and field-level provenance policy. Determine whether the original entry can be reached through an authorized context chain, and why expiry and side survive while strike does not. Clarify whether ok=true means structurally valid rather than fully source-supported.
+- The current message gives '15%' but no exit premium or contract quantity. The reader preserves price=null and qty=null. Earlier same-channel messages use similar 'trimming ... @ ...%' wording, but do not explicitly establish the percentage's meaning. Preserve '15%' as raw reported text and verify whether it denotes reported performance or a trim fraction. Do not use it as an exact exit premium, realized return, or order quantity; retain missing price and quantity as null.
+
+## Limitations
+- Only one current parser, reader, and validation result is supplied; internal eligibility rules, position state, and the reason for fire=false are unavailable.
+- The supplied evidence is marked untruncated, but does not establish complete channel or position-history coverage.
+- No broker fills or numerical performance calculations are supplied. The scribed entry and trim statements are not broker-confirmed execution results.
+
+---
+
 # Reader Review — 2026-09-16 — cd39e75bb77b6ce84dd0
 
 The current message supports an MSFT trim. The reader links it to a retained same-channel, same-attributed-caller MSFT entry, but validation marks that context unsupported and removes the strike. This warrants source and context-eligibility verification, not a confirmed parser-bug finding.
