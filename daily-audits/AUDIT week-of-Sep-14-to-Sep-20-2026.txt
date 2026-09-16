@@ -1,5 +1,85 @@
 # AUDIT — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Wed Sep 16 2026 =====
+
+DISCORD SNIPER DAILY AUDIT — 2026-09-16
+generated: 2026-09-16T16:41:16.105805-04:00
+status: ATTENTION
+silent drops: 4
+possible missed entries: 1
+coverage warnings: 0
+failed checks: none
+
+MESSAGE REPLAY
+REPLAY CHECK for 2026-09-16 — exports: signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt, signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt
+
+Low Key Stonks: ⚖chika-alerts — 26 msgs, 14 actionable, 6 judged, 2 SILENT
+   16:01:48  OPEN    NQ    last short, 260 pivot @Chika Alerts
+   16:01:48  OPEN    NQ    last short, 260 pivot @Chika Alerts
+
+Low Key Stonks: 🍣maguro-alerts — 2 msgs, 2 actionable, 0 judged, 2 SILENT
+   14:29:57  OPEN    GLD   $gld 450c 12.18 5.8 @Maguro Alerts
+   14:29:57  OPEN    GLD   $gld 450c 12.18 5.8 @Maguro Alerts
+
+Platinum Trading: 🟣│futures-alerts — 30 msgs, 2 actionable, 2 judged, 0 SILENT
+
+NGD: ngd-trades — 101 msgs, 101 actionable, 101 judged, 0 SILENT
+
+OWLS Capital: 🛎️｜all-alerts — 52 msgs, 11 actionable, 7 judged, 0 SILENT
+
+Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge — 98 msgs, 12 actionable, 4 judged, 0 SILENT
+
+Low Key Stonks: 😈demon-day-trades — 18 msgs, 4 actionable, 2 judged, 0 SILENT
+
+OWLS Capital: 🌟｜shabs-sky-alerts — 20 msgs, 6 actionable, 2 judged, 0 SILENT
+
+Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps — 72 msgs, 62 actionable, 22 judged, 0 SILENT
+
+OWLS Capital: 🌟｜jon-and-kian — 20 msgs, 3 actionable, 3 judged, 0 SILENT
+
+Honey Drip Network 🍯💰📈: 👑｜aristotle-trades — 14 msgs, 6 actionable, 0 judged, 0 SILENT
+
+OWLS Capital: 🌟｜eli-alerts — 26 msgs, 2 actionable, 2 judged, 0 SILENT
+
+ELITE OPTIONS: brando-alerts — 2 msgs, 2 actionable, 2 judged, 0 SILENT
+
+OWLS Capital: 🌟｜ab — 10 msgs, 6 actionable, 5 judged, 0 SILENT
+
+TradingTheTrend: 🎰lotto-alerts — 2 msgs, 2 actionable, 2 judged, 0 SILENT
+
+Day Trades — 1 msgs, 1 actionable, 0 judged, 0 SILENT
+
+TOTAL silent drops: 4  (actionable per the parser, no verdict, no bridge line)
+
+POSSIBLE MISSED ENTRIES (heuristic — parser found NO action at all, but the trader had an unconfirmed LOADING call and this message carries a price):
+   09:41:18  Honey Drip Network 🍯 midas (admin)   SPY 759C — 2.32 fill on 1 contract @here
+POSSIBLE MISSED ENTRIES: 1
+
+REGRESSION CHECKS
+PASS  JS test_bare_entry.js  0.08s
+PASS  JS test_buy_verb.js  0.08s
+PASS  JS test_dotdate.js  0.08s
+PASS  JS test_elite.js  0.08s
+PASS  JS test_exits.js  0.08s
+PASS  JS test_loaded_fill.js  0.08s
+PASS  JS test_optionable.js  0.03s
+PASS  JS test_owls_jonkian.js  0.09s
+PASS  JS test_percon.js  0.08s
+PASS  JS test_pivot.js  0.06s
+PASS  JS test_plan_entry.js  0.08s
+PASS  JS test_spreads.js  0.08s
+PASS  JS test_word_order.js  0.08s
+PASS  JS test_resolve.js  0.09s
+PASS  Historical parser corpus gate  1.95s
+    11386 messages, 75 rooms, 6362 on the allowlist
+    entries fired BEFORE : 852
+    entries fired NOW    : 852   (+0)
+    all actions BEFORE/NOW: 3048 / 3048
+    JUNK TICKERS: 0
+PASS  Python regression suite  54.23s
+    Ran 318 tests in 30.567s
+    OK
+
 ===== Tue Sep 15 2026 =====
 
 DISCORD SNIPER DAILY AUDIT — 2026-09-15

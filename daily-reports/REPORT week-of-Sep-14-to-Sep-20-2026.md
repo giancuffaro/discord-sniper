@@ -1,5 +1,151 @@
 # REPORT — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Wed Sep 16 2026 =====
+
+# Daily Sniper Report — 2026-09-16
+
+Generated 2026-09-16 16:41:17 Eastern Daylight Time.
+
+## Coverage
+
+- Rooms configured on: **35** Discord and **5** Whop.
+- Rooms/channels with a live parser input today: **16**.
+- Live parser inputs retained: **495** messages.
+- Rooms with no message are quiet or unverified; the report does not call them healthy solely from silence.
+
+## Alert flow
+
+| Measure | Count |
+|---|---:|
+| Unique entry alerts observed (normal + recovered) | 66 |
+| Entry alerts read and given a decision | 66 |
+| Broker entry orders submitted | 6 |
+| Read but not taken | 60 |
+| Broker/risk refusals | 35 |
+| Stale when first read | 0 |
+| Duplicate or other skips | 26 |
+| Recovered entry gaps | 0 |
+| Recovered add gaps | 0 |
+| Actual fills in master ledger | 7 |
+
+## Actual results
+
+- Bot trades: **7** — 1 win, 4 loss, 2 flat.
+- Realized P&L: **-175.00**.
+- Gian QQQ 707.0C 2026-09-16: 3.41 → 3.45, **+8.00** (closed).
+- Unraveller TSLA 355.0P 2026-09-18: 4.8 → 4.3, **-50.00** (closed).
+- Mike TSLA 350.0P 2026-09-18: 2.65 → 2.33, **-32.00** (closed).
+- Brett AAPL 335.0C 2026-09-18: 3.4 → 2.93, **-47.00** (closed).
+- Gian MESZ6 : 7677.5 → ?, **+0.00** (filled).
+- Gian MNQZ6 : 29431.25 → ?, **+0.00** (filled).
+- Gian QQQ 707.0P 2026-09-16: 1.28 → 1.1, **-54.00** (closed).
+
+## Entry and exit comparison
+
+- No filled trade has enough tape for a comparison yet.
+- Exact caller-entry/caller-exit P&L is reported only when both messages and a contemporaneous contract quote exist. Missing exits remain **unavailable**; they are never estimated from a later high or a stale quote.
+- Refused or missed alerts stay outcome-pending until a caller exit can be paired to the recorded contract tape; a later high alone is not labeled a win.
+- No matched trade is available for a system-versus-caller verdict.
+
+## Every recognized decision
+
+| Time | Caller | Room | Alert | Result | Reason | Source message |
+|---|---|---|---|---|---|---|
+| 09:18:22 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4396.60 | failed | futures protective exit not operational; no order sent | unavailable |
+| 09:19:05 | already acted on that exact call 43s ago | unavailable | OPEN MGC @ 4397.10 | skipped | skipped | unavailable |
+| 09:22:11 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4395.10 | failed | futures protective exit not operational; no order sent | unavailable |
+| 09:27:34 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29418.00 | failed | futures protective exit not operational; no order sent | unavailable |
+| 09:28:50 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4398.95 | failed | futures protective exit not operational; no order sent | unavailable |
+| 09:29:34 | already acted on that exact call 120s ago | unavailable | OPEN MNQ @ 29414.13 | skipped | skipped | unavailable |
+| 09:34:59 | Unraveller | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN GOOGL 347.5C 9/18 @ 9.00 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1549775552229941301) |
+| 09:38:47 | Unraveller | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN TSLA 355P 9/18 @ 4.96 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1549776551401365525) |
+| 09:39:13 | Mike | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN TSLA 350P 9/18 @ 3.00 | sent | order sent | unavailable |
+| 09:40:57 | Brett | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN AAPL 335C 9/18 @ 3.17 | sent | order sent | unavailable |
+| 09:41:51 | Unraveller | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | ADD TSLA 350P 9/18 | failed | buying-power safety; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1549777317751033907) |
+| 09:45:49 | that message wasn't in a channel you're listening to | unavailable | OPEN META 665P 9/18 @ 5.25 | skipped | skipped | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1549778337113706579) |
+| 09:46:43 | Demon × LKS | Low Key Stonks: 😈demon-day-trades | OPEN QQQ 713C 9/16 @ 1.00 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/722872384800948227/1169216956746969088/1549778547646664887) |
+| 09:55:44 | EliteOptions | unavailable | OPEN QQQ 713C 9/18 @ 3.66 | failed | failed | unavailable |
+| 10:04:01 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29449.13 | failed | failed | unavailable |
+| 10:05:00 | already acted on that exact call 60s ago | unavailable | OPEN MNQ @ 29448.50 | skipped | skipped | unavailable |
+| 10:06:05 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29450.88 | failed | failed | unavailable |
+| 10:06:33 | that message wasn't in a channel you're listening to | unavailable | OPEN MSFT 495P 9/18 @ 5.22 | skipped | skipped | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1549783556442824796) |
+| 10:08:05 | already acted on that exact call 120s ago | unavailable | OPEN MNQ @ 29450.38 | skipped | skipped | unavailable |
+| 10:08:43 | Skyy | OWLS Capital: 🌟｜shabs-sky-alerts | OPEN QQQ 713C @ 112.00 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1513300726141419550/1549784071863795804) |
+| 10:09:05 | that message wasn't in a channel you're listening to | unavailable | OPEN AAPL 335C 9/18 @ 2.70 | skipped | skipped | unavailable |
+| 10:09:18 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29468.88 | failed | failed | unavailable |
+| 10:10:23 | that message wasn't in a channel you're listening to | unavailable | OPEN AAPL 335C 9/18 @ 10.00 | skipped | skipped | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1549784193574240318) |
+| 10:12:04 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MGC @ 4381.05 | failed | failed | unavailable |
+| 10:12:06 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29445.88 | failed | failed | unavailable |
+| 10:14:04 | already acted on that exact call 117s ago | unavailable | OPEN MNQ @ 29436.88 | skipped | skipped | unavailable |
+| 10:15:23 | Tater Tot Done Chased 🥜 | TradingTheTrend: 🎰lotto-alerts | OPEN NVDA 217.5C 9/16 @ 0.23 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/769790224921395200/880503518878892143/1549785766886903889) |
+| 14:09:59 | Midas (Admin) | unavailable | OPEN SPY 761C 9/16 @ 2.00 | skipped | stale when received (110s old; 20s Discord limit) | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/1144369893760831489/1549844356091871315) |
+| 14:10:13 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29508.00 | failed | failed | unavailable |
+| 14:16:35 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29491.13 | failed | failed | unavailable |
+| 14:22:09 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29491.50 | failed | failed | unavailable |
+| 14:27:05 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29453.13 | failed | failed | unavailable |
+| 14:28:03 | already acted on that exact call 57s ago | unavailable | OPEN MNQ @ 29426.50 | skipped | skipped | unavailable |
+| 14:29:02 | already acted on that exact call 116s ago | unavailable | OPEN MNQ @ 29433.13 | skipped | skipped | unavailable |
+| 14:30:05 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29494.88 | failed | failed | unavailable |
+| 14:32:26 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29488.63 | failed | failed | unavailable |
+| 14:33:25 | already acted on that exact call 59s ago | unavailable | OPEN MNQ @ 29402.38 | skipped | skipped | unavailable |
+| 14:35:27 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29401.50 | failed | failed | unavailable |
+| 14:36:44 | already acted on that exact call 78s ago | unavailable | OPEN MNQ @ 29358.13 | skipped | skipped | unavailable |
+| 14:37:49 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29360.75 | failed | failed | unavailable |
+| 14:41:38 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29430.00 | failed | failed | unavailable |
+| 14:42:38 | already acted on that exact call 60s ago | unavailable | OPEN MNQ @ 29431.38 | skipped | skipped | unavailable |
+| 14:45:04 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29454.75 | failed | failed | unavailable |
+| 14:46:13 | already acted on that exact call 69s ago | unavailable | OPEN MNQ @ 29433.75 | skipped | skipped | unavailable |
+| 14:48:18 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29413.25 | failed | failed | unavailable |
+| 14:49:16 | already acted on that exact call 58s ago | unavailable | OPEN MNQ @ 29417.63 | skipped | skipped | unavailable |
+| 14:50:17 | already acted on that exact call 119s ago | unavailable | OPEN MNQ @ 29421.50 | skipped | skipped | unavailable |
+| 15:03:05 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29299.75 | failed | failed | unavailable |
+| 15:04:02 | already acted on that exact call 57s ago | unavailable | OPEN MNQ @ 29289.25 | skipped | skipped | unavailable |
+| 15:07:34 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29375.75 | failed | failed | unavailable |
+| 15:08:33 | already acted on that exact call 59s ago | unavailable | OPEN MNQ @ 29251.13 | skipped | skipped | unavailable |
+| 15:09:33 | already acted on that exact call 119s ago | unavailable | OPEN MNQ @ 29218.63 | skipped | skipped | unavailable |
+| 15:10:37 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29217.63 | failed | failed | unavailable |
+| 15:11:32 | already acted on that exact call 55s ago | unavailable | OPEN MNQ @ 29221.38 | skipped | skipped | unavailable |
+| 15:12:32 | already acted on that exact call 115s ago | unavailable | OPEN MNQ @ 29216.50 | skipped | skipped | unavailable |
+| 15:13:36 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29172.00 | failed | failed | unavailable |
+| 15:14:35 | already acted on that exact call 59s ago | unavailable | OPEN MNQ @ 29162.88 | skipped | skipped | unavailable |
+| 15:18:06 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29192.63 | failed | failed | unavailable |
+| 15:20:49 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29178.25 | failed | failed | unavailable |
+| 15:26:37 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29077.00 | failed | failed | unavailable |
+| 15:27:29 | already acted on that exact call 52s ago | unavailable | OPEN MNQ @ 29077.13 | skipped | skipped | unavailable |
+| 15:29:36 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29175.50 | failed | failed | unavailable |
+| 15:31:57 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29137.25 | failed | failed | unavailable |
+| 15:33:25 | AbTrades | OWLS Capital: 🛎️｜all-alerts | OPEN SPY 760C 9/25 @ 2.66 | sent | order sent | unavailable |
+| 15:50:10 | Ninjago Futures Radar | NGD: ngd-trades | OPEN MNQ @ 29341.00 | failed | failed | unavailable |
+| 15:50:58 | @Owls | OWLS Capital: 🌟｜ab | OPEN SPY 760C | failed | swing paused | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1235366372385493074/1549870210855735426) |
+| 15:52:04 | Eva | OWLS Capital: 🛎️｜all-alerts | OPEN SMH 520P 09/18/2026 @ 0.72 | failed | swing paused | unavailable |
+
+## Room activity
+
+| Room/channel | Parser inputs |
+|---|---:|
+| NGD: ngd-trades | 101 |
+| Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | 98 |
+| Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | 72 |
+| OWLS Capital: 🛎️｜all-alerts | 52 |
+| Platinum Trading: 🟣│futures-alerts | 30 |
+| OWLS Capital: 🌟｜eli-alerts | 26 |
+| Low Key Stonks: ⚖chika-alerts | 26 |
+| OWLS Capital: 🌟｜shabs-sky-alerts | 20 |
+| OWLS Capital: 🌟｜jon-and-kian | 20 |
+| Low Key Stonks: 😈demon-day-trades | 18 |
+| Honey Drip Network 🍯💰📈: 👑｜aristotle-trades | 14 |
+| OWLS Capital: 🌟｜ab | 10 |
+| ELITE OPTIONS: brando-alerts | 2 |
+| TradingTheTrend: 🎰lotto-alerts | 2 |
+| Low Key Stonks: 🍣maguro-alerts | 2 |
+| Low Key Stonks: 🐱xephyr-alerts | 2 |
+
+## Detailed benchmarks
+
+- [Caller entry, trim, and exit evidence](CALLER-OUTCOMES%20week-of-Sep-14-to-Sep-20-2026.md)
+- [Caller original entry versus our ratchet](CALLER-VS-RATCHET%20week-of-Sep-14-to-Sep-20-2026.md)
+- [Fixed stop versus live ratchet replay](RATCHET-COMPARE%20week-of-Sep-14-to-Sep-20-2026.md)
+
 ===== Tue Sep 15 2026 =====
 
 # Daily Sniper Report — 2026-09-15

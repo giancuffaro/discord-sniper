@@ -269,6 +269,26 @@
     "trades.log (day lines)": "bd60edf568438815"
    },
    "output": "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md"
+  },
+  "2026-09-16": {
+   "built_at": "2026-09-16T16:41:17-04:00",
+   "fingerprint": "6da29c5cb2c1702e",
+   "inputs": {
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "59d8353e4b73cd11",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "5b468d9757df7c5f",
+    "daily-audits/recovered-2026-09-16.json": "missing",
+    "daily_report.py": "18269:1789451346",
+    "extension/optionable.txt": "30073:1788840105",
+    "extension/parse_batch.js": "2964:1789152506",
+    "extension/parser.js": "179623:1789324393",
+    "extension/rooms.txt": "34126:1789581289",
+    "master_alerts.csv (day rows)": "6deb9dd9b8b5fbb1",
+    "master_ledger.csv (day rows)": "bd197240817e8e9a",
+    "master_postmortems.csv (day rows)": "4f53cda18c2baa0c",
+    "replay_check.py": "15780:1789445270",
+    "trades.log (day lines)": "841b505896a58741"
+   },
+   "output": "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md"
   }
  }
 }
