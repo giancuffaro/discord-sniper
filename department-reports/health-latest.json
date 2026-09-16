@@ -1,6 +1,7 @@
 {
   "in_session": true,
   "issues": [
+    "Aristotle is ON but has no tab in this browser",
     "Whop Day Trades tab is open but its reader hasn't beaten in a while",
     "Whop Futures tab is open but its reader hasn't beaten in a while",
     "Whop High Risk tab is open but its reader hasn't beaten in a while",
@@ -11,22 +12,22 @@
     {
       "lane": "discord",
       "fresh": true,
-      "version": "3.8.36"
+      "version": "3.8.37"
     },
     {
       "lane": "whop",
       "fresh": true,
-      "version": "3.8.36"
+      "version": "3.8.37"
     }
   ],
   "observer": {
     "queue_remaining": 0,
-    "worker_started": true,
-    "last_finished": 1789566207.3138826,
+    "worker_started": false,
+    "last_finished": 0,
     "last_error": "",
-    "last_provider": "openai",
+    "last_provider": "",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789566233.8106477
+  "checked_at": 1789566337.1666033
 }
