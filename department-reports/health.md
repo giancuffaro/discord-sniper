@@ -1,5 +1,20 @@
 # Health reviews — newest first
 
+# Health — 2026-09-16 — 364fddc1596b91b8a695
+
+The session is active, but all listed Whop tabs are reported as having readers that have not beaten in a while. This suggests stale or missing heartbeat data for those feeds, but the evidence does not confirm whether the tabs are quiet by normal operation or experiencing an outage.
+
+## Findings
+- in_session is true, and five tabs are flagged with "reader hasn't beaten in a while": Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, and Whop Swing Trades. Verify the source heartbeat or reader status for each tab against the expected update interval before classifying the feeds as unavailable. If the feeds are supposed to update continuously, treat this as a possible stale-data condition requiring source confirmation.
+
+## Limitations
+- No timestamp, threshold, or heartbeat interval is provided for what counts as "in a while."
+- The evidence shows an active session, but it does not prove whether the tabs are intentionally quiet or actually experiencing an outage.
+- No raw reader payloads or source-side confirmations are included, so missing updates cannot be distinguished from zero updates.
+- The text lists issue labels only; it does not provide the underlying parser output or transport status.
+
+---
+
 # Health — 2026-09-16 — 087380cfdff6c952081c
 
 The session is marked in_session=true, and the evidence reports multiple alert sources as ON while having no corresponding tab in this browser. This suggests a source-availability or browser-association discrepancy that should be verified, but it does not by itself confirm an outage, error, or intentional configuration.
