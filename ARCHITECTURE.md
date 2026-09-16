@@ -79,8 +79,8 @@ Dependency edges below are the REAL import graph.
 | `positions.py` | 3983 | the Book: position state, ratchet, stops, trims, P&L |
 | `signals.py` | 2350 | the PYTHON MIRROR of the JS parser (parity-tested, not in the live path) |
 | `webull_options.py` | 2283 | every Webull call. Nothing else may talk to the broker |
-| `webull_futures.py` | 731 | Webull futures leg, and the entry gate that reads the live-broker proof |
-| `futures_protection_proof.py` | 731 | the supervised one-lot MES run that writes that proof. Never called by the bridge |
+| `webull_futures.py` | 843 | Webull futures leg, and the PER-MICRO entry gate that reads the live-broker proof (MES and MNQ are proven separately) |
+| `futures_protection_proof.py` | 820 | the supervised one-lot run that writes that proof, one micro at a time (`--symbol MES` / `--symbol MNQ`). Never called by the bridge |
 | `dxlink.py` | 712 | stdlib WebSocket + GreeksBus + shadow quote stream |
 | `guards.py` | 608 | pre-trade refusals |
 | `props.py` | 593 | futures brokers (Topstep/ProjectX, NinjaTrader) |
