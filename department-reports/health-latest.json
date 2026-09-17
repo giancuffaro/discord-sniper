@@ -1,10 +1,12 @@
 {
   "in_session": false,
-  "issues": [],
+  "issues": [
+    "Observer queue backlog exceeds 20 messages"
+  ],
   "lanes": [
     {
       "lane": "discord",
-      "fresh": true,
+      "fresh": false,
       "version": "3.8.39"
     },
     {
@@ -14,13 +16,13 @@
     }
   ],
   "observer": {
-    "queue_remaining": 0,
+    "queue_remaining": 23,
     "worker_started": true,
-    "last_finished": 1789588910.8949652,
+    "last_finished": 1789604382.6261957,
     "last_error": "",
-    "last_provider": "gemini",
+    "last_provider": "openai",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789604083.2185411
+  "checked_at": 1789604383.22331
 }

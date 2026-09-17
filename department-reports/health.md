@@ -1,5 +1,20 @@
 # Health reviews — newest first
 
+# Health — 2026-09-16 — 9a9f8c621e6e482b9e1b
+
+The provided evidence indicates the session is not active and reports an observer queue backlog exceeding 20 messages. This should be treated as a source-reported condition pending verification, not as a confirmed parser or system fault.
+
+## Findings
+- in_session: false; issues: ["Observer queue backlog exceeds 20 messages"] Verify the source of the backlog report and confirm whether the queue is currently accumulating messages, since the evidence does not include timestamps, queue depth history, or a baseline for comparison.
+
+## Limitations
+- Only one evidence record was provided.
+- No timestamp, severity level, or queue depth value beyond "exceeds 20 messages" was included.
+- The evidence does not say whether the backlog is ongoing, resolved, or intermittent.
+- The meaning of in_session: false is not explained in the source and should not be assumed to indicate an outage.
+
+---
+
 # Health — 2026-09-16 — be083d675e2ba7fd2970
 
 The evidence shows many alert sources marked ON but with no corresponding browser tab, alongside several open tabs whose reader heartbeat has not been seen for a while. This suggests incomplete browser-side coverage or stale/inactive readers, but the source data does not confirm an outage versus a quiet room or an intentional detached setup.
