@@ -2404,6 +2404,30 @@ def _pullback_quote(sym):
     raise RuntimeError(str(last) if last else "no Webull connection for stock quotes")
 
 
+def _pullback_too_early(now=None):
+    """-> "" when a round-number wait may arm, else the sentence that says why
+    not. The cutoff is pullback.no_entries_before ("HH:MM" Eastern, default
+    10:00); "", "off" or an unreadable value turns it off rather than
+    guessing a time."""
+    raw = str((CFG.get("pullback") or {}).get("no_entries_before", "10:00")
+              ).strip().lower()
+    if raw in ("", "off", "none", "false", "0"):
+        return ""
+    try:
+        hh, mm = raw.split(":")
+        cutoff = int(hh) * 60 + int(mm)
+    except ValueError:
+        return ""
+    if now is None:
+        import eastern
+        now = eastern.now()
+    if now.hour * 60 + now.minute < cutoff:
+        return ("no round-number entries before %s ET — it is %s. Skipped on "
+                "purpose; nothing was sent."
+                % (raw, now.strftime("%H:%M")))
+    return ""
+
+
 def _pullback_enter(order):
     # F09 (9/11 audit): checked here too, not just in do_POST and inside
     # _place_impl — this fires from the pullback watcher's OWN thread,
@@ -3286,6 +3310,16 @@ def _place_impl(order):
     if (action == "OPEN" and str(order.get("entry_mode") or "") == "pullback"
             and order.get("kind") not in ("future", "equity")
             and sym in _pullback.MANAGED):
+        # NO ROUND-NUMBER ENTRIES BEFORE 10:00 ET (G, 9/17). 102 replayed
+        # pullback entries: the 40 armed before 10:00 were 70% of the whole
+        # loss (-$1,116, 2% win on the 10/10/10 ladder; -$724 on 5/3/5) and
+        # lost on 14 of the 16 days that had any. SKIPPED, not converted to an
+        # instant entry. pullback.no_entries_before in settings.json moves or
+        # ("" / "off") removes it.
+        _early = _pullback_too_early()
+        if _early:
+            note("PULLBACK skipped  %s — %s" % (sym, _early))
+            return False, _early
         # Affordability is checked NOW, at arm time — not five minutes later
         # at the touch (his pick #3, 8/18: MSFT and TSLA both waited, touched
         # their level perfectly, then died on "$204 to spend"). If the money
