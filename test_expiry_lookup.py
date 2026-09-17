@@ -241,6 +241,19 @@ q3._listed_cache = {k: v for k, v in q3._listed_cache.items() if "asked" not in 
 check("a typed date missing from the first answer is ASKED, not refused from cache",
       q3.listed_expiries("QQQ", 713, "CALL", [FRIDAY]), {FRIDAY: 3.66})
 
+o = {"action": "OPEN", "side": "CALLS", "strike": 713, "expiry": TODAY, "limit": 112}
+check("'713c at 112' against a 1.15 ask is 1.12, not a refusal",
+      bridge._price_sanity("QQQ", o, {TODAY: 1.15}), "")
+check("and the order now carries 1.12", o["limit"], 1.12)
+o = {"action": "OPEN", "side": "CALLS", "strike": 716, "expiry": TODAY, "limit": 105}
+check("'105' against a 0.91 ask is 1.05", bridge._price_sanity("QQQ", o, {TODAY: 0.91}), "")
+o = {"action": "OPEN", "side": "CALLS", "strike": 713, "expiry": TODAY, "limit": 112}
+check("112 against a 7.40 ask is still refused (1.12 is not that contract either)",
+      bool(bridge._price_sanity("QQQ", o, {TODAY: 7.40})), True)
+o = {"action": "OPEN", "side": "CALLS", "strike": 713, "expiry": TODAY, "limit": 11.25}
+check("a price that has a decimal is never divided",
+      bool(bridge._price_sanity("QQQ", o, {TODAY: 0.11})), True)
+
 # --------------------------------------------------------------------------
 print("\n7. _verify_listed — a date the CALLER typed still has to be real")
 # 9/14's recap posted "INTC 9/14 97C" — a MONDAY expiry on a stock that has no

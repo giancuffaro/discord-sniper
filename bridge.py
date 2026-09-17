@@ -4284,6 +4284,22 @@ def _price_sanity(sym, order, asks):
 
     if _ok(ask):
         return ""
+    # THE DROPPED DECIMAL (G, 9/17: "yes"). Skyy types "Qqq 713c at 112
+    # target 200" and "716c … 105" — he means 1.12 and 1.05. 9/16 and 9/17
+    # both refused a contract that was asking 1.15 / 0.91, and both calls
+    # trimmed +15% / +50%. When the posted number is a whole number, is wildly
+    # over the ask, and ONE HUNDREDTH of it lands inside the same sanity band
+    # against the live ask, that is the price he meant. Anything else about
+    # the order is untouched, and the rewrite is said out loud.
+    if theirs >= 10 and abs(theirs - round(theirs)) < 1e-9 \
+            and theirs > hi * ask:
+        cents = round(theirs / 100.0, 2)
+        if lo * cents <= ask <= hi * cents:
+            note("PRICE    %s %s%s — the caller wrote %.0f; the contract asks "
+                 "%.2f, so that is %.2f with the decimal dropped. Using %.2f."
+                 % (sym, order.get("strike"), _cp, theirs, ask, cents, cents))
+            order["limit"] = cents
+            return ""
     for d in sorted(asks):
         if d == exp or not _ok(asks[d]):
             continue
