@@ -50,6 +50,7 @@ for p in (ROOT, HERE):
 import occ as occ_mod                                       # noqa: E402
 import ratchet_replay_tape as rr                            # noqa: E402
 import tape                                                 # noqa: E402
+import trend as trend_mod                                   # noqa: E402
 from webull_options import tick_floor                       # noqa: E402
 
 WINDOWS = (90, 120, 180, 300)
@@ -165,6 +166,18 @@ def trend(root, day, ts, side):
     return with_trend, move, day_move
 
 
+def structure(root, day, ts, side):
+    """trend.py's swing read (higher highs + higher lows) at the alert."""
+    path = stock_path(root, day)
+    if not path:
+        return None, None
+    bars = trend_mod.minute_bars(path, ts)
+    if len(bars) < 20:
+        return None, None
+    got = trend_mod.read(bars)
+    return trend_mod.with_or_counter(got["label"], side), got["label"]
+
+
 def run():
     al = alerts()
     paths = option_paths({a["occ"] for a in al})
@@ -214,7 +227,9 @@ def run():
                                      False, flat)["pl"], 2)
 
         tr, move30, moveday = trend(a["root"], a["day"], a["ts"], a["side"])
-        row = {"a": a, "ask": ask0, "over": (ask0 / theirs - 1) * 100.0,
+        st, st_label = structure(a["root"], a["day"], a["ts"], a["side"])
+        row = {"a": a, "ask": ask0, "bid": after[0][1], "t0": t0, "path": path,
+               "flat": flat, "struct": st, "struct_label": st_label, "over": (ask0 / theirs - 1) * 100.0,
                "old": result(t0, ask0) or 0.0, "new": {}, "trend": tr,
                "move30": move30, "moveday": moveday, "logged": bool(real)}
         for w in WINDOWS:
@@ -268,6 +283,10 @@ def main():
     for name in ("WITH", "COUNTER", "FLAT"):
         print(_line("%s trend" % name, [r for r in lab if r["trend"] == name]))
     print("  (no 1-second stock file for the other %d)" % (len(rows) - len(lab)))
+    print("\nTREND — SWING STRUCTURE at the alert (trend.py: higher highs + higher lows = UP)")
+    sl = [r for r in rows if r["struct"]]
+    for name in ("WITH", "COUNTER", "CHOP"):
+        print(_line("%s structure" % name, [r for r in sl if r["struct"] == name]))
     print("\nTREND — against the move since the 9:30 open")
     for name, test in (("WITH the day", lambda r: (r["moveday"] > 0) == r["a"]["side"].startswith("C")),
                        ("AGAINST the day", lambda r: (r["moveday"] > 0) != r["a"]["side"].startswith("C"))):
@@ -291,13 +310,13 @@ def main():
         wr = csv.writer(fh)
         wr.writerow(["date", "time", "caller", "occ", "caller_price", "ask_at_touch",
                      "over_pct", "old_pl"] + ["new_%ds" % w for w in WINDOWS]
-                    + ["trend30", "move30_pct", "move_since_open_pct", "touch_from_log"])
+                    + ["structure", "trend30", "move30_pct", "move_since_open_pct", "touch_from_log"])
         for r in rows:
             a = r["a"]
             wr.writerow([a["day"], a["time"], a["caller"], a["occ"], a["their_price"], r["ask"],
                          "%.1f" % r["over"], r["old"]]
                         + ["" if r["new"][w][0] == "nofill" else r["new"][w][1] for w in WINDOWS]
-                        + [r["trend"] or "", "" if r["move30"] is None else "%.2f" % r["move30"],
+                        + [r["struct"] or "", r["trend"] or "", "" if r["move30"] is None else "%.2f" % r["move30"],
                            "" if r["moveday"] is None else "%.2f" % r["moveday"], int(r["logged"])])
 
 
