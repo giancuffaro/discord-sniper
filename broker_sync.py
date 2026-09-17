@@ -103,23 +103,21 @@ def _et_stamp(value):
 
 
 def _occ(order):
+    """The leg's OCC symbol via occ.py — the ONE builder — or "" when the row
+    does not name a contract. occ.build raises on an unreadable side instead
+    of defaulting to a put; an unreadable row is dropped, never guessed."""
+    import occ
     legs = order.get("legs") or []
     leg = legs[0] if legs else {}
-    symbol = str(leg.get("symbol") or order.get("symbol") or "").upper()
-    expiry = str(leg.get("option_expire_date")
-                 or order.get("option_expire_date") or "")[:10]
-    if not symbol or len(expiry) != 10:
-        return ""
-    kind = "C" if str(leg.get("option_type")
-                      or order.get("option_type") or "").upper() \
-        .startswith("C") else "P"
     try:
-        strike = int(round(float(leg.get("strike_price")
-                                 or leg.get("option_exercise_price")) * 1000))
-    except (TypeError, ValueError):
+        return occ.build(
+            leg.get("symbol") or order.get("symbol"),
+            str(leg.get("option_expire_date")
+                or order.get("option_expire_date") or "")[:10],
+            leg.get("option_type") or order.get("option_type"),
+            leg.get("strike_price") or leg.get("option_exercise_price"))
+    except (ValueError, TypeError):
         return ""
-    return "%s%s%s%08d" % (symbol, expiry[2:4] + expiry[5:7] + expiry[8:10],
-                           kind, strike)
 
 
 def export_rows(orders):

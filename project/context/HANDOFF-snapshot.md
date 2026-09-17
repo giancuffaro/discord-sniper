@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-16 — VERIFY WITH G: every end-of-day journal ends with the list of what did not add up, for G to rule on; futures account is in the journal (master_futures.csv, flow columns).
+Last updated: 2026-09-17 — PRICE: pullback entries can no longer pay over the caller's price (G, after AAPL 9/16: paid 3.40 on a 3.17 alert). Also 9/16: VERIFY WITH G end-of-day list; futures account in the journal.
 
 ## How to update this file (long form: reference/OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. ONE RULE, ONE LINE
@@ -31,7 +31,7 @@ RULES-INDEX.md says which code enforces each rule below.
 ## Rules of the house
 
 ENTRIES · ENTRIES.md
-- PRICE: caller's price or better; pullbacks cross the ask; one contract per entry. RN PULLBACK is ON and global; THE LEVEL STAYS $1 (SETTLED 9/9), never re-opened on a feeling.
+- PRICE: caller's price or better — ALWAYS, pullbacks included (G, 9/17: "we need to be at the same average or better than them"). A pullback that touches its level crosses the ask ONLY when the ask is at or under the caller's price; over it, the order rests AT the caller's price (tick-floored) for the normal working window and dies unfilled. No caller price = crosses as before. `webull_options.pullback_limit`. One contract per entry. RN PULLBACK is ON and global; THE LEVEL STAYS $1 (SETTLED 9/9), never re-opened on a feeling.
 - ENTRY SLACK (G, 9/15) — **OFF, activation blocked**: bid the caller's price or better, never chase. `execution.entry_slack_pct` exists only so `reference/entry_slack_replay.py` can measure crossing the ask; non-zero refuses to arm until the replay nets a gain outside its error bar. Measured daily, not argued.
 - ONE SWITCH PER ROOM (G, 9/9): ON = tab + read + trades LIVE; OFF = nothing; LAPSED = sub ran out. No paper state. A TAB CLOSED BY HAND IS NOT A BENCH; benched rooms stay.
 - TABS (9/10): the reaper closes only `_OURS`, never a human's; only START HERE, the popup switch and whopSelfHeal() open one; "No Access" → `lapsed` + close; the last tab stays.
@@ -63,7 +63,7 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 - APPEND, DON'T PILE (G, 9/15). New data goes INTO the one living file for its kind, never a new dated file beside it; rotated logs and finished experiments zip to `archive/`.
 - REUSE, DON'T REBUILD (G, 9/15). A report whose inputs have not changed is handed over as it is (`reports.py status` decides, `reports/INDEX.json` is the memory). Never re-derive from logs what a report already states.
 - ASK-MAP FIRST (G, 9/15). Every ask starts at ASK-MAP.md, then STATUS.json; logs only when those two cannot answer. STATUS.json.verified is trusted while its inputs are unchanged (VERIFY ONCE).
-- SPEND (G, 9/16). A SUB-AGENT IS THE EXPENSIVE TOOL — 100-350k each; eight of them cost ~1.9M on 9/15-16, more than every read and reply combined. Spawn one only for genuinely large or parallel work, and give it the whole job in one prompt. Otherwise: read the slice not the file, one clean edit not twenty shaves, and answer from ASK-MAP/STATUS.json instead of re-deriving. Full list: AGENTS.md.
+- SPEND (G, 9/16). A SUB-AGENT IS THE EXPENSIVE TOOL — 100-350k each; eight of them cost ~1.9M on 9/15-16, more than every read and reply combined. Spawn one only for genuinely large or parallel work, and give it the whole job in one prompt. Otherwise: read the slice not the file, one clean edit not twenty shaves, and answer from ASK-MAP/STATUS.json instead of re-deriving.
 - THE 16:40 AUDIT: broker actuals override any simulation; RAW capture is kept, LIVE PARSER rows overlay it; relay duplicates count once; expired pullback waits are skips; never recreate the 15-min Codex guard.
 - GIT: settings.json holds every key, never committed; AUTO PUSH owns commits; never run git write commands from a sandbox.
 - REPLACE, DON'T STACK (G, 9/9). When anything changes — a rule, a value, a function, a setting, a room line, a doc — the new version takes the old one's place; never beside it, not commented out, not "superseded", not "legacy", not "just in case". One thing, one truth; history lives in git and HANDOFF-LOG.md.
