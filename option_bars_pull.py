@@ -17,6 +17,13 @@ exits; these answer "did it ever print X, and when".
 WHAT: every option contract in master_alerts.csv and master_ledger.csv.
 WHERE: option_bars.csv — ts,occ,span,open,high,low,close,volume — ONE file,
 one row per (occ, span, ts); a re-run adds only bars it does not have.
+WEBULL FORGETS. A contract that expired more than about a week ago answers
+417 INVALID_SYMBOL (9/17: everything expiring 9/9 and earlier was gone, 9/14
+still answered). So this is a DAILY job, not a one-time backfill: the 16:40
+audit runs it with `--recent 6`, which asks only for contracts alerted or
+traded in the last 6 days and adds the bars it does not have. A day missed is
+a day of history lost for good.
+
 PACING: one request per second, never while the option market is open unless
 --now is passed (the bridge's stops share this app key).
 """
@@ -35,7 +42,7 @@ SPANS = ("M1", "M5")
 PACE_S = 1.0
 
 
-def contracts():
+def contracts(recent_days=None):
     import occ
     found = {}
     for name in ("master_alerts.csv", "master_ledger.csv"):
@@ -55,7 +62,11 @@ def contracts():
                 day = (row.get("date") or "")[:10]
                 found[symbol] = max(found.get(symbol, ""), day)
     # newest first: the contracts Webull is most likely to still serve
-    return [c for c, _d in sorted(found.items(), key=lambda kv: kv[1], reverse=True)]
+    ranked = sorted(found.items(), key=lambda kv: kv[1], reverse=True)
+    if recent_days:
+        floor = (dt.date.today() - dt.timedelta(days=recent_days)).isoformat()
+        ranked = [kv for kv in ranked if kv[1] >= floor]
+    return [c for c, _d in ranked]
 
 
 def have():
@@ -67,6 +78,14 @@ def have():
     except OSError:
         pass
     return seen
+
+
+def _market_open():
+    try:
+        from market_hours import is_open
+        return bool(is_open("option"))
+    except Exception:                                       # noqa: BLE001
+        return False
 
 
 def main(force_now):
@@ -82,8 +101,16 @@ def main(force_now):
     import broker_sync
     client = broker_sync._client(broker_sync._settings())
     fetch = client._data.option_market_data.get_option_history_bars
-    todo, seen = contracts(), have()
-    done_pairs = {(o, s) for o, s, _t in seen}
+    recent = None
+    if "--recent" in sys.argv:
+        try:
+            recent = int(sys.argv[sys.argv.index("--recent") + 1])
+        except (IndexError, ValueError):
+            recent = 6
+    todo, seen = contracts(recent), have()
+    # A daily run REFRESHES recent contracts (today's bars are new); the big
+    # backfill skips any contract-span it already holds.
+    done_pairs = set() if recent else {(o, s) for o, s, _t in seen}
     fresh = not os.path.exists(OUT)
     got = empty = errors = added = 0
     with open(OUT, "a", encoding="utf-8", newline="") as fh:
@@ -95,6 +122,10 @@ def main(force_now):
                 if (contract, span) in done_pairs and "--refresh" not in sys.argv:
                     continue
                 time.sleep(PACE_S)
+                if not force_now and _market_open():
+                    print("the option market opened — stopping at %d/%d; run again "
+                          "after the close, it resumes where it stopped" % (i, len(todo)))
+                    return 0
                 try:
                     res = fetch(contract, "US_OPTION", span, "1200")
                     if getattr(res, "status_code", 200) == 429:

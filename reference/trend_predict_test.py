@@ -112,6 +112,7 @@ def part1(days_bars):
 def part2(days_bars):
     out = {}
     for mult in (1.0, 2.0):
+        by_hour = {"turn": defaultdict(int), "bar": defaultdict(int)}
         piv_clock, base_clock = defaultdict(int), defaultdict(int)
         near = {"piv": defaultdict(int), "base": defaultdict(int)}
         n_piv = n_base = both_p = both_b = 0
@@ -121,7 +122,16 @@ def part2(days_bars):
                 continue
             rev = trend.reversal_size(rth) * mult
             band = max(0.10, rth[0][4] * 0.0002)            # 2 bp of price, min 10c
-            pivots = [p for p in trend.swings(rth, rev) if p[2] in ("H", "L")]
+            # The session's first minutes are excluded on BOTH sides: a zigzag's
+            # first pivot is nearly always the opening extreme, which would
+            # "prove" that turns cluster at :30 when it is only the 9:30 bell.
+            pivots = [p for p in trend.swings(rth, rev)
+                      if p[2] in ("H", "L") and minute_of_day(p[0]) >= 580]
+            rth = [b for b in rth if minute_of_day(b[0]) >= 580]
+            for p_ts, _pp, _k in pivots:
+                by_hour["turn"][minute_of_day(p_ts) // 30] += 1
+            for b in rth:
+                by_hour["bar"][minute_of_day(b[0]) // 30] += 2
 
             def flags(ts, price):
                 mod = minute_of_day(ts) % 60
@@ -148,7 +158,7 @@ def part2(days_bars):
                     near["base"]["five"] += five
                     near["base"]["one"] += one
                     both_b += (hour and five)
-        out[mult] = (n_piv, n_base, piv_clock, base_clock, near, both_p, both_b)
+        out[mult] = (n_piv, n_base, piv_clock, base_clock, near, both_p, both_b, by_hour)
     return out
 
 
@@ -156,7 +166,7 @@ def main():
     days_bars = {}
     for day in trading_days():
         for sym in SYMBOLS:
-            bars, _src = ttl.day_bars(sym, day)
+            bars, _src = ttl.day_bars(sym, day, "--no-fetch" not in sys.argv[1:])
             if bars:
                 days_bars[(sym, day)] = bars
     used = sorted({d for _s, d in days_bars})
@@ -184,7 +194,7 @@ def main():
     print("  (each cell: mean move, %% of samples that went the label's way, t-stat across symbol-days; |t| under 2 = noise)")
 
     print("\nPART 2 — where swing turns happen, vs where every 1-minute extreme happens")
-    for mult, (n_piv, n_base, pc, bc, near, both_p, both_b) in part2(days_bars).items():
+    for mult, (n_piv, n_base, pc, bc, near, both_p, both_b, by_hour) in part2(days_bars).items():
         print("\n  reversal x%g — %d turns" % (mult, n_piv))
         for label, p, b in (("within 2 min of the top of the hour", pc["hour"], bc["hour"]),
                             ("within 2 min of the half hour", pc["half"], bc["half"]),
@@ -197,6 +207,11 @@ def main():
             z = (fp - fb) / se if se else 0.0
             print("    %-48s turns %5.1f%%   all bars %5.1f%%   lift x%.2f   z %+.1f"
                   % (label, fp, fb, (fp / fb) if fb else 0, z))
+        tt, tb = sum(by_hour["turn"].values()), sum(by_hour["bar"].values())
+        print("    turns per half-hour slot vs that slot's share of the tape (x1.00 = no more turns than time spent):")
+        print("      " + "  ".join("%02d:%02d x%.2f" % (k // 2, (k % 2) * 30,
+                                   (by_hour["turn"][k] / tt) / (by_hour["bar"][k] / tb))
+                                   for k in sorted(by_hour["bar"]) if by_hour["bar"][k]))
     print("  (z over ~3 = real; the 10:00 hour carries scheduled data releases, so 'top of the hour' is partly the calendar)")
 
 

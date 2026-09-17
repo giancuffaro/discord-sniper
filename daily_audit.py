@@ -125,6 +125,16 @@ def run(day):
     steps_note = broker_step["output"].strip().splitlines()
     print("BROKER SYNC %s — %s" % ("ok" if broker_step["ok"] else "FAILED",
                                    steps_note[-1] if steps_note else ""))
+    # WEBULL'S OPTION BARS, BEFORE THEY EXPIRE OUT (9/17). The SDK serves
+    # 1-minute option trade bars, but only for contracts that expired within
+    # about a week — after that it answers INVALID_SYMBOL. One pass a day over
+    # the last 6 days' contracts keeps option_bars.csv complete. Never fatal.
+    bars_step = _run("webull option bars",
+                     [sys.executable, os.path.join(HERE, "option_bars_pull.py"),
+                      "--recent", "6", "--now"], 600)
+    bars_note = bars_step["output"].strip().splitlines()
+    print("OPTION BARS %s — %s" % ("ok" if bars_step["ok"] else "FAILED",
+                                   bars_note[-1] if bars_note else ""))
     steps = []
     replay = _run("daily message replay",
                   [sys.executable, os.path.join(HERE, "replay_check.py"), day])

@@ -12,6 +12,14 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+### 2026-09-17 (03:40 ET) — Webull option bars: the depth is one week, so it is now a daily job
+The 866-contract backfill answered for 214 contracts (367k bars); everything that expired 9/9 or earlier came back 417 INVALID_SYMBOL. Webull keeps an expired contract's bars for roughly a week. option_bars_pull.py gained --recent N (refreshes the last N days' contracts), an in-loop stop if the option market opens, and daily_audit.run() now calls it (--recent 6 --now, 600s cap, never fatal) right after broker_sync. My earlier "1,200 bars, expired contracts included" was true but read as unlimited; it is not.
+
+### 2026-09-17 (03:15 ET) — does the trend label PREDICT? and do turns cluster at round hours / 5-0 prices?
+reference/trend_predict_test.py -> reference/TREND-PREDICT-TEST.txt. 10 symbols (SPY QQQ AAPL MSFT NVDA TSLA META AMZN AMD GOOGL) x 58 sessions 6/25–9/16 = 580 symbol-days of Webull 1-minute bars (free, cached in bars/stock_m1), label read every 5 min 09:45–15:00 from closed bars only = 37,120 reads (UP 32%, DOWN 31%, CHOP 37%), forward move at +5/15/30/45/60 min, significance by symbol-day not by sample.
+PART 1: the label does NOT predict continuation. After UP: +0.3 / +0.6 / +1.1 / +1.9 / +2.1 bp — the same as no label at all (+0.3 … +1.9 bp, the period's upward drift), hit rate 50%. After DOWN the stock went the OTHER way: -0.2 / -0.5 / -1.8 / -2.7 / -2.9 bp with the label, hit rate 47-48%, t -6 to -7 — a small, real MEAN REVERSION. By age: fresh (<15 min) and 15-45 min labels are zero; MATURE labels (45 min+) revert, t -6 at +5 min fading to -3 at +60. Sizes are tiny (3 bp on SPY = 23 cents in an hour) — not a trade by itself, but it is the same fact as G's hand ledger: with-trend entries are late. CHOP is not quiet: mean absolute move 13 bp in 5 min, 40 bp in an hour.
+PART 2 (first 10 min of the session excluded on both sides — before that fix the 9:30 bell alone made "half hour" look x1.97): turns at a price ending in 5 or 0: 4.3% of turns vs 4.4% of all bar extremes — lift x0.98, z -1.0; bigger turns (2x reversal) x1.00. Whole dollars x0.99. Top of the hour: x1.18 (z +9.8) on small turns but x1.06 (z +1.6, noise) on bigger ones, and it is confounded — turns are 4x denser 09:30-10:00 and 2.6x 10:00-10:30 than their share of the clock, 0.35-0.55x from 12:00 to 15:00, so any window touching 10:00 looks special. Both together: x1.17-1.23, z under 2. G's round-price idea is NOT in this data; the round-hour idea is mostly "mornings turn more".
+
 ## 2026-09-17 (ladder switched to 5/3/5; every alert NOT taken priced at the caller's number)
 
 LADDER CHANGE, G's call: strategy.stop_loss_pct 10 -> 5, ratchet_tiers.TIERS
