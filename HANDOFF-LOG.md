@@ -12,6 +12,46 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-16 (pullback lookback on the FULL sample — 33% of timed-out waits were already tagged)
+
+Bought the 25 missing symbol-days of 1s XNAS.ITCH bars from Databento for
+$0.2238 (pullback_levels.fetch_bars, cost-checked first). 24 landed. 2026-09-16
+refused: 403 license_not_found_unauthorized — XNAS.ITCH historical is not
+available for the current day, so today's QQQ arm stays unpriced until tomorrow.
+(databento the PYTHON PACKAGE was missing in the Cowork Linux VM and was pip
+installed there; the Windows bridge Python already had it. Different machines.)
+
+pullback_lookback.py now sees 94 of 95 timed-out arms instead of 50:
+
+    30s  17 already tagged (18%)
+    60s  24                (26%)
+    90s  31                (33%)
+   120s  37                (39%)
+
+The 38% from the 50-row partial was beta-name biased; the true rate at 90s is
+33%. The shape holds: a third of the waits the rule times out on were waiting
+for a touch that had already happened before the alert reached us.
+
+WHAT STILL BLOCKS A DECISION. The arm line in trades.log carries only symbol +
+level, not the contract, so the 31 cannot be priced directly. Joining them to
+master_alerts on date+symbol gets a full contract + caller price for only 12,
+and that join is naive — it takes the first match, two rows are duplicates, and
+'2026-09-02 NVDA 225C their_price 224.7' is plainly the STOCK price captured as
+premium, not a $224.70 option. So the real priceable sample is under 10. That
+is not enough to move a money rule on, and no dollarization was run on it.
+
+THE FIX FOR NEXT TIME: master_alerts already recovers these with tier
+"C-linked(F-airead)" — the pullback arm linked to the AI READ line 1-2s earlier,
+same symbol AND same direction. Use that same linker to attach the contract to
+each arm inside pullback_lookback, then price the already-tagged subset off OPRA
+via databento_backfill. Only then is there an answer to whether a lookback
+window would have made money.
+
+STANDING CORRECTION from 9/15 still holds: missed_dollarize.py says the skips it
+can price total -$133 over 9 calls, 1 win in 9 — waiting SAVED money on the set
+as a whole. The open question is only whether the already-tagged subset behaves
+differently from the whole.
+
 - 9/16, G: "tell me how to use yourself properly." Measured where the tokens actually went on 9/15-16 instead of guessing: EIGHT sub-agent runs at 111k-349k each, ~1.9M total — more than every file read, log grep and reply of those two days combined. So the SPEND rule in AGENTS.md is ranked by that, not by intuition: (1) a sub-agent is the expensive tool — only for genuinely large or parallel work, and give it the whole job in one prompt because a follow-up round-trip costs another full agent; (2) don't re-derive what ASK-MAP/STATUS.json/reports.py already answer; (3) one clean cut, not twenty shaves (9/16 burned a dozen calls trimming HANDOFF 20 bytes at a time against a ceiling I set myself); (4) read the slice, not the file; (5) answer short, reasoning goes here where it costs nothing to skip. One-line pointer in HANDOFF. GitHub was asked about and does not help — the same bytes cost the same whether they come from a repo or the device bridge.
 
 ## 2026-09-16 pm (why START HERE has been opening nothing for Discord — found and fixed)
