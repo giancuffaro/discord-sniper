@@ -229,6 +229,18 @@ check("an empty answer is empty", q2.listed_expiries("ZZZZ", 5, "CALL", CANDS), 
 q2.listed_expiries("ZZZZ", 5, "CALL", CANDS)
 check("and is NOT cached (a throttle must not blind the day)", q2.calls, 2)
 
+# 9/16: a dateless QQQ 713C lookup cached {today} and then answered Brando's
+# typed 9/18 with "no such contract". One answer never stands in for another
+# question, and a short batch answer heals instead of poisoning the day.
+_occ_q0 = wo.occ_symbol("QQQ", TODAY, "CALL", 713)
+_occ_q1 = wo.occ_symbol("QQQ", FRIDAY, "CALL", 713)
+q3 = FakeQuotes({_occ_q0: 1.11})                 # the batch came back short
+check("a short answer is what it is", sorted(q3.listed_expiries("QQQ", 713, "CALL", CANDS)), [TODAY])
+q3.rows[_occ_q1] = 3.66                          # the contract was real all along
+q3._listed_cache = {k: v for k, v in q3._listed_cache.items() if "asked" not in k}
+check("a typed date missing from the first answer is ASKED, not refused from cache",
+      q3.listed_expiries("QQQ", 713, "CALL", [FRIDAY]), {FRIDAY: 3.66})
+
 # --------------------------------------------------------------------------
 print("\n7. _verify_listed — a date the CALLER typed still has to be real")
 # 9/14's recap posted "INTC 9/14 97C" — a MONDAY expiry on a stock that has no

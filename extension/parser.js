@@ -487,7 +487,11 @@ const NOT_TICKERS = new Set(["THE", "A", "AN", "IT", "ALL", "IN", "OUT", "AT",
 // "Yesterday at 11:22 AM", trailing "2 Add Reaction". None of it is the call.
 const RE_ROWHDR = /^\s*[^\n—]{1,70}?\s+—\s+(?:Yesterday at |Today at |\d{1,2}\/\d{1,2}\/\d{2,4},\s*)?\d{1,2}:\d{2}\s*[AP]M(?:\s+[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?\s*/i;
 const RE_ROWTIME = /\[\s*\d{1,2}:\d{2}\s*[AP]M\s*\]\s*(?:[A-Za-z]+day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?\s*/gi;
-const RE_ROWMISC = /\b(?:Yesterday|Today) at \d{1,2}:\d{2}\s*[AP]M\b|\bForwarded\b|\b\d{0,3}\s*Add Reaction\b|\(edited\)/gi;
+// An EDITED row carries Discord's own full datestamp glued to the mark:
+// "@ 2.67 @everyone (edited)Wednesday, September 16, 2026 at 10:10 AM". On 9/16
+// that "10" out-ranked the 2.67 and Brett's AAPL edit read as "@ 10.00". A
+// spelled-out weekday-month-day-year-time is never part of a call, anywhere.
+const RE_ROWMISC = /\b(?:Yesterday|Today) at \d{1,2}:\d{2}\s*[AP]M\b|\bForwarded\b|\b\d{0,3}\s*Add Reaction\b|\(edited\)|\b(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+at\s+\d{1,2}:\d{2}\s*[AP]M\b/gi;
 
 function cleanText(raw) {
   let t = String(raw || "").trim().replace(RE_STAG, " ").replace(RE_HDR, "");

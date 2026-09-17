@@ -1155,6 +1155,9 @@ class WebullOptions:
         the 0DTE row answered Brando's typed "QQQ SEPT 18 713C" nine minutes
         later with "lists no such contract" — a contract that exists and was
         asking 3.66. A short batch answer or a throttle must not blind the day.
+        A date that did NOT answer is left alone for 60 seconds only — long
+        enough that three relays of one alert cost one call, short enough that
+        a bad answer heals itself.
         """
         day = dt.date.today().isoformat()
         base = (str(symbol).upper(), str(strike), str(option_type).upper()[:1],
@@ -1168,6 +1171,8 @@ class WebullOptions:
             if base + (iso,) in cache:
                 out[iso] = cache[base + (iso,)]
                 continue
+            if time.time() - cache.get(base + (iso, "asked"), 0) < 60:
+                continue
             try:
                 occs[occ_symbol(symbol, iso, option_type, strike)] = iso
             except Exception:                           # noqa: BLE001
@@ -1178,6 +1183,8 @@ class WebullOptions:
         for occ, iso in occs.items():
             got = rows.get(occ)
             if not got:
+                if rows:                # the feed answered; this date did not
+                    cache[base + (iso, "asked")] = time.time()
                 continue
             ask = got[0]
             try:
