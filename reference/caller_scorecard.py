@@ -107,6 +107,50 @@ def bot_order_lines():
     return _CALL_LINE
 
 
+_CHAT = None
+
+
+def chat_lines():
+    """{date: [(seconds, author, channel, TEXT)]} from the recorded room chat.
+    166 alerts in master_alerts.csv were rebuilt from trades.log lines (AI READ /
+    PULLBACK / REFUSED) that never named the room; the message itself, a minute
+    earlier in DS Logs, does."""
+    global _CHAT
+    if _CHAT is None:
+        import glob
+        import re
+        _CHAT = defaultdict(list)
+        pat = re.compile(r"^(\d{4}-\d\d-\d\d) (\d\d):(\d\d):(\d\d)  \[(.*?) #\S+ message_id=\S+\]  "
+                         r"(?:<history> )?([^:]{1,60}): (.*)$")
+        for path in glob.glob(os.path.join(ROOT, "DS Logs", "signal-room-chat week-of-*.txt")):
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    m = pat.match(line)
+                    if m:
+                        _CHAT[m.group(1)].append((int(m.group(2)) * 3600 + int(m.group(3)) * 60 + int(m.group(4)),
+                                                  m.group(6).strip(), m.group(5).split(":")[-1].strip(),
+                                                  m.group(7).upper()))
+    return _CHAT
+
+
+def from_chat(day, at, symbol, strike):
+    import re
+    want = re.compile(r"(?<![A-Z])\$?%s(?![A-Z])" % re.escape(symbol.upper()))
+    strike_txt = ("%g" % strike) if strike else ""
+    best = None
+    for secs, author, channel, text in chat_lines().get(day, ()):
+        if -180 <= at - secs <= 30 and want.search(text) and (not strike_txt or strike_txt in text):
+            if best is None or abs(at - secs) < abs(at - best[0]):
+                # HoneyDrip's relay bot posts "@Unraveller (Admin) in TSLA …":
+                # the caller is the first @name in the text, not the bot.
+                if "SCRIBE" in author.upper():
+                    m = re.search(r"@([A-Z][A-Z0-9_]{2,20})", text)
+                    if m:
+                        author = m.group(1).title()
+                best = (secs, author, channel)
+    return best
+
+
 def owner_of(row):
     """The ledger's caller, else the caller on the bot's own order line for that
     symbol in the 15 minutes before the position opened, else ORPHAN."""
@@ -209,8 +253,12 @@ def build():
             at = int(clock[0]) * 3600 + int(clock[1]) * 60 + int((clock + ["0"])[2] or 0)
             near = [c for c in bot_order_lines() if c[0] == a["day"] and c[2] == a["root"]
                     and abs(c[1] - at) <= 120]
+            heard = None if near else from_chat(a["day"], at, a["root"], a.get("strike"))
             if near:
                 name = who({"caller": min(near, key=lambda c: abs(c[1] - at))[3]})
+            elif heard:
+                # relay bots post under their own name; the channel says whose room
+                name = who({"caller": heard[1] if len(heard[1]) > 2 else "", "room": heard[2]})
             else:
                 name = "UNATTRIBUTED alert (no caller, no room, no order line)"
         by[name].append({"silent": t_call is None, "follow": follow(r, t_call),
