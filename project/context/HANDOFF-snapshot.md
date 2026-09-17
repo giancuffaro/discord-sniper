@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-16 — START HERE now checks the DISCORD PROFILE, not "any Chrome" (that is why Discord opened nothing for days); TRADING/NOT TRADING toggle in the popup; a SPEND rule after eight sub-agents cost ~1.9M tokens in two days.
+Last updated: 2026-09-16 — THE FUTURES ACCOUNT IS IN THE JOURNAL (G: "add futures from now on"): fills+fees → master_futures.csv, futures NLV/net/fees and money-moved `flow` on the balance_daily.csv row, the brief prints futures, transfers and ALL ACCOUNTS net.
 
 ## How to update this file (long form: reference/OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. ONE RULE, ONE LINE
@@ -79,7 +79,7 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 - CLEAN UP AFTER A LIVE ROOM (G, 9/15: "when the live zoom for felony finishes kill the tab please"): a Discord-voice or Zoom tab the ears ran on, still silent 10 min AFTER they stop, gets closed. The ONE exception to "never close a human tab", scoped to tabs we listened to.
 
 ## DATA — one file per family (9/9); THE APP READS ONLY THESE (inside each: DATA-MAP.md)
-- BROKER RECORD → master_broker.csv; the Webull export is ONE file OVERWRITTEN every run, never dated piles; one balance row a day in balance_daily.csv.
+- BROKER RECORD → master_broker.csv (options); the Webull export is ONE file OVERWRITTEN every run, never dated piles; one balance row a day in balance_daily.csv. FUTURES ACCOUNT (G, 9/16) → master_futures.csv, one row per filled order id with Webull's own fees; the same balance row carries fut_nlv / fut_pl (NET) / fut_fees and `flow` / `fut_flow` = NLV change − the day's net result = a transfer, deposit or withdrawal, NEVER trading. The brief prints futures, money moved and ALL ACCOUNTS net; a product still open or with no point value in broker_sync.FUT_POINT_VALUE (E-nanos NNQ/NES/N2K/NDOW included, from Webull's instrument list) is NAMED and not scored. That table is journal arithmetic only — what may TRADE stays webull_futures.FUT_SPECS + the proof gate.
 - FILLS → master_ledger.csv; the broker's exit/P&L/state/account WIN over the book, a DRIFT line means something upstream lied, and nothing reads days/*.json or journal.csv for analysis.
 - ALERTS → master_alerts.csv. RN LEDGER → rn_ledger.csv (append-only). HOLIDAYS/HOURS → market_hours.py owns the table — UPDATE EVERY YEAR. POST-MORTEMS → master_postmortems.csv + postmortems/; his own hand trades are never graded.
 - PRICE TAPES → tape.py is the ONE registry; Webull has NO historical option prices; databento_backfill.py spends credit — never run its main() casually.

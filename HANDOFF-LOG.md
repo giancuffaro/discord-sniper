@@ -12,6 +12,14 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+### 2026-09-16 (night) — the futures account joins the journal
+G asked to see the journal; the brief said +$43 day, NLV −$465. He had moved $500 margin→futures and traded futures by hand. Checked at the broker: margin day P&L +34.59 net (+43.00 gross on 44 filled legs, 212 contracts — the 8.41 gap is $0.04/contract fees), NLV change −465.41 → exactly −500.00 left. Futures account: 46 fills 9/16 — MNQZ6 +17.50, MESZ6 −87.50, NNQZ6 −2.40 gross, 39.16 fees → −111.56 net, NLV 389.26 (so it held 0.82 before the transfer). Real day across accounts −76.97; no report saw any of it because master_broker.csv is options-only and balance_daily.csv was margin-only.
+MY ERROR: the Webull connector's order history with a date range returned [] for the futures account and I reported "no futures orders" — the undated call returned all 72. The SDK's dated call (what broker_sync uses) returns them correctly (46). Never report "none" from one empty connector read.
+NNQ = E-nano Nasdaq-100, $0.20/pt, tick 0.5, first traded 2026-08-24; siblings NES $0.50 (tick 0.5), N2K $0.50 (tick 0.2), NDOW $0.05 (tick 2). Source: Webull instrument list `size` / `min_tick`.
+SECOND BUG FOUND AND FIXED: balance_daily.csv had blank day_pl/bp on 9/15 and 9/16. account_snapshot() returned the FIRST balance endpoint that answered; the v1 `account.get_account_balance(id,"USD")` answers with net liquidation only, account_v2 has all three. Now every endpoint is asked until one gives all three and the fullest answer is kept.
+BUILT: webull_options.account_snapshot/order_history take `account_id`; broker_sync pulls the futures account (history + balance) in the same after-close run → master_futures.csv (one row per order id) + five new balance_daily.csv columns; FUT_POINT_VALUE lives in broker_sync (journal arithmetic) so webull_futures.py is UNTOUCHED and the futures protection proof stays valid. daily_brief Day section gains futures / money moved / ALL ACCOUNTS; status_json balance gains the fut fields; reports.py brief inputs gain master_futures.csv. Tests: broker_sync 30, daily_brief 41, status_json 3, reports 11 — green. Ran broker_sync live for 9/16 and backfilled futures legs from 8/12 (172 legs): net by day 8/12 +22.44, 8/13 −162.36, 8/14 +86.20, 8/17 −204.16, 9/10 −164.73, 9/16 −111.56 = −534.17 all time, of which 135.52 is fees. fut_flow is blank for 9/16 (no prior fut_nlv on file) and starts working 9/17.
+Side note, not fixed: a second Python process importing the Webull SDK cannot rotate webull_api.log while the bridge holds it — harmless stderr noise ("Logging error … WinError 32") on every hand-run of broker_sync.
+
 ## 2026-09-16 (pullback lookback on the FULL sample — 33% of timed-out waits were already tagged)
 
 Bought the 25 missing symbol-days of 1s XNAS.ITCH bars from Databento for

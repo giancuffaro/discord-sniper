@@ -584,7 +584,7 @@ all.
 | `reference/FUTURES-MIRROR-REPLAY-2026-09-13.csv` | same | Frozen — the original 8/3–9/11 study (298 rows, both modes). The seed. Do not append to it. |
 | `daily-reports/FUTURES-MIRROR week-of-….md` (that day's `===== Mon Sep 14 2026 =====` block) | — | One day's trades, day total, running total since 2026-08-03, win rate, by room, by sym×direction, exits, and what the number is not. |
 
-`balance_daily.csv` (`broker_sync.py`, appended once per trading day at 16:40) — `date, nlv, day_pl, bp, read_at`. The ONLY place the account's net liquidation, Webull day P&L and option buying power are kept; nothing else on disk records a balance, and `health.csv` stores only whether the read succeeded. `day_pl` is Webull's own figure, NET of fees; `master_broker.csv` round trips are GROSS, so the two differ by the day's fees (9/14: -333.85 net vs -321 gross across 47 filled legs). One row per day — a re-run replaces that day's row, never stacks a second.
+`balance_daily.csv` (`broker_sync.py`, appended once per trading day at 16:40) — `date, nlv, day_pl, bp, read_at, fut_nlv, fut_pl, fut_fees, flow, fut_flow`. `fut_*` is the FUTURES account (net liquidation, the day's NET result from `master_futures.csv`, its fees); `flow` / `fut_flow` = (NLV change since the last recorded day) − (that day's net result) = money moved in or out that was NOT trading (9/16: margin −500.00, the transfer to futures), blank when any of the three numbers is missing. `master_futures.csv` (`broker_sync.py`, same run) — `date, filled_time, symbol, code, side, qty, price, fees, order_id`: every FILLED futures leg, Eastern-stamped, ONE ROW PER ORDER ID (a re-run replaces, never stacks), fees = Webull's own `fees[].actual_value` summed; backfilled to 2026-08-12. `broker_sync.futures_day(day)` scores it: points × `FUT_POINT_VALUE` per product that closed flat, less fees; open or unpriced products are named and the net is None. The ONLY place the account's net liquidation, Webull day P&L and option buying power are kept; nothing else on disk records a balance, and `health.csv` stores only whether the read succeeded. `day_pl` is Webull's own figure, NET of fees; `master_broker.csv` round trips are GROSS, so the two differ by the day's fees (9/14: -333.85 net vs -321 gross across 47 filled legs). One row per day — a re-run replaces that day's row, never stacks a second.
 
 **TZ TRAP (9/15):** `build_ledger._hms()` renders epochs in the MACHINE's local timezone, and days-json `closed` values come from stored Eastern strings instead. Rebuild from anything but an Eastern shell and `opened` jumps +4h while `closed` jumps -4h. Always `TZ=America/New_York python3 build_ledger.py` off his PC. Caught the same day it happened and restored from `backups/`.
 
@@ -806,7 +806,7 @@ mechanics are here, verbatim.
   no loop — pulls the order history (paged on `last_client_order_id` until a
   short page) into ONE fixed file, Webull_Orders_auto.csv, OVERWRITING it every
   run (G, 9/10: "have one that overwrites" — no deletes, ever), and records one
-  balance row per day in `balance_daily.csv` (date, nlv, day_pl, bp, read_at) —
+  balance row per day in `balance_daily.csv` (margin + futures account + money moved) and the futures fills in `master_futures.csv` —
   the brief's only balance source (automated 9/15 — nothing pulled it
   before). build_ledger's absorb_exports() (runs inside every ledger refresh) folds
   it into master_broker.csv and leaves it in place. Never write dated
