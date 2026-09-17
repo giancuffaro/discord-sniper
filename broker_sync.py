@@ -16,13 +16,20 @@ WHAT IT IS. A ONE-SHOT, READ-ONLY, AFTER-CLOSE step of the daily audit:
   1 order history for the day (paged) -> Webull_Orders_auto.csv, OVERWRITTEN
     (G, 9/10: "have one that overwrites" — no deletes, no dated piles)
   2 the account balance -> one appended row in balance_daily.csv
-  3 build_ledger, which absorbs the export into master_broker.csv and
+  3 THE FUTURES ACCOUNT (G, 9/16: "add futures from now on") — its filled
+    legs -> master_futures.csv (one row per order id, fees included), and its
+    net liquidation, day result and fees onto the SAME balance_daily.csv row.
+    9/16 was 46 futures fills, -$72 gross and $39 of fees that no report saw,
+    and a $500 margin->futures transfer the brief printed as a -$465 day.
+    `flow` / `fut_flow` are what moved in or out of each account that was NOT
+    trading: (net liquidation change) - (the day's net result).
+  4 build_ledger, which absorbs the export into master_broker.csv and
     reconciles it against master_ledger.csv to the cent
 
 NOT A SECOND CLIENT AND NOT A POLL LOOP. It builds ONE WebullOptions the way
 health.py already does, uses it for two reads, and exits. It runs once a day,
-after the close, when the bridge's quote bus is idle — two hits against the
-2-per-2s door, not a loop competing with the stops. It never places, cancels
+after the close, when the bridge's quote bus is idle — a handful of hits
+against the 2-per-2s door, not a loop competing with the stops. It never places, cancels
 or modifies an order, and never touches settings.json.
 """
 from __future__ import annotations
@@ -40,7 +47,22 @@ BALANCES = os.path.join(HERE, "balance_daily.csv")
 EXPORT_HEAD = ["Name OCC", "Symbol", "Side", "Status", "Filled", "Total Qty",
                "Price", "Avg Price", "Time-in-Force", "Placed Time",
                "Filled Time"]
-BALANCE_HEAD = ["date", "nlv", "day_pl", "bp", "read_at"]
+FUTURES = os.path.join(HERE, "master_futures.csv")
+BALANCE_HEAD = ["date", "nlv", "day_pl", "bp", "read_at",
+                "fut_nlv", "fut_pl", "fut_fees", "flow", "fut_flow"]
+FUT_HEAD = ["date", "filled_time", "symbol", "code", "side", "qty", "price",
+            "fees", "order_id"]
+
+# Dollars per index point, per contract — Webull's own instrument list
+# (`size`), read 2026-09-16. The E-nanos (NNQ/NES/N2K/NDOW) began trading
+# 2026-08-24. JOURNAL ARITHMETIC ONLY: this table prices fills that already
+# happened. What the bridge may TRADE is webull_futures.FUT_SPECS and its
+# proof gate, which this file never touches. A code missing here is reported
+# as unpriced — never guessed.
+FUT_POINT_VALUE = {"ES": 50.0, "MES": 5.0, "NES": 0.5,
+                   "NQ": 20.0, "MNQ": 2.0, "NNQ": 0.2,
+                   "RTY": 50.0, "M2K": 5.0, "N2K": 0.5,
+                   "YM": 5.0, "MYM": 0.5, "NDOW": 0.05}
 
 
 def _settings():
@@ -134,23 +156,167 @@ def write_export(rows, path=None):
     return len(rows)
 
 
-def record_balance(day, snapshot, path=None):
-    """Append one row per trading day. Append-only, and a re-run replaces that
-    day's row rather than stacking a second one — one day, one balance."""
-    path = path or BALANCES
-    if not snapshot:
+def _fut_code(symbol):
+    """'MNQZ6' -> 'MNQ': the product code is the symbol less its month letter
+    and year digit(s)."""
+    text = str(symbol or "").upper().strip()
+    while text and text[-1].isdigit():
+        text = text[:-1]
+    return text[:-1] if len(text) > 1 else text
+
+
+def futures_rows(orders):
+    """Raw SDK order dicts -> one master_futures.csv row per FILLED futures
+    leg. Fees are Webull's own per-order `fees[].actual_value`, summed."""
+    rows = []
+    for order in orders:
+        if str(order.get("instrument_type") or "").upper() != "FUTURES":
+            continue
+        if str(order.get("status") or "").upper() != "FILLED":
+            continue
+        stamp = _et_stamp(order.get("filled_time_at")
+                          or order.get("place_time_at"))
+        symbol = str(order.get("symbol") or "").upper()
+        fees = 0.0
+        for fee in (order.get("fees") or []):
+            try:
+                fees += float(fee.get("actual_value") or 0)
+            except (TypeError, ValueError, AttributeError):
+                pass
+        rows.append([stamp[:10], stamp, symbol, _fut_code(symbol),
+                     str(order.get("side") or "").upper(),
+                     order.get("filled_quantity") or "0",
+                     order.get("filled_price") or "",
+                     "%.2f" % fees,
+                     order.get("order_id") or order.get("client_order_id")
+                     or ""])
+    rows.sort(key=lambda r: r[1])
+    return rows
+
+
+def merge_futures(rows, path=None):
+    """Fold the pulled legs into master_futures.csv. ONE ROW PER ORDER ID: a
+    re-run replaces a leg it already has, never stacks a second copy."""
+    path = path or FUTURES
+    have = {}
+    try:
+        with open(path, encoding="utf-8", newline="") as fh:
+            for old in list(csv.reader(fh))[1:]:
+                if old and len(old) == len(FUT_HEAD):
+                    have[old[-1] or "|".join(old)] = old
+    except OSError:
+        pass
+    for row in rows:
+        have[row[-1] or "|".join(row)] = row
+    out = sorted(have.values(), key=lambda r: r[1])
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(FUT_HEAD)
+        writer.writerows(out)
+    os.replace(tmp, path)
+    return len(out)
+
+
+def futures_day(day, path=None):
+    """The day's futures result from master_futures.csv.
+
+    gross = cash from round trips that CLOSED FLAT that day, per product.
+    A product still open at the end of the day (or carried in) cannot be
+    scored from one day's fills, and a product with no point value here
+    cannot be priced — both are NAMED in `open` / `unpriced`, and `gross` /
+    `net` come back None rather than a number that leaves them out."""
+    path = path or FUTURES
+    try:
+        with open(path, encoding="utf-8", newline="") as fh:
+            rows = [r for r in csv.DictReader(fh)
+                    if (r.get("date") or "") == day]
+    except OSError:
+        rows = []
+    if not rows:
         return None
+    per, fees, contracts = {}, 0.0, 0.0
+    for r in rows:
+        try:
+            qty, price = float(r["qty"] or 0), float(r["price"] or 0)
+            fees += float(r.get("fees") or 0)
+        except (TypeError, ValueError):
+            continue
+        sign = 1.0 if (r.get("side") or "").startswith("S") else -1.0
+        slot = per.setdefault(r.get("code") or "", {"pos": 0.0, "pts": 0.0,
+                                                    "fills": 0})
+        slot["pos"] -= sign * qty
+        slot["pts"] += sign * qty * price
+        slot["fills"] += 1
+        contracts += qty
+    gross, open_, unpriced, by_code = 0.0, [], [], {}
+    for code, slot in sorted(per.items()):
+        value = FUT_POINT_VALUE.get(code)
+        if abs(slot["pos"]) > 1e-9:
+            open_.append(code)
+        elif value is None:
+            unpriced.append(code)
+        else:
+            by_code[code] = round(slot["pts"] * value, 2)
+            gross += by_code[code]
+    whole = not open_ and not unpriced
+    return {"fills": len(rows), "contracts": contracts,
+            "gross": round(gross, 2) if whole else None,
+            "fees": round(fees, 2),
+            "net": round(gross - fees, 2) if whole else None,
+            "by_code": by_code, "open": open_, "unpriced": unpriced}
+
+
+def _prior(existing, day, column):
+    """The last value recorded in `column` BEFORE `day`, or None."""
+    index = BALANCE_HEAD.index(column)
+    for old in sorted((r for r in existing if r and r[0] < day),
+                      key=lambda r: r[0], reverse=True):
+        if len(old) > index and old[index] != "":
+            try:
+                return float(old[index])
+            except ValueError:
+                return None
+    return None
+
+
+def record_balance(day, snapshot, path=None, futures=None):
+    """Append one row per trading day. Append-only, and a re-run replaces that
+    day's row rather than stacking a second one — one day, one balance.
+
+    `futures` = {"nlv", "pl", "fees"} for the futures account, any of them
+    None. `flow` / `fut_flow` = (net liquidation change since the last
+    recorded day) - (that day's net result): a transfer, deposit or
+    withdrawal. Blank when any of the three numbers is missing."""
+    path = path or BALANCES
+    if not snapshot and not futures:
+        return None
+    snapshot, futures = snapshot or {}, futures or {}
     existing, seen = [], False
     try:
         with open(path, encoding="utf-8", newline="") as fh:
             existing = [r for r in csv.reader(fh)][1:]
     except OSError:
         pass
-    row = [day,
-           "" if snapshot.get("nlv") is None else "%.2f" % snapshot["nlv"],
-           "" if snapshot.get("day_pl") is None else "%.2f" % snapshot["day_pl"],
-           "" if snapshot.get("bp") is None else "%.2f" % snapshot["bp"],
-           dt.datetime.now().astimezone().isoformat(timespec="seconds")]
+    width = len(BALANCE_HEAD)
+    existing = [(r + [""] * width)[:width] for r in existing if r]
+
+    def cell(value):
+        return "" if value is None else "%.2f" % value
+
+    def flow(now, column, result):
+        before = _prior(existing, day, column)
+        if now is None or before is None or result is None:
+            return None
+        return round(now - before - result, 2)
+
+    row = [day, cell(snapshot.get("nlv")), cell(snapshot.get("day_pl")),
+           cell(snapshot.get("bp")),
+           dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+           cell(futures.get("nlv")), cell(futures.get("pl")),
+           cell(futures.get("fees")),
+           cell(flow(snapshot.get("nlv"), "nlv", snapshot.get("day_pl"))),
+           cell(flow(futures.get("nlv"), "fut_nlv", futures.get("pl")))]
     out = []
     for old in existing:
         if old and old[0] == day:
@@ -189,11 +355,14 @@ def latest_balance(day=None, path=None):
     def num(key):
         try:
             return float(row.get(key) or "")
-        except ValueError:
+        except (TypeError, ValueError):
             return None
     return {"date": row.get("date") or "", "nlv": num("nlv"),
             "day_pl": num("day_pl"), "bp": num("bp"),
-            "read_at": row.get("read_at") or ""}
+            "read_at": row.get("read_at") or "",
+            "fut_nlv": num("fut_nlv"), "fut_pl": num("fut_pl"),
+            "fut_fees": num("fut_fees"), "flow": num("flow"),
+            "fut_flow": num("fut_flow")}
 
 
 def main(day=None):
@@ -211,10 +380,37 @@ def main(day=None):
           % (day, legs, os.path.basename(EXPORT)))
 
     snapshot = client.account_snapshot()
-    row = record_balance(day, snapshot)
+
+    futures = None
+    fut_id = getattr(client, "futures_account_id", None)
+    if fut_id and fut_id != getattr(client, "account_id", None):
+        kept = merge_futures(futures_rows(
+            client.order_history(start, end, account_id=fut_id)))
+        fut_day = futures_day(day) or {}
+        fut_snap = client.account_snapshot(account_id=fut_id) or {}
+        # No fills that day is a result of 0.00, not an unknown one.
+        flat = not fut_day
+        futures = {"nlv": fut_snap.get("nlv"),
+                   "pl": 0.0 if flat else fut_day.get("net"),
+                   "fees": 0.0 if flat else fut_day.get("fees")}
+        print("BROKER SYNC futures — %d fill(s) that day, net %s, fees %s, "
+              "nlv %s%s%s  (%d legs in %s)"
+              % (fut_day.get("fills", 0),
+                 "?" if futures["pl"] is None else "%.2f" % futures["pl"],
+                 "?" if futures["fees"] is None else "%.2f" % futures["fees"],
+                 "?" if futures["nlv"] is None else "%.2f" % futures["nlv"],
+                 "  STILL OPEN: %s" % ",".join(fut_day["open"])
+                 if fut_day.get("open") else "",
+                 "  NO POINT VALUE: %s" % ",".join(fut_day["unpriced"])
+                 if fut_day.get("unpriced") else "",
+                 kept, os.path.basename(FUTURES)))
+
+    row = record_balance(day, snapshot, futures=futures)
     if row:
-        print("BROKER SYNC balance — nlv %s  day P&L %s  option BP %s"
-              % (row[1] or "?", row[2] or "?", row[3] or "?"))
+        print("BROKER SYNC balance — nlv %s  day P&L %s  option BP %s  "
+              "flow %s  futures flow %s"
+              % (row[1] or "?", row[2] or "?", row[3] or "?",
+                 row[8] or "?", row[9] or "?"))
     else:
         print("BROKER SYNC balance — Webull would not say; nothing recorded")
 
