@@ -4,7 +4,7 @@
   "lanes": [
     {
       "lane": "discord",
-      "fresh": true,
+      "fresh": false,
       "version": "3.8.39"
     },
     {
@@ -22,5 +22,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789602883.198935
+  "checked_at": 1789603183.2037282
 }
