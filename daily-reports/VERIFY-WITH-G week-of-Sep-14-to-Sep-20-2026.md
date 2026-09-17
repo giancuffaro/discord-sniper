@@ -1,5 +1,17 @@
 # VERIFY WITH G — things that did not add up (newest day first)
 
+===== Thu Sep 17 2026 =====
+
+1. JOURNAL MISSED THE FUTURES DAY. The 16:40 brief said "Webull futures: no fills" and "money moved: futures -$132.62". Truth at the broker: 15 futures fills 09:30-14:48, -$120.00 gross, $12.62 fees = -$132.62 — a trading loss, not money moved. Cause: the futures order-history pull runs right after the margin pull (3 pages on a 201-leg day) and hit Webull's 2-per-2s door; throttled = empty = "no fills". FIXED tonight (waits the door out, asks twice, and a balance that moved with no fills is now UNKNOWN, never 0.00). Real day: margin +227.10, futures -132.62 = +94.48. Verdict:
+2. "Bot trades" lists 6 NO-FILLS as trades with "? ? $0 unavailable ⚠ journal ≠ broker" (SNDK, MRNA, SPY 760C, ORCL, QQQ 716C x2). They never filled — nobody sold at our price in 90s. Guess: brief display bug, a no-fill is not a trade. Verdict:
+3. 10:24 "QQQ 716C … 105.00" refused, price makes no sense (ask 0.91). SAME as 9/16 item 2 (Skyy "112" = 1.12): the caller drops the decimal. Skyy's QQQ 716C trimmed +50%. Still waiting on G's ruling from 9/16. Verdict:
+4. The new 10:00 rule skipped 7 round-number entries 09:33-09:56 (GOOGL x2, SPY x2, TSLA, QQQ, AMD). Callers' own results on some of those: Unraveller GOOGL 342.5C +65% trim, Brett TSLA 372.5C +70% trim, @Owner TSLA 377.5C +48% trim; also Unraveller GOOGL 345C -14%/-39%, Mike TSLA 362.5P -38%. Rule did what it was built to do; one day proves nothing either way. Verdict:
+5. 10:14 Brett SPY 760C @ 2.25 — NOFILL: the caller-price rule rested at his 2.25, never came back; he trimmed +13% and closed +6.7%. Rule working as designed; this is its cost. Verdict:
+6. INTC 111C 9/21: STOP-WARN x12 "Webull wouldn't hold a resting stop (417 … LONG_POSITION_MUST_BE_CLOSE…)", POSTCHECK "book holds INTC, the account doesn't", and a second INTC row with no exit price. Guess: the first INTC sold, the book kept a ghost and kept trying to stop it. Verdict:
+7. Audit: 16 silent drops, 1 possible missed entry, failed checks "Historical parser corpus gate" (EXPECTED — it compares to the last commit and last night's edit-timestamp fix changed 5 expiries on purpose; clears when that commit is the baseline) and "caller versus ratchet comparison" (no CALLER-VS-RATCHET block built for 9/17 — not yet looked at). Verdict:
+8. Bot net +$2 on 9 filled trades while callers posted 12 winners; 2 of our 3 "wins" were +$14 and +$3, and three exits were BE/born stops at exactly entry. 5/3/5 ladder is scratching trades out at breakeven that the callers rode. One day. Verdict:
+9. MIRROR unscored again (Databento: data_end_after_available_end) — second day running. Verdict:
+
 ===== Wed Sep 16 2026 =====
 
 Each line: what happened · why it looks wrong · my guess · G's verdict (blank until he teaches it).

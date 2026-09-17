@@ -6,10 +6,9 @@
 
 ## Day
 - Webull margin day P&L: +$227.1 net · +$233 gross on 65 broker legs (the gap is fees)
-- Balance: NLV $1165.93 (+$227.12 vs 2026-09-16) · option BP $1165.93 · read 2026-09-17T16:40:20
-- Webull futures: no fills · NLV $256.64
-- Money moved (transfer / deposit / withdrawal — NOT trading): futures -$132.62
-- ALL ACCOUNTS, net of fees: +$227.1 (margin +$227.1, futures $0)
+- Balance: NLV $1165.93 (+$227.12 vs 2026-09-16) · option BP $1165.93 · read 2026-09-17T18:18:50
+- Webull futures: -$132.62 net · -$120 gross, $12.62 fees on 15 fills · NLV $256.64
+- ALL ACCOUNTS, net of fees: +$94.48 (margin +$227.1, futures -$132.62)
 - Bot: +$2 · 15 trades, 10 contracts  (1 with no P&L)
 - Hand (G): +$232 · 16 trades, 51 contracts
 - Ledger day total: +$234 (options only)
@@ -75,7 +74,7 @@ ratchet replay: unavailable (no CALLER-VS-RATCHET block for 2026-09-17)
 - NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
 - NOTHING REOPENS A DISCORD ROOM TAB — only START HERE does (G, 9/8), and it starts the DISCORD BROWSER only wh…
 
-built from master_ledger.csv, master_broker.csv, balance_daily.csv, master_futures.csv, trades.log, daily-reports/CALLER-OUTCOMES.csv, daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md, daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md, daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md, department-reports/extension-*.json, HANDOFF.md · 2026-09-17 16:46 Eastern Daylight Time
+built from master_ledger.csv, master_broker.csv, balance_daily.csv, master_futures.csv, trades.log, daily-reports/CALLER-OUTCOMES.csv, daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md, daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md, daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md, department-reports/extension-*.json, HANDOFF.md · 2026-09-17 18:18 Eastern Daylight Time
 
 ===== Wed Sep 16 2026 =====
 

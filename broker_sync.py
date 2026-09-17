@@ -39,6 +39,7 @@ import datetime as dt
 import json
 import os
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXPORT = os.path.join(HERE, "Webull_Orders_auto.csv")
@@ -48,6 +49,7 @@ EXPORT_HEAD = ["Name OCC", "Symbol", "Side", "Status", "Filled", "Total Qty",
                "Price", "Avg Price", "Time-in-Force", "Placed Time",
                "Filled Time"]
 FUTURES = os.path.join(HERE, "master_futures.csv")
+HISTORY_DOOR_S = 2.5        # Webull: order history is 2 requests per 2 seconds
 BALANCE_HEAD = ["date", "nlv", "day_pl", "bp", "read_at",
                 "fut_nlv", "fut_pl", "fut_fees", "flow", "fut_flow"]
 FUT_HEAD = ["date", "filled_time", "symbol", "code", "side", "qty", "price",
@@ -382,15 +384,41 @@ def main(day=None):
     futures = None
     fut_id = getattr(client, "futures_account_id", None)
     if fut_id and fut_id != getattr(client, "account_id", None):
-        kept = merge_futures(futures_rows(
-            client.order_history(start, end, account_id=fut_id)))
+        # THE ORDER-HISTORY DOOR IS 2 PER 2 SECONDS and the margin pull has
+        # just used it (three pages on a 200-leg day). Asked straight after,
+        # the futures pull is throttled and comes back EMPTY — which on 9/17
+        # the journal printed as "no fills" on a day with 15 fills and -$132.62.
+        # Wait the door out, and ask once more if it still says nothing.
+        time.sleep(HISTORY_DOOR_S)
+        fut_orders = client.order_history(start, end, account_id=fut_id)
+        if not fut_orders:
+            time.sleep(2 * HISTORY_DOOR_S)
+            fut_orders = client.order_history(start, end, account_id=fut_id)
+        kept = merge_futures(futures_rows(fut_orders))
         fut_day = futures_day(day) or {}
         fut_snap = client.account_snapshot(account_id=fut_id) or {}
-        # No fills that day is a result of 0.00, not an unknown one.
+        # No fills that day is a result of 0.00 — but ONLY when the balance
+        # agrees. A futures balance that moved with no fills on file is an
+        # unknown result (a missed pull, or money moved), never a 0.00.
         flat = not fut_day
+        moved = None
+        if flat and fut_snap.get("nlv") is not None:
+            try:
+                with open(BALANCES, encoding="utf-8", newline="") as fh:
+                    before = _prior([(r + [""] * len(BALANCE_HEAD))[:len(BALANCE_HEAD)]
+                                     for r in list(csv.reader(fh))[1:] if r],
+                                    day, "fut_nlv")
+            except OSError:
+                before = None
+            if before is not None and abs(fut_snap["nlv"] - before) >= 1.0:
+                moved = fut_snap["nlv"] - before
+                print("BROKER SYNC futures — NO FILLS ON FILE but the futures "
+                      "balance moved %+.2f: result recorded as UNKNOWN, not 0.00 "
+                      "(a throttled history pull, or money moved)" % moved)
+        unknown = flat and moved is not None
         futures = {"nlv": fut_snap.get("nlv"),
-                   "pl": 0.0 if flat else fut_day.get("net"),
-                   "fees": 0.0 if flat else fut_day.get("fees")}
+                   "pl": None if unknown else 0.0 if flat else fut_day.get("net"),
+                   "fees": None if unknown else 0.0 if flat else fut_day.get("fees")}
         print("BROKER SYNC futures — %d fill(s) that day, net %s, fees %s, "
               "nlv %s%s%s  (%d legs in %s)"
               % (fut_day.get("fills", 0),

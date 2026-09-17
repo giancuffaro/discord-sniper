@@ -278,6 +278,7 @@ class TestFutures(SyncFixture):
 
 class TestMainFlow(SyncFixture):
     def _patch(self, client, ledger_rows=7):
+        broker_sync.HISTORY_DOOR_S = 0
         broker_sync._settings = lambda: {"execution": {"webull": {}}}
         broker_sync._client = lambda _settings: client
 
@@ -332,6 +333,36 @@ class TestMainFlow(SyncFixture):
         got = broker_sync.latest_balance("2026-09-16")
         self.assertEqual((got["fut_nlv"], got["fut_pl"], got["fut_fees"]),
                          (389.26, 18.54, 1.46))
+
+    def test_a_throttled_futures_pull_is_asked_again(self):
+        client = FakeClient(snapshot={"nlv": 1.0, "day_pl": 0.0, "bp": 1.0},
+                            futures_id="FUT1", futures_snapshot={"nlv": 256.64})
+        answers = [[], [fut(oid="a", price="29400", filled="2026-09-17T14:36:57.081Z"),
+                        fut(oid="b", side="SELL", price="29390",
+                            filled="2026-09-17T14:40:57.081Z")]]
+        real = client.order_history
+
+        def flaky(start, end, page_size=100, account_id=None):
+            if account_id:
+                client.calls.append(("order_history", start, end, account_id))
+                return answers.pop(0)
+            return real(start, end, page_size)
+        client.order_history = flaky
+        self._patch(client)
+        broker_sync.main("2026-09-17")
+        self.assertEqual(broker_sync.latest_balance("2026-09-17")["fut_pl"], -21.46)
+
+    def test_a_balance_that_moved_with_no_fills_is_unknown_never_zero(self):
+        broker_sync.record_balance("2026-09-16", {"nlv": 1.0, "day_pl": 0.0, "bp": 1.0},
+                                   futures={"nlv": 389.26, "pl": -111.56, "fees": 39.16})
+        client = FakeClient(snapshot={"nlv": 1.0, "day_pl": 0.0, "bp": 1.0},
+                            futures_id="FUT1", futures_snapshot={"nlv": 256.64})
+        self._patch(client)
+        broker_sync.main("2026-09-17")
+        got = broker_sync.latest_balance("2026-09-17")
+        self.assertIsNone(got["fut_pl"])
+        self.assertIsNone(got["fut_flow"])
+        self.assertEqual(got["fut_nlv"], 256.64)
 
     def test_a_refused_balance_still_writes_the_export(self):
         client = FakeClient(snapshot=None)

@@ -280,22 +280,22 @@
    "output": "daily-reports/BRIEF week-of-Sep-14-to-Sep-20-2026.md"
   },
   "2026-09-17": {
-   "built_at": "2026-09-17T16:46:56-04:00",
-   "fingerprint": "1e9cd1e65deb93b6",
+   "built_at": "2026-09-17T18:18:59-04:00",
+   "fingerprint": "425fc9a8aa82d411",
    "inputs": {
     "CALLER-OUTCOMES.csv (day rows)": "4f086360f04370d3",
     "HANDOFF.md": "18369:1789623747",
-    "balance_daily.csv (day rows)": "78ce6b9a6d751081",
+    "balance_daily.csv (day rows)": "99f90d9b9bcdbce4",
     "daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md (day block)": "missing",
     "daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md (day block)": "6eb75e71360cd172",
     "daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md (day block)": "58ee089ab20df34b",
-    "daily_brief.py": "32385:1789613939",
+    "daily_brief.py": "32766:1789683517",
     "department-reports/extension-discord.json": "9d0bdd9af4aecc08",
     "department-reports/extension-whop.json": "3a3bc3a135ac99b9",
     "master_broker.csv (day rows)": "19787718bc763742",
-    "master_futures.csv (day rows)": "4f53cda18c2baa0c",
+    "master_futures.csv (day rows)": "2e05b59ce7ab3abd",
     "master_ledger.csv (day rows)": "65200f7df8d20253",
-    "trades.log (day lines)": "c4594861e65fd43e"
+    "trades.log (day lines)": "1b2fd19b5b066976"
    },
    "output": "daily-reports/BRIEF week-of-Sep-14-to-Sep-20-2026.md"
   }

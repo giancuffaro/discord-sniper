@@ -367,6 +367,10 @@ def _futures_lines(day, balance):
         if fut["unpriced"]:
             text += " · no point value, not scored: %s" \
                 % ", ".join(fut["unpriced"])
+    elif today.get("fut_nlv") is not None and today.get("fut_pl") is None:
+        # broker_sync found no fills but the balance moved: unknown, not zero.
+        text = ("%s — no fills on file but the futures balance moved; the "
+                "history pull was throttled or money moved" % UNAVAILABLE)
     elif today.get("fut_nlv") is not None:
         text = "no fills"
     else:
@@ -386,6 +390,7 @@ def _futures_lines(day, balance):
 
     margin_net = today.get("day_pl")
     fut_net = fut["net"] if fut else (0.0 if today.get("fut_nlv") is not None
+                                      and today.get("fut_pl") is not None
                                       else None)
     if margin_net is not None and fut_net is not None:
         out.append("- ALL ACCOUNTS, net of fees: %s (margin %s, futures %s)"
