@@ -1415,19 +1415,27 @@ class WebullOptions:
         setattr(self, cache_key + "_ttl", 8 if val is not None else 300)
         return val
 
-    def account_snapshot(self):
-        """Net liquidation, day P&L and option buying power for the margin
-        account — one read, or None when Webull will not say.
+    def account_snapshot(self, account_id=None):
+        """Net liquidation, day P&L and buying power for one account (the
+        margin account unless `account_id` names another — broker_sync passes
+        the futures account) — or None when Webull will not say.
 
         `buying_power()` above returns ONE number and caches it for the
         trading path; this returns the whole picture and is called once a day,
-        after the close, by broker_sync.py. Same hunted balance endpoint, no
-        second client, no loop: it costs one hit against the 2-per-2s door.
+        after the close, by broker_sync.py. No second client, no loop.
+
+        THE FULLEST ANSWER WINS. Two hunted endpoints answer: the v1 balance
+        gives net liquidation and nothing else, account_v2 gives all three.
+        Returning the first one that answered left day_pl and bp blank in
+        balance_daily.csv on 9/15 and 9/16, so every endpoint is asked until
+        one answers all three fields, and the best answer is kept.
         """
         if getattr(self, "paper", False):
             return None
+        acct = account_id or self.account_id
+        best, best_n = None, 0
         for _name, fn in self._balance_fns():
-            for args in ((self.account_id,), (), (self.account_id, "USD")):
+            for args in ((acct,), (), (acct, "USD")):
                 try:
                     res = fn(*args)
                 except TypeError:
@@ -1446,15 +1454,23 @@ class WebullOptions:
                         "total_day_profit_loss")),
                     "bp": _num_or_none(_find(
                         body, "option_buying_power", "optionBuyingPower",
-                        "day_buying_power", "dayBuyingPower")),
+                        "day_buying_power", "dayBuyingPower",
+                        "buying_power")),
                 }
-                if any(v is not None for v in snap.values()):
-                    return snap
-        return None
+                got = sum(1 for v in snap.values() if v is not None)
+                if got > best_n:
+                    best, best_n = snap, got
+                if got:
+                    break
+            if best_n == 3:
+                break
+        return best
 
-    def order_history(self, start_date, end_date, page_size=100):
-        """Every option order leg the account placed in [start, end], as the
-        raw SDK dicts. Read-only; the day's export is built from this.
+    def order_history(self, start_date, end_date, page_size=100,
+                      account_id=None):
+        """Every order leg one account placed in [start, end], as the raw SDK
+        dicts (the margin account unless `account_id` names another —
+        broker_sync passes the futures account). Read-only.
 
         PAGING IS NOT OPTIONAL (HANDOFF, broker facts): Webull answers at most
         `page_size` orders and expects the last client_order_id back to
@@ -1462,6 +1478,7 @@ class WebullOptions:
         order past the first hundred — which is most of a busy day. Stop on a
         short page, and never loop more than 50 times whatever the server says.
         """
+        acct = account_id or self.account_id
         out, cursor, guard = [], None, 0
         while guard < 50:
             guard += 1
@@ -1470,8 +1487,8 @@ class WebullOptions:
             if cursor:
                 kw["last_client_order_id"] = cursor
             body = None
-            for args, extra in (((self.account_id,), kw),
-                                ((self.account_id, start_date, end_date), {})):
+            for args, extra in (((acct,), kw),
+                                ((acct, start_date, end_date), {})):
                 body, _why = self._try_calls(
                     ["order_v3", "order", "trade", "account_v2"],
                     ["history", "list_orders", "orders", "query_orders"],
