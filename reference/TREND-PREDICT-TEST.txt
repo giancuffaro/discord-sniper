@@ -1,0 +1,34 @@
+[webull] accounts visible to these keys: MARGIN=ENIQGUV4LUTT3JSAA9NKLDDU19; CASH=MOI680KKJ1F36VPUA5FGOFS7MA; MARGIN=R8IECPMDTO73FABD0UH7UT3T0B
+[webull] FUTURES account -> R8IECPMDTO73FABD0UH7UT3T0B
+TREND PREDICTION TEST — 580 symbol-days, 58 sessions 2026-06-25 .. 2026-09-16, 10 symbols
+
+labels read: CHOP 13603 (37%)  DOWN 11572 (31%)  UP 11945 (32%)
+
+PART 1 — forward move WITH the label, basis points (1bp = 0.01%%; SPY $760 -> 1bp = 7.6c)
+                                +5 min           +15 min           +30 min           +45 min           +60 min
+  ALL (no label)      +0.3bp 50% t+2.7  +0.7bp 50% t+2.6  +1.1bp 51% t+2.3  +1.6bp 51% t+2.3  +1.9bp 51% t+2.2
+  UP                  +0.3bp 50% t-2.1  +0.6bp 49% t-3.0  +1.1bp 50% t-3.1  +1.9bp 50% t-2.8  +2.1bp 50% t-2.7
+  DOWN                -0.2bp 48% t-6.2  -0.5bp 48% t-6.5  -1.8bp 47% t-6.8  -2.7bp 47% t-7.2  -2.9bp 48% t-6.6
+  UP+DOWN             +0.1bp 49% t-1.7  +0.0bp 49% t-1.8  -0.3bp 49% t-2.0  -0.4bp 49% t-1.7  -0.4bp 49% t-1.4
+    age fresh <15m    +0.0bp 49% t+0.7  +0.0bp 49% t+1.1  -0.3bp 49% t+0.8  -0.1bp 49% t+1.3  +0.1bp 49% t+1.6
+    age 15-45m        +0.2bp 50% t+0.4  +0.1bp 49% t+0.1  -0.3bp 49% t+0.2  -0.5bp 49% t+0.3  -0.6bp 49% t+0.2
+    age mature 45m+   -0.1bp 48% t-6.1  -0.1bp 49% t-5.1  -0.4bp 48% t-4.2  -0.9bp 48% t-3.8  -1.1bp 48% t-3.0
+  CHOP (abs move)   +13.2bp 99% t+44.3+21.8bp 100% t+40.8+30.1bp 100% t+38.5+35.8bp 100% t+36.8+40.3bp 100% t+36.4
+  (each cell: mean move, %% of samples that went the label's way, t-stat across symbol-days; |t| under 2 = noise)
+
+PART 2 — where swing turns happen, vs where every 1-minute extreme happens
+
+  reversal x1 — 37494 turns
+    within 2 min of the top of the hour              turns   8.7%   all bars   8.2%   lift x1.06   z +3.4
+    within 2 min of the half hour                    turns   9.3%   all bars   8.5%   lift x1.10   z +6.2
+    at a price ending in 5 or 0 (multiple of $5)     turns   4.2%   all bars   4.4%   lift x0.96   z -1.5
+    at a whole dollar                                turns  21.6%   all bars  22.0%   lift x0.98   z -2.0
+    BOTH top of the hour AND a 5/0 price             turns   0.4%   all bars   0.4%   lift x1.05   z +0.6
+
+  reversal x2 — 9393 turns
+    within 2 min of the top of the hour              turns   6.7%   all bars   8.2%   lift x0.82   z -5.3
+    within 2 min of the half hour                    turns  16.7%   all bars   8.5%   lift x1.97   z +28.5
+    at a price ending in 5 or 0 (multiple of $5)     turns   4.2%   all bars   4.4%   lift x0.95   z -1.0
+    at a whole dollar                                turns  21.4%   all bars  22.0%   lift x0.97   z -1.3
+    BOTH top of the hour AND a 5/0 price             turns   0.3%   all bars   0.4%   lift x0.94   z -0.3
+  (z over ~3 = real; the 10:00 hour carries scheduled data releases, so 'top of the hour' is partly the calendar)
