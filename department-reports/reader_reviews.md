@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-17 — 789259eb52463675f77f
+
+The current message supports CLOSE TSLA. The reader’s proposed TSLA 9/18 362.5 put linkage is supported by retained Mike-attributed history, but its cited messages are outside the validator’s eligible context. Validation reports success while flagging that mismatch and removing the strike; this warrants source and validation-policy review, not a confirmed parser-bug classification.
+
+## Findings
+- The current text is '@Mike (Admin) all out of TSLA @everyone'. Both parser and reader identify CLOSE TSLA. Earlier Mike-attributed messages explicitly say 'loading TSLA 9/18 362.5P' and 'in TSLA 9/18 362.5P @ 3.5'; the latest Mike update says 'added to TSLA, new avg is 2.98'. The reader cites the loading and entry messages to supply expiry, side and strike. Verify the original messages and caller-specific position chain before accepting the inferred contract. Preserve Mike as the attributed caller rather than grouping all HoneyDrip scribe messages together. Do not substitute older TSLA contracts or another caller’s position.
+- Validation lists only chat-messages-829754942817828884-1550142649954996255, the TSLA average update, as eligible prior context. Neither reader supporting ID is eligible. Validation returns ok=true with 'expiry_not_literal' and 'unsupported_context_id', retains expiry '9/18' and side 'PUTS', but changes strike '362.5' to null. Review the intended context-eligibility and field-provenance rules against the retained source. Determine whether the earlier entry should be eligible and whether flagged inferred fields should be retained, withheld or routed for review consistently. Check downstream handling of ok=true with safety flags; this evidence does not establish that an incorrect contract was acted upon.
+- The close message contains no exit premium or quantity, and both reader and validated output leave price and qty null. The earlier 'new avg is 2.98' describes an entry-position average, not an exit. Keep exit premium and quantity unknown. Preserve the raw average separately and do not use it as a closing price or calculate realized returns without verified exit evidence, quantities and premium units.
+
+## Limitations
+- Only the supplied messages and processing outputs were reviewed; original-source authenticity and complete position history are not independently verified.
+- The validator’s eligibility policy and downstream behavior are not provided.
+- No broker fills, execution records, exit calculations or simulation results are supplied. A CLOSE classification and fire=true do not establish execution.
+- Entry and average values have no explicit per-share or per-contract units in these messages; no unit conversion was performed.
+
+---
+
 # Reader Review — 2026-09-17 — 5cf861b924c72e1d85bc
 
 The reader identifies the current message as an INTC equity long-entry idea at 107.80, consistent with the supplied wording. The parser returns no signal. This is a candidate extraction or scope mismatch requiring verification, not a confirmed parser bug or executed trade.
