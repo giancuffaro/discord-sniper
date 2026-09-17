@@ -5,7 +5,7 @@
     {
       "lane": "discord",
       "fresh": true,
-      "version": "3.8.40"
+      "version": "3.8.41"
     },
     {
       "lane": "whop",
@@ -22,5 +22,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789685437.4487584
+  "checked_at": 1789685502.0516126
 }
