@@ -1,5 +1,24 @@
 # Health reviews — newest first
 
+# Health — 2026-09-17 — 364fddc1596b91b8a695
+
+The evidence shows five Whop tabs are open, but each has a reader that "hasn't beaten in a while." This suggests possible reader staleness or inactivity, but the evidence does not include timestamps, heartbeat thresholds, or a confirmed outage, so the status cannot be verified from the provided text alone.
+
+## Findings
+- "Whop 2K Challenge tab is open but its reader hasn't beaten in a while" Verify the reader heartbeat timestamp and configured stale threshold for the Whop 2K Challenge tab before treating it as an outage.
+- "Whop Day Trades tab is open but its reader hasn't beaten in a while" Check whether the Whop Day Trades reader is merely quiet, delayed, or actually disconnected by confirming the latest source heartbeat.
+- "Whop Futures tab is open but its reader hasn't beaten in a while" Confirm the Whop Futures tab's reader status against source logs or monitoring data; do not assume a failure without a verified timestamp gap.
+- "Whop High Risk tab is open but its reader hasn't beaten in a while" Verify whether the Whop High Risk reader is stale or intentionally idle by checking the last successful beat and any alerting threshold.
+- "Whop Swing Trades tab is open but its reader hasn't beaten in a while" Inspect the Whop Swing Trades reader heartbeat and related logs to determine whether this is a quiet room, delayed feed, or confirmed reader outage.
+
+## Limitations
+- The evidence is truncated and contains no exact timestamps, so recency cannot be assessed.
+- No heartbeat interval, timeout policy, or monitoring threshold is provided.
+- The text reports reader inactivity only; it does not confirm a parser bug, data outage, or source failure.
+- There are no price, order, or performance figures in the evidence, so no numerical validation is possible.
+
+---
+
 # Health — 2026-09-17 — ee3194fb0609114267cf
 
 The snapshot shows the session is in progress, but several alert sources are reported as ON with no tab visible in this browser, and several open tabs are reported as having not beaten in a while. This is a source-verification issue, not a confirmed outage or parser bug.

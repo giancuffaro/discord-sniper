@@ -1,5 +1,89 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-17 — a407d426b91a83116082
+
+The message plausibly describes adding to the immediately preceding short, but the exact instrument and meaning of 650 remain unresolved. Validation rejected the reader's NQ identification. This warrants source verification, not a confirmed parser-bug finding.
+
+## Findings
+- The current message says "650 added, dont want to see acceptance above else im out". The eligible prior message from the same author and channel says "starter short 630, pivot 650". These support a contextual ADD/SHORT interpretation, while the parser returned null fields and fire=false. Review whether contextual position updates are within the parser's intended scope. Verify the source linkage before classifying this as a missed add; do not infer an executable trade from incomplete instrument information.
+- The reader returned ticker=NQ, instrument=future and confidence=1.0. Neither the current message nor its sole eligible prior names NQ. Validation reports: "the reader named NQ but it isn't in the message". Older text includes "short nascock", but does not establish an exact tradable symbol. Require retained source evidence for the instrument and any caller-specific alias mapping. Keep ticker and instrument unresolved unless verified, and review whether confidence appropriately reflects that uncertainty.
+- The reader preserved price="650", but the source does not establish whether this is a full price or abbreviated level. The prior calls 650 a pivot. "dont want to see acceptance above else im out" expresses a conditional exit intention, not a completed exit or an exact stop execution. Preserve the raw 650 and conditional wording. Verify the caller's price convention and instrument before normalizing the level; keep the add level, pivot and exit condition separate. Do not manufacture a full price, premium conversion or exit fill.
+
+## Limitations
+- Only one prior message is listed as eligible context; older messages do not establish the current instrument or an active position conclusively.
+- No broker fills, contemporaneous quotes, contract identifiers or verified price conventions are provided.
+- Null parser fields indicate missing extraction, not zero values. fire=false does not establish an outage.
+- No verified execution results or return calculations are supplied; historical gain and MFE statements are caller reports, not broker-confirmed outcomes.
+
+---
+
+# Reader Review — 2026-09-17 — 6fea2e12d1ab432170ac
+
+The current message supports an MDB equity entry idea at 390, consistent with the reader's core interpretation. The parser's empty result is a candidate coverage gap, not a confirmed bug. Position sizing and an unusual target level require source-aware handling.
+
+## Findings
+- The current message says 'NEW ENTRY IDEA Swing Trade Idea $MDB Entry: 390'. The reader identifies OPEN, equity, LONG, MDB, and price 390; validation retains these fields. The parser returns null fields and fire=false. Prior messages from this channel contain similar equity-entry templates. Verify the retained original message and whether equity entry ideas are within the parser's intended scope before proposing a coverage change. Preserve the distinction between an entry idea and an executed trade; validation does not establish a fill.
+- The source says '1/2 position'. The reader outputs qty=0.5, while validation sets qty=null. Verify that this wording denotes relative position sizing rather than share quantity. Preserve '1/2 position' as sizing context; do not interpret it as 0.5 shares or infer an absolute quantity without a supported sizing basis.
+- The source lists 'Levels: 398 / 405 / 410 / 4230 / 445' and 'SL: 372 (380 reduce)'. The raw level 4230 is unusual within that sequence, but no correction is supplied. Check the original edited source for the 4230 level and retain it unchanged pending clarification. If extracting risk-management fields, keep the 372 stop and 380 reduction threshold distinct from the entry and target levels.
+
+## Limitations
+- Only the supplied message text and processing outputs are available; the original Discord message and edit history have not been independently verified.
+- Parser scope, filtering rules, and reasons for fire=false are not provided. Prior examples do not include parser outputs establishing broader coverage.
+- No broker fills, executed quantities, exits, or performance calculations are supplied. Neither the reader's confidence nor validation success confirms execution.
+
+---
+
+# Reader Review — 2026-09-17 — 863fa5fe3fbe3874c301
+
+The reader inferred an NQ futures opening short at 630 with confidence 1.0, but the current message does not identify an instrument. Validation rejected the unsupported ticker. The evidence supports reviewing contextual inference and confidence, not declaring a confirmed parser bug.
+
+## Findings
+- The current message says "starter short 630, pivot 650 @Chika Alerts". The reader returned ticker "NQ" and instrument "future" with no supporting_ids. Validation reported eligible_prior_ids: [] and rejected the result because NQ is not in the message. A prior message says "short nascock, stop 490", but does not establish a verified NQ mapping. Verify the instrument through retained source evidence and an eligible same-caller, same-channel convention before assigning NQ or futures. Otherwise leave the instrument unresolved and abstain from an actionable interpretation.
+- The reader assigned price: 630. The source supplies bare "630" and labels "650" as a pivot; it does not specify units, a full instrument price, or a premium. Prior messages show similar numeric shorthand without establishing its exact meaning. Preserve both raw values and verify whether 630 is a complete price or shorthand. Keep the pivot distinct from entry price and do not automatically treat it as a stop. Do not rescale either value or classify it as an option premium without source support.
+- The reader returned action: "OPEN", side: "SHORT", and confidence: 1.0. "Starter short" supports a candidate opening-short intent, but instrument and price interpretation remain unresolved. The parser returned null fields and fire: false. Review confidence calibration separately from directional-intent recognition. Compare the parser's abstention with its documented instrument requirements before proposing a parsing change; the supplied evidence does not establish that firing would have been appropriate.
+
+## Limitations
+- Only the current message has supplied parser and reader outputs; prior-message parsing performance cannot be assessed.
+- No verified instrument mapping, numeric-shorthand convention, contemporaneous quotes, or broker fills are supplied.
+- Prior performance statements, including "+500 MFE", do not establish exact exits or realized broker-confirmed results.
+- The evidence is marked untruncated, but it does not establish complete channel coverage or justify any outage conclusion.
+
+---
+
+# Reader Review — 2026-09-17 — dd6316dc8ff1ca4d22e6
+
+Review candidates concern interpreting a TEM performance update as TRIM and using historical contract context outside the validator's eligible set. These are proposals for source verification, not confirmed parser bugs. The parser reports fire=false.
+
+## Findings
+- The current message says only "200%+ on TEM @everyone". Both parser and reader label it TRIM, and the reader assigns confidence 1.0. Unlike retained messages such as "Take 1st trim" and "43% out of half", the current wording contains no explicit reduction instruction or reported sale. Verify the original message and any documented, source-backed convention for this caller and channel. Consider classifying percentage-only wording as a performance update rather than TRIM unless supported by explicit action evidence. Preserve "200%+" as a caller-reported claim, not an exact realized return or exit.
+- The reader supplies TEM 66 CALL expiring "10/2" and cites historical message chat-messages-987515353670221834-1549447869793181847, which explicitly contains "$TEM,Bull flag,above 63.5 for calls,66 C 10/2". That ID is not in eligible_prior_ids. Validation flags unsupported_context_id and expiry_not_literal, removes the strike, but retains expiry "10/2" and side CALLS while reporting ok=true. Verify the intended context-eligibility and validation rules. If historical linkage is allowed, require an approved source reference and verification that the current TEM update concerns that contract. Otherwise leave unsupported contract fields unresolved. Review why the flagged context produces different treatment of strike, side, and expiry; do not assume ok=true confirms their source support.
+- Recent context concerns SNDK, including "Feel free to trim that", "I’m scalping it", and "I’m down to runners". The current message explicitly switches back to TEM. Older TEM messages separately mention runners. Verify that action and position-state context remains tied to the named ticker. Do not carry recent SNDK trim instructions or runner status into the TEM update solely because those messages are nearby.
+
+## Limitations
+- The supplied evidence is marked untruncated, but does not establish complete channel history, original reply targets, or current position state.
+- No broker fills, execution records, contemporaneous quotes, or return calculations are provided; reported percentages do not establish broker-confirmed performance.
+- Price and quantity are null, meaning missing rather than zero. Historical "4.05 avg" lacks explicit premium units; those units remain unresolved, and no conversion or inferred exit is justified.
+- Parser and validator specifications are absent, so the intended meanings of TRIM, confidence, eligibility, and ok=true cannot be fully assessed.
+
+---
+
+# Reader Review — 2026-09-17 — 19c995a6f77edaa3e6d9
+
+The current message plausibly reports a SNDK reduction to runners. Review is warranted for the parser/reader disagreement and the strike lost between reader and validation outputs; neither is a confirmed parser bug.
+
+## Findings
+- The current message says “I’m down to runners.” The parser returns null action and fire=false, while the reader classifies TRIM for SNDK calls expiring 9/18. Same-author, same-channel context includes “I’m in some SNDK 1800 C 9/18 lottos,” “Feel free to trim that,” “I’m scalping it,” and “Cons up 34%.” Verify the original message sequence and intended handling of retrospective position updates. Consider recognizing a contextual reduction-to-runners status associated with SNDK, without treating it as a new order or assuming a trim quantity. Check whether the earlier trim message and current status describe the same reduction.
+- The reader preserves strike “1800” from source message chat-messages-987515353670221834-1550139105508335758. validation.read instead has strike=null despite ok=true and no safety flags. Inspect validation and normalization rules to determine why the explicit strike was omitted and what ok=true guarantees. Preserve the raw “1800 C 9/18” wording pending source and contract verification; do not silently substitute a more plausible strike.
+
+## Limitations
+- Only the supplied evidence is reviewed. Evidence truncated=false does not establish complete channel history or position state.
+- The current message does not explicitly name an instrument, provide an exit premium, or specify the amount sold or remaining. SNDK attribution is contextual.
+- The standalone “1.25” lacks explicit premium units and a stated price role. Units remain unresolved; no conversion or exit-price calculation is supported.
+- Reported percentage gains are caller statements, not broker-confirmed fills or realized results. No supporting return calculations or broker records are supplied.
+- The Gemini cooldown followed by a successful OpenAI response does not establish an overall reader outage.
+
+---
+
 # Reader Review — 2026-09-17 — a0f9b539f2ca6e886d75
 
 The reader's ADD classification is not supported by the current message alone. “Sized for zero” appears to qualify the risk of the preceding SNDK lotto entry rather than announce an additional purchase. The parser's non-firing result is consistent with that interpretation; source verification is needed before classifying this as a reader error.

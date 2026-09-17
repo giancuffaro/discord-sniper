@@ -1,16 +1,6 @@
 {
   "in_session": true,
   "issues": [
-    "Nando Alerts tab is open but its reader hasn't beaten in a while",
-    "Brick Alerts is ON but has no tab in this browser",
-    "Maguro Alerts is ON but has no tab in this browser",
-    "PhiccDuck Alerts is ON but has no tab in this browser",
-    "Xephyr Alerts is ON but has no tab in this browser",
-    "Ducci Alerts is ON but has no tab in this browser",
-    "Jon Tran Alerts is ON but has no tab in this browser",
-    "Hog Alerts is ON but has no tab in this browser",
-    "Quantum Alerts is ON but has no tab in this browser",
-    "Optionality free-trades is ON but has no tab in this browser",
     "Whop Day Trades tab is open but its reader hasn't beaten in a while",
     "Whop Futures tab is open but its reader hasn't beaten in a while",
     "Whop High Risk tab is open but its reader hasn't beaten in a while",
@@ -30,13 +20,13 @@
     }
   ],
   "observer": {
-    "queue_remaining": 0,
+    "queue_remaining": 1,
     "worker_started": true,
-    "last_finished": 1789652229.9836526,
+    "last_finished": 1789652528.4303365,
     "last_error": "",
-    "last_provider": "openai",
+    "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789652232.838477
+  "checked_at": 1789652532.8448095
 }
