@@ -1,5 +1,22 @@
 # Health reviews — newest first
 
+# Health — 2026-09-17 — ee3194fb0609114267cf
+
+The snapshot shows the session is in progress, but several alert sources are reported as ON with no tab visible in this browser, and several open tabs are reported as having not beaten in a while. This is a source-verification issue, not a confirmed outage or parser bug.
+
+## Findings
+- Brick Alerts, Ducci Alerts, Hog Alerts, Jon Tran Alerts, Maguro Alerts, Optionality free-trades, PhiccDuck Alerts, Quantum Alerts, and Xephyr Alerts are all reported as ON but have no tab in this browser. Verify whether these alert sources are open in another browser window, on another device, or intentionally hidden; if they should be visible in this browser, confirm the source state directly before treating the missing tabs as a problem.
+- Nando Alerts, Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, and Whop Swing Trades are reported as tabs open but their reader hasn't beaten in a while. Check whether the inactivity is expected quietness or a stale-reader condition by confirming the last update time at the source; do not treat the absence of recent beats as an outage without source confirmation.
+
+## Limitations
+- The evidence is a browser snapshot only; it does not confirm whether tabs exist in other windows, profiles, or devices.
+- No timestamps or beat intervals are provided, so 'hasn't beaten in a while' cannot be converted into a measured downtime duration.
+- An alert being ON with no visible tab is a missing-observation condition, not proof that the alert is disabled or broken.
+- A quiet room or inactive tab may be normal behavior; source confirmation is required before labeling any item as an outage.
+- This report does not include broker-confirmed results, prices, or execution data.
+
+---
+
 # Health — 2026-09-17 — ad25638b076a97997043
 
 The evidence indicates the session is active, but many alert rooms are reported as ON without a corresponding tab in this browser, and several Whop tabs are open but their readers have not beaten in a while. This suggests possible monitoring coverage gaps or stale readers, but the source does not confirm an outage or parser failure.

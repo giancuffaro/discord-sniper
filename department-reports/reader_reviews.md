@@ -1,5 +1,78 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-17 — a0f9b539f2ca6e886d75
+
+The reader's ADD classification is not supported by the current message alone. “Sized for zero” appears to qualify the risk of the preceding SNDK lotto entry rather than announce an additional purchase. The parser's non-firing result is consistent with that interpretation; source verification is needed before classifying this as a reader error.
+
+## Findings
+- The current message says only “Sized for zero.” The immediately preceding message says “I’m in some SNDK 1800 C 9/18 lottos @everyone.” The reader returns ADD with confidence 0.8 and cites only that preceding message. Neither message explicitly describes adding to an existing position. Verify the original message sequence and the application's ADD semantics. If ADD means increasing an existing position, consider treating the current message as a risk-sizing qualifier, not a new trade action. Review the preceding entry independently and check whether it was already processed to avoid duplicate alerts.
+- SNDK, 1800 C and 9/18 are present in the preceding entry, but no premium or quantity is supplied. The reader preserves price and qty as null. “Sized for zero” does not establish zero contracts, a zero premium, a realized loss, or an exit. Preserve missing price and quantity as null and retain the raw wording. Verify the caller's intended risk meaning from source context rather than converting “zero” into a numerical trade field. Keep 1800 as the source-stated strike, separate from premium.
+- Validation reports ok=true and no safety flags, while the reader's sole supporting ID is an eligible prior message. This establishes an accepted contextual reference, but does not independently establish that the current message announces an ADD. Review whether semantic validation distinguishes inherited instrument details from evidence of a new action. Require action-specific source support before promoting a contextual risk comment to an actionable alert.
+
+## Limitations
+- Only the supplied text and outputs were reviewed; original Discord context and the application's action definitions are unavailable.
+- No processing record for the preceding SNDK entry is supplied, so duplicate handling cannot be confirmed.
+- No broker fills, quantities, premiums, or execution results are provided. Caller statements are not broker-confirmed trades.
+- Evidence is marked untruncated, but that does not establish complete channel coverage.
+
+---
+
+# Reader Review — 2026-09-17 — 671f1165a5a5f4a05915
+
+The reader plausibly links “I took one @here 1.50” to the recent SPY 761c 0dtes alert. Validation accepts that interpretation, while the parser returns null fields and fire=false. This is a candidate contextual-extraction gap requiring source verification, not a confirmed parser bug or broker-confirmed trade.
+
+## Findings
+- The current message, 1550139046557261925, says “I took one @here 1.50”. The eligible same-author, same-channel message 1550138636526288957 says “Load $SPY 761c 0dtes @here”. The reader returns OPEN, SPY, CALL, strike 761, expiry “0dtes”, quantity 1, and price 1.50; validation.ok is true. The parser instead returns null action and contract fields with fire=false. Verify the original message sequence and the parser's intended contextual scope. Consider this a proposed test case for linking a fill-like follow-up to a recent explicit contract alert, rather than automatically classifying the parser's abstention as a defect. Preserve the supporting message IDs and resolve the relative expiry using the verified posting date and market timezone.
+- The other eligible prior message says “I prefer 760.80 entry”. The explicit contract alert identifies 761 as the strike, while the current message supplies 1.50. Earlier retained examples from this caller and channel pair “I bought one contract now 0.57” with “$57 is what I paid”, supporting a quote-versus-contract-cost distinction. Keep 761 as the strike and treat 760.80 as a candidate underlying entry level requiring source confirmation, not an option premium. Preserve raw 1.50 as the current reported price. The historical 0.57/$57 pair supports a per-share quote convention consistent with multiplier 100, but the current message does not explicitly state units. Verify that convention applies here and confirm the instrument's premium multiplier before assigning a contract cost; otherwise mark premium units unresolved.
+- The reader assigns confidence 1.0 despite inheriting the contract and expiry from context. The current message is not marked as a reply. Only the recent 761c alert and “760.80 entry” message are listed as eligible context; the older plan for SPY 764p leaves expiry undecided. Review whether confidence should reflect contextual inference and implicit premium units. Retain the recent eligible call alert as the proposed linkage, without importing the older put plan or prior-session contracts. Treat “I took one” as a caller-reported execution, not proof of a broker fill.
+
+## Limitations
+- The evidence is marked untruncated, but it does not establish complete channel coverage or include original-source verification, broker records, contemporaneous quotes, or contract specifications.
+- Only the current parser output is provided; its context state, prior outputs, and intended handling of follow-up messages are unknown.
+- Null parser fields indicate missing extraction, not zero-valued trade attributes. fire=false does not establish an outage.
+- Validation acceptance establishes internal consistency, not the caller's exact fill, verified premium units, or execution.
+- No current-trade exit or verified performance calculation is supplied; historical profit commentary cannot establish this trade's results.
+
+---
+
+# Reader Review — 2026-09-17 — 351a0f3c35ae4f5698db
+
+The reader interprets the current MRNA message as an equity trim at a reported price of 153.21, while the parser returns no action or symbol. This is a candidate extraction or coverage gap requiring source and parser-scope verification, not a confirmed parser bug.
+
+## Findings
+- Current message chat-messages-1449226651064991806-1550138949043748935, attributed to Common Stock / KianTrades, says: "CLOSE: sold some MRNA here at 153.21". The parser reports action=null, symbol=null and fire=false. The reader reports action=TRIM, ticker=MRNA, instrument=equity and price="153.21"; validation accepts that interpretation. Verify the original message and whether the parser supports common-stock partial exits. If supported, review this as a candidate missed extraction. Preserve "sold some" as a partial-sale indication rather than treating the CLOSE label as an all-out exit. Keep quantity unknown; successful extraction alone should not imply an executable alert.
+- The current message contains no option strike, expiry, call/put side or contract identifier. Its Common Stock source supports the reader's equity interpretation. The earlier same-source message "152.47 now" identifies neither a ticker nor an entry, and validation lists no eligible prior IDs. Verify the equity classification against the original source and position context. Preserve 153.21 as the reported sale price without option-premium conversion. Do not use 152.47 as an MRNA entry or calculate profit from these two messages.
+- Reader attempts show a Gemini "cooldown" followed by an OpenAI attempt with error=null and a validated result. Treat this as a recorded provider cooldown with successful fallback, not an overall reader outage. Verify provider logs if investigating reliability; this single trace does not establish broader availability or coverage.
+
+## Limitations
+- Only the current message has paired parser and reader outputs; prior messages do not establish additional parser failures.
+- Parser instrument coverage, filtering rules and reasons for fire=false are not supplied.
+- The supplied text is a forwarded alert, not broker-confirmed execution evidence. Reader confidence and validation do not confirm a fill.
+- MRNA entry price, position size, quantity sold and remaining holdings are missing, not zero. No verified return calculations are supplied.
+- Evidence is marked untruncated, but completeness of original source history and position context is not established.
+
+---
+
+# Reader Review — 2026-09-17 — 2e6f59a1a670066f2500
+
+The reader reasonably interprets “sold another SLV at 2.45” as a partial exit, while the parser labels it CLOSE. Contract identity, quantity, and premium units remain unresolved. The evidence supports source-verification proposals, not a confirmed parser bug.
+
+## Findings
+- The current source says “CLOSE: sold another SLV at 2.45.” The parser returns CLOSE with fire=true; the reader returns TRIM with qty=null. A prior SLV message says “sold 6/10 SLV at 2.35.” Verify whether CLOSE is a broad exit category or means full liquidation downstream. Preserve the incremental-sale wording; do not infer a full close, an exact quantity, or remaining holdings from “another” without verified position context.
+- The supplied prior source includes Jon’s “OPEN: SLV 65C 11/20 Exp. at 2.17,” but validation reports eligible_prior_ids=[] and the reader supplies supporting_ids=[]. Strike, side, and expiry remain null. Investigate why the supplied SLV history was not eligible for linkage. Verify caller attribution, chronology, and position uniqueness before proposing contract enrichment. Keep missing fields unresolved rather than treating them as zero or automatically importing the prior contract.
+- The reader preserves the current raw value 2.45 as price. The wording “at 2.45” does not explicitly establish per-share versus per-contract units, and the retained SLV examples do not explicitly establish a unit convention. Retain 2.45 and the original wording, flag unresolved premium units, and verify source conventions specific to Jon in this channel. Do not rescale the value or calculate contract proceeds or returns without verified units and the applicable premium multiplier.
+- Validation reports ok=true and safety_flags=[], despite unresolved contract fields and no eligible supporting history. The reader’s confidence is 0.85. Verify what validation success and confidence represent. Distinguish successful extraction of an exit mention from verified contract linkage, quantity, premium units, and readiness for downstream use.
+- The reader attempt log records a Gemini cooldown followed by an OpenAI response without an error. Classify this as a recorded provider cooldown with a successful fallback response, not evidence of a complete reader outage. Verify broader telemetry before making availability claims.
+
+## Limitations
+- Only the current parser and reader outputs are supplied; downstream handling and prior parsing results are absent.
+- Evidence is marked untruncated, but that does not establish complete channel history or complete position coverage.
+- The prior SLV partial exit is marked history=true; its eligibility policy and whether it was previously processed are not supplied.
+- Messages describe caller-reported activity, not broker-confirmed fills. No broker results or simulation results are provided.
+- No verified performance calculations are supplied, so no returns, proceeds, or remaining-position totals are asserted.
+
+---
+
 # Reader Review — 2026-09-16 — b6072c450bed84a38740
 
 The current message explicitly supports TRIM MSFT. The reader links it to a prior MSFT 9/18 495P entry, but validation excludes that supporting message and removes the strike. This is a context-eligibility review candidate, not a confirmed parser bug.
