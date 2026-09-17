@@ -12,6 +12,9 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+### 2026-09-16 (late) — VERIFY WITH G rule
+G asked for an end-of-day list of everything that does not add up so he can rule on it and teach. Rule added to HANDOFF.md; first list (18 items, 9/16) written to daily-reports/VERIFY-WITH-G week-of-Sep-14-to-Sep-20-2026.md. Not yet automated in daily_brief.py — the 16:45 task writes it by hand from the day's <skipped>/<failed>/<ignored> parser lines, REFUSED/BAD-CONTRACT/POSTCHECK/MODE/ROOMS lines in trades.log, and any number that fails to reconcile. Per-trade path study for 9/16 (tapes: quote_shadow.csv + alert_tape.csv `und`): posted prices were 9–11% stale on AAPL/QQQ/SPY at first sight; every eventual winner dipped 19–38% before its FOMC peak; QQQ pullback missed $709 by $0.19, NVDA's $214 level was $0.81 away on a $0.23 lotto.
+
 ### 2026-09-16 (night) — the futures account joins the journal
 G asked to see the journal; the brief said +$43 day, NLV −$465. He had moved $500 margin→futures and traded futures by hand. Checked at the broker: margin day P&L +34.59 net (+43.00 gross on 44 filled legs, 212 contracts — the 8.41 gap is $0.04/contract fees), NLV change −465.41 → exactly −500.00 left. Futures account: 46 fills 9/16 — MNQZ6 +17.50, MESZ6 −87.50, NNQZ6 −2.40 gross, 39.16 fees → −111.56 net, NLV 389.26 (so it held 0.82 before the transfer). Real day across accounts −76.97; no report saw any of it because master_broker.csv is options-only and balance_daily.csv was margin-only.
 MY ERROR: the Webull connector's order history with a date range returned [] for the futures account and I reported "no futures orders" — the undated call returned all 72. The SDK's dated call (what broker_sync uses) returns them correctly (46). Never report "none" from one empty connector read.

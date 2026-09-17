@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-16 — THE FUTURES ACCOUNT IS IN THE JOURNAL (G: "add futures from now on"): fills+fees → master_futures.csv, futures NLV/net/fees and money-moved `flow` on the balance_daily.csv row, the brief prints futures, transfers and ALL ACCOUNTS net.
+Last updated: 2026-09-16 — VERIFY WITH G: every end-of-day journal ends with the list of what did not add up, for G to rule on; futures account is in the journal (master_futures.csv, flow columns).
 
 ## How to update this file (long form: reference/OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. ONE RULE, ONE LINE
@@ -77,6 +77,8 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 - Relays: OWLS all-alerts active, RELAY UNWRAP re-books under the real trader; ZTRADEZ, shabs, eli retired 9/9. Never close a human tab. Profile 2 = Discord, Profile 6 = Whop, pinned by chrome-profile.txt / whop-profile.txt.
 - VOICE: ears always transcribe (Deepgram); voice ENTRIES ON (9/2), exits irrelevant; a typed copy of a voice fire is an echo.
 - CLEAN UP AFTER A LIVE ROOM (G, 9/15: "when the live zoom for felony finishes kill the tab please"): a Discord-voice or Zoom tab the ears ran on, still silent 10 min AFTER they stop, gets closed. The ONE exception to "never close a human tab", scoped to tabs we listened to.
+
+- VERIFY WITH G (G, 9/16: "anything that doesn't make sense needs to be gathered and pointed out at the end of the day so I can verify what went wrong and teach you"): every end-of-day journal ENDS with a numbered list of what did not add up — no such contract listed, a price that makes no sense, an alert with no order and no clear reason, a fill far off the caller's price, a switch flipped mid-day, a silent gap in a log, a number that does not reconcile. Each line = what happened · why it looks wrong · my guess · blank verdict. Appended newest-first to `daily-reports/VERIFY-WITH-G week-of-….md`. NEVER decide it was fine and drop it; G's verdict becomes a rule or a fix the same evening, and the verdict is written back onto the line.
 
 ## DATA — one file per family (9/9); THE APP READS ONLY THESE (inside each: DATA-MAP.md)
 - BROKER RECORD → master_broker.csv (options); the Webull export is ONE file OVERWRITTEN every run, never dated piles; one balance row a day in balance_daily.csv. FUTURES ACCOUNT (G, 9/16) → master_futures.csv, one row per filled order id with Webull's own fees; the same balance row carries fut_nlv / fut_pl (NET) / fut_fees and `flow` / `fut_flow` = NLV change − the day's net result = a transfer, deposit or withdrawal, NEVER trading. The brief prints futures, money moved and ALL ACCOUNTS net; a product still open or with no point value in broker_sync.FUT_POINT_VALUE (E-nanos NNQ/NES/N2K/NDOW included, from Webull's instrument list) is NAMED and not scored. That table is journal arithmetic only — what may TRADE stays webull_futures.FUT_SPECS + the proof gate.
