@@ -1,0 +1,34 @@
+ALL taped alerts 2026-09-11..2026-09-17: 82  | with a caller follow-up call: 48 | SILENT (never trimmed or exited out loud): 34
+
+FOLLOW HIS EXIT + OUR OWN DISASTER STOP, every taped alert (silent ones ride the stop or the close)
+  exit at his FIRST call, stop -10%               82 trades   -1209   -14.7/trade  win 21%   {'stop': 49, 'his call': 26, 'close': 7}
+  exit at his FIRST call, stop -20%               82 trades   -1277   -15.6/trade  win 30%   {'stop': 38, 'his call': 35, 'close': 9}
+  exit at his FIRST call, stop -30%               82 trades   -1793   -21.9/trade  win 32%   {'stop': 30, 'his call': 37, 'close': 15}
+  exit at his FIRST call, stop -50%               82 trades   -2109   -25.7/trade  win 34%   {'stop': 17, 'his call': 43, 'close': 22}
+  exit at his FIRST call, stop -NONE              82 trades   -2164   -26.4/trade  win 35%   {'his call': 46, 'close': 36}
+  exit at his LAST call, stop -10%                82 trades   -1358   -16.6/trade  win 19%   {'stop': 57, 'his call': 17, 'close': 8}
+  exit at his LAST call, stop -20%                82 trades    -907   -11.1/trade  win 29%   {'stop': 45, 'his call': 27, 'close': 10}
+  exit at his LAST call, stop -30%                82 trades   -1579   -19.3/trade  win 31%   {'stop': 35, 'his call': 31, 'close': 16}
+  exit at his LAST call, stop -50%                82 trades   -1728   -21.1/trade  win 35%   {'stop': 20, 'his call': 39, 'close': 23}
+  exit at his LAST call, stop -NONE               82 trades   -1736   -21.2/trade  win 37%   {'his call': 45, 'close': 37}
+  LIVE ladder 5/3/5 (what runs now)               82 trades   -1366   -16.7/trade  win 15%
+
+THE SILENT ONES ALONE (34): stop -20% -1034 · stop -30% -1517 · hold to close -1868 · live ladder -256
+
+TIME STOP — room early, his first trim is the exit, and if he has said NOTHING by T minutes, leave at the bid
+  (82 alerts; the time stop only uses what is known at that minute — no lookahead)
+  stop -15%, silent after  5 min -> out     -1145   -14.0/trade  win 28%  {'stop': 24, 'his trim': 19, 'time': 38, 'close': 1}
+  stop -15%, silent after 10 min -> out     -1171   -14.3/trade  win 29%  {'stop': 27, 'his trim': 21, 'time': 32, 'close': 2}
+  stop -15%, silent after 15 min -> out     -1023   -12.5/trade  win 29%  {'stop': 30, 'his trim': 23, 'time': 25, 'close': 4}
+  stop -15%, silent after 20 min -> out     -1139   -13.9/trade  win 29%  {'stop': 32, 'his trim': 25, 'time': 21, 'close': 4}
+  stop -15%, silent after 30 min -> out     -1333   -16.3/trade  win 25%  {'stop': 34, 'his trim': 26, 'time': 18, 'close': 4}
+  stop -20%, silent after  5 min -> out     -1211   -14.8/trade  win 29%  {'stop': 17, 'his trim': 20, 'time': 44, 'close': 1}
+  stop -20%, silent after 10 min -> out     -1298   -15.8/trade  win 29%  {'stop': 23, 'his trim': 23, 'time': 34, 'close': 2}
+  stop -20%, silent after 15 min -> out     -1183   -14.4/trade  win 29%  {'stop': 27, 'his trim': 25, 'time': 26, 'close': 4}
+  stop -20%, silent after 20 min -> out     -1274   -15.5/trade  win 29%  {'stop': 27, 'his trim': 27, 'time': 24, 'close': 4}
+  stop -20%, silent after 30 min -> out     -1471   -17.9/trade  win 26%  {'stop': 28, 'his trim': 28, 'time': 22, 'close': 4}
+  stop -30%, silent after  5 min -> out     -1255   -15.3/trade  win 29%  {'stop': 8, 'his trim': 21, 'time': 52, 'close': 1}
+  stop -30%, silent after 10 min -> out     -1395   -17.0/trade  win 30%  {'stop': 13, 'his trim': 24, 'time': 43, 'close': 2}
+  stop -30%, silent after 15 min -> out     -1296   -15.8/trade  win 30%  {'stop': 18, 'his trim': 26, 'time': 33, 'close': 5}
+  stop -30%, silent after 20 min -> out     -1440   -17.6/trade  win 30%  {'stop': 18, 'his trim': 28, 'time': 31, 'close': 5}
+  stop -30%, silent after 30 min -> out     -1620   -19.8/trade  win 29%  {'stop': 20, 'his trim': 30, 'time': 27, 'close': 5}

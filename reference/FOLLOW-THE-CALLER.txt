@@ -1,0 +1,32 @@
+FOLLOW THE CALLER — 39 caller entries with a follow-up call AND our quotes (19 had no tape), 2026-09-11 .. 2026-09-17
+
+1. THE ENTRY GAP — his posted price vs the ask when the alert reached us
+   median +3.3% · over his price on 28 of 39 · 10%+ over on 2
+
+2. HIS FIRST TRIM — what he CLAIMED vs what a follower HAD at that same moment (19 with both)
+   he claimed a median +12%; the follower was at a median +6% (selling at the bid, bought at the ask)
+   follower was GREEN at his first trim on 15 of 19; first trim came a median 5.0 min after the alert
+
+3. FOLLOWER P&L, 1 contract each
+   A  sell all at his FIRST trim                         35 trades    +373   +10.7/trade  win 62%
+   B  sell at his LAST call (full exit, else last trim)  35 trades    +621   +17.7/trade  win 51%
+   C  our live ladder                                    39 trades    -291    -7.5/trade  win 15%
+   on the SAME 35 trades: A +373 vs ladder -265
+
+4. WHAT THE LADDER DID ON TRADES THE CALLER TRIMMED GREEN
+   he was tradeable-green at his first trim on 22; our ladder on those: -65 (A made +981)
+   the ladder was ALREADY OUT before his first trim on 19 of 22 — median hold 34s vs his trim at 7.9 min
+   how it left: born stop 10, first lock 7, ratchet rung 2
+
+5. THE SHAPE OF HIS RESULTS — best bid after the alert, vs the follower's entry
+   reached +10%: 32 of 39
+   reached +25%: 20 of 39
+   reached +50%: 11 of 39
+   reached +100%: 4 of 39
+   entries that ever got a FULL EXIT call: 24 of 39 — the rest end on a trim and go quiet
+
+6. BY CALLER (4+), follower selling at his first trim vs our ladder
+   Unraveller                  7   first-trim   -115   ladder   -200   median entry gap +4%
+   Mike                        5   first-trim   -144   ladder    -31   median entry gap -1%
+   MuggZone                    5   first-trim    -46   ladder    -16   median entry gap +8%
+   Brett                       4   first-trim    +20   ladder    -12   median entry gap +2%
