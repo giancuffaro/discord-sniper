@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-17 — PRICE: pullback entries can no longer pay over the caller's price (G, after AAPL 9/16: paid 3.40 on a 3.17 alert). Also 9/16: VERIFY WITH G end-of-day list; futures account in the journal.
+Last updated: 2026-09-17 — trend label on every alert (trend.py, measurement only); Webull's SDK DOES serve 1-minute option trade bars, expired contracts included; pullback entries held to the caller's price.
 
 ## How to update this file (long form: reference/OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. ONE RULE, ONE LINE
@@ -80,11 +80,13 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 
 - VERIFY WITH G (G, 9/16: "anything that doesn't make sense needs to be gathered and pointed out at the end of the day so I can verify what went wrong and teach you"): every end-of-day journal ENDS with a numbered list of what did not add up — no such contract listed, a price that makes no sense, an alert with no order and no clear reason, a fill far off the caller's price, a switch flipped mid-day, a silent gap in a log, a number that does not reconcile. Each line = what happened · why it looks wrong · my guess · blank verdict. Appended newest-first to `daily-reports/VERIFY-WITH-G week-of-….md`. NEVER decide it was fine and drop it; G's verdict becomes a rule or a fix the same evening, and the verdict is written back onto the line.
 
+- TREND LABEL (G, 9/17) — MEASUREMENT ONLY: `trend.py` reads the stock's swing structure off the last 90 one-minute bars of TODAY — higher highs + higher lows = UP, the mirror = DOWN, else CHOP (EARLY under 15 bars); a pullback counts only past max(0.04% of price, 2.5 x the median 1-minute range). The bridge writes it beside every option entry alert in `alert_trend.csv` (own thread, one stock-bars request, never on the order path). Nothing trades on it until `reference/caller_price_window_replay.py`'s structure split says it should.
+
 ## DATA — one file per family (9/9); THE APP READS ONLY THESE (inside each: DATA-MAP.md)
 - BROKER RECORD → master_broker.csv (options); the Webull export is ONE file OVERWRITTEN every run, never dated piles; one balance row a day in balance_daily.csv. FUTURES ACCOUNT (G, 9/16) → master_futures.csv, one row per filled order id with Webull's own fees; the same balance row carries fut_nlv / fut_pl (NET) / fut_fees and `flow` / `fut_flow` = NLV change − the day's net result = a transfer, deposit or withdrawal, NEVER trading. The brief prints futures, money moved and ALL ACCOUNTS net; a product still open or with no point value in broker_sync.FUT_POINT_VALUE (E-nanos NNQ/NES/N2K/NDOW included, from Webull's instrument list) is NAMED and not scored. That table is journal arithmetic only — what may TRADE stays webull_futures.FUT_SPECS + the proof gate.
 - FILLS → master_ledger.csv; the broker's exit/P&L/state/account WIN over the book, a DRIFT line means something upstream lied, and nothing reads days/*.json or journal.csv for analysis.
 - ALERTS → master_alerts.csv. RN LEDGER → rn_ledger.csv (append-only). HOLIDAYS/HOURS → market_hours.py owns the table — UPDATE EVERY YEAR. POST-MORTEMS → master_postmortems.csv + postmortems/; his own hand trades are never graded.
-- PRICE TAPES → tape.py is the ONE registry; Webull has NO historical option prices; databento_backfill.py spends credit — never run its main() casually.
+- PRICE TAPES → tape.py is the ONE registry; WEBULL DOES SERVE OPTION HISTORY through the SDK (found 9/17): `_data.option_market_data.get_option_history_bars(occ, "US_OPTION", "M1", count)` returns up to 1,200 one-minute TRADE bars (open/high/low/close/volume), EXPIRED contracts included, free — but NO bid/ask, and the Webull MCP connector still answers UNSUPPORTED for the same thing. Stops watch the BID, so quote tapes remain the truth for fills and exits; the bars settle "did it ever print X"; databento_backfill.py spends credit — never run its main() casually.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I don't want any more confusions"): account="paper" rows stay OUT of master_ledger.csv, account="unknown" is NOT paper.
 - BOT ATTRIBUTION: a caller name is candidate evidence until the entry links to an alert and the trade to broker fills; never quote P&L from a book-priced row when a broker row exists.
 
