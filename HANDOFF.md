@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-17 — no round-number pullback entries before 10:00 ET; counter-trend filter REFUSED by G (label stays measurement only); pullback entries held to the caller's price; Webull SDK serves option trade bars.
+Last updated: 2026-09-17 — ratchet ladder changed to 5/3/5 (sweep-best, G's call); missed_all_dollarize.py added (prices all non-taken alerts at caller's price); verify_listed still guards contract existence pre-order.
 
 ## How to update this file (long form: reference/OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. ONE RULE, ONE LINE
@@ -51,7 +51,7 @@ EXITS — THE DOCTRINE: THEIR TRIGGER → OUR ENTRY → THE RATCHET'S EXIT · RA
 - TRADING / NOT TRADING (G, 9/16) — the ONE master switch allowed back: it only makes things safer. The popup toggle (or `READ ONLY - NO ORDERS.bat`) sets execution.mode=webhook — rooms keep reading and logging, `live_order` forced False at the dispatch boundary, nothing reaches the broker, survives a restart. HELD POSITIONS UNTOUCHED: their resting stops stay at Webull. Stopping is one tap, starting two within 4s; a failed switch says so LOUDLY and assumes it is still trading. /mode reports `read_only`.
 - NO DAILY LOSS STOP (G, 9/14: "No. We are not gonna do a daily daily stop limit. No. We're not."). Never propose one, never wire one. The per-trade born stop is the only cap.
 - ENTRIES ONLY (G, 9/3): the bot follows room ENTRIES (and adds) only. EVERY room-side exit — trim, stop-move, "all out", "stopped out" — is logged "EXIT-IGNORED … entries only" and NEVER traded. The ratchet's resting stop is the ONLY exit. A bot SELL tracing to a room's exit call is a BUG.
-- THE RATCHET (10/10/10 since 9/15, flat — G: "go back to 10", the August spacing): born −10%; +10% → breakeven; each further +10% locks +10%. `ratchet_tiers.py` is the one implementation, `live_spacing()` the one reader. Stops never loosen; anti-clip off. The sweeps ranked this below 5/3/5 — G's call against that evidence (HANDOFF-LOG). Re-measure as the sample grows.
+- THE RATCHET (5/3/5 since 9/17, G: "change the ladder back" — the sweep-ranked spacing): born −5%; +3% → breakeven; each further +5% locks +5%. `ratchet_tiers.py` is the one implementation, `live_spacing()` the one reader. Stops never loosen; anti-clip off. 115-trade sweep ranked 10/10/10 worst (rank 41/51, -$242.70); this region best (+$503.65). Broader miss-backtest (missed_all_dollarize.py, 9/17): all non-taken alerts priced at caller's price through this ladder = +$3,312/160 (33% win), but driven entirely by one AAPL 240C trade (+$7,350) — ex-outlier the set is -$4,038/159. Not a clean edge yet; re-measure as sample grows.
 - FUTURES RATCHET (9/9) comes from the trade's own risk, never a fixed number. SWINGS (14+ DTE, auto-tagged): their stock stop runs it; no level = wide −25% re-armed at 9:31; scalps excluded.
 - CLOSE: every bot sell waits for FILLED; a CLOSE the book does not hold is REFUSED, never sent.
 - NO PRE-CLOSE FLATTEN (G, 9/15, told the risk and chose it): the bot does NOT close 0DTE before the bell. A 0DTE left $0.01 ITM auto-exercises into 100 shares; that is HIS risk to run, HIS to close by hand. Never re-add an auto-flatten. ETFs trade to 16:15.
