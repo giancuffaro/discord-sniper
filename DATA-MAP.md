@@ -90,7 +90,7 @@ The 636 span 442 in August and 194 in September.
 | `STOP-PULLED` | 89 | `STOP-PULLED HPE — pulled the resting stop before selling` | |
 | `STOPPED` | 272 | `STOPPED  HPE — bid hit 2.35, at or under your 2.42 stop. Selling 5.` | The stop trigger and the bid that caused it. |
 | `FAILED` | 278 | `FAILED   HPE — the stop tried to sell and couldn't: HTTP 417 …` | Exits that did not go through. **A `FAILED` is not a loss — it means nothing happened.** |
-| `UPDATE` | 204 | `UPDATE   NVDA — up 20%, hitting your +20% take-profit. Closing all 1.` | Take-profit and ratchet narration. |
+| `UPDATE` | 204 | `UPDATE   …` | Ratchet narration. (Lines before 9/17 may show the removed hard take-profit close.) |
 | `CLOSED` | 169 | `CLOSED   FCX — gone from your Webull account — you closed it yourself` | Includes positions G closed by hand. |
 | `TRIMMED` | 15 | `TRIMMED  AAPL — their trim — sold 1 at 1.82 (+$15 on those)` | |
 | `EXIT` | 39 | `EXIT     your bid on SPY never filled, so there was nothing to sell.` | |
@@ -133,7 +133,7 @@ The 636 span 442 in August and 194 in September.
 | `Webull` | 480 | Connection banners (multi-account ambiguity, not connected). |
 | `test` | 244 | "test account: unlimited" startup banner. |
 | `paper` | 226 | Paper-mode banners. |
-| `STRATEGY` | 218 | `STRATEGY forced ON at bridge start: 1 contract, +20% take-profit, -10% stop` — **the settings in force at that moment.** |
+| `STRATEGY` | 218 | `STRATEGY forced ON at bridge start: 1 contract, -5.0% stop to start, then at +3.0% the stop goes to BREAKEVEN …` — **the settings in force at that moment.** |
 | `GREEKS` | 179 | DXLink greeks lane on/off. |
 | `DEADMAN` | 130 | Thread watchdog armed. |
 | `QUOTE` | 96 | Quote bus on/off. |
