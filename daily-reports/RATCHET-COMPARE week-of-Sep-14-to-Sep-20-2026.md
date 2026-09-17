@@ -1,5 +1,89 @@
 # RATCHET-COMPARE — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Thu Sep 17 2026 =====
+
+# Ratchet comparison — 2026-09-17
+
+This replay isolates the exit rule. Both versions buy **one contract** at the first recorded ask (the actual fill for a filled bot trade) and use the same initial broker-compatible **-5% born stop**. The fixed version never moves that stop. The live version arms at **+3%** and then advances in **+5%** rungs, subject to tick and spread floors.
+
+| Alert | Source | Entry | Fixed stop P&L | Ratchet P&L | Ratchet advantage |
+|---|---|---:|---:|---:|---:|
+| 09:33 GOOGL | Honeydrip daytrades | $4.65 | -55 | -55 | +0 |
+| 09:36 SPY | Vero 1 | $1.40 | -9 | -9 | +0 |
+| 09:39 GOOGL | Honeydrip daytrades | $4.35 | -35 | -35 | +0 |
+| 09:39 SNDK | Aristotle | $1.20 | -20 | +30 | +50 |
+| 09:39 SNDK | Aristotle | $1.25 | -10 | +25 | +35 |
+| 09:40 SPY | Honeydrip daytrades | $2.51 | -11 | -4 | +7 |
+| 09:40 TSLA | Honeydrip daytrades | $3.30 | -20 | -20 | +0 |
+| 09:42 QQQ | Demon day-trades | $0.90 | -12 | -1 | +11 |
+| 09:56 NVDA | Whop Day Trades | $2.53 | +45 | -2 | -47 |
+| 09:56 NVDA | Whop Day Trades | $2.55 | +43 | -4 | -47 |
+| 09:56 AMD | Aristotle | $2.28 | -19 | -19 | +0 |
+| 09:58 GOOGL | Honeydrip daytrades | $4.60 | -55 | -55 | +0 |
+| 10:02 TSLA | Platinum nitro | $1.96 | -11 | -4 | +7 |
+| 10:03 MRNA | OWLS all-alerts | $1.85 | -10 | +0 | +10 |
+| 10:03 MRNA | OWLS all-alerts | $1.85 | -10 | +0 | +10 |
+| 10:05 TSLA | Honeydrip daytrades | $3.75 | -15 | -15 | +0 |
+| 10:09 TSLA | Platinum ei-alerts | $1.41 | -12 | +18 | +30 |
+| 10:12 TSLA | Platinum ei-alerts | $1.22 | -11 | +2 | +13 |
+| 10:14 SPY | Honeydrip daytrades | $2.40 | -10 | +0 | +10 |
+| 10:14 SPY | Honeydrip daytrades | $2.41 | -11 | -1 | +10 |
+| 10:16 QQQ | Brando Alerts | $2.95 | -15 | -1 | +14 |
+| 10:16 QQQ | Brando Alerts | $2.95 | -15 | -1 | +14 |
+| 10:17 INTC | Aristotle small | $1.98 | +24 | +10 | -14 |
+| 10:17 INTC | Aristotle | $2.04 | +18 | +0 | -18 |
+| 10:19 AMZN | Honeydrip daytrades | $2.27 | +123 | +21 | -102 |
+| 10:19 INTC | Aristotle | $2.06 | -14 | +9 | +23 |
+| 10:23 ORCL | OWLS all-alerts | $1.65 | -10 | +0 | +10 |
+| 10:23 ORCL | OWLS all-alerts | $1.65 | -10 | +0 | +10 |
+| 10:23 QQQ | Vero 1 | $1.45 | -5 | -5 | +0 |
+| 10:24 QQQ | Vero 1 | $1.39 | -12 | +7 | +19 |
+| 10:25 AMZN | OWLS all-alerts | $3.25 | -25 | -25 | +0 |
+| 10:26 ORCL | OWLS all-alerts | $1.28 | -18 | -18 | +0 |
+| 10:28 QQQ | Vero 1 | $1.66 | -8 | -8 | +0 |
+| 10:29 QQQ | Vero 1 | $1.40 | -5 | +0 | +5 |
+| 10:44 SMCI | Mugzone Options | $1.55 | +22 | +12 | -10 |
+| 10:44 SMCI | Mugzone Options | $1.50 | +27 | +14 | -13 |
+| 10:56 QQQ | Vero 2 | $1.37 | -7 | -7 | +0 |
+| 10:56 QQQ | Vero 2 | $1.32 | -7 | -7 | +0 |
+| 12:05 AAPL | TTT Lotto | $0.62 | -7 | +0 | +7 |
+| 12:18 INGM | Demon day-trades | $0.65 | -35 | -35 | +0 |
+| 12:22 AMD | OWLS all-alerts | $382.65 | -940 | -940 | +0 |
+| 12:23 AAPL | Demon day-trades | $1.48 | -8 | +0 | +8 |
+| 12:29 AAPL | Demon day-trades | $1.40 | -5 | +0 | +5 |
+| 12:45 DELL | Brando Alerts | $5.25 | -30 | -30 | +0 |
+| 12:45 DELL | Brando Alerts | $4.95 | -25 | +0 | +25 |
+| 12:45 DELL | Brando Alerts | $5.15 | -40 | -40 | +0 |
+| 12:45 DELL | Brando Alerts | $4.95 | -25 | +0 | +25 |
+| 15:41 HOOD | OWLS all-alerts | $1.00 | +45 | +10 | -35 |
+| 15:54 LRCX | Option Alerts | $2.86 | -28 | -28 | +0 |
+
+## Result
+
+- Price-replayable alerts: **49 of 40 observed**.
+- Fixed born stop: **-1283** total per one-contract replay.
+- Live ratchet: **-1211** total per one-contract replay.
+- Ratchet advantage on the covered subset: **+72**.
+- At least one value is marked at the end of its available tape and is not a final exit.
+- HOOD is deliberately included because the question asks what happened if every alert were forced through. The live bot refused its 22% spread; bypassing that filter would have produced the replayed loss.
+
+## Actual bot trade
+
+- 09:39 SNDK realized **+0**. The quote replay gives fixed **-10** versus ratchet **+25**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 09:56 NVDA realized **+14**. The quote replay gives fixed **+43** versus ratchet **-4**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:03 MRNA realized **+0**. The quote replay gives fixed **-10** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:12 TSLA realized **+3**. The quote replay gives fixed **-11** versus ratchet **+2**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:14 SPY realized **+0**. The quote replay gives fixed **-11** versus ratchet **-1**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:17 INTC realized **+1**. The quote replay gives fixed **+18** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:23 ORCL realized **+0**. The quote replay gives fixed **-10** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:24 QQQ realized **+0**. The quote replay gives fixed **-12** versus ratchet **+7**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:29 QQQ realized **+0**. The quote replay gives fixed **-5** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:44 SMCI realized **-8**. The quote replay gives fixed **+27** versus ratchet **+14**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 10:56 QQQ realized **-8**. The quote replay gives fixed **-7** versus ratchet **-7**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 12:29 AAPL realized **+0**. The quote replay gives fixed **-5** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 12:45 DELL realized **+0**. The quote replay gives fixed **-25** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
+- 12:45 DELL realized **+0**. The quote replay gives fixed **-25** versus ratchet **+0**; the real ratchet fill was better because the market sell completed above the trigger bid.
+
 ===== Wed Sep 16 2026 =====
 
 # Ratchet comparison — 2026-09-16

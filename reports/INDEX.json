@@ -143,6 +143,82 @@
     "trades.log (day lines)": "841b505896a58741"
    },
    "output": "daily-audits/AUDIT week-of-Sep-14-to-Sep-20-2026.txt"
+  },
+  "2026-09-17": {
+   "built_at": "2026-09-17T16:46:56-04:00",
+   "fingerprint": "c84dc08c9f2e1799",
+   "inputs": {
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "c0b2dcaf122d9ca1",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "2b092b86a8d69119",
+    "daily-audits/recovered-2026-09-17.json": "missing",
+    "daily_audit.py": "13326:1789623735",
+    "extension/optionable.txt": "30073:1788840105",
+    "extension/parse_batch.js": "2964:1789152506",
+    "extension/parser.js": "176910:1789615934",
+    "extension/rooms.txt": "34126:1789581289",
+    "extension/test_bare_entry.js": "3777:1789152961",
+    "extension/test_buy_verb.js": "3284:1788817653",
+    "extension/test_dotdate.js": "3725:1789072494",
+    "extension/test_edit_stamp.js": "1761:1789615986",
+    "extension/test_elite.js": "4286:1788819864",
+    "extension/test_exits.js": "7274:1789164640",
+    "extension/test_loaded_fill.js": "1929:1789166454",
+    "extension/test_optionable.js": "2926:1788840630",
+    "extension/test_owls_jonkian.js": "3829:1789069510",
+    "extension/test_percon.js": "6211:1789160944",
+    "extension/test_pivot.js": "5434:1789073401",
+    "extension/test_plan_entry.js": "3713:1788832159",
+    "extension/test_spreads.js": "2590:1788816921",
+    "extension/test_word_order.js": "6640:1789070020",
+    "master_alerts.csv (day rows)": "49d57bc4f5c76a65",
+    "master_ledger.csv (day rows)": "65200f7df8d20253",
+    "master_postmortems.csv (day rows)": "709075d04c3b4c76",
+    "parser_gate.js": "13219:1789445270",
+    "replay_check.py": "15780:1789445270",
+    "test_alert_revision.py": "15150:1789452545",
+    "test_alert_tape.py": "19543:1789102780",
+    "test_architecture.py": "11022:1789102652",
+    "test_audit_regressions.py": "15387:1789484034",
+    "test_bridge_restart.py": "1445:1789339017",
+    "test_broker_sync.py": "15920:1789613905",
+    "test_brokers.py": "14442:1788535022",
+    "test_caller_outcomes.py": "6036:1789438756",
+    "test_channel_accounts.py": "1418:1789329598",
+    "test_context_reader.py": "3717:1789318421",
+    "test_daily_audit.py": "5745:1789440539",
+    "test_daily_brief.py": "25210:1789613968",
+    "test_daily_policy_compare.py": "631:1789434242",
+    "test_departments.py": "1765:1789321051",
+    "test_entry_attribution.py": "759:1789331866",
+    "test_entry_slack.py": "7342:1789492960",
+    "test_expiry.py": "4042:1789108037",
+    "test_expiry_comparison.py": "853:1789267095",
+    "test_expiry_lookup.py": "14085:1789615924",
+    "test_futures_protection.py": "21289:1789567448",
+    "test_health.py": "1843:1789167877",
+    "test_image_reader.py": "12056:1789400366",
+    "test_index_mirror.py": "10299:1789343487",
+    "test_market_hours.py": "3604:1789452621",
+    "test_observer_providers.py": "2039:1789343351",
+    "test_openai_reader_trial.py": "5695:1789241743",
+    "test_phantom_exit.py": "7485:1787875285",
+    "test_positions.py": "41910:1789491200",
+    "test_pullback_early.py": "1684:1789621996",
+    "test_pullback_limit.py": "1901:1789616474",
+    "test_reader_history.py": "6130:1789232395",
+    "test_reader_release.py": "1484:1789317359",
+    "test_reports.py": "9140:1789451397",
+    "test_request_journal.py": "1486:1789146732",
+    "test_research_ledger.py": "2477:1789338506",
+    "test_status_json.py": "7402:1789613953",
+    "test_stream_bus.py": "668:1789165200",
+    "test_tape.py": "4972:1788534247",
+    "test_trade_identity.py": "4683:1789338604",
+    "test_trend.py": "2463:1789620315",
+    "test_weekly_export.py": "15108:1789447184",
+    "trades.log (day lines)": "c4594861e65fd43e"
+   },
+   "output": "daily-audits/AUDIT week-of-Sep-14-to-Sep-20-2026.txt"
   }
  },
  "brief": {
@@ -200,6 +276,26 @@
     "master_futures.csv (day rows)": "3c0e47228f6b7b3f",
     "master_ledger.csv (day rows)": "bd197240817e8e9a",
     "trades.log (day lines)": "f9a4065e481646b1"
+   },
+   "output": "daily-reports/BRIEF week-of-Sep-14-to-Sep-20-2026.md"
+  },
+  "2026-09-17": {
+   "built_at": "2026-09-17T16:46:56-04:00",
+   "fingerprint": "1e9cd1e65deb93b6",
+   "inputs": {
+    "CALLER-OUTCOMES.csv (day rows)": "4f086360f04370d3",
+    "HANDOFF.md": "18369:1789623747",
+    "balance_daily.csv (day rows)": "78ce6b9a6d751081",
+    "daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md (day block)": "missing",
+    "daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md (day block)": "6eb75e71360cd172",
+    "daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md (day block)": "58ee089ab20df34b",
+    "daily_brief.py": "32385:1789613939",
+    "department-reports/extension-discord.json": "9d0bdd9af4aecc08",
+    "department-reports/extension-whop.json": "3a3bc3a135ac99b9",
+    "master_broker.csv (day rows)": "19787718bc763742",
+    "master_futures.csv (day rows)": "4f53cda18c2baa0c",
+    "master_ledger.csv (day rows)": "65200f7df8d20253",
+    "trades.log (day lines)": "c4594861e65fd43e"
    },
    "output": "daily-reports/BRIEF week-of-Sep-14-to-Sep-20-2026.md"
   }
@@ -271,6 +367,29 @@
     "master_postmortems.csv (day rows)": "4f53cda18c2baa0c",
     "quote_shadow.csv (day rows)": "752d90489b3092b6",
     "trades.log (day lines)": "52a270f0002b9d65"
+   },
+   "output": "daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md"
+  },
+  "2026-09-17": {
+   "built_at": "2026-09-17T16:46:27-04:00",
+   "fingerprint": "72e35b74f65ff7ae",
+   "inputs": {
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "c0b2dcaf122d9ca1",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "2b092b86a8d69119",
+    "alert_meta.csv (day rows)": "4079452944e24650",
+    "alert_tape.csv (day rows)": "1022b38db999e741",
+    "caller_outcomes.py": "25690:1789451347",
+    "daily-audits/recovered-2026-09-17.json": "missing",
+    "daily_report.py": "18269:1789451346",
+    "extension/optionable.txt": "30073:1788840105",
+    "extension/parse_batch.js": "2964:1789152506",
+    "extension/parser.js": "176910:1789615934",
+    "extension/rooms.txt": "34126:1789581289",
+    "master_alerts.csv (day rows)": "49d57bc4f5c76a65",
+    "master_ledger.csv (day rows)": "65200f7df8d20253",
+    "master_postmortems.csv (day rows)": "709075d04c3b4c76",
+    "quote_shadow.csv (day rows)": "dd20c9eb5826ef86",
+    "trades.log (day lines)": "c4594861e65fd43e"
    },
    "output": "daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md"
   }
@@ -347,6 +466,24 @@
     "trades.log (day lines)": "841b505896a58741"
    },
    "output": "daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md"
+  },
+  "2026-09-17": {
+   "built_at": "2026-09-17T16:46:54-04:00",
+   "fingerprint": "758ef5b66db6a10e",
+   "inputs": {
+    "alert_tape.csv (day rows)": "1022b38db999e741",
+    "databento_tape.csv (day rows)": "e3b0c44298fc1c14",
+    "entry_slack.py": "7323:1789492821",
+    "missed_tape.csv (day rows)": "e3b0c44298fc1c14",
+    "option_tape.csv (day rows)": "188c7bcf165b75c1",
+    "quote_shadow.csv (day rows)": "dd20c9eb5826ef86",
+    "ratchet_tiers.py": "16164:1789620636",
+    "reference/entry_slack_replay.py": "34808:1789493332",
+    "reference/ratchet_replay_tape.py": "48823:1789438395",
+    "tape.py": "10632:1789492976",
+    "trades.log (day lines)": "c4594861e65fd43e"
+   },
+   "output": "daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md"
   }
  },
  "ratchet-compare": {
@@ -389,6 +526,20 @@
     "master_ledger.csv (day rows)": "bd197240817e8e9a",
     "option_tape.csv (day rows)": "792dac74c40c2731",
     "ratchet_tiers.py": "16166:1789491110"
+   },
+   "output": "daily-reports/RATCHET-COMPARE week-of-Sep-14-to-Sep-20-2026.md"
+  },
+  "2026-09-17": {
+   "built_at": "2026-09-17T16:46:19-04:00",
+   "fingerprint": "67ca3e5a2afcfaba",
+   "inputs": {
+    "alert_meta.csv (day rows)": "4079452944e24650",
+    "alert_tape.csv (day rows)": "1022b38db999e741",
+    "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md (day block)": "fbea1541b945a32b",
+    "daily_policy_compare.py": "9341:1789451347",
+    "master_ledger.csv (day rows)": "65200f7df8d20253",
+    "option_tape.csv (day rows)": "ff71035a26a6fdec",
+    "ratchet_tiers.py": "16164:1789620636"
    },
    "output": "daily-reports/RATCHET-COMPARE week-of-Sep-14-to-Sep-20-2026.md"
   }
@@ -451,6 +602,26 @@
     "master_postmortems.csv (day rows)": "4f53cda18c2baa0c",
     "replay_check.py": "15780:1789445270",
     "trades.log (day lines)": "841b505896a58741"
+   },
+   "output": "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md"
+  },
+  "2026-09-17": {
+   "built_at": "2026-09-17T16:46:11-04:00",
+   "fingerprint": "76cc1c70b41b0832",
+   "inputs": {
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "c0b2dcaf122d9ca1",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "2b092b86a8d69119",
+    "daily-audits/recovered-2026-09-17.json": "missing",
+    "daily_report.py": "18269:1789451346",
+    "extension/optionable.txt": "30073:1788840105",
+    "extension/parse_batch.js": "2964:1789152506",
+    "extension/parser.js": "176910:1789615934",
+    "extension/rooms.txt": "34126:1789581289",
+    "master_alerts.csv (day rows)": "49d57bc4f5c76a65",
+    "master_ledger.csv (day rows)": "65200f7df8d20253",
+    "master_postmortems.csv (day rows)": "709075d04c3b4c76",
+    "replay_check.py": "15780:1789445270",
+    "trades.log (day lines)": "c4594861e65fd43e"
    },
    "output": "daily-reports/REPORT week-of-Sep-14-to-Sep-20-2026.md"
   }

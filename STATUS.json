@@ -1,76 +1,80 @@
 {
  "audit": {
   "coverage_warnings": 0,
-  "failed_checks": [],
-  "generated_at": "2026-09-16T16:41:16.105805-04:00",
+  "failed_checks": [
+   "Historical parser corpus gate",
+   "caller versus ratchet comparison"
+  ],
+  "generated_at": "2026-09-17T16:46:09.937445-04:00",
   "possible_missed": 1,
-  "silent_drops": 4,
+  "silent_drops": 16,
   "status": "attention"
  },
  "balance": {
-  "as_of": "2026-09-16",
-  "bp": 938.81,
-  "day_pl": 34.59,
-  "flow": -500.0,
-  "fut_fees": 39.16,
-  "fut_flow": null,
-  "fut_nlv": 389.26,
-  "fut_pl": -111.56,
-  "nlv": 938.81
+  "as_of": "2026-09-17",
+  "bp": 1165.93,
+  "day_pl": 227.1,
+  "flow": 0.02,
+  "fut_fees": 0.0,
+  "fut_flow": -132.62,
+  "fut_nlv": 256.64,
+  "fut_pl": 0.0,
+  "nlv": 1165.93
  },
  "bot": {
-  "losses": 3,
-  "pl": -129.0,
-  "trades": 3,
-  "wins": 0
+  "losses": 2,
+  "pl": 2.0,
+  "trades": 14,
+  "wins": 3
  },
  "bridge": {
   "buying_power": null,
   "health": {
-   "checked_at": 1789613983.4022884,
+   "checked_at": 1789677433.369386,
    "issues": [],
    "lanes": [
     {
-     "fresh": false,
+     "fresh": true,
      "lane": "discord",
-     "version": "3.8.39"
+     "version": "3.8.40"
     },
     {
      "fresh": true,
      "lane": "whop",
-     "version": "3.8.39"
+     "version": "3.8.40"
     }
    ]
   },
-  "probed_at": "2026-09-16T23:00:02-04:00",
+  "probed_at": "2026-09-17T16:46:57-04:00",
   "up": false
  },
  "broke": [
+  {
+   "date": "2026-09-17",
+   "failed_checks": [
+    "Historical parser corpus gate",
+    "caller versus ratchet comparison"
+   ]
+  },
+  {
+   "coverage_warnings": 0,
+   "date": "2026-09-17",
+   "failed_checks": [
+    "Historical parser corpus gate",
+    "caller versus ratchet comparison"
+   ],
+   "possible_missed": 1,
+   "silent_drops": 16
+  },
   {
    "coverage_warnings": 0,
    "date": "2026-09-16",
    "failed_checks": [],
    "possible_missed": 1,
    "silent_drops": 4
-  },
-  {
-   "coverage_warnings": 0,
-   "date": "2026-09-15",
-   "failed_checks": [
-    "caller versus ratchet comparison"
-   ],
-   "possible_missed": 0,
-   "silent_drops": 6
-  },
-  {
-   "coverage_warnings": 0,
-   "date": "2026-09-14",
-   "failed_checks": [],
-   "possible_missed": 3,
-   "silent_drops": 11
   }
  ],
- "date": "2026-09-16",
+ "date": "2026-09-17",
  "pending": [
   "Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5\u21922 rung, futures decouple) \u2014 G's call who does i\u2026",
   "NinjaTrader ATM \"SNIPER\": stop 100 ticks / target 200, qty 1 \u2014 create in NT8 (paused; NinjaTrader is off).",
@@ -78,51 +82,51 @@
  ],
  "reports": [
   "alert-audit            all        STALE    ALERT-AUDIT.html  [never recorded in reports/INDEX.json]",
-  "audit                  2026-09-16 STALE    daily-audits\\AUDIT week-of-Sep-14-to-Sep-20-2026.txt  [changed: DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block), DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block), test_broker_sync.py, test_daily_brief.py, test_status_json.py, trades.log (day lines)]",
-  "brief                  2026-09-16 CURRENT  daily-reports\\BRIEF week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-16T23:00:02-04:00]",
-  "caller-outcomes        2026-09-16 STALE    daily-reports\\CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md  [changed: DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block), DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block), quote_shadow.csv (day rows), trades.log (day lines)]",
-  "caller-vs-ratchet      2026-09-16 STALE    daily-reports\\CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md  [changed: DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block), DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block), option_tape.csv (day rows)]",
-  "entry-slack            2026-09-16 STALE    daily-reports\\ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md  [changed: option_tape.csv (day rows), quote_shadow.csv (day rows), trades.log (day lines)]"
+  "audit                  2026-09-17 CURRENT  daily-audits\\AUDIT week-of-Sep-14-to-Sep-20-2026.txt  [built 2026-09-17T16:46:56-04:00]",
+  "brief                  2026-09-17 CURRENT  daily-reports\\BRIEF week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-17T16:46:56-04:00]",
+  "caller-outcomes        2026-09-17 CURRENT  daily-reports\\CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-17T16:46:27-04:00]",
+  "entry-slack            2026-09-17 STALE    daily-reports\\ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md  [changed: option_tape.csv (day rows)]",
+  "futures-mirror         2026-09-17 STALE    daily-reports\\FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md  [never recorded in reports/INDEX.json]"
  ],
  "rooms": {
   "discord": {
    "on": 35,
-   "reads": 455,
-   "spoke": 23
+   "reads": 447,
+   "spoke": 25
   },
   "whop": {
    "on": 5,
-   "reads": 172,
-   "spoke": 5
+   "reads": 714,
+   "spoke": 4
   }
  },
  "verified": {
   "bridge_code_live": {
-   "at": "2026-09-16T23:00:03-04:00",
-   "bridge_py_mtime": "2026-09-16T13:27:42-04:00",
-   "sha": "8ca9cfe"
+   "at": "2026-09-17T16:46:57-04:00",
+   "bridge_py_mtime": "2026-09-17T01:13:06-04:00",
+   "sha": "f088693"
   },
   "broker_reconciled": {
-   "at": "2026-09-16T23:00:03-04:00",
-   "broker_legs": 44,
-   "ledger_pl": 43.0,
+   "at": "2026-09-17T16:46:57-04:00",
+   "broker_legs": 42,
+   "ledger_pl": 234.0,
    "match": null,
    "sync_ok": true
   },
   "parser_gate": {
-   "at": "2026-09-16T23:00:03-04:00",
+   "at": "2026-09-17T16:46:57-04:00",
    "counts": {
-    "actions": 3048,
-    "entries": 852,
+    "actions": 3050,
+    "entries": 848,
     "messages": 11386,
     "pass": false
    }
   },
   "tests": {
-   "at": "2026-09-16T23:00:03-04:00",
+   "at": "2026-09-17T16:46:57-04:00",
    "failed": 0,
-   "passed": 332
+   "passed": 363
   }
  },
- "written_at": "2026-09-16T23:00:02-04:00"
+ "written_at": "2026-09-17T16:46:56-04:00"
 }

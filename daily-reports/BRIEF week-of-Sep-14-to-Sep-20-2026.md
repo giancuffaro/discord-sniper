@@ -1,5 +1,82 @@
 # BRIEF — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Thu Sep 17 2026 =====
+
+# SNIPER BRIEF — 2026-09-17
+
+## Day
+- Webull margin day P&L: +$227.1 net · +$233 gross on 65 broker legs (the gap is fees)
+- Balance: NLV $1165.93 (+$227.12 vs 2026-09-16) · option BP $1165.93 · read 2026-09-17T16:40:20
+- Webull futures: no fills · NLV $256.64
+- Money moved (transfer / deposit / withdrawal — NOT trading): futures -$132.62
+- ALL ACCOUNTS, net of fees: +$227.1 (margin +$227.1, futures $0)
+- Bot: +$2 · 15 trades, 10 contracts  (1 with no P&L)
+- Hand (G): +$232 · 16 trades, 51 contracts
+- Ledger day total: +$234 (options only)
+
+## Bot trades
+```
+time   channel             trader           tkr    contract         in    out        $  why exited
+--------------------------------------------------------------------------------------------------
+09:39  Aristotle           👑KingBeeAri🐝     SNDK   1800C 9/18        ?      ?       $0  unavailable  ⚠ journal ≠ broker
+09:56  Whop Day Trades     Trademorewiser…  NVDA   217.5C 9/18    2.55   2.69     +$14  ratchet
+10:03  OWLS all-alerts     MuggZone         MRNA   165C 9/18         ?      ?       $0  unavailable  ⚠ journal ≠ broker
+10:12  Platinum ei-alerts  PT | ei trades   TSLA   382.5C 9/18    1.22   1.25      +$3  ratchet
+10:14  Honeydrip daytrad…  Brett            SPY    760C 9/18         ?      ?       $0  unavailable  ⚠ journal ≠ broker
+10:17  Aristotle           👑KingBeeAri🐝     INTC   111C 9/21      2.04   2.04      +$1  born stop
+10:18  Aristotle           👑KingBeeAri🐝     INTC   111C 9/21      2.03      ?        ?  close
+10:23  OWLS all-alerts     MuggZone         ORCL   160C 9/25         ?      ?       $0  unavailable  ⚠ journal ≠ broker
+10:24  Vero 1              @vero-alerts     QQQ    716C 9/17         ?      ?       $0  unavailable  ⚠ journal ≠ broker
+10:29  Vero 1              Vero             QQQ    716C 9/17         ?      ?       $0  unavailable  ⚠ journal ≠ broker
+10:44  Mugzone Options     MuggZone         SMCI   41C 9/25       1.50   1.42      -$8  born stop
+10:56  Vero 2              Vero             QQQ    715P 9/17      1.32   1.24      -$8  born stop
+12:29  Demon day-trades    Demon × LKS      AAPL   340C 9/21      1.40   1.40       $0  BE stop
+12:45  Brando Alerts       EliteOptions |…  DELL   600C 9/18      4.95   4.95       $0  BE stop
+12:45  Brando Alerts       EliteOptions |…  DELL   600C SEPT 18   4.95   4.95       $0  BE stop
+```
+⚠ 6 rows: the journal says it exited, the broker record prices no exit.
+entry slack (OFF, measured): 6 no-fills today; nothing beats today's rule: every slack level from 2% to 10% comes out behind it (-$13 to -$234), and the 95% band on 156 paired orders (-$2.58 .. -$0.49 per order) CLEARS zero
+
+## Callers right / wrong
+**Right**
+- @Owner Alerts TSLA 377.5C +48.0% (trim) — bot: no
+- Brett SPY 760C 9/18 +13.0% (trim) — bot took it: $0
+- Brett TSLA 372.5C 9/18 +70.0% (trim) — bot: no
+- Brett SPY 760C 9/18 +6.7% (full) — bot took it: $0
+- Mike AMZN 250C 9/18 +3053.2% (full) — bot: no
+- MuggZone HOOD 110C 9/18 +50.0% (trim) — bot: no
+- MuggZone SMCI 41C 9/25 +50.0% (trim) — bot took it: -$8
+- Skyy QQQ 716C +50.0% (trim) — bot: no
+- TB22 AAPL 340C 9/18 +108.3% (trim) — bot: no
+- Trademorewiser (MOD) NVDA 217.5C +22.0% (trim) — bot took it: +$14
+- Unraveller GOOGL 342.5C 9/18 +65.0% (trim) — bot: no
+- Vero QQQ 715P 9/17 +51.5% (full) — bot took QQQ 716C 9/17: $0
+**Wrong**
+- @vero-alerts QQQ 716C 9/17 -14.4% (full) — bot took it: $0
+- Mike TSLA 362.5P 9/18 -37.7% (full) — bot: no
+- MuggZone MRNA 165C 9/18 -47.7% (full) — bot took it: $0
+- MuggZone AMD 170C 9/18 -30.6% (trim) — bot: no
+- Unraveller GOOGL 345C 9/18 -13.9% (full) — bot: no
+- Unraveller GOOGL 345C 9/18 -39.2% (full) — bot: no
+- Vero SPY 761P 9/17 -12.8% (full) — bot: no
+unscored (no exit price — never estimated): shoof-alerts SNDK 1650C 9/18, Trademorewiser (MOD) MNQ, 👑KingBeeAri🐝 AMD 555C 9/18, 👑KingBeeAri🐝 INTC 111C 9/21, 👑KingBeeAri🐝 SNDK 1800C 9/18
+ratchet replay: unavailable (no CALLER-VS-RATCHET block for 2026-09-17)
+
+## What broke
+- REFUSED 2 — OPEN QQQ — 716C 2026-09-17 asks 0.91 but the caller said 105.00; no listed expiry matches, not buying the wrong contract
+- POSTCHECK PROBLEM 8 — FAILED INTC — PROBLEM: book holds INTC, the account doesn't
+- STOP-WARN 12 — INTC — Webull wouldn't hold a resting stop (HTTP Status: 417, Code: OPENAPI_OPTION_LONG_POSITION_MUST_BE_CLOSE_THAN_SEL…
+- EXPIRY 4 — QQQ 716C had no date — using 2026-09-17: today (2026-09-17) IS a listed expiration for QQQ, so 0DTE it is
+- AI READ 9 — saved key check: verified (HTTP 200)
+- MIRROR — bars unavailable, 9 alert(s) unscored: BentoClientError: 422 data_end_after_available_end
+
+## Pending (G's action)
+- Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does i…
+- NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
+- NOTHING REOPENS A DISCORD ROOM TAB — only START HERE does (G, 9/8), and it starts the DISCORD BROWSER only wh…
+
+built from master_ledger.csv, master_broker.csv, balance_daily.csv, master_futures.csv, trades.log, daily-reports/CALLER-OUTCOMES.csv, daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md, daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md, daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md, department-reports/extension-*.json, HANDOFF.md · 2026-09-17 16:46 Eastern Daylight Time
+
 ===== Wed Sep 16 2026 =====
 
 # SNIPER BRIEF — 2026-09-16

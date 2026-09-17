@@ -1,5 +1,139 @@
 # AUDIT — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Thu Sep 17 2026 =====
+
+DISCORD SNIPER DAILY AUDIT — 2026-09-17
+generated: 2026-09-17T16:46:09.937445-04:00
+status: ATTENTION
+silent drops: 16
+possible missed entries: 1
+coverage warnings: 0
+failed checks: Historical parser corpus gate
+
+MESSAGE REPLAY
+REPLAY CHECK for 2026-09-17 — exports: signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt, signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt
+
+Low Key Stonks: ⚖chika-alerts — 56 msgs, 24 actionable, 8 judged, 12 SILENT
+   09:45:28  CLOSE   NQ    650 added, dont want to see acceptance above else im out @Chika Alerts
+   09:46:53  CLOSE   NQ    flat dont like it @Chika Alerts
+   10:52:14  OPEN    NQ    readding a bit on shorts 695 @Chika Alerts
+   13:52:38  OPEN    NQ    bunting a short, 735 pivot @Chika Alerts
+   15:08:43  OPEN    NQ    feeler short 745 will add around 770 @Chika Alerts
+   15:43:49  OPEN    NQ    small long 755 fill 745 pivot @Chika Alerts
+   09:45:28  CLOSE   NQ    650 added, dont want to see acceptance above else im out @Chika Alerts
+   09:46:53  CLOSE   NQ    flat dont like it @Chika Alerts
+
+OWLS Capital: 🌟｜shabs-sky-alerts — 44 msgs, 9 actionable, 3 judged, 2 SILENT
+   15:46:51  OPEN    SPX   7645c moc at .6
+   15:46:51  OPEN    SPX   7645c moc at .6
+
+OWLS Capital: 🌟｜muggzone-options — 86 msgs, 32 actionable, 21 judged, 2 SILENT
+   10:31:16  OPEN    ORCL  ORCL 9/25 160 CALLS 1.55-1.60 ENTRY @everyone
+   11:40:20  OPEN    ORCL  ORCL 9/25 160 CALLS 1.55-1.60 ENTRY @everyone
+
+Honey Drip Network 🍯💰📈: 👑｜aristotle-trades — 142 msgs, 54 actionable, 12 judged, 0 SILENT
+
+Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps — 128 msgs, 108 actionable, 32 judged, 0 SILENT
+
+OWLS Capital: 🌟｜jon-and-kian — 1 msgs, 1 actionable, 1 judged, 0 SILENT
+
+OWLS Capital: 🛎️｜all-alerts — 53 msgs, 17 actionable, 13 judged, 0 SILENT
+
+ELITE OPTIONS: shoof-alerts — 4 msgs, 4 actionable, 2 judged, 0 SILENT
+
+VeroTrade: ✅⏐1k-challenge — 12 msgs, 12 actionable, 10 judged, 0 SILENT
+
+Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge — 68 msgs, 6 actionable, 2 judged, 0 SILENT
+
+Platinum Trading: 🟣│ei-alerts — 18 msgs, 2 actionable, 2 judged, 0 SILENT
+
+Platinum Trading: 👑│nitro — 18 msgs, 10 actionable, 2 judged, 0 SILENT
+
+Low Key Stonks: 😈demon-day-trades — 24 msgs, 8 actionable, 8 judged, 0 SILENT
+
+OWLS Capital: 🌟｜eli-alerts — 20 msgs, 2 actionable, 2 judged, 0 SILENT
+
+ELITE OPTIONS: brando-alerts — 6 msgs, 6 actionable, 6 judged, 0 SILENT
+
+Platinum Trading: 🟣│futures-alerts — 24 msgs, 2 actionable, 2 judged, 0 SILENT
+
+Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge — 14 msgs, 8 actionable, 2 judged, 0 SILENT
+
+VeroTrade: ✅⏐vero-trades — 4 msgs, 4 actionable, 4 judged, 0 SILENT
+
+OWLS Capital: 🌟｜ab — 6 msgs, 4 actionable, 4 judged, 0 SILENT
+
+TradingTheTrend: 🎰lotto-alerts — 20 msgs, 12 actionable, 2 judged, 0 SILENT
+
+TradingTheTrend: 🚨option-alerts🚨 — 2 msgs, 2 actionable, 2 judged, 0 SILENT
+
+Day Trades — 13 msgs, 10 actionable, 4 judged, 0 SILENT
+
+Trading Chat — 150 msgs, 6 actionable, 3 judged, 0 SILENT
+
+TOTAL silent drops: 16  (actionable per the parser, no verdict, no bridge line)
+
+POSSIBLE MISSED ENTRIES (heuristic — parser found NO action at all, but the trader had an unconfirmed LOADING call and this message carries a price):
+   09:38:27  Honey Drip Network 🍯 midas (admin)   SPY 761C — I prefer 760.80 entry
+POSSIBLE MISSED ENTRIES: 1
+
+REGRESSION CHECKS
+PASS  JS test_bare_entry.js  0.08s
+PASS  JS test_buy_verb.js  0.08s
+PASS  JS test_dotdate.js  0.08s
+PASS  JS test_edit_stamp.js  0.08s
+PASS  JS test_elite.js  0.08s
+PASS  JS test_exits.js  0.09s
+PASS  JS test_loaded_fill.js  0.08s
+PASS  JS test_optionable.js  0.05s
+PASS  JS test_owls_jonkian.js  0.07s
+PASS  JS test_percon.js  0.08s
+PASS  JS test_pivot.js  0.07s
+PASS  JS test_plan_entry.js  0.08s
+PASS  JS test_spreads.js  0.07s
+PASS  JS test_word_order.js  0.08s
+PASS  JS test_resolve.js  0.09s
+FAIL  Historical parser corpus gate  2.44s
+    11386 messages, 75 rooms, 6362 on the allowlist
+    entries fired BEFORE : 852
+    entries fired NOW    : 848   (-4)
+    all actions BEFORE/NOW: 3048 / 3050
+    JUNK TICKERS: 0
+ades-scalps        | @Unraveller (Admin)🔮 loading TSLA 9/11 365C @here (edited) Thursday, September 10, 2026 at 9:41
+
+--- EXPIRY CHANGED — same trade, different date (5) ---
+  SPY    756   8/3 -> null           | LONG SETUP Ticker: SPY Contract: 756 C Entry Zone: $0.38-.40 Risk: 20% Stop TP1: TP2: @Options S
+  NVDA   225   8/12 -> null          | LONG SETUP Ticker: NVDA Contract: 225 C Entry Zone: $0.36-.38 Risk: 20% Stop TP1: 20% TP2:224.40
+  SPY    775   8/28 -> null          | SPY | $775 C 3.38 @eveyrone (edited) Friday, August 28, 2026 at 11:46 AM
+  AAPL   325   9/3 -> 9/11           | In aapl 325 puts starter size 9/11 exp. Avg 5.53 @here (edited) Thursday, September 3, 2026 at 9
+  AAPL   120   8/24 -> 11/6          | How our alerts work Every alert uses the same format: ACTION TICKER STRIKE + TYPE EXPIRATION @ P
+
+--- ACTION GAINED — any newly recognized entry/management message (2) ---
+  2026-08-24 12:53:00  TRIM ?                            👑｜aristotle-trades        | 20% @here (edited) Monday, August 24, 2026 at 12:55 PM
+  2026-09-11 09:45:49  TRIM ?                            🌟｜muggzone-options        | now up 350%-400% (edited) Friday, September 11, 2026 at 9:46 AM
+
+--- ACTION CHANGED — action or contract identity changed (13) ---
+  2026-08-20 10:26:56  OPEN AMZN 260 CALLS 8/21 -> OPEN AMZN 260 CALLS 8/21☀️｜daytrades-scalps        | @Brett (Admin) in AMZN 8/21 260C @ 2.98 @everyone (edited) Thursday, August 20, 2026 at 10:29 AM
+  2026-08-03 11:08:55  OPEN SPY 756 CALLS 8/3 -> OPEN SPY 756 CALLS    🟣│day-trades              | LONG SETUP Ticker: SPY Contract: 756 C Entry Zone: $0.38-.40 Risk: 20% Stop TP1: TP2: @Options S
+  2026-08-12 11:18:07  OPEN NVDA 225 CALLS 8/12 -> OPEN NVDA 225 CALLS 🟣│day-trades              | LONG SETUP Ticker: NVDA Contract: 225 C Entry Zone: $0.36-.38 Risk: 20% Stop TP1: 20% TP2:224.40
+  2026-08-28 11:46:30  OPEN SPY 775 CALLS 8/28 -> OPEN SPY 775 CALLS   🟢︱🔪scalps                | SPY | $775 C 3.38 @eveyrone (edited) Friday, August 28, 2026 at 11:46 AM
+  2026-09-01 10:49:53  OPEN AMZN 255 PUTS 9/4 -> OPEN AMZN 255 PUTS 9/4☀️｜daytrades-scalps        | @Brett (Admin) in AMZN 9/4 255P @ 3.03 @everyone (edited) Tuesday, September 1, 2026 at 10:49 AM
+  2026-09-02 09:49:56  OPEN NVDA 217.5 CALLS 9/4 -> PREPARE NVDA 217.5 CALLS 9/4☀️｜daytrades-scalps        | @Brett (Admin) loading NVDA 9/4 217.5C @here (edited) Wednesday, September 2, 2026 at 9:51 AM
+  2026-09-02 10:51:12  OPEN TSLA 352.5 PUTS 9/4 -> PREPARE TSLA 352.5 PUTS 9/4☀️｜daytrades-scalps        | @Unraveller (Admin)🔮 loading TSLA 9/4 352.5 P @here (edited) Wednesday, September 2, 2026 at 10
+  2026-09-02 10:51:37  OPEN TSLA 352.5 PUTS 9/4 -> OPEN TSLA 352.5 PUTS 9/4☀️｜daytrades-scalps        | @Unraveller (Admin)🔮 in TSLA 9/4 352.5 P @4.80 @everyone (edited) Wednesday, September 2, 2026 
+  2026-09-03 09:38:32  OPEN AAPL 325 PUTS 9/3 -> OPEN AAPL 325 PUTS 9/11☀️｜daytrades-scalps        | In aapl 325 puts starter size 9/11 exp. Avg 5.53 @here (edited) Thursday, September 3, 2026 at 9
+  2026-09-03 12:05:26  OPEN SPY 774 PUTS 9/3 -> PREPARE SPY 774 PUTS 1DTE☀️｜daytrades-scalps        | Loading SPY $774P 1dte as well @here (edited) Thursday, September 3, 2026 at 12:05 PM
+  2021-01-18 01:16:58  OPEN AAPL 120 CALLS 8/24 -> OPEN AAPL 120 CALLS 11/6🔵rules                    | How our alerts work Every alert uses the same format: ACTION TICKER STRIKE + TYPE EXPIRATION @ P
+  2026-09-10 09:40:08  OPEN TSLA 365 CALLS 9/11 -> PREPARE TSLA 365 CALLS 9/11☀️｜daytrades-scalps        | @Unraveller (Admin)🔮 loading TSLA 9/11 365C @here (edited) Thursday, September 10, 2026 at 9:41
+  2026-09-11 10:12:24  OPEN TSLA 362.5 PUTS 9/16 -> OPEN TSLA 362.5 PUTS 9/16☀️｜daytrades-scalps        | @Unraveller (Admin)🔮 in TSLA 9/16 362.5P @ 5.15 @everyone (edited) Friday, September 11, 2026 a
+
+============================================================================
+FAIL — 0 invented tickers and 5 silent expiry changes.
+Either can buy a contract nobody actually named.
+PASS  Python regression suite  55.34s
+    Ran 348 tests in 31.603s
+    OK
+
 ===== Wed Sep 16 2026 =====
 
 DISCORD SNIPER DAILY AUDIT — 2026-09-16

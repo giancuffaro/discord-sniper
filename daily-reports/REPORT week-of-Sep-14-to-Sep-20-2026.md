@@ -1,5 +1,146 @@
 # REPORT — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Thu Sep 17 2026 =====
+
+# Daily Sniper Report — 2026-09-17
+
+Generated 2026-09-17 16:46:11 Eastern Daylight Time.
+
+## Coverage
+
+- Rooms configured on: **35** Discord and **5** Whop.
+- Rooms/channels with a live parser input today: **22**.
+- Live parser inputs retained: **758** messages.
+- Rooms with no message are quiet or unverified; the report does not call them healthy solely from silence.
+
+## Alert flow
+
+| Measure | Count |
+|---|---:|
+| Unique entry alerts observed (normal + recovered) | 40 |
+| Entry alerts read and given a decision | 40 |
+| Broker entry orders submitted | 10 |
+| Read but not taken | 31 |
+| Broker/risk refusals | 16 |
+| Stale when first read | 0 |
+| Duplicate or other skips | 16 |
+| Recovered entry gaps | 0 |
+| Recovered add gaps | 0 |
+| Actual fills in master ledger | 15 |
+
+## Actual results
+
+- Bot trades: **15** — 3 win, 2 loss, 10 flat.
+- Realized P&L: **+2.00**.
+- Gian NNQZ6 : 29706.0 → ?, **+0.00** (room call).
+- 👑KingBeeAri🐝 SNDK 1800.0C 2026-09-18: ? → ?, **+0.00** (nofill).
+- Trademorewiser (MOD) NVDA 217.5C 2026-09-18: 2.55 → 2.69, **+14.00** (bot stop).
+- MuggZone MRNA 165.0C 2026-09-18: ? → ?, **+0.00** (nofill).
+- PT | ei trades TSLA 382.5C 2026-09-18: 1.22 → 1.25, **+3.00** (bot stop).
+- Brett SPY 760.0C 2026-09-18: ? → ?, **+0.00** (nofill).
+- 👑KingBeeAri🐝 INTC 111.0C 2026-09-21: 2.04 → 2.04, **+1.00** (bot stop).
+- MuggZone ORCL 160.0C 2026-09-25: ? → ?, **+0.00** (nofill).
+- @vero-alerts QQQ 716.0C 2026-09-17: ? → ?, **+0.00** (nofill).
+- Vero QQQ 716.0C 2026-09-17: ? → ?, **+0.00** (nofill).
+- MuggZone SMCI 41.0C 2026-09-25: 1.5 → 1.42, **-8.00** (bot stop).
+- Vero QQQ 715.0P 2026-09-17: 1.32 → 1.24, **-8.00** (bot stop).
+- Demon × LKS AAPL 340.0C 2026-09-21: 1.4 → 1.4, **+0.00** (bot stop).
+- EliteOptions | Brando DELL 600.0C 2026-09-18: 4.95 → 4.95, **+0.00** (bot stop).
+- EliteOptions | Brando DELL 600.0C SEPT 18: 4.95 → 4.95, **+0.00** (bot stop).
+
+## Entry and exit comparison
+
+- AAPL: caller entry 1.45, bot fill 1.4 (-3.4% difference); bot exit 1.4, P&L 0.0, verdict **ARM CLIP**. the ratchet armed to breakeven 115s after the fill on a real +5% move that reversed; the bid then reached 1.42 (+1%). Counted, not acted on: on 90 contract-days (9/9) the INSTANT arm beat every alternative — a 30 s dwell lost $170 vs today's rule, 5 min lost $640, and a spread-aware arm changed 3 old trades by $25. This is the known cost of a rule that wins on the sample. Ratchet values stay G's call.
+- DELL: caller entry 4.95, bot fill 4.95 (0.0% difference); bot exit 4.95, P&L 0.0, verdict **ARM CLIP**. the ratchet armed to breakeven 69s after the fill on a real +5% move that reversed; the bid then reached 5.40 (+9%). Counted, not acted on: on 90 contract-days (9/9) the INSTANT arm beat every alternative — a 30 s dwell lost $170 vs today's rule, 5 min lost $640, and a spread-aware arm changed 3 old trades by $25. This is the known cost of a rule that wins on the sample. Ratchet values stay G's call.
+- INTC: caller entry unavailable, bot fill 2.04 (n.a.% difference); bot exit 2.04, P&L 1.0, verdict **GOOD EXIT**. took what was there; nothing to change.
+- NVDA: caller entry 2.55, bot fill 2.55 (0.0% difference); bot exit 2.69, P&L 14.0, verdict **GOOD EXIT**. took what was there; nothing to change.
+- QQQ: caller entry 1.32, bot fill 1.32 (0.0% difference); bot exit 1.24, P&L -8.0, verdict **NOISE CLIP**. stopped, then the bid was back above the entry by +10m. Only a 20%+ born stop survives this one; the 80-fill sweep still prefers 7.5 on average — count these clips; if they pile up on 0DTE ATM, that is the case for a wider 0DTE stop.
+- SMCI: caller entry 1.5, bot fill 1.5 (0.0% difference); bot exit 1.42, P&L -8.0, verdict **NOISE CLIP**. stopped, then the bid was back above the entry by +30s. Only a 7.5%+ born stop survives this one; the 80-fill sweep still prefers 7.5 on average — count these clips; if they pile up on 0DTE ATM, that is the case for a wider 0DTE stop.
+- TSLA: caller entry 1.4, bot fill 1.22 (-12.9% difference); bot exit 1.25, P&L 3.0, verdict **LEFT MONEY**. exited at 1.25, ran to 1.56 within 10 min (25% more). The ratchet's rung is the lever if this repeats.
+- Exact caller-entry/caller-exit P&L is reported only when both messages and a contemporaneous contract quote exist. Missing exits remain **unavailable**; they are never estimated from a later high or a stale quote.
+- Refused or missed alerts stay outcome-pending until a caller exit can be paired to the recorded contract tape; a later high alone is not labeled a win.
+- A system-versus-caller verdict needs matched trades on both sides. 7 bot trades are displayed, but they are not enough evidence to call either method better.
+
+## Every recognized decision
+
+| Time | Caller | Room | Alert | Result | Reason | Source message |
+|---|---|---|---|---|---|---|
+| 09:33:15 | Unraveller | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN GOOGL 345C 9/18 @ 4.53 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1550137552328200337) |
+| 09:35:39 | Elite Options \| Shoof | unavailable | OPEN SNDK 1650C 9/18 @ 14.30 | skipped | stale when received (76s old; 20s Discord limit) | unavailable |
+| 09:36:31 | Vero | VeroTrade: ✅⏐1k-challenge | OPEN SPY 761P 9/17 @ 1.25 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/725117609275555851/1323708708374450247/1550138377620160554) |
+| 09:39:18 | Unraveller | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN GOOGL 345C 9/18 @ 4.08 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1550139079415566347) |
+| 09:39:31 | 👑KingBeeAri🐝 | Honey Drip Network 🍯💰📈: 👑｜aristotle-trades | OPEN SNDK 1800C 9/18 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/987515353670221834/1550139105508335758) |
+| 09:40:28 | Brett | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN SPY 760C 9/18 @ 2.55 | failed | failed | unavailable |
+| 09:40:42 | Mike | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN TSLA 362.5P 9/18 @ 3.50 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1550139419263107236) |
+| 09:41:36 | HoneyDrip (Scribe) | unavailable | OPEN SPY 760C 9/18 @ 2.50 | skipped | stale when received (70s old; 20s Discord limit) | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1550139371888312461) |
+| 09:42:52 | Demon × LKS | Low Key Stonks: 😈demon-day-trades | OPEN QQQ 716C 9/17 @ 0.82 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/722872384800948227/1169216956746969088/1550139957652357172) |
+| 09:52:40 | Skyy | OWLS Capital: 🌟｜shabs-sky-alerts | OPEN QQQ 716C @ 105.00 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1513300726141419550/1550142425333502065) |
+| 09:56:27 | Trademorewiser (MOD) | Whop Day Trades | OPEN NVDA 217.5C @ 2.55 | sent | order sent | unavailable |
+| 09:56:37 | 👑KingBeeAri🐝 | Honey Drip Network 🍯💰📈: 👑｜aristotle-trades | OPEN AMD 555C 9/18 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/987515353670221834/1550143428124475474) |
+| 09:58:43 | Unraveller | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN GOOGL 342.5C 9/18 @ 4.20 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1550143961845211197) |
+| 10:02:06 | @Owner Alerts | Platinum Trading: 👑│nitro | OPEN TSLA 377.5C @ 1.77 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/911385966864896081/911389167169191946/1550144803625369721) |
+| 10:03:41 | MuggZone | OWLS Capital: 🛎️｜all-alerts | OPEN MRNA 165C 9/18 @ 1.72 | sent | order sent | unavailable |
+| 10:05:08 | Brett | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN TSLA 372.5C 9/18 @ 3.80 | skipped | pullback expired; no order | unavailable |
+| 10:05:21 | you're already in TSLA from their earlier call | unavailable | OPEN TSLA 372.5C 9/18 @ 3.70 | skipped | skipped | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1550145572785233923) |
+| 10:09:54 | PT | unavailable | OPEN TSLA 382.5C @ 1.40 | skipped | pullback expired; no order | unavailable |
+| 10:14:15 | Brett | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN SPY 760C 9/18 @ 2.25 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1550147870861164614) |
+| 10:16:49 | EliteOptions | unavailable | OPEN QQQ 718C 9/21 @ 2.97 | skipped | pullback expired; no order | unavailable |
+| 10:17:58 | 👑KingBeeAri🐝 | Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge | OPEN INTC 111C 9/21 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/1433933203302776852/1550148787304136736) |
+| 10:19:13 | Mike | Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | OPEN AMZN 250C 9/18 @ 2.22 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/829754942817828884/1550149113050571033) |
+| 10:19:34 | 👑KingBeeAri🐝 | Honey Drip Network 🍯💰📈: 👑｜aristotle-trades | ADD INTC 111C 9/21 | sent | order sent | [Open in Chrome](http://127.0.0.1:8787/open-discord/525113944239767562/987515353670221834/1550149185523814481) |
+| 10:23:03 | that exact contract's entry is already in flight from another relay of the same call | unavailable | OPEN ORCL 160C 9/25 | skipped | duplicate/repost | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1503509270526951575/1550150069628706911) |
+| 10:23:05 | MuggZone | OWLS Capital: 🛎️｜all-alerts | OPEN ORCL 160C 9/25 @ 1.55 | sent | order sent | unavailable |
+| 10:23:26 | @vero-alerts | VeroTrade: ✅⏐1k-challenge | OPEN QQQ 716C 9/17 @ 1.32 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/725117609275555851/1323708708374450247/1550150179263357019) |
+| 10:24:29 | Trademorewiser (MOD) | Whop Day Trades | OPEN MNQ @ 29713.00 | failed | failed | unavailable |
+| 10:25:13 | AbTrades | OWLS Capital: 🛎️｜all-alerts | ADD AMZN 250C 9/18 | skipped | pullback expired; no order | unavailable |
+| 10:26:51 | MuggZone | OWLS Capital: 🛎️｜all-alerts | OPEN ORCL 170C 10/2 @ 1.20 | failed | swing paused | unavailable |
+| 10:33:45 | @Futures Alerts | Platinum Trading: 🟣│futures-alerts | OPEN MGC @ 4405.00 | failed | failed | [Open in Chrome](http://127.0.0.1:8787/open-discord/911385966864896081/911390080285962290/1550152780684075060) |
+| 10:44:16 | MuggZone | OWLS Capital: 🌟｜muggzone-options | OPEN SMCI 41C 9/25 @ 1.50 | sent | order sent | unavailable |
+| 10:56:15 | Vero | VeroTrade: ✅⏐vero-trades | OPEN QQQ 715P 9/17 @ 1.32 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/725117609275555851/760694103401955378/1550158436325523599) |
+| 11:29:07 | Trademorewiser (MOD) | Whop Day Trades | OPEN MNQ @ 29703.00 | failed | failed | unavailable |
+| 12:05:13 | TB22 | TradingTheTrend: 🎰lotto-alerts | OPEN AAPL 340C 9/18 @ 0.60 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/769790224921395200/880503518878892143/1550175779130708180) |
+| 12:18:57 | Demon × LKS | Low Key Stonks: 😈demon-day-trades | OPEN INGM 30C 10/16 @ 0.60 | failed | swing paused | [Open in Chrome](http://127.0.0.1:8787/open-discord/722872384800948227/1169216956746969088/1550179244905078936) |
+| 12:22:33 | MuggZone | OWLS Capital: 🛎️｜all-alerts | OPEN AMD 170C 9/18 @ 1.70 | sent | order sent | unavailable |
+| 12:23:39 | Demon × LKS | Low Key Stonks: 😈demon-day-trades | OPEN AAPL 340C 9/21 @ 1.45 | skipped | pullback expired; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/722872384800948227/1169216956746969088/1550180421445230603) |
+| 12:24:16 | MuggZone | unavailable | OPEN AMD 570C 9/18 @ 1.70 | skipped | stale when received (110s old; 20s Discord limit) | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1503509270526951575/1550180136928809061) |
+| 12:45:22 | EliteOptions | unavailable | OPEN DELL 600C 9/18 @ 4.95 | sent | order sent | unavailable |
+| 15:41:40 | MuggZone | OWLS Capital: 🛎️｜all-alerts | OPEN HOOD 110C 9/18 @ 0.89 | failed | swing paused | unavailable |
+| 15:41:44 | that exact contract's entry is already in flight from another relay of the same call | unavailable | OPEN HOOD 110C 9/18 | skipped | duplicate/repost | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1503509270526951575/1550230257221771267) |
+| 15:54:07 | TradingTheTrend | TradingTheTrend: 🚨option-alerts🚨 | OPEN LRCX 300C 10/02 @ 2.84 | failed | swing paused | [Open in Chrome](http://127.0.0.1:8787/open-discord/769790224921395200/769797179992571914/1550233389112500284) |
+
+## Room activity
+
+| Room/channel | Parser inputs |
+|---|---:|
+| Honey Drip Network 🍯💰📈: 👑｜aristotle-trades | 142 |
+| Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | 128 |
+| OWLS Capital: 🌟｜muggzone-options | 86 |
+| Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | 68 |
+| Low Key Stonks: ⚖chika-alerts | 56 |
+| OWLS Capital: 🛎️｜all-alerts | 53 |
+| OWLS Capital: 🌟｜shabs-sky-alerts | 44 |
+| Low Key Stonks: 😈demon-day-trades | 24 |
+| Platinum Trading: 🟣│futures-alerts | 24 |
+| OWLS Capital: 🌟｜eli-alerts | 20 |
+| TradingTheTrend: 🎰lotto-alerts | 20 |
+| Platinum Trading: 🟣│ei-alerts | 18 |
+| Platinum Trading: 👑│nitro | 18 |
+| Honey Drip Network 🍯💰📈: 🐝｜aristotle-small-acct-challenge | 14 |
+| VeroTrade: ✅⏐1k-challenge | 12 |
+| Platinum Trading: 🟣│equity | 8 |
+| ELITE OPTIONS: brando-alerts | 6 |
+| OWLS Capital: 🌟｜ab | 6 |
+| ELITE OPTIONS: shoof-alerts | 4 |
+| VeroTrade: ✅⏐vero-trades | 4 |
+| TradingTheTrend: 🚨option-alerts🚨 | 2 |
+| OWLS Capital: 🌟｜jon-and-kian | 1 |
+
+## Detailed benchmarks
+
+- [Caller entry, trim, and exit evidence](CALLER-OUTCOMES%20week-of-Sep-14-to-Sep-20-2026.md)
+- [Caller original entry versus our ratchet](CALLER-VS-RATCHET%20week-of-Sep-14-to-Sep-20-2026.md)
+- [Fixed stop versus live ratchet replay](RATCHET-COMPARE%20week-of-Sep-14-to-Sep-20-2026.md)
+
 ===== Wed Sep 16 2026 =====
 
 # Daily Sniper Report — 2026-09-16

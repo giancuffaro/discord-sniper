@@ -1,27 +1,29 @@
 {
   "brief": "daily-reports\\BRIEF week-of-Sep-14-to-Sep-20-2026.md",
   "broker_sync": {
-    "note": "Arguments: ()",
+    "note": "BROKER SYNC ledger rebuilt \u2014 1040 rows",
     "ok": true,
     "reconciled": null
   },
   "caller_outcomes": "daily-reports\\CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md",
-  "caller_ratchet_comparison": "daily-reports\\CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md",
   "coverage_warnings": 0,
   "daily_analyst": {
     "model": "gpt-6-astra",
     "report": "C:\\Users\\Hulk\\Desktop\\discord-sniper\\department-reports\\daily.jsonl",
-    "status": "completed"
+    "status": "failed"
   },
   "daily_report": "daily-reports\\REPORT week-of-Sep-14-to-Sep-20-2026.md",
-  "date": "2026-09-16",
+  "date": "2026-09-17",
   "entry_slack": "daily-reports\\ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md",
-  "failed_checks": [],
-  "generated_at": "2026-09-16T16:41:16.105805-04:00",
+  "failed_checks": [
+    "Historical parser corpus gate",
+    "caller versus ratchet comparison"
+  ],
+  "generated_at": "2026-09-17T16:46:09.937445-04:00",
   "index_mirror": "daily-reports\\FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md",
   "possible_missed": 1,
   "ratchet_comparison": "daily-reports\\RATCHET-COMPARE week-of-Sep-14-to-Sep-20-2026.md",
   "report": "daily-audits\\AUDIT week-of-Sep-14-to-Sep-20-2026.txt",
-  "silent_drops": 4,
+  "silent_drops": 16,
   "status": "attention"
 }
