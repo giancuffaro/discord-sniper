@@ -53,8 +53,11 @@ class StatusFixture(unittest.TestCase):
              daily_brief.HERE, status_json.bridge) = saved
         self.addCleanup(restore)
         _write(os.path.join(self.root, "balance_daily.csv"),
-               "date,nlv,day_pl,bp,read_at\n"
-               "2026-09-13,1600,-10,1600,x\n2026-09-14,1279.86,-333.85,1279.86,x\n")
+               "date,nlv,day_pl,bp,read_at,fut_nlv,fut_pl,fut_fees,flow,"
+               "fut_flow\n"
+               "2026-09-13,1600,-10,1600,x,,,,,\n"
+               "2026-09-14,1279.86,-333.85,1279.86,x,389.26,-111.56,39.16,"
+               "-500,500\n")
         _write(os.path.join(self.root, "master_ledger.csv"), LEDGER)
         _write(os.path.join(self.root, "master_broker.csv"),
                "date,status,pl\n2026-09-14,FILLED,\n")
@@ -100,7 +103,10 @@ class TestStatus(StatusFixture):
         d = json.loads(raw)
         self.assertEqual(d["date"], DAY)
         self.assertEqual(d["balance"], {"nlv": 1279.86, "day_pl": -333.85,
-                                        "bp": 1279.86, "as_of": DAY})
+                                        "bp": 1279.86, "as_of": DAY,
+                                        "fut_nlv": 389.26, "fut_pl": -111.56,
+                                        "fut_fees": 39.16, "flow": -500.0,
+                                        "fut_flow": 500.0})
         self.assertEqual(d["bot"], {"trades": 2, "pl": 21.0, "wins": 1, "losses": 1})
         self.assertEqual(d["rooms"]["discord"], {"on": 1, "spoke": 2, "reads": 3})
         self.assertEqual(d["rooms"]["whop"], {"on": 1, "spoke": None, "reads": None})

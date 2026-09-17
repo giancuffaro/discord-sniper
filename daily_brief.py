@@ -336,11 +336,62 @@ def section_day(day, bot, hand, broker):
 
     lines = ["## Day",
              "- Webull margin day P&L: %s" % export,
-             "- Balance: %s" % _balance_line(day, balance),
-             side("Bot", bot, bot_net, bot_blind),
-             side("Hand (G)", hand, hand_net, hand_blind),
-             "- Ledger day total: %s" % _money(day_net)]
+             "- Balance: %s" % _balance_line(day, balance)]
+    lines += _futures_lines(day, balance)
+    lines += [side("Bot", bot, bot_net, bot_blind),
+              side("Hand (G)", hand, hand_net, hand_blind),
+              "- Ledger day total: %s (options only)" % _money(day_net)]
     return "\n".join(lines), bot_net, hand_net
+
+
+def _futures_lines(day, balance):
+    """The futures account, the money that moved between accounts, and the
+    one number for the whole day (G, 9/16: "add futures from now on"). All of
+    it is the broker's own record via broker_sync: master_futures.csv for the
+    fills and fees, balance_daily.csv for the balances and flows. Nothing
+    here is estimated — a product still open or with no point value is NAMED
+    and the net says unavailable."""
+    try:
+        import broker_sync
+        fut = broker_sync.futures_day(day)
+    except Exception:                                       # noqa: BLE001
+        fut = None
+    today = balance if balance and balance.get("date") == day else {}
+    out = []
+    if fut:
+        text = "%s net · %s gross, %s fees on %d fill%s" % (
+            _money(fut["net"]), _money(fut["gross"]), _dollars(fut["fees"]),
+            fut["fills"], "" if fut["fills"] == 1 else "s")
+        if fut["open"]:
+            text += " · STILL OPEN, not scored: %s" % ", ".join(fut["open"])
+        if fut["unpriced"]:
+            text += " · no point value, not scored: %s" \
+                % ", ".join(fut["unpriced"])
+    elif today.get("fut_nlv") is not None:
+        text = "no fills"
+    else:
+        return out
+    if today.get("fut_nlv") is not None:
+        text += " · NLV %s" % _dollars(today["fut_nlv"])
+    out.append("- Webull futures: %s" % text)
+
+    moved = [(label, today.get(key)) for label, key in
+             (("margin", "flow"), ("futures", "fut_flow"))
+             if today.get(key) is not None and abs(today[key]) >= 1.0]
+    if moved:
+        out.append("- Money moved (transfer / deposit / withdrawal — NOT "
+                   "trading): %s" % " · ".join(
+                       "%s %s" % (label, _money(value))
+                       for label, value in moved))
+
+    margin_net = today.get("day_pl")
+    fut_net = fut["net"] if fut else (0.0 if today.get("fut_nlv") is not None
+                                      else None)
+    if margin_net is not None and fut_net is not None:
+        out.append("- ALL ACCOUNTS, net of fees: %s (margin %s, futures %s)"
+                   % (_money(margin_net + fut_net), _money(margin_net),
+                      _money(fut_net)))
+    return out
 
 
 def _balance_line(day, balance):
@@ -667,6 +718,7 @@ def build(day):
               section_callers(day, bot), broke, section_pending()]
 
     sources = ["master_ledger.csv", "master_broker.csv", "balance_daily.csv",
+               "master_futures.csv",
                "trades.log", "daily-reports/CALLER-OUTCOMES.csv",
                reports.KINDS["caller-vs-ratchet"].rel_path(day).replace("\\", "/"),
                reports.KINDS["futures-mirror"].rel_path(day).replace("\\", "/"),

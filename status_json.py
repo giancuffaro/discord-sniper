@@ -7,7 +7,9 @@ already computed or that are already on disk; no AI, no broker call. Under
 any log.
 
     date                 the audit day
-    balance              nlv / day_pl / bp from balance_daily.csv (that day)
+    balance              nlv / day_pl / bp, and the futures account's fut_nlv /
+                         fut_pl (net) / fut_fees, and flow / fut_flow (money
+                         moved that was not trading) from balance_daily.csv
     bot                  trades and realized P&L (master_ledger, live, not manual)
     rooms                per lane: rooms switched on, rooms that spoke, messages read
     audit                status / silent drops / possible missed / failed checks
@@ -64,9 +66,16 @@ def balance(day):
         if (r.get("date") or "") <= day:
             row = r
     if not row:
-        return {"nlv": None, "day_pl": None, "bp": None, "as_of": None}
+        return {"nlv": None, "day_pl": None, "bp": None, "as_of": None,
+                "fut_nlv": None, "fut_pl": None, "fut_fees": None,
+                "flow": None, "fut_flow": None}
     return {"nlv": _num(row.get("nlv")), "day_pl": _num(row.get("day_pl")),
-            "bp": _num(row.get("bp")), "as_of": row.get("date")}
+            "bp": _num(row.get("bp")), "as_of": row.get("date"),
+            "fut_nlv": _num(row.get("fut_nlv")),
+            "fut_pl": _num(row.get("fut_pl")),
+            "fut_fees": _num(row.get("fut_fees")),
+            "flow": _num(row.get("flow")),
+            "fut_flow": _num(row.get("fut_flow"))}
 
 
 def bot(day):

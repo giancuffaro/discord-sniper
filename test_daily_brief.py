@@ -170,6 +170,9 @@ class BriefFixture(unittest.TestCase):
         saved = (daily_brief.HERE, reports.HERE,
                  daily_brief._bridge_buying_power,
                  broker_sync.HERE, broker_sync.BALANCES)
+        saved_futures = broker_sync.FUTURES
+        broker_sync.FUTURES = os.path.join(self.root, "master_futures.csv")
+        self.addCleanup(setattr, broker_sync, "FUTURES", saved_futures)
         daily_brief.HERE = self.root
         reports.HERE = self.root
         daily_brief._bridge_buying_power = lambda: None
@@ -222,6 +225,32 @@ class TestDayMoney(BriefFixture):
         self.assertIn("NLV $1279.86", line)
         self.assertIn("option BP $1279.86", line)
         self.assertIn("read 2026-09-14T16:41:02", line)
+
+    def test_futures_transfer_and_the_all_accounts_line(self):
+        _write(os.path.join(self.root, "master_futures.csv"),
+               "date,filled_time,symbol,code,side,qty,price,fees,order_id\n"
+               "%s,%s 10:00:00,MNQZ6,MNQ,BUY,1,29400,0.73,a\n"
+               "%s,%s 10:05:00,MNQZ6,MNQ,SELL,1,29390,0.73,b\n"
+               % (DAY, DAY, DAY, DAY))
+        _write(os.path.join(self.root, "master_broker.csv"),
+               "date,occ,symbol,side,status,filled,total_qty,price,"
+               "avg_price,placed_time,filled_time\n")
+        _write(os.path.join(self.root, "balance_daily.csv"),
+               "date,nlv,day_pl,bp,read_at,fut_nlv,fut_pl,fut_fees,flow,"
+               "fut_flow\n%s,938.81,34.59,938.81,x,478.54,-21.46,1.46,"
+               "-500.00,500.00\n" % DAY)
+        text, _ = self.brief()
+        self.assertIn("- Webull futures: -$21.46 net · -$20 gross, $1.46 fees "
+                      "on 2 fills · NLV $478.54", text)
+        self.assertIn("NOT trading): margin -$500 · futures +$500", text)
+        self.assertIn("- ALL ACCOUNTS, net of fees: +$13.13 (margin +$34.59, "
+                      "futures -$21.46)", text)
+
+    def test_no_futures_record_adds_no_futures_lines(self):
+        self._with_broker(balances="%s,1279.86,-333.85,1279.86,y\n" % DAY)
+        text, _ = self.brief()
+        self.assertNotIn("Webull futures", text)
+        self.assertNotIn("ALL ACCOUNTS", text)
 
     def test_day_over_day_change(self):
         self._with_broker(
