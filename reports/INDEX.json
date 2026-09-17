@@ -252,11 +252,11 @@
    "output": "daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md"
   },
   "2026-09-16": {
-   "built_at": "2026-09-16T16:41:27-04:00",
-   "fingerprint": "61bd476769fb078f",
+   "built_at": "2026-09-16T23:06:02-04:00",
+   "fingerprint": "61406917931eede6",
    "inputs": {
-    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "59d8353e4b73cd11",
-    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "5b468d9757df7c5f",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block)": "c2818f74c0874eb6",
+    "DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block)": "fbb5d968030def86",
     "alert_meta.csv (day rows)": "dee776372e1bde2c",
     "alert_tape.csv (day rows)": "62146daa03dc356d",
     "caller_outcomes.py": "25690:1789451347",
@@ -269,8 +269,8 @@
     "master_alerts.csv (day rows)": "6deb9dd9b8b5fbb1",
     "master_ledger.csv (day rows)": "bd197240817e8e9a",
     "master_postmortems.csv (day rows)": "4f53cda18c2baa0c",
-    "quote_shadow.csv (day rows)": "4f58f7310d59857c",
-    "trades.log (day lines)": "841b505896a58741"
+    "quote_shadow.csv (day rows)": "752d90489b3092b6",
+    "trades.log (day lines)": "52a270f0002b9d65"
    },
    "output": "daily-reports/CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md"
   }
