@@ -2,9 +2,9 @@
 rem ============================================================
 rem  AUTO PUSH - push-on-change (8/26, his ask: "can we push
 rem  automatically when we change something?").
-rem  Runs as a quiet resident loop: every 45 seconds it looks for
+rem  Runs as a quiet resident loop: every 5 minutes it looks for
 rem  changes and commits+pushes only when there are any - so an
-rem  edit reaches GitHub within a minute instead of within half
+rem  edit reaches GitHub within 5 minutes instead of within half
 rem  an hour. Single-instance: the Task Scheduler job (every 30
 rem  min, via _autopush_hidden.vbs) now just revives the loop if
 rem  it ever died - a second copy sees the fresh heartbeat file
@@ -47,10 +47,10 @@ for /f %%N in ('git rev-list --count origin/main..HEAD 2^>nul') do (
   if not "%%N"=="0" git push origin main >nul 2>&1
 )
 
-timeout /t 45 /nobreak >nul
+timeout /t 300 /nobreak >nul
 goto loop
 
 :gate_failed
 rem Leave the change staged and local. The next pass retries after it is fixed.
-timeout /t 45 /nobreak >nul
+timeout /t 300 /nobreak >nul
 goto loop
