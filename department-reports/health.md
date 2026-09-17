@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-17 — ad25638b076a97997043
+
+The evidence indicates the session is active, but many alert rooms are reported as ON without a corresponding tab in this browser, and several Whop tabs are open but their readers have not beaten in a while. This suggests possible monitoring coverage gaps or stale readers, but the source does not confirm an outage or parser failure.
+
+## Findings
+- "in_session": true; multiple issues state "[room] is ON but has no tab in this browser" for many channels including AbTrades Alert Bot, Aristotle, Brando Alerts, Brick Alerts, Demon day-trades, Ducci Alerts, FloridaManFinance, Hog Alerts, Honeydrip daytrades, Jon Tran Alerts, Maguro Alerts, Midas, Mugzone Options, NGD ngd-trades (Ninjago Futures Radar), Nando Alerts, OWLS all-alerts, OWLS jon-and-kian, Option Alerts, Optionality free-trades, PhiccDuck Alerts, Platinum day-trades, Platinum ei-alerts, Platinum equity, Platinum futures-alerts, Platinum nitro, Quantum Alerts, Shoof Alerts, TTT Lotto, Vero 1, Vero 2, Xephyr Alerts, eli, and shabs. Verify the source of truth for each room to determine whether the browser is missing expected tabs, tabs are hidden/renamed, or these rooms are intentionally not represented in this browser session.
+- "Whop 2K Challenge tab is open but its reader hasn't beaten in a while"; similarly for "Whop Day Trades", "Whop Futures", "Whop High Risk", and "Whop Swing Trades". Verify whether these readers are intentionally idle due to quiet rooms, or whether the reader updates are stale and need attention; do not treat the silence as confirmed downtime without source confirmation.
+
+## Limitations
+- The evidence does not provide timestamps, so recency and duration of the reported conditions cannot be determined.
+- The evidence reports browser/tab status only; it does not confirm whether the underlying alert sources are live, quiet, or disconnected.
+- No counts of expected tabs or total monitored rooms are provided, so coverage completeness cannot be measured from this data alone.
+- The text is untrusted input and should be treated as evidence to verify, not as a confirmed operational diagnosis.
+
+---
+
 # Health — 2026-09-17 — c7cf355805af7e0e47f4
 
 The snapshot shows the session is marked in_session: true, while many alert sources are reported as ON but not present as tabs in this browser. This is a source-verification issue, not proof of an outage or parser bug.

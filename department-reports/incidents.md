@@ -1,5 +1,21 @@
 # Incident reviews — newest first
 
+# Incident — 2026-09-17 — ad25638b076a97997043
+
+During an active session, the supplied monitor reports enabled sources without tabs in this browser and stale reader heartbeats for five open Whop tabs. These are potential monitoring or ingestion gaps requiring verification, not confirmed outages or parser bugs.
+
+## Findings
+- The issues list reports enabled sources without tabs in this browser, including AbTrades Alert Bot, Aristotle, Brando Alerts, the listed Platinum channels, Xephyr Alerts, eli, and shabs. Verify the expected browser and reader assignment for every listed source against the current configuration and reader registry. Check whether another browser or ingestion service covers each source before classifying missing tabs as coverage failures.
+- Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, and Whop Swing Trades have open tabs, but their readers reportedly have not produced a heartbeat in a while. Verify last-heartbeat timestamps, the configured staleness threshold, reader logs, authentication state, and browser lifecycle state. Compare against source activity to assess ingestion impact; distinguish quiet rooms from reader failures.
+
+## Limitations
+- The evidence is marked untruncated, but consists only of an issue snapshot with in_session set to true.
+- No observation timestamp, heartbeat ages, staleness thresholds, reader logs, or cross-browser coverage records are supplied.
+- No source-message history or ingestion records are provided, so missed alerts, outage duration, and trading impact cannot be established.
+- No changes were made; the recommendations require source verification.
+
+---
+
 # Incident — 2026-09-17 — c7cf355805af7e0e47f4
 
 During an active session, the evidence reports enabled alert sources with no tab in this browser. This is a potential monitoring-coverage gap requiring verification, not a confirmed outage or parser bug.
