@@ -826,8 +826,8 @@ function paintSim() {}
 
 /* ---- one-click bracket strategy (LIVE-safe) -------------------------------
  * 1 contract on every entry, with the BRIDGE's values, not any number typed
- * here: settings execution take_profit_pct 10%, born stop_loss_pct 7.5%, and
- * from there the ratchet (arm +5% -> breakeven, then +2% locks another +2%).
+ * here: the born stop is settings strategy.stop_loss_pct and the ladder is
+ * ratchet_tiers.TIERS — both reported live in /mode.ratchet_live, never typed.
  * It lives in TWO places on purpose: the bridge (so orders actually get the
  * bracket and the single-contract clamp) and the extension's settings (so the
  * worker sizes every entry to 1 before the order even leaves the browser).
@@ -851,15 +851,17 @@ function paintStrat() {
   if (sel) sel.value = bracketExit;
   const exitNote = $("bracketexitstate");
   if (exitNote) {
+    const r = (modeStatus || {}).ratchet_live || {};
+    const n = v => (v === undefined || v === null) ? "?" : String(+v);
+    const lock = +r.first_lock === 0 ? "BREAKEVEN" : "+" + n(r.first_lock) + "%";
     exitNote.innerHTML = bracketExit === "hardclose"
       ? "<b>Close whole position</b>: sells everything the instant it hits the " +
-        "take-profit (+10% today) and you're flat. The old behaviour, from " +
-        "before 8/15."
-      : "<b>Ratchet</b>: the stop stops sitting at -7.5% and starts walking UP " +
-        "instead — at +5% gain it locks BREAKEVEN, then every further +2% of " +
-        "gain locks another +2% (up 7 locks +2, up 9 locks +4, up 11 locks " +
-        "+6…), no ceiling. Never sells outright, never comes back red once " +
-        "it's locked.";
+        "take-profit (+" + n(s.take_profit_pct) + "%) and you're flat."
+      : "<b>Ratchet</b> (live numbers from the bridge): the stop is born at -" +
+        n(r.born) + "%. At +" + n(r.arm) + "% gain it locks " + lock +
+        ", then every further +" + n(r.step) + "% of gain locks another +" +
+        n(r.step) + "%, no ceiling. Never sells outright — the resting stop " +
+        "does the selling.";
   }
 }
 async function _saveBracket() {

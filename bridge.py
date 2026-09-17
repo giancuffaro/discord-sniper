@@ -2412,6 +2412,16 @@ def _pullback_quote(sym):
     raise RuntimeError(str(last) if last else "no Webull connection for stock quotes")
 
 
+def _ratchet_live():
+    try:
+        import ratchet_tiers as _rt
+        born, arm, step = _rt.live_spacing()
+        first = float(_rt.TIERS[-1][1][1])
+        return {"born": born, "arm": arm, "first_lock": first, "step": step}
+    except Exception:                                   # noqa: BLE001
+        return {}
+
+
 def _pullback_too_early(now=None):
     """-> "" when a round-number wait may arm, else the sentence that says why
     not. The cutoff is pullback.no_entries_before ("HH:MM" Eastern, default
@@ -4727,6 +4737,11 @@ class Handler(BaseHTTPRequestHandler):
                 # The one-click bracket strategy (1 contract, +15%/-15%), so the
                 # popup toggle can show its true state after a reload.
                 "strategy": CFG.get("strategy", {}),
+                # The ladder AS IT RUNS — born from settings, arm/lock/step
+                # from ratchet_tiers — so the popup paints the real numbers
+                # instead of a sentence typed when they were different (it
+                # still said -7.5% / +5% / +2% on 9/17 with 5/3/5 live).
+                "ratchet_live": _ratchet_live(),
                 # Where futures route (Webull/NinjaTrader/Topstep), so the
                 # popup toggles show their true state after a reload. Passwords
                 # are stripped — never send a credential back to a browser.
