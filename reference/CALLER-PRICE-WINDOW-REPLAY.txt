@@ -1,0 +1,41 @@
+CALLER-PRICE RULE REPLAY — days 2026-09-11..2026-09-16 — 19 scored, 50 unscored
+
+alert                                                      caller    ask   over   OLD $ |   90s   120s   180s   300s
+ 2026-09-11 10:25 Nitro Trades TSLA260911P00362500           1.79   1.41   -21%     -14 |   -14    -14    -14    -14
+*2026-09-14 10:36 Demon × LKS QQQ260914P00704000             1.00   1.11   +11%     -11 |    --     --     --     --
+*2026-09-14 10:41 Vero QQQ260914P00705000                    1.55   1.49    -4%     -15 |   -15    -15    -15    -15
+*2026-09-14 11:12 MuggZone MSFT260914C00505000               0.85   0.68   -20%      -7 |    -7     -7     -7     -7
+*2026-09-14 11:24 Unraveller META260918C00670000             6.50   6.80    +5%     +55 |    --     --     --    +65
+*2026-09-14 11:52 MuggZone TSLA260925P00340000               2.40   2.42    +1%     +63 |   +65    +65    +65    +65
+*2026-09-14 14:05 👑KingBeeAri🐝 META260918C00700000           2.68   2.64    -1%     -28 |   -28    -28    -28    -28
+*2026-09-14 14:14 Skyy QQQ260914C00713000                    0.40   0.24   -40%      -2 |    -2     -2     -2     -2
+*2026-09-15 09:46 Demon × LKS META260916C00690000            1.90   1.92    +1%     -21 |   -19    -19    -19    -19
+*2026-09-15 09:50 Nitro Trades TSLA260916C00370000           1.51   1.35   -11%     -18 |   -18    -18    -18    -18
+*2026-09-15 10:51 Mike TSLA260918P00350000                   3.35   3.25    -3%     -37 |   -37    -37    -37    -37
+*2026-09-15 11:03 Demon × LKS QQQ260915P00703000             0.70   0.65    -7%      -6 |    -6     -6     -6     -6
+*2026-09-15 11:32 Unraveller AMD260918P00490000              5.30   5.45    +3%      +0 |    +0     +0     +0     +0
+*2026-09-15 13:36 Mike (Admin) TSLA260918P00350000           3.60   4.00   +11%     -40 |    --     --    -40    -40
+*2026-09-16 09:38 Unraveller TSLA260918P00355000             4.96   5.00    +1%     -50 |   -55    -55    -55    -55
+*2026-09-16 09:39 Mike TSLA260918P00350000                   3.00   2.91    -3%     -31 |   -31    -31    -31    -31
+*2026-09-16 09:40 Brett AAPL260918C00335000                  3.17   3.50   +10%     -35 |   -31    -31    -31    -31
+ 2026-09-16 09:41 Unraveller TSLA260918P00350000             3.00   2.64   -12%     -26 |   -26    -26    -26    -26
+*2026-09-16 15:33 AbTrades SPY260925C00760000                2.66   2.88    +8%     +49 |    --     --     --     --
+
+* = touch time taken from the live watcher's own log line; others replayed from the recorded underlying
+
+TOTALS
+  OLD (cross the ask always): 19 trades, -174
+  NEW  90s: 15 trades (10 crossed, 5 rested-and-filled)   -224 | skipped 4: 2 winners worth +104, 2 losers worth -51 | vs OLD -50
+  NEW 120s: 15 trades (10 crossed, 5 rested-and-filled)   -224 | skipped 4: 2 winners worth +104, 2 losers worth -51 | vs OLD -50
+  NEW 180s: 16 trades (10 crossed, 6 rested-and-filled)   -264 | skipped 3: 2 winners worth +104, 1 losers worth -11 | vs OLD -90
+  NEW 300s: 17 trades (10 crossed, 7 rested-and-filled)   -199 | skipped 2: 1 winners worth +49, 1 losers worth -11 | vs OLD -25
+
+UNSCORED
+   16  never touched
+   11  no recorded quotes
+   10  instant-entry symbol
+    9  no caller price
+    1  caller price 1.42 vs ask 7.55
+    1  caller price 1.61 vs ask 6.50
+    1  caller price 760.40 vs ask 0.92
+    1  caller price 9.00 vs ask 3.25
