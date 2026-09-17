@@ -72,6 +72,7 @@ option_tape.csv.*
 alert_tape.csv
 alert_tape.csv.*
 alert_meta.csv
+alert_trend.csv
 alert_meta.csv.*
 # The index-mirror shadow (9/13): one row for every SPY/QQQ entry the bridge
 # saw, written whether the mirror switch is on or off. Same class as the alert

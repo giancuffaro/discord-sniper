@@ -2822,6 +2822,79 @@ def _alert_tape_register(order):
         pass        # recording is never allowed to touch the order path
 
 
+_TREND_SEEN = {}
+_TREND_HEAD = ("ts,date,time,coid,room,caller,symbol,side,strike,expiry,"
+               "label,with_trend,reversal,last_highs,last_lows,legs\n")
+
+
+def _alert_trend_log(order):
+    """Write the stock's SWING STRUCTURE beside every option entry alert —
+    alert_trend.csv (G, 9/17: "yes add alert label"). trend.py reads higher
+    highs + higher lows (UP), the mirror (DOWN) or CHOP off the last 90
+    one-minute bars. MEASUREMENT ONLY: it runs in its own thread after the
+    order path has the order, costs one stock-bars request, is skipped for a
+    symbol already labelled this minute (relays), and never raises. Nothing
+    reads this file to decide a trade."""
+    try:
+        if order.get("action") not in ("OPEN", "ADD"):
+            return
+        if (order.get("kind") or "option") == "future":
+            return
+        sym = str(order.get("symbol") or "").upper()
+        client = WB or WB_LIVE
+        if not sym or client is None or not hasattr(client, "stock_minute_bars"):
+            return
+        minute = int(time.time() // 60)
+        if _TREND_SEEN.get((sym, str(order.get("side")))) == minute:
+            return
+        _TREND_SEEN[(sym, str(order.get("side")))] = minute
+        snap = dict(order)
+
+        def _work():
+            try:
+                import trend as _trend
+                now = time.time()
+                stamp = time.localtime(now)
+                today = time.strftime("%Y-%m-%d", stamp)
+                # TODAY'S bars only: yesterday's afternoon glued to this
+                # morning across the overnight gap is not a swing structure.
+                bars = [b for b in client.stock_minute_bars(sym, 90)
+                        if time.strftime("%Y-%m-%d",
+                                         time.localtime(b[0])) == today]
+                got = _trend.read(bars)
+                if len(bars) < 15:
+                    got["label"] = "EARLY"      # under 15 minutes of tape
+                path = os.path.join(HERE, "alert_trend.csv")
+                fresh = not os.path.exists(path)
+                cells = [
+                    "%.3f" % now, time.strftime("%Y-%m-%d", stamp),
+                    time.strftime("%H:%M:%S", stamp), snap.get("coid") or "",
+                    snap.get("room") or snap.get("channel") or "",
+                    snap.get("trader") or "", sym, snap.get("side") or "",
+                    snap.get("strike") or "", snap.get("expiry") or "",
+                    got["label"], _trend.with_or_counter(got["label"],
+                                                         snap.get("side")),
+                    got["reversal"],
+                    "/".join("%.2f" % v for v in got["highs"]),
+                    "/".join("%.2f" % v for v in got["lows"]), got["legs"]]
+                with open(path, "a", encoding="utf-8", newline="") as fh:
+                    if fresh:
+                        fh.write(_TREND_HEAD)
+                    fh.write(",".join('"%s"' % str(c).replace('"', "'")
+                                      if "," in str(c) else str(c)
+                                      for c in cells) + "\n")
+                note("TREND    %s %s — %s (%s) · %s"
+                     % (sym, snap.get("side") or "", got["label"],
+                        _trend.with_or_counter(got["label"], snap.get("side")),
+                        got["legs"] or "not enough bars yet"))
+            except Exception:                           # noqa: BLE001
+                pass
+        threading.Thread(target=_work, name="trend:%s" % sym,
+                         daemon=True).start()
+    except Exception:                                   # noqa: BLE001
+        pass        # a label is never allowed to touch the order path
+
+
 def place(order):
     """Retry-safe wrapper around the real placement. The extension retries an
     order the socket refused (a bridge restart). If a retry lands after a first
@@ -2838,6 +2911,7 @@ def place(order):
     # price record at all). Registering is a set insert and a line of CSV:
     # it sends no request, and it cannot change what happens to the order.
     _alert_tape_register(order)
+    _alert_trend_log(order)
     coid = str(order.get("coid") or "").strip()
     dedupe = coid and order.get("action") in ("OPEN", "ADD")
     _my_event = None

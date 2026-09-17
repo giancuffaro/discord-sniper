@@ -118,7 +118,7 @@ def read(bars):
 def with_or_counter(label, side):
     """A call in an UP tape or a put in a DOWN tape is WITH it."""
     if label not in ("UP", "DOWN"):
-        return "CHOP"
+        return label or "CHOP"          # CHOP, or EARLY (too little tape)
     is_call = str(side or "").upper().startswith("C")
     return "WITH" if (label == "UP") == is_call else "COUNTER"
 

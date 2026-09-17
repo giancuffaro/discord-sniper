@@ -1194,6 +1194,36 @@ class WebullOptions:
             cache[base + (iso,)] = out[iso]
         return out
 
+    def stock_minute_bars(self, symbol, count=90):
+        """The last `count` 1-minute bars of a STOCK, oldest first, as
+        [(ts, open, high, low, close)] — or [] when Webull will not say.
+
+        A TYPED SDK call (market_data.get_history_bar), not a hunted one. One
+        request; trend.py reads the swing structure from it for the alert
+        trend label. Read-only and off the order path: the caller runs it in
+        its own thread."""
+        try:
+            res = self._data.market_data.get_history_bar(
+                str(symbol).upper(), "US_STOCK", "M1", str(int(count)))
+            if getattr(res, "status_code", 200) != 200:
+                return []
+            body = res.json() if hasattr(res, "json") else res
+        except Exception:                               # noqa: BLE001
+            return []
+        out = []
+        for row in (body or []):
+            try:
+                when = dt.datetime.strptime(str(row.get("time"))[:19],
+                                            "%Y-%m-%dT%H:%M:%S").replace(
+                                                tzinfo=dt.timezone.utc)
+                out.append((when.timestamp(), float(row["open"]),
+                            float(row["high"]), float(row["low"]),
+                            float(row["close"])))
+            except (TypeError, ValueError, KeyError, AttributeError):
+                continue
+        out.sort(key=lambda b: b[0])
+        return out
+
     def _stock_fns(self):
         if getattr(self, "_sfns", None) is not None:
             return self._sfns
