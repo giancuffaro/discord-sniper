@@ -1,5 +1,123 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-17 — 5cf861b924c72e1d85bc
+
+The reader identifies the current message as an INTC equity long-entry idea at 107.80, consistent with the supplied wording. The parser returns no signal. This is a candidate extraction or scope mismatch requiring verification, not a confirmed parser bug or executed trade.
+
+## Findings
+- The current message states 'NEW ENTRY IDEA Swing Trade Idea $INTC Entry: 107.80' and '1/4 position Stage 2 breakout'. The reader returns OPEN, LONG, equity, INTC and price 107.8; the parser returns fire=false with null action, symbol and side. Validation reports ok=true. Verify the original message and the parser's intended equity coverage and entry-idea eligibility. If this format is supported, investigate the discrepancy using this retained example. Keep an entry idea distinct from a confirmed purchase; validation does not establish execution.
+- The reader preserves qty='1/4 position', while validation.read sets qty=null. The source provides relative sizing but no share count, account allocation or total position cost. Verify the quantity schema and normalization rules. Preserve '1/4 position' as source sizing text where supported, without converting it to shares or assuming a portfolio percentage. Treat the null normalized quantity as unspecified, not zero.
+- The current source separately lists 'Levels: 112 / 115 / 120 / 125 / 130 / 140+' and 'SL: 99'. These are distinct from the stated entry of 107.80 and are not represented in the supplied reader output. Verify whether levels and stops belong in the reader's output schema before proposing additional extraction. Preserve their source labels and the '140+' qualifier; do not treat them as actual exits or realized results.
+
+## Limitations
+- The evidence is marked untruncated, but original-message verification, parser implementation and intended coverage are not supplied.
+- No broker fills, actual share quantity, exits or performance calculations are provided.
+- Validation success and reader confidence do not independently confirm source accuracy or trade execution.
+- Prior messages provide same-channel format examples, but no corresponding parser outputs are supplied; they do not establish a recurring parser failure.
+
+---
+
+# Reader Review — 2026-09-17 — 08889c1ed1cf892b0c68
+
+The reader's MRNA equity-sale interpretation is supported by the current text, while the parser returns no action or symbol. This is a candidate coverage difference, not a confirmed parser bug. Validation also flags an unsupported context reference.
+
+## Findings
+- The current message says "CLOSE: sold more MRNA here at 156. $11/share gain". The reader returns CLOSE, equity, MRNA and price 156; the parser returns action=null, symbol=null and fire=false. Verify the original source and whether equity-sale updates are within the parser's intended scope before proposing a parsing change. Preserve 156 as the reported equity sale price and $11/share as a separate claimed gain; neither is an option premium.
+- The wording "sold more" and the earlier same-source message "sold some MRNA here at 153.21" describe sales without specifying quantity or stating that the position is fully closed. The reader returns qty=null. Verify position context before treating CLOSE as a full liquidation. Retain unknown quantity and remaining holdings as missing, not zero, and do not infer an entry price or total realized profit from the claimed per-share gain.
+- The reader cites supporting_id chat-messages-1449226651064991806-1550138949043748935. That message is present in the supplied prior evidence, but validation reports eligible_prior_ids=[] and safety_flags=["unsupported_context_id"] despite ok=true. Review source-link eligibility and validation semantics. The current message independently supports the core extraction, but the cited prior should not be treated as validated context unless its eligibility is verified.
+
+## Limitations
+- Parser scope, rejection reasons and the exact semantics of CLOSE are not supplied.
+- The evidence contains caller-reported sales, not broker-confirmed fills or simulation results.
+- No verified opening position, sold quantity, remaining quantity, fees or performance calculations are supplied.
+- The supplied evidence is marked untruncated, but this does not establish complete source-history coverage or an outage.
+
+---
+
+# Reader Review — 2026-09-17 — 55416f568b36b59063f5
+
+The reader interprets Skyy's bare "135" as a definite QQQ trim, but the evidence supports only a possible contextual price update. Premium units and expiry remain unresolved, and validation drops the reader's strike. These are review proposals, not confirmed parser bugs.
+
+## Findings
+- The current message is only "135". The eligible prior message is "Qqq 716c at 105" from the same author and channel. The reader returns TRIM with confidence 1.0, while the parser returns no action and fire=false. Neither message explicitly requests a trim. Verify whether retained Skyy examples establish that bare numeric updates mean trims rather than price observations. Without that evidence, preserve the possible QQQ context but leave the action unresolved; do not classify the parser's abstention as a confirmed missed trade.
+- The reader preserves "135" as price, and validation represents it as 135.0. Both the current "135" and prior entry "105" lack explicit premium units. Skyy's earlier "330 100$ a con" may inform a convention review but does not explicitly label the units of every bare number. Another author's "135/con" cannot establish Skyy's convention. Preserve raw values "105" and "135" and report unresolved premium units. Verify source wording and caller-specific examples before conversion. If per-contract dollar units are established, confirm the instrument's premium multiplier before converting to a per-share quote. Do not infer 1.35 solely from price magnitude or calculate a return from these unresolved values.
+- The eligible prior explicitly contains "716c", and the reader emits strike "716", but validation.read contains strike=null while validation.ok is true. The reader also emits expiry as the string "None"; validation retains it and flags "expiry_not_literal". Review the validator's schema and normalization trace to determine why the supported strike becomes missing and what ok=true guarantees. Verify that unknown expiry is represented as missing rather than a literal expiry, and that incomplete contract identification is not treated as execution-ready.
+
+## Limitations
+- Only the displayed parser, reader, and validation outputs are available; their internal rules and downstream handling are not shown.
+- Evidence is marked untruncated, but no explicit expiry, premium-unit declaration for the current message, or confirmed bare-number trim convention is supplied.
+- No broker fills, contemporaneous quotes, execution records, or verified return calculations are provided. Price updates and performance claims are not broker-confirmed results.
+- The historical service complaint does not establish an application outage; missing context or gaps in this sample do not establish one either.
+
+---
+
+# Reader Review — 2026-09-17 — 001d6a03d055fe167478
+
+The reader's TSLA ADD interpretation is supported by the supplied same-caller history, but validation rejected its contextual contract details. This suggests a context-eligibility issue to investigate, not a confirmed parser bug. The reported new average of 2.98 is not an exact add fill.
+
+## Findings
+- The current message says '@Mike (Admin) added to TSLA, new avg is 2.98'. Earlier in the same channel, message 1550139419263107236 says '@Mike (Admin) in TSLA 9/18 362.5P @ 3.5', following matching loading message 1550138899194450004. The reader cites both and returns ADD, TSLA, 9/18, PUT, strike 362.5. No subsequent Mike TSLA closure appears in the supplied history before the current message. Verify the retained source messages and position continuity before accepting contextual contract resolution. Scope attribution to Mike within this channel rather than the shared HoneyDrip scribe author; do not inherit Unraveller's TSLA contract or Mike's older contracts.
+- Validation reports eligible_prior_ids as an empty array, flags 'expiry_not_literal' and 'unsupported_context_id', and states that strike 362.5 is absent from the current message. Those contract details are absent from the current text but present in the supplied prior messages. The parser returns null contract fields and fire=false. Review whether the validator intentionally requires literal current-message details or should permit verified historical context. Check why the cited prior messages were not eligible. Preserve the distinction between context-supported inference and literal extraction; do not classify this rejection as a confirmed defect or recommend firing an alert without verification.
+- The current text explicitly labels 2.98 as a 'new avg'. The reader leaves price and qty null. The source provides neither the added quantity nor the exact premium paid for the add, and does not explicitly state premium units. Preserve raw 2.98 as a reported updated average in a distinct field if supported by the schema, subject to source verification. Do not substitute it for an add execution price, derive quantity, or apply a factor-of-100 conversion. Resolve premium units through retained same-caller source evidence before normalization.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not establish complete channel coverage or expose internal position state and context-eligibility rules.
+- No broker fills, contemporaneous quotes, or instrument multiplier verification are provided; these are caller-reported trade statements, not broker-confirmed executions.
+- No return calculations are supplied, and the exact add price, quantity, and premium units remain unresolved.
+- The evidence does not establish why fire=false or show downstream alert delivery.
+
+---
+
+# Reader Review — 2026-09-17 — d139ae8589ef9b003865
+
+The current message supports QQQ 716 calls and an apparent opening alert, but premium units and expiry remain unresolved. The reader interpreted raw '105' as 1.05 with full confidence; validation removed that price and flagged an unsupported context reference. These are review proposals, not confirmed parser bugs.
+
+## Findings
+- The source says 'Qqq 716c at 105' without premium units. The reader returned price 1.05 and confidence 1.0, implicitly dividing 105 by 100. Skyy's retained examples include 'Qqq 713c at 112 target 200', 'In qqq 710s at .89', and '330 100$ a con'. These suggest shorthand worth investigating but do not explicitly establish the units of the current '105'. Verify Skyy's convention using retained source examples from this channel before accepting 1.05. Preserve raw '105' and mark premium units unresolved meanwhile. If 105 is verified as cents, conversion to dollars is division by 100; if verified as dollars per contract, conversion requires the instrument's premium multiplier. Keep profit wording such as '100$ a con' separate from premium.
+- The reader cited prior message 'Qqq 713c at 112 target 200' as supporting evidence. Validation reports eligible_prior_ids as empty and safety_flags as ['unsupported_context_id'], despite ok being true. Its normalized read has price null rather than the reader's 1.05. Review context eligibility and validation semantics against the source-selection rules. Do not treat ok: true as verification of the cited context or premium. Preserve the distinction between the reader's proposed price and validation's missing price, and investigate whether unsupported evidence should reduce confidence or require review.
+- The current source explicitly identifies QQQ, strike 716, and calls, matching the parser and reader on those fields. It supplies no expiry or quantity; both reader and validated read leave those fields null. The parser nevertheless reports fire: true. Verify what fire means and whether downstream alert requirements permit unresolved expiry and premium. Do not infer expiry from prior trades or interpret missing quantity or price as zero. The supplied flag alone does not establish that an order was placed.
+
+## Limitations
+- No explicit unit clarification for the current '105', instrument premium multiplier, contemporaneous quotes, or broker fills is supplied.
+- The evidence contains one current parser/reader/validation comparison, not downstream execution records or verified trading results.
+- Evidence is marked untruncated, but the supplied prior messages do not establish complete channel history or the rules governing context eligibility.
+
+---
+
+# Reader Review — 2026-09-17 — c3f46ccce504d6b95fdf
+
+The current message supports a SPY trim. The reader linked it to Brett's earlier SPY 9/18 760C entry, but those supporting messages are outside validation's eligible prior IDs. Review context eligibility and validation consistency; this evidence does not establish a confirmed parser bug.
+
+## Findings
+- The current text is '@Brett (Admin) trimming SPY @ 13%'. The parser returns TRIM and SPY with expiry, side and strike null. The reader supplies expiry '9/18', CALL and strike '760', citing Brett's earlier loading and entry messages. Both cited messages are present in the supplied history, but validation lists only the preceding 'trimming SPY @ 8%' message as eligible. Verify the intended context-eligibility rules and source-message availability at processing time. If contextual resolution is permitted, require an eligible, unambiguous link scoped to Brett and this channel; otherwise retain unresolved contract fields. Do not classify the parser's missing contract fields as a bug solely from this comparison.
+- Validation reports ok=true alongside 'expiry_not_literal' and 'unsupported_context_id'. Its read retains expiry '9/18' and side 'CALLS' but clears strike to null. Review the validator's acceptance and field-provenance rules to determine why some contextual fields survive while strike is removed. Verify what ok=true and parser fire=false mean before interpreting either as an actionable decision or a failure.
+- The current message contains '13%' but gives no explicit exit premium or trim quantity. The reader correctly leaves price and qty null. The earlier entry preserves the raw wording '@ 2.5', without explicit premium units. Preserve 13% as a source-reported percentage pending confirmation of its meaning; do not treat it as a premium, quantity, or broker-confirmed return. Keep exit price and trim quantity missing, not zero. Verify entry-premium units before any monetary conversion or return calculation.
+
+## Limitations
+- The evidence includes neither context-selection specifications nor validator implementation details.
+- The current trim and earlier SPY entry are marked edited; their revision histories are not supplied.
+- No broker fills, contemporaneous quotes, execution records, or performance calculations are provided.
+- Evidence is marked untruncated, but that does not establish complete channel history or position coverage.
+
+---
+
+# Reader Review — 2026-09-17 — adcede8323bfb981ec41
+
+The current message supports a GOOGL CLOSE intent. The reader's 9/18 345 CALL identification matches a supplied prior entry, but validation reports that supporting context as ineligible. This warrants source and context-eligibility review, not a confirmed parser-bug classification.
+
+## Findings
+- The current text says '@Unraveller (Admin)🔮 all out of GOOGL @everyone' without expiry, strike, or option side. The parser preserves those fields as null. The reader supplies 9/18, CALL, and 345 using prior message chat-messages-829754942817828884-1550139079415566347, which explicitly says 'in GOOGL 9/18 345C @ 4.08'. Validation has eligible_prior_ids: [], flags expiry_not_literal and unsupported_context_id, and returns strike: null while retaining expiry: '9/18' and side: 'CALLS'. Verify the original entry and the rules governing eligible context. Review whether retaining expiry and side while removing strike is intended when all three depend on prior context. Preserve the supported symbol-level CLOSE intent and distinguish literal fields from verified contextual enrichment; confidence 1.0 should not obscure unresolved context eligibility.
+- The same scribe relays multiple callers. Unraveller's GOOGL sequence includes an entry at raw value 4.53, 'all out of GOGGL', another entry at raw value 4.08, a trim, and an edited 'added to GOOGL new avg is 3.55' before the current close. The earlier 9/18 347.5C message says only 'loading'. Verify the original 'GOGGL' message before treating it as a GOOGL close, and inspect lifecycle linkage by attributed caller and channel rather than scribe author alone. Confirm that the current close links to the later 345C trade cycle, without treating 'loading' as an established position or merging separate entries. Preserve raw premium and average values without unsupported unit conversion.
+- The current close provides no exit premium or quantity; the reader returns price: null and qty: null. The prior trim gives no amount, and the added-position message gives a reported average but no size. Keep exit price and quantity unknown, not zero. Interpret 'all out' as a reported full-close intent rather than evidence of a specific executed quantity. Do not derive an exit, realized return, or broker-confirmed result from the entry and average messages.
+
+## Limitations
+- The evidence is marked untruncated, but no context-eligibility specification or authoritative position ledger is supplied.
+- Original edit history and confirmation of the apparent 'GOGGL' typo are unavailable.
+- No broker fills, contemporaneous quotes, execution records, or performance calculations are provided.
+- The supplied parser and validation outputs do not establish that any order was placed or any position was closed.
+
+---
+
 # Reader Review — 2026-09-17 — 5cc92c0221a508debae9
 
 The reader identified a plausible SNDK trim advisory, but validation rejected its output because an empty string could not be converted to a number. Instrument classification and contextual trade linkage warrant source verification; the evidence does not establish a confirmed parser bug.
