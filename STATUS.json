@@ -9,8 +9,13 @@
  },
  "balance": {
   "as_of": "2026-09-16",
-  "bp": null,
-  "day_pl": null,
+  "bp": 938.81,
+  "day_pl": 34.59,
+  "flow": -500.0,
+  "fut_fees": 39.16,
+  "fut_flow": null,
+  "fut_nlv": 389.26,
+  "fut_pl": -111.56,
   "nlv": 938.81
  },
  "bot": {
@@ -22,11 +27,11 @@
  "bridge": {
   "buying_power": null,
   "health": {
-   "checked_at": 1789591152.3414161,
+   "checked_at": 1789613983.4022884,
    "issues": [],
    "lanes": [
     {
-     "fresh": true,
+     "fresh": false,
      "lane": "discord",
      "version": "3.8.39"
     },
@@ -37,7 +42,7 @@
     }
    ]
   },
-  "probed_at": "2026-09-16T16:42:38-04:00",
+  "probed_at": "2026-09-16T23:00:02-04:00",
   "up": false
  },
  "broke": [
@@ -63,22 +68,6 @@
    "failed_checks": [],
    "possible_missed": 3,
    "silent_drops": 11
-  },
-  {
-   "coverage_warnings": 0,
-   "date": "2026-09-14",
-   "failed_checks": [],
-   "possible_missed": 3,
-   "silent_drops": 13
-  },
-  {
-   "coverage_warnings": 0,
-   "date": "2026-09-14",
-   "failed_checks": [
-    "ratchet policy comparison"
-   ],
-   "possible_missed": 3,
-   "silent_drops": 13
   }
  ],
  "date": "2026-09-16",
@@ -89,15 +78,11 @@
  ],
  "reports": [
   "alert-audit            all        STALE    ALERT-AUDIT.html  [never recorded in reports/INDEX.json]",
-  "audit                  2026-09-16 CURRENT  daily-audits\\AUDIT week-of-Sep-14-to-Sep-20-2026.txt  [built 2026-09-16T16:42:37-04:00]",
-  "brief                  2026-09-16 CURRENT  daily-reports\\BRIEF week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-16T16:42:37-04:00]",
-  "caller-outcomes        2026-09-16 CURRENT  daily-reports\\CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-16T16:41:27-04:00]",
-  "caller-vs-ratchet      2026-09-16 STALE    daily-reports\\CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md  [changed: option_tape.csv (day rows)]",
-  "entry-slack            2026-09-16 STALE    daily-reports\\ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md  [changed: option_tape.csv (day rows)]",
-  "futures-mirror         2026-09-16 STALE    daily-reports\\FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md  [never recorded in reports/INDEX.json]",
-  "ratchet-compare        2026-09-16 STALE    daily-reports\\RATCHET-COMPARE week-of-Sep-14-to-Sep-20-2026.md  [changed: option_tape.csv (day rows)]",
-  "report                 2026-09-16 CURRENT  daily-reports\\REPORT week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-16T16:41:17-04:00]",
-  "scoreboard             all        STALE    SCOREBOARD.html  [never recorded in reports/INDEX.json]"
+  "audit                  2026-09-16 STALE    daily-audits\\AUDIT week-of-Sep-14-to-Sep-20-2026.txt  [changed: DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block), DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block), test_broker_sync.py, test_daily_brief.py, test_status_json.py, trades.log (day lines)]",
+  "brief                  2026-09-16 CURRENT  daily-reports\\BRIEF week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-16T23:00:02-04:00]",
+  "caller-outcomes        2026-09-16 STALE    daily-reports\\CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md  [changed: DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block), DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block), quote_shadow.csv (day rows), trades.log (day lines)]",
+  "caller-vs-ratchet      2026-09-16 STALE    daily-reports\\CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md  [changed: DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block), DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block), option_tape.csv (day rows)]",
+  "entry-slack            2026-09-16 STALE    daily-reports\\ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md  [changed: option_tape.csv (day rows), quote_shadow.csv (day rows), trades.log (day lines)]"
  ],
  "rooms": {
   "discord": {
@@ -107,37 +92,37 @@
   },
   "whop": {
    "on": 5,
-   "reads": 63,
-   "spoke": 4
+   "reads": 172,
+   "spoke": 5
   }
  },
  "verified": {
   "bridge_code_live": {
-   "at": "2026-09-16T16:42:38-04:00",
+   "at": "2026-09-16T23:00:03-04:00",
    "bridge_py_mtime": "2026-09-16T13:27:42-04:00",
-   "sha": "d5274f7"
+   "sha": "8ca9cfe"
   },
   "broker_reconciled": {
-   "at": "2026-09-16T16:42:38-04:00",
+   "at": "2026-09-16T23:00:03-04:00",
    "broker_legs": 44,
    "ledger_pl": 43.0,
    "match": null,
    "sync_ok": true
   },
   "parser_gate": {
-   "at": "2026-09-16T16:42:38-04:00",
+   "at": "2026-09-16T23:00:03-04:00",
    "counts": {
     "actions": 3048,
     "entries": 852,
     "messages": 11386,
-    "pass": true
+    "pass": false
    }
   },
   "tests": {
-   "at": "2026-09-16T16:42:38-04:00",
+   "at": "2026-09-16T23:00:03-04:00",
    "failed": 0,
    "passed": 332
   }
  },
- "written_at": "2026-09-16T16:42:37-04:00"
+ "written_at": "2026-09-16T23:00:02-04:00"
 }

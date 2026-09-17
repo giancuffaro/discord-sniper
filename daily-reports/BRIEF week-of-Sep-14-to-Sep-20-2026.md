@@ -5,11 +5,14 @@
 # SNIPER BRIEF — 2026-09-16
 
 ## Day
-- Webull margin day P&L: +$43 on 49 broker legs (gross of fees)
-- Balance: NLV $938.81 (-$465.41 vs 2026-09-15) · read 2026-09-16T16:40:17
+- Webull margin day P&L: +$34.59 net · +$43 gross on 49 broker legs (the gap is fees)
+- Balance: NLV $938.81 (-$465.41 vs 2026-09-15) · option BP $938.81 · read 2026-09-16T22:59:40
+- Webull futures: -$111.56 net · -$72.4 gross, $39.16 fees on 46 fills · NLV $389.26
+- Money moved (transfer / deposit / withdrawal — NOT trading): margin -$500
+- ALL ACCOUNTS, net of fees: -$76.97 (margin +$34.59, futures -$111.56)
 - Bot: -$129 · 3 trades, 3 contracts
 - Hand (G): +$172 · 22 trades, 106 contracts
-- Ledger day total: +$43
+- Ledger day total: +$43 (options only)
 
 ## Bot trades
 ```
@@ -40,13 +43,14 @@ ratchet on those 10 caller-priced paths: -1361 per 1-contract replay
 - EXPIRY 2 — QQQ 713C had no date — using 2026-09-16: today (2026-09-16) IS a listed expiration for QQQ, so 0DTE it is
 - AI READ 8 — saved key check: verified (HTTP 200)
 - MIRROR — bars unavailable, 3 alert(s) unscored: BentoClientError: 422 data_end_after_available_end
+- LANE discord 1 — Chika Alerts is ON but has no tab in this browser
 
 ## Pending (G's action)
 - Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does i…
 - NinjaTrader ATM "SNIPER": stop 100 ticks / target 200, qty 1 — create in NT8 (paused; NinjaTrader is off).
 - NOTHING REOPENS A DISCORD ROOM TAB — only START HERE does (G, 9/8), and it starts the DISCORD BROWSER only wh…
 
-built from master_ledger.csv, master_broker.csv, balance_daily.csv, trades.log, daily-reports/CALLER-OUTCOMES.csv, daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md, daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md, daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md, department-reports/extension-*.json, HANDOFF.md · 2026-09-16 16:42 Eastern Daylight Time
+built from master_ledger.csv, master_broker.csv, balance_daily.csv, master_futures.csv, trades.log, daily-reports/CALLER-OUTCOMES.csv, daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md, daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md, daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md, department-reports/extension-*.json, HANDOFF.md · 2026-09-16 23:00 Eastern Daylight Time
 
 ===== Tue Sep 15 2026 =====
 
