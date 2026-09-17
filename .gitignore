@@ -65,6 +65,7 @@ announcer.log.*
 streaming-test.txt
 option_tape.csv
 option_bars.csv
+trade_trend.csv
 option_bars_pull.log
 option_tape.csv.*
 # The alert tape (9/11): real bid/ask for every contract the rooms called,
