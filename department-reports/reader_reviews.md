@@ -1,5 +1,58 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-17 — 5cc92c0221a508debae9
+
+The reader identified a plausible SNDK trim advisory, but validation rejected its output because an empty string could not be converted to a number. Instrument classification and contextual trade linkage warrant source verification; the evidence does not establish a confirmed parser bug.
+
+## Findings
+- The current message says "Take profits and feel free to leave runners." The reader returned action "TRIM", ticker "SNDK", confidence 0.51, and empty strings for price, quantity, strike, and other fields. Validation returned ok=false with "invalid model field: could not convert string to float: ''". The error does not identify the specific field. Verify the reader output schema and validator contract for absent numeric values. Propose an explicit missing-value representation rather than empty strings or zero, while preserving the distinction between recognizing an advisory and resolving an actionable trade.
+- The reader labeled the instrument "equity". Earlier same-caller, same-channel text says "I’m in some SNDK 1800 C 9/18 lottos", followed by scalping and runner updates. That entry message is outside validation.eligible_prior_ids; the cited eligible support says only "54% SNDK @everyone". Verify the original option entry and permitted context scope before assigning an instrument or contract. Review whether "equity" is an unsupported default. If contract context cannot be established within the allowed evidence, retain an unresolved instrument rather than silently treating the advisory as a stock trim.
+- The immediately preceding message names SNDK, supporting the reader's linkage, but nearby messages also discuss "200%+ on TEM" and runners. The current message names no symbol, quantity, or exit price and is not marked as a reply. The parser returned null fields and fire=false. Review the proposed SNDK linkage against retained source context and any available reply metadata. Treat the wording as a potential partial-profit advisory, not a full close or confirmed execution. The reader/parser difference alone does not establish that the parser should have fired.
+- The first reader attempt recorded HTTP_503 from Gemini; the subsequent OpenAI attempt returned output with no attempt-level error, followed by a validation failure. Review provider-attempt failure and output-validation failure separately. Verify retry logs before proposing reliability changes; this trace supports neither a channel outage nor a total reader-provider outage.
+
+## Limitations
+- Only the current message has parser and reader outputs; earlier messages cannot be assessed for parsing correctness.
+- Although the supplied evidence is marked untruncated, complete channel coverage and position state are not established.
+- Caller-reported percentages are not broker-confirmed realized returns. No broker fills, exact exit premiums, remaining quantities, or simulation results are supplied.
+- The bare SNDK value "1.25" lacks explicit units and an explicit price label. Its role and premium units remain unresolved; no conversion or exit-price calculation is justified.
+- The validator error does not identify which empty numeric field caused rejection.
+
+---
+
+# Reader Review — 2026-09-17 — c3363ee67643cd41bd75
+
+The current message plausibly signals closing the recent short, but the exact instrument is unresolved. The reader inferred NQ without explicit source support, and validation rejected that inference. The parser/reader disagreement warrants source review, not a confirmed parser-bug classification.
+
+## Findings
+- The current message says "flat dont like it @Chika Alerts". The two eligible prior messages say "starter short 630, pivot 650" and "650 added, dont want to see acceptance above else im out". The parser returned action null and fire false; the reader returned CLOSE with side short. Verify that these messages refer to the same position and review whether contextual closure language should be recognized separately from instrument resolution. Treat this as a candidate missed close intent, not proof that an executable close alert was warranted.
+- The reader returned ticker NQ, instrument future, and confidence 1.0, although neither the current message nor its two supporting messages names NQ or explicitly identifies futures. Validation returned ok false because "the reader named NQ but it isn't in the message". Older wording, "short nascock, stop 490", does not establish an exact instrument mapping. Keep ticker and instrument unresolved unless retained source evidence establishes the mapping for this caller and channel within permitted context. Review confidence calibration so plausible close intent is not treated as certainty about the instrument.
+- The current message supplies no exit price or quantity. The prior raw values 630 and 650 occur in entry/add and pivot language, not as an exit quote. The reader left price and qty null. Preserve missing exit price and quantity as unknown, not zero. Do not substitute the prior levels for an exit, expand abbreviated prices, or calculate profit without verified units, position details, and exit evidence.
+
+## Limitations
+- Evidence is marked untruncated, but the supplied sequence does not establish complete channel history or verified position state.
+- No broker fills, execution confirmations, contemporaneous quotes, or verified instrument convention are provided. The caller's statement is not a broker-confirmed closure.
+- Only the current parser output is supplied; prior parsing and downstream alert behavior are unknown.
+- Historical performance statements are caller-reported and have unspecified units; no realized-return calculation is supported.
+
+---
+
+# Reader Review — 2026-09-17 — 3cfdcb37ca607616e159
+
+Review proposed: “54% SNDK @everyone” appears to be a performance update rather than an explicit new trim instruction. The reader also supplied contract details from a prior message outside the listed eligible context. These are source-verification candidates, not confirmed parser bugs; parser fire is false.
+
+## Findings
+- Both parser and reader classify the current message as TRIM, although it contains only “54% SNDK @everyone.” Earlier SNDK messages explicitly say “Feel free to trim that” and “I’m down to runners.” Same-caller examples also distinguish percentage updates from instructions: “18% TEM” is followed by “I’m gonna hold personally,” while “27% TEM” is followed separately by “Take 1st trim.” Verify whether this caller's percentage-only updates signify a fresh action or merely report performance. Consider treating this message as a non-actionable update unless retained source evidence supports a new trim instruction. Do not interpret 54% as the quantity to sell or a broker-confirmed realized return.
+- The reader supplies CALL, strike “1800,” and expiry “9/18,” citing chat-messages-987515353670221834-1550139105508335758, whose text explicitly states “I’m in some SNDK 1800 C 9/18 lottos.” That ID is present in the supplied history but absent from validation.eligible_prior_ids. Validation flags “unsupported_context_id” and “expiry_not_literal”; its read removes the strike but retains expiry “9/18” and side CALLS. Verify the intended context-eligibility rules and field-level provenance. The contract details have source support in the broader history, but their use under the listed eligibility boundary is unresolved. Review why validation retains expiry and side while dropping strike, and preserve the distinction between current-message literals and contextual enrichment.
+- The reader reports confidence 1.0 despite the current message lacking an explicit action and validation recording two safety flags. Validation also reports ok: true, while the parser has fire: false. Review confidence calibration and the meaning of validation success for ambiguous actions and flagged contextual fields. Verify downstream handling rather than assuming ok: true authorizes execution or fire: false explains why the event was suppressed.
+
+## Limitations
+- No parser policy, context-window specification, downstream execution trace, or broker fills are supplied.
+- The prior bare value “1.25” lacks explicit premium units; its role and units remain unresolved. No exit premium or return calculation is justified from it.
+- The reported percentages are caller statements, not independently verified calculations, broker-confirmed results, or identified simulation results.
+- Missing price, quantity, and contract fields are not zero values. The untruncated evidence payload does not establish complete channel history.
+
+---
+
 # Reader Review — 2026-09-17 — a407d426b91a83116082
 
 The message plausibly describes adding to the immediately preceding short, but the exact instrument and meaning of 650 remain unresolved. Validation rejected the reader's NQ identification. This warrants source verification, not a confirmed parser-bug finding.
