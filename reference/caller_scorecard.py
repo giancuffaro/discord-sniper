@@ -79,6 +79,50 @@ def logged_days():
     return found
 
 
+OWNER = ("gian",)          # G's own typed alerts — his, never a caller's
+ORPHAN = "ADOPTED — no bot order before it (G's own position, or a lost link)"
+_CALL_LINE = None
+
+
+def bot_order_lines():
+    """[(date, seconds, SYMBOL, caller)] from the bridge's own narration —
+    "WORKING  META — Unraveller's call, …". The ledger lost the owner on 32
+    August trades (key "?|SYM", adopted back from the account after the fill
+    race of 8/10-8/20); the order line written seconds earlier still names him."""
+    global _CALL_LINE
+    if _CALL_LINE is None:
+        import re
+        pat = re.compile(r"^(\d{4}-\d\d-\d\d)T(\d\d):(\d\d):(\d\d)\S*\t"
+                         r"(?:WORKING|PULLBACK|FILLED|ORDER IN)\s+(\w+) — (.+?)'s call")
+        _CALL_LINE = []
+        try:
+            with open(os.path.join(ROOT, "trades.log"), encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    m = pat.match(line)
+                    if m:
+                        _CALL_LINE.append((m.group(1), int(m.group(2)) * 3600 + int(m.group(3)) * 60
+                                           + int(m.group(4)), m.group(5).upper(), m.group(6)))
+        except OSError:
+            pass
+    return _CALL_LINE
+
+
+def owner_of(row):
+    """The ledger's caller, else the caller on the bot's own order line for that
+    symbol in the 15 minutes before the position opened, else ORPHAN."""
+    caller, room = (row.get("caller") or "").strip(), (row.get("room") or "").strip()
+    if caller not in ("", "?") or room not in ("", "?"):
+        return who({"caller": caller, "room": room})
+    try:
+        h, m, sec = (row.get("opened") or "").split(":")
+        opened = int(h) * 3600 + int(m) * 60 + int(sec)
+    except ValueError:
+        return ORPHAN
+    near = [c for c in bot_order_lines() if c[0] == row.get("date")
+            and c[2] == (row.get("symbol") or "").upper() and 0 <= opened - c[1] <= 900]
+    return who({"caller": max(near, key=lambda c: c[1])[3]}) if near else ORPHAN
+
+
 def real_trades():
     """{caller: [pl,...]}, {caller: [hi_pct,...]} — the bot's own closed option
     trades. Hand trades are G's, never a caller's."""
@@ -92,7 +136,9 @@ def real_trades():
             pl = rr._f(r.get("pl"))
             if pl is None:
                 continue
-            name = who({"caller": r.get("caller"), "room": r.get("room")})
+            name = owner_of(r)
+            if name.lower() in OWNER:
+                name = "G's OWN typed alerts (not a caller)"
             pls[name].append(pl)
             hi = rr._f(r.get("hi_pct"))
             if hi is not None:
@@ -155,7 +201,19 @@ def build():
         gap = (r["ask"] / a["their_price"] - 1) * 100.0 if a.get("their_price") else None
         if gap is not None and not (-60 < gap < 150):
             gap = None
-        by[who(a)].append({"silent": t_call is None, "follow": follow(r, t_call),
+        name = who(a)
+        if name.startswith("(room) ?"):
+            # the alert row has no caller or room; the bridge's own order line
+            # for that symbol within two minutes of it usually does
+            clock = a["time"][:8].split(":")
+            at = int(clock[0]) * 3600 + int(clock[1]) * 60 + int((clock + ["0"])[2] or 0)
+            near = [c for c in bot_order_lines() if c[0] == a["day"] and c[2] == a["root"]
+                    and abs(c[1] - at) <= 120]
+            if near:
+                name = who({"caller": min(near, key=lambda c: abs(c[1] - at))[3]})
+            else:
+                name = "UNATTRIBUTED alert (no caller, no room, no order line)"
+        by[name].append({"silent": t_call is None, "follow": follow(r, t_call),
                            "ladder": ladder["pl"] if ladder else 0.0, "gap": gap, "day": a["day"]})
     return all_days, rows, by, len(alerts)
 

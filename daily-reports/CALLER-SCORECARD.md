@@ -6,10 +6,10 @@ ALL CALLERS: 239 alerts · silent 58% · follow him -1393 · ladder -2842
 
 | caller | alerts | days | silent | entry gap | FOLLOW HIM | per alert | LADDER | per alert | better | REAL trades | REAL $ | real win | peak |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|
-| (room) ? | 51 | 14 | 61% | +1% | +1115 | +21.9 | -639 | -12.5 | follow | 32 | -736 | 16% | -17% |
-| Vero | 10 | 6 | 40% | +7% | -82 | -8.2 | -5 | -0.5 | ladder | 11 | -113 | 0% | +6% |
+| (room) ? | 51 | 14 | 61% | +1% | +1115 | +21.9 | -639 | -12.5 | follow | — | — | — | — |
+| Vero | 10 | 6 | 40% | +7% | -82 | -8.2 | -5 | -0.5 | ladder | 12 | -127 | 0% | +6% |
 | Brett | 11 | 7 | 36% | -1% | -272 | -24.7 | -37 | -3.4 | ladder | 4 | -50 | 25% | +2% |
-| Unraveller | 23 | 12 | 30% | +5% | -1053 | -45.8 | -507 | -22.0 | ladder | 15 | -239 | 20% | +2% |
+| Unraveller | 23 | 12 | 30% | +5% | -1053 | -45.8 | -507 | -22.0 | ladder | 17 | -479 | 18% | +2% |
 | MuggZone | 13 | 3 | 38% | +7% | -642 | -49.4 | -919 | -70.7 | follow | 7 | -41 | 0% | -1% |
 | (room) Midas *(few)* | 1 | 1 | 100% | -3% | +198 | +198.0 | +9 | +9.0 | follow | — | — | — | — |
 | Elite Options / Shoof *(few)* | 1 | 1 | 0% | +7% | +150 | +150.0 | -30 | -30.0 | follow | 1 | +0 | 0% | — |
@@ -50,9 +50,9 @@ ALL CALLERS: 239 alerts · silent 58% · follow him -1393 · ladder -2842
 | PT / ei trades *(few)* | 2 | 2 | 100% | +1% | -55 | -27.5 | -22 | -11.0 | ladder | 2 | -31 | 50% | +3% |
 | Owner Alerts *(few)* | 7 | 5 | 57% | +2% | -200 | -28.6 | -1 | -0.1 | ladder | 3 | -22 | 33% | +3% |
 | MR.TOPHAT (OPTIONS/FUTURES) *(few)* | 3 | 2 | 100% | +51% | -95 | -31.7 | -65 | -21.7 | ladder | 4 | -9 | 50% | -10% |
-| Bullwinkle *(few)* | 7 | 4 | 100% | -7% | -222 | -31.7 | -59 | -8.4 | ladder | 9 | -117 | 22% | +16% |
-| EvaPanda Alerts *(few)* | 2 | 2 | 100% | +77% | -65 | -32.5 | -70 | -35.0 | follow | 3 | -137 | 33% | +4% |
-| Mike *(few)* | 8 | 5 | 38% | -0% | -284 | -35.5 | -24 | -3.0 | ladder | 9 | +38 | 33% | +3% |
+| Bullwinkle *(few)* | 7 | 4 | 100% | -7% | -222 | -31.7 | -59 | -8.4 | ladder | 10 | -208 | 20% | +16% |
+| EvaPanda Alerts *(few)* | 2 | 2 | 100% | +77% | -65 | -32.5 | -70 | -35.0 | follow | 4 | -148 | 25% | +4% |
+| Mike *(few)* | 8 | 5 | 38% | -0% | -284 | -35.5 | -24 | -3.0 | ladder | 11 | +29 | 36% | +3% |
 | TradeLikeGates *(few)* | 4 | 4 | 75% | -3% | -149 | -37.2 | -13 | -3.2 | ladder | 4 | -12 | 25% | +10% |
 | are alerts *(few)* | 1 | 1 | 100% | +3% | -40 | -40.0 | -40 | -40.0 | ladder | 2 | -42 | 0% | +6% |
 | ZTRADEZ Manager *(few)* | 2 | 1 | 100% | +0% | -97 | -48.5 | -26 | -13.0 | ladder | 1 | +0 | 0% | — |
@@ -61,12 +61,13 @@ ALL CALLERS: 239 alerts · silent 58% · follow him -1393 · ladder -2842
 
 REAL TRADES ON CALLERS WITH NO QUOTED ALERT ABOVE (broker truth only):
 
-- Gian — 19 trades -287, win 37%
+- ADOPTED — no bot order before it (G's own position, or a lost link) — 21 trades -288, win 14%
+- G's OWN typed alerts (not a caller) — 19 trades -287, win 37%
+- Lars — 2 trades -86, win 0%
 - Demon Alerts — 4 trades -39, win 0%
-- Lars — 1 trades -26, win 0%
+- Namrood-Trades — 3 trades -38, win 0%
 - (room) Whop High Risk — 1 trades -25, win 0%
 - KuMo Bot — 1 trades -25, win 0%
-- Namrood-Trades — 2 trades -23, win 0%
-- TLM — 4 trades +31, win 25%
+- TLM — 6 trades +23, win 33%
 
-built from master_alerts.csv, alert_meta.csv, master_ledger.csv, daily-reports/CALLER-OUTCOMES.csv and the quote tapes · 2026-09-17 23:36 UTC
+built from master_alerts.csv, alert_meta.csv, master_ledger.csv, daily-reports/CALLER-OUTCOMES.csv and the quote tapes · 2026-09-17 23:41 UTC
