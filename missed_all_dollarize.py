@@ -34,6 +34,7 @@ import ratchet_sweep as rs                                    # noqa: E402
 import tape as _tape                                          # noqa: E402
 from ratchet_tiers import live_spacing                        # noqa: E402
 from ratchet_sweep_fine import sim                             # noqa: E402
+from databento_backfill import downsample                       # noqa: E402  (~1 row/sec — the raw feed is not usable as-is)
 
 SETTINGS = os.path.join(HERE, "settings.json")
 OUT_CSV = os.path.join(HERE, "missed_all_tape.csv")
@@ -162,19 +163,15 @@ def fetch_missing(missing, cost_only=False):
         except Exception as e:                                # noqa: BLE001
             print("  %s: pull failed — %s" % (c["occ"], str(e)[:140]))
             continue
+        rows_ds = downsample(df, win_start=start, win_end=end)
         n = 0
-        for ts, row in df.iterrows():
-            bid = row.get("bid_px_00")
-            ask = row.get("ask_px_00")
-            if bid is None or ask is None:
-                continue
+        for t, bid, ask in rows_ds:
             try:
-                writer.writerow(["%.3f" % ts.timestamp(), c["occ"],
-                                 "%.4f" % (float(bid) / 1e9), "%.4f" % (float(ask) / 1e9)])
+                writer.writerow(["%.3f" % t, c["occ"], "%.4f" % bid, "%.4f" % ask])
                 n += 1
             except (TypeError, ValueError):
                 continue
-        print("  %-20s %5d quotes" % (c["occ"], n))
+        print("  %-20s %5d quotes (downsampled from %d raw)" % (c["occ"], n, len(df)))
         if n:
             bought += 1
     fh.close()
