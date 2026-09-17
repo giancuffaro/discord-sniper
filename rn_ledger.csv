@@ -145,3 +145,5 @@ aytrades
 1789662153.159,armed,AMD,CALLS,170,9/18,,551.0,,MuggZone,OWLS all-alerts
 1789662164.415,submit_failed,AMD,CALLS,170,9/18,,551.0,,MuggZone,OWLS all-alerts
 1789662219.325,armed,AAPL,CALLS,340,9/21,,336.0,,Demon × LKS,Demon day-trades
+1789662542.078,submitted,AAPL,CALLS,340,9/21,,336.0,,Demon × LKS,Demon day-trades
+1789662544.084,filled,AAPL,CALLS,340,9/21,,336.0,1.4,Demon × LKS,Demon day-trades
