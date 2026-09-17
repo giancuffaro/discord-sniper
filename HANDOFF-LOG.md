@@ -7339,3 +7339,16 @@ cut 9/9 ahead of it) | Vero $49. Stripe: Honeydrip/Aristotle $125. Free: Rafita.
 ≈ $1,140/mo rooms + ~$52 infra (ProjectX $29, NT data $12, Deepgram ~$5,
 Webull data ~$5.50) + ~$30 exchange fees ≈ $1,220/mo before AI usage.
 Break-even ≈ $60+/trading day. Next audit: cost vs ledger P&L per room.
+
+## 2026-09-17 (correction)
+G caught it: "i dont think its possible for a single trade to have those earnings" — right.
+The AAPL 240C @$2.30 line (stock at $317.52) is IMPOSSIBLE — a $240 call that deep ITM
+has ~$77.52 intrinsic value alone, can't trade at $2.30. Source-data error (bad parse/typo
+on the room's alert), not backtest math. It was the ONLY row like this (checked all 160
+MISS-outcome rows for premium-below-intrinsic — 1 hit).
+Corrected clean total: missed_all_dollarize.py result excluding this row =
+**-$4,038.00 / 159 trades**, not +$3,312/160. No positive result stands.
+Filter gap: the 9/17 contamination filter only caught premiums too HIGH (>$50 or >5x tape
+ask). It missed premiums too LOW relative to intrinsic. TODO: add an intrinsic-value floor
+check (premium >= max(0, spot-strike) for calls / max(0, strike-spot) for puts, minus slack)
+to missed_all_dollarize.py's cleaning pass before this number is trusted again.
