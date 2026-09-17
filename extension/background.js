@@ -3148,7 +3148,7 @@ async function autoExportForLearning() {
         ", ninjatrader " + onoff((fb.ninjatrader || {}).enabled) +
         ", tradovate " + onoff((fb.tradovate || {}).enabled) + "\n" +
       "  bracket strat:  " + onoff(strat.enabled) +
-        (strat.enabled ? " (+" + (strat.take_profit_pct || 20) + "% / -" + (strat.stop_loss_pct || 10) + "%, 1 contract)" : "") + "\n" +
+        (strat.enabled ? " (1 contract, born stop -" + (strat.stop_loss_pct === undefined ? "?" : strat.stop_loss_pct) + "%, then the ratchet)" : "") + "\n" +
       "  AI reader:      " + onoff(mode && mode.ai_enabled) + "\n" +
       "  voice key:      " + onoff(dg) + "\n" +
       "  LIVE rooms:     " + (liveRooms.length ? liveRooms.join(", ") : "none — every room is flipped to TESTING") + "\n" +

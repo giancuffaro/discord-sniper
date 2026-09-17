@@ -834,30 +834,21 @@ function paintSim() {}
  * Painted from the bridge's reported state so a reload always tells the truth.
  */
 let bracketOn = false;
-// "ratchet" (default, 8/15): the stop walks up in +stop_loss_pct steps once
-// gain reaches take_profit_pct, never sells outright. "hardclose": the old
-// behaviour, sells everything the instant gain hits take_profit_pct.
-let bracketExit = "ratchet";
 function paintStrat() {
   const s = (modeStatus || {}).strategy || {};
   bracketOn = !!s.enabled;
-  bracketExit = s.take_profit_hard_close ? "hardclose" : "ratchet";
   const btn = $("bracketstrat");
   if (btn) {
     btn.textContent = bracketOn ? "ON" : "off";
     btn.className = "tgl " + (bracketOn ? "live" : "safe");
   }
-  const sel = $("bracketexit");
-  if (sel) sel.value = bracketExit;
   const exitNote = $("bracketexitstate");
   if (exitNote) {
     const r = (modeStatus || {}).ratchet_live || {};
     const n = v => (v === undefined || v === null) ? "?" : String(+v);
     const lock = +r.first_lock === 0 ? "BREAKEVEN" : "+" + n(r.first_lock) + "%";
-    exitNote.innerHTML = bracketExit === "hardclose"
-      ? "<b>Close whole position</b>: sells everything the instant it hits the " +
-        "take-profit (+" + n(s.take_profit_pct) + "%) and you're flat."
-      : "<b>Ratchet</b> (live numbers from the bridge): the stop is born at -" +
+    exitNote.innerHTML =
+        "<b>Ratchet</b> — the only exit (live numbers from the bridge): the stop is born at -" +
         n(r.born) + "%. At +" + n(r.arm) + "% gain it locks " + lock +
         ", then every further +" + n(r.step) + "% of gain locks another +" +
         n(r.step) + "%, no ceiling. Never sells outright — the resting stop " +
@@ -870,23 +861,16 @@ async function _saveBracket() {
     btn.textContent = bracketOn ? "ON" : "off";
     btn.className = "tgl " + (bracketOn ? "live" : "safe");
   }
-  const hardClose = bracketExit === "hardclose";
-  // 9/9 BUG FIX — these two were hardcoded 20 and 10. This function POSTs the
-  // whole strategy object to /config, and the bridge does st.update(body) then
-  // writes settings.json — so every click of this toggle (or the exit dropdown,
-  // which calls the same saver) silently pushed the PRE-9/8 numbers back over
-  // the live ratchet, reverting the born stop 7.5% -> 10% at the next restart.
-  // Silent and delayed, which is the worst shape for a real-money regression.
-  // Carry whatever the bridge already has; this saver only owns the SWITCHES.
+  // This function POSTs the strategy object to /config and the bridge merges
+  // it into settings.json, so it must NEVER carry a number of its own: a
+  // hardcoded stop here once pushed old values back over the live ladder at
+  // the next restart (9/9). It owns the SWITCH only. The born stop is sent
+  // back only when the bridge has told us what it is.
   const _cur = (modeStatus && modeStatus.strategy) || {};
-  const _tp = Number(_cur.take_profit_pct);
   const _sl = Number(_cur.stop_loss_pct);
-  const tpPct = Number.isFinite(_tp) ? _tp : 10;      // live values as of 9/9,
-  const slPct = Number.isFinite(_sl) ? _sl : 7.5;     // used only if /status is mute
-  const strat = { enabled: bracketOn, take_profit_pct: tpPct,
-                  stop_loss_pct: slPct, one_contract: true,
-                  ratchet_enabled: !hardClose,
-                  take_profit_hard_close: hardClose };
+  const slPct = Number.isFinite(_sl) ? _sl : null;
+  const strat = { enabled: bracketOn, one_contract: true, ratchet_enabled: true };
+  if (slPct !== null) strat.stop_loss_pct = slPct;
   // Extension settings first — this is what the worker reads to force qty=1.
   try {
     const { settings } = await chrome.storage.local.get("settings");
@@ -899,12 +883,10 @@ async function _saveBracket() {
     modeStatus = await askBridge("/config", { strategy: strat });
     if ($("bracketstate"))
       $("bracketstate").textContent = bracketOn
-        ? (hardClose
-           ? "ON — every entry is 1 contract, +" + tpPct + "% take-profit, −"
-             + slPct + "% stop. Live and paper."
-           : "ON — every entry is 1 contract, −" + slPct + "% stop to start, "
-             + "then the ratchet walks it up. Live and paper.")
-        : "Off — sizing and exits go back to the room's calls.";
+        ? "ON — every entry is 1 contract, −" +
+          (((modeStatus || {}).ratchet_live || {}).born ?? slPct ?? "?") +
+          "% stop born with it, then the ratchet walks it up."
+        : "Off — the bracket's single-contract clamp, born stop and ratchet are NOT applied.";
   } catch (e) {
     if ($("bracketstate"))
       $("bracketstate").textContent = "Saved in the browser, but couldn't reach the bridge — START HERE first.";
@@ -913,10 +895,6 @@ async function _saveBracket() {
 }
 if ($("bracketstrat")) $("bracketstrat").onclick = async () => {
   bracketOn = !bracketOn;
-  await _saveBracket();
-};
-if ($("bracketexit")) $("bracketexit").onchange = async () => {
-  bracketExit = $("bracketexit").value;
   await _saveBracket();
 };
 

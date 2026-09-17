@@ -730,7 +730,6 @@ print("Live-exit: live AND paper positions both get real resting stops and real 
 RWB = FakeWB(fills=True, ask=2.00, bid=2.00)
 rb = book(RWB)
 rb.ratchet_on = True
-rb.take_profit_pct = 20.0
 rb.stop_pct = 10.0
 RWB.limits["9"] = 2.00; RWB.qtys["9"] = 1
 rtk = ticket(RWB, limit=2.00, oid="9")
@@ -827,7 +826,6 @@ import datetime as _dtt
 _ZWB = FakeWB(fills=True, ask=2.00, bid=2.00)
 _zb = book(_ZWB)
 _zb.ratchet_on = True
-_zb.take_profit_pct = 20.0
 _zb.stop_pct = 10.0
 _ZWB.limits["z0"] = 2.00; _ZWB.qtys["z0"] = 1
 _ztk = ticket(_ZWB, limit=2.00, oid="z0")
@@ -853,7 +851,6 @@ ok(_zstops and abs(_zstops[-1][3] - _ladder_stop(2.00, 30.0)) < 0.005,
 _FWB = FakeWB(fills=True, ask=2.00, bid=2.00)
 _fb = book(_FWB)
 _fb.ratchet_on = True
-_fb.take_profit_pct = 20.0
 _fb.stop_pct = 10.0
 _FWB.limits["f0"] = 2.00; _FWB.qtys["f0"] = 1
 _ftk = ticket(_FWB, limit=2.00, oid="f0")

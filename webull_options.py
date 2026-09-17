@@ -644,7 +644,13 @@ class WebullOptions:
         # trade the room called at 9:40 and closed at 10:05.
         self.fill_seconds = float(w.get("entry_fill_seconds", 180))
         # The protective stop, as a percentage of what you actually paid.
-        self.stop_pct = float(w.get("stop_loss_pct", 20))
+        # ONE number, ONE place: settings strategy.stop_loss_pct (the born
+        # stop). The bridge pushes it here again at boot (_sync_stop_pct); this
+        # is the same value for anything that builds an executor on its own.
+        # Until 9/17 this read a second, separate execution.webull.stop_loss_pct
+        # that sat at 20 beside a live 5.
+        self.stop_pct = float(((cfg or {}).get("strategy") or {})
+                              .get("stop_loss_pct", 10))
         # Dollars to leave untouched no matter what. 0 means "spend it all".
         self.cash_buffer = float(w.get("keep_cash_buffer", 0))
         self.trade = None

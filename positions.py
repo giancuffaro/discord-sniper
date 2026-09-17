@@ -222,27 +222,20 @@ class Book:
         self.auto_be_on = False         # sell a slice at +N%, stop to breakeven
         self.auto_be_pct = 10.0
         self.auto_be_frac = 0.10
-        # His one-click bracket: close the WHOLE position at +take_profit_pct.
-        # Works on LIVE and paper (a real sell), unlike the sim-only tactics
-        # above. The stop side of the bracket is the resting stop (stop_pct),
-        # so setting both to 15 gives a tight +15% / -15% exit on one contract.
         # Contracts the BROKER keeps refusing to sell (an order still resting
         # on them that isn't ours to see). Keyed by contract, not by position
         # key, because the position gets rebuilt on every adoption pass and a
         # flag on it would be forgotten every 20 seconds.
         self.broker_blocked = set()
-        # His replacement for the hard take-profit close (8/15): once a winner
-        # reaches +take_profit_pct the stop walks up instead of the position
-        # closing outright. See auto_ratchet() and ratchet_locked_pct(). Off
-        # by default like every other tactic here — the bridge switches it on
-        # from settings.
+        # THE exit (8/15; the only one since 9/17, when the old hard
+        # take-profit close was removed): a winner's stop walks up, the
+        # position is never sold outright. See auto_ratchet() and
+        # ratchet_tiers. The bridge switches it on from settings.
         self.ratchet_on = False
         # ...and how many times each contract has been refused. Same reason:
         # a counter on the position is wiped by the next adoption pass, so it
         # would never reach three and the loop would run all day.
         self.sell_fail_counts = {}
-        self.take_profit_on = False
-        self.take_profit_pct = 20.0
         # HIS trim ladder — run our own exit on their entry, because the
         # rooms don't always call their trims. Each rung: sell some at +at_pct
         # and (optionally) drag the stop to entry*(1+stop_to_pct/100). Keep a
@@ -2813,12 +2806,8 @@ class Book:
                                     _q3["greeks_in"] = _gin
                 except Exception:                       # noqa: BLE001
                     pass
-                # His rule runs here, on the same live bid the stop watches.
-                # Take-profit first: if the position is up +N% it closes ALL of
-                # it and we're done — nothing else to manage. Then the sim-only
-                # secure/ladder tactics for a paper trade that's still open.
-                if self.auto_take_profit(key, float(bid)):
-                    return
+                # His rule runs here, on the same live bid the stop watches:
+                # the ratchet, then the sim-only secure/ladder tactics.
                 self.auto_ratchet(key, float(bid))
                 # SHADOW (9/4) — runs beside the real ratchet, sells nothing.
                 self._shadow(key, float(bid))
@@ -3238,99 +3227,6 @@ class Book:
             return 0.0
         return self.fee_option * n
 
-    def auto_take_profit(self, key, bid):
-        """His one-click bracket, run by the watchdog on the live bid: the moment
-        a position is up take_profit_pct, close ALL of it. Unlike breakeven/ladder
-        this fires on LIVE too, with a real sell, because it's a real exit — the
-        whole point is to bank +15% and be flat. Returns True if it closed."""
-        if not self.take_profit_on or bid is None:
-            return False
-        with self._lock:
-            p = self._pos.get(key)
-            if not p or p.get("state") != FILLED or p.get("closing"):
-                return False
-            fill = float(p.get("fill") or 0)
-            held = int(p.get("qty") or 0)
-            dirn = int(p.get("direction") or 1)
-            if not fill or held <= 0:
-                return False
-            gain = (float(bid) - fill) * dirn / fill * 100.0
-            if gain < self.take_profit_pct:
-                return False
-            sym, side = p["symbol"], p.get("side")
-            strike, expiry = p.get("strike"), p.get("expiry")
-            occ = p.get("occ")
-            wb = self._wbfor(p)
-        if not self.claim(key):
-            return False        # their exit or the stop got there first
-        # A stop can partially fill during the cancel. claim() records that
-        # broker fill and reduces the book before this second exit is sent.
-        held = self.qty_of(key)
-        if held <= 0:
-            return True
-        self._event(key, "update",
-                    "%s — up %.0f%%, hitting your +%.0f%% take-profit. Closing "
-                    "all %d." % (sym, gain, self.take_profit_pct, held))
-        if self._sim(p):
-            self.finish(key, CLOSED,
-                        "take-profit at %.2f (+%.0f%%)" % (float(bid), gain),
-                        price=float(bid))
-            return True
-        try:
-            _okf, _px = self._sell_confirmed(
-                wb, key, occ, sym, side, strike, expiry, held, float(bid))
-            if not _okf:
-                self.release(key, rearm=True)
-                self._event(key, "stop-warn",
-                            "%s — take-profit order did not confirm a fill. "
-                            "Still HOLDING; protection restored and it will retry."
-                            % sym)
-                return False
-            self.finish(key, CLOSED,
-                        "take-profit sold at %.2f (+%.0f%%)" % (float(_px), gain),
-                        price=float(_px))
-        except Exception as e:                              # noqa: BLE001
-            # FIRST: anything left to sell? (8/18) — same race as the stop:
-            # a resting order can fill a beat ahead of the watchdog, and
-            # every "failure" after that is against a position that's gone.
-            if self._gone_at_broker(wb, sym, side, strike):
-                self._event(key, "update",
-                            "%s — already sold at Webull before the "
-                            "take-profit got there (a resting order beat "
-                            "it). Trade closed." % sym)
-                self.finish(key, CLOSED,
-                            "a resting order at Webull sold it first "
-                            "(+%.0f%% at the time)" % gain,
-                            price=float(bid))
-                return True
-            # Same breaker as the stop: three refusals on one contract and we
-            # stop re-arming it, instead of re-adopting and re-failing every
-            # 20s while a +30% winner sits there (8/12 QQQ).
-            with self._lock:
-                q = self._pos.get(key) or {}
-                _ct = (str(q.get("symbol") or "").upper(), q.get("strike"),
-                       str(q.get("expiry") or ""))
-                n = int(self.sell_fail_counts.get(_ct) or 0) + 1
-                self.sell_fail_counts[_ct] = n
-            if n >= 3:
-                with self._lock:
-                    self.broker_blocked.add(_ct)
-                    q2 = self._pos.get(key)
-                    if q2 is not None:
-                        q2["no_auto_stop"] = True
-                self._event(key, "failed",
-                            "%s — the take-profit has tried %d times and Webull "
-                            "keeps refusing (%s). I've stopped retrying. SELL "
-                            "THIS ONE IN THE WEBULL APP — it's up %.0f%% — and "
-                            "cancel any leftover order on it."
-                            % (sym, n, str(e)[:60], gain))
-            else:
-                self._event(key, "failed",
-                            "%s — take-profit tried to sell and couldn't: %s. "
-                            "Retrying." % (sym, str(e)[:110]))
-            self.finish(key, FAILED, "take-profit failed to sell")
-        return True
-
     def _futures_ratchet(self, key, price):
         """Points-based ratchet for futures (v3.5.0) — percent is meaningless
         when MNQ trades at 24,000. Uses the trade's own stop width, in the
@@ -3371,17 +3267,12 @@ class Book:
         """His replacement for the hard take-profit close (8/15): a winner is
         never sold outright — the STOP walks up instead, so it can run forever
         and can never come back red once it's locked. The arm/lock/step numbers
-        come from ratchet_tiers.TIERS (9/9: arm +5% -> BREAKEVEN, then every
-        further +2% locks another +2%), NOT from take_profit_pct /
-        stop_loss_pct — those two settings no longer describe this rule, and an
-        earlier version of this docstring deriving the ladder from them is
-        exactly the drift bridge.py warns about at its boot banner. Uses the
-        same resting-stop-at-Webull +
+        come from ratchet_tiers.TIERS and the born stop from settings
+        strategy.stop_loss_pct — never typed here (ratchet_tiers.live_spacing()
+        reports them). Uses the same resting-stop-at-Webull +
         watchdog-checks-the-bid pair every other stop uses — this only ever
-        decides a new price for that same mechanism, never a new one. Runs
-        AFTER auto_take_profit in the watchdog and only if that left the
-        position open (take_profit_on stays a separate, still-available hard
-        exit for anyone who wants the old all-or-nothing behaviour instead).
+        decides a new price for that same mechanism, never a new one. It is
+        the ONLY exit a winner has.
         """
         if not self.ratchet_on or bid is None:
             return

@@ -667,13 +667,11 @@ def strategy_numbers():
         arm, rung = 5.0, 2.0
     return {
         "stop_loss_pct": {"value": float(st.get("stop_loss_pct", 7.5)), "min": 2, "max": 30, "step": 0.5,
-                          "label": "Born stop %", "note": "7.5% best of 50 spacings on 80 real fills (9/8); right on 0DTE and 1+DTE alike (9/9)"},
-        "take_profit_pct": {"value": float(st.get("take_profit_pct", 10)), "min": 3, "max": 100, "step": 1,
-                            "label": "Take-profit % (hard-close mode only)", "note": "only used when the exit mode is Close whole position; the ratchet ignores it"},
+                          "label": "Born stop %", "note": "the stop every entry is born with — the ratchet's first rung and the only exit a red trade has"},
         "ratchet_arm_pct": {"value": float(arm), "min": 1, "max": 30, "step": 0.5,
-                            "label": "Ratchet arms at +%  (stop → breakeven)", "note": "instant arm at +5% beat every wait: 10 s +149, 30 s −6, 5 min −477 on 90 contract-days (9/9)"},
+                            "label": "Ratchet arms at +%  (stop → breakeven)", "note": "the gain at which the stop jumps to breakeven"},
         "ratchet_rung_pct": {"value": float(rung), "min": 0.5, "max": 20, "step": 0.5,
-                             "label": "Ratchet rung % (locks another +N each +N)", "note": "+2% rungs, 5/BE/2 was +$251 vs the old 10/10 −$434 (9/8 sweep)"},
+                             "label": "Ratchet rung % (locks another +N each +N)", "note": "each further +N% of gain locks another +N%"},
         "pullback_minutes": {"value": round(float(pb.get("timeout_seconds", 600)) / 60.0, 1), "min": 1, "max": 30, "step": 1,
                              "label": "Round-number wait (minutes)", "note": "10 vs 15 min: identical on 65 beta-name trades; $1 level beats taking the call by +$8/contract (9/9)"},
     }
@@ -705,8 +703,6 @@ def set_strategy_numbers(body):
     pb = data.setdefault("pullback", {})
     if "stop_loss_pct" in vals:
         st["stop_loss_pct"] = vals["stop_loss_pct"]
-    if "take_profit_pct" in vals:
-        st["take_profit_pct"] = vals["take_profit_pct"]
     if "ratchet_arm_pct" in vals or "ratchet_rung_pct" in vals:
         st["ratchet_arm_pct"] = vals.get("ratchet_arm_pct", spec["ratchet_arm_pct"]["value"])
         st["ratchet_rung_pct"] = vals.get("ratchet_rung_pct", spec["ratchet_rung_pct"]["value"])
@@ -1122,9 +1118,9 @@ def build_book():
     BOOK.auto_be_on = _abe_on
     BOOK.auto_be_pct = _abe_pct
     BOOK.auto_be_frac = _abe_frac
-    # One-click bracket strategy — LIVE-safe: 1 contract in, close the whole
-    # position at +take_profit_pct, stop at -stop_loss_pct. Applies on top of
-    # everything else; when it's on, that's the plan.
+    # One-click bracket strategy — LIVE-safe: 1 contract in, a stop born with
+    # the order at -stop_loss_pct, and from there the ratchet. Applies on top
+    # of everything else; when it's on, that's the plan.
     _strat = (CFG.get("strategy") or {})
     # G's standing rule: the one-click bracket must ALWAYS come up ON when the
     # bridge starts. On 8/10 it booted OFF and left live positions with no stop.
@@ -1132,35 +1128,21 @@ def build_book():
     # (protected every time) while turning it OFF from the popup mid-session
     # still works.
     #
-    # 8/15: the hard take-profit close (sell everything the instant gain hits
-    # +take_profit_pct) is replaced as the DEFAULT by the ratchet — the stop
-    # walks up instead of the position closing, so a winner can keep running
-    # and can never come back red once it locks in. take_profit_on stays a
-    # real, working switch (settings.json or the popup can still turn the old
-    # all-or-nothing close back on) — it's just no longer what boots by
-    # default.
+    # THE RATCHET IS THE ONLY EXIT (9/17). The hard take-profit close — sell
+    # everything the instant gain hit +take_profit_pct — was removed: it
+    # contradicted "their trigger, our entry, the ratchet's exit" and nothing
+    # had run it since 8/15.
     _strat["enabled"] = True
-    _strat.setdefault("take_profit_pct", 20.0)
     _strat.setdefault("stop_loss_pct", 10.0)
     _strat.setdefault("ratchet_enabled", True)
     CFG["strategy"] = _strat
-    BOOK.take_profit_on = bool(_strat.get("take_profit_hard_close", False))
     BOOK.ratchet_on = bool(_strat.get("ratchet_enabled", True))
-    BOOK.take_profit_pct = float(_strat.get("take_profit_pct", 20.0))
     BOOK.stop_pct = float(_strat.get("stop_loss_pct", 10.0))
     _sync_stop_pct(BOOK.stop_pct)
     if BOOK.ratchet_on:
-        # Arm/first-lock/step come from ratchet_tiers.TIERS, not from
-        # take_profit_pct/stop_loss_pct — this banner used to recompute the
-        # rule from those two and went stale the day the real rule stopped
-        # matching them (the 8/25 "+0% steps" FLAT LIE this comment used to
-        # warn about). It drifted the same way again 9/8, silently, the
-        # whole time arm/step were coincidentally both 10 and equal to
-        # stop_loss_pct — now that 9/8's respacing (5% arm/step vs a 7.5%
-        # born stop) actually made the three numbers diverge, recomputing
-        # from settings would print +10% arm/step here while the bot
-        # actually runs +5%. Read it off the function that owns it — this
-        # time for real, so it can't go stale like that again.
+        # Arm/first-lock/step are READ off ratchet_tiers.TIERS — the function
+        # that owns them — never recomputed or typed here, so this banner
+        # cannot describe a ladder the bot is not running.
         _arm, _first, _step = _rt.TIERS[-1][1]
         _lock_txt = "BREAKEVEN" if abs(_first) < 1e-9 else ("+%.0f%%" % _first)
         note("STRATEGY forced ON at bridge start: 1 contract, -%.1f%% stop to "
@@ -1169,8 +1151,9 @@ def build_book():
              "never sells outright, never comes back red once it locks"
              % (BOOK.stop_pct, _arm, _lock_txt, _step, _step))
     else:
-        note("STRATEGY forced ON at bridge start: 1 contract, +%.0f%% take-profit, "
-             "-%.0f%% stop" % (BOOK.take_profit_pct, BOOK.stop_pct))
+        note("STRATEGY forced ON at bridge start: 1 contract, -%.1f%% stop — "
+             "and the RATCHET IS OFF (strategy.ratchet_enabled=false), so a "
+             "winner has NO exit but that stop" % BOOK.stop_pct)
     if MODE != "webull":
         note("test account: unlimited. Nothing is refused for money — instead "
              "I keep the most cash that was ever tied up at once, which is the "
@@ -1267,9 +1250,7 @@ def _connect_extras():
                 bk.occ_builder = BOOK.occ_builder
             bk.fut_mult = FUT_MULT
             _st = (CFG.get("strategy") or {})
-            bk.take_profit_on = bool(_st.get("take_profit_hard_close", False))
             bk.ratchet_on = bool(_st.get("ratchet_enabled", True))
-            bk.take_profit_pct = float(_st.get("take_profit_pct", 20.0))
             bk.stop_pct = float(_st.get("stop_loss_pct", 10.0))
             try:
                 cli.stop_pct = bk.stop_pct
@@ -5641,36 +5622,31 @@ class Handler(BaseHTTPRequestHandler):
                 BOOK.auto_be_frac = float(ab.get("sell_fraction", 0.10))
 
         # The one-click bracket strategy (LIVE-safe). Applied live so the next
-        # trade already obeys it: 1 contract, +N% take-profit, -N% stop.
+        # trade already obeys it: 1 contract, the born stop, the ratchet.
         if isinstance(body.get("strategy"), dict):
             st = dict(CFG.get("strategy") or {}); st.update(body["strategy"])
+            for _dead in ("take_profit_pct", "take_profit_hard_close"):
+                st.pop(_dead, None)     # removed 9/17; an old popup may still send them
             data["strategy"] = st
             CFG["strategy"] = st
             if BOOK is not None:
-                # ratchet_enabled is the default exit now; take_profit_hard_close
-                # is the old all-or-nothing close, still available as an
-                # explicit opt-in. "enabled" keeps meaning "the bracket runs at
-                # all" — off, and neither one fires.
+                # "enabled" means "the bracket runs at all"; the ratchet is
+                # its only exit.
                 bracket_on = bool(st.get("enabled"))
                 BOOK.ratchet_on = bracket_on and bool(
                     st.get("ratchet_enabled", True))
-                BOOK.take_profit_on = bracket_on and bool(
-                    st.get("take_profit_hard_close", False))
-                BOOK.take_profit_pct = float(st.get("take_profit_pct", 20.0))
                 # the extra accounts' books follow the same strategy switch
                 for _x in WB_EXTRA:
                     try:
                         _x["book"].ratchet_on = BOOK.ratchet_on
-                        _x["book"].take_profit_on = BOOK.take_profit_on
-                        _x["book"].take_profit_pct = BOOK.take_profit_pct
                     except Exception:                   # noqa: BLE001
                         pass
                 if bracket_on and st.get("stop_loss_pct"):
                     BOOK.stop_pct = float(st["stop_loss_pct"])
                     _sync_stop_pct(BOOK.stop_pct)
             if BOOK is not None and BOOK.ratchet_on:
-                # Arm/lock/step read off ratchet_tiers.TIERS, not
-                # take_profit_pct/stop_loss_pct — see the boot banner above.
+                # Arm/lock/step read off ratchet_tiers.TIERS — see the boot
+                # banner above.
                 _arm, _first, _step = _rt.TIERS[-1][1]
                 _lock_txt = "BREAKEVEN" if abs(_first) < 1e-9 else ("+%.0f%%" % _first)
                 note("STRATEGY ON: 1 contract, -%.1f%% stop to start, then at "
@@ -5679,10 +5655,10 @@ class Handler(BaseHTTPRequestHandler):
                      % (float(st.get("stop_loss_pct", 10)), _arm, _lock_txt,
                         _step, _step))
             else:
-                note("STRATEGY %s: 1 contract, +%.0f%% TP, -%.0f%% SL"
+                note("STRATEGY %s: 1 contract, -%.1f%% born stop, ratchet %s"
                      % ("ON" if st.get("enabled") else "off",
-                        float(st.get("take_profit_pct", 20)),
-                        float(st.get("stop_loss_pct", 10))))
+                        float(st.get("stop_loss_pct", 10)),
+                        "on" if st.get("ratchet_enabled", True) else "OFF"))
 
         # Where futures trade: Webull / NinjaTrader / Tradovate toggles plus
         # each one's account details. Merged (not replaced) so toggling one
