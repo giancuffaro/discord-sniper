@@ -72,9 +72,18 @@ def follow(row, t_call):
     return (walk[-1][1] - entry) * 100.0 if walk else 0.0
 
 
+ALIASES = {"abtrades alert bot": "AbTrades", "elite": "EliteOptions | Brando",
+           "vero-alerts": "Vero"}
+
+
 def who(alert):
+    """One person, one row: "Brett (Admin)", "@Brett" and "Brett" are Brett."""
+    import re
     name = (alert.get("caller") or "").strip()
-    return name if name and name != "?" else "(room) " + (alert.get("room") or "?")[:28]
+    if not name or name == "?":
+        return "(room) " + (alert.get("room") or "?")[:28]
+    name = re.sub(r"\s*\((?:admin|mod)\)\s*", "", name, flags=re.I).lstrip("@").strip()
+    return ALIASES.get(name.lower(), name)
 
 
 def build():

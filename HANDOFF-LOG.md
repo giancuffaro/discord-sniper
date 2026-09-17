@@ -12,6 +12,9 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+### 2026-09-17 (23:30 ET) — caller scorecard in the daily audit
+reference/caller_scorecard.py -> daily-reports/CALLER-SCORECARD.md (one file, overwritten), run by daily_audit after caller-outcomes, never fatal. Per caller over every day with quotes: taped alerts, days, SILENT % (no trim/exit/stop call ever followed), median entry gap, FOLLOW HIM (out at his first follow-up call, -20% disaster stop, else last quote — on ALL his alerts) vs the LIVE LADDER, per alert, and which is better. Names are folded ("Brett (Admin)" = Brett, "AbTrades Alert Bot" = AbTrades). Under 10 alerts is marked *(few)* — a list, not a ranking. First build, 5 days / 82 alerts: only MuggZone clears 10 (13 alerts, 38% silent, follow -$642 = -49/alert, ladder -$919 = -71/alert — half of the whole period's loss is one caller). Silent 100%: Eva 3, Brando 3, PT ei 2; Demon 75% of 8. Everyone else has 1–8 alerts. It needs ~3 more weeks before it can rank anybody.
+
 ### 2026-09-17 (22:30 ET) — "why aren't we getting the callers' results?" — measured
 reference/follow_the_caller.py (-> FOLLOW-THE-CALLER.txt, FOLLOW-THE-CALLER-ALL-ALERTS.txt), 9/11–9/17, our own quotes, 1 contract, bought at the ask when the alert reached us, sold at the bid.
 (1) ENTRY GAP IS SMALL: median ask +3.3% over the caller's posted price; 10%+ over on 2 of 39. Not the leak.

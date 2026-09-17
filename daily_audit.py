@@ -239,6 +239,18 @@ def run(day):
     else:
         summary["entry_slack"] = res["path"]
 
+    # CALLER SCORECARD (9/17) — per caller: how often he goes SILENT after an
+    # entry, and what following his own first exit call pays against our
+    # ladder, over every day with quotes. Runs after caller-outcomes is built
+    # (it reads CALLER-OUTCOMES.csv). Measurement only, never fatal.
+    score_step = _run("caller scorecard",
+                      [sys.executable, os.path.join(HERE, "reference",
+                                                    "caller_scorecard.py")], 300)
+    summary["caller_scorecard"] = ("daily-reports/CALLER-SCORECARD.md"
+                                   if score_step["ok"] else
+                                   {"status": "failed",
+                                    "why": score_step["output"][-200:]})
+
     try:
         import departments
         summary["daily_analyst"] = departments.daily(day)
