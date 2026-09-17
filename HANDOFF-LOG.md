@@ -12,6 +12,10 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+### 2026-09-17 (01:50 ET) — G's two rulings
+1 YES: no round-number pullback entries before 10:00 ET. bridge._pullback_too_early() at the arm point in _place_impl, before the affordability check; settings pullback.no_entries_before = "10:00" ("off" removes it, garbage turns it off rather than guessing). Skipped outright — NOT turned into an instant entry. Instant-entry symbols and futures are untouched. test_pullback_early.py (5).
+2 NO: the bot does not skip counter-trend entries. The trend label stays measurement only; written into the HANDOFF rule so it is not re-proposed on the same 31 trades.
+
 ### 2026-09-17 (05:40 UTC) — skip-before-10 numbers, Webull option bars pull, every ledger trade trend-labelled
 SETTINGS CHANGED UNDER ME: strategy.stop_loss_pct went 10 -> 5 and the ladder to 5/3/5 at 04:50 UTC / 00:50 ET (G, another session, off ratchet_sweep*). The replays follow settings.json, so every "as live" number moved between two of my runs; both ladders are reported from now on. SKIP PULLBACK ENTRIES BEFORE 10:00 (102 replayed entries): 10/10/10 ladder — all day -1,594, before 10:00 40 trades -1,116 (2% win), after 62 trades -478 (-7.7/trade, 18% win); 5/3/5 ladder — all day -1,197, before 10:00 -724 (18% win), after -473 (-7.6/trade). Early trades lost on 14 of the 16 days that had any. Caller-price rule + skip before 10:00: 52 trades, -327 (10/10/10) / -190 (5/3/5) = -3.7/trade. Still negative — the two filters remove ~85% of the loss, not the loss.
 option_bars_pull.py -> option_bars.csv: Webull's 1-minute + 5-minute option TRADE bars for all 866 contracts in master_alerts + master_ledger, 1,200 bars each counted back from the contract's last print, 1 request/sec, refuses to run while the option market is open. Started 05:05 UTC (01:05 ET), ~65 min.
