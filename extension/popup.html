@@ -297,12 +297,13 @@
 
     <label style="margin-top:10px">One-click bracket — <span style="color:#fbbf24">real money</span></label>
     <div class="row" style="margin-bottom:4px">
-      <span class="grow" style="font-size:12px">Bracket: 1 contract, -10% stop to start</span>
+      <span class="grow" style="font-size:12px">Bracket: 1 contract, a stop born with it, then the ratchet</span>
       <button id="bracketstrat" class="tgl safe">off</button>
     </div>
     <div class="note" id="bracketstate">On: every entry is exactly ONE contract no
-      matter what the alert says, with a -10% stop.
-      Overrides sizing while it's on.</div>
+      matter what the alert says, with a stop born with the order — the
+      ratchet's first rung, the only exit a trade has until it turns green.
+      The live % is shown here once the bridge answers.</div>
 
     <div class="row" style="margin-top:8px;margin-bottom:2px">
       <span class="grow" style="font-size:12px">Once it's green, then —</span>

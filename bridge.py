@@ -345,7 +345,10 @@ ROOMS_TXT = os.path.join(HERE, "extension", "rooms.txt")
 ROOM_STATES = ("on", "off", "lapsed")
 
 
-ROOM_RULE_FLAGS = ("bare", "always")   # + "sym=XXX"; always = tab open 24h (futures rooms)
+# Every flag apply_room_rules() reads — the popup sends a room's WHOLE list
+# back when one pill is clicked, so a flag missing here freezes that room's
+# pills (Chika: pivot=NQ,readonly,always could not drop "always", 9/17).
+ROOM_RULE_FLAGS = ("bare", "always", "readonly", "dotdate")   # + sym=XXX, pivot=XXX
 
 
 def read_rooms():
@@ -444,8 +447,13 @@ def set_room_rules(room_id, rules):
             clean.append(r)
         elif r.startswith("sym=") and r[4:].isalpha() and 1 <= len(r[4:]) <= 6:
             clean.append("sym=" + r[4:].upper())
+        elif r.startswith("pivot=") and r[6:].isalnum() and 1 <= len(r[6:]) <= 6:
+            # Chika's room carries pivot=NQ. The popup sends a room's WHOLE
+            # rule list back when one pill is clicked, so refusing pivot= meant
+            # her 24h pill could never be turned off (G, 9/17).
+            clean.append("pivot=" + r[6:].upper())
         else:
-            return False, "unknown rule %r (use bare, always, sym=XXX)" % r
+            return False, "unknown rule %r (use bare, always, sym=XXX, pivot=XXX)" % r
     seen, out = set(), []
     for r in clean:
         k = r.split("=")[0]

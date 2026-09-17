@@ -1,0 +1,33 @@
+[webull] accounts visible to these keys: MARGIN=ENIQGUV4LUTT3JSAA9NKLDDU19; CASH=MOI680KKJ1F36VPUA5FGOFS7MA; MARGIN=R8IECPMDTO73FABD0UH7UT3T0B
+[webull] FUTURES account -> R8IECPMDTO73FABD0UH7UT3T0B
+  bars SPXW 2026-08-12: HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbol does not exist in the ca
+  bars SPX 2026-08-12: HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbol does not exist in the ca
+  bars SPX 2026-08-24: HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbol does not exist in the ca
+  bars SPX 2026-08-25: HTTP Status: 417, Code: INVALID_SYMBOL, Msg: The symbol does not exist in the ca
+FADE TEST — 488 option alerts with stock bars (9 had none), 2026-08-04 .. 2026-09-17, 28 days
+
+A. THE STOCK'S MOVE IN THE CALLER'S DIRECTION, basis points (negative = the fade was right)
+                                n          +5 min         +15 min         +30 min         +60 min        to close
+  ALL ALERTS                  488  +0bp 54% t+0.3  -3bp 51% t-0.1  -2bp 51% t+0.3  -3bp 48% t+0.3  -1bp 50% t+0.1
+  calls                       344  +1bp 55% t+0.8  +3bp 53% t+1.1  +7bp 55% t+1.7 +14bp 53% t+1.9 +13bp 49% t+0.6
+  puts                        144  -3bp 50% t-0.2 -14bp 46% t-1.5 -20bp 44% t-1.8 -37bp 37% t-1.6 -33bp 51% t-0.8
+  09:30-10:00                 151  -7bp 56% t-0.3 -15bp 48% t-0.8 -15bp 50% t-0.7 -21bp 48% t-0.4  -9bp 54% t+0.1
+  10:00-11:00                 146  +7bp 62% t+1.9 +10bp 57% t+1.3  +9bp 53% t+0.8 +12bp 49% t+1.8  -3bp 45% t+0.3
+  11:00-14:00                 116  -0bp 47% t-0.1  -3bp 47% t-0.3  -1bp 47% t+0.7  +3bp 48% t+0.6  +5bp 47% t+0.3
+  14:00-16:00                  74  +3bp 36% t+0.5  +1bp 48% t+0.9  +4bp 60% t+1.1  -2bp 35% t-0.0 +12bp 57% t+1.8
+  (each cell: mean move for the caller, %% of alerts that went his way, t-stat by day; |t| under 2 = coin flip)
+
+  BY CALLER (10+ alerts), +30 min
+    ?                        129     +11bp  right 61%
+    Unraveller                34      +2bp  right 53%
+    Bullwinkle                26     -64bp  right 42%
+    ZTRADEZ BOT               10      +2bp  right 50%
+    MuggZone                  14      +0bp  right 57%
+    ZT all-trades-mashup      13      +5bp  right 85%
+    Brett                     13     +11bp  right 54%
+    Honeydrip daytrades       13     +10bp  right 46%
+    Mike                      12     -35bp  right 42%
+    Demon Alerts              12     -33bp  right 33%
+    Vero                      11      +4bp  right 45%
+    TradeLikeGates            11     +29bp  right 45%
+    👑KingBeeAri🐝              11     -48bp  right 45%
