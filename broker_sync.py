@@ -289,9 +289,9 @@ def record_balance(day, snapshot, path=None, futures=None):
     recorded day) - (that day's net result): a transfer, deposit or
     withdrawal. Blank when any of the three numbers is missing."""
     path = path or BALANCES
-    if not snapshot and not futures:
-        return None
     snapshot, futures = snapshot or {}, futures or {}
+    if not snapshot and futures.get("nlv") is None:
+        return None
     existing, seen = [], False
     try:
         with open(path, encoding="utf-8", newline="") as fh:

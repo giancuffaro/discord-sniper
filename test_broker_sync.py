@@ -39,18 +39,27 @@ def order(occ_symbol="QQQ", strike="704.00", kind="PUT", expiry="2026-09-14",
 class FakeClient:
     """Answers order_history/account_snapshot; raises on anything that trades."""
 
-    def __init__(self, pages=None, snapshot=None):
+    def __init__(self, pages=None, snapshot=None, futures_id=None,
+                 futures_orders=None, futures_snapshot=None):
         self.pages = pages or [[order()]]
         self.snapshot = snapshot
+        self.account_id = "MARGIN1"
+        self.futures_account_id = futures_id
+        self.futures_orders = futures_orders or []
+        self.futures_snapshot = futures_snapshot
         self.calls = []
 
-    def order_history(self, start, end, page_size=100):
+    def order_history(self, start, end, page_size=100, account_id=None):
+        if account_id:
+            self.calls.append(("order_history", start, end, account_id))
+            return list(self.futures_orders)
         self.calls.append(("order_history", start, end))
         return [o for page in self.pages for o in page]
 
-    def account_snapshot(self):
-        self.calls.append(("account_snapshot",))
-        return self.snapshot
+    def account_snapshot(self, account_id=None):
+        self.calls.append(("account_snapshot",) + ((account_id,)
+                                                   if account_id else ()))
+        return self.futures_snapshot if account_id else self.snapshot
 
     def __getattr__(self, name):
         raise AssertionError("broker_sync must not call %s()" % name)
@@ -61,6 +70,9 @@ class SyncFixture(unittest.TestCase):
         self.root = tempfile.mkdtemp(prefix="sync-test-")
         self.addCleanup(shutil.rmtree, self.root, True)
         saved = (broker_sync.HERE, broker_sync.EXPORT, broker_sync.BALANCES)
+        saved_futures = broker_sync.FUTURES
+        broker_sync.FUTURES = os.path.join(self.root, "master_futures.csv")
+        self.addCleanup(setattr, broker_sync, "FUTURES", saved_futures)
         broker_sync.HERE = self.root
         broker_sync.EXPORT = os.path.join(self.root, "Webull_Orders_auto.csv")
         broker_sync.BALANCES = os.path.join(self.root, "balance_daily.csv")
@@ -172,6 +184,98 @@ class TestBalanceRecord(SyncFixture):
         self.assertEqual(broker_sync.latest_balance()["date"], "2026-09-11")
 
 
+def fut(symbol="MNQZ6", side="BUY", price="29400", qty="1", oid="f0",
+        filled="2026-09-16T14:36:57.081Z", status="FILLED", fee="0.73"):
+    return {"symbol": symbol, "side": side, "status": status,
+            "instrument_type": "FUTURES", "order_id": oid,
+            "filled_quantity": qty, "total_quantity": qty,
+            "filled_price": price, "place_time_at": filled,
+            "filled_time_at": filled,
+            "fees": [{"type": "FUT_EXCHANGE", "actual_value": fee}]}
+
+
+class TestFutures(SyncFixture):
+    DAY = "2026-09-16"
+
+    def test_the_code_is_the_symbol_less_its_month(self):
+        self.assertEqual(broker_sync._fut_code("MNQZ6"), "MNQ")
+        self.assertEqual(broker_sync._fut_code("NDOWZ6"), "NDOW")
+        self.assertEqual(broker_sync._fut_code("M2KH27"), "M2K")
+
+    def test_only_filled_futures_legs_are_kept(self):
+        rows = broker_sync.futures_rows(
+            [fut(oid="a"), fut(oid="b", status="CANCELLED"), order()])
+        self.assertEqual([r[-1] for r in rows], ["a"])
+        self.assertEqual(rows[0][:4] + rows[0][7:8],
+                         [self.DAY, "2026-09-16 10:36:57", "MNQZ6", "MNQ",
+                          "0.73"])
+
+    def test_a_rerun_replaces_a_leg_it_never_stacks(self):
+        broker_sync.merge_futures(broker_sync.futures_rows([fut(oid="a")]))
+        kept = broker_sync.merge_futures(broker_sync.futures_rows(
+            [fut(oid="a"), fut(oid="b", side="SELL", price="29410")]))
+        self.assertEqual(kept, 2)
+
+    def test_a_flat_day_is_points_times_the_point_value_less_fees(self):
+        broker_sync.merge_futures(broker_sync.futures_rows([
+            fut(oid="a", price="29400"),
+            fut(oid="b", side="SELL", price="29410"),
+            fut("NNQZ6", oid="c", price="29400"),
+            fut("NNQZ6", "SELL", "29394", oid="d")]))
+        got = broker_sync.futures_day(self.DAY)
+        self.assertEqual(got["by_code"], {"MNQ": 20.0, "NNQ": -1.2})
+        self.assertEqual(got["gross"], 18.8)
+        self.assertEqual(got["fees"], 2.92)
+        self.assertEqual(got["net"], 15.88)
+
+    def test_an_open_or_unpriced_product_is_named_never_scored(self):
+        broker_sync.merge_futures(broker_sync.futures_rows([
+            fut(oid="a"), fut("ZZZZ6", oid="b"),
+            fut("ZZZZ6", "SELL", oid="c")]))
+        got = broker_sync.futures_day(self.DAY)
+        self.assertEqual((got["open"], got["unpriced"]), (["MNQ"], ["ZZZ"]))
+        self.assertIsNone(got["gross"])
+        self.assertIsNone(got["net"])
+        self.assertEqual(got["fees"], 2.19)
+
+    def test_no_fills_that_day_is_none(self):
+        self.assertIsNone(broker_sync.futures_day(self.DAY))
+
+    def test_a_transfer_shows_as_equal_and_opposite_flow(self):
+        broker_sync.record_balance("2026-09-15", {"nlv": 1404.22,
+                                                  "day_pl": 124.36, "bp": 1.0},
+                                   futures={"nlv": 0.82, "pl": 0.0,
+                                            "fees": 0.0})
+        broker_sync.record_balance(self.DAY, {"nlv": 938.81, "day_pl": 34.59,
+                                              "bp": 938.81},
+                                   futures={"nlv": 389.26, "pl": -111.56,
+                                            "fees": 39.16})
+        got = broker_sync.latest_balance(self.DAY)
+        self.assertEqual((got["flow"], got["fut_flow"]), (-500.0, 500.0))
+        self.assertEqual((got["fut_nlv"], got["fut_pl"], got["fut_fees"]),
+                         (389.26, -111.56, 39.16))
+
+    def test_flow_is_blank_when_a_number_is_missing(self):
+        broker_sync.record_balance("2026-09-15", {"nlv": 1404.22,
+                                                  "day_pl": None, "bp": None})
+        broker_sync.record_balance(self.DAY, {"nlv": 938.81, "day_pl": None,
+                                              "bp": None})
+        self.assertIsNone(broker_sync.latest_balance(self.DAY)["flow"])
+
+    def test_an_old_five_column_file_is_widened_not_broken(self):
+        with open(broker_sync.BALANCES, "w", encoding="utf-8",
+                  newline="") as fh:
+            fh.write("date,nlv,day_pl,bp,read_at\n"
+                     "2026-09-15,1404.22,,,2026-09-15T16:40:34-04:00\n")
+        broker_sync.record_balance(self.DAY, {"nlv": 938.81, "day_pl": 34.59,
+                                              "bp": 938.81})
+        with open(broker_sync.BALANCES, encoding="utf-8", newline="") as fh:
+            rows = list(csv.reader(fh))
+        self.assertEqual(rows[0], broker_sync.BALANCE_HEAD)
+        self.assertEqual({len(r) for r in rows}, {len(broker_sync.BALANCE_HEAD)})
+        self.assertEqual(broker_sync.latest_balance(self.DAY)["flow"], -500.0)
+
+
 class TestMainFlow(SyncFixture):
     def _patch(self, client, ledger_rows=7):
         broker_sync._settings = lambda: {"execution": {"webull": {}}}
@@ -213,6 +317,21 @@ class TestMainFlow(SyncFixture):
         broker_sync.main("2026-09-14")
         self.assertEqual({c[0] for c in client.calls},
                          {"order_history", "account_snapshot"})
+
+    def test_the_futures_account_is_pulled_and_lands_on_the_same_row(self):
+        client = FakeClient(
+            snapshot={"nlv": 938.81, "day_pl": 34.59, "bp": 938.81},
+            futures_id="FUT1", futures_snapshot={"nlv": 389.26},
+            futures_orders=[fut(oid="a", price="29400"),
+                            fut(oid="b", side="SELL", price="29410")])
+        self._patch(client)
+        self.assertEqual(broker_sync.main("2026-09-16"), 0)
+        self.assertIn(("order_history", "2026-09-15", "2026-09-17", "FUT1"),
+                      client.calls)
+        self.assertIn(("account_snapshot", "FUT1"), client.calls)
+        got = broker_sync.latest_balance("2026-09-16")
+        self.assertEqual((got["fut_nlv"], got["fut_pl"], got["fut_fees"]),
+                         (389.26, 18.54, 1.46))
 
     def test_a_refused_balance_still_writes_the_export(self):
         client = FakeClient(snapshot=None)
