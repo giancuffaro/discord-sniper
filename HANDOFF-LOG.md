@@ -12,6 +12,89 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+## 2026-09-17 (ladder switched to 5/3/5; every alert NOT taken priced at the caller's number)
+
+LADDER CHANGE, G's call: strategy.stop_loss_pct 10 -> 5, ratchet_tiers.TIERS
+(3.0, 0.0, 5.0) replacing (10.0, 0.0, 10.0). live_spacing() confirmed (5.0, 3.0,
+5.0). Reasoning: ratchet_sweep.py AND ratchet_sweep_fine.py, independently, on
+the same 115-trade sample, both put born-10/arm-10 at or near the BOTTOM of
+their grid (-$242.70, rank 41/51) and tight-born/tight-arm at the top
+(5/3/5 = +$503.65 in the fine grid). settings.json._ratchet_spacing_9_17 has
+the full note. Neither grid was rerun fresh this session — both CSVs predate
+today and should be reproduced before trusting this further; ratchet_tiers.
+live_spacing() being read (not typed) by every sweep script means a rerun is
+just `python3 ratchet_sweep.py && python3 ratchet_sweep_fine.py`.
+
+MISS BACKTEST, G's ask: everything the bot did NOT take (BUYING POWER too
+small, PULLBACK never hit, OTHER refusal, THIN, NO buying connection), priced
+at the caller's own posted number, run through the (now) live ladder. Built
+missed_all_dollarize.py — missed_dollarize.py only ever covered ledger state
+"nofill" (round-number pullback timeouts); most misses never reach the ledger
+at all because no order was attempted, so there's no days/*.json row for
+databento_backfill.py to price. This reads master_alerts.csv's wider net
+directly and prices what that script had no source for.
+
+191 candidates (real callers, full contract+price) -> 187 had or got a tape.
+Bought 54 missing contract-windows from OPRA.PILLAR cmbp-1, $0.033 total,
+cost-quoted before every purchase, capped at $5 (never hit). One bug caught
+and fixed mid-run: the first version wrote every raw tick instead of
+downsampling like databento_backfill.py does — 344,559 rows for 10 contracts
+before I noticed. Killed it, reused databento_backfill.downsample(), reran
+clean. missed_all_tape.csv is its own cache, separate from databento_tape.csv
+so this never touches databento_backfill.py's state.
+
+TWO DATA PROBLEMS FOUND, both matter beyond this one backtest:
+  1. DUPLICATE ROWS: 25 of 187 were exact (contract, date, price) repeats —
+     the same 9/16 finding (build_alerts.py's pullback-arm linker can attach
+     one arm to more than one AI-READ line) now confirmed at scale. Every
+     count master_alerts.csv produces — misses.py, caller reports, this
+     backtest — is inflated by this until the linker is fixed to attach at
+     most one contract per arm.
+  2. PRICE CONTAMINATION: 2 rows carried a "their_price" that was actually
+     the STOCK price, not an option premium — SPY "premium" $761.90 (SPY was
+     ~$762 that day), NVDA "premium" $224.70 (NVDA was ~$225). Root cause:
+     the PULLBACK arm linked to an AI-READ line 0-2s earlier that itself
+     misread the room's spot-price chatter as the premium — this is upstream
+     of build_alerts.py, in the AI reader parse itself (ai_reader.py or the
+     OpenAI call it makes), not something the linker can fix. Filtered here
+     by a $50 hard cap (nothing in master_ledger.csv has ever paid more) plus
+     a 5x-the-tape's-own-ask check. Both rows would have shown up as the two
+     single biggest line items in the whole set (-$76,032 and -$22,197) and
+     alone flipped the total from +$3,312 to -$109,380. Nobody should trust
+     a their_price field out of master_alerts.csv without this same sanity
+     check until the reader bug is found and fixed.
+
+RESULT, after dedup + contamination filter (160 of 191 candidates, clean):
+    total $3,312.00   win 53/160 (33%)   avg $20.70/call
+
+  by reason:
+    PULLBACK never hit       n=26   $8,108    avg $311.85
+    BUYING POWER too small   n=110  -$4,420   avg -$40.18
+    OTHER refusal            n=21   -$319     avg -$15.19
+    THIN / no open interest  n=2    -$55
+    NO buying connection     n=1    -$2
+
+CRITICAL CAVEAT, do not skip this reading the number above: ONE trade —
+AAPL 240C bought 8/20 at $2.30, entered on a caller alert the pullback rule
+skipped, worth +$7,350 by the 8/28 expiry off AAPL's real rally that
+stretch — is 222% of the total. Pull that single row and the whole set is
+-$4,038 over 159 trades. The headline +$3,312 is not a stable, repeatable
+number; it is "flat-to-slightly-negative, with one lottery ticket that hit."
+Nothing here says loosen the PULLBACK rule or raise buying power — the
+n=110 BUYING POWER bucket, the largest, is cleanly negative on its own
+(-$40.18/call average) and isn't rescued by the outlier at all.
+
+This directly narrows Tuesday's (9/15) open question: the PULLBACK
+"already-tagged" 90s-lookback idea is STILL unresolved — that was about
+which alerts to enter sooner, this is about the full miss population at
+any spacing — but the wider sample here (26 clean PULLBACK-never-hit trades
+vs 3 on the 15th) says the same thing the 9-trade sample from the 15th
+said: waiting has not clearly cost money once you strip the one outlier.
+
+missed_all_dollarize.py is read-only, never trades, writes only
+missed_all_tape.csv. python3 -m py_compile clean on ratchet_tiers.py,
+bridge.py, missed_all_dollarize.py.
+
 ### 2026-09-17 (01:50 ET) — G's two rulings
 1 YES: no round-number pullback entries before 10:00 ET. bridge._pullback_too_early() at the arm point in _place_impl, before the affordability check; settings pullback.no_entries_before = "10:00" ("off" removes it, garbage turns it off rather than guessing). Skipped outright — NOT turned into an instant entry. Instant-entry symbols and futures are untouched. test_pullback_early.py (5).
 2 NO: the bot does not skip counter-trend entries. The trend label stays measurement only; written into the HANDOFF rule so it is not re-proposed on the same 31 trades.
