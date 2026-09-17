@@ -20,13 +20,13 @@
     }
   ],
   "observer": {
-    "queue_remaining": 0,
+    "queue_remaining": 3,
     "worker_started": true,
-    "last_finished": 1789654010.3306088,
+    "last_finished": 1789654300.200479,
     "last_error": "",
     "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789654032.8737125
+  "checked_at": 1789654332.8794355
 }
