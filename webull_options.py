@@ -2426,16 +2426,7 @@ class WebullOptions:
         blind = False
         if ask and ask > 0:
             if price_mode == "ask":
-                # Pullback entry at the touch: marketable at the ask, no
-                # their-price cap — capping would turn it back into a resting
-                # bid, which is exactly what waiting for the level was meant
-                # to end. The buffer makes it fill through a moving quote.
-                limit = max(0.01, round(
-                    float(ask) * (1 + self.buffer_pct / 100) + 0.01, 2))
-                # A marketable buy must stay AT/ABOVE the ask after tick
-                # rounding, or the cross turns back into a resting bid on a
-                # nickel-tick name (2.54 -> 2.50 under a 2.53 ask). Ceil.
-                limit = max(0.01, float(tick_ceil(limit, symbol)))
+                limit = self.pullback_limit(ask, their_price, symbol)
             else:
                 limit = self.entry_limit(bid, ask)
                 # "Match their avg or better" (his ask, 8/13): never pay above
@@ -2614,6 +2605,31 @@ class WebullOptions:
                 "expiry": expiry, "qty": qty,
                 "stop_child": stop_child, "stop_born": stop_born,
                 "submission_uncertain": submission_uncertain}
+
+    def pullback_limit(self, ask, their_price, symbol):
+        """The limit for a round-number pullback entry at the touch.
+
+        CROSS THE ASK (8/17) — marketable, with the buffer, tick-CEILED so a
+        nickel name stays at/above the ask — BUT NEVER ABOVE THE CALLER'S OWN
+        PRICE (G, 9/17: "even if it reaches the pullback and the price is more
+        than the caller we don't buy — we need to be at the same average or
+        better than them"). 9/16: Brett posted AAPL 335C at 3.17, the level
+        touched with the ask at 3.45, the bot paid 3.40, and Brett trimmed +13%
+        six seconds later. When the ask is over their price the order rests AT
+        their price (tick-FLOORED, so rounding cannot lift it) for the normal
+        working window and dies unfilled if the market never comes back — the
+        same trade-off the instant entry has made since 8/13. No caller price
+        = nothing to hold it to, so it crosses as before."""
+        limit = max(0.01, round(
+            float(ask) * (1 + self.buffer_pct / 100) + 0.01, 2))
+        limit = max(0.01, float(tick_ceil(limit, symbol)))
+        try:
+            theirs = float(their_price) if their_price else 0.0
+        except (TypeError, ValueError):
+            theirs = 0.0
+        if theirs > 0 and limit > theirs:
+            limit = max(0.01, float(tick_floor(round(theirs, 2), symbol)))
+        return limit
 
     def entry_limit(self, bid, ask):
         """The number that goes on the entry.
