@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-17 — c7cf355805af7e0e47f4
+
+The snapshot shows the session is marked in_session: true, while many alert sources are reported as ON but not present as tabs in this browser. This is a source-verification issue, not proof of an outage or parser bug.
+
+## Findings
+- The evidence lists many sources with the same pattern, for example: "AbTrades Alert Bot is ON but has no tab in this browser", "Aristotle is ON but has no tab in this browser", and "Platinum futures-alerts is ON but has no tab in this browser". Verify the browser/tab inventory against the alert-source inventory. Confirm whether these sources are intentionally closed, opened in another browser/profile, hidden, or unavailable before labeling them missing.
+- "in_session": true is present, but the evidence does not include timestamps, tab counts, or source-side delivery logs. Treat the session state as context only. Verify source-side activity or delivery logs before concluding that alert delivery is working or failing.
+
+## Limitations
+- The evidence is a single snapshot and does not show whether the missing tabs are due to a different browser, a closed window, or an intentional quiet period.
+- No source-side logs, timestamps, or browser tab identifiers are provided, so missing data cannot be distinguished from a true outage.
+- The text reports status strings only; it does not confirm whether any alerts were actually received or suppressed.
+- The department label is health, but the evidence does not include any clinical or health metrics to assess.
+
+---
+
 # Health — 2026-09-16 — 9a9f8c621e6e482b9e1b
 
 The provided evidence indicates the session is not active and reports an observer queue backlog exceeding 20 messages. This should be treated as a source-reported condition pending verification, not as a confirmed parser or system fault.

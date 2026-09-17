@@ -1,5 +1,21 @@
 # Incident reviews — newest first
 
+# Incident — 2026-09-17 — c7cf355805af7e0e47f4
+
+During an active session, the evidence reports enabled alert sources with no tab in this browser. This is a potential monitoring-coverage gap requiring verification, not a confirmed outage or parser bug.
+
+## Findings
+- in_session is true. Every listed issue states that an alert source is ON but has no tab in this browser, including AbTrades Alert Bot, Aristotle, NGD ngd-trades (Ninjago Futures Radar), multiple Platinum channels, and shabs. Verify the reported enabled state and tab inventory against the application's authoritative configuration. For each listed source, confirm whether ingestion requires a tab in this browser or is handled by another browser, worker, or connection before classifying it as uncovered.
+- The supplied issues describe local tab absence but provide no source-message timestamps, ingestion logs, connection health, or delivery acknowledgments. Compare retained source messages with ingestion and delivery records for the same session. Distinguish a quiet source from a disconnected collector, and establish any missed-alert interval only where source activity and delivery evidence support it.
+
+## Limitations
+- The evidence is marked untruncated, but its scope is limited to the supplied issue list.
+- No observation timestamp, session boundaries, browser identity, or collection architecture is provided.
+- Missing tabs do not establish zero source activity, missed alerts, or an outage.
+- No parser examples, broker fills, or trading results are supplied; parsing accuracy and trading impact cannot be assessed.
+
+---
+
 # Incident — 2026-09-16 — 087380cfdff6c952081c
 
 During an active session, 17 sources are reported ON without corresponding tabs in this browser. This suggests a monitoring coverage concern requiring verification, not a confirmed outage or parser bug.
