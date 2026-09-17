@@ -64,6 +64,8 @@ announcer.log.*
 .venv-stream/
 streaming-test.txt
 option_tape.csv
+option_bars.csv
+option_bars_pull.log
 option_tape.csv.*
 # The alert tape (9/11): real bid/ask for every contract the rooms called,
 # including the 289 in six weeks we never bought. Same class as option_tape
