@@ -16,6 +16,11 @@ TREND — the stock's own move in the 30 min before the alert (OLD-rule P&L)
   FLAT trend                          26 trades     -152  (-5.8/trade, 12% win)
   (no 1-second stock file for the other 40)
 
+TREND — SWING STRUCTURE at the alert (trend.py: higher highs + higher lows = UP)
+  WITH structure                      27 trades     -128  (-4.7/trade, 22% win)
+  COUNTER structure                   15 trades     -187  (-12.5/trade, 20% win)
+  CHOP structure                      28 trades     -383  (-13.7/trade, 7% win)
+
 TREND — against the move since the 9:30 open
   WITH the day                        26 trades     -294  (-11.3/trade, 15% win)
   AGAINST the day                     23 trades     -146  (-6.3/trade, 26% win)

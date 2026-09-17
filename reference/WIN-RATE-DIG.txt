@@ -1,0 +1,58 @@
+WIN-RATE DIG — 102 pullback entries, ask at the touch, live ladder (born -10%, arm +10% -> breakeven, step 10%)
+
+  AS LIVE                                        102 trades   -1594   -15.6/trade  win 12%  scratch 14%  loss 75%
+
+1. HOW THEY END
+  born stop       67 (66%)    -2045   median hold   58s
+  first lock      19 (19%)      -23   median hold  132s
+  ratchet rung     7 ( 7%)     +387   median hold  575s
+  close            9 ( 9%)      +87   median hold 1540s
+
+2. WHAT CROSSING THE SPREAD COSTS AGAINST A STOP THAT WATCHES THE BID
+  spread at entry: median 1.7% of the ask, 75th pct 3.2%, max 8.3%
+  -> the trade is BORN that far under water; the -10% stop has only 8.3% of real room on the median trade
+  born stop clamped under the bid by the broker rule on 3 of 102
+
+3. DID THEY EVER WORK? best bid reached BEFORE the exit, vs the entry ask
+  reached  +0% or better:  55 of 102 (54%)
+  reached  +5% or better:  37 of 102 (36%)
+  reached +10% or better:  29 of 102 (28%)
+  reached +20% or better:   8 of 102 (8%)
+  reached +30% or better:   4 of 102 (4%)
+  AFTER a born stop, the same contract later traded above the ENTRY on 44 of 67; +10% or better on 29, +20% on 19
+
+4. ONE CHANGE AT A TIME (same trades, same quotes)
+  born stop -15% (ladder unchanged)              102 trades   -1894   -18.6/trade  win 18%  scratch 16%  loss 67%
+  born stop -20% (ladder unchanged)              102 trades   -1793   -17.6/trade  win 23%  scratch 20%  loss 58%
+  born stop -30% (ladder unchanged)              102 trades   -2267   -22.2/trade  win 24%  scratch 22%  loss 55%
+  born stop -50% (ladder unchanged)              102 trades   -2750   -27.0/trade  win 25%  scratch 23%  loss 52%
+  born stop floored to 2x spread / 3 ticks       102 trades   -1591   -15.6/trade  win 13%  scratch 13%  loss 75%
+  9/2 price tiers + anti-clip, -10% born         102 trades   -1298   -12.7/trade  win 23%  scratch  6%  loss 72%
+  9/2 tiers + anti-clip, born -20%               102 trades   -1607   -15.8/trade  win 40%  scratch  7%  loss 53%
+  enter at the MID instead of the ask (if fillable) 102 trades   -1554   -15.2/trade  win 14%  scratch 17%  loss 70%
+  wait 30s after the touch, then cross           102 trades   -1145   -11.2/trade  win 17%  scratch 19%  loss 65%
+  wait 60s after the touch, then cross           102 trades   -1585   -15.5/trade  win 17%  scratch 13%  loss 71%
+  wait 120s after the touch, then cross          102 trades   -1454   -14.3/trade  win 15%  scratch 19%  loss 67%
+
+5. NO STOP AT ALL — bid N minutes after entry (the raw quality of the entries)
+  + 2 min: 102 priced     -899    -8.8/trade  above entry 30%
+  + 5 min: 100 priced     -909    -9.1/trade  above entry 40%
+  +10 min:  98 priced    -1184   -12.1/trade  above entry 29%
+  +20 min:  81 priced    -1353   -16.7/trade  above entry 28%
+  +40 min:  70 priced     -509    -7.3/trade  above entry 36%
+
+6. BY PRICE OF THE CONTRACT (as live)
+  ask $0-1                                        16 trades     -57    -3.6/trade  win 12%  scratch 25%  loss 62%
+  ask $1-2                                        24 trades    -182    -7.6/trade  win 12%  scratch 17%  loss 71%
+  ask $2-4                                        34 trades    -525   -15.4/trade  win 12%  scratch 12%  loss 76%
+  ask $4-99                                       28 trades    -830   -29.6/trade  win 11%  scratch  7%  loss 82%
+
+7. BY TIME OF DAY (as live)
+  09:30-10:00                                     40 trades   -1116   -27.9/trade  win  2%  scratch  8%  loss 90%
+  10:00-11:00                                     33 trades    -411   -12.5/trade  win 12%  scratch 18%  loss 70%
+  11:00-14:00                                     22 trades     +46    +2.1/trade  win 32%  scratch 18%  loss 50%
+  14:00-16:00                                      7 trades    -113   -16.1/trade  win  0%  scratch 14%  loss 86%
+
+8. 0DTE vs LATER EXPIRY (as live)
+  0DTE                                            27 trades    -201    -7.4/trade  win  4%  scratch 26%  loss 70%
+  1+ DTE                                          75 trades   -1393   -18.6/trade  win 15%  scratch  9%  loss 76%
