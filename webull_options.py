@@ -1147,29 +1147,34 @@ class WebullOptions:
         what the caller posted.
 
         ONE batched call (the endpoint takes 20 symbols; there are never more
-        than about six candidates), cached per contract per DAY, so a dateless
-        alert costs one request no matter how many times it is re-read. An
-        empty answer is never cached: a throttle at 9:31 must not blind the
-        rest of the session.
+        than about six candidates). ONLY A DATE THAT ANSWERED IS REMEMBERED,
+        per contract per date per day, and only the dates NOT already known
+        are asked again. Absence is never cached, and one answer never stands
+        in for a different question: until 9/16 the cache was keyed by contract
+        alone, so a dateless QQQ 713C lookup at 9:46 that came back with just
+        the 0DTE row answered Brando's typed "QQQ SEPT 18 713C" nine minutes
+        later with "lists no such contract" — a contract that exists and was
+        asking 3.66. A short batch answer or a throttle must not blind the day.
         """
-        key = (str(symbol).upper(), str(strike), str(option_type).upper()[:1],
-               dt.date.today().isoformat())
+        day = dt.date.today().isoformat()
+        base = (str(symbol).upper(), str(strike), str(option_type).upper()[:1],
+                day)
         cache = getattr(self, "_listed_cache", None)
         if cache is None:
             cache = self._listed_cache = {}
-        hit = cache.get(key)
-        if hit is not None:
-            return dict(hit)
-        occs = {}
+        out, occs = {}, {}
         for iso in (candidates or []):
+            iso = str(iso)
+            if base + (iso,) in cache:
+                out[iso] = cache[base + (iso,)]
+                continue
             try:
                 occs[occ_symbol(symbol, iso, option_type, strike)] = iso
             except Exception:                           # noqa: BLE001
                 continue                # a date occ.py can't build isn't a date
         if not occs:
-            return {}
+            return out
         rows = self.ask_bid_many(list(occs)) or {}
-        out = {}
         for occ, iso in occs.items():
             got = rows.get(occ)
             if not got:
@@ -1179,8 +1184,7 @@ class WebullOptions:
                 out[iso] = float(ask) if ask else None
             except (TypeError, ValueError):
                 out[iso] = None
-        if out:
-            cache[key] = dict(out)
+            cache[base + (iso,)] = out[iso]
         return out
 
     def _stock_fns(self):
