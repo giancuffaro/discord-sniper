@@ -1,0 +1,36 @@
+TRADE TREND — 966 option trades labelled (trend.py swing structure at the entry)
+
+BOT — 176 trades with a P&L, -1786
+  WITH       54 trades      -403     -7.5/trade  win 24%
+  COUNTER    31 trades      -540    -17.4/trade  win 19%
+  CHOP       55 trades      -577    -10.5/trade  win 18%
+  EARLY      34 trades      -245     -7.2/trade  win 26%
+  NO BARS     2 trades       -21    -10.5/trade  win  0%
+  by the tape's own label (whatever he traded):
+    CHOP  CALLS   34 trades      -294     -8.6/trade  win 18%
+    CHOP  PUTS    21 trades      -283    -13.5/trade  win 19%
+    DOWN  CALLS   17 trades       -91     -5.4/trade  win 24%
+    DOWN  PUTS    20 trades      -274    -13.7/trade  win 20%
+    EARLY CALLS   23 trades      -280    -12.2/trade  win 26%
+    EARLY PUTS    11 trades       +35     +3.2/trade  win 27%
+    NO BARS CALLS    2 trades       -21    -10.5/trade  win  0%
+    UP    CALLS   34 trades      -129     -3.8/trade  win 26%
+    UP    PUTS    14 trades      -449    -32.1/trade  win 14%
+
+HAND (G) — 728 trades with a P&L, -3924
+  WITH      193 trades     -4187    -21.7/trade  win 21%
+  COUNTER   189 trades     -2352    -12.4/trade  win 31%
+  CHOP      260 trades     +2641    +10.2/trade  win 38%
+  EARLY      73 trades      +509     +7.0/trade  win 37%
+  NO BARS    13 trades      -535    -41.2/trade  win 23%
+  by the tape's own label (whatever he traded):
+    CHOP  CALLS  131 trades      -932     -7.1/trade  win 34%
+    CHOP  PUTS   129 trades     +3573    +27.7/trade  win 41%
+    DOWN  CALLS   92 trades      -108     -1.2/trade  win 33%
+    DOWN  PUTS   108 trades     -2396    -22.2/trade  win 23%
+    EARLY CALLS   35 trades      +210     +6.0/trade  win 29%
+    EARLY PUTS    38 trades      +299     +7.9/trade  win 45%
+    NO BARS CALLS    6 trades      +185    +30.8/trade  win 33%
+    NO BARS PUTS     7 trades      -720   -102.9/trade  win 14%
+    UP    CALLS   85 trades     -1791    -21.1/trade  win 19%
+    UP    PUTS    97 trades     -2244    -23.1/trade  win 29%
