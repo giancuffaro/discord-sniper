@@ -12,6 +12,9 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+### 2026-09-18 (04:45 ET) — reverse at the target instead of just taking it
+G: "instead of taking profits at the final level, what about reversing and going the opposite way?" reference/reverse_at_target_test.py -> REVERSE-AT-TARGET-TEST.txt. On the pullback-entry base (MES 2 before the 25, 30-min wait, 12.5 1:1 = 53 trades +1439; MNQ at the 50, 10/BE5/2.5 = 44 trades +569). MES flip at the +12.5 target: 37 got there, 34 reverse trades -> -72, 17 winners / 17 losers, 50% — a coin flip that costs commissions. MES flip at the next 25 level: 19 reverses -> -126, 10/9. MNQ flip at the next 50: 9 reverses -> +36, 2 winners / 7 losers (the 2 paid). Told G: the target is the exit, not a signal; the base edge is the entry location, and after the target the tape is 50/50 again. No.
+
 ### 2026-09-18 (04:30 ET) — limit a few points BEFORE the level
 G: "we can also get filled if it's 2 or 3 points before our pullback." pullback_level_entry_test.pullback_fill now takes buf (limit = level + buf toward the alert price); second table in PULLBACK-LEVEL-ENTRY-TEST.txt. MES (ES 25s, 12.5 1:1, 30-min wait): buf 0 = 37 fills +632; 1 = 45 +966; 2 = 53 +1439 (75% win, +970/+469); 3 = 55 +1239; 5 = 61 +950 (first half +211 only). All-day: 2 = 79 fills +1593 (72%, +706/+887). 2 pts is the sweet spot on both waits — 16 more fills, 5 pts of a worse entry on each, and the ones a 2-pt buffer catches are the ones that reversed right in front of the level. MNQ (NQ 50s, 10/BE5/2.5): buf 0 = +569 (75%); 5 = +339; 10 = +438; 15 = +314; 25 = +228 (40%). Every buffer HURTS MNQ — the 10-pt stop cannot afford a worse entry; NQ either reaches the 50 or it doesn't. Told G: MES 2 before the 25, MNQ at the 50 exactly. Still touch-fill and n=53/44.
 
