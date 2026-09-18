@@ -1,5 +1,21 @@
 # Incident reviews — newest first
 
+# Incident — 2026-09-18 — ce64520035f2aeedbffd
+
+In-session monitoring reports stale reader heartbeats for five open Whop tabs and a missing or stale Discord extension heartbeat. These are potential monitoring-health issues requiring source verification, not confirmed outages or parser bugs.
+
+## Findings
+- Whop 2K Challenge, Day Trades, Futures, High Risk, and Swing Trades tabs are reported open, but each reader "hasn't beaten in a while." Verify each reader's last heartbeat timestamp, expected heartbeat interval, and current status against source logs. Check for a shared monitoring dependency, while keeping heartbeat health separate from room message activity; quiet rooms alone do not establish an outage.
+- The report states "discord extension heartbeat missing or stale" without distinguishing the two conditions. Check extension and heartbeat-collector records to determine whether no heartbeat was recorded or an existing heartbeat exceeded the freshness threshold. Verify extension connectivity before classifying this as an outage or claiming missed alerts.
+
+## Limitations
+- No heartbeat timestamps, freshness thresholds, or logs are provided, so duration and severity cannot be established.
+- Missing heartbeat data is not evidence of zero activity.
+- The evidence does not establish whether alerts were missed, which monitoring component is responsible, or whether the Whop and Discord symptoms share a cause.
+- The evidence is marked untruncated, but contains only issue summaries rather than underlying diagnostic records.
+
+---
+
 # Incident — 2026-09-17 — ad25638b076a97997043
 
 During an active session, the supplied monitor reports enabled sources without tabs in this browser and stale reader heartbeats for five open Whop tabs. These are potential monitoring or ingestion gaps requiring verification, not confirmed outages or parser bugs.
