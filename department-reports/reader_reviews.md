@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — a753de4fee612fde63c0
+
+The reader proposed an option OPEN with confidence 1.0, but validation rejected it and the parser did not fire. The evidence suggests review candidates involving ticker inference, multi-leg representation, unsupported context, and ambiguous sizing and expiry—not confirmed parser bugs.
+
+## Findings
+- The reader assigned ticker "SIC" from "daily i1 SIC". The prior message also uses "an SIC" without identifying an underlying. Validation disputes the ticker interpretation. Verify what "SIC" means using retained source examples from this caller and channel. Leave the underlying unresolved unless source evidence identifies it; do not substitute a guessed ticker.
+- The current message lists "Sell 7690C Buy 7695C Sell 7610P Sell 7605P". The reader returned one OPEN record with null side and strike, and validation flagged "option_side_not_call_or_put". Both put legs are explicitly written as sells. Review whether the extraction and validation schemas support multi-leg alerts. Preserve all four leg instructions as written and verify the intended structure with the source. Do not silently change either put leg to a buy to fit an expected strategy.
+- The reader cited prior message "chat-messages-1315504529898209310-1549861200232456252", but validation reports an empty eligible_prior_ids list and flags "unsupported_context_id". Check context eligibility and citation handling against the source records. Do not rely on this prior message as eligible support unless its eligibility is verified.
+- The reader mapped "daily" to expiry, "Size - 1/2" to qty, and "Credit - 1.60" to price. The message separately states "Risk - 3.40" but provides no explicit expiration date, premium units, multiplier, or definition of half size. Preserve these raw values and verify their meanings before normalization. Treat "1/2" as unresolved sizing rather than a confirmed contract count, and "daily" as unresolved expiration wording. Keep credit and risk separate; do not convert the credit into dollars per contract without verified units and the instrument's premium multiplier.
+
+## Limitations
+- Only the current message and one prior message are provided, although the evidence is marked untruncated.
+- No broker fills, contemporaneous quotes, instrument specifications, or retained caller conventions are supplied.
+- The null parser fields represent missing extracted data, not zero values. Parser fire is false and validation ok is false; no order execution or confirmed trade result is shown.
+- These records do not establish a room outage or channel-wide coverage problem.
+
+---
+
 # Reader Review — 2026-09-18 — 07a9aded453a5d29158b
 
 The current TT message supports a caller-reported partial trim of MU calls, while the parser returns no extracted action. The reader identifies the trim, but validation drops the explicit strike. These are review candidates requiring source and schema verification, not confirmed parser bugs.
