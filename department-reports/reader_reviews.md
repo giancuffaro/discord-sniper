@@ -1,5 +1,21 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — 2e13c17347d14972b1f1
+
+The reader identified a possible entry, but validation rejected it because the ticker was missing. Source verification is needed for the instrument, option side, expiry, and premium units; the evidence does not establish a parser bug.
+
+## Findings
+- Skyy's current message says "im in 7640s here at 400" and is marked as a reply, but its reply target is not supplied. The reader returned OPEN, strike "7640", and no ticker or expiry. The parser returned null fields with fire=false; validation reported "the reader found an entry with no ticker in the message". Retrieve the original reply target and associated source context to verify whether this is an entry and identify the contract. Treat the non-firing result as an unresolved-context case, not a confirmed missed-alert bug.
+- The reader assigned side="CALL" despite no explicit call/put designation in the current message and supporting_ids=[]. Earlier messages include "7645c moc at .6" and "I’m in 7650s at 200", but neither establishes the side of this current 7640s position. Review whether CALL was inferred without sufficient source support. Require context explicitly linked to the current position before accepting its side; do not carry forward a different contract's attributes.
+- The raw entry value is "400", without currency or per-share/per-contract units. Skyy's retained examples use both bare integers and decimals without establishing their units. Another author's "135/con" wording does not establish Skyy's convention. Preserve "400" and report unresolved premium units. Verify the original wording, caller-specific convention, instrument, and premium multiplier before conversion. Do not reinterpret it as 4.00 merely because that would fit a presumed price range.
+
+## Limitations
+- Although the evidence is marked untruncated, the current reply target and full contract identification are absent; validation lists no eligible prior IDs.
+- No broker fills or contemporaneous quotes are provided. Prior percentage claims and "Sold at 220" are caller reports, not broker-confirmed results, and do not establish an exit or return for the current position.
+- One reader-provider attempt reported cooldown, followed by a successful response from another provider; this does not establish an overall outage.
+
+---
+
 # Reader Review — 2026-09-18 — 46c8be8ed25b5de3409a
 
 The MU trim wording supports reviewing contract-field extraction, but the reader's expiry and context linkage are not established by the supplied evidence. Validation reports success despite an unsupported-context flag and a missing strike. These are review proposals, not confirmed parser bugs.
