@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — 5c5b3e7e690406ac160e
+
+The reader and parser match the current alert’s explicit close instruction and SNDK 9/18 1750 call identity. Review is proposed for an ineligible supporting reference and validation output that drops the strike and full-close scope; neither establishes a confirmed parser bug.
+
+## Findings
+- The reader cites prior message chat-messages-1368263191632543956-1550548317006463030, a history=true alert selling half of SNDK 9/18 1750C at 10.00. Validation lists no eligible prior IDs and flags unsupported_context_id, while returning ok=true. Verify context-eligibility rules and the meaning of ok=true. The current message independently states the contract and close intent, so assess whether this supporting reference should be omitted rather than treated as required evidence.
+- The current source says 'SNDK 9/18 1750C at 2.90 (ALL OUT)'. The reader retains strike='1750' and qty='ALL OUT', and the parser retains strike=1750. However, validation.read has strike=null and qty=null. Verify whether these nulls are intentional schema behavior or field loss. Preserve the explicit strike and full-close scope where supported, without treating 'ALL OUT' as a known contract count. Any position association should verify the exact contract rather than substitute the earlier SNDK 1650C position.
+- The source reports 'at 2.90', and the reader records price=2.9. This is numerically equivalent formatting, not evidence of a factor-of-100 error. The source does not explicitly state premium units. Retain the raw wording and verify premium units using instrument details and retained examples for this caller and channel. Do not rescale the value or infer contract cost from price magnitude alone.
+
+## Limitations
+- The supplied prior messages contain no opening alert for SNDK 9/18 1750C; this does not prove that no opening alert or position exists elsewhere.
+- No broker fills, position quantities, contemporaneous quotes, or premium multiplier are provided. These are caller-reported alerts, not broker-confirmed executions.
+- Expiry text omits the year, and no year-resolution rules are supplied.
+- No return calculations or downstream execution results are provided; profitability and operational impact cannot be established.
+
+---
+
 # Reader Review — 2026-09-18 — a1577862c4b2a88346ca
 
 The message contains an explicit option-opening alert that the reader extracted but the parser left unrecognized. This is a candidate parsing discrepancy requiring source verification, not a confirmed parser bug.
