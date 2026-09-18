@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ratchet_sweep.py — hundreds of stop / arm / rung / target combinations on the
+"""futures_ratchet_sweep.py — hundreds of stop / arm / rung / target combinations on the
 SPY->MES and QQQ->MNQ alert mirror, each instrument on its own.
 
 G, 9/18: "take the best results from MNQ and MES and lay them out; run 100
@@ -16,7 +16,7 @@ OVERFIT WARNING, printed with the result: with 64 SPY and 40 QQQ alerts the best
 of 520 will look good by luck. So each combination is also scored on the FIRST
 half of the days and the SECOND half separately; only a combination positive in
 both halves is worth a second look. MEASUREMENT ONLY.
-Output: reference/RATCHET-SWEEP.txt
+Output: reference/FUTURES-RATCHET-SWEEP.txt
 """
 from __future__ import annotations
 
@@ -135,7 +135,7 @@ def main():
             avg = {k: [x[0] for x in scored if x[idx] == k] for k in keys}
             p("  avg total by %-6s " % name + "  ".join("%s:%+.0f" % ("none" if k is None else "%g" % k, sum(v) / len(v)) for k, v in avg.items() if v))
     txt = "\n".join(out)
-    with open(os.path.join(HERE, "RATCHET-SWEEP.txt"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(HERE, "FUTURES-RATCHET-SWEEP.txt"), "w", encoding="utf-8") as fh:
         fh.write("Run %s\n%s\n" % (dt.datetime.now().strftime("%Y-%m-%d %H:%M"), txt))
     print(txt)
 
