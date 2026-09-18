@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — b7d9c8e4d9343bd68795
+
+TRIM is supported by the current message, and MU is a plausible same-caller contextual reference. Review is warranted for the equity classification, loss of the explicit half-trim quantity, and acceptance of an unsupported context ID. These are verification proposals, not confirmed parser bugs; fire remains false.
+
+## Findings
+- The reader labels the instrument "equity", but the same caller's nearby message says "Odte is crack so trim that shi if ur holding. Safer to hold monday exp". This suggests options context without identifying the exact contract. "995+ on mu now" and "996, 998, 1000+ next levels" do not establish option premiums. Verify the original trade and chart context before assigning an instrument. Preserve MU as a contextual candidate, but leave the instrument or contract unresolved if the source cannot distinguish shares from options. Do not populate premium, strike, or expiry from the cited price levels.
+- The current message explicitly says "Personally trimmed half into highs". The reader preserves qty as "half", while validation.read changes qty to null. Both retain TRIM. Check the quantity schema and validation rules to determine whether this removal is intentional. Preserve the raw half-trim statement as a relative quantity, without inventing a contract count or assuming whether half refers to the original position or remaining holdings.
+- Reader supporting_ids includes chat-messages-829754942817828884-1550550877209759867, which is absent from validation.eligible_prior_ids. Validation records "unsupported_context_id" but still returns ok: true. An eligible message, chat-messages-829754942817828884-1550551595438047378, independently names MU. Verify the intended context-eligibility and safety-flag policy. Reassess the extraction using eligible sources and distinguish a supported MU inference from permission to accept an ineligible citation; do not assume the entire extraction is invalid.
+- "Personally trimmed" describes a reported past action, and "will hold rest risk free" supplies neither an exit price nor an explicit stop. Earlier wording says "Its too volatile to signal" and "Follow this idea on your own". The parser reports fire: false. Preserve the distinction between a personal trade update and an executable alert. Treat "risk free" as the caller's characterization, not proof of recovered cost, guaranteed safety, or an instruction to set a breakeven stop.
+
+## Limitations
+- The evidence is marked untruncated, but the referenced chart contents and a complete MU entry specification are not supplied.
+- No broker fills, position quantities, exact execution prices, or return calculations are provided. The reported trim is not broker-confirmed.
+- Null fields represent missing or unresolved information, not zero.
+- The extraction and validation specifications are unavailable, so the intended handling of quantity normalization and non-blocking safety flags cannot be confirmed.
+
+---
+
 # Reader Review — 2026-09-17 — 789259eb52463675f77f
 
 The current message supports CLOSE TSLA. The reader’s proposed TSLA 9/18 362.5 put linkage is supported by retained Mike-attributed history, but its cited messages are outside the validator’s eligible context. Validation reports success while flagging that mismatch and removing the strike; this warrants source and validation-policy review, not a confirmed parser-bug classification.

@@ -1,5 +1,20 @@
 # Health reviews — newest first
 
+# Health — 2026-09-18 — 364fddc1596b91b8a695
+
+The evidence suggests multiple Whop tabs are open but their readers have not reported activity recently. This is a possible staleness or heartbeat issue, but the data does not prove an outage or parser failure.
+
+## Findings
+- "Whop 2K Challenge tab is open but its reader hasn't beaten in a while"; "Whop Day Trades tab is open but its reader hasn't beaten in a while"; "Whop Futures tab is open but its reader hasn't beaten in a while"; "Whop High Risk tab is open but its reader hasn't beaten in a while"; "Whop Swing Trades tab is open but its reader hasn't beaten in a while" Verify the source heartbeat or last-seen timestamps for each tab before classifying this as an outage. Distinguish a quiet room from a stalled reader, and confirm whether any tab is intentionally inactive or actually missing updates.
+
+## Limitations
+- No timestamps, thresholds, or expected heartbeat interval were provided, so 'hasn't beaten in a while' cannot be quantified.
+- The evidence only says the tabs are open and the readers are inactive; it does not confirm a feed outage, parser bug, or lost connection.
+- The term 'beaten' is unnormalized in the source text, so its exact operational meaning is unresolved.
+- This review cannot determine whether the inactivity is expected behavior for any of the listed tabs.
+
+---
+
 # Health — 2026-09-18 — ae4d75b869ff5845a7dd
 
 The session is marked in_session=true, but the evidence shows broad source-coverage gaps: many alert bots are ON without a corresponding browser tab, and several Whop tabs are open but their readers have not beaten in a while. This suggests possible missing inputs or stale readers, but the evidence does not confirm a parser bug or an outage.
