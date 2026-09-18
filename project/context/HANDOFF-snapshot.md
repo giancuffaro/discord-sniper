@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-18 — the LEVEL shape (pullback-to-round-number futures entry) is defined, shadowed nightly, and wired to NinjaTrader (quote file + OIF limit + ATM exit); arms only with NinjaTrader as the sole futures broker. CME single-stock futures NON-TRADABLE at Webull.
+Last updated: 2026-09-18 14:35 ET — Whop tabs kept "visible" (whop-awake.js), isWhopUrl() fix, Whop tabs reload at come-up; the LEVEL shape (pullback-to-round-number futures entry) is defined, shadowed nightly, and wired to NinjaTrader (quote file + OIF limit + ATM exit); arms only with NinjaTrader as the sole futures broker. CME single-stock futures NON-TRADABLE at Webull.
 
 ## How to update this file (long form: reference/OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. ONE RULE, ONE LINE
@@ -75,6 +75,7 @@ RESTARTS / SAFETY / HOUSE RULES · OPERATIONS.md
 ROOMS / TABS / READERS · ROOMS-TABS.md
 - rooms.txt = THE channel list (tabs + trading, one file). START HERE IS FULLY UNATTENDED (G, 9/9); between runs NOTHING opens rooms; the only manual inputs are a Discord/Whop login and Webull keys.
 - Relays: OWLS all-alerts active, RELAY UNWRAP re-books under the real trader; ZTRADEZ, shabs, eli retired 9/9. Never close a human tab. Profile 2 = Discord, Profile 6 = Whop, pinned by chrome-profile.txt / whop-profile.txt.
+- WHOP TABS ARE KEPT "VISIBLE" (measured 9/18): Whop only renders new posts while the page believes it is looked at, and every Sniper Whop tab is a background tab — so the feed froze at load and the reader only ever saw the 30-min backstop reload (a whole day of `<history>`, zero live Whop calls). `extension/whop-awake.js` (page world, document_start + injected into open tabs) tells the page it is visible; `whop.js` also sweeps on a MutationObserver (a hidden tab's 2-s poll wakes once a MINUTE). A Whop tab RELOADS at every extension come-up (hidden, nobody's scroll to lose — the never-refresh rule stays Discord-only). `isWhopUrl()` is the one Whop-url test — the old regex never matched `https://whop.com/…` and put content.js (the Discord reader) into Whop tabs from 9/8 to 9/18. WHOP_PULSE is the Whop reader's heartbeat. Whop tabs count "loading" forever — never skip a tab for that. A chat row's time is its header clock (clockToTs), never Date.now().
 - VOICE: ears always transcribe (Deepgram); exits irrelevant; a typed copy of a voice fire is an echo. Voice ENTRIES is a popup switch — NOT READY (9/17 measurement: 1,673 spoken lines in reads.log produced ZERO complete entries; of 24 action reads most were false, e.g. "I can't even load the charts" -> PREPARE). Do not tell G it is ready without a new count.
 - CLEAN UP AFTER A LIVE ROOM (G, 9/15: "when the live zoom for felony finishes kill the tab please"): a Discord-voice or Zoom tab the ears ran on, still silent 10 min AFTER they stop, gets closed. The ONE exception to "never close a human tab", scoped to tabs we listened to.
 

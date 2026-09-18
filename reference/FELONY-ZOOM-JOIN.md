@@ -11,10 +11,18 @@ Any zoom.us tab that is playing audio is picked up automatically; nothing to
 switch on.
 
 ## Which Chrome
-The "Sniper Whop" profile. Tell-tale: a whop.com tab SURVIVES there. In the
-Discord profile the sniper extension closes any Whop tab within seconds
-(lane guard) — if your tab vanishes, you're in the wrong browser.
-(Claude-in-Chrome on 9/9: "Browser 1" = Whop, "Browser 2" = Discord.)
+The "Sniper Whop" profile. A surviving whop.com tab is NOT proof (learned
+9/18: an UNASSIGNED profile — G's Default Chrome with the extension in it —
+keeps Whop tabs too, and the 9/12 run joined Zoom there, where no lane
+takes the ears). The proof is the worker's reply: open any Whop room in the
+candidate browser, then read its console (Claude-in-Chrome
+read_console_messages, pattern "whop sent") — whop.js logs every send with
+the reply. `{"ok":true}` = the Whop lane. `"ignored":"other lane"` = the
+Discord lane. `"ignored":"unassigned profile"` = wrong Chrome entirely.
+Claude-in-Chrome names ("Browser 1/2/3") are re-numbered on every connect —
+never trust them; on 9/18 the deviceIds were 462c7901… = Whop lane,
+9adbdf77… = Discord lane, d86a8f99… = unassigned. Close the room tab you
+opened for the test (in the Whop lane it counts as a room tab).
 
 ## The fast path (his meeting is recurring)
 1. Open a tab: `https://us02web.zoom.us/wc/join/89312529658`

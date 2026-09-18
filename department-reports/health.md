@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-18 — 60806c60c325d4e909b0
+
+The evidence contains two in-session status lines with differing reader/tab counts across passes: one reports 38 room tabs seen and 1 Whop tab reloaded at come-up, while the other reports 6 room tabs seen and 7 Whop tabs reloaded at come-up. Both lines also record pulse IDs with second values, but there is no explicit error, outage, or confirmed failure in the supplied text.
+
+## Findings
+- readers: 38 room tab(s) seen, 0 injected on the last pass, 1 Whop tab(s) reloaded at come-up (come-up saw 38 room tabs); pulses: 538396536=26s Verify the source log for this pass to confirm whether the 38 room-tab count and the single Whop tab reload refer to the same session window and whether the come-up count is meant to be per-pass or cumulative.
+- readers: 6 room tab(s) seen, 0 injected on the last pass, 7 Whop tab(s) reloaded at come-up (come-up saw 7 room tabs); pulses: 538395898=28s 538395899=28s 538396212=28s 538396408=28s 538396414=28s 538396415=28s 538396537=58s Verify the source for the second pass to determine whether the reduction to 6 room tabs and the 7 Whop tab reloads reflect a different snapshot, a filtered subset, or a reporting mismatch.
+
+## Limitations
+- The supplied text does not define what "readers," "room tab(s)," "Whop tab(s)," or "come-up" mean operationally.
+- There is no explicit indication of outage, error, or failed ingestion; zero injected on the last pass is a reported value, not proof of a problem.
+- The pulse entries provide IDs and second values, but not enough context to determine whether they indicate latency, status, or alerts.
+- I cannot determine whether the two issue lines come from separate runs, separate rooms, or a single aggregated report.
+
+---
+
 # Health — 2026-09-18 — 9183abaecc3550581285
 
 The snapshot indicates several Whop tabs are open but their readers have not updated recently, and pulse activity is reported as none. This suggests a possible stale-reader or quiet-room condition, but the evidence does not distinguish an actual outage from a period with no new activity.

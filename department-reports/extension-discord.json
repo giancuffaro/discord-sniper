@@ -1,1 +1,1 @@
-{"lane": "discord", "received_at": 1789756222.5050514, "version": "3.8.55", "issues": ["readers: 38 room tab(s) seen, 0 injected on the last pass, 1 Whop tab(s) reloaded at come-up (come-up saw 38 room tabs); pulses: 538396536=26s"], "rooms_expected": 40}
+{"lane": "discord", "received_at": 1789756492.4642975, "version": "3.8.55", "issues": ["readers: 38 room tab(s) seen, 2 injected on the last pass, 1 Whop tab(s) reloaded at come-up (come-up saw 38 room tabs); pulses: 538396536=51s"], "rooms_expected": 40}

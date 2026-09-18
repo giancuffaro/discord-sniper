@@ -184,6 +184,23 @@ function readFeedPosts() {
   }
 }
 
+// "1:42 PM" / "13:42" on today's date; a clock later than now by more than
+// 5 minutes belongs to yesterday. Anything unreadable = now.
+function clockToTs(clock) {
+  const m = /^(\d{1,2}):(\d{2})\s*([AP]M)?$/i.exec(String(clock || "").trim());
+  if (!m) return Date.now();
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  if (m[3]) {
+    const pm = m[3].toUpperCase() === "PM";
+    if (h === 12) h = pm ? 12 : 0; else if (pm) h += 12;
+  }
+  const d = new Date();
+  d.setHours(h, min, 0, 0);
+  if (d.getTime() > Date.now() + 5 * 60000) d.setDate(d.getDate() - 1);
+  return d.getTime();
+}
+
 /* ---- TYPE B: chat rooms ---- */
 let lastAuthor = "?";
 function readChatMessages() {
@@ -209,7 +226,12 @@ function readChatMessages() {
       if (SEEN.has(key)) continue;
       SEEN.add(key);
       if (SEEN.size > 6000) SEEN.clear();
-      send(text, lastAuthor, Date.now());   // live chat = present tense
+      // 9/18: the header clock ("1:42 PM") IS the row's time. Date.now()
+      // here made every chat row painted after a reload's first 15 s look
+      // brand new — the 14:29 reload re-sent 2:07 PM chatter as fresh, and
+      // a trade-like line from an hour ago would have passed the 3-min
+      // stale gate. No clock parsed = now (the staleness guard still rules).
+      send(text, lastAuthor, clockToTs(lastTime));
     } catch (e) { /* one bad row never stops the sweep */ }
   }
 }
