@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-18 — 4eb94bbb0cbbb60ec58d
+
+The evidence indicates an in-session state with multiple Whop tabs reporting stale reader heartbeats and no injections on the last pass, but it does not confirm an outage or parser failure. The data is insufficient to distinguish an inactive/quiet room from a delivery problem without timestamped source checks.
+
+## Findings
+- "Whop 2K Challenge tab is open but its reader hasn't beaten in a while"; "Whop Day Trades tab is open but its reader hasn't beaten in a while"; "Whop Futures tab is open but its reader hasn't beaten in a while"; "Whop High Risk tab is open but its reader hasn't beaten in a while"; "Whop Swing Trades tab is open but its reader hasn't beaten in a while" Verify the reader heartbeat status and the upstream tab sources for these rooms using timestamps; confirm whether the rooms are quiet or whether ingestion has stalled before treating this as an outage.
+- "readers: 38 room tab(s) seen, 0 injected on the last pass" and "readers: 7 room tab(s) seen, 0 injected on the last pass" Check whether zero injections reflect a legitimately empty pass, filtered content, or a delivery issue. Compare against the raw source feed and recent historical activity before concluding there is a problem.
+
+## Limitations
+- No timestamps are provided for the heartbeat or last-pass observations.
+- The evidence does not include raw messages, message counts, or explicit error codes.
+- "0 injected on the last pass" does not by itself prove a malfunction; it may also occur in a quiet room or filtered pass.
+- The evidence is truncated to status summaries, so source-level verification is required to distinguish stale readers from normal inactivity.
+
+---
+
 # Health — 2026-09-18 — 364fddc1596b91b8a695
 
 The evidence suggests multiple Whop tabs are open but their readers have not reported activity recently. This is a possible staleness or heartbeat issue, but the data does not prove an outage or parser failure.
