@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-18 — ae4d75b869ff5845a7dd
+
+The session is marked in_session=true, but the evidence shows broad source-coverage gaps: many alert bots are ON without a corresponding browser tab, and several Whop tabs are open but their readers have not beaten in a while. This suggests possible missing inputs or stale readers, but the evidence does not confirm a parser bug or an outage.
+
+## Findings
+- Multiple items state "is ON but has no tab in this browser" (for example: AbTrades Alert Bot, Brick Alerts, Chika Alerts, Demon day-trades, Ducci Alerts, FloridaManFinance, Hog Alerts, Jon Tran Alerts, Maguro Alerts, Mugzone Options, Nando Alerts, OWLS all-alerts, OWLS jon-and-kian, Optionality free-trades, PhiccDuck Alerts, Quantum Alerts, Shoof Alerts, Xephyr Alerts, eli, shabs). Verify source availability and tab mapping for each listed alert source. Missing tabs may indicate hidden, closed, or misrouted sources, but the evidence alone does not confirm a system failure.
+- Several open Whop tabs are described as "tab is open but its reader hasn't beaten in a while" (Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, Whop Swing Trades). Check whether the reader heartbeat is stale, delayed, or simply quiet. Do not treat silence as zero activity without confirming the source's expected update cadence.
+
+## Limitations
+- The evidence is truncated to a status list and contains no timestamps, heartbeat intervals, or source payloads.
+- "Has no tab in this browser" indicates missing browser-side coverage, not necessarily that the upstream source is down.
+- "Hasn't beaten in a while" indicates stale or delayed reader activity, but it does not by itself prove an outage.
+- No prices, fills, exits, or numerical trade results are present in the supplied evidence.
+
+---
+
 # Health — 2026-09-18 — ce64520035f2aeedbffd
 
 The session is active, but several Whop tabs are reported as not having received a reader beat for a while, and the Discord extension heartbeat is missing or stale. This suggests a possible monitoring or ingestion gap, but the evidence does not distinguish a quiet room from an outage or confirm any specific parser failure.

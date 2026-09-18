@@ -1,5 +1,21 @@
 # Incident reviews — newest first
 
+# Incident — 2026-09-18 — ae4d75b869ff5845a7dd
+
+During an active session, the supplied monitor reports 20 enabled feeds without tabs in this browser and 6 open tabs with stale reader heartbeats. These are potential ingestion-health gaps requiring verification, not confirmed outages or parser bugs.
+
+## Findings
+- Reported ON with no tab in this browser: AbTrades Alert Bot, Brick Alerts, Chika Alerts, Demon day-trades, Ducci Alerts, FloridaManFinance, Hog Alerts, Jon Tran Alerts, Maguro Alerts, Mugzone Options, Nando Alerts, OWLS all-alerts, OWLS jon-and-kian, Optionality free-trades, PhiccDuck Alerts, Quantum Alerts, Shoof Alerts, Xephyr Alerts, eli, and shabs. Verify whether each feed is expected to be collected in this browser, then compare the tab inventory with reader assignments and ingestion logs. Check for collection in another browser or service before classifying any feed as uncovered.
+- Reported open with a reader that "hasn't beaten in a while": Brando Alerts, Whop 2K Challenge, Whop Day Trades, Whop Futures, Whop High Risk, and Whop Swing Trades. Verify actual heartbeat timestamps, the configured staleness threshold, and whether heartbeats are independent of message activity. Review reader logs, browser lifecycle state, and source accessibility; compare source message timestamps with ingestion records to distinguish quiet rooms from reader interruptions.
+
+## Limitations
+- The evidence is marked untruncated, but contains only issue descriptions and an active-session flag, not supporting telemetry.
+- No heartbeat timestamps, staleness thresholds, incident duration, or browser assignment details are supplied.
+- No source messages or ingestion records establish missed alerts or the extent of any coverage gap; missing records are not evidence of zero activity.
+- No broker fills, simulations, or financial calculations are provided, so trading impact cannot be assessed.
+
+---
+
 # Incident — 2026-09-18 — ce64520035f2aeedbffd
 
 In-session monitoring reports stale reader heartbeats for five open Whop tabs and a missing or stale Discord extension heartbeat. These are potential monitoring-health issues requiring source verification, not confirmed outages or parser bugs.
