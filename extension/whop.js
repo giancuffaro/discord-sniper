@@ -321,5 +321,5 @@ pulseTimer = setInterval(function () {
       href: location.href
     }, function () { void chrome.runtime.lastError; });
   } catch (e) {}
-}, 60 * 1000);
+}, 30 * 1000);   // 9/18: 60→30 s — the pulse is the reader's heartbeat now
 })();

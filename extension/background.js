@@ -2305,12 +2305,15 @@ async function ensureReaders() {
     // 9/9: a tab whose reader is HEARTBEATING doesn't need a new copy.
     // Re-injecting healthy tabs every 5 min was what manufactured the
     // zombie beaters (one per inject). Inject only when nothing is beating.
+    const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
+    // A hidden tab's timers wake about once a minute (Chrome), so a Whop
+    // pulse can land 60-90 s apart while the reader is perfectly healthy.
+    const beatWindow = isWhop ? 180000 : 60000;
     let beating = false;
     for (const cid in READER_TAB) {
-      if (READER_TAB[cid] === t.id && now - (READER_BEAT[cid] || 0) < 60000) { beating = true; break; }
+      if (READER_TAB[cid] === t.id && now - (READER_BEAT[cid] || 0) < beatWindow) { beating = true; break; }
     }
     if (beating) { INJECTED_AT[t.id] = now; continue; }
-    const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
     if (isWhop) { try { await keepWhopAwake(t.id); } catch (e) { /* reader still goes in */ } }
     try {
       await chrome.scripting.executeScript({ target: { tabId: t.id },
@@ -3563,6 +3566,15 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     const prev = WHOP_PULSE[sender.tab.id] || {};
     WHOP_PULSE[sender.tab.id] = { t: Date.now(), ok: !!msg.ok,
       badSince: msg.ok ? 0 : (prev.badSince || Date.now()) };
+    // 9/18: the pulse IS the Whop reader's heartbeat. It never counted as
+    // one, so every Whop room read "hasn't beaten in a while" all day and
+    // ensureReaders re-injected whop.js into a healthy tab every 5 min —
+    // each inject restarting the 15-s history window (a blind spot).
+    try {
+      const path = new URL(String(msg.href || "")).pathname.replace(/\/+$/, "");
+      const wroom = whopRoomOf("whop:" + path);
+      if (wroom) { READER_BEAT[wroom.id] = Date.now(); READER_TAB[wroom.id] = sender.tab.id; }
+    } catch (e) {}
     return;
   }
   if (!msg || msg.type !== "LIVE_DETECTED") return;
