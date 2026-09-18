@@ -1,0 +1,67 @@
+Run 2026-09-17 21:55 ET
+STOCK FUTURES MIRROR GRID — 232 single-name alerts on 28 days with stock 1-min bars; 0 alerts without bars (none)
+ONE micro stock future = 10 shares ($10 per $1). BARS ARE THE STOCK'S (proxy) — the futures themselves print a few lots an hour and are status NT (non-tradable) at Webull on 9/18. Market entry next bar, $1.50 round turn, flat 15:59. Stops in % of the stock price.
+names: TSLA 52, NVDA 37, AAPL 31, AMD 21, META 18, AMZN 18, MSFT 16, SPCX 14, GOOGL 7, MU 7, PLTR 6, NFLX 3, AVGO 2
+
+stop / mode                                               all $   win%    longs $   shorts $
+0.25% · hard 1:2 bracket, no ratchet                       -385    34%       -143       -243
+0.25% · hard 1:1 bracket, no ratchet                       -321    50%        -38       -283
+0.25% · house ratchet (arm 2/3, rungs 4/15) + 2x target       -173    44%        +38       -211
+0.25% · house ratchet, NO target                           -155    44%        +70       -225
+0.25% · ratchet arm 1x, rungs 1/2, no target               -161    39%       +114       -275
+0.25% · ratchet arm 1/2, rungs 1/4, no target              -199    46%        +30       -230
+0.5% · hard 1:2 bracket, no ratchet                        -749    35%        -80       -669
+0.5% · hard 1:1 bracket, no ratchet                        -595    47%       -189       -406
+0.5% · house ratchet (arm 2/3, rungs 4/15) + 2x target       -302    44%       +106       -408
+0.5% · house ratchet, NO target                            -216    44%       +185       -401
+0.5% · ratchet arm 1x, rungs 1/2, no target                -481    31%        +65       -546
+0.5% · ratchet arm 1/2, rungs 1/4, no target               -290    50%       +119       -409
+1% · hard 1:2 bracket, no ratchet                          -400    42%       +227       -627
+1% · hard 1:1 bracket, no ratchet                          -989    45%       -171       -818
+1% · house ratchet (arm 2/3, rungs 4/15) + 2x target       -390    40%       +246       -636
+1% · house ratchet, NO target                              -352    40%       +318       -670
+1% · ratchet arm 1x, rungs 1/2, no target                  -722    38%        +46       -768
+1% · ratchet arm 1/2, rungs 1/4, no target                 -503    39%       +186       -689
+1.5% · hard 1:2 bracket, no ratchet                         +42    47%       +499       -457
+1.5% · hard 1:1 bracket, no ratchet                        -555    48%       -102       -454
+1.5% · house ratchet (arm 2/3, rungs 4/15) + 2x target       -413    44%        +80       -492
+1.5% · house ratchet, NO target                            -517    44%        -24       -492
+1.5% · ratchet arm 1x, rungs 1/2, no target                -266    47%       +200       -466
+1.5% · ratchet arm 1/2, rungs 1/4, no target               -254    43%       +194       -448
+
+BEST cell: 1.5% · hard 1:2 bracket, no ratchet = +42   WORST: 1% · hard 1:1 bracket, no ratchet = -989
+HOW THEY END under the best cell: CLOSE 178, STOP 40, TARGET 14
+
+BY NAME under the best cell — and under 0.5% house ratchet, no target
+  TSLA    52  best    +602 (win 63%)   house    -181
+  AMD     21  best    +181 (win 48%)   house     -22
+  SPCX    14  best     +62 (win 50%)   house     +17
+  NFLX     3  best      +4 (win 67%)   house     +10
+  AAPL    31  best     -19 (win 42%)   house     -27
+  GOOGL    7  best     -36 (win 71%)   house     -23
+  META    18  best     -37 (win 39%)   house    +252
+  AVGO     2  best     -50 (win 50%)   house      -3
+  PLTR     6  best     -74 (win 17%)   house     -30
+  AMZN    18  best     -82 (win 39%)   house     -59
+  NVDA    37  best    -126 (win 38%)   house     -67
+  MSFT    16  best    -128 (win 50%)   house     -44
+  MU       7  best    -256 (win 29%)   house     -41
+
+BY CALLER under the best cell (4+ alerts)
+  ?                           83  best    +716 (win 54%)   house    +308
+  Brett                        9  best    +313 (win 78%)   house     -25
+  TradeLikeGates               6  best     +43 (win 50%)   house     -30
+  Demon Alerts                 7  best     +29 (win 43%)   house     -81
+  Bullwinkle                  20  best     -77 (win 50%)   house     -15
+  Mike                         7  best    -120 (win 29%)   house     -74
+  Honeydrip daytrades          9  best    -163 (win 22%)   house     -74
+  MuggZone                     8  best    -171 (win 38%)   house    -109
+  Unraveller                  32  best    -409 (win 38%)   house    -109
+
+BY TIME OF DAY under the best cell
+  09:30-10:00   96      +10  win 48%
+  10:00-11:00   70     -134  win 43%
+  11:00-14:00   51      +58  win 49%
+  14:00-16:00   15     +108  win 60%
+
+MFE (best move in favour, % of stock) — median 0.40%, 75th 0.66%; reached 0.5% on 38%, 1% on 11%, 2% on 0%
