@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — 07a9aded453a5d29158b
+
+The current TT message supports a caller-reported partial trim of MU calls, while the parser returns no extracted action. The reader identifies the trim, but validation drops the explicit strike. These are review candidates requiring source and schema verification, not confirmed parser bugs.
+
+## Findings
+- Current message chat-messages-1449226651064991806-1550596525502234674 says: "took one more trim MU 1035c 2.35 -> 5.00 6 left". The parser returns fire=false and null action, symbol, side, strike and expiry; the reader returns TRIM, MU, CALL and strike "1035". Verify the original alert and intended parser scope, then review whether explicit partial-trim reports should be recognized even when expiry and trimmed quantity are missing. Distinguish this reported trim from earlier conditional wording such as "if you want to derisk"; recognition does not authorize execution.
+- The reader retains strike "1035", matching the current message's "1035c", but validation.read.strike is null despite validation.ok=true and no safety flags. Inspect the validation schema and normalization trace for possible strike loss. Preserve the source strike without changing it based on plausibility, and leave expiry unresolved rather than borrowing a date from unrelated alerts.
+- The current message contains raw values "2.35 -> 5.00" and "6 left". Retained TT wording includes "Trim some MU 1035c 2.35 -> 3.35 100 per" and "mu now 3.7, 70 a con from the 3.00 av", supporting a distinction between quoted premiums and per-contract gains. The reader records price "5.00" and qty=null. Preserve 2.35 as the reported entry/reference premium and 5.00 as the reported trim premium, subject to source verification of their roles and units. The same-caller examples support a per-share quote interpretation, but verify units and the instrument's premium multiplier before conversion; no conversion is applied here. Treat "6 left" as reported remaining quantity, not quantity sold. Keep trimmed quantity unknown and do not present the report as a broker-confirmed fill.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not include the original MU opening alert, expiry, complete position ledger or broker fills.
+- Only the current message has a supplied parser result; prior messages do not establish parser-wide behavior or coverage.
+- Validation lists only two eligible prior messages. Earlier TT examples are review evidence, not proof that the reader was permitted to use them for position linkage.
+- No verified return calculation or realized position result is supplied; none is inferred.
+- A provider cooldown followed by a successful fallback does not establish a service outage.
+
+---
+
 # Reader Review — 2026-09-18 — f3961872d1708b2901ef
 
 The reader plausibly recognizes an optional MU trim update, but assigns an unsupported expiry and excessive confidence. Validation reports success despite an unsupported context reference and loss of the strike. These are review proposals, not confirmed parser bugs.
