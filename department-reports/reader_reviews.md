@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — a1577862c4b2a88346ca
+
+The message contains an explicit option-opening alert that the reader extracted but the parser left unrecognized. This is a candidate parsing discrepancy requiring source verification, not a confirmed parser bug.
+
+## Findings
+- The current message says "BTO MU 9/25 1100c @ 4.2". The reader extracted OPEN, MU, CALL, expiry 9/25, strike 1100 and price 4.2; validation returned ok=true. The parser returned null for action, symbol, expiry, side and strike, with fire=false. Verify the retained original message and parser eligibility rules, then investigate why the explicit opening-alert syntax produced no structured parser result. Validation success alone does not establish that the contract details are correct or that firing was appropriate.
+- The source explicitly gives "1100c" and says "Adding half position now and the other half right before close." The reader preserved strike 1100 and left qty=null. Verify the stated strike and contract against the original source without silently correcting 1100. Preserve the staged-entry wording: half a position is relative sizing, not a contract count, and the planned later addition is not evidence that it occurred.
+
+## Limitations
+- The supplied prior message is a different LRCX alert; it does not verify the MU contract details.
+- The expiry text specifies 9/25 but no year.
+- The raw premium is "@ 4.2". Explicit premium units and the instrument's premium multiplier are not supplied; retain 4.2 without rescaling or deriving contract cost.
+- No broker fills, contemporaneous quotes, exits or performance calculations are provided. The alert and reader output do not establish execution or realized results.
+- No parser rejection rationale is supplied, so the cause of fire=false remains unresolved.
+
+---
+
 # Reader Review — 2026-09-18 — 76457304c12458cd1151
 
 The current TT message supports a discretionary MU trim update, not a confirmed sale. Review is warranted for unsupported expiry and context attribution in the reader output. The parser/reader disagreement alone does not establish a parser bug.
