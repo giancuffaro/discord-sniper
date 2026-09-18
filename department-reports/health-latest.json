@@ -11,22 +11,22 @@
     {
       "lane": "discord",
       "fresh": true,
-      "version": "3.8.43"
+      "version": "3.8.44"
     },
     {
       "lane": "whop",
       "fresh": true,
-      "version": "3.8.43"
+      "version": "3.8.44"
     }
   ],
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789752725.7707503,
+    "last_finished": 1789753109.4468274,
     "last_error": "",
     "last_provider": "openai",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789753042.7955835
+  "checked_at": 1789753342.8003845
 }
