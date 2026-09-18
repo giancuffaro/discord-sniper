@@ -52,7 +52,58 @@ def main():
             "5. The proof this shape trades as measured is the nightly FUTURES MIRROR `level` column against the NinjaTrader fills — same alerts, same levels.", ""]
     with open(os.path.join(HERE, "ATM-TEMPLATES.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(doc))
+    for root, L in LEVEL.items():
+        with open(os.path.join(HERE, NAMES[root] + ".xml"), "w", encoding="utf-8") as fh:
+            fh.write(template_xml(root, L))
     print("\n".join(doc))
+
+
+def template_xml(root, L):
+    """The NinjaTrader 8 ATM template file for one micro — what NT writes to
+    Documents\\NinjaTrader 8\\templates\\AtmStrategy\\<name>.xml when you
+    press 'save as template'. Ticks. Copied there by hand or by the setup step;
+    NT lists it in the ATM Strategy dropdown after a restart or a template
+    refresh. If NT rejects the file, ATM-TEMPLATES.md has the same numbers for
+    creating it by hand."""
+    name = NAMES[root]
+    if L.get("target"):
+        target, be_trig, be_plus, trail = ticks(root, L["target"]), 0, 0, ""
+    else:
+        target, be_trig, be_plus = 4000, ticks(root, L["arm"]), 0
+        trail = ("\n          <AutoTrailSteps>\n            <AutoTrailStep>\n"
+                 "              <Frequency>%d</Frequency>\n              <ProfitTrigger>%d</ProfitTrigger>\n"
+                 "              <StopLoss>%d</StopLoss>\n            </AutoTrailStep>\n          </AutoTrailSteps>"
+                 % (ticks(root, L["step"]), ticks(root, L["arm"]), ticks(root, L["arm"])))
+    return """<?xml version="1.0" encoding="utf-8"?>
+<NinjaTrader>
+  <AtmStrategy xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Brackets>
+      <Bracket>
+        <Quantity>1</Quantity>
+        <StopLoss>%d</StopLoss>
+        <StopStrategy>
+          <AutoBreakEvenPlus>%d</AutoBreakEvenPlus>
+          <AutoBreakEvenProfitTrigger>%d</AutoBreakEvenProfitTrigger>%s
+          <IsSimStopEnabled>false</IsSimStopEnabled>
+          <VolumeTrigger>0</VolumeTrigger>
+        </StopStrategy>
+        <Target>%d</Target>
+      </Bracket>
+    </Brackets>
+    <Calculate>OnPriceChange</Calculate>
+    <ChaseLimit>0</ChaseLimit>
+    <EntryQuantity>1</EntryQuantity>
+    <IsChase>false</IsChase>
+    <IsChaseIfTouched>false</IsChaseIfTouched>
+    <IsTargetChase>false</IsTargetChase>
+    <ReverseAtStop>false</ReverseAtStop>
+    <ReverseAtTarget>false</ReverseAtTarget>
+    <ShadowStrategy />
+    <Template>%s</Template>
+    <TimeInForce>Day</TimeInForce>
+  </AtmStrategy>
+</NinjaTrader>
+""" % (ticks(root, L["stop"]), be_plus, be_trig, (trail if trail else "\n          <AutoTrailSteps />"), target, name)
 
 
 if __name__ == "__main__":

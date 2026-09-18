@@ -2,9 +2,9 @@
 // last price to a small JSON file once a second so the Discord Sniper bridge
 // can place its round-number level entry off NinjaTrader's own feed.
 //
-// INSTALL: NinjaTrader 8 > New > NinjaScript Editor > right-click Indicators >
-// New Indicator... name it SniperQuoteTape, paste this whole file over the
-// generated one, press F5 (compile). Then open a 1-minute chart of ES 12-26
+// INSTALL: this file lives in Documents\NinjaTrader 8\bin\Custom\Indicators\
+// (copied there 9/18). NinjaTrader 8 > New > NinjaScript Editor > F5 compiles
+// it (or it compiles on the next NinjaTrader start). Then open a 1-minute chart of ES 12-26
 // and one of NQ 12-26 (the front month), add the indicator to EACH chart
 // (Indicators > SniperQuoteTape) with Folder = the discord-sniper folder.
 // Leave those charts open all day. Each chart writes nt_quote_<ROOT>.json:
@@ -14,9 +14,16 @@
 
 #region Using declarations
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Xml.Serialization;
 using NinjaTrader.Cbi;
+using NinjaTrader.Gui;
+using NinjaTrader.Gui.Chart;
 using NinjaTrader.Data;
 using NinjaTrader.NinjaScript;
 #endregion

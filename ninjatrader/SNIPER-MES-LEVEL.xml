@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<NinjaTrader>
+  <AtmStrategy xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Brackets>
+      <Bracket>
+        <Quantity>1</Quantity>
+        <StopLoss>50</StopLoss>
+        <StopStrategy>
+          <AutoBreakEvenPlus>0</AutoBreakEvenPlus>
+          <AutoBreakEvenProfitTrigger>0</AutoBreakEvenProfitTrigger>
+          <AutoTrailSteps />
+          <IsSimStopEnabled>false</IsSimStopEnabled>
+          <VolumeTrigger>0</VolumeTrigger>
+        </StopStrategy>
+        <Target>50</Target>
+      </Bracket>
+    </Brackets>
+    <Calculate>OnPriceChange</Calculate>
+    <ChaseLimit>0</ChaseLimit>
+    <EntryQuantity>1</EntryQuantity>
+    <IsChase>false</IsChase>
+    <IsChaseIfTouched>false</IsChaseIfTouched>
+    <IsTargetChase>false</IsTargetChase>
+    <ReverseAtStop>false</ReverseAtStop>
+    <ReverseAtTarget>false</ReverseAtTarget>
+    <ShadowStrategy />
+    <Template>SNIPER-MES-LEVEL</Template>
+    <TimeInForce>Day</TimeInForce>
+  </AtmStrategy>
+</NinjaTrader>
