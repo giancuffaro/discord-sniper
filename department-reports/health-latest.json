@@ -2,7 +2,7 @@
   "in_session": true,
   "issues": [
     "readers: 4 room tab(s) seen, 0 injected on the last pass, 1 Whop tab(s) reloaded at come-up (come-up saw 38 room tabs); pulses: 538396536=21s",
-    "readers: 3 room tab(s) seen, 0 injected on the last pass, 6 Whop tab(s) reloaded at come-up (come-up saw 6 room tabs); pulses: 538395898=3s 538395899=30s 538396212=3s 538396408=123s 538396414=123s 538396415=123s"
+    "readers: 3 room tab(s) seen, 0 injected on the last pass, 6 Whop tab(s) reloaded at come-up (come-up saw 6 room tabs); pulses: 538395898=3s 538395899=29s 538396212=3s 538396408=423s 538396414=423s 538396415=423s"
   ],
   "lanes": [
     {
@@ -25,5 +25,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789763543.0171788
+  "checked_at": 1789763843.0222852
 }
