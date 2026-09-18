@@ -1,5 +1,38 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — d68bb3d2f1df6106cec8
+
+The reader's TSLA close interpretation is supported by the visible same-caller sequence, but validation rejects its context linkage. This warrants source and context-eligibility review, not classification as a confirmed parser bug. The parser recognized CLOSE and did not fire.
+
+## Findings
+- MuggZone's current message says "all out @ .34" without identifying a contract. The same caller previously posted "RISKY SCALP PLAY TSLA 0DTE 365 calls .45-.50 ENTRY" in message 1550587288738857001, followed by "1st TP HIT sold 1/4" in message 1550587857385816248. The reader cited both and returned TSLA 365 CALL, expiry 9/18. Validation lists only the partial-close message as eligible, flags unsupported_context_id, and states that TSLA is absent from the current message. Verify the original entry, partial-close and final-close messages and inspect why the entry was excluded from eligible context. Consider a source-scoped, verified linkage through the partial close to the entry rather than requiring the ticker in every follow-up. Preserve the non-firing outcome until contract identity and context eligibility are established.
+- The reader assigns confidence 1.0 despite relying on contextual contract identification, while validation returns ok=false and read=null. The shared destination channel contains multiple callers, and MuggZone's older messages discuss other contracts. Review confidence calibration and require verified caller and originating-channel provenance for contextual resolution. Recency alone should not establish contract identity; neither other callers' messages nor their conventions should supply missing fields.
+- The current raw exit value is ".34". The preceding entry quotes ".45-.50" and targets "..65 / .75 /. .80"; the follow-up reports "1st TP HIT sold 1/4" without an exact fill. No explicit premium units, instrument multiplier, broker fills or original contract quantity are supplied. Preserve the raw prices and mark premium units unresolved pending retained source-convention verification. Do not rescale values based on magnitude or turn the first target into a confirmed fill. If the sequence is verified, interpret "all out" as closing the remaining position, without inventing contract counts or realized returns.
+
+## Limitations
+- The supplied evidence is marked untruncated, but this does not establish complete source-channel history or account position state.
+- The eligibility rules, prior parser outputs and position ledger are not provided, so the cause of the validation rejection remains unresolved.
+- The 9/18 expiry is contextually inferred from the entry's 0DTE wording and displayed date; it is not explicit in the final-close message.
+- These are caller-reported alerts, not broker-confirmed executions. No simulation results or verified performance calculations are supplied.
+
+---
+
+# Reader Review — 2026-09-18 — a643e189633c0957b0f0
+
+The current message clearly expresses a full-close intent. The recent TSLA scalp sequence supports the reader's contextual interpretation, but its cited entry is outside the validator's eligible context. This is a candidate context-policy mismatch requiring source verification, not a confirmed parser bug or missed execution.
+
+## Findings
+- The current message says "all out @ .34 @here" without naming a contract. The parser returned CLOSE with fire=false and null contract fields. The reader supplied TSLA 365 CALL, expiry "0DTE", and price "0.34", citing message 1550587285291008073: "RISKY SCALP PLAY TSLA 0DTE 365 calls .45-.50 ENTRY". Subsequent messages say "1st TP HIT sold 1/4" and "Rejected at 365". These support a TSLA association, but validation permits only those two subsequent messages and flags unsupported_context_id. Verify the original message sequence, thread relationships, position state, and intended context-eligibility rules. Review whether the TSLA entry should have remained eligible through its follow-ups. If it was intentionally excluded, retain the unresolved contract rather than forcing a close association; align reader context access and confidence with validator requirements.
+- Validation also flags expiry_not_literal. "0DTE" appears in the cited TSLA entry, but not in the current close or either eligible prior message. The reader returned the relative label rather than a calendar expiry. Verify whether the expiry requirement applies to the current message, eligible context, or a resolved contract record. If relative-expiry resolution is permitted, verify the source session date, timezone, and actual contract expiry before associating the close. Do not treat "0DTE" in ineligible context as sufficient validation.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not establish complete channel history, reply targets, or tracked position state.
+- The raw exit value is ".34"; the reader's "0.34" preserves its numerical value. Premium units are not explicit, and no unit conversion or contract-dollar amount is established here.
+- "1st TP HIT sold 1/4" reports a partial sale without an explicit fill price. "All out" may describe closing the remainder; original quantity and remaining contracts are not supplied.
+- No broker fills, execution results, or performance calculations are provided. Caller statements and fire=false do not establish realized returns or a missed broker execution.
+
+---
+
 # Reader Review — 2026-09-18 — ecd06691fac61148a95a
 
 The current message is a caller-reported partial exit plausibly linked to MuggZone's preceding TSLA scalp alert. The reader identifies that context, while the parser returns no action. This warrants source-verified review, not classification as a confirmed parser bug.
