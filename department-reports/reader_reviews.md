@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — f3961872d1708b2901ef
+
+The reader plausibly recognizes an optional MU trim update, but assigns an unsupported expiry and excessive confidence. Validation reports success despite an unsupported context reference and loss of the strike. These are review proposals, not confirmed parser bugs.
+
+## Findings
+- The current TT message says 'Mu 1035 2.35 -> 4.40 if you want to derisk into the weekend.' The reader returns TRIM with confidence 1.0, whereas the parser returns fire=false and null fields. Earlier TT messages explicitly discuss trimming MU. Verify whether optional de-risking updates belong in the application's TRIM classification. Preserve the distinction between a suggested trim and an executed sale; this message does not establish a fill or quantity. Review the parser-reader disagreement against that policy rather than assuming fire=false is a bug.
+- The reader assigns expiry '9/18', but neither the current message nor the retained TT MU messages specifies that expiry. TT's earlier 'Trim some MU 1035c 2.35 -> 3.35 100 per' supports a candidate call-side interpretation, but the cited supporting message only says 'Coming into second trim area here if you want on MU I plan to hold most until 1040.' Leave expiry unresolved pending verification of the original TT opening alert. Do not infer expiry from the posting date or another caller's trades. Verify the same-position link before inheriting CALL from the earlier 1035c message, and reduce confidence to reflect missing contract details.
+- Validation has eligible_prior_ids=[], flags 'unsupported_context_id', and nevertheless returns ok=true. The reader cites chat-messages-1449226651064991806-1550581036830818305. Reader strike '1035' also becomes null in validation.read without an explanation. Inspect context-eligibility rules and the validation trace to determine what ok=true guarantees. Verify whether an unsupported citation should block acceptance or require review, and investigate whether strike removal is intentional normalization or unintended field loss.
+- The current raw values are '2.35 -> 4.40'. Same-caller examples include '2.35 -> 3.35 100 per' and '3.7, 70 a con from the 3.00 av', which support a possible distinction between premium quotes and per-contract gains. The current message does not explicitly state premium units or report a completed exit. Preserve 2.35 and 4.40 as raw values and verify TT's quote convention and the instrument's premium multiplier before conversion. Treat 4.40 as a reported trim-area value, not a broker-confirmed exit. Keep '100 per' and '70 a con' separate from exit premiums; no unit conversion or return calculation is established here.
+
+## Limitations
+- Only the current message has supplied parser, reader, and validation outputs; prior messages provide context, not evidence of their parsing behavior.
+- The retained evidence lacks an explicit TT MU opening alert identifying expiry and a verified complete contract.
+- No broker fills, contemporaneous option quotes, or verified position quantities are supplied. Caller statements are not broker-confirmed results.
+- Evidence is marked untruncated, but that does not establish complete channel history or context eligibility. Missing fields are unknown, not zero.
+
+---
+
 # Reader Review — 2026-09-18 — d68bb3d2f1df6106cec8
 
 The reader's TSLA close interpretation is supported by the visible same-caller sequence, but validation rejects its context linkage. This warrants source and context-eligibility review, not classification as a confirmed parser bug. The parser recognized CLOSE and did not fire.
