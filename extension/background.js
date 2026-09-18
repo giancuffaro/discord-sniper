@@ -2364,6 +2364,8 @@ async function reinject() {
   // the previous observer/timer before the new one starts — so there's no
   // double-reading and no orphaned "context invalidated" copy left running.
   // You keep your scroll position in every room, and reading never stops.
+  let updated = "";
+  try { updated = (await chrome.storage.local.get("just_updated")).just_updated || ""; } catch (e) {}
   try { await chrome.storage.local.set({ just_updated: "" }); } catch (e) {}
 
   const urls = ["https://discord.com/channels/*", "https://*.discord.com/channels/*",
@@ -2373,6 +2375,17 @@ async function reinject() {
 
   for (const t of tabs) {
     const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
+    // WHOP TABS RELOAD ON A CODE UPDATE (9/18). Measured on 3.8.45→.50: after
+    // chrome.runtime.reload() the old whop.js copies die ("context gone") and
+    // executeScript reported success without a reader ever coming up in the
+    // tab — every Whop room read nothing until the 30-min backstop reload.
+    // A Whop tab is a background tab nobody is looking at, so a page reload
+    // costs him nothing (the Discord rule — never refresh under him — stands
+    // for Discord). A reload also runs whop-awake.js at document_start.
+    if (isWhop && updated) {
+      try { await chrome.tabs.reload(t.id); } catch (e) {}
+      continue;
+    }
     if (isWhop) { try { await keepWhopAwake(t.id); } catch (e) { /* reader still goes in */ } }
     try {
       await chrome.scripting.executeScript({ target: { tabId: t.id },

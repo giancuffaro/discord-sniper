@@ -1,5 +1,22 @@
 # Health reviews — newest first
 
+# Health — 2026-09-18 — 72f7782f2dc1df09ee0d
+
+The session is marked in_session=true. The evidence reports multiple Whop tabs whose reader "hasn't beaten in a while," plus room-tab coverage counts of 38 seen / 3 injected and 7 seen / 0 injected on the last pass. The data is insufficient to tell whether this reflects a quiet room, a stalled reader, or an outage without source timestamps and expected-heartbeat thresholds.
+
+## Findings
+- Issues list: "Whop 2K Challenge tab is open but its reader hasn't beaten in a while", "Whop Day Trades tab is open but its reader hasn't beaten in a while", "Whop Futures tab is open but its reader hasn't beaten in a while", "Whop High Risk tab is open but its reader hasn't beaten in a while", "Whop Swing Trades tab is open but its reader hasn't beaten in a while". Verify the source heartbeat or reader timestamp for each listed tab and confirm whether the readers are expected to be idle, delayed, or disconnected before treating this as an outage.
+- Issues list: "readers: 38 room tab(s) seen, 3 injected on the last pass" and "readers: 7 room tab(s) seen, 0 injected on the last pass". Verify the meaning of "seen" versus "injected" in the source telemetry and compare against the expected coverage for those rooms; do not assume zero injected means failure without a source-confirmed threshold or control data.
+
+## Limitations
+- No timestamps are provided, so "hasn't beaten in a while" cannot be quantified.
+- The evidence does not define the expected heartbeat interval or the threshold for stale readers.
+- The counts "38 room tab(s) seen" and "7 room tab(s) seen" are coverage metrics only; they do not confirm successful or failed delivery by themselves.
+- There is no broker-confirmed execution, quote, or trade result in the evidence.
+- The evidence is not sufficient to distinguish a quiet room from a true outage.
+
+---
+
 # Health — 2026-09-18 — 4eb94bbb0cbbb60ec58d
 
 The evidence indicates an in-session state with multiple Whop tabs reporting stale reader heartbeats and no injections on the last pass, but it does not confirm an outage or parser failure. The data is insufficient to distinguish an inactive/quiet room from a delivery problem without timestamped source checks.
