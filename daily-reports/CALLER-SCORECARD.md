@@ -1,8 +1,8 @@
-# CALLER SCORECARD — 2026-08-18 .. 2026-09-17 (21 days with the room chat recorded · 419 option alerts · 239 with quotes at the alert)
+# CALLER SCORECARD — 2026-08-18 .. 2026-09-18 (22 days with the room chat recorded · 425 option alerts · 245 with quotes at the alert)
 
 Instant buy at the ask, 1 contract, our own recorded quotes. **FOLLOW HIM** = out at the bid on his first follow-up call, a -20% disaster stop, else flat at the last quote — on ALL his alerts, silent ones included. **LADDER** = the live ladder (5/3/5) on the same alerts. Under 10 alerts is a list, not a ranking. Measurement only.
 
-ALL CALLERS: 239 alerts · silent 58% · follow him -1393 · ladder -2842
+ALL CALLERS: 245 alerts · silent 58% · follow him -1539 · ladder -2947
 
 | caller | alerts | days | silent | entry gap | FOLLOW HIM | per alert | LADDER | per alert | better | REAL trades | REAL $ | real win | peak |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|
@@ -11,22 +11,21 @@ ALL CALLERS: 239 alerts · silent 58% · follow him -1393 · ladder -2842
 | Vero | 12 | 8 | 33% | +4% | -131 | -10.9 | -1 | -0.1 | ladder | 12 | -127 | 0% | +6% |
 | Mike | 12 | 9 | 25% | -2% | -285 | -23.8 | -40 | -3.3 | ladder | 11 | +29 | 36% | +3% |
 | Unraveller | 29 | 15 | 38% | +3% | -721 | -24.9 | -577 | -19.9 | ladder | 17 | -479 | 18% | +2% |
-| MuggZone | 13 | 3 | 38% | +7% | -642 | -49.4 | -919 | -70.7 | follow | 7 | -41 | 0% | -1% |
+| MuggZone | 15 | 4 | 33% | +7% | -653 | -43.5 | -944 | -62.9 | follow | 8 | -36 | 12% | -4% |
 | (room) Midas *(few)* | 1 | 1 | 100% | -3% | +198 | +198.0 | +9 | +9.0 | follow | — | — | — | — |
 | Elite Options / Shoof *(few)* | 1 | 1 | 0% | +7% | +150 | +150.0 | -30 | -30.0 | follow | 1 | +0 | 0% | — |
 | (room) Platinum nitro *(few)* | 2 | 1 | 100% | -1% | +255 | +127.5 | +56 | +28.0 | follow | — | — | — | — |
-| TT *(few)* | 1 | 1 | 0% | +1% | +110 | +110.0 | +0 | +0.0 | follow | — | — | — | — |
 | (room) Vero 1 *(few)* | 1 | 1 | 100% | — | +93 | +93.0 | -17 | -17.0 | follow | — | — | — | — |
 | Skyy *(few)* | 2 | 1 | 50% | -1% | +159 | +79.5 | -6 | -3.0 | follow | 1 | -2 | 0% | -8% |
 | (room) ZT fut-6 *(few)* | 3 | 1 | 67% | +0% | +171 | +57.0 | +19 | +6.3 | follow | — | — | — | — |
 | (room) Honeydrip daytrades *(few)* | 2 | 2 | 0% | +6% | +102 | +51.0 | -7 | -3.5 | follow | — | — | — | — |
 | stockguy007 *(few)* | 1 | 1 | 0% | — | +50 | +50.0 | -16 | -16.0 | follow | 1 | +27 | 100% | — |
 | (room) ZT opt-1 *(few)* | 1 | 1 | 0% | -10% | +37 | +37.0 | -5 | -5.0 | follow | — | — | — | — |
+| TT *(few)* | 2 | 2 | 50% | +1% | +70 | +35.0 | +0 | +0.0 | follow | — | — | — | — |
 | Demon Alerts *(few)* | 1 | 1 | 0% | -2% | +32 | +32.0 | +4 | +4.0 | follow | 4 | -39 | 0% | -13% |
 | Lars *(few)* | 1 | 1 | 0% | +3% | +30 | +30.0 | +0 | +0.0 | follow | 2 | -86 | 0% | — |
 | (room) Aristotle *(few)* | 3 | 1 | 33% | +1% | +72 | +24.0 | -54 | -18.0 | follow | — | — | — | — |
 | The Pawn (The Market Bishop) *(few)* | 1 | 1 | 0% | -1% | +22 | +22.0 | -1 | -1.0 | follow | 8 | +204 | 38% | -5% |
-| Eva *(few)* | 4 | 4 | 100% | -0% | +69 | +17.2 | -21 | -5.2 | follow | 1 | -9 | 0% | -5% |
 | Namrood-BOT *(few)* | 3 | 3 | 33% | +6% | +36 | +12.0 | +5 | +1.7 | follow | 5 | -2 | 40% | +4% |
 | AbTrades *(few)* | 5 | 4 | 40% | +4% | +58 | +11.6 | +36 | +7.2 | follow | 1 | +0 | 0% | — |
 | 👑KingBeeAri🐝 *(few)* | 7 | 5 | 14% | -1% | +80 | +11.4 | -21 | -3.0 | follow | 6 | +0 | 50% | +7% |
@@ -35,13 +34,15 @@ ALL CALLERS: 239 alerts · silent 58% · follow him -1393 · ladder -2842
 | (room) ZT all-trades-mashup *(few)* | 6 | 2 | 83% | -8% | +21 | +3.5 | +6 | +1.0 | follow | — | — | — | — |
 | EvaPanda Alerts *(few)* | 4 | 4 | 75% | +4% | +3 | +0.8 | -67 | -16.7 | follow | 4 | -148 | 25% | +4% |
 | Clutch Trades *(few)* | 2 | 2 | 100% | -2% | +0 | +0.0 | -5 | -2.5 | follow | 1 | -4 | 0% | +9% |
+| BRICK [I will never DM you]🧱 *(few)* | 1 | 1 | 0% | +3% | +0 | +0.0 | -10 | -10.0 | follow | — | — | — | — |
 | King Maker Bot *(few)* | 2 | 1 | 100% | +3% | -3 | -1.5 | -2 | -1.0 | ladder | 4 | -26 | 0% | — |
 | (room) Vero 2 *(few)* | 1 | 1 | 100% | +2% | -2 | -2.0 | -2 | -2.0 | ladder | — | — | — | — |
 | Owls *(few)* | 1 | 1 | 0% | — | -2 | -2.0 | +3 | +3.0 | ladder | — | — | — | — |
 | eli *(few)* | 1 | 1 | 100% | -12% | -3 | -3.0 | -2 | -2.0 | ladder | 1 | -1 | 0% | -7% |
+| Eva *(few)* | 5 | 5 | 100% | +1% | -21 | -4.2 | -61 | -12.2 | follow | 1 | -9 | 0% | -5% |
 | Tater Tot Done Chased 🥜 *(few)* | 1 | 1 | 100% | +4% | -5 | -5.0 | -2 | -2.0 | ladder | — | — | — | — |
 | Trademorewiser *(few)* | 4 | 4 | 50% | -1% | -24 | -6.0 | -12 | -3.0 | ladder | 3 | +10 | 33% | +5% |
-| TradingTheTrend *(few)* | 7 | 7 | 71% | +0% | -49 | -7.0 | -63 | -9.0 | follow | 2 | -22 | 0% | — |
+| TradingTheTrend *(few)* | 8 | 8 | 75% | +1% | -54 | -6.7 | -93 | -11.6 | follow | 2 | -22 | 0% | — |
 | Demon × LKS *(few)* | 9 | 5 | 78% | +2% | -99 | -11.0 | -64 | -7.1 | ladder | 5 | -11 | 20% | +4% |
 | ZTRADEZ Manager *(few)* | 6 | 2 | 100% | +3% | -71 | -11.8 | -79 | -13.2 | follow | 1 | +0 | 0% | — |
 | sloth  legooman NR100 *(few)* | 1 | 1 | 100% | +2% | -12 | -12.0 | -6 | -6.0 | ladder | — | — | — | — |
@@ -72,4 +73,4 @@ REAL TRADES ON CALLERS WITH NO QUOTED ALERT ABOVE (broker truth only):
 - KuMo Bot — 1 trades -25, win 0%
 - TLM — 6 trades +23, win 33%
 
-built from master_alerts.csv, alert_meta.csv, master_ledger.csv, daily-reports/CALLER-OUTCOMES.csv and the quote tapes · 2026-09-17 23:43 UTC
+built from master_alerts.csv, alert_meta.csv, master_ledger.csv, daily-reports/CALLER-OUTCOMES.csv and the quote tapes · 2026-09-18 16:47 Eastern Daylight Time

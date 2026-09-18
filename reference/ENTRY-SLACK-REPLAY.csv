@@ -198,3 +198,5 @@ date,time,kind,occ,symbol,qty,our_bid,actual_fill,improvement,status,bid_at_read
 2026-09-17,12:29:01,fill,AAPL260921C00340000,AAPL,1,1.45,1.40,5,scored,1.40,1.41,0,,True,1.41,-1,True,1.41,-1,True,1.41,-1,True,1.41,-1,True,1.41,-1,True,1.41,-1
 2026-09-17,12:45:21,fill,DELL260918C00600000,DELL,1,4.95,4.95,0,scored,4.95,5.10,1,,False,4.95,-0,False,4.95,-0,False,4.95,-0,True,5.1,-15,True,5.1,-15,True,5.1,-15
 2026-09-17,12:45:21,fill,DELL260918C00600000,DELL,1,4.95,4.95,0,scored,4.95,5.10,1,,False,4.95,-0,False,4.95,-0,False,4.95,-0,True,5.1,-15,True,5.1,-15,True,5.1,-15
+2026-09-18,13:57:03,fill,HOOD260925C00120000,HOOD,1,4.30,4.30,0,scored,4.30,4.40,0,,False,4.3,-0,False,4.3,-0,True,4.4,-10,True,4.4,-10,True,4.4,-10,True,4.4,-10
+2026-09-18,15:24:48,fill,TSLA260918C00365000,TSLA,1,0.36,0.33,3,scored,0.31,0.33,1,,True,0.33,-0,True,0.33,-0,True,0.33,-0,True,0.33,-0,True,0.33,-0,True,0.33,-0

@@ -3,58 +3,71 @@
   "coverage_warnings": 0,
   "failed_checks": [
    "Historical parser corpus gate",
-   "caller versus ratchet comparison"
+   "Python regression suite"
   ],
-  "generated_at": "2026-09-17T16:46:09.937445-04:00",
-  "possible_missed": 1,
-  "silent_drops": 16,
+  "generated_at": "2026-09-18T16:46:35.816057-04:00",
+  "possible_missed": 0,
+  "silent_drops": 3,
   "status": "attention"
  },
  "balance": {
-  "as_of": "2026-09-17",
-  "bp": 1165.93,
-  "day_pl": 227.1,
-  "flow": 0.02,
-  "fut_fees": 12.62,
-  "fut_flow": 0.0,
-  "fut_nlv": 256.64,
-  "fut_pl": -132.62,
-  "nlv": 1165.93
+  "as_of": "2026-09-18",
+  "bp": 334.25,
+  "day_pl": -916.68,
+  "flow": 85.0,
+  "fut_fees": 18.98,
+  "fut_flow": -85.0,
+  "fut_nlv": 68.16,
+  "fut_pl": -103.48,
+  "nlv": 334.25
  },
  "bot": {
-  "losses": 2,
-  "pl": 2.0,
-  "trades": 14,
-  "wins": 3
+  "losses": 0,
+  "pl": 5.0,
+  "trades": 1,
+  "wins": 1
  },
  "bridge": {
   "buying_power": null,
   "health": {
-   "checked_at": 1789683486.2587874,
-   "issues": [],
+   "checked_at": 1789763843.0222852,
+   "issues": [
+    "readers: 4 room tab(s) seen, 0 injected on the last pass, 1 Whop tab(s) reloaded at come-up (come-up saw 38 room tabs); pulses: 538396536=21s",
+    "readers: 3 room tab(s) seen, 0 injected on the last pass, 6 Whop tab(s) reloaded at come-up (come-up saw 6 room tabs); pulses: 538395898=3s 538395899=29s 538396212=3s 538396408=423s 538396414=423s 538396415=423s"
+   ],
    "lanes": [
     {
      "fresh": true,
      "lane": "discord",
-     "version": "3.8.40"
+     "version": "3.8.56"
     },
     {
      "fresh": true,
      "lane": "whop",
-     "version": "3.8.40"
+     "version": "3.8.56"
     }
    ]
   },
-  "probed_at": "2026-09-17T18:19:00-04:00",
+  "probed_at": "2026-09-18T16:47:32-04:00",
   "up": false
  },
  "broke": [
   {
-   "date": "2026-09-17",
+   "date": "2026-09-18",
    "failed_checks": [
     "Historical parser corpus gate",
-    "caller versus ratchet comparison"
+    "Python regression suite"
    ]
+  },
+  {
+   "coverage_warnings": 0,
+   "date": "2026-09-18",
+   "failed_checks": [
+    "Historical parser corpus gate",
+    "Python regression suite"
+   ],
+   "possible_missed": 0,
+   "silent_drops": 3
   },
   {
    "coverage_warnings": 0,
@@ -65,56 +78,49 @@
    ],
    "possible_missed": 1,
    "silent_drops": 16
-  },
-  {
-   "coverage_warnings": 0,
-   "date": "2026-09-16",
-   "failed_checks": [],
-   "possible_missed": 1,
-   "silent_drops": 4
   }
  ],
- "date": "2026-09-17",
+ "date": "2026-09-18",
  "pending": [
   "Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5\u21922 rung, futures decouple) \u2014 G's call who does i\u2026",
-  "NinjaTrader ATM \"SNIPER\": stop 100 ticks / target 200, qty 1 \u2014 create in NT8 (paused; NinjaTrader is off).",
+  "NinjaTrader: create the two LEVEL ATM templates from ninjatrader/ATM-TEMPLATES.md, put SniperQuoteTape on an \u2026",
   "NOTHING REOPENS A DISCORD ROOM TAB \u2014 only START HERE does (G, 9/8), and it starts the DISCORD BROWSER only wh\u2026"
  ],
  "reports": [
   "alert-audit            all        STALE    ALERT-AUDIT.html  [never recorded in reports/INDEX.json]",
-  "audit                  2026-09-17 STALE    daily-audits\\AUDIT week-of-Sep-14-to-Sep-20-2026.txt  [changed: DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block), DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block), test_broker_sync.py, trades.log (day lines)]",
-  "brief                  2026-09-17 CURRENT  daily-reports\\BRIEF week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-17T18:18:59-04:00]",
-  "caller-outcomes        2026-09-17 STALE    daily-reports\\CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md  [changed: DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (discord).txt (day block), DS Logs/signal-room-chat week-of-Sep-14-to-Sep-20-2026 (whop).txt (day block), quote_shadow.csv (day rows), trades.log (day lines)]",
-  "entry-slack            2026-09-17 STALE    daily-reports\\ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md  [changed: option_tape.csv (day rows), quote_shadow.csv (day rows), trades.log (day lines)]",
-  "futures-mirror         2026-09-17 STALE    daily-reports\\FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md  [never recorded in reports/INDEX.json]"
+  "audit                  2026-09-18 CURRENT  daily-audits\\AUDIT week-of-Sep-14-to-Sep-20-2026.txt  [built 2026-09-18T16:47:32-04:00]",
+  "brief                  2026-09-18 CURRENT  daily-reports\\BRIEF week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-18T16:47:31-04:00]",
+  "caller-outcomes        2026-09-18 CURRENT  daily-reports\\CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md  [built 2026-09-18T16:46:50-04:00]",
+  "caller-vs-ratchet      2026-09-18 STALE    daily-reports\\CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md  [changed: option_tape.csv (day rows)]",
+  "entry-slack            2026-09-18 STALE    daily-reports\\ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md  [changed: option_tape.csv (day rows)]"
  ],
  "rooms": {
   "discord": {
    "on": 35,
-   "reads": 447,
-   "spoke": 25
+   "reads": 334,
+   "spoke": 24
   },
   "whop": {
    "on": 5,
-   "reads": 714,
-   "spoke": 4
+   "reads": 772,
+   "spoke": 3
   }
  },
  "verified": {
   "bridge_code_live": {
-   "at": "2026-09-17T18:19:00-04:00",
-   "bridge_py_mtime": "2026-09-17T01:13:06-04:00",
-   "sha": "c1a1592"
+   "at": "2026-09-18T16:47:32-04:00",
+   "bridge_py_mtime": "2026-09-17T23:54:32-04:00",
+   "sha": "992a980"
   },
   "broker_reconciled": {
-   "at": "2026-09-17T18:19:00-04:00",
-   "broker_legs": 42,
-   "ledger_pl": 234.0,
+   "at": "2026-09-18T16:47:32-04:00",
+   "broker_legs": 77,
+   "ledger_pl": -839.0,
    "match": null,
    "sync_ok": true
   },
   "parser_gate": {
-   "at": "2026-09-17T18:19:00-04:00",
+   "at": "2026-09-18T16:47:32-04:00",
    "counts": {
     "actions": 3050,
     "entries": 848,
@@ -123,10 +129,10 @@
    }
   },
   "tests": {
-   "at": "2026-09-17T18:19:00-04:00",
-   "failed": 0,
-   "passed": 363
+   "at": "2026-09-18T16:47:32-04:00",
+   "failed": 1,
+   "passed": 366
   }
  },
- "written_at": "2026-09-17T18:18:59-04:00"
+ "written_at": "2026-09-18T16:47:32-04:00"
 }

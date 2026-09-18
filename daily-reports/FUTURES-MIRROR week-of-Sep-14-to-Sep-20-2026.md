@@ -1,5 +1,28 @@
 # FUTURES-MIRROR — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Fri Sep 18 2026 =====
+
+# FUTURES MIRROR — 2026-09-18
+
+SPY/QQQ room entries replayed as one-contract MES/MNQ two ways: market entry with a 25-pt stop / 50-pt target and the futures ratchet, and the LEVEL entry (MES: limit 2 before the 25, 12.5-pt 1:1 bracket; MNQ: limit 5 through the 25, 12.5 stop, BE at +5, rungs 2.5; 30-min wait).
+The switch is OFF: this is a measurement, not a trade.
+
+**No SPY/QQQ entries on this date.** Nothing to replay.
+
+
+### What this number is not
+
+- No slippage and no spread: entries fill at the next bar's OPEN, exits at
+  the exact stop/target price. A real market order does neither.
+- 1-minute bars, so a bar that touched the stop AND the target is scored as
+  a stop. Conservative, but it is a guess about which came first.
+- Commission is an assumption: $1.50 round turn per contract, shown net.
+- The mirror is OFF. This is hypothetical: the current live futures route
+  records stop/target levels but does not enforce those exits at the broker.
+  Activation is blocked until protective exits are operational and tested.
+- New-day alert coverage is limited to bridge shadow rows and master_alerts;
+  a post missed before those stages is absent from this report.
+
 ===== Thu Sep 17 2026 =====
 
 # FUTURES MIRROR — 2026-09-17

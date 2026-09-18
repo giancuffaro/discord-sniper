@@ -1,5 +1,51 @@
 # BRIEF — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Fri Sep 18 2026 =====
+
+# SNIPER BRIEF — 2026-09-18
+
+## Day
+- Webull margin day P&L: -$916.68 net · -$844 gross on 79 broker legs (the gap is fees)
+- Balance: NLV $334.25 (-$831.68 vs 2026-09-17) · option BP $334.25 · read 2026-09-18T16:40:33
+- Webull futures: -$103.48 net · -$84.5 gross, $18.98 fees on 26 fills · NLV $68.16
+- Money moved (transfer / deposit / withdrawal — NOT trading): margin +$85 · futures -$85
+- ALL ACCOUNTS, net of fees: -$1020.16 (margin -$916.68, futures -$103.48)
+- Bot: +$5 · 1 trade, 1 contract
+- Hand (G): -$844 · 41 trades, 300 contracts
+- Ledger day total: -$839 (options only)
+
+## Bot trades
+```
+time   channel             trader           tkr    contract         in    out        $  why exited
+--------------------------------------------------------------------------------------------------
+15:24  OWLS all-alerts     MuggZone         TSLA   365C 9/18      0.33   0.38      +$5  born stop
+```
+entry slack (OFF, measured): 0 no-fills today; nothing beats today's rule: every slack level from 2% to 10% comes out behind it (-$13 to -$244), and the 95% band on 158 paired orders (-$2.61 .. -$0.56 per order) CLEARS zero
+
+## Callers right / wrong
+**Right**
+- BRICK [I will never DM you]🧱 FSLY 25C 10/16 +40.0% (trim) — bot: no
+- MuggZone HOOD 120C 9/25 +2.3% (full) — bot: no
+**Wrong**
+- MuggZone TSLA 365C 0DTE -24.4% (full) — bot took it: +$5
+unscored (no exit price — never estimated): 🛎️｜all-alerts MU 1000C
+ratchet on those 6 caller-priced paths: -69 per 1-contract replay
+
+## What broke
+- REFUSED 2 — OPEN P (BRICK [I will never DM you]🧱's call) 115C 1/16 x1 @ 3.30 -> 2027-01-16 is not a trading day, so that contract d…
+- POSTCHECK PROBLEM 1 — FAILED HOOD — PROBLEM: HOOD is held with NO resting stop — watchdog only
+- STOP-WARN 2 — HOOD — Webull wouldn't hold a resting stop (HTTP Status: 417, Code: OPENAPI_OPTION_CAVERED_CALL_STOCK_NO_ENOUGH, Msg: Y…
+- AI READ 3 — saved key check: verified (HTTP 200)
+- LANE discord 1 — readers: 4 room tab(s) seen, 2 injected on the last pass, 1 Whop tab(s) reloaded at come-up (come-up saw 38 room tabs);…
+- LANE whop 1 — readers: 3 room tab(s) seen, 0 injected on the last pass, 6 Whop tab(s) reloaded at come-up (come-up saw 6 room tabs); …
+
+## Pending (G's action)
+- Market Sniper: apply HANDOFF-RATCHET-2026-09-09.md (options 5→2 rung, futures decouple) — G's call who does i…
+- NinjaTrader: create the two LEVEL ATM templates from ninjatrader/ATM-TEMPLATES.md, put SniperQuoteTape on an …
+- NOTHING REOPENS A DISCORD ROOM TAB — only START HERE does (G, 9/8), and it starts the DISCORD BROWSER only wh…
+
+built from master_ledger.csv, master_broker.csv, balance_daily.csv, master_futures.csv, trades.log, daily-reports/CALLER-OUTCOMES.csv, daily-reports/CALLER-VS-RATCHET week-of-Sep-14-to-Sep-20-2026.md, daily-reports/FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md, daily-reports/ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md, department-reports/extension-*.json, HANDOFF.md · 2026-09-18 16:47 Eastern Daylight Time
+
 ===== Thu Sep 17 2026 =====
 
 # SNIPER BRIEF — 2026-09-17

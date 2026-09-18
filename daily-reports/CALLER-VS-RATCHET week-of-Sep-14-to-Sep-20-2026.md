@@ -1,5 +1,40 @@
 # CALLER-VS-RATCHET — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Fri Sep 18 2026 =====
+
+# Caller entry versus our ratchet — 2026-09-18
+
+The caller's posted premium is the hypothetical fill when available. Our 5/3/5 ratchet is replayed against the best available exact-contract bid path: historical OPRA when present, otherwise the live Tastytrade/Webull tapes. Caller exits use their posted price/percentage, or the contemporaneous bid when they posted only the exit time.
+
+| Alert | Source | Hypothetical entry | Entry basis | Caller result | Caller evidence | Our ratchet exit | Our ratchet result |
+|---|---|---:|---|---|---|---:|---:|
+| 13:24 GOOGL | OWLS all-alerts | $4.00 | first recorded ask; caller price absent | unavailable | no paired caller exit | $4.00 | +0.0% / +0 (quote-path replay) |
+| 13:47 FSLY | Brick Alerts | $1.75 | caller posted | partial +40.0% | caller-stated | $1.65 | -5.7% / -10 (quote-path replay) |
+| 13:57 HOOD | MuggZone | $4.30 | caller posted | full $4.40 (+2.3%) | market bid at caller exit | $4.10 | -4.7% / -20 (quote-path replay) |
+| 15:02 MU | Option Alerts | $4.20 | caller posted | unavailable | no paired caller exit | $4.00 | -4.8% / -20 (quote-path replay) |
+| 15:20 TSLA | OWLS all-alerts | $0.45 | caller posted | full $0.34 (-24.4%) | caller-stated | $0.53 | +17.8% / +8 (quote-path replay) |
+| 15:20 TSLA | OWLS all-alerts | $0.45 | caller posted | full $0.34 (-24.4%) | caller-stated | $0.53 | +17.8% / +8 (quote-path replay) |
+| 15:49 GOOGL | OWLS all-alerts | $4.25 | caller posted | unavailable | no paired caller exit | $3.90 | -8.2% / -35 (quote-path replay) |
+
+## Alerts awaiting an exact path
+
+These rows are still part of the comparison. Their caller evidence is retained; only our ratchet result waits for contract tape.
+
+| Alert | Trader / room | Original entry | Caller result | Ratchet status |
+|---|---|---:|---|---|
+| 12:57 MU 1000C | OWLS Capital: 🛎️｜all-alerts | — | partial $2.35 | expiry missing; exact contract unresolved |
+| 13:43 P 115C 1/16 @ 3.30 | BRICK [I will never DM you]🧱 | $3.30 | unavailable | exact bid/ask path unavailable |
+
+## Result
+
+- Comparable ratchet paths: **7 of 9 observed**.
+- Our ratchet on the **6 paths with a caller-posted entry**: **-69 per one-contract replay**.
+- Including the no-price alerts at their first recorded ask: **-69 across 7 scorable paths**.
+- Numeric caller full-exit results on this subset: **4 of 7**; missing caller exit prices prevent an honest aggregate caller P&L.
+- Broker-confirmed results override quote-path simulations whenever the bot actually traded.
+- Every observed entry is listed: **7 scored + 2 awaiting tape/futures handling = 9**.
+- This assumes the caller's posted price filled. It measures trade management from their original entry, not whether that fill was executable for us.
+
 ===== Wed Sep 16 2026 =====
 
 # Caller entry versus our ratchet — 2026-09-16
