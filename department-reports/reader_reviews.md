@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — 9acf5101739ff4aa792d
+
+The reader plausibly links TT's standalone '3.9 fill' to the immediately preceding GOOGL 380c 10/23 plan, while the parser returns no action. This is a candidate contextual-extraction gap requiring source verification, not a confirmed parser bug.
+
+## Findings
+- Current message 1550558183817216124 says '3.9 fill'. The preceding same-caller message 1550558118189207583 says 'Still have half googl 360c Gonna add 20% size 380c 10/23'. The reader extracts OPEN GOOGL 380 CALL, expiry 10/23, price 3.9, citing that preceding message. Validation accepts the linkage; the parser has fire=false and null contract/action fields. Verify the original adjacent TT messages and intended contract linkage. If confirmed, review whether contextual fill updates should be recognized separately from standalone alerts. Keep the existing 360c holding distinct from the proposed 380c position, and do not treat validation acceptance as proof of a parser defect.
+- The reader retains '20% size' as qty, whereas validation returns qty=null. The source supplies relative sizing, not a contract count. Review preservation of relative sizing in a separate field. Keep contract quantity unknown rather than interpreting 20% as 20 contracts or treating null as zero; verify the caller's sizing basis before further interpretation.
+- The source reports '3.9 fill' without explicit premium units. No broker fill, contemporaneous quote, or retained explicit-unit TT convention is supplied. Preserve raw 3.9 and label premium units unresolved pending source verification. Do not rescale by 100 based on price plausibility. If verified as a per-share option quote, calculate contract premium only with the confirmed instrument premium multiplier. Treat this as a caller-reported fill, not broker-confirmed execution.
+
+## Limitations
+- Only the current message has a supplied parser result; historical parser behavior is not shown.
+- Expiry 10/23 lacks an explicit year, and the current message has no explicit reply linkage.
+- Evidence is marked untruncated, but completeness of the underlying source conversation is not established.
+- The Gemini cooldown was followed by a successful OpenAI reader response; this does not establish a reader outage.
+- No execution records or performance calculations are supplied.
+
+---
+
 # Reader Review — 2026-09-18 — b7d9c8e4d9343bd68795
 
 TRIM is supported by the current message, and MU is a plausible same-caller contextual reference. Review is warranted for the equity classification, loss of the explicit half-trim quantity, and acceptance of an unsupported context ID. These are verification proposals, not confirmed parser bugs; fire remains false.
