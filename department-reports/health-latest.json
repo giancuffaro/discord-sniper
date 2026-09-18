@@ -1,7 +1,12 @@
 {
   "in_session": true,
   "issues": [
-    "discord extension heartbeat missing or stale"
+    "discord extension heartbeat missing or stale",
+    "Whop Day Trades tab is open but its reader hasn't beaten in a while",
+    "Whop Futures tab is open but its reader hasn't beaten in a while",
+    "Whop High Risk tab is open but its reader hasn't beaten in a while",
+    "Whop 2K Challenge tab is open but its reader hasn't beaten in a while",
+    "Whop Swing Trades tab is open but its reader hasn't beaten in a while"
   ],
   "lanes": [
     {
@@ -24,5 +29,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789738042.4953704
+  "checked_at": 1789738342.5004005
 }
