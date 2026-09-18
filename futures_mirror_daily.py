@@ -55,6 +55,18 @@ MAP = {"SPY": ("ES", "MES", 5.0), "QQQ": ("NQ", "MNQ", 2.0)}
 STOP, TGT = 25.0, 50.0
 ARM = STOP * (5 / 7.5)          # 2/3 of the risk in profit -> breakeven
 STEP = STOP * (2 / 7.5)         # then a rung every ~6.67 points
+
+# The LEVEL mode (G, 9/18, measured in reference/PULLBACK-LEVEL-ENTRY-TEST.txt
+# and FUTURES-RATCHET-SWEEP.txt): the alert only picks the direction; the
+# entry is a limit resting `buf` points before the first round level in the
+# pullback's path (ES every 25, NQ every 50), good for LEVEL_WAIT minutes,
+# else the alert is skipped. Exits per instrument: MES a 12.5 bracket (1:1,
+# the ratchet added nothing); MNQ a 10-pt stop, breakeven at +5, a rung every
+# 2.5, no target (every target hurt MNQ). Per root: (grid, buf, stop, arm,
+# step, target) — arm/step/target None = not used.
+LEVEL = {"ES": dict(grid=25.0, buf=2.0, stop=12.5, arm=None, step=None, target=12.5),
+         "NQ": dict(grid=50.0, buf=0.0, stop=10.0, arm=5.0, step=2.5, target=None)}
+LEVEL_WAIT = 30                 # minutes the resting entry lives
 CLOSE = dt.time(15, 59)
 OPEN_MINUTE, LAST_MINUTE = 9 * 60 + 30, 15 * 60 + 45
 DEDUPE_SECONDS = 180
@@ -237,8 +249,9 @@ def bars_for(day):
 # ---------------------------------------------------------------- the replay
 
 def run(a, mode, bars):
-    """One alert, one entry mode. Copied from reference/futures_mirror_replay.py
-    — do not 'improve' it here without re-running the whole history."""
+    """One alert, one entry mode. The market branch is copied from
+    reference/futures_mirror_replay.py — do not 'improve' it here without
+    re-running the whole history. The level branch is the 9/18 shape."""
     root, _micro, ppt = MAP[a["sym"]]
     b = bars[root]
     s = 1 if a["dirn"] == "L" else -1
@@ -252,20 +265,28 @@ def run(a, mode, bars):
         e = float(w.iloc[0]["open"])
         ei = 0
         lvl = ref = ""
-    else:                       # 25-pt snap in his favour, 10-minute window
+        stop_pts, tgt_pts, arm, step = STOP, TGT, ARM, STEP
+    else:                       # level: resting limit before the round number
+        L = LEVEL[root]
         ref = float(w.iloc[0]["open"])
-        lvl = math.floor(ref / 25) * 25 if s > 0 else math.ceil(ref / 25) * 25
-        ei = None
-        for i in range(min(10, len(w))):
-            r = w.iloc[i]
-            if (s > 0 and r["low"] <= lvl) or (s < 0 and r["high"] >= lvl):
-                ei = i
-                break
-        if ei is None:
-            return dict(status="snap never touched", lvl=lvl, ref=ref)
-        e = float(lvl)
-    stop = e - s * STOP
-    tgt = e + s * TGT
+        lvl = (math.floor(ref / L["grid"]) * L["grid"] if s > 0
+               else math.ceil(ref / L["grid"]) * L["grid"])
+        limit = lvl + s * L["buf"]
+        if (limit >= ref) if s > 0 else (limit <= ref):
+            ei, e = 0, ref                                 # already there
+        else:
+            ei = None
+            for i in range(min(LEVEL_WAIT, len(w))):
+                r = w.iloc[i]
+                if (s > 0 and r["low"] <= limit) or (s < 0 and r["high"] >= limit):
+                    ei = i
+                    break
+            if ei is None:
+                return dict(status="level never touched", lvl=lvl, ref=ref)
+            e = float(limit)
+        stop_pts, tgt_pts, arm, step = L["stop"], L["target"], L["arm"], L["step"]
+    stop = e - s * stop_pts
+    tgt = e + s * tgt_pts if tgt_pts else None
     mfe = mae = 0.0
     for i in range(ei, len(w)):
         r = w.iloc[i]
@@ -275,10 +296,10 @@ def run(a, mode, bars):
         # stop first (conservative), then target, then the ratchet on this
         # bar's excursion
         hit_stop = (lo <= stop) if s > 0 else (hi >= stop)
-        hit_tgt = (hi >= tgt) if s > 0 else (lo <= tgt)
+        hit_tgt = tgt is not None and ((hi >= tgt) if s > 0 else (lo <= tgt))
         if hit_stop:
             ex = stop
-            why = ("STOP" if stop == e - s * STOP
+            why = ("STOP" if stop == e - s * stop_pts
                    else ("BE" if abs(stop - e) < 1e-9 else "RATCHET"))
             break
         if hit_tgt:
@@ -287,9 +308,9 @@ def run(a, mode, bars):
             break
         mfe = max(mfe, fav)
         mae = max(mae, adv)
-        if mfe >= ARM:
-            k = math.floor((mfe - ARM) / STEP)
-            new = e + s * (k * STEP)
+        if arm is not None and mfe >= arm:
+            k = math.floor((mfe - arm) / step)
+            new = e + s * (k * step)
             if (s > 0 and new > stop) or (s < 0 and new < stop):
                 stop = new
     else:
@@ -343,6 +364,19 @@ def append_cumulative(existing, rows):
 
 # ---------------------------------------------------------------- the report
 
+def _level_text():
+    """The level shape, read from LEVEL so the report can never drift from it."""
+    parts = []
+    for root, L in LEVEL.items():
+        ex = ("%g-pt 1:1 bracket" % L["stop"] if L["target"] and L["arm"] is None
+              else "%g stop, BE at +%g, rungs %g%s" % (L["stop"], L["arm"], L["step"],
+                                                         ", target %g" % L["target"] if L["target"] else ""))
+        parts.append("%s: limit %s the %g, %s" % (
+            MAP["SPY" if root == "ES" else "QQQ"][1],
+            "%g before" % L["buf"] if L["buf"] else "at", L["grid"], ex))
+    return "; ".join(parts) + "; %d-min wait" % LEVEL_WAIT
+
+
 def _money(x):
     return "%s$%.0f" % ("-" if x < 0 else "+", abs(x))
 
@@ -381,8 +415,9 @@ CAVEATS = [
 def main(day):
     alerts = alerts_for(day)
     lines = ["# FUTURES MIRROR — %s" % day, "",
-             "SPY/QQQ room entries replayed as one-contract MES/MNQ, "
-             "market entry, 25-pt stop / 50-pt target, futures ratchet.",
+             "SPY/QQQ room entries replayed as one-contract MES/MNQ two ways: "
+             "market entry with a %g-pt stop / %g-pt target and the futures "
+             "ratchet, and the LEVEL entry (%s)." % (STOP, TGT, _level_text()),
              "The switch is OFF: this is a measurement, not a trade.", ""]
     if not alerts:
         lines += ["**No SPY/QQQ entries on this date.** Nothing to replay.", ""]
@@ -400,7 +435,7 @@ def main(day):
         return 1
 
     results = []
-    for mode in ("market", "snap"):
+    for mode in ("market", "level"):
         for a in alerts:
             r = run(a, mode, bars)
             r.update(mode=mode, ts=_norm_ts(a["ts"].isoformat()), sym=a["sym"],
@@ -411,21 +446,26 @@ def main(day):
             results.append(r)
 
     existing = load_cumulative()
-    fresh = append_cumulative(existing, [r for r in results if r["mode"] == "market"])
+    fresh = append_cumulative(existing, results)
     allrows = existing + fresh
 
     mkt = [r for r in results if r["mode"] == "market"]
     mkt_ok = [r for r in mkt if r["status"] == "ok"]
-    snap = [r for r in results if r["mode"] == "snap"]
-    snap_ok = [r for r in snap if r["status"] == "ok"]
+    lvl_rows = [r for r in results if r["mode"] == "level"]
+    lvl_ok = [r for r in lvl_rows if r["status"] == "ok"]
     day_usd = sum(float(r["usd"]) for r in mkt_ok)
-    snap_usd = sum(float(r["usd"]) for r in snap_ok)
+    lvl_usd = sum(float(r["usd"]) for r in lvl_ok)
 
-    hist = [r for r in allrows
-            if r.get("mode") == "market" and r.get("status") == "ok"
-            and str(r.get("ts", ""))[:10] >= SINCE]
+    def _hist(mode):
+        return [r for r in allrows
+                if r.get("mode") == mode and r.get("status") == "ok"
+                and str(r.get("ts", ""))[:10] >= SINCE]
+    hist = _hist("market")
     run_usd = sum(float(r["usd"]) for r in hist)
     run_wins = sum(1 for r in hist if float(r["usd"]) > 0)
+    lhist = _hist("level")
+    lrun_usd = sum(float(r["usd"]) for r in lhist)
+    lrun_wins = sum(1 for r in lhist if float(r["usd"]) > 0)
 
     lines += ["**Bars:** %s" % where,
               "**Alerts:** %d (after RTH filter and 3-minute dedupe)" % len(alerts),
@@ -433,7 +473,7 @@ def main(day):
     lines += ["## The day", ""]
     lines += _table(
         ["time ET", "sym", "dir", "micro", "room", "caller", "entry", "exit",
-         "why", "pts", "$ market", "$ snap*"],
+         "why", "pts", "$ market", "$ level"],
         [[r["ts"][11:19], r["sym"], "long" if r["dirn"] == "L" else "short",
           MAP[r["sym"]][1], (r["room"] or "")[:34], (r["caller"] or "")[:22],
           ("%.2f" % r["entry"]) if r["status"] == "ok" else "—",
@@ -442,14 +482,12 @@ def main(day):
           ("%+.2f" % r["pts"]) if r["status"] == "ok" else "—",
           _money(r["usd"]) if r["status"] == "ok" else "—",
           next((_money(s["usd"]) if s["status"] == "ok" else s["status"]
-                for s in snap if s["ts"] == r["ts"] and s["sym"] == r["sym"]
+                for s in lvl_rows if s["ts"] == r["ts"] and s["sym"] == r["sym"]
                 and s["dirn"] == r["dirn"]), "—")]
          for r in mkt])
     lines += ["",
-              "\\* the 25-pt-snap entry variant. **Selection-biased** — it only "
-              "trades the alerts whose level happened to get touched inside ten "
-              "minutes, which is a filter you cannot apply live. Shown for "
-              "comparison, never as the headline.", ""]
+              "$ level = the resting-limit entry (%s) with its own exits; "
+              "\"level never touched\" = the alert was skipped, not lost." % _level_text(), ""]
 
     lines += ["## Totals", ""]
     lines += _table(
@@ -458,15 +496,19 @@ def main(day):
           _money(day_usd - RT_FEE * len(mkt_ok)),
           "%.0f%%" % (100.0 * sum(1 for r in mkt_ok if float(r["usd"]) > 0)
                       / len(mkt_ok)) if mkt_ok else "—"],
-         ["Today (snap*)", len(snap_ok), _money(snap_usd),
-          _money(snap_usd - RT_FEE * len(snap_ok)),
-          "%.0f%%" % (100.0 * sum(1 for r in snap_ok if float(r["usd"]) > 0)
-                      / len(snap_ok)) if snap_ok else "—"],
+         ["Today (level)", len(lvl_ok), _money(lvl_usd),
+          _money(lvl_usd - RT_FEE * len(lvl_ok)),
+          "%.0f%%" % (100.0 * sum(1 for r in lvl_ok if float(r["usd"]) > 0)
+                      / len(lvl_ok)) if lvl_ok else "—"],
          ["**Since %s (market)**" % SINCE, len(hist), "**%s**" % _money(run_usd),
           _money(run_usd - RT_FEE * len(hist)),
-          "%.0f%%" % (100.0 * run_wins / len(hist)) if hist else "—"]])
-    lines += ["", "The running total is the market column only — the snap "
-              "column has no seeded history and is biased anyway.", ""]
+          "%.0f%%" % (100.0 * run_wins / len(hist)) if hist else "—"],
+         ["**Level, fills so far**", len(lhist), "**%s**" % _money(lrun_usd),
+          _money(lrun_usd - RT_FEE * len(lhist)),
+          "%.0f%%" % (100.0 * lrun_wins / len(lhist)) if lhist else "—"]])
+    lines += ["", "The level row counts from the day it was added to this file "
+              "(9/18); the history behind it is reference/PULLBACK-LEVEL-ENTRY-TEST.txt. "
+              "It goes to G for a real-money decision at 30 fills per micro.", ""]
 
     def _group(rows, keyf, label):
         agg = {}
