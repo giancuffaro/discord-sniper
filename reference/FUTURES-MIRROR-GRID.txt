@@ -8,30 +8,35 @@ ES 7.5 / NQ 12.5 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target          
 ES 7.5 / NQ 12.5 pt · house ratchet, NO target                -31            39%           -166           +135
 ES 7.5 / NQ 12.5 pt · ratchet arm 1x, rungs 1/2, no target           -125            38%           -227           +102
 ES 7.5 / NQ 12.5 pt · ratchet arm 1/2, rungs 1/4, no target           +144            40%            -96           +240
+ES 7.5 / NQ 12.5 pt · G ladder: arm 1x, rungs 1x, no target           -537            20%           -527            -10
 12.5 pt · hard 1:2 bracket, no ratchet                         +2            42%            +86            -85
 12.5 pt · hard 1:1 bracket, no ratchet                       +132            53%           +292           -160
 12.5 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target           -250            45%           -141           -108
 12.5 pt · house ratchet, NO target                            -59            45%           -194           +135
 12.5 pt · ratchet arm 1x, rungs 1/2, no target               -134            39%           -236           +102
 12.5 pt · ratchet arm 1/2, rungs 1/4, no target              +113            43%           -127           +240
+12.5 pt · G ladder: arm 1x, rungs 1x, no target              -374            30%           -364            -10
 25 pt · hard 1:2 bracket, no ratchet                         -338            44%           -228           -110
 25 pt · hard 1:1 bracket, no ratchet                         +202            54%           +262            -60
 25 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target           -241            45%           -294            +53
 25 pt · house ratchet, NO target                             -291            45%           -378            +87
 25 pt · ratchet arm 1x, rungs 1/2, no target                 -516            41%           -281           -235
 25 pt · ratchet arm 1/2, rungs 1/4, no target                 -47            48%           -225           +178
+25 pt · G ladder: arm 1x, rungs 1x, no target                -410            40%           -281           -128
 35 pt · hard 1:2 bracket, no ratchet                         -456            44%            +94           -550
 35 pt · hard 1:1 bracket, no ratchet                          -28            52%           +172           -200
 35 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target            +47            43%           +122            -74
 35 pt · house ratchet, NO target                              -46            43%           +122           -167
 35 pt · ratchet arm 1x, rungs 1/2, no target                 -221            46%            +94           -315
 35 pt · ratchet arm 1/2, rungs 1/4, no target                +109            45%            +99            +10
+35 pt · G ladder: arm 1x, rungs 1x, no target                -186            43%            +94           -280
 50 pt · hard 1:2 bracket, no ratchet                        -1178            42%           +220          -1398
 50 pt · hard 1:1 bracket, no ratchet                          +76            52%           +305           -229
 50 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target           +125            50%           +220            -96
 50 pt · house ratchet, NO target                               +7            50%           +220           -213
 50 pt · ratchet arm 1x, rungs 1/2, no target                 -779            44%           +220           -999
 50 pt · ratchet arm 1/2, rungs 1/4, no target                +549            50%           +253           +296
+50 pt · G ladder: arm 1x, rungs 1x, no target               -1029            39%           +220          -1249
 
 BEST cell: 50 pt · ratchet arm 1/2, rungs 1/4, no target = +549   WORST: 50 pt · hard 1:2 bracket, no ratchet = -1178
 

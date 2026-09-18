@@ -52,6 +52,8 @@ MODES = {
     "house ratchet, NO target": (5 / 7.5, 2 / 7.5, None),
     "ratchet arm 1x, rungs 1/2, no target": (1.0, 0.5, None),
     "ratchet arm 1/2, rungs 1/4, no target": (0.5, 0.25, None),
+    # G, 9/18: "-12.5 stop, +12.5 stop to break even, +25 stop to +12.5, and so on"
+    "G ladder: arm 1x, rungs 1x, no target": (1.0, 1.0, None),
 }
 
 
