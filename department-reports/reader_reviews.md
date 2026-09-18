@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — a4639335059b6fcd2ec4
+
+The message supports a proposed MU partial-exit interpretation, but contract details remain unresolved. Review the parser/reader disagreement and the validator's unsupported-context warning against retained sources; neither establishes a confirmed parser bug.
+
+## Findings
+- The current message says, "Took majority sells into this break. Holding runners with 996 stops," while the parser returns action=null and fire=false. The reader returns TRIM for MU. The immediately preceding same-author, same-channel message explicitly says "MU" and is listed as eligible context. Verify source continuity and the intended handling of retrospective trade-management reports. Consider a contextual partial-exit annotation for MU, not a new entry or full exit. Keep quantity unknown: "majority" does not specify contracts or an exact fraction.
+- The reader cites three supporting IDs, but only the preceding "MU" message is among validation.eligible_prior_ids. The older "Mu at 1000" and "Lets see if it squeezes" messages are not eligible. Validation reports ok=true alongside safety_flags=["unsupported_context_id"]. Review context-eligibility rules and the meaning of ok=true. Verify whether the interpretation remains supported using only permitted sources, and distinguish structural validation from evidence eligibility.
+- "996 stops" is a stop reference, not an explicit option exit premium. Earlier same-author messages describe MU levels of "996, 998, 1000+" and discuss both zero-day and Monday-expiry contracts. The reader leaves price, quantity, side, strike, and expiry null. Preserve raw 996 as an unresolved stop reference and verify its price basis from original source context. Do not convert it into an option premium or infer a contract, exact exit, or return. Verify the option classification and position linkage before treating this as a contract-specific update.
+
+## Limitations
+- Evidence is marked untruncated, but no chart contents, broker fills, or uniquely identified MU contract are supplied.
+- The author's sell statement and earlier performance claims are self-reported, not broker-confirmed execution or realized results.
+- Null contract and price fields represent missing information, not zero.
+- The provider log shows a Gemini cooldown followed by an OpenAI response; it does not establish a room or application outage.
+
+---
+
 # Reader Review — 2026-09-18 — 9acf5101739ff4aa792d
 
 The reader plausibly links TT's standalone '3.9 fill' to the immediately preceding GOOGL 380c 10/23 plan, while the parser returns no action. This is a candidate contextual-extraction gap requiring source verification, not a confirmed parser bug.

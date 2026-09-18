@@ -1826,8 +1826,17 @@ async function renderRest(s) {
         })();
         const room = p.room || (p.channelId ? chanLabel(p.channelId) : "");
         if (!who && !room) continue;
-        return (who ? esc(who) : "") + (who && room ? " · " : "") +
-               (room ? esc(room) : "");
+        // CLICK IT, LAND ON THE ROOM (9/18, G: "open trades are not clickable
+        // to go and see what room they were called from"). The day table
+        // below has had .gotoroom since 9/4; this holdings credit line was
+        // still plain text. Same class, same delegated handler; data-chan
+        // carries the exact channel id when the extension's own store has it.
+        const label = (who ? esc(who) : "") + (who && room ? " · " : "") +
+                      (room ? esc(room) : "");
+        if (!room) return label;
+        return '<span class="gotoroom" data-room="' + esc(room) + '"' +
+               (p.channelId ? ' data-chan="' + esc(p.channelId) + '"' : "") +
+               ' title="' + esc("go to " + room) + '">' + label + "</span>";
       }
       return "";
     };

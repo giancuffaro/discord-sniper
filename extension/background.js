@@ -2284,6 +2284,7 @@ async function checkBuild() {
  * so a healthy tab isn't re-scripted every tick. */
 const INJECTED_AT = {};       // tabId -> last inject time
 const INJECT_ERR = {};        // tabId -> why the last reader inject failed (9/18)
+const INJECT_SEEN = [0, 0];   // last ensureReaders pass: [room tabs found, readers injected]
 async function ensureReaders() {
   if (!await assignedLane()) return;
   let tabs = [];
@@ -2292,6 +2293,7 @@ async function ensureReaders() {
       "https://*.discord.com/channels/*", "https://whop.com/*", "https://*.whop.com/*"] });
   } catch (e) { return; }
   const now = Date.now();
+  INJECT_SEEN[0] = tabs.length; INJECT_SEEN[1] = 0;
   for (const t of tabs) {
     if (t.discarded) continue;
     // 9/18: "loading" is NOT skipped any more. A Whop room keeps a request
@@ -2314,6 +2316,7 @@ async function ensureReaders() {
       await chrome.scripting.executeScript({ target: { tabId: t.id },
         files: [isWhop ? "whop.js" : "content.js"] });
       INJECTED_AT[t.id] = now;
+      INJECT_SEEN[1] += 1;
       delete INJECT_ERR[t.id];
     } catch (e) {
       // 9/18: SAY it. A silent inject failure here is a room that reads
@@ -2371,7 +2374,7 @@ async function reinject() {
     try {
       await chrome.scripting.executeScript({ target: { tabId: t.id },
         files: [isWhop ? "whop.js" : "content.js"] });
-    } catch (e) { /* tab closed or mid-navigation; the next attach picks it up */ }
+    } catch (e) { INJECT_ERR[t.id] = "come-up: " + String(e && e.message || e).slice(0, 100); }
   }
 }
 
@@ -2962,7 +2965,8 @@ async function publishDepartmentHealth() {
     method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({lane, version: chrome.runtime.getManifest().version,
       issues: issues.map(i => i.what).concat(
-        Object.keys(INJECT_ERR).map(id => "reader inject failed on tab " + id + ": " + INJECT_ERR[id])),
+        Object.keys(INJECT_ERR).map(id => "reader inject failed on tab " + id + ": " + INJECT_ERR[id]),
+        ["readers: " + INJECT_SEEN[0] + " room tab(s) seen, " + INJECT_SEEN[1] + " injected on the last pass"]),
       rooms_expected: ALL_ROOMS.filter(r => r.state === "on").length}),
     signal: AbortSignal.timeout(5000)
   });
