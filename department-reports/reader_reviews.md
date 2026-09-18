@@ -1,5 +1,39 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — ecd06691fac61148a95a
+
+The current message is a caller-reported partial exit plausibly linked to MuggZone's preceding TSLA scalp alert. The reader identifies that context, while the parser returns no action. This warrants source-verified review, not classification as a confirmed parser bug.
+
+## Findings
+- Current message 1550587857385816248 says '1st TP HIT sold 1/4' without naming a contract. The eligible prior message 1550587288738857001, from the same caller and source channel, says 'RISKY SCALP PLAY TSLA 0DTE 365 calls .45-.50 ENTRY'. The reader returns TRIM, TSLA, CALL, strike '365', expiry '9/18', and qty '1/4'; the parser returns null fields and fire=false. Verify the original messages and same-caller position continuity before linking this update to TSLA 365 calls. Review whether contextual partial-exit recognition is intended for the parser. Do not treat the intervening shabs message as MuggZone context or equate fire=false with a confirmed defect.
+- The reader preserves strike '365' and qty '1/4', but validation.read contains strike=null and qty=null despite validation.ok=true. The evidence does not explain whether validation.read is a normalized output or an independent extraction. Verify the validation schema and downstream field handling before proposing a field-loss correction. Preserve the raw '1/4' as a reported fraction, not a contract count; confirm whether it refers to the original or remaining position.
+- The current message gives no exit price. The preceding alert lists targets as 'TP ..65 / .75 /. .80'. The reader and validation both retain price=null. Keep the exit price unresolved. Verify the malformed target wording and premium units at the source before normalizing it; even a verified target is not proof of an exact fill. Preserve the raw values and do not calculate realized returns from '1st TP HIT'.
+
+## Limitations
+- Evidence is marked untruncated, but the supplied window does not establish complete source history or position state.
+- No broker fills, execution records, or simulation results are supplied; 'sold 1/4' is a caller report, not broker-confirmed execution.
+- The current message is not a reply and does not explicitly identify the instrument; the contract linkage remains contextual despite reader confidence of 1.0.
+- Parser specifications and downstream processing records are absent. Null fields indicate missing extracted data, not zero values.
+
+---
+
+# Reader Review — 2026-09-18 — 1d9fcb7a7838736c6e09
+
+The reader plausibly links the reported partial sale to the preceding TSLA scalp alert. The parser returns no action, while validation retains TRIM but drops the reader's quantity and strike. These are review candidates, not confirmed parser bugs.
+
+## Findings
+- The current message says "1st TP HIT sold 1/4 @here". The eligible preceding alert specifies "TSLA 0DTE 365 calls .45-.50 ENTRY". The reader identifies TRIM, TSLA, CALL, strike 365 and quantity "1/4", citing that alert; the parser instead returns null fields and fire=false. Verify the original message sequence and intended parser scope before classifying a missed contextual trim. The same-author, same-channel preceding alert supports the TSLA association, but the current message does not explicitly identify the contract.
+- The reader outputs qty="1/4" and strike="365", but validation.read contains qty=null and strike=null despite validation.ok=true and no safety flags. Inspect the validation schema and transformation trace to determine whether these omissions are intentional or a candidate field-preservation issue. Preserve the reported fraction separately from contract count; verify whether it refers to the original or remaining position.
+- The current message reports a first-target hit without an execution premium. The preceding target text is "TP ..65 / .75 /. .80". Both reader and validation leave price=null. Keep the exit premium unknown. Verify the malformed target wording against the original source, and do not substitute a target for an exact sale price or calculate realized returns from it.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it does not include original Discord thread metadata, parser specifications or validation transformation rules.
+- The sale is caller-reported; no broker-confirmed fills or simulation results are supplied.
+- Contract count, the fraction's position basis and exact exit premium are missing, not zero.
+- No verified premium-unit conversion or numerical return calculation is supplied; none is inferred.
+
+---
+
 # Reader Review — 2026-09-18 — ed1856b5a2b27e43ac83
 
 The reader identified a TSLA call-entry alert, but validation rejected its entry-price range and flagged its inferred expiry. These are candidates for source-verified handling improvements, not confirmed parser bugs.

@@ -148,3 +148,5 @@ aytrades
 1789662542.078,submitted,AAPL,CALLS,340,9/21,,336.0,,Demon × LKS,Demon day-trades
 1789662544.084,filled,AAPL,CALLS,340,9/21,,336.0,1.4,Demon × LKS,Demon day-trades
 1789759224.012,armed,TSLA,CALLS,365,0DTE,,364.0,,MuggZone,OWLS all-alerts
+1789759489.036,submitted,TSLA,CALLS,365,0DTE,,364.0,,MuggZone,OWLS all-alerts
+1789759491.044,filled,TSLA,CALLS,365,0DTE,,364.0,0.33,MuggZone,OWLS all-alerts
