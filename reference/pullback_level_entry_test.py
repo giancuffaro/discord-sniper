@@ -44,16 +44,20 @@ def level_below(price, s, grid):
     return math.floor(price / grid) * grid if s > 0 else math.ceil(price / grid) * grid
 
 
-def pullback_fill(rows, e, s, grid, wait):
+def pullback_fill(rows, e, s, grid, wait, buf=0.0):
+    """(bar index, fill price) — the limit rests `buf` points BEFORE the level
+    (G, 9/18: "we can also get filled 2 or 3 points before our pullback").
+    Filled when a bar trades to the limit."""
     lvl = level_below(e, s, grid)
-    if lvl == e:                                   # already sitting on it: that is the fill
-        return 0, lvl
+    limit = lvl + s * buf
+    if (limit >= e) if s > 0 else (limit <= e):    # already at or past it: fill at the alert bar
+        return 0, e
     n = len(rows) if wait is None else min(len(rows), wait)
     for i in range(n):
         hi, lo, _c = rows[i]
-        if (lo <= lvl) if s > 0 else (hi >= lvl):
-            return i, lvl
-    return None, lvl
+        if (lo <= limit) if s > 0 else (hi >= limit):
+            return i, limit
+    return None, limit
 
 
 def main():
@@ -86,6 +90,31 @@ def main():
                         sym, grid, "day" if wait is None else "%dm" % wait, name, len(got), sum(got),
                         100 * sum(1 for v in got if v > 0) / len(got), sum(waits) / len(waits),
                         sum(inst), 100 * sum(1 for v in inst if v > 0) / len(inst)))
+            p("")
+    # G, 9/18: a limit a few points BEFORE the level — more fills, worse price
+    BUFFERS = {"SPY": (0.0, 1.0, 2.0, 3.0, 5.0), "QQQ": (0.0, 5.0, 10.0, 15.0, 25.0)}
+    p("\nLIMIT PLACED BEFORE THE LEVEL (buffer points above an ES 25 / NQ 50 for calls, below for puts)")
+    p("%-6s %-6s %-9s %-32s %6s %8s %6s %8s" % ("sym", "buffer", "wait", "exit", "filled", "$", "win%", "1st/2nd"))
+    for sym, grid in (("SPY", 25.0), ("QQQ", 50.0)):
+        tr = [x for x in W if x[0]["sym"] == sym]
+        days = sorted({a["ts"].date() for a, *_ in tr})
+        mid = days[len(days) // 2]
+        ex = EXITS[sym][0] if sym == "SPY" else EXITS[sym][2]
+        name, st, ar, ru, tg = ex
+        for wait in (30, None):
+            for buf in BUFFERS[sym]:
+                got = []
+                for a, ppt, rows, e in tr:
+                    s = 1 if a["dirn"] == "L" else -1
+                    i, fill = pullback_fill(rows, e, s, grid, wait, buf)
+                    if i is None:
+                        continue
+                    got.append((a, rs.sim(s, fill, rows[i:], ppt, st, ar, ru, tg)))
+                tot = sum(v for _a, v in got)
+                h1 = sum(v for a, v in got if a["ts"].date() < mid)
+                p("%-6s %-6g %-9s %-32s %6d %+8.0f %5.0f%% %+5.0f/%+5.0f" % (
+                    sym, buf, "day" if wait is None else "%dm" % wait, name, len(got), tot,
+                    100 * sum(1 for _a, v in got if v > 0) / max(1, len(got)), h1, tot - h1))
             p("")
     # the skipped: what did the instant entry make on alerts that never pulled back (day wait)?
     for sym in ("SPY", "QQQ"):

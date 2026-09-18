@@ -44,5 +44,32 @@ QQQ    100   day       25 stop · 1:1                        48     +152    54% 
 QQQ    100   day       10 stop · BE at 5 · 2.5 rungs        48     +978    81%      40m |      +68    38%
 QQQ    100   day       25 stop · 3x target                  48     +826    35%      40m |     -872    17%
 
+
+LIMIT PLACED BEFORE THE LEVEL (buffer points above an ES 25 / NQ 50 for calls, below for puts)
+sym    buffer wait      exit                             filled        $   win%  1st/2nd
+SPY    0      30m       12.5 stop · 1:1                      37     +632    65%  +421/ +211
+SPY    1      30m       12.5 stop · 1:1                      45     +966    71%  +726/ +240
+SPY    2      30m       12.5 stop · 1:1                      53    +1439    75%  +970/ +469
+SPY    3      30m       12.5 stop · 1:1                      55    +1239    67%  +662/ +576
+SPY    5      30m       12.5 stop · 1:1                      61     +950    64%  +211/ +739
+
+SPY    0      day       12.5 stop · 1:1                      67     +982    64%  +514/ +468
+SPY    1      day       12.5 stop · 1:1                      68     +846    66%  +618/ +227
+SPY    2      day       12.5 stop · 1:1                      79    +1593    72%  +706/ +887
+SPY    3      day       12.5 stop · 1:1                      80    +1366    66%  +383/ +983
+SPY    5      day       12.5 stop · 1:1                      87    +1317    67%  +274/+1043
+
+QQQ    0      30m       10 stop · BE at 5 · 2.5 rungs        44     +569    75%  +284/ +286
+QQQ    5      30m       10 stop · BE at 5 · 2.5 rungs        44     +339    59%  +128/ +210
+QQQ    10     30m       10 stop · BE at 5 · 2.5 rungs        48     +438    62%  +337/ +101
+QQQ    15     30m       10 stop · BE at 5 · 2.5 rungs        51     +314    57%  +186/ +128
+QQQ    25     30m       10 stop · BE at 5 · 2.5 rungs        55     +228    40%  +226/   +2
+
+QQQ    0      day       10 stop · BE at 5 · 2.5 rungs        54     +774    80%  +349/ +425
+QQQ    5      day       10 stop · BE at 5 · 2.5 rungs        54     +494    61%  +139/ +355
+QQQ    10     day       10 stop · BE at 5 · 2.5 rungs        56     +471    64%  +324/ +147
+QQQ    15     day       10 stop · BE at 5 · 2.5 rungs        56     +326    57%  +199/ +127
+QQQ    25     day       10 stop · BE at 5 · 2.5 rungs        59     +256    44%  +242/  +14
+
 SPY: 43 alerts NEVER pulled back to a 25 level all day; entered instantly under 12.5 stop · 1:1 they made +884 (win 70%)
 QQQ: 7 alerts NEVER pulled back to a 50 level all day; entered instantly under 12.5 stop · 1:1 they made +114 (win 86%)
