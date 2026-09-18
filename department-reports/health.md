@@ -1,5 +1,19 @@
 # Health reviews — newest first
 
+# Health — 2026-09-18 — c2d75cb182a7fca3397e
+
+The provided evidence shows an active session flag, but also reports a Discord extension heartbeat as missing or stale. This suggests a monitoring inconsistency or telemetry gap that needs source verification; it is not enough to confirm an outage or parser failure.
+
+## Findings
+- in_session=true while issue reported: "discord extension heartbeat missing or stale" Verify the heartbeat source, timestamp freshness, and expected reporting interval against logs or brokered telemetry. Treat this as an unresolved health signal until source evidence confirms whether the extension is quiet, delayed, or actually unavailable.
+
+## Limitations
+- No timestamps, heartbeat age, or expected interval were provided.
+- The evidence contains only a single issue string, so there is no corroborating data to distinguish a quiet room from an outage.
+- The session flag indicates presence in-session, but does not confirm that the Discord extension is healthy or that alerts are being delivered.
+
+---
+
 # Health — 2026-09-17 — 364fddc1596b91b8a695
 
 The evidence shows five Whop tabs are open, but each has a reader that "hasn't beaten in a while." This suggests possible reader staleness or inactivity, but the evidence does not include timestamps, heartbeat thresholds, or a confirmed outage, so the status cannot be verified from the provided text alone.

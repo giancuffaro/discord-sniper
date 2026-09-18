@@ -1,6 +1,8 @@
 {
-  "in_session": false,
-  "issues": [],
+  "in_session": true,
+  "issues": [
+    "discord extension heartbeat missing or stale"
+  ],
   "lanes": [
     {
       "lane": "discord",
@@ -22,5 +24,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789737142.476323
+  "checked_at": 1789737442.483285
 }
