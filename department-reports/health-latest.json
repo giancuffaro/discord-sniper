@@ -1,34 +1,34 @@
 {
   "in_session": true,
   "issues": [
-    "readers: 38 room tab(s) seen, 3 injected on the last pass, 0 Whop tab(s) reloaded at come-up; pulses: none",
+    "readers: 38 room tab(s) seen, 0 injected on the last pass, 0 Whop tab(s) reloaded at come-up; pulses: none",
     "Whop Day Trades tab is open but its reader hasn't beaten in a while",
     "Whop Futures tab is open but its reader hasn't beaten in a while",
     "Whop High Risk tab is open but its reader hasn't beaten in a while",
     "Whop 2K Challenge tab is open but its reader hasn't beaten in a while",
     "Whop Swing Trades tab is open but its reader hasn't beaten in a while",
-    "readers: 7 room tab(s) seen, 0 injected on the last pass"
+    "readers: 7 room tab(s) seen, 7 injected on the last pass, 0 Whop tab(s) reloaded at come-up; pulses: none"
   ],
   "lanes": [
     {
       "lane": "discord",
       "fresh": true,
-      "version": "3.8.52"
+      "version": "3.8.53"
     },
     {
       "lane": "whop",
       "fresh": true,
-      "version": "3.8.51"
+      "version": "3.8.53"
     }
   ],
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789755666.481539,
+    "last_finished": 1789755858.2975469,
     "last_error": "",
-    "last_provider": "openai",
+    "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789755742.8450205
+  "checked_at": 1789756042.851518
 }

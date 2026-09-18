@@ -2282,10 +2282,21 @@ async function checkBuild() {
  * injected in the last 5 min. content.js/whop.js are idempotent (they stop the
  * old copy first), so a re-inject never double-reads. Bounded by INJECTED_AT
  * so a healthy tab isn't re-scripted every tick. */
+// THE REGEX THAT PUT THE DISCORD READER INTO EVERY WHOP TAB (found 9/18).
+// It was /(^|\.)whop\.com/ — which needs "whop.com" at the start of the
+// string or after a dot, and a tab url is "https://whop.com/…": "whop.com"
+// sits after a "/", so it never matched. isWhop was false for every Whop
+// tab since 9/8, so ensureReaders() and reinject() injected content.js
+// (the DISCORD reader) into Whop pages and reported success. The only
+// whop.js a Whop tab ever got came from the manifest at page load — and
+// died at the next extension reload, with nothing to put it back.
+function isWhopUrl(u) {
+  return /^https:\/\/([a-z0-9-]+\.)*whop\.com\//i.test(String(u || ""));
+}
 const INJECTED_AT = {};       // tabId -> last inject time
 const INJECT_ERR = {};        // tabId -> why the last reader inject failed (9/18)
 const INJECT_SEEN = [0, 0];   // last ensureReaders pass: [room tabs found, readers injected]
-const RELOADED_ON_UPDATE = [0]; // Whop tabs reloaded at the last code update
+const RELOADED_ON_UPDATE = [0, -1]; // [Whop tabs reloaded at come-up, room tabs come-up saw]
 const RELOADED_TABS = new Set(); // which ones (reinject runs 3x at come-up)
 async function ensureReaders() {
   if (!await assignedLane()) return;
@@ -2307,7 +2318,7 @@ async function ensureReaders() {
     // 9/9: a tab whose reader is HEARTBEATING doesn't need a new copy.
     // Re-injecting healthy tabs every 5 min was what manufactured the
     // zombie beaters (one per inject). Inject only when nothing is beating.
-    const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
+    const isWhop = isWhopUrl(t.url);
     // A hidden tab's timers wake about once a minute (Chrome), so a Whop
     // pulse can land 60-90 s apart while the reader is perfectly healthy.
     const beatWindow = isWhop ? 180000 : 60000;
@@ -2373,10 +2384,12 @@ async function reinject() {
   const urls = ["https://discord.com/channels/*", "https://*.discord.com/channels/*",
                 "https://whop.com/*", "https://*.whop.com/*"];
   let tabs = [];
-  try { tabs = await chrome.tabs.query({ url: urls }); } catch (e) { return; }
+  try { tabs = await chrome.tabs.query({ url: urls }); }
+  catch (e) { INJECT_ERR["come-up-query"] = String(e && e.message || e).slice(0, 100); return; }
+  RELOADED_ON_UPDATE[1] = tabs.length;
 
   for (const t of tabs) {
-    const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
+    const isWhop = isWhopUrl(t.url);
     // WHOP TABS RELOAD ON A CODE UPDATE (9/18). Measured on 3.8.45→.50: after
     // chrome.runtime.reload() the old whop.js copies die ("context gone") and
     // executeScript reported success without a reader ever coming up in the
@@ -2390,7 +2403,8 @@ async function reinject() {
     // tab may simply reload. Once per tab per worker life.
     if (isWhop && !RELOADED_TABS.has(t.id)) {
       RELOADED_TABS.add(t.id);
-      try { await chrome.tabs.reload(t.id); RELOADED_ON_UPDATE[0] += 1; } catch (e) {}
+      try { await chrome.tabs.reload(t.id); RELOADED_ON_UPDATE[0] += 1; }
+      catch (e) { INJECT_ERR[t.id] = "reload: " + String(e && e.message || e).slice(0, 100); }
       continue;
     }
     if (isWhop) { try { await keepWhopAwake(t.id); } catch (e) { /* reader still goes in */ } }
@@ -2990,7 +3004,7 @@ async function publishDepartmentHealth() {
       issues: issues.map(i => i.what).concat(
         Object.keys(INJECT_ERR).map(id => "reader inject failed on tab " + id + ": " + INJECT_ERR[id]),
         ["readers: " + INJECT_SEEN[0] + " room tab(s) seen, " + INJECT_SEEN[1] + " injected on the last pass, " +
-         RELOADED_ON_UPDATE[0] + " Whop tab(s) reloaded at come-up; pulses: " +
+         RELOADED_ON_UPDATE[0] + " Whop tab(s) reloaded at come-up (come-up saw " + RELOADED_ON_UPDATE[1] + " room tabs); pulses: " +
          (Object.keys(WHOP_PULSE).map(id => id + "=" + Math.round((Date.now() - WHOP_PULSE[id].t) / 1000) + "s").join(" ") || "none")]),
       rooms_expected: ALL_ROOMS.filter(r => r.state === "on").length}),
     signal: AbortSignal.timeout(5000)
