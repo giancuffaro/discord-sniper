@@ -2283,6 +2283,7 @@ async function checkBuild() {
  * old copy first), so a re-inject never double-reads. Bounded by INJECTED_AT
  * so a healthy tab isn't re-scripted every tick. */
 const INJECTED_AT = {};       // tabId -> last inject time
+const INJECT_ERR = {};        // tabId -> why the last reader inject failed (9/18)
 async function ensureReaders() {
   if (!await assignedLane()) return;
   let tabs = [];
@@ -2292,7 +2293,12 @@ async function ensureReaders() {
   } catch (e) { return; }
   const now = Date.now();
   for (const t of tabs) {
-    if (t.discarded || t.status === "loading") continue;
+    if (t.discarded) continue;
+    // 9/18: "loading" is NOT skipped any more. A Whop room keeps a request
+    // open for as long as the tab lives, so Chrome reports it "loading"
+    // forever — and this guard left every Whop tab without a reader after
+    // each extension reload until the 30-min backstop reloaded the page.
+    // Injecting into a page mid-navigation just throws; that is caught below.
     if (now - (INJECTED_AT[t.id] || 0) < 300000) continue;   // did this one recently
     // 9/9: a tab whose reader is HEARTBEATING doesn't need a new copy.
     // Re-injecting healthy tabs every 5 min was what manufactured the
@@ -2303,12 +2309,17 @@ async function ensureReaders() {
     }
     if (beating) { INJECTED_AT[t.id] = now; continue; }
     const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
+    if (isWhop) { try { await keepWhopAwake(t.id); } catch (e) { /* reader still goes in */ } }
     try {
-      if (isWhop) await keepWhopAwake(t.id);
       await chrome.scripting.executeScript({ target: { tabId: t.id },
         files: [isWhop ? "whop.js" : "content.js"] });
       INJECTED_AT[t.id] = now;
-    } catch (e) { /* closed / mid-nav — next tick */ }
+      delete INJECT_ERR[t.id];
+    } catch (e) {
+      // 9/18: SAY it. A silent inject failure here is a room that reads
+      // nothing until its next page reload — surfaced in department health.
+      INJECT_ERR[t.id] = String(e && e.message || e).slice(0, 100);
+    }
   }
 }
 
@@ -2319,9 +2330,22 @@ async function ensureReaders() {
  * the page's own world (manifest, document_start) for every NEW load; this
  * puts it into a tab that was already open when the extension came up or
  * reloaded. Idempotent on the page side, so calling it twice costs nothing. */
+const AWAKE_FAILED = {};      // tabId -> said once
 async function keepWhopAwake(tabId) {
-  await chrome.scripting.executeScript({ target: { tabId, allFrames: true },
-                                         world: "MAIN", files: ["whop-awake.js"] });
+  try {
+    await chrome.scripting.executeScript({ target: { tabId, allFrames: true },
+                                           world: "MAIN", files: ["whop-awake.js"] });
+    delete AWAKE_FAILED[tabId];
+  } catch (e) {
+    if (!AWAKE_FAILED[tabId]) {
+      AWAKE_FAILED[tabId] = true;
+      addLog({ kind: "failed", author: "whop", text: "",
+               why: "⚠ could not put whop-awake.js into tab " + tabId + " — " +
+                    String(e && e.message || e).slice(0, 120) +
+                    " — that Whop feed will freeze in the background" });
+    }
+    throw e;
+  }
 }
 
 async function reinject() {
@@ -2343,8 +2367,8 @@ async function reinject() {
 
   for (const t of tabs) {
     const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
+    if (isWhop) { try { await keepWhopAwake(t.id); } catch (e) { /* reader still goes in */ } }
     try {
-      if (isWhop) await keepWhopAwake(t.id);
       await chrome.scripting.executeScript({ target: { tabId: t.id },
         files: [isWhop ? "whop.js" : "content.js"] });
     } catch (e) { /* tab closed or mid-navigation; the next attach picks it up */ }
@@ -2937,7 +2961,9 @@ async function publishDepartmentHealth() {
   await fetch(bridgeBaseFrom(c.bridge_url) + "/department-health", {
     method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({lane, version: chrome.runtime.getManifest().version,
-      issues: issues.map(i => i.what), rooms_expected: ALL_ROOMS.filter(r => r.state === "on").length}),
+      issues: issues.map(i => i.what).concat(
+        Object.keys(INJECT_ERR).map(id => "reader inject failed on tab " + id + ": " + INJECT_ERR[id])),
+      rooms_expected: ALL_ROOMS.filter(r => r.state === "on").length}),
     signal: AbortSignal.timeout(5000)
   });
 }
