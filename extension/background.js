@@ -2285,6 +2285,8 @@ async function checkBuild() {
 const INJECTED_AT = {};       // tabId -> last inject time
 const INJECT_ERR = {};        // tabId -> why the last reader inject failed (9/18)
 const INJECT_SEEN = [0, 0];   // last ensureReaders pass: [room tabs found, readers injected]
+const RELOADED_ON_UPDATE = [0]; // Whop tabs reloaded at the last code update
+const RELOADED_TABS = new Set(); // which ones (reinject runs 3x at come-up)
 async function ensureReaders() {
   if (!await assignedLane()) return;
   let tabs = [];
@@ -2316,7 +2318,7 @@ async function ensureReaders() {
     if (beating) { INJECTED_AT[t.id] = now; continue; }
     if (isWhop) { try { await keepWhopAwake(t.id); } catch (e) { /* reader still goes in */ } }
     try {
-      await chrome.scripting.executeScript({ target: { tabId: t.id },
+      await chrome.scripting.executeScript({ target: { tabId: t.id, allFrames: isWhop },
         files: [isWhop ? "whop.js" : "content.js"] });
       INJECTED_AT[t.id] = now;
       INJECT_SEEN[1] += 1;
@@ -2382,8 +2384,13 @@ async function reinject() {
     // A Whop tab is a background tab nobody is looking at, so a page reload
     // costs him nothing (the Discord rule — never refresh under him — stands
     // for Discord). A reload also runs whop-awake.js at document_start.
-    if (isWhop && updated) {
-      try { await chrome.tabs.reload(t.id); } catch (e) {}
+    // (9/18, 14:25) not only on `just_updated` — that flag read "" on every
+    // come-up today (0 reloads on 3.8.51/.52) while the tabs sat readerless.
+    // Come-up is browser start or a code update; either way a hidden Whop
+    // tab may simply reload. Once per tab per worker life.
+    if (isWhop && !RELOADED_TABS.has(t.id)) {
+      RELOADED_TABS.add(t.id);
+      try { await chrome.tabs.reload(t.id); RELOADED_ON_UPDATE[0] += 1; } catch (e) {}
       continue;
     }
     if (isWhop) { try { await keepWhopAwake(t.id); } catch (e) { /* reader still goes in */ } }
@@ -2982,7 +2989,9 @@ async function publishDepartmentHealth() {
     body: JSON.stringify({lane, version: chrome.runtime.getManifest().version,
       issues: issues.map(i => i.what).concat(
         Object.keys(INJECT_ERR).map(id => "reader inject failed on tab " + id + ": " + INJECT_ERR[id]),
-        ["readers: " + INJECT_SEEN[0] + " room tab(s) seen, " + INJECT_SEEN[1] + " injected on the last pass"]),
+        ["readers: " + INJECT_SEEN[0] + " room tab(s) seen, " + INJECT_SEEN[1] + " injected on the last pass, " +
+         RELOADED_ON_UPDATE[0] + " Whop tab(s) reloaded at come-up; pulses: " +
+         (Object.keys(WHOP_PULSE).map(id => id + "=" + Math.round((Date.now() - WHOP_PULSE[id].t) / 1000) + "s").join(" ") || "none")]),
       rooms_expected: ALL_ROOMS.filter(r => r.state === "on").length}),
     signal: AbortSignal.timeout(5000)
   });

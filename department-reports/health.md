@@ -1,5 +1,22 @@
 # Health reviews — newest first
 
+# Health — 2026-09-18 — 9a2b2b99dd8c841d0fa8
+
+The supplied status text suggests several Whop tabs have not received recent reader heartbeats, and the pulse feed is reported as "none." This is a source-status concern rather than a confirmed application fault, because the text does not show timing thresholds, expected heartbeat cadence, or whether the tabs are intentionally idle.
+
+## Findings
+- ["Whop 2K Challenge tab is open but its reader hasn't beaten in a while", "Whop Day Trades tab is open but its reader hasn't beaten in a while", "Whop Futures tab is open but its reader hasn't beaten in a while", "Whop High Risk tab is open but its reader hasn't beaten in a while", "Whop Swing Trades tab is open but its reader hasn't beaten in a while"] Verify whether these readers are expected to emit heartbeats during the observed interval. If they should be active, check source connectivity, reader health, and any tab-specific throttling or idle behavior before treating this as an outage.
+- ['readers: 38 room tab(s) seen, 3 injected on the last pass, 0 Whop tab(s) reloaded at come-up; pulses: none'] Confirm whether "pulses: none" means no heartbeats were observed or whether the pulse channel is unavailable. If pulses are required for monitoring, verify source availability and the capture pipeline rather than assuming a parser defect.
+- ['readers: 7 room tab(s) seen, 0 injected on the last pass'] Check whether the absence of injected room tabs is expected for this pass. If not expected, verify room-tab discovery, injection criteria, and whether relevant tabs were skipped because of upstream availability or filtering.
+
+## Limitations
+- The evidence is a partial status snapshot; it does not provide timestamps, heartbeat thresholds, or the normal update cadence.
+- The text reports that tabs "haven't beaten in a while," but it does not distinguish intentional inactivity from a true source outage.
+- No broker-confirmed results, fills, or trade outcomes are present here; only reader/session status is available.
+- The meaning of "pulses: none" is not defined in the supplied text, so it cannot be treated as a confirmed failure without source verification.
+
+---
+
 # Health — 2026-09-18 — 72f7782f2dc1df09ee0d
 
 The session is marked in_session=true. The evidence reports multiple Whop tabs whose reader "hasn't beaten in a while," plus room-tab coverage counts of 38 seen / 3 injected and 7 seen / 0 injected on the last pass. The data is insufficient to tell whether this reflects a quiet room, a stalled reader, or an outage without source timestamps and expected-heartbeat thresholds.

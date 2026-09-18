@@ -1,5 +1,22 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — 46c8be8ed25b5de3409a
+
+The MU trim wording supports reviewing contract-field extraction, but the reader's expiry and context linkage are not established by the supplied evidence. Validation reports success despite an unsupported-context flag and a missing strike. These are review proposals, not confirmed parser bugs.
+
+## Findings
+- The current TT message says 'Trim some MU 1035c 2.35 -> 3.35 100 per'. The parser returns TRIM and MU but null side and strike; the reader returns CALL and strike '1035'; validation retains CALLS but returns a null strike. Verify the original alert and trace extraction and validation of '1035c'. Review whether CALL and strike 1035 should be preserved as source-stated contract fields. Do not alter the strike based on presumed market plausibility. Missing expiry may still prevent complete contract identification.
+- The reader supplies expiry '9/18' with confidence 1.0, although the current alert contains no explicit expiry. Its supporting messages say 'MU 3.7 -> 4.4' and 'Glad I sold half my MU Current cons green'; neither identifies an expiry or strike. Validation has eligible_prior_ids: [] and safety_flags: ['unsupported_context_id'], yet ok is true. Verify an original TT entry or other eligible, explicitly linked contract source before assigning expiry. Do not use the posting date as expiry. Review confidence calibration and whether validation success denotes structural validity rather than source-supported completeness.
+- The reader selects price '3.35' from '2.35 -> 3.35 100 per'. TT's retained earlier wording, 'mu now 3.7, 70 a con from the 3.00 av ... 140/per on current av', supports a possible distinction between decimal premium quotes and per-contract gain commentary, but does not establish exact fills or the current contract's multiplier. Preserve '2.35', '3.35' and '100 per' separately. Verify whether 3.35 is an indicated trim premium or a reported execution and whether '100 per' denotes profit. Keep premium units unresolved until confirmed; do not interpret 100 as quantity or exit premium, or rescale values merely to reconcile them. Any verified conversion should state the premium multiplier and exclude fees.
+
+## Limitations
+- Only one parser/reader/validation comparison is supplied; broader parser performance cannot be inferred.
+- The provided history does not establish a complete TT MU contract identity or position linkage. Other callers' MU commentary cannot supply TT's missing fields.
+- No broker fills, contemporaneous quotes, instrument multiplier confirmation or independent performance calculations are supplied. Caller commentary is not broker-confirmed execution evidence.
+- The reason for fire: false and the internal meaning of validation ok are not provided; neither establishes a malfunction.
+
+---
+
 # Reader Review — 2026-09-18 — a4639335059b6fcd2ec4
 
 The message supports a proposed MU partial-exit interpretation, but contract details remain unresolved. Review the parser/reader disagreement and the validator's unsupported-context warning against retained sources; neither establishes a confirmed parser bug.
