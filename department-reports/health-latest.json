@@ -1,8 +1,8 @@
 {
   "in_session": true,
   "issues": [
-    "readers: 38 room tab(s) seen, 0 injected on the last pass, 1 Whop tab(s) reloaded at come-up (come-up saw 38 room tabs); pulses: 538396536=25s",
-    "readers: 6 room tab(s) seen, 0 injected on the last pass, 6 Whop tab(s) reloaded at come-up (come-up saw 6 room tabs); pulses: 538395898=29s 538395899=29s 538396212=28s 538396408=28s 538396414=27s 538396415=26s"
+    "readers: 38 room tab(s) seen, 0 injected on the last pass, 1 Whop tab(s) reloaded at come-up (come-up saw 38 room tabs); pulses: 538396536=21s",
+    "readers: 6 room tab(s) seen, 0 injected on the last pass, 6 Whop tab(s) reloaded at come-up (come-up saw 6 room tabs); pulses: 538395898=3s 538395899=30s 538396212=3s 538396408=3s 538396414=3s 538396415=3s"
   ],
   "lanes": [
     {
@@ -19,11 +19,11 @@
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789756566.448486,
+    "last_finished": 1789756942.2450092,
     "last_error": "",
-    "last_provider": "openai",
+    "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789756642.8655593
+  "checked_at": 1789756942.8712397
 }

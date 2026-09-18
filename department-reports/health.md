@@ -1,5 +1,21 @@
 # Health reviews — newest first
 
+# Health — 2026-09-18 — bf3c19902327d89b25cb
+
+The evidence shows the session is in progress and reports two issue entries: one with 38 room tabs seen, 0 injected on the last pass, and 1 Whop tab reloaded at come-up; another with 6 room tabs seen, 0 injected on the last pass, and 6 Whop tabs reloaded at come-up. Pulse timestamps are listed for each entry. This does not by itself confirm an outage or a parser bug, but it does warrant source verification of the relationship between room tabs, reloaded Whop tabs, and the meaning of the pulse timings.
+
+## Findings
+- "readers: 38 room tab(s) seen, 0 injected on the last pass, 1 Whop tab(s) reloaded at come-up (come-up saw 38 room tabs); pulses: 538396536=21s" Verify the source semantics for "room tab(s) seen," "injected," and "Whop tab(s) reloaded at come-up" before treating the counts as a defect or outage signal. The presence of room tabs with zero injected on the last pass may be normal, but the relationship is not confirmed here.
+- "readers: 6 room tab(s) seen, 0 injected on the last pass, 6 Whop tab(s) reloaded at come-up (come-up saw 6 room tabs); pulses: 538395898=3s 538395899=30s 538396212=3s 538396408=3s 538396414=3s 538396415=3s" Check whether the equal count of come-up room tabs and reloaded Whop tabs is expected in this workflow, and confirm what the pulse durations represent. Do not label this as an error without source-backed confirmation.
+
+## Limitations
+- The evidence is a short status snapshot with no surrounding logs, so missing context cannot be distinguished from a quiet-but-healthy state.
+- No source documentation is provided for the terms "injected," "come-up," "room tab(s)," or "Whop tab(s)," so their operational meaning is unresolved.
+- The pulse values are reported as raw durations only; their significance, thresholding, and whether they indicate latency, retry timing, or normal cadence are unknown.
+- This evidence does not include any broker-confirmed results, prices, fills, or alerts, so no performance or outcome conclusion can be drawn.
+
+---
+
 # Health — 2026-09-18 — 1dbd30e809faa9ca9d13
 
 The evidence shows in_session=true and two logged issue entries. One reports 38 room tab(s) seen, 0 injected on the last pass, and 1 Whop tab(s) reloaded at come-up. The other reports 6 room tab(s) seen, 0 injected on the last pass, and 6 Whop tab(s) reloaded at come-up, with pulse values recorded as 538395898=29s, 538395899=29s, 538396212=28s, 538396408=28s, 538396414=27s, and 538396415=26s.
