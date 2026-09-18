@@ -61,6 +61,7 @@ def windows():
             if w.empty:
                 continue
             rows = list(zip(w["high"].astype(float), w["low"].astype(float), w["close"].astype(float)))
+            a = dict(a, grp="SPY" if root == "ES" else "QQQ")   # SPX/SPXW score with SPY
             out.append((a, ppt, rows, float(w.iloc[0]["open"])))
     return out
 
@@ -94,11 +95,11 @@ def main():
     combos = [(st, None, 1.0, tg) for st in STOPS for tg in TARGETS] + \
              [(st, ar, ru, tg) for st in STOPS for ar in ARMS if ar for ru in RUNGS for tg in TARGETS]
     p("RATCHET SWEEP — %d combinations per instrument on %d SPY/MES and %d QQQ/MNQ alerts (%s..%s)"
-      % (len(combos), sum(1 for a, *_ in W if a["sym"] == "SPY"), sum(1 for a, *_ in W if a["sym"] == "QQQ"),
+      % (len(combos), sum(1 for a, *_ in W if a["grp"] == "SPY"), sum(1 for a, *_ in W if a["grp"] == "QQQ"),
          min(a["ts"].date() for a, *_ in W), max(a["ts"].date() for a, *_ in W)))
     p("OVERFIT WARNING: the best of %d on this few trades is mostly luck. Trust only what is positive in BOTH halves of the days." % len(combos))
     for sym, label in (("SPY", "MES ($5/pt)"), ("QQQ", "MNQ ($2/pt)")):
-        tr = [(a, ppt, rows, e) for a, ppt, rows, e in W if a["sym"] == sym]
+        tr = [(a, ppt, rows, e) for a, ppt, rows, e in W if a["grp"] == sym]
         days = sorted({a["ts"].date() for a, *_ in tr})
         mid = days[len(days) // 2]
         scored = []

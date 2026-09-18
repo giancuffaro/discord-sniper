@@ -65,11 +65,11 @@ def main():
     out = []
     p = out.append
     p("PULLBACK-TO-LEVEL ENTRY — %d SPY/MES and %d QQQ/MNQ alerts; limit at the nearest ES 25 / NQ 50 or 100 below (above for puts), filled on touch"
-      % (sum(1 for a, *_ in W if a["sym"] == "SPY"), sum(1 for a, *_ in W if a["sym"] == "QQQ")))
+      % (sum(1 for a, *_ in W if a["grp"] == "SPY"), sum(1 for a, *_ in W if a["grp"] == "QQQ")))
     p("%-6s %-5s %-9s %-32s %6s %8s %6s %8s | %8s %6s" % ("sym", "grid", "wait", "exit", "filled", "pullbk $", "win%", "avg wait", "instant$", "win%"))
     p("                                                                                  (instant = same filled alerts entered at the alert bar instead)")
     for sym in ("SPY", "QQQ"):
-        tr = [x for x in W if x[0]["sym"] == sym]
+        tr = [x for x in W if x[0]["grp"] == sym]
         for grid in GRIDS[sym]:
             for wait in WAITS:
                 for name, st, ar, ru, tg in EXITS[sym]:
@@ -96,7 +96,7 @@ def main():
     p("\nLIMIT PLACED BEFORE THE LEVEL (buffer points above an ES 25 / NQ 50 for calls, below for puts)")
     p("%-6s %-6s %-9s %-32s %6s %8s %6s %8s" % ("sym", "buffer", "wait", "exit", "filled", "$", "win%", "1st/2nd"))
     for sym, grid in (("SPY", 25.0), ("QQQ", 50.0)):
-        tr = [x for x in W if x[0]["sym"] == sym]
+        tr = [x for x in W if x[0]["grp"] == sym]
         days = sorted({a["ts"].date() for a, *_ in tr})
         mid = days[len(days) // 2]
         ex = EXITS[sym][0] if sym == "SPY" else EXITS[sym][2]
@@ -118,7 +118,7 @@ def main():
             p("")
     # the skipped: what did the instant entry make on alerts that never pulled back (day wait)?
     for sym in ("SPY", "QQQ"):
-        tr = [x for x in W if x[0]["sym"] == sym]
+        tr = [x for x in W if x[0]["grp"] == sym]
         grid = GRIDS[sym][0]
         name, st, ar, ru, tg = EXITS[sym][0]
         never = [rs.sim(1 if a["dirn"] == "L" else -1, e, rows, ppt, st, ar, ru, tg)

@@ -1,14 +1,14 @@
-PULLBACK-TO-LEVEL ENTRY — 110 SPY/MES and 61 QQQ/MNQ alerts; limit at the nearest ES 25 / NQ 50 or 100 below (above for puts), filled on touch
+PULLBACK-TO-LEVEL ENTRY — 126 SPY/MES and 61 QQQ/MNQ alerts; limit at the nearest ES 25 / NQ 50 or 100 below (above for puts), filled on touch
 sym    grid  wait      exit                             filled pullbk $   win% avg wait | instant$   win%
                                                                                   (instant = same filled alerts entered at the alert bar instead)
-SPY    25    5m        12.5 stop · 1:1                      15     +415    73%       1m |     +384    73%
-SPY    25    5m        20 stop · 1:1                        15     +464    73%       1m |     +402    73%
-SPY    25    15m       12.5 stop · 1:1                      24     +214    58%       3m |     +183    58%
-SPY    25    15m       20 stop · 1:1                        24      +82    58%       3m |       +5    58%
-SPY    25    30m       12.5 stop · 1:1                      37     +632    65%      10m |     -334    46%
-SPY    25    30m       20 stop · 1:1                        37     +616    65%      10m |     -218    57%
-SPY    25    day       12.5 stop · 1:1                      67     +982    64%      71m |     -293    49%
-SPY    25    day       20 stop · 1:1                        67     +851    66%      71m |     -852    46%
+SPY    25    5m        12.5 stop · 1:1                      17     +412    71%       0m |     +381    71%
+SPY    25    5m        20 stop · 1:1                        17     +388    71%       0m |     +326    71%
+SPY    25    15m       12.5 stop · 1:1                      27     +272    59%       3m |     +184    59%
+SPY    25    15m       20 stop · 1:1                        27      +36    59%       3m |      -67    59%
+SPY    25    30m       12.5 stop · 1:1                      41     +705    66%       9m |     -346    46%
+SPY    25    30m       20 stop · 1:1                        41     +585    66%       9m |     -304    56%
+SPY    25    day       12.5 stop · 1:1                      76    +1180    67%      70m |     -625    46%
+SPY    25    day       20 stop · 1:1                        76     +876    67%      70m |    -1183    43%
 
 QQQ    50    5m        12.5 stop · 1:1                      23     +190    70%       1m |     -360    22%
 QQQ    50    5m        25 stop · 1:1                        23     +116    57%       1m |     -584    26%
@@ -47,17 +47,17 @@ QQQ    100   day       25 stop · 3x target                  48     +826    35% 
 
 LIMIT PLACED BEFORE THE LEVEL (buffer points above an ES 25 / NQ 50 for calls, below for puts)
 sym    buffer wait      exit                             filled        $   win%  1st/2nd
-SPY    0      30m       12.5 stop · 1:1                      37     +632    65%  +421/ +211
-SPY    1      30m       12.5 stop · 1:1                      45     +966    71%  +726/ +240
-SPY    2      30m       12.5 stop · 1:1                      53    +1439    75%  +970/ +469
-SPY    3      30m       12.5 stop · 1:1                      55    +1239    67%  +662/ +576
-SPY    5      30m       12.5 stop · 1:1                      61     +950    64%  +211/ +739
+SPY    0      30m       12.5 stop · 1:1                      41     +705    66%  +418/ +287
+SPY    1      30m       12.5 stop · 1:1                      49    +1034    71%  +723/ +311
+SPY    2      30m       12.5 stop · 1:1                      57    +1502    75%  +967/ +535
+SPY    3      30m       12.5 stop · 1:1                      60    +1232    65%  +660/ +573
+SPY    5      30m       12.5 stop · 1:1                      69     +875    62%  +145/ +730
 
-SPY    0      day       12.5 stop · 1:1                      67     +982    64%  +514/ +468
-SPY    1      day       12.5 stop · 1:1                      68     +846    66%  +618/ +227
-SPY    2      day       12.5 stop · 1:1                      79    +1593    72%  +706/ +887
-SPY    3      day       12.5 stop · 1:1                      80    +1366    66%  +383/ +983
-SPY    5      day       12.5 stop · 1:1                      87    +1317    67%  +274/+1043
+SPY    0      day       12.5 stop · 1:1                      76    +1180    67%  +561/ +618
+SPY    1      day       12.5 stop · 1:1                      77    +1018    68%  +656/ +362
+SPY    2      day       12.5 stop · 1:1                      89    +1760    72%  +733/+1027
+SPY    3      day       12.5 stop · 1:1                      90    +1376    64%  +327/+1049
+SPY    5      day       12.5 stop · 1:1                      97    +1308    66%  +208/+1100
 
 QQQ    0      30m       10 stop · BE at 5 · 2.5 rungs        44     +569    75%  +284/ +286
 QQQ    5      30m       10 stop · BE at 5 · 2.5 rungs        44     +339    59%  +128/ +210
@@ -71,5 +71,5 @@ QQQ    10     day       10 stop · BE at 5 · 2.5 rungs        56     +471    64
 QQQ    15     day       10 stop · BE at 5 · 2.5 rungs        56     +326    57%  +199/ +127
 QQQ    25     day       10 stop · BE at 5 · 2.5 rungs        59     +256    44%  +242/  +14
 
-SPY: 43 alerts NEVER pulled back to a 25 level all day; entered instantly under 12.5 stop · 1:1 they made +884 (win 70%)
+SPY: 50 alerts NEVER pulled back to a 25 level all day; entered instantly under 12.5 stop · 1:1 they made +968 (win 68%)
 QQQ: 7 alerts NEVER pulled back to a 50 level all day; entered instantly under 12.5 stop · 1:1 they made +114 (win 86%)

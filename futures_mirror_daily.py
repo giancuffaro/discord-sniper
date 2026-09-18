@@ -51,7 +51,9 @@ SETTINGS = os.path.join(HERE, "settings.json")
 # added together.
 ET = ZoneInfo('America/New_York')
 
-MAP = {"SPY": ("ES", "MES", 5.0), "QQQ": ("NQ", "MNQ", 2.0)}
+MAP = {"SPY": ("ES", "MES", 5.0), "QQQ": ("NQ", "MNQ", 2.0),
+       # SPX / SPXW alerts are the same bet as SPY (G, 9/18): long MES on a call, short on a put
+       "SPX": ("ES", "MES", 5.0), "SPXW": ("ES", "MES", 5.0)}
 STOP, TGT = 25.0, 50.0
 ARM = STOP * (5 / 7.5)          # 2/3 of the risk in profit -> breakeven
 STEP = STOP * (2 / 7.5)         # then a rung every ~6.67 points
@@ -152,7 +154,7 @@ def alerts_for(day):
     rows.sort(key=lambda r: r["ts"])
     keep, last = [], {}
     for r in rows:
-        k = (r["sym"], r["dirn"])
+        k = (MAP[r["sym"]][0], r["dirn"])        # SPY and SPX relays of one move are one alert
         if k in last and (r["ts"] - last[k]).total_seconds() < DEDUPE_SECONDS:
             continue
         last[k] = r["ts"]

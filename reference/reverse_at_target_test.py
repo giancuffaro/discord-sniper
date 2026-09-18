@@ -48,7 +48,7 @@ def main():
         ("QQQ", "MNQ · limit at the 50 · 10/BE5/2.5 · reverse at the NEXT 50 level", 50.0, 0.0, (10.0, 0.5, 0.25, None), "level"),
     )
     for sym, name, grid, buf, (st, ar, ru, tg), where in cases:
-        tr = [x for x in W if x[0]["sym"] == sym]
+        tr = [x for x in W if x[0]["grp"] == sym]
         base, rev, reached = [], [], 0
         for a, ppt, rows, e in tr:
             s = 1 if a["dirn"] == "L" else -1
