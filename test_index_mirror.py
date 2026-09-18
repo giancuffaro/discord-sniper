@@ -22,9 +22,25 @@ NOON = dt.datetime(2026, 9, 11, 12, 0, tzinfo=ET)       # inside 09:30-15:45
 OFF = {"execution": {"index_mirror": {"enabled": False,
                                       "map": {"SPY": "MES", "QQQ": "MNQ"},
                                       "qty": 1}}}
+QUOTES = tempfile.mkdtemp(prefix="nt_quotes_")
 ON = {"execution": {"index_mirror": {"enabled": True,
                                      "map": {"SPY": "MES", "QQQ": "MNQ"},
-                                     "qty": 1}}}
+                                     "qty": 1}},
+      "futures_brokers": {"webull": False,
+                          "ninjatrader": {"enabled": True, "quote_dir": QUOTES,
+                                          "atm_templates": {"MES": "SNIPER-MES-LEVEL",
+                                                            "MNQ": "SNIPER-MNQ-LEVEL"}}}}
+
+
+def write_quote(root, last, when=NOON):
+    """What SniperQuoteTape writes: the last price and when."""
+    import json
+    with open(os.path.join(QUOTES, "nt_quote_%s.json" % root), "w", encoding="utf-8") as fh:
+        json.dump({"root": root, "last": last, "ts": when.timestamp()}, fh)
+
+
+write_quote("ES", 7712.75)      # long: level 7700, limit 7702 (2 before)
+write_quote("NQ", 24975.50)     # short: level 25000, limit at 25000
 
 
 def spy_call(action="OPEN"):
@@ -41,8 +57,18 @@ def qqq_put():
 
 
 class MirrorOffIsInert(unittest.TestCase):
-    def test_live_activation_stays_blocked_without_protective_exits(self):
+    def test_live_activation_stays_blocked_without_a_broker_side_exit(self):
         self.assertFalse(index_mirror.live_exit_ready())
+        self.assertFalse(index_mirror.live_exit_ready(OFF))
+        webull = copy.deepcopy(ON)
+        webull["futures_brokers"]["webull"] = True
+        self.assertFalse(index_mirror.live_exit_ready(webull))
+        bare = copy.deepcopy(ON)
+        bare["futures_brokers"]["ninjatrader"]["atm_templates"] = {}
+        self.assertFalse(index_mirror.live_exit_ready(bare))
+        self.assertTrue(index_mirror.live_exit_ready(ON))
+        self.assertTrue(index_mirror.live_exit_ready(ON, "MES"))
+        self.assertFalse(index_mirror.live_exit_ready(ON, "M2K"))
 
     def test_new_york_clock_tracks_winter_offset(self):
         winter = dt.datetime(2026, 12, 1, 12, 0, tzinfo=ET)
@@ -73,10 +99,15 @@ class MirrorOnConverts(unittest.TestCase):
         self.assertEqual(order["direction"], "LONG")
         self.assertEqual(order["kind"], "future")
         self.assertEqual(order["qty"], 1)
-        self.assertIsNone(order["their_stop"])
-        self.assertIsNone(order["their_target"])
-        # No option premium survives as a futures price.
-        self.assertIsNone(order["limit"])
+        # The LEVEL shape, from futures_mirror_daily.LEVEL: ES at 7712.75, long,
+        # the 25 below is 7700, the limit rests 2 before it.
+        from futures_mirror_daily import LEVEL, LEVEL_WAIT
+        L = LEVEL["ES"]
+        self.assertEqual(order["limit"], 7700 + L["buf"])
+        self.assertEqual(order["their_stop"], order["limit"] - L["stop"])
+        self.assertEqual(order["their_target"], order["limit"] + L["target"])
+        self.assertEqual(order["level_ttl_s"], LEVEL_WAIT * 60)
+        self.assertEqual(order["atm_template"], "SNIPER-MES-LEVEL")
         self.assertIsNone(order["strike"])
         self.assertIsNone(order["expiry"])
         self.assertFalse(order["swing"])
@@ -87,8 +118,12 @@ class MirrorOnConverts(unittest.TestCase):
         self.assertEqual(order["symbol"], "MNQ")
         self.assertEqual(order["direction"], "SHORT")
         self.assertEqual(order["kind"], "future")
-        self.assertIsNone(order["their_stop"])
-        self.assertIsNone(order["their_target"])
+        from futures_mirror_daily import LEVEL
+        L = LEVEL["NQ"]
+        self.assertEqual(order["limit"], 25000 - L["buf"])        # short: the 50 above
+        self.assertEqual(order["their_stop"], order["limit"] + L["stop"])
+        self.assertIsNone(order["their_target"])                 # MNQ runs on the trail
+        self.assertEqual(order["atm_template"], "SNIPER-MNQ-LEVEL")
 
     def test_spy_put_is_short_mes_and_qqq_call_is_long_mnq(self):
         o = spy_call()
@@ -99,6 +134,28 @@ class MirrorOnConverts(unittest.TestCase):
         o2["side"] = "CALLS"
         index_mirror.convert(o2, ON, now=NOON)
         self.assertEqual((o2["symbol"], o2["direction"]), ("MNQ", "LONG"))
+
+    def test_a_stale_quote_blocks_the_order_instead_of_guessing(self):
+        write_quote("ES", 7712.75, when=NOON - dt.timedelta(minutes=5))
+        try:
+            order = spy_call()
+            said = []
+            self.assertFalse(index_mirror.convert(order, ON, note=said.append, now=NOON))
+            self.assertIn("not mirrored", order["mirror_block"])
+            self.assertEqual(order["symbol"], "SPY")          # untouched
+            self.assertEqual(order["limit"], 3.10)
+            self.assertTrue(any("no fresh ES price" in m for m in said))
+        finally:
+            write_quote("ES", 7712.75)
+
+    def test_already_past_the_level_takes_the_price_it_has(self):
+        write_quote("ES", 7701.00)                            # long, level 7700, limit 7702 > price
+        try:
+            order = spy_call()
+            self.assertTrue(index_mirror.convert(order, ON, now=NOON))
+            self.assertEqual(order["limit"], 7701.00)
+        finally:
+            write_quote("ES", 7712.75)
 
     def test_the_room_toggle_and_caller_ride_through_untouched(self):
         order = spy_call()

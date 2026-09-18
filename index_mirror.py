@@ -32,6 +32,16 @@ WHY IT SHIPS OFF (9/13): a hypothetical 25/50 replay of 149 alerts lost $721
 gross, and live futures stops/ratchets are not yet enforced by a broker order
 or quote watcher. The bridge refuses activation until that is fixed.
 
+THE LEVEL SHAPE (9/18, G: "let's do Ninja"): the alert only picks the
+direction. The entry is a LIMIT resting at the round number in the pullback's
+path — read from futures_mirror_daily.LEVEL, the one home of the numbers —
+good for LEVEL_WAIT minutes, then cancelled. The exit is NinjaTrader's own ATM
+template for that micro (stop / target / breakeven / trail, server-side), named
+in futures_brokers.ninjatrader.atm_templates. The price the level is measured
+from is NinjaTrader's, written to a file by the SniperQuoteTape indicator
+(ninjatrader/SniperQuoteTape.cs); no fresh quote = no order, never a market
+entry in its place.
+
 RTH ONLY (09:30-15:45 ET), same window the replay measured. Futures trade
 nearly around the clock and the option market does not, so without this a
 7 p.m. SPY alert would become an overnight MES position that no replay has
@@ -57,13 +67,96 @@ DEFAULT_MAP = {"SPY": "MES", "QQQ": "MNQ"}
 ET = ZoneInfo('America/New_York')
 
 
-def live_exit_ready():
-    """The futures route currently records levels but does not enforce them.
+QUOTE_MAX_AGE_S = 15                   # older than this, the price is a memory
+ROOT_OF = {"MES": "ES", "MNQ": "NQ", "M2K": "RTY", "MYM": "YM"}
 
-    Keep mirror activation blocked until a broker-confirmed protective exit
-    and target/ratchet path exists and has its own execution tests.
+
+def ninja(cfg):
+    """futures_brokers.ninjatrader, or {}. Never raises."""
+    try:
+        return (cfg or {}).get("futures_brokers", {}).get("ninjatrader", {}) or {}
+    except Exception:                                   # noqa: BLE001
+        return {}
+
+
+def atm_template(cfg, micro):
+    """The NinjaTrader ATM template that owns this micro's exit, or ""."""
+    t = ninja(cfg).get("atm_templates") or {}
+    return str(t.get(str(micro).upper()) or "").strip()
+
+
+def live_exit_ready(cfg=None, micro=None):
+    """Is there a broker-side exit for a mirrored entry?
+
+    Webull: NO — its futures route records levels but does not enforce them
+    (the proof gate in webull_futures is about a bare stop, not this shape).
+    NinjaTrader: YES when it is the ONLY futures broker armed and the micro has
+    an ATM template named — the stop, target, breakeven and trail then live on
+    NinjaTrader's server, and survive the bridge dying.
     """
-    return False
+    if not cfg:
+        return False
+    try:
+        fb = cfg.get("futures_brokers") or {}
+    except Exception:                                   # noqa: BLE001
+        return False
+    if fb.get("webull"):
+        return False
+    if (fb.get("topstep") or {}).get("enabled"):
+        return False
+    if not ninja(cfg).get("enabled"):
+        return False
+    if micro is None:
+        return any(atm_template(cfg, m) for m in symbol_map(cfg).values())
+    return bool(atm_template(cfg, micro))
+
+
+def quote_file(cfg, root):
+    d = str(ninja(cfg).get("quote_dir") or "").strip() or HERE
+    return os.path.join(d, "nt_quote_%s.json" % str(root).upper())
+
+
+def quote(cfg, root, now=None):
+    """NinjaTrader's last price for ES/NQ, from the SniperQuoteTape file, or
+    None when the file is missing, unreadable, or older than QUOTE_MAX_AGE_S."""
+    import json
+    import time
+    try:
+        with open(quote_file(cfg, root), encoding="utf-8") as fh:
+            d = json.load(fh)
+        px = float(d["last"])
+        age = (now.timestamp() if now else time.time()) - float(d["ts"])
+        if px <= 0 or age > QUOTE_MAX_AGE_S or age < -60:
+            return None
+        return px
+    except Exception:                                   # noqa: BLE001
+        return None
+
+
+def level_entry(cfg, micro, dirn, now=None):
+    """(limit, stop, target, ttl_s, why) for the level shape, or (None, ..., why).
+
+    The numbers come from futures_mirror_daily.LEVEL — the same table the
+    nightly mirror scores — so what trades is what was measured."""
+    import math
+    from futures_mirror_daily import LEVEL, LEVEL_WAIT
+    root = ROOT_OF.get(str(micro).upper())
+    L = LEVEL.get(root) if root else None
+    if not L:
+        return None, None, None, 0, "%s has no level shape" % micro
+    px = quote(cfg, root, now=now)
+    if px is None:
+        return None, None, None, 0, ("no fresh %s price from NinjaTrader (%s) — the "
+                                     "SniperQuoteTape indicator has to be on an %s chart"
+                                     % (root, os.path.basename(quote_file(cfg, root)), root))
+    s = 1 if dirn == "LONG" else -1
+    lvl = math.floor(px / L["grid"]) * L["grid"] if s > 0 else math.ceil(px / L["grid"]) * L["grid"]
+    limit = lvl + s * L["buf"]
+    if (limit >= px) if s > 0 else (limit <= px):
+        limit = px                                        # already there: take it
+    stop = limit - s * L["stop"]
+    target = limit + s * L["target"] if L.get("target") else None
+    return limit, stop, target, LEVEL_WAIT * 60, ""
 
 
 def settings(cfg):
@@ -131,22 +224,30 @@ def convert(order, cfg, note=None, now=None):
         qty = max(1, int(settings(cfg).get("qty") or 1))
     except (TypeError, ValueError):
         qty = 1
-    # What the room actually posted, kept for the shadow row — the futures
-    # order below has no price of its own.
+    # No option premium can survive into a futures order: the alert's $3.10 is
+    # a contract price, not an index level. The entry is the LEVEL shape: a
+    # limit resting before the round number in the pullback's path, from
+    # NinjaTrader's live price. No fresh price = no order — the option is not
+    # bought either (the mirror is on; the caller chose futures), and the
+    # bridge refuses with this sentence. Priced BEFORE the order is touched,
+    # so a refusal leaves it byte-for-byte as it came.
+    limit, stop, target, ttl, why = level_entry(cfg, micro, dirn, now=now)
+    if limit is None:
+        order["mirror_block"] = "%s not mirrored: %s. Nothing was sent." % (was, why)
+        if note:
+            note("MIRROR   " + order["mirror_block"])
+        return False
+    # What the room actually posted, kept for the shadow row.
     order["mirror_their_price"] = order.get("limit")
     order["kind"] = "future"
     order["symbol"] = micro
     order["direction"] = dirn
     order["qty"] = qty
-    # No option premium can survive into a futures order: the alert's $3.10 is
-    # a contract price, not an index level, and webull_futures would snap it to
-    # the 25-point grid and bid 0. No price = a market entry, which is exactly
-    # what the replay measured. The bracket is born off the fill (positions.
-    # _arm_stop) at the house 25/50, the same numbers a room that posts no stop
-    # already gets.
-    order["limit"] = None
-    order["their_stop"] = None
-    order["their_target"] = None
+    order["limit"] = limit
+    order["their_stop"] = stop
+    order["their_target"] = target
+    order["level_ttl_s"] = ttl
+    order["atm_template"] = atm_template(cfg, micro)
     order["side"] = ""
     order["strike"] = None
     order["expiry"] = None
@@ -157,8 +258,10 @@ def convert(order, cfg, note=None, now=None):
     order["mirrored_from"] = was
     if note:
         note("MIRROR   %s -> %s %s x%d (index mirror is ON; the option was "
-             "NOT bought). Market entry, house 25/50 bracket, futures ratchet "
-             "owns the exit." % (was, dirn, micro, qty))
+             "NOT bought). Limit %g resting %d min; NinjaTrader ATM '%s' owns "
+             "the exit (stop %g%s)."
+             % (was, dirn, micro, qty, limit, ttl // 60, order["atm_template"] or "?",
+                stop, ", target %g" % target if target else ", no target"))
     return True
 
 

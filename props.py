@@ -545,7 +545,9 @@ def _send_ninjatrader(prop, order, note):
     # going dark, the NinjaTrader equal of the Webull resting stop and the
     # Topstep server bracket. Only on entries; exits (CLOSE/TRIM) flatten and
     # must never re-bracket. Blank template = plain order, as before.
-    atm = str(prop.get("atm_template") or "").strip()
+    # Per-micro template first (the index mirror names the one measured for
+    # that micro, index_mirror.atm_template), the account-wide one as fallback.
+    atm = str(order.get("atm_template") or prop.get("atm_template") or "").strip()
     strat, stratid = "", ""
     if atm and not is_exit:
         strat, stratid = atm, "DSA" + uuid.uuid4().hex[:8]
@@ -563,9 +565,34 @@ def _send_ninjatrader(prop, order, note):
     except OSError as e:
         raise PropRefused("%s: couldn't write the NinjaTrader order file (%s) — "
                           "nothing was sent" % (prop.get("name"), str(e)[:100]))
+    # A resting LEVEL entry dies after its wait (index_mirror.level_entry sets
+    # level_ttl_s): a CANCEL instruction file lands in the same folder when the
+    # time is up. NinjaTrader ignores it if the order already filled or died.
+    ttl = order.get("level_ttl_s")
+    if ttl and not is_exit:
+        import threading
+
+        def _cancel(folder=folder, oid=oid, name=prop.get("name")):
+            cl = "CANCEL;;;;;;;;;;%s;;" % oid
+            ctmp = os.path.join(folder, ".oif_cancel_%s.txt" % oid)
+            cdst = os.path.join(folder, "oif_cancel_%s.txt" % oid)
+            try:
+                with open(ctmp, "w", encoding="ascii") as f:
+                    f.write(cl + "\n")
+                os.replace(ctmp, cdst)
+                note("PROP     %s <- CANCEL %s (the resting level entry's %d minutes "
+                     "are up; no-op if it already filled)" % (name, oid, int(ttl) // 60))
+            except OSError as e:
+                note("PROP     %s WARN — couldn't write the cancel for %s (%s); "
+                     "the DAY order rests until NinjaTrader's close"
+                     % (name, oid, str(e)[:80]))
+        t = threading.Timer(float(ttl), _cancel)
+        t.daemon = True
+        t.start()
     if atm and not is_exit:
-        note("PROP     %s <- %s %s x%d (NinjaTrader OIF %s, ATM bracket '%s')"
-             % (prop.get("name"), side, instrument, qty, oid, atm))
+        note("PROP     %s <- %s %s x%d (NinjaTrader OIF %s, ATM bracket '%s'%s)"
+             % (prop.get("name"), side, instrument, qty, oid, atm,
+                ", cancels in %d min" % (int(ttl) // 60) if ttl else ""))
     else:
         note("PROP     %s <- %s %s x%d (NinjaTrader OIF %s)"
              % (prop.get("name"), side, instrument, qty, oid))

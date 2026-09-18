@@ -3110,12 +3110,19 @@ def _place_impl(order):
     # While the switch is off index_mirror.convert() returns before it reads
     # anything and the order is untouched. See index_mirror.py.
     if (index_mirror.enabled(CFG) and index_mirror.eligible(order, CFG)
-            and not index_mirror.live_exit_ready()):
-        note("MIRROR   refused: futures protective exits are not operational")
-        return False, "index mirror unavailable: futures protective exits are not operational"
+            and not index_mirror.live_exit_ready(CFG)):
+        note("MIRROR   refused: no broker-side exit for a mirrored entry (NinjaTrader "
+             "must be the only futures broker on, with an ATM template per micro)")
+        return False, ("index mirror unavailable: no broker-side exit — NinjaTrader "
+                       "only, with an ATM template named for the micro")
     try:
         if index_mirror.convert(order, CFG, note):
             sym = str(order.get("symbol", "")).upper()
+        elif order.get("mirror_block"):
+            # The mirror is ON and could not price the level (no fresh
+            # NinjaTrader quote). The caller chose futures; buying the option
+            # instead would be a different trade nobody asked for.
+            return False, order["mirror_block"]
     except Exception as _mie:                           # noqa: BLE001
         note("MIRROR   conversion failed (%s) — the option order stands"
              % str(_mie)[:90])
@@ -4742,7 +4749,7 @@ class Handler(BaseHTTPRequestHandler):
                 "index_mirror": {
                     "enabled": index_mirror.enabled(CFG),
                     "map": index_mirror.symbol_map(CFG),
-                    "available": index_mirror.live_exit_ready(),
+                    "available": index_mirror.live_exit_ready(CFG),
                 },
                 # The entry-slack measurement switch, read-only here. No
                 # popup control: there is nothing to click while activation
@@ -5734,9 +5741,11 @@ class Handler(BaseHTTPRequestHandler):
         if "index_mirror" in body:
             _im = body["index_mirror"]
             _want = bool(_im.get("enabled") if isinstance(_im, dict) else _im)
-            if _want and not index_mirror.live_exit_ready():
+            if _want and not index_mirror.live_exit_ready(CFG):
                 return self._json(409, {"ok": False,
-                    "why": "index mirror unavailable: futures protective exits are not operational"})
+                    "why": "index mirror unavailable: no broker-side exit — turn "
+                           "NinjaTrader on as the only futures broker and name an "
+                           "ATM template per micro in settings"})
             _cur = dict((data.setdefault("execution", {})
                          .get("index_mirror") or {}))
             _cur.setdefault("map", {"SPY": "MES", "QQQ": "MNQ"})
