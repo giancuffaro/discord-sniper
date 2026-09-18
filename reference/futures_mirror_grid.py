@@ -32,7 +32,16 @@ for p in (ROOT, HERE):
 
 import futures_mirror_daily as fm                           # noqa: E402
 
-STOPS = (12.5, 25.0, 35.0, 50.0)
+# a number = the same points on ES and NQ; a dict = per root (G, 9/18: "MNQ 12.5, MES 7.5")
+STOPS = ({"ES": 7.5, "NQ": 12.5}, 12.5, 25.0, 35.0, 50.0)
+
+
+def _stop_for(stop, root):
+    return stop[root] if isinstance(stop, dict) else stop
+
+
+def _stop_name(stop):
+    return "ES %g / NQ %g pt" % (stop["ES"], stop["NQ"]) if isinstance(stop, dict) else "%g pt" % stop
 # name -> (arm_frac, step_frac, target_mult): arm = arm_frac x stop in profit
 # moves the stop to breakeven, then every step_frac x stop locks another rung;
 # target_mult x stop is a hard take-profit (None = none, the ratchet is the exit)
@@ -48,6 +57,7 @@ MODES = {
 
 def run(a, bars, stop_pts, arm_frac, step_frac, target_mult):
     root, _micro, ppt = fm.MAP[a["sym"]]
+    stop_pts = _stop_for(stop_pts, root)
     b = bars[root]
     s = 1 if a["dirn"] == "L" else -1
     t0 = (a["ts"] + dt.timedelta(minutes=1)).replace(second=0, microsecond=0)
@@ -111,21 +121,21 @@ def main():
         for mode, (af, sf, tm) in MODES.items():
             res = [(a, run(a, bars, stop, af, sf, tm)) for a, bars in trades]
             res = [(a, r) for a, r in res if r]
-            results[(stop, mode)] = res
+            results[(STOPS.index(stop), mode)] = res
     print("\n%-50s" % "stop / mode" + "".join("%15s" % h for h in ("all $", "win%", "SPY/MES $", "QQQ/MNQ $")))
     for stop in STOPS:
         for mode in MODES:
-            res = results[(stop, mode)]
+            res = results[(STOPS.index(stop), mode)]
             usd = [r["usd"] for _a, r in res]
             spy = sum(r["usd"] for a, r in res if a["sym"] == "SPY")
             qqq = sum(r["usd"] for a, r in res if a["sym"] == "QQQ")
-            print("%-50s %14s %14s %14s %14s" % ("%g pt · %s" % (stop, mode), "%+.0f" % sum(usd),
+            print("%-50s %14s %14s %14s %14s" % ("%s · %s" % (_stop_name(stop), mode), "%+.0f" % sum(usd),
                   "%d%%" % round(100 * sum(1 for u in usd if u > 0) / len(usd)), "%+.0f" % spy, "%+.0f" % qqq))
     best = max(results, key=lambda k: sum(r["usd"] for _a, r in results[k]))
     worst = min(results, key=lambda k: sum(r["usd"] for _a, r in results[k]))
-    print("\nBEST cell: %g pt · %s = %+.0f   WORST: %g pt · %s = %+.0f"
-          % (best[0], best[1], sum(r["usd"] for _a, r in results[best]),
-             worst[0], worst[1], sum(r["usd"] for _a, r in results[worst])))
+    print("\nBEST cell: %s · %s = %+.0f   WORST: %s · %s = %+.0f"
+          % (_stop_name(STOPS[best[0]]), best[1], sum(r["usd"] for _a, r in results[best]),
+             _stop_name(STOPS[worst[0]]), worst[1], sum(r["usd"] for _a, r in results[worst])))
     print("\nHOW THEY END under the best cell: " + ", ".join(
         "%s %d" % kv for kv in sorted(defaultdict(int, {}).items())) if False else "")
     ends = defaultdict(int)
@@ -134,7 +144,7 @@ def main():
     print("HOW THEY END under the best cell: " + ", ".join("%s %d" % kv for kv in sorted(ends.items(), key=lambda kv: -kv[1])))
 
     print("\nBY CALLER under the best cell (4+ alerts) — and under the live 25-pt house rule")
-    house = results[(25.0, "house ratchet (arm 2/3, rungs 4/15) + 2x target")]
+    house = results[(STOPS.index(25.0), "house ratchet (arm 2/3, rungs 4/15) + 2x target")]
     by_best, by_house = defaultdict(list), defaultdict(list)
     for a, r in results[best]:
         by_best[(a["caller"] or a["room"] or "?")[:26]].append(r["usd"])

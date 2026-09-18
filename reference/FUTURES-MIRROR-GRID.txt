@@ -2,6 +2,12 @@ FUTURES MIRROR GRID — 104 SPY/QQQ alerts on 20 days with ES/NQ bars; 15 alerts
 SPY -> MES $5/pt, QQQ -> MNQ $2/pt, 1 contract, market entry next bar, $1.50 round turn, flat 15:59
 
 stop / mode                                                 all $           win%      SPY/MES $      QQQ/MNQ $
+ES 7.5 / NQ 12.5 pt · hard 1:2 bracket, no ratchet           -462            32%           -377            -85
+ES 7.5 / NQ 12.5 pt · hard 1:1 bracket, no ratchet           -406            46%           -246           -160
+ES 7.5 / NQ 12.5 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target           -114            39%             -6           -108
+ES 7.5 / NQ 12.5 pt · house ratchet, NO target                -31            39%           -166           +135
+ES 7.5 / NQ 12.5 pt · ratchet arm 1x, rungs 1/2, no target           -125            38%           -227           +102
+ES 7.5 / NQ 12.5 pt · ratchet arm 1/2, rungs 1/4, no target           +144            40%            -96           +240
 12.5 pt · hard 1:2 bracket, no ratchet                         +2            42%            +86            -85
 12.5 pt · hard 1:1 bracket, no ratchet                       +132            53%           +292           -160
 12.5 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target           -250            45%           -141           -108
