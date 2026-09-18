@@ -137,7 +137,16 @@ function send(text, author, at, images) {
     // is captured, studied, never traded.
     history: ts < STARTED - 5000 || (Date.now() - STARTED) < 15000,
     url: location.href
-  }).catch(() => { /* worker asleep; the next send wakes it */ });
+  }).then(function (r) {
+    // 9/18: SAY what happened to every post. A whole morning of Whop reads
+    // vanished with no trace — the console is the only place a content
+    // script can leave one. r is the worker's reply ({ok, ignored?}).
+    console.log("[sniper] whop sent → " + JSON.stringify(r || null) +
+                " · " + String(text).slice(0, 50));
+  }).catch(function (e) {
+    console.warn("[sniper] whop send FAILED: " + String(e && e.message || e) +
+                 " · " + String(text).slice(0, 50));
+  });
 }
 
 /* ---- TYPE A: feed rooms (the alert rooms) ---- */
@@ -229,6 +238,7 @@ window.__SNIPER_WHOP_STOP__ = function () {
   // 9/9: also stop the health pulse — a replaced copy must go fully silent
   // (same zombie-interval bug that reloaded Discord rooms 662 times).
   stopped = true;
+  console.log("[sniper] whop reader stopped (replaced or context gone)");
   if (timer) clearInterval(timer);
   if (pulseTimer) clearInterval(pulseTimer);
   timer = null;
@@ -256,12 +266,23 @@ if (!/\/exp_[A-Za-z0-9]+\/app\/?/.test(location.pathname)) {
 // A 2-second poll instead of a MutationObserver: the stable ids make
 // re-reads free (dedup by id), a poll survives Whop's SPA re-renders that
 // used to orphan the observer, and 2s is faster than a human reads.
+let SWEEPS = 0;
+console.log("[sniper] whop reader up in " + (window === window.top ? "top" : "iframe") +
+            " frame · " + location.pathname);
 sweep();
 timer = setInterval(function () {
   let alive = false;
   try { alive = !!(chrome.runtime && chrome.runtime.id); } catch (e) { alive = false; }
-  if (!alive) { window.__SNIPER_WHOP_STOP__(); return; }
+  if (!alive) {
+    console.warn("[sniper] whop reader stopping — extension context gone");
+    window.__SNIPER_WHOP_STOP__(); return;
+  }
   sweep();
+  SWEEPS += 1;
+  if (SWEEPS % 30 === 0) {          // once a minute: proof the poll is alive
+    console.log("[sniper] whop reader alive · sweeps=" + SWEEPS +
+                " · seen=" + SEEN.size);
+  }
 }, 2000);
 
 // HEALTH PULSE (8/25): once a minute, tell the worker whether this page
