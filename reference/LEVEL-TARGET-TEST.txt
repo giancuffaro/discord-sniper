@@ -1,0 +1,30 @@
+LEVEL TARGET TEST — 104 SPY/QQQ alerts as MES/MNQ, G's ladder underneath every variant (arm 1x, rungs 1x)
+levels: ES every 25, NQ every 100; B trails the stop 5 (ES) / 20 (NQ) under each level hit
+baseline (ladder only, no level): 12.5 both = -374
+
+stop · variant                                                all $   win%    MES $    MNQ $   ends
+12.5 pt · A close at level · first level, any distance          +74    39%     +236     -163   STOP 43, TARGET 32, BE 20, CLOSE 7, RATCHET 2
+12.5 pt · A close at level · skip levels < 5 ES / 20 NQ away     -188    33%      -54     -135   STOP 48, BE 22, TARGET 22, CLOSE 7, RATCHET 5
+12.5 pt · B trail under level · first level, any distance      -226    31%     -217       -8   STOP 43, LEVEL-TRAIL 30, BE 20, CLOSE 9, RATCHET 2
+12.5 pt · B trail under level · skip levels < 5 ES / 20 NQ away     -341    32%     -332       -8   STOP 48, BE 22, LEVEL-TRAIL 20, CLOSE 9, RATCHET 5
+ES 7.5 / NQ 12.5 pt · A close at level · first level, any distance     -444    30%     -281     -163   STOP 52, TARGET 22, BE 21, RATCHET 9
+ES 7.5 / NQ 12.5 pt · A close at level · skip levels < 5 ES / 20 NQ away     -630    24%     -495     -135   STOP 56, BE 23, RATCHET 13, TARGET 12
+ES 7.5 / NQ 12.5 pt · B trail under level · first level, any distance     -417    22%     -408       -8   STOP 52, BE 23, LEVEL-TRAIL 19, RATCHET 9, CLOSE 1
+ES 7.5 / NQ 12.5 pt · B trail under level · skip levels < 5 ES / 20 NQ away     -483    23%     -475       -8   STOP 56, BE 23, RATCHET 13, LEVEL-TRAIL 11, CLOSE 1
+
+BEST: 12.5 pt · A · min-away {'ES': 0, 'NQ': 0} = +74
+  ?                        n=21   +267 win 48%
+  Honeydrip daytrades      n= 5   +149 win 80%
+  Midas                    n= 4    +96 win 50%
+  Vero                     n=12    +70 win 25%
+  Mike                     n= 3    +49 win 67%
+  ZT fut-6                 n= 3    +26 win 33%
+  ZT all-trades-mashup     n=12    +17 win 50%
+  MR.TOPHAT                n= 3     -8 win 33%
+  MR.TOPHAT (OPTIONS/FUTUR n= 4    -22 win 25%
+  JpmInvestments           n= 3    -28 win 67%
+  Demon Alerts             n= 3    -54 win  0%
+  Platinum nitro           n= 3    -54 win  0%
+  ZTRADEZ BOT              n= 5    -70 win 40%
+  Unraveller               n= 4    -71 win 25%
+  positive days 11 of 20
