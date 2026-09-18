@@ -1,5 +1,57 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — 76457304c12458cd1151
+
+The current TT message supports a discretionary MU trim update, not a confirmed sale. Review is warranted for unsupported expiry and context attribution in the reader output. The parser/reader disagreement alone does not establish a parser bug.
+
+## Findings
+- The reader returns expiry "9/18" with confidence 1.0. Neither the current message nor the cited TT message, "Trim some MU 1035c 2.35 -> 3.35 100 per," states an expiry. The posting date does not establish option expiration. Verify the original TT opening alert or contract record before assigning expiry. Otherwise retain expiry as unknown and reassess confidence.
+- The reader cites chat-messages-1449226651064991806-1550573180114960565, but validation lists only chat-messages-1449226651064991806-1550580033381474416 as eligible and flags "unsupported_context_id" despite "ok": true. The eligible message says "MU 1035 2.35 -> 4.05 If youd like to trim." Validation retains CALLS but clears strike to null. Review source eligibility and field-level provenance before accepting inherited contract details. Verify why the cited context is ineligible and why validation retains side while removing strike; do not treat the overall validation status as proof that all fields are supported.
+- The current wording is "Coming into second trim area here if you want on MU I plan to hold most until 1040." The parser returns null fields and fire=false, while the reader returns TRIM. No completed sale, exact trim quantity, or exit premium is stated. Verify whether the application intends to capture optional position-management commentary. Consider a non-execution MU trim-advisory classification if supported by that policy, without recording a fill or inventing quantity. Preserve "1040" as an unresolved target reference rather than assigning it as strike or premium.
+
+## Limitations
+- No original MU opening alert, verified expiry, broker fills, or contemporaneous quotes are supplied.
+- The current message provides no exit premium or quantity; null values mean missing data, not zero. Earlier quoted values must not be carried forward as current fills.
+- TT's earlier "2.35 -> 3.35 100 per" is a caller-reported calculation, not broker-confirmed performance. No premium conversion or return calculation was performed.
+- Parser output is supplied only for the current message, and context-eligibility rules are not provided. These findings are verification proposals, not confirmed defects.
+
+---
+
+# Reader Review — 2026-09-18 — f783d4cd941d17edbb3a
+
+The reader inferred an SPX partial-exit update from prior same-author messages, while the parser abstained and validation rejected the contextual inference. This is a source-verification candidate, not a confirmed parser bug.
+
+## Findings
+- The current message says "Up 450%...Locks gains and hold runners" without naming an instrument. The reader returned TRIM for SPX 7645 CALL using the author's earlier "SPX 0DTE 7645C @1" message. However, eligible_prior_ids is empty, and validation reports unsupported_context_id. The current message has reply=true but no reply target is supplied. Verify the original reply target and context-eligibility rules before associating this update with SPX. Same-author history is a plausible lead, not proof. Do not associate it with the intervening SPY message from another author merely because that message is nearer.
+- The wording "Locks gains and hold runners" supports a possible partial-exit recommendation, but the reader's TRIM result has price=null and qty=null. The parser returned null fields and fire=false. Review whether verified contextual trade-management updates should be represented as non-executable partial-exit proposals. Preserve missing price and quantity rather than treating them as zero or inferring a completed sale.
+- The reader inherited expiry="0DTE" from an earlier message; the current message contains no expiry. Validation separately flags expiry_not_literal. Verify the linked source, posting date, applicable timezone, and expiry-resolution policy before accepting inherited expiry. Retain "0DTE" as raw source wording and distinguish it from a verified calendar expiry.
+- "Up 450%" is a caller-reported performance claim. No supporting calculation, exact exit premium, executed quantity, or broker fill is provided. The candidate entry source uses the raw value "@1". Retain the percentage as an unverified claim; do not derive an exact exit or realized profit. If premium normalization is needed, verify the source quote units and SPX instrument multiplier rather than borrowing conventions from other callers.
+
+## Limitations
+- The supplied evidence is marked untruncated, but it lacks reply-target metadata and the rules explaining why no prior IDs were eligible.
+- No broker-confirmed executions or simulation results are supplied.
+- The record does not establish a confirmed parser defect, service outage, or broader alert coverage.
+
+---
+
+# Reader Review — 2026-09-18 — 59ba9e9b0609ce0ca327
+
+The reader identifies an optional MU trim update, while the parser returns no action. Review is warranted for context eligibility, strike preservation, and price interpretation; the evidence does not establish a confirmed parser bug or executed trade.
+
+## Findings
+- The current TT message says 'MU 1035 2.35 -> 4.05 If youd like to trim'. The parser returns fire=false and null trade fields; the reader returns TRIM, MU, CALL, strike 1035, and price 4.05. Verify the intended handling of discretionary position-management updates against the original source and parser specification. Consider retaining an informational trim classification without treating the suggestion as a new entry or confirmed sale.
+- The reader cites chat-messages-1449226651064991806-1550573180114960565, which says 'Trim some MU 1035c 2.35 -> 3.35 100 per' and is marked history=true. Validation reports eligible_prior_ids=[], safety_flags=['unsupported_context_id'], and ok=true. The current message does not explicitly state CALL. Verify why the cited prior message is ineligible and what ok=true guarantees when unsupported context is flagged. The retained same-caller message supports a possible contract link, but CALL should remain context-dependent until that link is accepted. Review whether confidence=1.0 appropriately represents this uncertainty.
+- The reader returns strike=1035, but validation.read returns strike=null while retaining MU, CALLS, TRIM, and price=4.05. Both outputs leave expiry null. Inspect the validation transformation and source interpretation before proposing a strike-preservation change. Keep the unresolved expiry missing rather than inferring it from the posting date or another caller's alerts.
+- The current source preserves the values '2.35 -> 4.05' without explicit premium units or a fill statement. TT's retained examples include '2.35 -> 3.35 100 per' and '3.7, 70 a con from the 3.00 av', providing contextual support for a quote-versus-per-contract-profit distinction, not proof of execution. Preserve the raw values and verify TT's unit convention and the instrument's premium multiplier. Treat 4.05 as a reported update level, not an exact exit fill; do not conflate '100 per' with exit premium. Leave premium units unresolved pending verification, and do not rescale values merely because of their magnitude.
+
+## Limitations
+- No broker fills, contemporaneous quotes, complete contract identifier, or executed trim quantity are supplied.
+- Only the current parser result is provided; prior messages do not include parser outputs.
+- No performance calculations are supplied, so no return or realized profit is established.
+- Evidence is marked untruncated, but that does not establish complete source coverage or explain context eligibility.
+
+---
+
 # Reader Review — 2026-09-18 — 2e13c17347d14972b1f1
 
 The reader identified a possible entry, but validation rejected it because the ticker was missing. Source verification is needed for the instrument, option side, expiry, and premium units; the evidence does not establish a parser bug.
