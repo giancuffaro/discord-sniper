@@ -64,10 +64,14 @@ STEP = STOP * (2 / 7.5)         # then a rung every ~6.67 points
 # pullback's path (ES every 25, NQ every 50), good for LEVEL_WAIT minutes,
 # else the alert is skipped. Exits per instrument: MES a 12.5 bracket (1:1,
 # the ratchet added nothing); MNQ a 10-pt stop, breakeven at +5, a rung every
-# 2.5, no target (every target hurt MNQ). Per root: (grid, buf, stop, arm,
-# step, target) — arm/step/target None = not used.
+# 2.5, no target (every target hurt MNQ). MNQ re-measured 9/18 morning
+# (reference/MNQ-ENTRY-SWEEP.txt, 10,416 rows): the 25 grid with the limit 5
+# pts THROUGH the level (buf -5 = wiggle room) and a 12.5 stop is 80% / +1001
+# on 46 fills, 17 of 18 days positive, vs 75% / +569 at the 50 exactly.
+# Per root: (grid, buf, stop, arm, step, target) — buf > 0 rests BEFORE the
+# level, buf < 0 rests THROUGH it; arm/step/target None = not used.
 LEVEL = {"ES": dict(grid=25.0, buf=2.0, stop=12.5, arm=None, step=None, target=12.5),
-         "NQ": dict(grid=50.0, buf=0.0, stop=10.0, arm=5.0, step=2.5, target=None)}
+         "NQ": dict(grid=25.0, buf=-5.0, stop=12.5, arm=5.0, step=2.5, target=None)}
 LEVEL_WAIT = 30                 # minutes the resting entry lives
 CLOSE = dt.time(15, 59)
 OPEN_MINUTE, LAST_MINUTE = 9 * 60 + 30, 15 * 60 + 45
@@ -375,7 +379,8 @@ def _level_text():
                                                          ", target %g" % L["target"] if L["target"] else ""))
         parts.append("%s: limit %s the %g, %s" % (
             MAP["SPY" if root == "ES" else "QQQ"][1],
-            "%g before" % L["buf"] if L["buf"] else "at", L["grid"], ex))
+            ("%g before" % L["buf"] if L["buf"] > 0 else "%g through" % -L["buf"]) if L["buf"] else "at",
+            L["grid"], ex))
     return "; ".join(parts) + "; %d-min wait" % LEVEL_WAIT
 
 

@@ -43,7 +43,7 @@ def main():
                     "| Auto trail: stop loss | %d ticks | the stop follows %g pts behind the best price |" % (ticks(root, L["arm"]), L["arm"]),
                     "| Auto trail: frequency | %d ticks | moves in %g-pt rungs |" % (ticks(root, L["step"]), L["step"])]
         doc += ["", "Entry (the bridge, not the ATM): limit %s the %g level in the pullback's path, cancelled after %d minutes."
-                % ("%g pts before" % L["buf"] if L["buf"] else "AT", L["grid"], LEVEL_WAIT), ""]
+                % (("%g pts before" % L["buf"] if L["buf"] > 0 else "%g pts THROUGH" % -L["buf"]) if L["buf"] else "AT", L["grid"], LEVEL_WAIT), ""]
     doc += ["## Before the first real one", "",
             "1. NinjaTrader 8 open on the Hulk, connected, with `SniperQuoteTape` on an ES and an NQ chart (nt_quote_ES.json / nt_quote_NQ.json in the sniper folder, timestamps moving).",
             "2. Tools > Options > Automated Trading Interface ON (the bridge writes order files into Documents\\NinjaTrader 8\\incoming).",

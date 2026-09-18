@@ -25,7 +25,7 @@ Entry (the bridge, not the ATM): limit 2 pts before the 25 level in the pullback
 | field | value | = |
 |---|---|---|
 | Quantity | 1 | one contract |
-| Stop loss | 40 ticks | 10 pts |
+| Stop loss | 50 ticks | 12.5 pts |
 | Profit target | 4000 ticks | no target (1,000 pts = never; NT requires a number) |
 | Auto breakeven: profit trigger | 20 ticks | +5 pts moves the stop to entry |
 | Auto breakeven: plus | 0 ticks | exactly breakeven |
@@ -33,7 +33,7 @@ Entry (the bridge, not the ATM): limit 2 pts before the 25 level in the pullback
 | Auto trail: stop loss | 20 ticks | the stop follows 5 pts behind the best price |
 | Auto trail: frequency | 10 ticks | moves in 2.5-pt rungs |
 
-Entry (the bridge, not the ATM): limit AT the 50 level in the pullback's path, cancelled after 30 minutes.
+Entry (the bridge, not the ATM): limit 5 pts THROUGH the 25 level in the pullback's path, cancelled after 30 minutes.
 
 ## Before the first real one
 

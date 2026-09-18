@@ -159,10 +159,10 @@ ok,29722.75,29722.75,BE,0.0,0.0,21.0,14.75,11,market,2026-09-17 10:28:18-04:00,Q
 ok,29684.25,29684.25,BE,-0.0,-0.0,18.0,11.25,7,market,2026-09-17 10:56:15-04:00,QQQ,S,Vero 2,Vero,shadow,,
 level never touched,,,,,,,,,level,2026-09-17 09:36:31-04:00,SPY,S,Vero 1,Vero,shadow,7700.0,7694.75
 level never touched,,,,,,,,,level,2026-09-17 09:40:28-04:00,SPY,L,Honeydrip daytrades,Brett,shadow,7675.0,7691.5
-level never touched,,,,,,,,,level,2026-09-17 09:42:51-04:00,QQQ,L,Demon day-trades,Demon × LKS,shadow,29600.0,29644.5
-ok,29650.0,29667.5,RATCHET,17.5,35.0,22.75,1.5,2,level,2026-09-17 09:52:00-04:00,QQQ,L,Vero 1,@vero-alerts,bot,29650.0,29670.75
+level never touched,,,,,,,,,level,2026-09-17 09:42:51-04:00,QQQ,L,Demon day-trades,Demon × LKS,shadow,29625.0,29644.5
+ok,29645.0,29665.0,RATCHET,20.0,40.0,25.75,5.5,2,level,2026-09-17 09:52:00-04:00,QQQ,L,Vero 1,@vero-alerts,bot,29650.0,29670.75
 level never touched,,,,,,,,,level,2026-09-17 10:14:00-04:00,SPY,L,Honeydrip daytrades,Brett,bot,7675.0,7692.25
-ok,29700.0,29705.0,RATCHET,5.0,10.0,11.0,3.75,2,level,2026-09-17 10:16:49-04:00,QQQ,L,Brando Alerts,EliteOptions | Brando,shadow,29700.0,29711.5
-ok,29700.0,29707.5,RATCHET,7.5,15.0,13.0,6.75,2,level,2026-09-17 10:23:26-04:00,QQQ,L,Vero 1,@vero-alerts,shadow,29700.0,29718.25
-ok,29700.0,29707.5,RATCHET,7.5,15.0,13.0,6.75,2,level,2026-09-17 10:28:18-04:00,QQQ,L,Vero 1,Vero,shadow,29700.0,29722.75
-ok,29700.0,29710.0,STOP,-10.0,-20.0,0.0,0.0,1,level,2026-09-17 10:56:15-04:00,QQQ,S,Vero 2,Vero,shadow,29700.0,29684.25
+ok,29695.0,29705.0,RATCHET,10.0,20.0,15.25,2.5,2,level,2026-09-17 10:16:49-04:00,QQQ,L,Brando Alerts,EliteOptions | Brando,shadow,29700.0,29711.5
+ok,29695.0,29707.5,RATCHET,12.5,25.0,18.0,1.75,2,level,2026-09-17 10:23:26-04:00,QQQ,L,Vero 1,@vero-alerts,shadow,29700.0,29718.25
+ok,29695.0,29707.5,RATCHET,12.5,25.0,18.0,1.75,2,level,2026-09-17 10:28:18-04:00,QQQ,L,Vero 1,Vero,shadow,29700.0,29722.75
+ok,29705.0,29697.5,RATCHET,7.5,15.0,13.75,7.25,2,level,2026-09-17 10:56:15-04:00,QQQ,S,Vero 2,Vero,shadow,29700.0,29684.25
