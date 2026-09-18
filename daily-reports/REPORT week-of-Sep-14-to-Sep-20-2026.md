@@ -1,5 +1,89 @@
 # REPORT — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Fri Sep 18 2026 =====
+
+# Daily Sniper Report — 2026-09-18
+
+Generated 2026-09-18 16:46:36 Eastern Daylight Time.
+
+## Coverage
+
+- Rooms configured on: **35** Discord and **5** Whop.
+- Rooms/channels with a live parser input today: **17**.
+- Live parser inputs retained: **167** messages.
+- Rooms with no message are quiet or unverified; the report does not call them healthy solely from silence.
+
+## Alert flow
+
+| Measure | Count |
+|---|---:|
+| Unique entry alerts observed (normal + recovered) | 9 |
+| Entry alerts read and given a decision | 9 |
+| Broker entry orders submitted | 2 |
+| Read but not taken | 7 |
+| Broker/risk refusals | 5 |
+| Stale when first read | 0 |
+| Duplicate or other skips | 2 |
+| Recovered entry gaps | 0 |
+| Recovered add gaps | 0 |
+| Actual fills in master ledger | 2 |
+
+## Actual results
+
+- Bot trades: **2** — 1 win, 0 loss, 1 flat.
+- Realized P&L: **+5.00**.
+- Gian MNQZ6 : 29723.25 → ?, **+0.00** (filled).
+- MuggZone TSLA 365.0C 2026-09-18: 0.33 → 0.38, **+5.00** (bot stop).
+
+## Entry and exit comparison
+
+- TSLA: caller entry 0.45, bot fill 0.33 (-26.7% difference); bot exit 0.38, P&L 5.0, verdict **GOOD EXIT**. took what was there; nothing to change.
+- Exact caller-entry/caller-exit P&L is reported only when both messages and a contemporaneous contract quote exist. Missing exits remain **unavailable**; they are never estimated from a later high or a stale quote.
+- Refused or missed alerts stay outcome-pending until a caller exit can be paired to the recorded contract tape; a later high alone is not labeled a win.
+- A system-versus-caller verdict needs matched trades on both sides. 1 bot trade is displayed, but it is not enough evidence to call either method better.
+
+## Every recognized decision
+
+| Time | Caller | Room | Alert | Result | Reason | Source message |
+|---|---|---|---|---|---|---|
+| 12:57:53 | Eva | unavailable | OPEN MU 1000C | skipped | stale when received (47s old; 20s Discord limit) | unavailable |
+| 13:24:30 | TT | OWLS Capital: 🛎️｜all-alerts | OPEN GOOGL 380C 10/23 | failed | swing paused | unavailable |
+| 13:43:25 | BRICK [I will never DM you]🧱 | Low Key Stonks: 🧱brick-alerts | OPEN P 115C 1/16 @ 3.30 | failed | failed | unavailable |
+| 13:47:46 | BRICK [I will never DM you]🧱 | Low Key Stonks: 🧱brick-alerts | OPEN FSLY 25C 10/16 @ 1.75 | failed | swing paused | [Open in Chrome](http://127.0.0.1:8787/open-discord/722872384800948227/1315498906036994129/1550563977019396257) |
+| 13:57:04 | MuggZone | OWLS Capital: 🛎️｜all-alerts | OPEN HOOD 120C 9/25 @ 4.30 | sent | order sent | unavailable |
+| 15:02:27 | TradingTheTrend | TradingTheTrend: 🚨option-alerts🚨 | OPEN MU 1100C 9/25 @ 4.20 | failed | buying-power safety; no order | [Open in Chrome](http://127.0.0.1:8787/open-discord/769790224921395200/769797179992571914/1550582758617649213) |
+| 15:20:23 | you're already in TSLA from their earlier call | unavailable | OPEN TSLA 365C 0DTE | skipped | skipped | [Open in Chrome](http://127.0.0.1:8787/open-discord/718624848812834903/1503509270526951575/1550587285291008073) |
+| 15:20:24 | MuggZone | OWLS Capital: 🛎️｜all-alerts | OPEN TSLA 365C 0DTE @ 0.45 | sent | order sent | unavailable |
+| 15:49:43 | Eva | OWLS Capital: 🛎️｜all-alerts | OPEN GOOGL 380C 10/23/2026 @ 4.25 | failed | swing paused | unavailable |
+
+## Room activity
+
+| Room/channel | Parser inputs |
+|---|---:|
+| Honey Drip Network 🍯💰📈: ☀️｜daytrades-scalps | 40 |
+| OWLS Capital: 🛎️｜all-alerts | 37 |
+| OWLS Capital: 🌟｜muggzone-options | 16 |
+| TradingTheTrend: 🎰lotto-alerts | 14 |
+| OWLS Capital: 🌟｜ab | 12 |
+| Honey Drip Network 🍯💰📈: 🇳🇬｜midas-small-account-challenge | 8 |
+| Platinum Trading: 🟣│ei-alerts | 6 |
+| ELITE OPTIONS: shoof-alerts | 6 |
+| OWLS Capital: 🌟｜shabs-sky-alerts | 6 |
+| TradingTheTrend: 🚨option-alerts🚨 | 6 |
+| Low Key Stonks: 🧱brick-alerts | 4 |
+| OWLS Capital: 🌟｜eli-alerts | 2 |
+| Platinum Trading: 🟣│futures-alerts | 2 |
+| Low Key Stonks: 😈demon-day-trades | 2 |
+| ELITE OPTIONS: brando-alerts | 2 |
+| OWLS Capital: 🌟｜jon-and-kian | 2 |
+| Low Key Stonks: 🐱xephyr-alerts | 2 |
+
+## Detailed benchmarks
+
+- [Caller entry, trim, and exit evidence](CALLER-OUTCOMES%20week-of-Sep-14-to-Sep-20-2026.md)
+- [Caller original entry versus our ratchet](CALLER-VS-RATCHET%20week-of-Sep-14-to-Sep-20-2026.md)
+- [Fixed stop versus live ratchet replay](RATCHET-COMPARE%20week-of-Sep-14-to-Sep-20-2026.md)
+
 ===== Thu Sep 17 2026 =====
 
 # Daily Sniper Report — 2026-09-17

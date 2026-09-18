@@ -1,29 +1,21 @@
 {
-  "brief": "daily-reports\\BRIEF week-of-Sep-14-to-Sep-20-2026.md",
   "broker_sync": {
-    "note": "BROKER SYNC ledger rebuilt \u2014 1040 rows",
+    "note": "BROKER SYNC ledger rebuilt \u2014 1082 rows",
     "ok": true,
     "reconciled": null
   },
   "caller_outcomes": "daily-reports\\CALLER-OUTCOMES week-of-Sep-14-to-Sep-20-2026.md",
   "coverage_warnings": 0,
-  "daily_analyst": {
-    "model": "gpt-6-astra",
-    "report": "C:\\Users\\Hulk\\Desktop\\discord-sniper\\department-reports\\daily.jsonl",
-    "status": "failed"
-  },
   "daily_report": "daily-reports\\REPORT week-of-Sep-14-to-Sep-20-2026.md",
-  "date": "2026-09-17",
-  "entry_slack": "daily-reports\\ENTRY-SLACK week-of-Sep-14-to-Sep-20-2026.md",
+  "date": "2026-09-18",
   "failed_checks": [
     "Historical parser corpus gate",
-    "caller versus ratchet comparison"
+    "Python regression suite"
   ],
-  "generated_at": "2026-09-17T16:46:09.937445-04:00",
-  "index_mirror": "daily-reports\\FUTURES-MIRROR week-of-Sep-14-to-Sep-20-2026.md",
-  "possible_missed": 1,
+  "generated_at": "2026-09-18T16:46:35.816057-04:00",
+  "possible_missed": 0,
   "ratchet_comparison": "daily-reports\\RATCHET-COMPARE week-of-Sep-14-to-Sep-20-2026.md",
   "report": "daily-audits\\AUDIT week-of-Sep-14-to-Sep-20-2026.txt",
-  "silent_drops": 16,
+  "silent_drops": 3,
   "status": "attention"
 }

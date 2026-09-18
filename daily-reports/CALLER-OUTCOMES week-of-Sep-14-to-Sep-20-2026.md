@@ -1,5 +1,23 @@
 # CALLER-OUTCOMES — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Fri Sep 18 2026 =====
+
+# Caller outcome evidence — 2026-09-18
+
+Caller claims are separate from broker results and ratchet simulations. Partial trims remain partial; percentages imply a price only when the caller's entry is known.
+
+| Entry | Event | Trader / room | Contract | Caller entry | Caller event | Exit/claim | Calculated | Evidence |
+|---|---|---|---|---:|---|---:|---:|---|
+| 12:57:53 | 13:05:21 | 🛎️｜all-alerts | MU 1000C | — | partial trim (1/2 of the position) | price unavailable | unavailable | caller trim; price unavailable |
+| 13:57:04 | 13:58:04 | MuggZone | HOOD 120C 9/25 @ 4.30 | $4.30 | full exit | $4.40 | +2.3% | market bid at caller exit |
+| 12:57:53 | 14:24:14 | 🛎️｜all-alerts | MU 1000C | — | partial trim | $2.35 | unavailable | caller-stated |
+| 13:47:46 | 14:52:53 | BRICK [I will never DM you]🧱 | FSLY 25C 10/16 @ 1.75 | $1.75 | partial trim | +40.0% | implied $2.45 | caller-stated |
+| 15:20:24 | 15:25:57 | MuggZone | TSLA 365C 0DTE @ 0.45 | $0.45 | full exit | $0.34 | -24.4% | caller-stated |
+
+- Claim events paired: **5**.
+- Full exits recorded: **2**; calculable: **2**; price/percent unavailable: **0**.
+- Quantity-weighted caller P&L stays unavailable when trim size or the final runner exit is missing.
+
 ===== Thu Sep 17 2026 =====
 
 # Caller outcome evidence — 2026-09-17

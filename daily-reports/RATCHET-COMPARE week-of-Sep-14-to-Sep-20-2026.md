@@ -1,5 +1,35 @@
 # RATCHET-COMPARE — week of Mon Sep 14 2026 to Sun Sep 20 2026. Newest day first; each day under its ===== header; a re-run replaces that day's block (reports.py).
 
+===== Fri Sep 18 2026 =====
+
+# Ratchet comparison — 2026-09-18
+
+This replay isolates the exit rule. Both versions buy **one contract** at the first recorded ask (the actual fill for a filled bot trade) and use the same initial broker-compatible **-5% born stop**. The fixed version never moves that stop. The live version arms at **+3%** and then advances in **+5%** rungs, subject to tick and spread floors.
+
+| Alert | Source | Entry | Fixed stop P&L | Ratchet P&L | Ratchet advantage |
+|---|---|---:|---:|---:|---:|
+| 13:24 GOOGL | OWLS all-alerts | $4.00 | -60 | +0 | +60 |
+| 13:47 FSLY | Brick Alerts | $1.80 | -10 | -10 | +0 |
+| 13:57 HOOD | OWLS all-alerts | $4.40 | -20 | -20 | +0 |
+| 15:02 MU | Option Alerts | $4.35 | -30 | -30 | +0 |
+| 15:20 TSLA | OWLS all-alerts | $0.47 | -8 | +3 | +11 |
+| 15:24 TSLA | OWLS all-alerts | $0.33 | -8 | -1 | +7 |
+| 15:49 GOOGL | OWLS all-alerts | $4.30 | -40 | -40 | +0 |
+
+## Result
+
+- Price-replayable alerts: **7 of 9 observed**.
+- Fixed born stop: **-176** total per one-contract replay.
+- Live ratchet: **-98** total per one-contract replay.
+- Ratchet advantage on the covered subset: **+78**.
+- **2 alerts cannot be scored yet** because no exact-contract bid/ask path was recorded. This subset cannot establish the winner for the entire day.
+- Every replayed path reached a stop, so none of the values above is an end-of-tape mark.
+- HOOD is deliberately included because the question asks what happened if every alert were forced through. The live bot refused its 22% spread; bypassing that filter would have produced the replayed loss.
+
+## Actual bot trade
+
+- 15:24 TSLA realized **+5**. The quote replay gives fixed **-8** versus ratchet **-1**; the real ratchet fill was better because the market sell completed above the trigger bid.
+
 ===== Thu Sep 17 2026 =====
 
 # Ratchet comparison — 2026-09-17
