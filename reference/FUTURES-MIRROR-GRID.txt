@@ -1,0 +1,50 @@
+FUTURES MIRROR GRID — 104 SPY/QQQ alerts on 20 days with ES/NQ bars; 15 alerts on 3 days WITHOUT bars (2026-09-14:8, 2026-09-15:4, 2026-09-16:3)
+SPY -> MES $5/pt, QQQ -> MNQ $2/pt, 1 contract, market entry next bar, $1.50 round turn, flat 15:59
+
+stop / mode                                                 all $           win%      SPY/MES $      QQQ/MNQ $
+12.5 pt · hard 1:2 bracket, no ratchet                         +2            42%            +86            -85
+12.5 pt · hard 1:1 bracket, no ratchet                       +132            53%           +292           -160
+12.5 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target           -250            45%           -141           -108
+12.5 pt · house ratchet, NO target                            -59            45%           -194           +135
+12.5 pt · ratchet arm 1x, rungs 1/2, no target               -134            39%           -236           +102
+12.5 pt · ratchet arm 1/2, rungs 1/4, no target              +113            43%           -127           +240
+25 pt · hard 1:2 bracket, no ratchet                         -338            44%           -228           -110
+25 pt · hard 1:1 bracket, no ratchet                         +202            54%           +262            -60
+25 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target           -241            45%           -294            +53
+25 pt · house ratchet, NO target                             -291            45%           -378            +87
+25 pt · ratchet arm 1x, rungs 1/2, no target                 -516            41%           -281           -235
+25 pt · ratchet arm 1/2, rungs 1/4, no target                 -47            48%           -225           +178
+35 pt · hard 1:2 bracket, no ratchet                         -456            44%            +94           -550
+35 pt · hard 1:1 bracket, no ratchet                          -28            52%           +172           -200
+35 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target            +47            43%           +122            -74
+35 pt · house ratchet, NO target                              -46            43%           +122           -167
+35 pt · ratchet arm 1x, rungs 1/2, no target                 -221            46%            +94           -315
+35 pt · ratchet arm 1/2, rungs 1/4, no target                +109            45%            +99            +10
+50 pt · hard 1:2 bracket, no ratchet                        -1178            42%           +220          -1398
+50 pt · hard 1:1 bracket, no ratchet                          +76            52%           +305           -229
+50 pt · house ratchet (arm 2/3, rungs 4/15) + 2x target           +125            50%           +220            -96
+50 pt · house ratchet, NO target                               +7            50%           +220           -213
+50 pt · ratchet arm 1x, rungs 1/2, no target                 -779            44%           +220           -999
+50 pt · ratchet arm 1/2, rungs 1/4, no target                +549            50%           +253           +296
+
+BEST cell: 50 pt · ratchet arm 1/2, rungs 1/4, no target = +549   WORST: 50 pt · hard 1:2 bracket, no ratchet = -1178
+
+HOW THEY END under the best cell: CLOSE 59, RATCHET 18, BE 17, STOP 10
+
+BY CALLER under the best cell (4+ alerts) — and under the live 25-pt house rule
+  ?                           21  best   +467 (win 57%)   house 25pt   +291
+  Midas                        4  best   +212 (win 50%)   house 25pt    -56
+  Honeydrip daytrades          5  best   +172 (win 40%)   house 25pt   +306
+  Vero                        12  best    +38 (win 50%)   house 25pt   +119
+  ZTRADEZ BOT                  5  best    -18 (win 60%)   house 25pt   -122
+  MR.TOPHAT (OPTIONS/FUTURES   4  best   -206 (win 50%)   house 25pt    -81
+  Unraveller                   4  best   -231 (win  0%)   house 25pt   -164
+  ZT all-trades-mashup        12  best   -257 (win 42%)   house 25pt   -482
+
+BY TIME OF DAY under the best cell
+  09:30-10:00   26    +890  win 65%
+  10:00-11:00   43     +26  win 44%
+  11:00-14:00   33    -370  win 45%
+  14:00-16:00    2      +3  win 50%
+
+MFE (best move in the trade's favour, points) — median 17.0, 75th 24.0; reached 12.5 pts on 62%, 25 on 23%, 50 on 0%
