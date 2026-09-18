@@ -39,6 +39,7 @@ from zoneinfo import ZoneInfo
 HERE = os.path.dirname(os.path.abspath(__file__))
 SHADOW = os.path.join(HERE, "futures_mirror_shadow.csv")
 MASTER = os.path.join(HERE, "master_alerts.csv")
+CHAT = os.path.join(HERE, "recovered_alerts_chat.csv")   # entries read back out of the room logs — the bot never saw most of them
 BARS_DIR = os.path.join(HERE, "bars")
 CUMULATIVE = os.path.join(HERE, "reference", "FUTURES-MIRROR-REPLAY.csv")
 SEED = os.path.join(HERE, "reference", "FUTURES-MIRROR-REPLAY-2026-09-13.csv")
@@ -114,6 +115,22 @@ def alerts_for(day):
         rows.append(dict(ts=ts, sym=sym, dirn="L" if side.startswith("C") else "S",
                          room=r.get("room") or "", caller=r.get("caller") or "",
                          src="bot"))
+    # G, 9/18: "run this by all the alerts we have, even the ones skipped and not
+    # taken" — every SPY/QQQ ENTRY recovered from the room logs, whether or not
+    # the bot ever parsed it. The 3-minute dedupe below folds the ones it did.
+    for r in _read_csv(CHAT):
+        if str(r.get("date") or "")[:10] != day or str(r.get("msg_type") or "") != "entry":
+            continue
+        sym = str(r.get("symbol") or "").upper()
+        side = str(r.get("side") or "").upper()
+        if sym not in MAP or not side.startswith(("C", "P")):
+            continue
+        ts = _parse_time(day, r.get("time"))
+        if ts is None:
+            continue
+        rows.append(dict(ts=ts, sym=sym, dirn="L" if side.startswith("C") else "S",
+                         room=r.get("room") or "", caller=r.get("caller") or "",
+                         src="chat"))
     # RTH, and early enough that there is a day left to trade.
     rows = [r for r in rows
             if OPEN_MINUTE <= r["ts"].hour * 60 + r["ts"].minute <= LAST_MINUTE]

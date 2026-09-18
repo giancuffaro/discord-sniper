@@ -5,7 +5,8 @@ SPY->MES and QQQ->MNQ alert mirror, each instrument on its own.
 G, 9/18: "take the best results from MNQ and MES and lay them out; run 100
 different ratchet or other scenarios to see if we can increase our odds."
 
-Same 104 alerts, bars and entry as futures_mirror_grid.py. Every combination of
+Same alerts, bars and entry as futures_mirror_grid.py (bot + shadow + room-log
+entries the bot never parsed, since 9/18). Every combination of
   stop      5 / 7.5 / 10 / 12.5 / 15 / 20 / 25 / 35 pts
   arm       none / 0.5x / 0.75x / 1x / 1.5x the stop  (profit that moves the stop to breakeven)
   rung      0.25x / 0.5x / 1x the stop                (each further rung locks that much)
@@ -95,7 +96,7 @@ def main():
     p("RATCHET SWEEP — %d combinations per instrument on %d SPY/MES and %d QQQ/MNQ alerts (%s..%s)"
       % (len(combos), sum(1 for a, *_ in W if a["sym"] == "SPY"), sum(1 for a, *_ in W if a["sym"] == "QQQ"),
          min(a["ts"].date() for a, *_ in W), max(a["ts"].date() for a, *_ in W)))
-    p("OVERFIT WARNING: the best of %d on 40-64 trades is mostly luck. Trust only what is positive in BOTH halves of the days." % len(combos))
+    p("OVERFIT WARNING: the best of %d on this few trades is mostly luck. Trust only what is positive in BOTH halves of the days." % len(combos))
     for sym, label in (("SPY", "MES ($5/pt)"), ("QQQ", "MNQ ($2/pt)")):
         tr = [(a, ppt, rows, e) for a, ppt, rows, e in W if a["sym"] == sym]
         days = sorted({a["ts"].date() for a, *_ in tr})
