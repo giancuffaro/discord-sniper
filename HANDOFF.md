@@ -22,7 +22,7 @@ RULES-INDEX.md says which code enforces each rule below.
 ## Who and what
 - G (giancuffaro230@gmail.com) maintains this code himself (9/13), trades options + futures live, real money, wants it CONDENSED. "Fix everything is default always" — bugs get fixed without asking, same day. "Fix errors every day after journaling."
 - Real-money actions are HIS ALONE: placing/canceling orders, flipping rooms LIVE, unlocking accounts, funding, questionnaires, accepting ToS, passwords.
-- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; check buying power and positions AT THE BROKER before any claim; futures_brokers.webull, Topstep/Tradovate and NinjaTrader stay OFF.
+- ACCOUNTS: `execution.mode=dryrun` does NOT disable per-room live orders; check buying power and positions AT THE BROKER before any claim; futures_brokers.webull and Topstep OFF; NinjaTrader ON since 9/18 (account Sim101 until the level shape proves itself on paper) with the index mirror ON — SPY/SPX/QQQ entries become MES/MNQ level orders at NinjaTrader, never options.
 - COEXISTENCE: Market Sniper (port 8000) shares the account and the rate budget — its positions are visible, NEVER stop-managed or sold.
 - NORTH STAR (G, 9/11): every day leaves a complete auditable alert funnel and append-only data to benchmark caller vs bot vs broker truth; a later high is never a caller exit.
 - AI READS ARE PROPOSALS: parser and guards judge them, AI confidence authorizes nothing; "" or a range is NO CALL — not a crash, not an order; department output is advisory.

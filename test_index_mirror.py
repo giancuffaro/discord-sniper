@@ -257,16 +257,22 @@ class ShadowRecord(unittest.TestCase):
 class BridgeWiring(unittest.TestCase):
     """The shipped settings file must have the switch, and it must be OFF."""
 
-    def test_settings_json_ships_the_switch_off(self):
+    def test_settings_json_switch_is_on_only_with_a_broker_side_exit(self):
+        """The switch is G's (ON since 9/18). Whatever it says, it may only be
+        ON while live_exit_ready agrees — NinjaTrader the sole futures broker,
+        a template per micro — or the bridge would refuse every alert."""
         import json
         here = os.path.dirname(os.path.abspath(__file__))
         p = os.path.join(here, "settings.json")
         if not os.path.exists(p):
             self.skipTest("settings.json is not on this machine")
         with open(p, encoding="utf-8") as f:
-            im = (json.load(f).get("execution", {}).get("index_mirror") or {})
-        self.assertIs(im.get("enabled"), False)
+            cfg = json.load(f)
+        im = cfg.get("execution", {}).get("index_mirror") or {}
         self.assertEqual(im.get("map"), {"SPY": "MES", "QQQ": "MNQ"})
+        if im.get("enabled"):
+            for micro in im["map"].values():
+                self.assertTrue(index_mirror.live_exit_ready(cfg, micro), micro)
 
     def test_bridge_calls_convert_before_it_builds_the_book_key(self):
         here = os.path.dirname(os.path.abspath(__file__))
