@@ -239,6 +239,10 @@ window.__SNIPER_WHOP_STOP__ = function () {
   // (same zombie-interval bug that reloaded Discord rooms 662 times).
   stopped = true;
   console.log("[sniper] whop reader stopped (replaced or context gone)");
+  try { if (observer) observer.disconnect(); } catch (e) {}
+  if (mutTimer) clearTimeout(mutTimer);
+  observer = null;
+  mutTimer = null;
   if (timer) clearInterval(timer);
   if (pulseTimer) clearInterval(pulseTimer);
   timer = null;
@@ -284,6 +288,23 @@ timer = setInterval(function () {
                 " · seen=" + SEEN.size);
   }
 }, 2000);
+
+// THE POLL IS NOT ENOUGH IN A BACKGROUND TAB (measured 9/18): Chrome wakes a
+// hidden tab's setInterval once a MINUTE once it has been hidden a while —
+// "probe eight" sat in the DOM 54 s before the 2-s poll saw it. A
+// MutationObserver is not a timer: Chrome fires it the moment Whop paints a
+// post, and the short setTimeout it arms is a fresh, shallow timer that the
+// throttle lets through within a second. The poll stays as the backstop.
+let mutTimer = null;
+let observer = null;
+try {
+  observer = new MutationObserver(function () {
+    if (stopped || mutTimer) return;
+    mutTimer = setTimeout(function () { mutTimer = null; if (!stopped) sweep(); }, 300);
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true,
+                                               characterData: true });
+} catch (e) { observer = null; }
 
 // HEALTH PULSE (8/25): once a minute, tell the worker whether this page
 // actually RENDERED — a black/stuck Whop shell runs scripts but paints no

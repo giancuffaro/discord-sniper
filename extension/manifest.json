@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Discord Sniper",
-  "version": "3.8.44",
+  "version": "3.8.45",
   "description": "Reads a Discord signal room in your own browser tab and fires the trade. No server admin needed.",
   "permissions": [
     "storage",
@@ -51,6 +51,18 @@
       ],
       "all_frames": true,
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://whop.com/*",
+        "https://*.whop.com/*"
+      ],
+      "js": [
+        "whop-awake.js"
+      ],
+      "world": "MAIN",
+      "all_frames": true,
+      "run_at": "document_start"
     }
   ],
   "action": {

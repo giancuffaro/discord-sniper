@@ -2304,11 +2304,24 @@ async function ensureReaders() {
     if (beating) { INJECTED_AT[t.id] = now; continue; }
     const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
     try {
+      if (isWhop) await keepWhopAwake(t.id);
       await chrome.scripting.executeScript({ target: { tabId: t.id },
         files: [isWhop ? "whop.js" : "content.js"] });
       INJECTED_AT[t.id] = now;
     } catch (e) { /* closed / mid-nav — next tick */ }
   }
+}
+
+/* WHOP ONLY RENDERS WHILE IT THINKS IT IS LOOKED AT (measured 9/18, see
+ * whop-awake.js). Every Sniper Whop tab is a background tab, so the feed
+ * froze at load and the reader only ever saw the 30-min backstop reload —
+ * a whole day of <history> and zero live Whop calls. whop-awake.js runs in
+ * the page's own world (manifest, document_start) for every NEW load; this
+ * puts it into a tab that was already open when the extension came up or
+ * reloaded. Idempotent on the page side, so calling it twice costs nothing. */
+async function keepWhopAwake(tabId) {
+  await chrome.scripting.executeScript({ target: { tabId, allFrames: true },
+                                         world: "MAIN", files: ["whop-awake.js"] });
 }
 
 async function reinject() {
@@ -2331,6 +2344,7 @@ async function reinject() {
   for (const t of tabs) {
     const isWhop = /(^|\.)whop\.com/.test(String(t.url || ""));
     try {
+      if (isWhop) await keepWhopAwake(t.id);
       await chrome.scripting.executeScript({ target: { tabId: t.id },
         files: [isWhop ? "whop.js" : "content.js"] });
     } catch (e) { /* tab closed or mid-navigation; the next attach picks it up */ }
