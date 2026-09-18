@@ -1,5 +1,23 @@
 # Reader Review reviews — newest first
 
+# Reader Review — 2026-09-18 — ed1856b5a2b27e43ac83
+
+The reader identified a TSLA call-entry alert, but validation rejected its entry-price range and flagged its inferred expiry. These are candidates for source-verified handling improvements, not confirmed parser bugs.
+
+## Findings
+- The current message says "TSLA 0DTE 365 calls .45-.50 ENTRY". The reader returned price "0.45-0.50", and validation reported "could not convert string to float: '0.45-0.50'". The parser returned null fields and fire=false. Verify the retained Discord source and reader-to-validator schema. Consider representing an explicit entry range with separate bounds while preserving ".45-.50" verbatim; do not silently select a midpoint or endpoint as an exact entry or fill. Confirm premium units before any contract-cost conversion.
+- The source uses "0DTE", while the reader returned expiry "9/18". Validation flagged "expiry_not_literal". Verify the source timestamp, applicable market timezone, trading session and listed expiration before resolving relative expiry. Preserve "0DTE" as the literal source value and distinguish a derived date from an explicitly stated date. Review whether the schema permits this derivation.
+- The alert includes "TP ..65 / .75 /. .80 small sized". These are target annotations with irregular punctuation, not reported exits. The reader returned qty=null. Preserve the raw target text and verify intended decimal punctuation before normalizing targets. Keep target premiums separate from the entry range, and retain quantity as unspecified: "small sized" does not establish a contract count.
+
+## Limitations
+- Only the current message has parser, reader and validation outputs; prior messages do not establish parser performance or failure rates.
+- The validation failure is visible, but parser traces and schema definitions are absent, so the cause of the null parser output is not established.
+- No broker fills, contemporaneous quotes, instrument multiplier confirmation or independently verified premium-unit convention are supplied.
+- No TSLA execution, exit or return calculation is provided. Targets and caller commentary do not establish realized results.
+- The supplied evidence is marked untruncated, but it does not establish complete channel coverage or an outage.
+
+---
+
 # Reader Review — 2026-09-18 — 5c5b3e7e690406ac160e
 
 The reader and parser match the current alert’s explicit close instruction and SNDK 9/18 1750 call identity. Review is proposed for an ineligible supporting reference and validation output that drops the strike and full-close scope; neither establishes a confirmed parser bug.
