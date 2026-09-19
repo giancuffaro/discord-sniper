@@ -7,7 +7,59 @@
 SPY/QQQ room entries replayed as one-contract MES/MNQ two ways: market entry with a 25-pt stop / 50-pt target and the futures ratchet, and the LEVEL entry (MES: limit 2 before the 25, 12.5-pt 1:1 bracket; MNQ: limit 5 through the 25, 12.5 stop, BE at +5, rungs 2.5; 30-min wait).
 The switch is OFF: this is a measurement, not a trade.
 
-**No SPY/QQQ entries on this date.** Nothing to replay.
+**Bars:** cache (ES_1m_2026-09-18.csv, NQ_1m_2026-09-18.csv)
+**Alerts:** 7 (after RTH filter and 3-minute dedupe)
+
+## The day
+
+| time ET | sym | dir | micro | room | caller | entry | exit | why | pts | $ market | $ level |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 10:09:00 | SPY | long | MES | Midas | Midas | 7690.00 | 7712.25 | CLOSE | +22.25 | +$111 | level never touched |
+| 10:41:00 | SPY | long | MES | TTT Lotto | Shakira T | 7689.25 | 7712.25 | CLOSE | +23.00 | +$115 | level never touched |
+| 10:54:00 | QQQ | long | MNQ | Shoof Alerts | Elite Options | 29764.00 | 29739.00 | STOP | -25.00 | -$50 | +$10 |
+| 10:57:00 | SPX | long | MES | shabs | shabs | 7692.75 | 7712.25 | CLOSE | +19.50 | +$98 | level never touched |
+| 12:01:00 | SPY | short | MES | OWLS jon-and-kian | jon & kian | 7682.75 | 7707.75 | STOP | -25.00 | -$125 | level never touched |
+| 12:27:00 | SPY | short | MES | Midas | Midas | 7679.75 | 7704.75 | STOP | -25.00 | -$125 | level never touched |
+| 12:55:00 | SPX | long | MES | TTT Lotto | rks_$$$$ | 7690.50 | 7712.25 | CLOSE | +21.75 | +$109 | level never touched |
+
+$ level = the resting-limit entry (MES: limit 2 before the 25, 12.5-pt 1:1 bracket; MNQ: limit 5 through the 25, 12.5 stop, BE at +5, rungs 2.5; 30-min wait) with its own exits; "level never touched" = the alert was skipped, not lost.
+
+## Totals
+
+|  | trades | gross | net after $1.50 RT | win rate |
+|---|---|---|---|---|
+| Today (market) | 7 | +$132 | +$122 | 57% |
+| Today (level) | 1 | +$10 | +$8 | 100% |
+| **Since 2026-08-03 (market)** | 165 | **-$429** | -$677 | 45% |
+| **Level, fills so far** | 6 | **+$135** | +$126 | 100% |
+
+The level row counts from the day it was added to this file (9/18); the history behind it is reference/PULLBACK-LEVEL-ENTRY-TEST.txt. It goes to G for a real-money decision at 30 fills per micro.
+
+## By room
+
+| room | trades | gross | wins |
+|---|---|---|---|
+| OWLS jon-and-kian | 1 | -$125 | 0 |
+| Shoof Alerts | 1 | -$50 | 0 |
+| Midas | 2 | -$14 | 1 |
+| shabs | 1 | +$98 | 1 |
+| TTT Lotto | 2 | +$224 | 2 |
+
+## By symbol and direction
+
+| direction | trades | gross | wins |
+|---|---|---|---|
+| SPY short | 2 | -$250 | 0 |
+| QQQ long | 1 | -$50 | 0 |
+| SPX long | 2 | +$206 | 2 |
+| SPY long | 2 | +$226 | 2 |
+
+## How they ended
+
+| exit | trades | gross |
+|---|---|---|
+| CLOSE | 4 | +$432 |
+| STOP | 3 | -$300 |
 
 
 ### What this number is not
