@@ -24,6 +24,10 @@ UNRELATED, seen in passing: Webull futures_positions() 429s once per 5-min backo
 4. (14:36) CHAT ROWS CARRIED Date.now(). The 14:29 come-up reload re-sent Trading Chat's 1:42-2:07 PM chatter as FRESH (painted after the 15-s window) — a trade-like line an hour old would have passed the 3-min stale gate. whop.js clockToTs() now reads the row's header clock ("1:42 PM") as its time; unreadable = now.
 Versions 3.8.44 -> 3.8.56 today (one per step; each auto-picked-up).
 
+### 2026-09-19 (07:30 ET) — "trade only NQ if that's our edge": SPY/SPX alerts as MNQ direction
+G: "if anything we can trade only NQ if that's our edge." Cross test on the year (four grabs + bot + logs): the 675 SPY/SPX alerts re-windowed on NQ bars and traded as MNQ under the MNQ level shape (10 through the NQ 25, 12.5 stop, BE 5, rungs 2.5, 30-min wait): 517 fills, +$7,774, $15.0/fill, 68% win, 13 of 13 months positive (instant on NQ: +1,182). The same alerts as MES: +2,165 at 57% with 4 losing months. QQQ alerts -> MNQ unchanged: 290 fills +5,318, 73%, 13/13. Both together -> MNQ: 807 fills, +$13,093, 70%. Honeydrip's SPY calls on NQ: 309 fills +4,782 (64%); Vero 82 fills +1,092 (72%); Midas 19 +372 (79%). Told G: the edge is NQ's round-number pullback, and any index caller's direction works as its trigger; MES has nothing to add. Not changed yet — his word.
+Nitro grab came back empty (5 messages, 9/4-9/6, message_id legacy-unknown) — the grab ended at the first stall; re-run with the tab in front once the room has rendered.
+
 ### 2026-09-19 (07:05 ET) — Honeydrip daytrades grab added: 1,057 index alerts on bars
 Honeydrip daytrades grab (26k messages in the four files now; 2,194 entries, 923 index). All Honeydrip posts are relayed by "HoneyDrip (Scribe)" (@Unraveller / @Mike / @Brett inside the text) — the caller column carries the Scribe; per-trader split needs the @name pulled out of the text (caller_scorecard already does this for the ledger; not yet for grab_alerts).
 MNQ (382 alerts): level fills 290, +$5,318, $18.3/fill, 73%, ALL 13 months positive (worst +78 Feb 26, best +1,132 Mar 26); Honeydrip's own 52 fills +1,082 at 79%. Instant on the same alerts +262, 45%.
