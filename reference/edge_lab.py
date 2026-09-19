@@ -53,8 +53,16 @@ def _day_arrays(b):
 
 
 def load(force=False):
+    """The bench's alerts and bars. ALERTS ARE RE-READ EVERY TIME (a new grab
+    lands in grab_alerts.csv and must count); the day-bar arrays are the slow
+    part, so they come from the cache and only days the cache has never seen
+    are parsed. --reload throws the cache away and parses every day again."""
+    cached = {}
     if not force and os.path.exists(CACHE):
-        return pickle.load(open(CACHE, "rb"))
+        try:
+            cached = pickle.load(open(CACHE, "rb")).get("bars") or {}
+        except Exception:                                   # noqa: BLE001
+            cached = {}
     days = set()
     for src, col in ((fm.MASTER, "symbol"), (fm.SHADOW, "sym"), (fm.CHAT, "symbol"), (fm.GRAB, "symbol")):
         for r in fm._read_csv(src):
@@ -64,6 +72,9 @@ def load(force=False):
     for day in sorted(d for d in days if d >= "2025-09-18"):
         ok = True
         for root in ("ES", "NQ"):
+            if (root, day) in cached:
+                bars[(root, day)] = cached[(root, day)]
+                continue
             b, _ = fm.cached_bars(root, day)
             if b is None:
                 ok = False
