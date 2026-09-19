@@ -24,6 +24,11 @@ UNRELATED, seen in passing: Webull futures_positions() 429s once per 5-min backo
 4. (14:36) CHAT ROWS CARRIED Date.now(). The 14:29 come-up reload re-sent Trading Chat's 1:42-2:07 PM chatter as FRESH (painted after the 15-s window) — a trade-like line an hour old would have passed the 3-min stale gate. whop.js clockToTs() now reads the row's header clock ("1:42 PM") as its time; unreadable = now.
 Versions 3.8.44 -> 3.8.56 today (one per step; each auto-picked-up).
 
+### 2026-09-19 (07:05 ET) — Honeydrip daytrades grab added: 1,057 index alerts on bars
+Honeydrip daytrades grab (26k messages in the four files now; 2,194 entries, 923 index). All Honeydrip posts are relayed by "HoneyDrip (Scribe)" (@Unraveller / @Mike / @Brett inside the text) — the caller column carries the Scribe; per-trader split needs the @name pulled out of the text (caller_scorecard already does this for the ledger; not yet for grab_alerts).
+MNQ (382 alerts): level fills 290, +$5,318, $18.3/fill, 73%, ALL 13 months positive (worst +78 Feb 26, best +1,132 Mar 26); Honeydrip's own 52 fills +1,082 at 79%. Instant on the same alerts +262, 45%.
+MES (675 alerts): 334 fills, +$2,165, $6.5/fill, 57%; 9 of 13 months positive but -426 Nov 25, -466 Jun 26, -149 May 26; the Scribe's 191 fills +426 at 53%. MES is a coin flip with a small positive drift on this sample — the level entry rescues it from -423/+169 instant, but it is not the MNQ story. Told G.
+
 ### 2026-09-19 (06:30 ET) — the first three room grabs, a year each, replayed under the level shape
 G grabbed Midas (6,900 lines, 9/2025 -> today), Vero 1k-challenge (1,660) and Vero-2 (1,120); "Vero-1" is a duplicate of 1k-challenge. New grab_to_alerts.py: every "grab *.txt" in DS Logs through the PRODUCTION parser (extension/parse_batch.js) -> grab_alerts.csv, 11,345 messages -> 573 entries (Vero 1 295, Midas 148, Vero 2 130), 421 of them SPY/QQQ/SPX, 9/18/25 -> 9/17/26. futures_mirror_daily reads it as a third source (src="grab"), SINCE moved to 2025-09-18; _bar_frame caches each bar file once (the year file was being re-read per day — the sweep timed out). 600 alerts on 205 days now have bars.
 RESULT, level shape as configured (MES 2 before the 25, 12.5 1:1; MNQ 10 through the 25, 12.5/BE5/2.5), 30-min wait:
