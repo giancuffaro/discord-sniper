@@ -182,10 +182,16 @@ def sim(s, e, rows, ppt, stop, arm=None, rung=None, tgt=None, time_stop=None, be
     st = e - s * stop
     target = e + s * tgt if tgt else None
     mfe = 0.0
+    slip = SLIP_TICKS * TICK * ppt
+    # The fill bar earns nothing, but if it CLOSES through the initial stop we
+    # were stopped inside it — at the close, not at the stop (9/19 fix #2).
+    c0 = rows[0][2]
+    if (c0 <= st) if s > 0 else (c0 >= st):
+        return (c0 - e) * s * ppt - slip - RT
     for k in range(1, len(rows)):
         h, l, c = rows[k]
         if (l <= st) if s > 0 else (h >= st):
-            return (st - e) * s * ppt - SLIP_TICKS * TICK * ppt - RT
+            return (st - e) * s * ppt - slip - RT
         if target is not None and ((h >= target) if s > 0 else (l <= target)):
             return (target - e) * s * ppt - RT
         if time_stop and k >= time_stop:
@@ -201,6 +207,12 @@ def sim(s, e, rows, ppt, stop, arm=None, rung=None, tgt=None, time_stop=None, be
                 new = e + s * (math.floor((mfe - arm) / rung) * rung)
                 if (s > 0 and new > st) or (s < 0 and new < st):
                     st = new
+        # A stop moved on this bar that the bar has ALREADY closed through
+        # is not a resting stop at that price — the trade is out at the
+        # close (the next bar opens there or worse). The old rule let the
+        # next bar "fill" at a stop it had gapped past (9/19 fix #2).
+        if (c <= st) if s > 0 else (c >= st):
+            return (c - e) * s * ppt - slip - RT
     return (rows[-1][2] - e) * s * ppt - RT
 
 

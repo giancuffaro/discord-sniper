@@ -64,23 +64,30 @@ def main():
                          input=json.dumps([t[-1] for t in texts]), capture_output=True, text=True, encoding="utf-8")
     parsed = json.loads(res.stdout)
     seen = set()
-    rows = []
+    rows, exits = [], []
     for (f, cid, room, stamp, n, author, text), p in zip(texts, parsed):
-        if not p or p.get("action") != "OPEN" or not p.get("symbol"):
+        if not p or not p.get("symbol") or p.get("action") not in ("OPEN", "TRIM", "CLOSE"):
             continue
         when = dt.datetime.strptime(stamp, "%Y-%m-%d %H:%M").replace(tzinfo=dt.timezone.utc).astimezone(ET)
-        key = (cid, when.strftime("%Y-%m-%d %H:%M"), p["symbol"], p.get("side"), p.get("strike"))
+        key = (cid, when.strftime("%Y-%m-%d %H:%M"), p["symbol"], p.get("side"), p.get("strike"), p["action"])
         if key in seen:
             continue
         seen.add(key)
-        rows.append([when.strftime("%Y-%m-%d"), when.strftime("%H:%M:%S"), cid, room, author, p["symbol"],
-                     p.get("side") or "", p.get("strike") or "", p.get("expiry") or "", p.get("limit") or "",
-                     p.get("action"), p.get("kind") or "option", f, n, text[:200]])
+        row = [when.strftime("%Y-%m-%d"), when.strftime("%H:%M:%S"), cid, room, author, p["symbol"],
+               p.get("side") or "", p.get("strike") or "", p.get("expiry") or "", p.get("limit") or "",
+               p.get("action"), p.get("kind") or "option", f, n, text[:200]]
+        (rows if p["action"] == "OPEN" else exits).append(row)
     rows.sort()
+    exits.sort()
     with open(OUT, "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(HEAD)
         w.writerows(rows)
+    # the callers' own TRIM / CLOSE posts, same columns — for measuring their exit timing
+    with open(OUT.replace("grab_alerts", "grab_exits"), "w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(HEAD)
+        w.writerows(exits)
     by = {}
     for r in rows:
         by[r[3]] = by.get(r[3], 0) + 1
