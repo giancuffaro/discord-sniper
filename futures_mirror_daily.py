@@ -71,7 +71,10 @@ STEP = STOP * (2 / 7.5)         # then a rung every ~6.67 points
 # Per root: (grid, buf, stop, arm, step, target) — buf > 0 rests BEFORE the
 # level, buf < 0 rests THROUGH it; arm/step/target None = not used.
 LEVEL = {"ES": dict(grid=25.0, buf=2.0, stop=12.5, arm=None, step=None, target=12.5),
-         "NQ": dict(grid=25.0, buf=-5.0, stop=12.5, arm=5.0, step=2.5, target=None)}
+         "NQ": dict(grid=25.0, buf=-10.0, stop=12.5, arm=5.0, step=2.5, target=None)}
+# NQ buf -10 (G, 9/19: "I prefer a higher percentage of winning"): 10 pts
+# through the 25 = 44 fills, +$1,012, 91% win, worst day -$8, both halves
+# positive, vs -5 = 47 fills, +$1,010, 81%. Same money, fewer and cleaner fills.
 LEVEL_WAIT = 30                 # minutes the resting entry lives
 CLOSE = dt.time(15, 59)
 OPEN_MINUTE, LAST_MINUTE = 9 * 60 + 30, 15 * 60 + 45

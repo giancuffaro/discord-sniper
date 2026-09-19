@@ -33,7 +33,7 @@ Entry (the bridge, not the ATM): limit 2 pts before the 25 level in the pullback
 | Auto trail: stop loss | 20 ticks | the stop follows 5 pts behind the best price |
 | Auto trail: frequency | 10 ticks | moves in 2.5-pt rungs |
 
-Entry (the bridge, not the ATM): limit 5 pts THROUGH the 25 level in the pullback's path, cancelled after 30 minutes.
+Entry (the bridge, not the ATM): limit 10 pts THROUGH the 25 level in the pullback's path, cancelled after 30 minutes.
 
 ## Before the first real one
 
