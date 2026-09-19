@@ -38,12 +38,18 @@ def honeydrip_names():
     return m
 
 
+# Platinum nitro's cards are one caller under two DOM labels: the "@Owner
+# Alerts" role ping in the body, or the bot's own name when the body is bare.
+SAME = {"@Owner Alerts": "Owner Alerts (nitro)", "Nitro Trades": "Owner Alerts (nitro)"}
+
+
 def relabel(alerts):
     names = honeydrip_names()
     for a in alerts:
         if str(a["caller"]).startswith("HoneyDrip"):
             k = (a["day"], a["ts"].strftime("%H:%M"), a["sym"], "C" if a["s"] > 0 else "P")
             a["caller"] = names.get(k, "HoneyDrip relay (no @name)")
+        a["caller"] = SAME.get(a["caller"], a["caller"])
     return alerts
 
 
