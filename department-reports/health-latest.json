@@ -1,13 +1,11 @@
 {
   "in_session": false,
-  "issues": [
-    "Observer latest request failed: all_providers_unavailable"
-  ],
+  "issues": [],
   "lanes": [
     {
       "lane": "discord",
-      "fresh": true,
-      "version": "3.8.58"
+      "fresh": false,
+      "version": null
     },
     {
       "lane": "whop",
@@ -17,12 +15,12 @@
   ],
   "observer": {
     "queue_remaining": 0,
-    "worker_started": true,
-    "last_finished": 1789795355.8791192,
-    "last_error": "all_providers_unavailable",
+    "worker_started": false,
+    "last_finished": 0,
+    "last_error": "",
     "last_provider": "",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789795413.0603368
+  "checked_at": 1789795844.8729239
 }

@@ -40,6 +40,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SHADOW = os.path.join(HERE, "futures_mirror_shadow.csv")
 MASTER = os.path.join(HERE, "master_alerts.csv")
 CHAT = os.path.join(HERE, "recovered_alerts_chat.csv")   # entries read back out of the room logs — the bot never saw most of them
+GRAB = os.path.join(HERE, "grab_alerts.csv")            # a year of room history, read by the production parser (grab_to_alerts.py)
 BARS_DIR = os.path.join(HERE, "bars")
 CUMULATIVE = os.path.join(HERE, "reference", "FUTURES-MIRROR-REPLAY.csv")
 SEED = os.path.join(HERE, "reference", "FUTURES-MIRROR-REPLAY-2026-09-13.csv")
@@ -79,7 +80,7 @@ LEVEL_WAIT = 30                 # minutes the resting entry lives
 CLOSE = dt.time(15, 59)
 OPEN_MINUTE, LAST_MINUTE = 9 * 60 + 30, 15 * 60 + 45
 DEDUPE_SECONDS = 180
-SINCE = "2026-08-03"
+SINCE = "2025-09-18"                   # 9/19: the grabbed year starts here (bars from 2025-07-21)
 RT_FEE = 1.50                   # round-turn commission assumption, per contract
 
 FIELDS = ["status", "entry", "exit", "why", "pts", "usd", "mfe", "mae", "bars",
@@ -152,6 +153,20 @@ def alerts_for(day):
         rows.append(dict(ts=ts, sym=sym, dirn="L" if side.startswith("C") else "S",
                          room=r.get("room") or "", caller=r.get("caller") or "",
                          src="chat"))
+    # 9/19: the year of grabbed room history, parsed by parse_batch.js.
+    for r in _read_csv(GRAB):
+        if str(r.get("date") or "")[:10] != day:
+            continue
+        sym = str(r.get("symbol") or "").upper()
+        side = str(r.get("side") or "").upper()
+        if sym not in MAP or not side.startswith(("C", "P")):
+            continue
+        ts = _parse_time(day, r.get("time"))
+        if ts is None:
+            continue
+        rows.append(dict(ts=ts, sym=sym, dirn="L" if side.startswith("C") else "S",
+                         room=r.get("room") or "", caller=r.get("caller") or "",
+                         src="grab"))
     # RTH, and early enough that there is a day left to trade.
     rows = [r for r in rows
             if OPEN_MINUTE <= r["ts"].hour * 60 + r["ts"].minute <= LAST_MINUTE]
@@ -173,19 +188,34 @@ def alerts_for(day):
 
 def _load_bar_file(path, root, day):
     """The rows of one cached bar file that fall on this ET trading day."""
-    import pandas as pd
-    b = pd.read_csv(path)
-    if "ts_event" not in b.columns:
+    b = _bar_frame(path, root)
+    if b is None:
         return None
-    b["ts"] = pd.to_datetime(b["ts_event"], utc=True)
-    if "symbol" in b.columns:
-        b = b[b["symbol"].astype(str).str.upper().str.startswith(root)]
-    b = b.set_index("ts").sort_index()
     d = dt.date.fromisoformat(day)
     lo = dt.datetime.combine(d, dt.time(9, 0), tzinfo=ET)
     hi = dt.datetime.combine(d, dt.time(16, 15), tzinfo=ET)
     w = b[(b.index >= lo) & (b.index <= hi)]
     return w if len(w) >= 200 else None
+
+
+_FRAMES = {}
+
+
+def _bar_frame(path, root):
+    """One parsed frame per bar file, kept for the process — a year file is
+    360k rows and the replays ask for 200 days out of it (9/19)."""
+    key = (path, root, os.path.getmtime(path))
+    if key not in _FRAMES:
+        import pandas as pd
+        b = pd.read_csv(path)
+        if "ts_event" not in b.columns:
+            _FRAMES[key] = None
+        else:
+            b["ts"] = pd.to_datetime(b["ts_event"], utc=True)
+            if "symbol" in b.columns:
+                b = b[b["symbol"].astype(str).str.upper().str.startswith(root)]
+            _FRAMES[key] = b.set_index("ts").sort_index()
+    return _FRAMES[key]
 
 
 def cached_bars(root, day):

@@ -43,7 +43,7 @@ TARGETS = (None, 1.0, 1.5, 2.0, 3.0)
 def windows():
     """[(alert, ppt, [(hi,lo,close)...], entry)] — bars pulled out of pandas once."""
     days = set()
-    for src, col in ((fm.MASTER, "symbol"), (fm.SHADOW, "sym")):
+    for src, col in ((fm.MASTER, "symbol"), (fm.SHADOW, "sym"), (fm.GRAB, "symbol")):
         for r in fm._read_csv(src):
             if str(r.get(col) or "").upper() in fm.MAP and len(str(r.get("date") or "")) == 10:
                 days.add(r["date"][:10])
