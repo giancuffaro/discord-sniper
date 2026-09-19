@@ -313,7 +313,7 @@ async function grabHistory(untilTs) {
   // tab on a long pull. Instead we nudge up about one screenful at a time and
   // wait a beat, so Discord loads the next batch and settles before the next
   // nudge. Slower, but it survives a 3-year scroll.
-  const WAIT = 750;                           // ms between nudges — twice as fast
+  const WAIT = 1125;                          // ms between nudges (G, 9/19: "scrolling a little too fast, reduce 1/3rd" — was 750)
                                               // as 1500; safe because we nudge
                                               // gently (a screen at a time), not
                                               // yank to the very top.
@@ -424,6 +424,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     if (msg.type === "HEALTH?") { reply && reply(_readerHealth()); return; }
     if (msg.type === "GRAB_HISTORY") { if (msg.channelId && msg.channelId !== channelId()) { reply && reply({ok:false}); return; } grabHistory(msg.untilTs || 0); reply && reply({ ok: true }); }
     else if (msg.type === "STOP_GRAB") { grabbing = false; reply && reply({ ok: true }); }
+    else if (msg.type === "GRAB_STATUS") { reply && reply({ grabbing: !!grabbing }); }
     else if (msg.type === "JOIN_VOICE") { joinLiveVoice().then(r => reply && reply(r)); return true; }
   });
 } catch (e) { /* orphaned copy after an update; the fresh one registers instead */ }

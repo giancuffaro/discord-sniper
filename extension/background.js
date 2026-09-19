@@ -1398,7 +1398,25 @@ async function pumpGrabQueue() {
   let retry = false;
   const generation = grabGeneration;
   try {
-    if (await getRunning()) return;
+    // A STUCK "running" item blocks every grab after it (G, 9/19: "the
+    // grabber worked once but not anymore"). grabRunning lives in storage
+    // and outlives the content script that was doing the work: reload the
+    // extension mid-grab (a manifest bump does that), or let the tab die,
+    // and the item stays "running" forever while nothing is grabbing. Ask
+    // the tab; if it is not grabbing, the item is a ghost — clear it.
+    const running = await getRunning();
+    if (running) {
+      let alive = false;
+      try {
+        const st = await chrome.tabs.sendMessage(running.tabId, { type: "GRAB_STATUS" });
+        alive = !!(st && st.grabbing);
+      } catch (_) { alive = false; }
+      if (alive) return;
+      await setRunning(null);
+      await addLog({ kind: "update", what: "GRAB",
+                     why: "cleared a stale grab of " + roomName(running.channelId)
+                          + " (nothing was scrolling) — the queue moves on" });
+    }
     const q = await getQueue();
     if (!q.length) return;
     const next = q[0];
@@ -4873,8 +4891,8 @@ async function allRoomsTesting() {
   return;
 }
 
-chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); });
-chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); });
+chrome.runtime.onInstalled.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); setRunning(null); });
+chrome.runtime.onStartup.addListener(() => { scrubOldBanners(); allRoomsTesting(); applyBornTesting(); refreshBridgeChannels(); badge(); reinject(); setRunning(null); });
 
 /* MEMORY SHED (9/1, G: "sometimes I come back and Chrome has run out of
  * memory"). Discord web leaks: a room tab that starts at ~150 MB sits at
