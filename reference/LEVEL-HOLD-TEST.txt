@@ -1,0 +1,27 @@
+NEXT-DOLLAR HOLD TEST — 1-minute RTH bars; a break of whole dollar L, the touch of the next dollar within 60 min, the outcome within 30 min of the touch (definitions in the file header)
+HOLDS = never printed the next half dollar past the level (L-1.50 down / L+1.50 up) after touching it; CONTINUES = did. 'bounce->thru' is G's exact case: to 713, up to 713.50, then 712.50.
+CONTROL rows do the same on half-dollar levels — if whole dollars are special, the two differ.
+
+== SPY — 99 days (2025-09-18 .. 2026-09-17)
+ whole $
+  down           breaks 2882  reached next $ 1659 ( 58%)  | HOLDS  37%  CONTINUES  63%  | thru@touch   8%  straight  43%  bounce->thru  12%  bounce->reclaim  30%  bounce,held   4%  stalled   3%  | of the bounces:  25% went on through,  65% reclaimed the broken $
+  down trend     breaks 1470  reached next $  909 ( 62%)  | HOLDS  32%  CONTINUES  68%  | thru@touch   9%  straight  47%  bounce->thru  13%  bounce->reclaim  27%  bounce,held   3%  stalled   2%  | of the bounces:  30% went on through,  63% reclaimed the broken $
+  up             breaks 2899  reached next $ 1576 ( 54%)  | HOLDS  41%  CONTINUES  59%  | thru@touch   6%  straight  41%  bounce->thru  12%  bounce->reclaim  26%  bounce,held   9%  stalled   6%  | of the bounces:  25% went on through,  55% reclaimed the broken $
+  up trend       breaks 1406  reached next $  728 ( 52%)  | HOLDS  44%  CONTINUES  56%  | thru@touch   4%  straight  41%  bounce->thru  11%  bounce->reclaim  25%  bounce,held  11%  stalled   8%  | of the bounces:  23% went on through,  54% reclaimed the broken $
+ CONTROL half $
+  down           breaks 2949  reached next $ 1691 ( 57%)  | HOLDS  35%  CONTINUES  65%  | thru@touch   8%  straight  41%  bounce->thru  16%  bounce->reclaim  26%  bounce,held   6%  stalled   3%  | of the bounces:  33% went on through,  54% reclaimed the broken $
+  down trend     breaks 1526  reached next $  908 ( 60%)  | HOLDS  35%  CONTINUES  65%  | thru@touch  10%  straight  37%  bounce->thru  18%  bounce->reclaim  29%  bounce,held   5%  stalled   1%  | of the bounces:  35% went on through,  56% reclaimed the broken $
+  up             breaks 2929  reached next $ 1639 ( 56%)  | HOLDS  41%  CONTINUES  59%  | thru@touch   5%  straight  45%  bounce->thru  10%  bounce->reclaim  29%  bounce,held   6%  stalled   6%  | of the bounces:  22% went on through,  64% reclaimed the broken $
+  up trend       breaks 1403  reached next $  751 ( 54%)  | HOLDS  39%  CONTINUES  61%  | thru@touch   3%  straight  50%  bounce->thru   8%  bounce->reclaim  26%  bounce,held   7%  stalled   6%  | of the bounces:  19% went on through,  64% reclaimed the broken $
+
+== QQQ — 49 days (2026-06-12 .. 2026-09-17)
+ whole $
+  down           breaks 2223  reached next $ 1613 ( 73%)  | HOLDS  34%  CONTINUES  66%  | thru@touch  15%  straight  36%  bounce->thru  15%  bounce->reclaim  31%  bounce,held   2%  stalled   1%  | of the bounces:  31% went on through,  64% reclaimed the broken $
+  down trend     breaks 1156  reached next $  873 ( 76%)  | HOLDS  36%  CONTINUES  64%  | thru@touch  14%  straight  35%  bounce->thru  16%  bounce->reclaim  34%  bounce,held   1%  stalled   1%  | of the bounces:  31% went on through,  67% reclaimed the broken $
+  up             breaks 2214  reached next $ 1606 ( 73%)  | HOLDS  32%  CONTINUES  68%  | thru@touch  14%  straight  41%  bounce->thru  13%  bounce->reclaim  27%  bounce,held   3%  stalled   2%  | of the bounces:  30% went on through,  63% reclaimed the broken $
+  up trend       breaks 1046  reached next $  731 ( 70%)  | HOLDS  32%  CONTINUES  68%  | thru@touch  12%  straight  44%  bounce->thru  13%  bounce->reclaim  27%  bounce,held   3%  stalled   3%  | of the bounces:  30% went on through,  63% reclaimed the broken $
+ CONTROL half $
+  down           breaks 2247  reached next $ 1620 ( 72%)  | HOLDS  31%  CONTINUES  69%  | thru@touch  15%  straight  39%  bounce->thru  14%  bounce->reclaim  27%  bounce,held   2%  stalled   1%  | of the bounces:  32% went on through,  62% reclaimed the broken $
+  down trend     breaks 1179  reached next $  883 ( 75%)  | HOLDS  30%  CONTINUES  70%  | thru@touch  18%  straight  38%  bounce->thru  14%  bounce->reclaim  26%  bounce,held   3%  stalled   1%  | of the bounces:  33% went on through,  60% reclaimed the broken $
+  up             breaks 2204  reached next $ 1561 ( 71%)  | HOLDS  35%  CONTINUES  65%  | thru@touch  11%  straight  39%  bounce->thru  14%  bounce->reclaim  31%  bounce,held   2%  stalled   2%  | of the bounces:  30% went on through,  65% reclaimed the broken $
+  up trend       breaks 1044  reached next $  725 ( 69%)  | HOLDS  37%  CONTINUES  63%  | thru@touch   9%  straight  40%  bounce->thru  14%  bounce->reclaim  31%  bounce,held   3%  stalled   2%  | of the bounces:  29% went on through,  64% reclaimed the broken $
