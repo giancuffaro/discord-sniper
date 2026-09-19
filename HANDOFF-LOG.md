@@ -12,6 +12,12 @@ From 2026-09-09 on, session notes are appended at the TOP of the
 
 ## SESSION NOTES
 
+### 2026-09-19 (14:32 ET) — "in general" + "do levels ending in 10/20/30/05/15/25 turn trends" -- reference/round_cents_test.py -> ROUND-CENTS-TEST.txt
+G clarified the hold test wasn't meant to be about 714 specifically -- it already isn't: LEVEL-HOLD-TEST.txt aggregates every whole-dollar break all year (3,445 SPY down-breaks alone), not one price. Told him that plainly instead of re-running anything.
+Second ask was new: do nickel/dime cent-endings mark trend reversals. Built a standard round-number test: zigzag the year of 1-min SPY/QQQ closes into swing pivots (>= $0.15 move to confirm one), take each pivot's cents, and compare that distribution to the baseline cents distribution of every close (nickels are already common quoted prices, so raw pivot% at .00/.50 looks big for free -- the real test is pivot% vs baseline% at the same cent).
+RESULT: no effect. All-nickel ratio SPY 1.02x / QQQ 0.95x; dimes 0.97x/0.99x; fives 1.09x/0.90x; G's exact set (05,10,15,20,25,30) 1.05x/0.72x -- inconsistent sign between the two symbols, which is what noise looks like, not a real one. SAMPLE: only 515 (SPY) / 479 (QQQ) pivots in the full year at this threshold, ~25 per cent-bucket -- the per-cent table swings 0x to 2.4x on that n and proves nothing at the single-cent level (house rule: n<20 is nothing; 25 is barely above it and it shows).
+VERDICT [Likely]: no round-cent reversal effect at SPY/QQQ. Didn't lower the threshold to chase a bigger n because that changes what a "reversal" means (more, smaller wiggles) rather than testing the same claim harder -- flagged to G rather than done unilaterally.
+
 CLOCK (9/19 03:45 ET): the stamps from 9/17 18:50 ET through 9/19 03:25 ET were re-set from file times (UTC-4; a few interpolated between them) — the session had guessed them, up to nine hours ahead of the files. The 9/17 "UTC" stamps are as written. Rule: a stamp comes from `date` on the machine, never from memory.
 
 ### 2026-09-19 (14:20 ET) — "when 714 breaks, does 713 hold?" — reference/level_hold_test.py -> LEVEL-HOLD-TEST.txt
