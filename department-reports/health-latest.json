@@ -18,11 +18,11 @@
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789781456.380321,
+    "last_finished": 1789781869.4155724,
     "last_error": "all_providers_unavailable",
     "last_provider": "",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789781633.6861365
+  "checked_at": 1789781933.6929486
 }
