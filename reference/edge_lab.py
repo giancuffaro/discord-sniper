@@ -288,10 +288,20 @@ def line(label, pairs, control=None):
     for a, v in pairs:
         months[a["ts"].strftime("%y-%m")] += v
     mp = "%d/%d" % (sum(1 for v in months.values() if v > 0), len(months))
+    # The control's own win% swings hard between IS and OOS (a regime shift in
+    # the random baseline itself, not the caller) -- one overall "rnd" number
+    # hides that and can make a caller look like he beats it on both halves
+    # when he only beats an average of two very different baselines (9/19,
+    # G: "double check Mike" -- his SPY instant looked ~50/50 against one rnd
+    # number; split, IS was 59% vs a 35% control and OOS was 42% vs a 61%
+    # control -- a flip, not an edge). ctl now always carries its own IS/OOS.
     ctl = ""
     if control is not None:
-        C = stats(control)
-        ctl = " | rnd %3.0f%% %+6.0f" % (C["win"], C["usd"])
+        CI = [p for p in control if p[0]["ts"].date() < SPLIT]
+        CO = [p for p in control if p[0]["ts"].date() >= SPLIT]
+        C, CIs, COs = stats(control), stats(CI), stats(CO)
+        ctl = (" | rnd %3.0f%% %+6.0f (IS %3.0f%% %+6.0f / OOS %3.0f%% %+6.0f)"
+               % (C["win"], C["usd"], CIs["win"], CIs["usd"], COs["win"], COs["usd"]))
     return ("%-46s n %4d  $%+7.0f  per %+5.1f  win %3.0f%%  dd %+6.0f  m+ %5s | IS n %3d %3.0f%% %+6.0f | OOS n %3d %3.0f%% %+6.0f%s"
             % (label, A["n"], A["usd"], A["per"], A["win"], A["dd"], mp, I["n"], I["win"], I["usd"], O["n"], O["win"], O["usd"], ctl))
 
