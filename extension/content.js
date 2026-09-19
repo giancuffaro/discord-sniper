@@ -300,91 +300,165 @@ function grabReport(obj) {
 
 async function grabHistory(untilTs) {
   if (grabbing) return;
+  grabbing = true;
   // Restore the original one-year target (the user requested at least four months).
   if (!untilTs) untilTs = Date.now() - 365 * 86400000;
-  let list = document.querySelector('[data-list-id="chat-messages"]');
-  let scroller = list && findScroller(list);
-  if (!scroller) { grabReport({ done: true, why: "couldn't find the message pane — open the room first" }); return; }
-  grabbing = true;
   const grabRoom = channelId();
-  let stagnant = 0, lastEdge = "", missingPane = 0, rounds = 0, parked = false, lastOldest = null;
   // GENTLE by design. Yanking straight to scrollTop=0 makes Discord fetch
   // batches faster than it can render them, which spikes CPU and crashes the
   // tab on a long pull. Instead we nudge up about one screenful at a time and
   // wait a beat, so Discord loads the next batch and settles before the next
   // nudge. Slower, but it survives a 3-year scroll.
   const WAIT = 1125;                          // ms between nudges (G, 9/19: "scrolling a little too fast, reduce 1/3rd" — was 750)
-                                              // as 1500; safe because we nudge
-                                              // gently (a screen at a time), not
-                                              // yank to the very top.
-  grabReport({ started: true });
-  try {
-  while (grabbing && rounds < 20000) {
-    if (channelId() !== grabRoom) { grabbing = false; grabReport({done:true,channelId:grabRoom,why:"channel changed — partial history"}); break; }
-    rounds++;
-    // Chrome slows hidden tabs to a crawl AND Discord stops loading older
-    // messages when its tab isn't on screen. If we kept scrolling we'd see no
-    // new height, wrongly decide we hit the top, and auto-download a partial
-    // file. So while this tab is in the background we PARK: hold our place,
-    // don't touch the stagnation counter, and wait for it to come back to the
-    // front. The grab resumes exactly where it left off — nothing is lost.
-    if (document.visibilityState !== "visible") {
-      if (!parked) { grabReport({ parked: true, oldest: lastOldest }); parked = true; }
-      await new Promise(r => setTimeout(r, 1000));
-      rounds--;                              // a parked round doesn't count
-      continue;
-    }
-    if (parked) { grabReport({ resumed: true }); parked = false; }
-    // Discord can replace these nodes while loading a virtualized message page.
-    // Resolve the live pane on every step rather than scrolling a detached node.
-    list = document.querySelector('[data-list-id="chat-messages"]');
-    scroller = list && findScroller(list);
-    if (!scroller) {
-      if (++missingPane >= 40) { grabReport({done:true,why:"message pane unavailable — partial history"}); break; }
-      await new Promise(r => setTimeout(r, WAIT));
-      continue;
-    }
-    missingPane = 0;
-    list.querySelectorAll('li[id^="chat-messages-"]').forEach(handle);
-    // Nudge up ~80% of a screen rather than jumping to the very top.
-    const step = Math.max(200, Math.floor(scroller.clientHeight * 0.8));
-    scroller.scrollTop = Math.max(0, scroller.scrollTop - step);
-    await new Promise(r => setTimeout(r, WAIT));
-    if (!grabbing) break;
-    if (channelId() !== grabRoom) continue;
-    list = document.querySelector('[data-list-id="chat-messages"]');
-    scroller = list && findScroller(list);
-    if (!scroller) continue;
-    // SWEEP every message currently on screen, don't wait for Discord's
-    // "new message" event — during a fast scroll those events skip rows, which
-    // is how whole embed calls went missing. handle() dedupes via SEEN, so
-    // re-sweeping the same rows is cheap and nothing gets dropped.
-    list.querySelectorAll('li[id^="chat-messages-"]').forEach(handle);
-    const times = list.querySelectorAll('time[datetime]');
-    const oldestEl = times[0];
-    const oldest = oldestEl ? Date.parse(oldestEl.getAttribute("datetime")) : null;
-    if (oldest) lastOldest = oldest;
-    const firstRow = list.querySelector('li[id^="chat-messages-"]');
-    const edge = String(oldest || "") + ":" + (firstRow ? firstRow.id : "");
-    const atTop = scroller.scrollTop <= 4;   // pinned at the top of what's loaded
-    if (rounds % 4 === 0 || (untilTs && oldest && oldest <= untilTs)) {
-      grabReport({ oldest: oldest || null, rounds });
-    }
-    if (untilTs && oldest && oldest <= untilTs) { grabReport({ done: true, reached: "date", oldest }); break; }
-    // Only call it "the top" when we're pinned at the top AND nothing new has
-    // loaded for several waits. While we're still scrolling down through
-    // already-loaded messages (not at top), that's not stagnation.
-    // A virtualized list may keep identical height while older messages arrive.
-    // Give a slow history fetch 30 seconds with an unchanged oldest message.
-    if (atTop && edge === lastEdge) { if (++stagnant >= 40) { grabReport({ done: true, reached: "top", oldest:lastOldest }); break; } }
-    else { stagnant = 0; }
-    lastEdge = edge;
+
+  /* THE GRAB'S OWN ROWS (9/19, G: "the grabber does not capture images or
+   * enclosed text"). The embed text always rode along in `full` — the FILE
+   * was the problem: it was built from the worker's shared `captured` store,
+   * not from what this scroll read. That store is capped at 50,000 rows (a
+   * year of one busy room evicts its own oldest rows and every other room's),
+   * it is fed only through handle()'s SEEN dedupe (a row this tab already
+   * read live is never re-sent), and it was dumped whole the moment a grab
+   * said "done" — including a grab that never scrolled because Discord had
+   * not painted the pane yet. Platinum nitro's "5 messages" were five stale
+   * rows from that store, not a read of the room. Now the grab keeps its own
+   * record of every row it sees — full text with embeds, and the uploaded
+   * images' urls — streams it to the worker in chunks as it scrolls, and the
+   * worker writes THAT. (Image urls are what the page holds; Discord signs
+   * them, so they fetch for about a day — read them the same night.) */
+  const got = new Map();        // message id -> [text length, image count]
+  let pending = [];             // rows not yet handed to the worker
+  let sent = 0;
+  function grabRow(li) {
+    if (!li.id) return;
+    let text = "", images = [];
+    try { text = fullTextOf(li); images = imagesOf(li); } catch (e) { return; }
+    if (!text && !images.length) return;      // blank shell — embed not hydrated yet
+    const prev = got.get(li.id);
+    if (prev && prev[0] >= text.length && prev[1] >= images.length) return;
+    got.set(li.id, [text.length, images.length]);
+    const t = li.querySelector("time[datetime]");
+    pending.push({ mid: li.id, t: t ? Date.parse(t.getAttribute("datetime")) : Date.now(),
+                   author: authorOf(li), text, images });
   }
-  if (rounds >= 20000) grabReport({ done: true, reached: "limit" });
+  async function flushRows() {
+    while (pending.length) {
+      const chunk = pending.slice(0, 400);
+      let ok = false;
+      try {
+        const r = await chrome.runtime.sendMessage({ type: "GRAB_ROWS", channelId: grabRoom, rows: chunk });
+        ok = !!(r && r.ok);
+      } catch (e) { ok = false; }
+      if (!ok) return false;                  // worker asleep — keep them, try again next round
+      pending = pending.slice(chunk.length);
+      sent += chunk.length;
+    }
+    return true;
+  }
+  function sweep(list) {
+    // handle() keeps the live/capture path fed exactly as before; grabRow()
+    // is the grab's own record and does not care what SEEN thinks.
+    list.querySelectorAll('li[id^="chat-messages-"]').forEach(li => { handle(li); grabRow(li); });
+  }
+
+  let done = null;              // the one final report, sent after the loop
+  let stagnant = 0, lastEdge = "", missingPane = 0, rounds = 0, parked = false, lastOldest = null;
+  try {
+    // DISCORD PAINTS LATE (9/19). The queue brings a sleeping tab to the
+    // front and asks for the grab 400 ms later; a discarded tab is still
+    // loading Discord then, and the old code answered "couldn't find the
+    // message pane" — reported as DONE, which exported the stale store and
+    // moved the queue on. Wait for the pane instead, up to 90 s, and when it
+    // never comes say FAILED, which exports nothing.
+    let list = null, scroller = null;
+    for (let i = 0; i < 180 && grabbing; i++) {
+      list = document.querySelector('[data-list-id="chat-messages"]');
+      scroller = list && findScroller(list);
+      if (scroller) break;
+      await new Promise(r => setTimeout(r, 500));
+    }
+    if (!scroller) {
+      grabReport({ failed: true, channelId: grabRoom,
+                   why: "the message pane never appeared in 90 s — open the room, let it load, then Grab again" });
+      return;
+    }
+    grabReport({ started: true });
+    while (grabbing && rounds < 20000) {
+      if (channelId() !== grabRoom) { done = { done: true, why: "channel changed — partial history" }; break; }
+      rounds++;
+      // Chrome slows hidden tabs to a crawl AND Discord stops loading older
+      // messages when its tab isn't on screen. If we kept scrolling we'd see no
+      // new height, wrongly decide we hit the top, and auto-download a partial
+      // file. So while this tab is in the background we PARK: hold our place,
+      // don't touch the stagnation counter, and wait for it to come back to the
+      // front. The grab resumes exactly where it left off — nothing is lost.
+      if (document.visibilityState !== "visible") {
+        if (!parked) { grabReport({ parked: true, oldest: lastOldest }); parked = true; }
+        await new Promise(r => setTimeout(r, 1000));
+        rounds--;                              // a parked round doesn't count
+        continue;
+      }
+      if (parked) { grabReport({ resumed: true }); parked = false; }
+      // Discord can replace these nodes while loading a virtualized message page.
+      // Resolve the live pane on every step rather than scrolling a detached node.
+      list = document.querySelector('[data-list-id="chat-messages"]');
+      scroller = list && findScroller(list);
+      if (!scroller) {
+        if (++missingPane >= 40) { done = { done: true, why: "message pane unavailable — partial history" }; break; }
+        await new Promise(r => setTimeout(r, WAIT));
+        continue;
+      }
+      missingPane = 0;
+      sweep(list);
+      // Nudge up ~80% of a screen rather than jumping to the very top.
+      const step = Math.max(200, Math.floor(scroller.clientHeight * 0.8));
+      scroller.scrollTop = Math.max(0, scroller.scrollTop - step);
+      await new Promise(r => setTimeout(r, WAIT));
+      if (!grabbing) break;
+      if (channelId() !== grabRoom) continue;
+      list = document.querySelector('[data-list-id="chat-messages"]');
+      scroller = list && findScroller(list);
+      if (!scroller) continue;
+      // SWEEP every message currently on screen, don't wait for Discord's
+      // "new message" event — during a fast scroll those events skip rows, which
+      // is how whole embed calls went missing. Re-sweeping the same rows is
+      // cheap and nothing gets dropped.
+      sweep(list);
+      const times = list.querySelectorAll('time[datetime]');
+      const oldestEl = times[0];
+      const oldest = oldestEl ? Date.parse(oldestEl.getAttribute("datetime")) : null;
+      if (oldest) lastOldest = oldest;
+      const firstRow = list.querySelector('li[id^="chat-messages-"]');
+      const edge = String(oldest || "") + ":" + (firstRow ? firstRow.id : "");
+      const atTop = scroller.scrollTop <= 4;   // pinned at the top of what's loaded
+      if (rounds % 4 === 0 || (untilTs && oldest && oldest <= untilTs)) {
+        grabReport({ oldest: oldest || null, rounds, rows: got.size });
+      }
+      if (rounds % 20 === 0) await flushRows();
+      if (untilTs && oldest && oldest <= untilTs) { done = { done: true, reached: "date", oldest }; break; }
+      // Only call it "the top" when we're pinned at the top AND nothing new has
+      // loaded for several waits. While we're still scrolling down through
+      // already-loaded messages (not at top), that's not stagnation.
+      // A virtualized list may keep identical height while older messages arrive.
+      // Give a slow history fetch 30 seconds with an unchanged oldest message.
+      if (atTop && edge === lastEdge) { if (++stagnant >= 40) { done = { done: true, reached: "top", oldest: lastOldest }; break; } }
+      else { stagnant = 0; }
+      lastEdge = edge;
+    }
+    // A stop (the popup's Stop, or a fresh copy of this file replacing this
+    // one) used to end the loop in silence: no report, no file, a queue item
+    // left "running". It is a done now — partial, and said so.
+    if (!done) done = rounds >= 20000 ? { done: true, reached: "limit", oldest: lastOldest }
+                                      : { done: true, reached: "stopped", oldest: lastOldest };
   } catch (e) {
-    grabReport({done:true,channelId:grabRoom,why:"history capture interrupted — partial history; retry Grab"});
+    done = { done: true, why: "history capture interrupted — partial history; retry Grab" };
   } finally {
     grabbing = false;
+    if (done) {
+      // Hand over what is still here before saying done, so the file is whole.
+      try { for (let i = 0; i < 5 && !(await flushRows()); i++) await new Promise(r => setTimeout(r, 1000)); }
+      catch (e) { /* reported below as unsent */ }
+      grabReport(Object.assign({ channelId: grabRoom, rows: sent, unsent: pending.length }, done));
+    }
   }
 }
 
