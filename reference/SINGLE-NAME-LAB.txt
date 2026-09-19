@@ -1,0 +1,35 @@
+single-name alerts 1606, with stock bars 1298, days 233, callers ['@ADMINS', '@Elite', '@Owner Alerts', '@Premium', '@TT alerts', '@Updates', 'ALERT BOUGHT', 'Aaron', 'AbTrades Alert B', 'BRICK [I will ne', 'Brett', 'Brett (Admin)']
+
+INSTANT at the alert, 10 shares, 5 bps slip each side
+1% stop, 1:1 target                            n 1298  $  -4460  per  -3.4  win  50%  dd  -5411  m+  4/13 | IS n 436  54%   -318 | OOS n 862  49%  -4142 | rnd  46%  -7204
+1% stop, 1:2 target                            n 1298  $  -5325  per  -4.1  win  41%  dd  -6446  m+  5/13 | IS n 436  43%  -1637 | OOS n 862  40%  -3687 | rnd  38%  -7037
+0.5% stop, 1:1                                 n 1298  $  -5481  per  -4.2  win  51%  dd  -5650  m+  2/13 | IS n 436  52%  -1507 | OOS n 862  51%  -3974 | rnd  46%  -7155
+1% stop, trail BE .4 / rungs .2                n 1298  $  -5870  per  -4.5  win  46%  dd  -6057  m+  2/13 | IS n 436  46%  -1340 | OOS n 862  47%  -4530 | rnd  42%  -7361
+2% stop, hold to close                         n 1298  $  -2749  per  -2.1  win  59%  dd  -4333  m+  9/13 | IS n 436  61%   +698 | OOS n 862  57%  -3448 | rnd  55%  -4472
+1% stop, 30-min time stop                      n 1298  $  -5976  per  -4.6  win  40%  dd  -6447  m+  3/13 | IS n 436  42%  -1395 | OOS n 862  39%  -4581 | rnd  37%  -6920
+1% stop, 60-min time stop                      n 1298  $  -5800  per  -4.5  win  43%  dd  -6431  m+  4/13 | IS n 436  46%   -878 | OOS n 862  42%  -4922 | rnd  39%  -7352
+1% stop, out at caller's first exit post (else close) n 1298  $  -6903  per  -5.3  win  37%  dd  -7068  m+  1/13 | IS n 436  40%  -1879 | OOS n 862  36%  -5025 | rnd  38%  -4773
+2% stop, out at caller's first exit post       n 1298  $  -6474  per  -5.0  win  41%  dd  -6627  m+  2/13 | IS n 436  43%  -1181 | OOS n 862  39%  -5293 | rnd  42%  -3702
+
+CALLS vs PUTS (1% stop, 1:1)
+calls                                          n  882  $  -3099  per  -3.5  win  51%  dd  -3664  m+  5/13 | IS n 261  50%  -1040 | OOS n 621  51%  -2059 | rnd  46%  -5411
+puts                                           n  416  $  -1361  per  -3.3  win  50%  dd  -2160  m+  7/13 | IS n 175  60%   +722 | OOS n 241  42%  -2083 | rnd  45%  -2982
+
+BY CALLER (1% stop, 1:1), 20+ alerts
+HD Unraveller                                  n  655  $  -2380  per  -3.6  win  52%  dd  -3372  m+  3/12 | IS n 229  58%    +92 | OOS n 426  49%  -2472 | rnd  49%  -4490
+HD Brett                                       n  186  $   -186  per  -1.0  win  54%  dd   -538  m+  6/12 | IS n  76  53%   -182 | OOS n 110  55%     -4 | rnd  43%  -1068
+HD Mike                                        n  127  $   -259  per  -2.0  win  50%  dd   -471  m+  5/12 | IS n  50  44%   -200 | OOS n  77  55%    -58 | rnd  50%   -590
+Midas (Admin)                                  n   76  $   -260  per  -3.4  win  30%  dd   -339  m+  3/10 | IS n  11  27%    -16 | OOS n  65  31%   -244 | rnd  39%    +45
+@Owner Alerts                                  n   55  $    +78  per  +1.4  win  64%  dd   -162  m+  9/13 | IS n  25  60%     -5 | OOS n  30  67%    +83 | rnd  44%   -375
+👑KingBeeAri🐝                                   n   29  $   -316  per -10.9  win  45%  dd   -360  m+   2/8 | IS n  20  40%   -137 | OOS n   9  56%   -179 | rnd  38%    -67
+Nitro Trades                                   n   21  $    +82  per  +3.9  win  52%  dd   -175  m+  6/11 | IS n  13  54%   +119 | OOS n   8  50%    -37 | rnd  48%   -147
+
+BY SYMBOL (1% stop, 1:1), 25+ alerts
+META                                           n  219  $  -1375  per  -6.3  win  51%  dd  -2098  m+  4/11 | IS n 101  55%   -248 | OOS n 118  47%  -1128 | rnd  47%  -1821
+TSLA                                           n  213  $   -320  per  -1.5  win  54%  dd  -1097  m+  7/13 | IS n  73  66%   +596 | OOS n 140  48%   -915 | rnd  48%  -1057
+NVDA                                           n  201  $   -305  per  -1.5  win  54%  dd   -475  m+  6/13 | IS n  68  53%   -144 | OOS n 133  55%   -161 | rnd  52%   -560
+AAPL                                           n  171  $     -2  per  -0.0  win  56%  dd   -312  m+  7/12 | IS n  65  55%    -28 | OOS n 106  56%    +26 | rnd  43%   -911
+AMD                                            n  115  $   -324  per  -2.8  win  51%  dd   -442  m+  6/12 | IS n  48  44%   -239 | OOS n  67  57%    -85 | rnd  52%   -240
+AMZN                                           n   76  $    -62  per  -0.8  win  51%  dd   -253  m+  6/11 | IS n  23  57%    +66 | OOS n  53  49%   -128 | rnd  43%   -325
+MSFT                                           n   60  $   -572  per  -9.5  win  40%  dd   -639  m+   3/8 | IS n   2   0%    -96 | OOS n  58  41%   -476 | rnd  43%   -592
+PLTR                                           n   36  $   -118  per  -3.3  win  44%  dd   -209  m+  4/10 | IS n   9  67%    +33 | OOS n  27  37%   -151 | rnd  44%   -141

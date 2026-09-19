@@ -1,7 +1,75 @@
-Traceback (most recent call last):
-  File "C:\Users\Hulk\Desktop\discord-sniper\reference\pullback_level_entry_test.py", line 135, in <module>
-    main()
-  File "C:\Users\Hulk\Desktop\discord-sniper\reference\pullback_level_entry_test.py", line 129, in main
-    with open(os.path.join(HERE, "PULLBACK-LEVEL-ENTRY-TEST.txt"), "w", encoding="utf-8") as fh:
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Hulk\\Desktop\\discord-sniper\\reference\\PULLBACK-LEVEL-ENTRY-TEST.txt'
+PULLBACK-TO-LEVEL ENTRY — 675 SPY/MES and 382 QQQ/MNQ alerts; limit at the nearest ES 25 / NQ 50 or 100 below (above for puts), filled on touch
+sym    grid  wait      exit                             filled pullbk $   win% avg wait | instant$   win%
+                                                                                  (instant = same filled alerts entered at the alert bar instead)
+SPY    25    5m        12.5 stop · 1:1                     137     +761    57%       1m |    -1120    47%
+SPY    25    5m        20 stop · 1:1                       137    +1367    57%       1m |     -493    51%
+SPY    25    15m       12.5 stop · 1:1                     217    +1012    56%       4m |    -3819    39%
+SPY    25    15m       20 stop · 1:1                       217     +747    53%       4m |    -4296    42%
+SPY    25    30m       12.5 stop · 1:1                     277    +1653    57%       7m |    -5267    38%
+SPY    25    30m       20 stop · 1:1                       277    +1023    53%       7m |    -7304    39%
+SPY    25    day       12.5 stop · 1:1                     478    +1143    55%      53m |    -5794    43%
+SPY    25    day       20 stop · 1:1                       478     +349    51%      53m |   -11697    38%
+
+QQQ    50    5m        12.5 stop · 1:1                     186    -1939    42%       1m |    -5114    19%
+QQQ    50    5m        25 stop · 1:1                       186    -1315    46%       1m |    -5198    27%
+QQQ    50    5m        10 stop · BE at 5 · 2.5 rungs       186     -912    37%       1m |    -4538    16%
+QQQ    50    5m        25 stop · 3x target                 186    -1157    24%       1m |    -7132     9%
+QQQ    50    15m       12.5 stop · 1:1                     251    -2250    43%       3m |    -5104    28%
+QQQ    50    15m       25 stop · 1:1                       251    -1584    47%       3m |    -5681    32%
+QQQ    50    15m       10 stop · BE at 5 · 2.5 rungs       251     -902    37%       3m |    -4290    23%
+QQQ    50    15m       25 stop · 3x target                 251    -1140    24%       3m |    -9741     8%
+QQQ    50    30m       12.5 stop · 1:1                     279    -2410    43%       5m |    -4910    32%
+QQQ    50    30m       25 stop · 1:1                       279    -2144    45%       5m |    -5030    36%
+QQQ    50    30m       10 stop · BE at 5 · 2.5 rungs       279    -1004    36%       5m |    -3976    27%
+QQQ    50    30m       25 stop · 3x target                 279    -1806    23%       5m |   -10407     9%
+QQQ    50    day       12.5 stop · 1:1                     327    -2350    46%      18m |    -4344    39%
+QQQ    50    day       25 stop · 1:1                       327    -2140    46%      18m |    -3410    43%
+QQQ    50    day       10 stop · BE at 5 · 2.5 rungs       327     -886    39%      18m |    -2719    33%
+QQQ    50    day       25 stop · 3x target                 327    -2422    23%      18m |    -7702    15%
+
+QQQ    100   5m        12.5 stop · 1:1                     117    -1116    44%       1m |    -3548    18%
+QQQ    100   5m        25 stop · 1:1                       117     -418    50%       1m |    -3642    26%
+QQQ    100   5m        10 stop · BE at 5 · 2.5 rungs       117     -528    38%       1m |    -3169    13%
+QQQ    100   5m        25 stop · 3x target                 117    -1050    22%       1m |    -5868     3%
+QQQ    100   15m       12.5 stop · 1:1                     171    -1258    46%       4m |    -3904    27%
+QQQ    100   15m       25 stop · 1:1                       171     -816    48%       4m |    -4384    30%
+QQQ    100   15m       10 stop · BE at 5 · 2.5 rungs       171     -452    37%       4m |    -3292    22%
+QQQ    100   15m       25 stop · 3x target                 171    -1260    23%       4m |    -8330     4%
+QQQ    100   30m       12.5 stop · 1:1                     209    -1375    47%       7m |    -4214    29%
+QQQ    100   30m       25 stop · 1:1                       209    -1601    45%       7m |    -4258    34%
+QQQ    100   30m       10 stop · BE at 5 · 2.5 rungs       209     -471    37%       7m |    -3434    24%
+QQQ    100   30m       25 stop · 3x target                 209    -2251    21%       7m |    -9922     4%
+QQQ    100   day       12.5 stop · 1:1                     287    -1400    49%      32m |    -4170    38%
+QQQ    100   day       25 stop · 1:1                       287    -2001    46%      32m |    -3024    44%
+QQQ    100   day       10 stop · BE at 5 · 2.5 rungs       287     -280    40%      32m |    -2299    32%
+QQQ    100   day       25 stop · 3x target                 287    -1891    23%      32m |    -7610    14%
+
+
+LIMIT PLACED BEFORE THE LEVEL (buffer points above an ES 25 / NQ 50 for calls, below for puts)
+sym    buffer wait      exit                             filled        $   win%  1st/2nd
+SPY    0      30m       12.5 stop · 1:1                     277    +1653    57%  +723/ +930
+SPY    1      30m       12.5 stop · 1:1                     306    +2172    59%  +917/+1256
+SPY    2      30m       12.5 stop · 1:1                     334    +1555    57%   +47/+1508
+SPY    3      30m       12.5 stop · 1:1                     365    +1198    55%  +283/ +915
+SPY    5      30m       12.5 stop · 1:1                     417     +874    54%  +432/ +442
+
+SPY    0      day       12.5 stop · 1:1                     478    +1143    55%  +320/ +823
+SPY    1      day       12.5 stop · 1:1                     486     +771    55%  +235/ +536
+SPY    2      day       12.5 stop · 1:1                     511     +570    55%  -419/ +989
+SPY    3      day       12.5 stop · 1:1                     525     +441    54%   +44/ +398
+SPY    5      day       12.5 stop · 1:1                     557     -333    53%  -213/ -120
+
+QQQ    0      30m       10 stop · BE at 5 · 2.5 rungs       279    -1004    36%    +4/-1008
+QQQ    5      30m       10 stop · BE at 5 · 2.5 rungs       292    -1183    37%  -149/-1034
+QQQ    10     30m       10 stop · BE at 5 · 2.5 rungs       313     -494    39%  -238/ -256
+QQQ    15     30m       10 stop · BE at 5 · 2.5 rungs       326     -894    38%  -110/ -784
+QQQ    25     30m       10 stop · BE at 5 · 2.5 rungs       350    -1794    35%  -362/-1432
+
+QQQ    0      day       10 stop · BE at 5 · 2.5 rungs       327     -886    39%    -4/ -881
+QQQ    5      day       10 stop · BE at 5 · 2.5 rungs       334    -1193    38%  -206/ -988
+QQQ    10     day       10 stop · BE at 5 · 2.5 rungs       347     -344    39%  -244/ -100
+QQQ    15     day       10 stop · BE at 5 · 2.5 rungs       353     -976    39%  -116/ -860
+QQQ    25     day       10 stop · BE at 5 · 2.5 rungs       364    -1780    35%  -352/-1428
+
+SPY: 197 alerts NEVER pulled back to a 25 level all day; entered instantly under 12.5 stop · 1:1 they made +5163 (win 73%)
+QQQ: 55 alerts NEVER pulled back to a 50 level all day; entered instantly under 12.5 stop · 1:1 they made +357 (win 67%)
