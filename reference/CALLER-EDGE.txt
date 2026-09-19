@@ -1,0 +1,72 @@
+PER-CALLER EDGE — honest sim (edge_lab), 1060 index alerts, IS before 2026-03-16 / OOS from it, random-direction control on the same fills
+exits: MES 12.5-pt stop 1:1 · MNQ 12.5-pt stop, BE at 5, 2.5 rungs (edge_lab defaults). instant = trade the alert at the next minute's open; level = the 25-level pullback shape.
+A caller counts as above random only if win%% > rnd on BOTH halves — and n under ~150 proves nothing either way.
+
+== Vero — 318 alerts (QQQ 217, SPY 101), 99 calls / 219 puts
+  instant  all                                 n  318  $  -1886  per  -5.9  win  41%  dd  -2226  m+  2/13 | IS n 170  44%   -740 | OOS n 148  36%  -1146 | rnd  42%  -1162
+  instant  QQQ->MNQ                            n  217  $  -1366  per  -6.3  win  37%  dd  -1592  m+  3/13 | IS n  87  45%   +120 | OOS n 130  32%  -1486 | rnd  42%    -82
+  instant  SPY/SPX->MES                        n  101  $   -519  per  -5.1  win  48%  dd  -1099  m+  6/11 | IS n  83  43%   -860 | OOS n  18  67%   +340 | rnd  47%   -752
+  instant  calls only                          n   99  $   -868  per  -8.8  win  38%  dd  -1025  m+  4/13 | IS n  46  41%   -276 | OOS n  53  36%   -592 | rnd  40%   -828
+  instant  puts only                           n  219  $  -1017  per  -4.6  win  42%  dd  -1415  m+  5/13 | IS n 124  45%   -464 | OOS n  95  37%   -553 | rnd  46%   -261
+  level    all                                 n  222  $   -296  per  -1.3  win  44%  dd   -912  m+  6/13 | IS n 105  45%   -352 | OOS n 117  44%    +55 | rnd  44%   -608
+  level    QQQ->MNQ                            n  166  $   -338  per  -2.0  win  41%  dd   -510  m+  4/13 | IS n  58  41%    -96 | OOS n 108  41%   -242 | rnd  39%   -542
+  level    SPY/SPX->MES                        n   56  $    +41  per  +0.7  win  54%  dd   -865  m+   6/9 | IS n  47  49%   -256 | OOS n   9  78%   +296 | rnd  53%    +12
+  level    calls only                          n   74  $   +256  per  +3.5  win  49%  dd   -346  m+  8/13 | IS n  32  53%   +108 | OOS n  42  45%   +148 | rnd  41%   -227
+  level    puts only                           n  148  $   -553  per  -3.7  win  42%  dd   -895  m+  7/13 | IS n  73  41%   -460 | OOS n  75  43%    -94 | rnd  41%   -438
+
+== Unraveller — 178 alerts (SPY 178), 91 calls / 87 puts
+  instant  all                                 n  177  $   -566  per  -3.2  win  49%  dd  -1268  m+  7/12 | IS n  79  51%   -105 | OOS n  98  48%   -461 | rnd  44%  -1702
+  instant  SPY/SPX->MES                        n  177  $   -566  per  -3.2  win  49%  dd  -1268  m+  7/12 | IS n  79  51%   -105 | OOS n  98  48%   -461 | rnd  44%  -1702
+  instant  calls only                          n   91  $   -256  per  -2.8  win  49%  dd   -874  m+  4/11 | IS n  25  44%   -242 | OOS n  66  52%    -14 | rnd  54%   +248
+  instant  puts only                           n   86  $   -309  per  -3.6  win  49%  dd  -1112  m+  7/12 | IS n  54  54%   +138 | OOS n  32  41%   -447 | rnd  52%    +70
+  level    all                                 n   86  $    -56  per  -0.7  win  51%  dd   -739  m+  4/10 | IS n  38  50%    -81 | OOS n  48  52%    +24 | rnd  53%   +173
+  level    SPY/SPX->MES                        n   86  $    -56  per  -0.7  win  51%  dd   -739  m+  4/10 | IS n  38  50%    -81 | OOS n  48  52%    +24 | rnd  53%   +173
+  level    calls only                          n   48  $   +150  per  +3.1  win  54%  dd   -735  m+  5/10 | IS n  14  64%   +223 | OOS n  34  50%    -72 | rnd  57%   +334
+  level    puts only                           n   38  $   -207  per  -5.4  win  47%  dd   -447  m+   3/8 | IS n  24  42%   -304 | OOS n  14  57%    +96 | rnd  54%   +185
+
+== Brett — 152 alerts (SPY 151, QQQ 1), 63 calls / 89 puts
+  instant  all                                 n  152  $  +1406  per  +9.2  win  59%  dd   -396  m+  7/12 | IS n  63  56%   +262 | OOS n  89  62%  +1144 | rnd  51%   -142
+  instant  SPY/SPX->MES                        n  151  $  +1464  per  +9.7  win  60%  dd   -396  m+  7/12 | IS n  63  56%   +262 | OOS n  88  62%  +1202 | rnd  48%   -589
+  instant  calls only                          n   63  $   +813  per +12.9  win  62%  dd   -286  m+  7/11 | IS n  24  54%    +75 | OOS n  39  67%   +738 | rnd  54%   +182
+  instant  puts only                           n   89  $   +593  per  +6.7  win  57%  dd   -348  m+  7/12 | IS n  39  56%   +186 | OOS n  50  58%   +406 | rnd  61%  +1050
+  level    all                                 n   75  $    +23  per  +0.3  win  52%  dd   -836  m+  6/12 | IS n  30  50%    -64 | OOS n  45  53%    +87 | rnd  60%   +790
+  level    SPY/SPX->MES                        n   74  $    +50  per  +0.7  win  53%  dd   -808  m+  6/12 | IS n  30  50%    -64 | OOS n  44  55%   +114 | rnd  57%   +438
+  level    calls only                          n   32  $   +392  per +12.2  win  62%  dd   -270  m+  6/10 | IS n  11  45%    -86 | OOS n  21  71%   +478 | rnd  67%   +624
+  level    puts only                           n   43  $   -369  per  -8.6  win  44%  dd   -810  m+  6/11 | IS n  19  53%    +23 | OOS n  24  38%   -392 | rnd  58%   +346
+
+== Mike — 139 alerts (SPY 72, QQQ 67), 19 calls / 120 puts
+  instant  all                                 n  139  $   -175  per  -1.3  win  50%  dd   -824  m+  4/11 | IS n  62  53%   +150 | OOS n  77  48%   -325 | rnd  40%  -1572
+  instant  QQQ->MNQ                            n   67  $   +102  per  +1.5  win  51%  dd   -389  m+  5/11 | IS n  28  46%   -126 | OOS n  39  54%   +228 | rnd  48%   +164
+  instant  SPY/SPX->MES                        n   72  $   -277  per  -3.8  win  50%  dd   -745  m+  4/11 | IS n  34  59%   +276 | OOS n  38  42%   -553 | rnd  51%    -89
+  instant  puts only                           n  120  $   -154  per  -1.3  win  52%  dd   -846  m+  5/11 | IS n  49  55%    +99 | OOS n  71  49%   -253 | rnd  50%   -228
+  level    all                                 n   86  $    +50  per  +0.6  win  47%  dd   -436  m+  5/11 | IS n  38  45%   -155 | OOS n  48  48%   +205 | rnd  46%   -113
+  level    QQQ->MNQ                            n   51  $    -10  per  -0.2  win  41%  dd   -252  m+   6/9 | IS n  22  45%     +6 | OOS n  29  38%    -16 | rnd  49%    +24
+  level    SPY/SPX->MES                        n   35  $    +60  per  +1.7  win  54%  dd   -339  m+  5/10 | IS n  16  44%   -160 | OOS n  19  63%   +220 | rnd  62%   +382
+  level    puts only                           n   71  $     +3  per  +0.0  win  46%  dd   -458  m+  5/11 | IS n  28  43%   -228 | OOS n  43  49%   +231 | rnd  52%   +357
+
+== @vero-alerts — 43 alerts (QQQ 24, SPY 19), 9 calls / 34 puts
+  instant  all                                 n   43  $   +842  per +19.6  win  65%  dd   -146  m+   8/9 | IS n  34  65%   +672 | OOS n   9  67%   +170 | rnd  40%   -424
+  instant  QQQ->MNQ                            n   24  $   +230  per  +9.6  win  54%  dd   -146  m+   6/8 | IS n  16  50%   +120 | OOS n   8  62%   +109 | rnd  50%    -50
+  instant  puts only                           n   34  $   +754  per +22.2  win  68%  dd   -118  m+   7/8 | IS n  28  64%   +554 | OOS n   6  83%   +200 | rnd  32%   -410
+  level    all                                 n   28  $   +640  per +22.9  win  71%  dd    -65  m+   6/8 | IS n  19  79%   +548 | OOS n   9  56%    +92 | rnd  59%   +383
+  level    QQQ->MNQ                            n   19  $   +259  per +13.6  win  63%  dd    -78  m+   6/8 | IS n  11  73%   +228 | OOS n   8  50%    +31 | rnd  65%   +236
+  level    puts only                           n   23  $   +455  per +19.8  win  70%  dd    -65  m+   5/7 | IS n  17  76%   +428 | OOS n   6  50%    +26 | rnd  62%   +367
+
+== @Owner Alerts — 32 alerts (QQQ 24, SPY 8), 9 calls / 23 puts
+  instant  all                                 n   32  $    -69  per  -2.2  win  38%  dd   -267  m+  3/11 | IS n  12  42%   -127 | OOS n  20  35%    +58 | rnd  50%   +189
+  instant  QQQ->MNQ                            n   24  $   -178  per  -7.4  win  29%  dd   -250  m+   3/9 | IS n   6  33%   -114 | OOS n  18  28%    -64 | rnd  58%   +416
+  instant  puts only                           n   23  $   -270  per -11.7  win  30%  dd   -410  m+  3/10 | IS n  11  45%    -62 | OOS n  12  17%   -208 | rnd  61%   +252
+  level    all                                 n   22  $   +202  per  +9.2  win  59%  dd   -147  m+  6/11 | IS n   7  29%   -112 | OOS n  15  73%   +314 | rnd  62%   +494
+  level    QQQ->MNQ                            n   19  $   +272  per +14.3  win  63%  dd    -82  m+   5/9 | IS n   5  40%    +18 | OOS n  14  71%   +253 | rnd  60%   +312
+  level    puts only                           n   16  $    +46  per  +2.9  win  56%  dd   -107  m+  5/10 | IS n   6  33%    -47 | OOS n  10  70%    +93 | rnd  47%    +92
+
+== Midas (Admin) — 28 alerts (SPY 28), 14 calls / 14 puts
+  instant  all                                 n   27  $   -330  per -12.2  win  41%  dd   -570  m+   2/7 | IS n   0   0%     +0 | OOS n  27  41%   -330 | rnd  67%   +470
+  instant  SPY/SPX->MES                        n   27  $   -330  per -12.2  win  41%  dd   -570  m+   2/7 | IS n   0   0%     +0 | OOS n  27  41%   -330 | rnd  67%   +470
+  level    all                                 n   16  $   +106  per  +6.6  win  62%  dd   -317  m+   4/7 | IS n   0   0%     +0 | OOS n  16  62%   +106 | rnd  90%   +428
+  level    SPY/SPX->MES                        n   16  $   +106  per  +6.6  win  62%  dd   -317  m+   4/7 | IS n   0   0%     +0 | OOS n  16  62%   +106 | rnd  90%   +428
+
+== ? — 24 alerts (SPY 13, QQQ 11), 10 calls / 14 puts
+  instant  all                                 n   24  $   +147  per  +6.1  win  54%  dd   -229  m+   2/2 | IS n   0   0%     +0 | OOS n  24  54%   +147 | rnd  58%    +96
+  level    all                                 n   13  $   +290  per +22.3  win  69%  dd    -54  m+   2/2 | IS n   0   0%     +0 | OOS n  13  69%   +290 | rnd  90%   +465
+
