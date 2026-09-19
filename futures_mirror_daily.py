@@ -80,7 +80,7 @@ LEVEL_WAIT = 30                 # minutes the resting entry lives
 CLOSE = dt.time(15, 59)
 OPEN_MINUTE, LAST_MINUTE = 9 * 60 + 30, 15 * 60 + 45
 DEDUPE_SECONDS = 180
-SINCE = "2025-09-18"                   # 9/19: the grabbed year starts here (bars from 2025-07-21)
+SINCE = "2026-09-17"                   # the running total counts from the honest simulator (9/19); the year lives in reference/edge_lab.py
 RT_FEE = 1.50                   # round-turn commission assumption, per contract
 
 FIELDS = ["status", "entry", "exit", "why", "pts", "usd", "mfe", "mae", "bars",
@@ -334,6 +334,12 @@ def run(a, mode, bars):
     # credited the fill bar's high and ratcheted on it; random direction
     # scored 71% under it.
     i = ei
+    slip = 2 * 0.25                                  # a stop fills two ticks through (points)
+    c0 = float(w.iloc[ei]["close"])
+    if (c0 <= stop) if s > 0 else (c0 >= stop):     # the fill bar closed through the stop
+        pts = (c0 - e) * s - slip
+        return dict(status="ok", entry=e, exit=c0, why="STOP", pts=pts, usd=pts * ppt, mfe=0.0,
+                    mae=abs(c0 - e), bars=1, lvl=lvl, ref=ref)
     for i in range(ei + 1, len(w)):
         r = w.iloc[i]
         hi, lo = float(r["high"]), float(r["low"])
@@ -342,7 +348,7 @@ def run(a, mode, bars):
         hit_stop = (lo <= stop) if s > 0 else (hi >= stop)
         hit_tgt = tgt is not None and ((hi >= tgt) if s > 0 else (lo <= tgt))
         if hit_stop:
-            ex = stop
+            ex = stop - s * slip
             why = ("STOP" if stop == e - s * stop_pts
                    else ("BE" if abs(stop - e) < 1e-9 else "RATCHET"))
             break
@@ -357,6 +363,10 @@ def run(a, mode, bars):
             new = e + s * (k * step)
             if (s > 0 and new > stop) or (s < 0 and new < stop):
                 stop = new
+        cl = float(r["close"])
+        if (cl <= stop) if s > 0 else (cl >= stop):   # (fix #2) closed through a moved stop: out at the close
+            ex, why = cl - s * slip, "RATCHET"
+            break
     else:
         ex = float(w.iloc[-1]["close"])
         why = "CLOSE"

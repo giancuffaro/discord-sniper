@@ -33,6 +33,7 @@ for p in (ROOT, HERE):
     if p not in sys.path:
         sys.path.insert(0, p)
 import futures_mirror_daily as fm                          # noqa: E402
+SINCE_YEAR = "2025-09-18"          # the grabbed year; the daily mirror's own SINCE is the honest-sim era
 
 STOPS = (5.0, 7.5, 10.0, 12.5, 15.0, 20.0, 25.0, 35.0)
 ARMS = (None, 0.5, 0.75, 1.0, 1.5)
@@ -48,7 +49,7 @@ def windows():
             if str(r.get(col) or "").upper() in fm.MAP and len(str(r.get("date") or "")) == 10:
                 days.add(r["date"][:10])
     out = []
-    for day in sorted(d for d in days if d >= fm.SINCE):
+    for day in sorted(d for d in days if d >= SINCE_YEAR):
         if not all(fm.cached_bars(r, day)[0] is not None for r in ("ES", "NQ")):
             continue
         bars, _ = fm.bars_for(day)
@@ -83,9 +84,13 @@ def sim(s, e, rows, ppt, stop_pts, arm_f, rung_f, tgt_m):
     arm = arm_f * stop_pts if arm_f else None
     rung = rung_f * stop_pts
     mfe = 0.0
+    slip = 2 * 0.25 * ppt                       # a stop fills two ticks through
+    c0 = rows[0][2]
+    if (c0 <= st) if s > 0 else (c0 >= st):     # the fill bar closed through the stop: out at its close
+        return (c0 - e) * s * ppt - slip - fm.RT_FEE
     for hi, lo, cl in rows[1:]:
         if (lo <= st) if s > 0 else (hi >= st):
-            return (st - e) * s * ppt - fm.RT_FEE
+            return (st - e) * s * ppt - slip - fm.RT_FEE
         if tgt is not None and ((hi >= tgt) if s > 0 else (lo <= tgt)):
             return (tgt - e) * s * ppt - fm.RT_FEE
         fav = (hi - e) if s > 0 else (e - lo)
@@ -95,6 +100,10 @@ def sim(s, e, rows, ppt, stop_pts, arm_f, rung_f, tgt_m):
                 new = e + s * (math.floor((mfe - arm) / rung) * rung)
                 if (s > 0 and new > st) or (s < 0 and new < st):
                     st = new
+        # (fix #2, 9/19) a stop moved on this bar that the bar already closed
+        # through is not resting there — the trade is out at the close.
+        if (cl <= st) if s > 0 else (cl >= st):
+            return (cl - e) * s * ppt - slip - fm.RT_FEE
     return (rows[-1][2] - e) * s * ppt - fm.RT_FEE
 
 

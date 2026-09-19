@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """level_target_test.py — G's round-level exits on the SPY/QQQ-as-MES/MNQ mirror.
 
+VOID (9/19): this file carries the pre-fix simulator loop (fill-bar credit, same-bar
+ratchet). Its LEVEL-TARGET-TEST.txt is kept only as the record of the mistake; the
+idea ("close at the round level") is retested honestly in reference/edge_lab.py.
+
 G, 9/18: "targets: for MNQ the closest 100 level, for ES the levels ending in
 25 — as soon as it hits 7725 it closes the trade. OR move the rung to 7720,
 5 pts below, in case it continues."

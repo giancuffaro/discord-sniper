@@ -31,6 +31,7 @@ for p in (ROOT, HERE):
         sys.path.insert(0, p)
 
 import futures_mirror_daily as fm                           # noqa: E402
+SINCE_YEAR = "2025-09-18"          # the grabbed year; the daily mirror's own SINCE is the honest-sim era
 
 # a number = the same points on ES and NQ; a dict = per root (G, 9/18: "MNQ 12.5, MES 7.5")
 STOPS = ({"ES": 7.5, "NQ": 12.5}, 12.5, 25.0, 35.0, 50.0)
@@ -58,6 +59,11 @@ MODES = {
 
 
 def run(a, bars, stop_pts, arm_frac, step_frac, target_mult):
+    """One alert under one stop/ratchet/target, through the ONE honest
+    simulator (futures_ratchet_sweep.sim, fixes #1 and #2 of 9/19). The loop
+    that used to live here credited the fill bar and ratcheted on the same bar
+    it tested; its numbers (FUTURES-MIRROR-GRID.txt before 9/19) were void."""
+    import futures_ratchet_sweep as rs
     root, _micro, ppt = fm.MAP[a["sym"]]
     stop_pts = _stop_for(stop_pts, root)
     b = bars[root]
@@ -68,33 +74,11 @@ def run(a, bars, stop_pts, arm_frac, step_frac, target_mult):
     if w.empty:
         return None
     e = float(w.iloc[0]["open"])
-    stop = e - s * stop_pts
-    tgt = e + s * target_mult * stop_pts if target_mult else None
-    arm = arm_frac * stop_pts if arm_frac else None
-    step = step_frac * stop_pts if step_frac else None
-    mfe = 0.0
-    ex, why = None, None
-    for i in range(len(w)):
-        r = w.iloc[i]
-        hi, lo = float(r["high"]), float(r["low"])
-        fav = (hi - e) if s > 0 else (e - lo)
-        if (lo <= stop) if s > 0 else (hi >= stop):
-            ex = stop
-            why = "STOP" if abs(stop - (e - s * stop_pts)) < 1e-9 else ("BE" if abs(stop - e) < 1e-9 else "RATCHET")
-            break
-        if tgt is not None and ((hi >= tgt) if s > 0 else (lo <= tgt)):
-            ex, why = tgt, "TARGET"
-            break
-        mfe = max(mfe, fav)
-        if arm is not None and mfe >= arm:
-            k = math.floor((mfe - arm) / step)
-            new = e + s * (k * step)
-            if (s > 0 and new > stop) or (s < 0 and new < stop):
-                stop = new
-    if ex is None:
-        ex, why = float(w.iloc[-1]["close"]), "CLOSE"
-    pts = (ex - e) * s
-    return {"pts": pts, "usd": pts * ppt - fm.RT_FEE, "why": why, "mfe": mfe}
+    rows = list(zip(w["high"].astype(float), w["low"].astype(float), w["close"].astype(float)))
+    usd = rs.sim(s, e, rows, ppt, stop_pts, arm_frac, step_frac or 1.0, target_mult)
+    mfe = max([0.0] + [((h - e) if s > 0 else (e - l)) for h, l, _c in rows[1:]])
+    why = "STOP" if usd < -0.5 * stop_pts * ppt else ("TARGET" if target_mult and usd > 0.9 * target_mult * stop_pts * ppt else "OTHER")
+    return {"pts": usd / ppt, "usd": usd, "why": why, "mfe": mfe}
 
 
 def main():
@@ -106,7 +90,7 @@ def main():
         if str(r.get("sym") or "").upper() in fm.MAP and len(str(r.get("date") or "")) == 10:
             days.add(r["date"][:10])
     trades, no_bars = [], []
-    for day in sorted(d for d in days if d >= fm.SINCE):
+    for day in sorted(d for d in days if d >= SINCE_YEAR):
         bars, _src = fm.bars_for(day) if all(fm.cached_bars(r, day)[0] is not None for r in ("ES", "NQ")) else (None, "no cached bars")
         alerts = fm.alerts_for(day)
         if bars is None:
