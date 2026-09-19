@@ -327,13 +327,18 @@ def run(a, mode, bars):
     stop = e - s * stop_pts
     tgt = e + s * tgt_pts if tgt_pts else None
     mfe = mae = 0.0
-    for i in range(ei, len(w)):
+    # HONEST ORDER (9/19): the fill bar (ei) earns nothing and cannot stop us
+    # — its other side's timing is unknown; on every later bar the stop and
+    # target tested are the ones that existed at the bar's open, and the
+    # ratchet moves AFTER, protecting from the next bar. The old loop
+    # credited the fill bar's high and ratcheted on it; random direction
+    # scored 71% under it.
+    i = ei
+    for i in range(ei + 1, len(w)):
         r = w.iloc[i]
         hi, lo = float(r["high"]), float(r["low"])
         fav = (hi - e) * s if s > 0 else (e - lo)
         adv = (e - lo) if s > 0 else (hi - e)
-        # stop first (conservative), then target, then the ratchet on this
-        # bar's excursion
         hit_stop = (lo <= stop) if s > 0 else (hi >= stop)
         hit_tgt = tgt is not None and ((hi >= tgt) if s > 0 else (lo <= tgt))
         if hit_stop:
@@ -357,7 +362,7 @@ def run(a, mode, bars):
         why = "CLOSE"
     pts = (ex - e) * s
     return dict(status="ok", entry=e, exit=ex, why=why, pts=pts,
-                usd=pts * ppt, mfe=mfe, mae=mae, bars=i - ei + 1,
+                usd=pts * ppt, mfe=mfe, mae=mae, bars=max(1, i - ei + 1),
                 lvl=lvl, ref=ref)
 
 

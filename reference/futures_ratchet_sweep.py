@@ -67,13 +67,23 @@ def windows():
 
 
 def sim(s, e, rows, ppt, stop_pts, arm_f, rung_f, tgt_m):
+    """HONEST ORDER OF EVENTS (fixed 9/19 07:50 — the earlier version credited
+    the FILL BAR's own high as profit and ratcheted the stop on it, which is
+    knowing the future: on a 1-minute bar nobody knows whether the high came
+    before or after the low that filled us. Random direction at random times
+    scored 71% under the old sim; 51% under this one.)
+      - rows[0] is the fill bar: it earns nothing and cannot stop us out
+        (the fill IS its low/high side; the other side is unknown order).
+      - every later bar: test the stop and the target that existed at the
+        bar's OPEN, stop first (conservative); THEN update the ratchet from
+        this bar's excursion — a stop moved on a bar protects from the next."""
     stop0 = e - s * stop_pts
     st = stop0
     tgt = e + s * tgt_m * stop_pts if tgt_m else None
     arm = arm_f * stop_pts if arm_f else None
     rung = rung_f * stop_pts
     mfe = 0.0
-    for hi, lo, cl in rows:
+    for hi, lo, cl in rows[1:]:
         if (lo <= st) if s > 0 else (hi >= st):
             return (st - e) * s * ppt - fm.RT_FEE
         if tgt is not None and ((hi >= tgt) if s > 0 else (lo <= tgt)):
