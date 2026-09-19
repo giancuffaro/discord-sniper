@@ -2,7 +2,7 @@
 Read this first for current operating state. Session history and past findings
 live in HANDOFF-LOG.md (and the zipped handoffs in `archive/`); they are
 evidence, not current instructions.
-Last updated: 2026-09-19 — full honest backtest (edge_lab.py): no edge in the rooms' calls on index or single names, mechanical strategies negative; simulator fixed twice; index mirror stays on paper (Sim101) only.
+Last updated: 2026-09-19 — grab files are the scroll's own rows (v3.8.59: embeds + image marks, no-rows = no file); full honest backtest (edge_lab.py): no edge in the rooms' calls; index mirror stays on paper (Sim101) only.
 
 ## How to update this file (long form: reference/OPERATIONS.md)
 - A STATE, not a story: edit the rule that changed IN PLACE. ONE RULE, ONE LINE
@@ -92,6 +92,7 @@ ROOMS / TABS / READERS · ROOMS-TABS.md
 - PRICE TAPES → tape.py is the ONE registry; WEBULL DOES SERVE OPTION HISTORY through the SDK (found 9/17): `_data.option_market_data.get_option_history_bars(occ, "US_OPTION", "M1", count)` returns up to 1,200 one-minute TRADE bars (open/high/low/close/volume), free — but NO bid/ask, and ONLY UNTIL ABOUT A WEEK AFTER EXPIRY (then 417 INVALID_SYMBOL: on 9/17 everything that expired 9/9 or earlier was gone), so `option_bars_pull.py --recent 6` runs inside the 16:40 audit every day into `option_bars.csv` — a missed day is history lost for good — and the Webull MCP connector still answers UNSUPPORTED for the same thing. Stops watch the BID, so quote tapes remain the truth for fills and exits; the bars settle "did it ever print X"; databento_backfill.py spends credit — never run its main() casually.
 - NO PAPER, ANYWHERE (9/9, G: "delete all paper trades data from the app, I don't want any more confusions"): account="paper" rows stay OUT of master_ledger.csv, account="unknown" is NOT paper.
 - BOT ATTRIBUTION: a caller name is candidate evidence until the entry links to an alert and the trade to broker fills; never quote P&L from a book-priced row when a broker row exists.
+- ROOM GRABS (9/19) → DS Logs/grab <channel_id> <room> <date>.txt (+ .json twin): the file is THE SCROLL'S OWN ROWS — full text with embeds, `[image]` marks an upload (urls only in the .json; Discord signs them, ~1 day) — streamed from the tab as it scrolls, never the live reader's 50,000-row `captured` store, and it works from ANY Chrome profile. A grab that read no rows writes NO file and logs ❌. Then `python grab_to_alerts.py`.
 
 ## Broker + ops truths — RULES only · OPTIONS-BROKER-REFERENCE.md
 - NO MARKET ORDERS ON OPTIONS; combos = MASTER(LIMIT) + STOP_LOSS on SINGLE only. Option SELL orders are DAY-only → every resting stop dies at the close.

@@ -329,16 +329,17 @@ async function grabHistory(untilTs) {
   let pending = [];             // rows not yet handed to the worker
   let sent = 0;
   function grabRow(li) {
-    if (!li.id) return;
-    let text = "", images = [];
-    try { text = fullTextOf(li); images = imagesOf(li); } catch (e) { return; }
-    if (!text && !images.length) return;      // blank shell — embed not hydrated yet
-    const prev = got.get(li.id);
-    if (prev && prev[0] >= text.length && prev[1] >= images.length) return;
-    got.set(li.id, [text.length, images.length]);
-    const t = li.querySelector("time[datetime]");
-    pending.push({ mid: li.id, t: t ? Date.parse(t.getAttribute("datetime")) : Date.now(),
-                   author: authorOf(li), text, images });
+    try {
+      if (!li.id) return;
+      const text = fullTextOf(li), images = imagesOf(li);
+      if (!text && !images.length) return;    // blank shell — embed not hydrated yet
+      const prev = got.get(li.id);
+      if (prev && prev[0] >= text.length && prev[1] >= images.length) return;
+      got.set(li.id, [text.length, images.length]);
+      const t = li.querySelector("time[datetime]");
+      pending.push({ mid: li.id, t: t ? Date.parse(t.getAttribute("datetime")) : Date.now(),
+                     author: authorOf(li), text, images });
+    } catch (e) { /* a row Discord is mid-repaint — the next sweep reads it */ }
   }
   async function flushRows() {
     while (pending.length) {

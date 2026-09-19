@@ -1220,19 +1220,79 @@ async function flushCaptures() {
   }
 }
 
-/* Save one room's captured messages straight to Downloads — called the moment a
- * grab finishes, so there's no button to press. Returns how many it wrote. */
+/* ---- The grab's own rows (9/19) ---------------------------------------------
+ * The scrolling tab streams every row it reads — full text with embeds, and
+ * the uploaded images' urls — in chunks of a few hundred. Each chunk is its
+ * own storage key (a 30,000-row room never rewrites one growing array) and
+ * `grab_parts` says which keys belong to which room. downloadRoom() merges
+ * them — one row per message id, the fullest read wins — writes the file and
+ * clears them. Nothing here touches the shared `captured` store: that is the
+ * live reader's daily export, capped at 50,000 rows, and building grab files
+ * from it is what made Platinum nitro's grab a five-row file of stale rows. */
+let GRAB_PARTS = null;                                   // channelId -> [keys]
+async function grabParts() {
+  if (!GRAB_PARTS) {
+    try { GRAB_PARTS = (await chrome.storage.local.get("grab_parts")).grab_parts || {}; }
+    catch (e) { GRAB_PARTS = {}; }
+  }
+  return GRAB_PARTS;
+}
+async function addGrabRows(channelId, rows) {
+  const cid = String(channelId || "");
+  if (!cid || !Array.isArray(rows) || !rows.length) return 0;
+  const parts = await grabParts();
+  const key = "grab_part_" + cid + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+  const put = {};
+  put[key] = rows.map(r => ({
+    mid: String(r.mid || ""), t: Number(r.t) || Date.now(),
+    author: String(r.author || ""), text: String(r.text || ""),
+    images: Array.isArray(r.images) ? r.images.map(String).slice(0, 3) : [] }));
+  (parts[cid] = parts[cid] || []).push(key);
+  put.grab_parts = parts;
+  await chrome.storage.local.set(put);
+  return rows.length;
+}
+async function takeGrabRows(channelId) {
+  const cid = String(channelId || "");
+  const keys = (await grabParts())[cid] || [];
+  const byMid = new Map();
+  if (keys.length) {
+    const got = await chrome.storage.local.get(keys);
+    for (const k of keys) {
+      for (const r of (got[k] || [])) {
+        const old = byMid.get(r.mid);
+        if (!old) { byMid.set(r.mid, r); continue; }
+        // the fullest read of a row wins; an image seen on either read stays
+        const best = r.text.length >= old.text.length ? r : old;
+        const imgs = (best.images || []).slice();
+        for (const u of ((best === r ? old : r).images || [])) if (imgs.indexOf(u) === -1) imgs.push(u);
+        byMid.set(r.mid, Object.assign({}, best, { images: imgs.slice(0, 3) }));
+      }
+    }
+  }
+  return { rows: Array.from(byMid.values()).sort((a, b) => a.t - b.t), keys };
+}
+async function dropGrabRows(channelId, keys) {
+  const parts = await grabParts();
+  delete parts[String(channelId || "")];
+  try { if (keys.length) await chrome.storage.local.remove(keys); } catch (e) { /* re-read next time, harmless */ }
+  try { await chrome.storage.local.set({ grab_parts: parts }); } catch (e) { /* same */ }
+}
+
+/* Save one room's grabbed messages the moment its grab finishes — no button.
+ * Returns how many rows it wrote; 0 means the scroll read nothing, and then
+ * NO file is written (a file of stale rows is worse than no file). */
 async function downloadRoom(channelId, roomLabel) {
-  // Completion can arrive during the final coalesced capture write.
-  while (CAPTURE_FLUSHING) await new Promise(r => setTimeout(r,25));
-  await flushCaptures();
-  let captured = [];
-  try { captured = (await chrome.storage.local.get("captured")).captured || []; } catch (e) {}
-  const rows = captured.filter(e => String(e.channel) === String(channelId))
-                       .sort((a, b) => (a.t || 0) - (b.t || 0));
+  const { rows, keys } = await takeGrabRows(channelId);
   if (!rows.length) return 0;
+  const nImg = rows.filter(e => e.images.length).length;
+  // One line per message, same shape grab_to_alerts.py / reader_history.py
+  // read today; a row that carried an upload ends in " [image]" (the urls
+  // themselves live only in the .json twin — they are signed and long, and
+  // their digit runs must never reach the price parser).
   const lines = rows.map(e => new Date(e.t).toISOString().slice(0, 16).replace("T", " ")
-    + "  [message_id=" + (e.message_id || "legacy-unknown") + "] " + (e.author || "?") + ": " + e.text);
+    + "  [message_id=" + (e.mid || "legacy-unknown") + "] " + (e.author || "?") + ": " + e.text
+    + (e.images.length ? " [image]" : ""));
   // WHERE IT LANDS, AND WHAT IT IS CALLED (9/10, G: "make sure the log goes
   // somewhere you know where it is, and save it with the name or the ID of
   // the channel"). It used to go to the Downloads folder as "<label>-<date>"
@@ -1248,8 +1308,14 @@ async function downloadRoom(channelId, roomLabel) {
   const head = "Discord Sniper — ROOM HISTORY GRAB\n"
     + "channel_id: " + channelId + "\nroom: " + (roomLabel || "") + "\n"
     + "grabbed: " + new Date().toISOString() + "\nmessages: " + rows.length + "\n"
+    + "with_images: " + nImg + " (urls in the .json twin; Discord signs them, so they fetch for about a day)\n"
     + "".padEnd(60, "-") + "\n";
   const body = head + lines.join("\n");
+  const structuredText = JSON.stringify({
+    schema_version: 3, channel_id: String(channelId), room: String(roomLabel || ""),
+    exported_at: new Date().toISOString(),
+    messages: rows.map(e => ({ message_id: e.mid, channel: String(channelId), t: e.t,
+                               author: e.author, text: e.text, images: e.images })) }, null, 2);
   try {
     const c = await cfg();
     const r = await fetch(bridgeBaseFrom(c.bridge_url) + "/exportlog", {
@@ -1259,15 +1325,14 @@ async function downloadRoom(channelId, roomLabel) {
       const saved = await r.json();
       if (!saved.ok) throw new Error("Project export failed");
       const structured = await fetch(bridgeBaseFrom(c.bridge_url) + "/exportlog", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({name:fname.replace(/\.txt$/, ".json"),
-          text:JSON.stringify({schema_version:2,channel_id:String(channelId),
-            exported_at:new Date().toISOString(),messages:rows},null,2)})
-      });
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fname.replace(/\.txt$/, ".json"), text: structuredText }) });
       if (!structured.ok || !(await structured.json()).ok)
-        await addLog({kind:"failed",why:"Readable history saved, but structured message-ID export failed."});
-      await addLog({ kind: "update", why: "💾 saved " + rows.length + " message(s) to "
-        + "DS Logs\\" + fname + " — in the project folder, named by channel id." });
+        await addLog({ kind: "failed", why: "Readable history saved, but the .json twin (message ids, image urls) failed." });
+      await addLog({ kind: "update", why: "💾 saved " + rows.length + " message(s)"
+        + (nImg ? " (" + nImg + " with images)" : "") + " to DS Logs\\" + fname
+        + " — in the project folder, named by channel id." });
+      await dropGrabRows(channelId, keys);
       return rows.length;
     }
   } catch (e) { /* bridge down — fall through to the browser download */ }
@@ -1276,8 +1341,9 @@ async function downloadRoom(channelId, roomLabel) {
   try {
     await chrome.downloads.download({ url, filename: fname });
     await addLog({ kind: "update", why: "💾 the bridge was down, so " + fname
-      + " went to your Downloads folder instead of DS Logs." });
+      + " went to your Downloads folder instead of DS Logs (no .json twin — image urls lost)." });
   } catch (e) { return 0; }
+  await dropGrabRows(channelId, keys);
   return rows.length;
 }
 
@@ -2325,8 +2391,10 @@ async function ensureReaders() {
   } catch (e) { return; }
   const now = Date.now();
   INJECT_SEEN[0] = tabs.length; INJECT_SEEN[1] = 0;
+  const grabbingTab = ((await getRunning()) || {}).tabId;   // a fresh copy would stop its grab (9/19)
   for (const t of tabs) {
     if (t.discarded) continue;
+    if (t.id === grabbingTab) continue;
     // 9/18: "loading" is NOT skipped any more. A Whop room keeps a request
     // open for as long as the tab lives, so Chrome reports it "loading"
     // forever — and this guard left every Whop tab without a reader after
@@ -2491,10 +2559,16 @@ async function oneTabPerChannel() {
           /\/exp_[a-z0-9]+/.test(path) || /\/joined\//.test(path))) continue;
     (byChannel[path] = byChannel[path] || []).push(t);
   }
+  // A tab that is GRABBING is never the duplicate (9/19): closing it mid-
+  // scroll ended the grab with "interrupted by tab closure" and a file of
+  // whatever the store held — one way the nitro/eli/Mugzone grabs came back
+  // as a handful of stale rows.
+  const grabbingTab = ((await getRunning()) || {}).tabId;
   for (const path of Object.keys(byChannel)) {
     const dupes = byChannel[path];
     if (dupes.length < 2) continue;
-    dupes.sort((a, b) => ((b.active ? 1 : 0) - (a.active ? 1 : 0)) || (a.id - b.id));
+    dupes.sort((a, b) => ((b.id === grabbingTab ? 1 : 0) - (a.id === grabbingTab ? 1 : 0))
+                      || ((b.active ? 1 : 0) - (a.active ? 1 : 0)) || (a.id - b.id));
     for (const extra of dupes.slice(1)) {
       try { await chrome.tabs.remove(extra.id); } catch (e) { /* already gone */ }
     }
@@ -3998,19 +4072,37 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     return true;
   }
   // ---- History grabber progress (from content.js auto-scroll) ----
+  if (msg && msg.type === "GRAB_ROWS") {
+    // A chunk of the grab's own rows (see addGrabRows). Answer only after it
+    // is in storage — the tab keeps a chunk until it hears ok.
+    addGrabRows(msg.channelId, msg.rows).then(n => reply({ ok: true, n }))
+                                        .catch(() => reply({ ok: false }));
+    return true;
+  }
   if (msg && msg.type === "GRAB_PROGRESS") {
     (async () => {
       const room = ROOM_LABELS[String(msg.channelId || "")] || String(msg.channelId || "");
       if (msg.started) await addLog({ kind: "update", why: "⏳ grabbing " + room + "'s history — scrolling it up, sit tight" });
+      else if (msg.failed) {
+        // The scroll never started (the pane never painted). No file — a file
+        // of stale rows is what sent G chasing "the grabber doesn't capture
+        // embeds" on 9/19. The queue moves on; the tab stays open.
+        await addLog({ kind: "failed", what: "GRAB", why: "❌ " + room + ": " + (msg.why || "did not start") });
+        const running = await getRunning();
+        if (running && sender.tab && sender.tab.id === running.tabId && String(running.channelId) === String(msg.channelId)) {
+          await advanceQueue(running.tabId, false);
+        }
+      }
       else if (msg.done) {
         const how = msg.why ? msg.why
           : (msg.reached === "date" ? "reached the history target; oldest loaded message " + new Date(msg.oldest).toLocaleDateString() :
              msg.reached === "top" ? "stopped loading older messages — coverage may be partial" :
              msg.reached === "limit" ? "hit the safety limit" : "stopped");
-        // Auto-download THIS room's messages the instant it's done — no button.
+        // Auto-save THIS room's rows the instant it's done — no button.
         const n = await downloadRoom(msg.channelId, room);
-        await addLog({ kind: "update", why: "✅ done grabbing " + room + " — " + how +
-          (n ? ". Downloaded " + n + " messages to your Downloads." : ". Nothing captured.") });
+        await addLog({ kind: n ? "update" : "failed", why: (n ? "✅" : "❌") + " done grabbing " + room + " — " + how +
+          (n ? ". Saved " + n + " messages." : ". The scroll read NO rows — nothing saved. Was the tab in front, and had the room painted?") +
+          (msg.unsent ? " " + msg.unsent + " row(s) never reached the worker." : "") });
         // If this room was in the queue, close its tab and start the next one.
         const running = await getRunning();
         if (running && sender.tab && sender.tab.id === running.tabId && String(running.channelId) === String(msg.channelId)) {
@@ -4026,7 +4118,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       } else if (msg.resumed) {
         await addLog({ kind: "update", why: "▶️ " + room + " back in front — grabbing again." });
       } else if (msg.oldest) {
-        await addLog({ kind: "ignored", why: "…grabbing " + room + " — back to " + new Date(msg.oldest).toLocaleDateString() });
+        await addLog({ kind: "ignored", why: "…grabbing " + room + " — back to " + new Date(msg.oldest).toLocaleDateString()
+          + (msg.rows ? ", " + msg.rows + " rows so far" : "") });
       }
     })();
     reply({ ok: true });
