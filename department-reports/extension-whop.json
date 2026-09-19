@@ -1,1 +1,1 @@
-{"lane": "whop", "received_at": 1789810956.8075087, "version": "3.8.59", "issues": ["readers: 3 room tab(s) seen, 0 injected on the last pass, 3 Whop tab(s) reloaded at come-up (come-up saw 3 room tabs); pulses: 538395898=35s 538395899=29s 538396212=35s"], "rooms_expected": 40}
+{"lane": "whop", "received_at": 1789811256.8041005, "version": "3.8.59", "issues": ["readers: 3 room tab(s) seen, 0 injected on the last pass, 3 Whop tab(s) reloaded at come-up (come-up saw 3 room tabs); pulses: 538395898=35s 538395899=29s 538396212=35s"], "rooms_expected": 40}
