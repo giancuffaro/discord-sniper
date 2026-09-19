@@ -5,12 +5,12 @@
     {
       "lane": "discord",
       "fresh": true,
-      "version": "3.8.57"
+      "version": "3.8.58"
     },
     {
       "lane": "whop",
       "fresh": true,
-      "version": "3.8.57"
+      "version": "3.8.58"
     }
   ],
   "observer": {
@@ -22,5 +22,5 @@
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789792713.007458
+  "checked_at": 1789793013.0136354
 }
