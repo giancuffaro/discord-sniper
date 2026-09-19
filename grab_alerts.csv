@@ -2193,3 +2193,6 @@ date,time,channel_id,room,caller,symbol,side,strike,expiry,their_price,action,ki
 2026-09-17,10:23:00,1323708708374450247,Vero 1,@vero-alerts,QQQ,CALLS,716,9/17,1.32,OPEN,option,grab 1323708708374450247 Vero-1 2026-09-19.txt,1660,QQQ 716C 9/17 1.32 2 CONTRACTS @vero-alerts
 2026-09-17,10:56:00,760694103401955378,Vero 2,Vero,QQQ,PUTS,715,9/17,1.32,OPEN,option,grab 760694103401955378 Vero-2 2026-09-19.txt,1118,QQQ 715P 9/17 1.32 4 CONTRACTS @vero-alerts
 2026-09-18,09:51:00,829754942817828884,Honeydrip daytrades,Unraveller (Admin)🔮,NVDA,CALLS,217.5,9/23,3.59,OPEN,option,grab 829754942817828884 Honeydrip-daytrades 2026-09-19.txt,15059,We are in NVDA 217.5 calls avg 3.59 sept 23 expiration @here
+2026-08-17,09:41:00,1519039282537300209,eli,EliSpicy,SPX,PUTS,7750,,3.1,OPEN,option,grab 1519039282537300209 eli 2026-09-19.txt,,"[room rule sym=SPX] EliSpicy: [ 9:41 AM ] Monday, August 17, 2026 at 9:41 AM 7750p 3.1 @here 7 2 Add Reaction"
+2026-09-01,14:35:00,1519039282537300209,eli,EliSpicy,SPX,PUTS,7625,,6.25,OPEN,option,grab 1519039282537300209 eli 2026-09-19.txt,,"[room rule sym=SPX, hand-read] Im in these, 7625p my major play @here"
+2026-09-03,12:47:00,1519039282537300209,eli,EliSpicy,SPX,CALLS,7755,,,OPEN,option,grab 1519039282537300209 eli 2026-09-19.txt,,"[room rule sym=SPX, hand-read] im in 7755c, last trade today, setting limit sell at 5 @here"
