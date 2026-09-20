@@ -1,8 +1,6 @@
 {
   "in_session": false,
-  "issues": [
-    "Observer latest request failed: all_providers_unavailable"
-  ],
+  "issues": [],
   "lanes": [
     {
       "lane": "discord",
@@ -18,11 +16,11 @@
   "observer": {
     "queue_remaining": 0,
     "worker_started": true,
-    "last_finished": 1789880665.7811663,
-    "last_error": "all_providers_unavailable",
-    "last_provider": "",
+    "last_finished": 1789881617.25358,
+    "last_error": "",
+    "last_provider": "gemini",
     "context_hours": 72,
     "context_messages": 50
   },
-  "checked_at": 1789881407.9123209
+  "checked_at": 1789881707.9179099
 }
