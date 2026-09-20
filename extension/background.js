@@ -834,7 +834,61 @@ function roomWindowOpen() {
   } catch (e) { return true; }        // a clock bug must never close the rooms
 }
 function roomAlways(room) { return (room.rules || []).includes("always"); }
-function roomWantsTab(room) { return room.state === "on" && (roomAlways(room) || roomWindowOpen()); }
+/* WEEKEND PAUSE FOR THE `always` (FUTURES) ROOMS (9/20, G: "from friday
+ * 4:30pm to sunday 6pm no tabs open" -- standing, every week). Every other
+ * `on` room already closes at 4:30 ET daily and stays closed till he starts
+ * it again (9/10) -- nothing changes for those. But `always` was built to
+ * mean "24h, every day, weekends included" (Whop Futures, Whop High Risk,
+ * Chika Alerts), and CME is shut from Fri 4:30pm ET to Sun 6:00pm ET -- the
+ * exact window futures reopen. This makes `always` mean "24h on days the
+ * market is open" instead. No separate close trigger is needed: Friday
+ * 4:30 is the SAME boundary roomWindowOpen() already flips false at, so
+ * roomSchedule()'s existing edge-triggered sweep now closes the always
+ * rooms too, for free. The one new piece is weekendReopen() below, which
+ * puts their tabs back the moment the window ends -- the single exception
+ * to "nothing reopens a tab but START HERE or the popup switch" (9/10),
+ * because Sunday 6pm ET is when futures actually start trading again. */
+function inWeekendPause(now) {
+  try {
+    const p = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York",
+      hour12: false, weekday: "short", hour: "2-digit", minute: "2-digit"
+    }).formatToParts(now || new Date());
+    const g = t => (p.find(x => x.type === t) || {}).value || "";
+    const wd = g("weekday");
+    const mins = parseInt(g("hour"), 10) * 60 + parseInt(g("minute"), 10);
+    const FRI_CLOSE = 16 * 60 + 30, SUN_OPEN = 18 * 60;
+    if (wd === "Fri" && mins >= FRI_CLOSE) return true;
+    if (wd === "Sat") return true;
+    if (wd === "Sun" && mins < SUN_OPEN) return true;
+    return false;
+  } catch (e) { return false; }        // a clock bug must never close the futures rooms
+}
+function roomWantsTab(room) { return room.state === "on" && !inWeekendPause() && (roomAlways(room) || roomWindowOpen()); }
+/* THE ONE AUTO-REOPEN (9/20). Everything else that creates a room tab is
+ * still only honourOpenRoomsRequest() (START HERE), setRoomState() (the
+ * popup switch), openMissingRooms()'s other callers, and probeOne() -- this
+ * fires once, at the Sunday-6pm-ET edge, and calls the same openMissingRooms()
+ * START HERE uses; that function already only opens a room that wantsTab
+ * RIGHT NOW, so on a non-weekend tick it opens nothing and costs nothing. */
+let _weekendPauseState = null;   // null = not yet observed this worker life
+let _weekendReopenPending = false;
+async function weekendReopen() {
+  const paused = inWeekendPause();
+  if (_weekendPauseState === null) { _weekendPauseState = paused; return; } // don't fire on a mid-window come-up
+  if (_weekendPauseState === true && !paused) _weekendReopenPending = true;
+  _weekendPauseState = paused;
+  if (!_weekendReopenPending) return;
+  let opened = 0;
+  try { opened = (await openMissingRooms()) || 0; } catch (e) { opened = 0; }
+  if (opened > 0) {
+    await addLog({ kind: "sent", what: "ROOMS",
+      why: "☀ Sunday 6pm ET -- reopened " + opened + " always-room tab(s); checking again in 30s" });
+    return;
+  }
+  _weekendReopenPending = false;
+  await addLog({ kind: "sent", what: "ROOMS",
+    why: "☀ Sunday 6pm ET -- the always rooms (futures) are back; every other room still waits for START HERE" });
+}
 /* Closing happens at the BOUNDARY (the moment the window shuts, and once at
  * startup if it is already shut) — not on every pass. So a room G opens by
  * hand at night to read stays open; it is only the 4:30 sweep that clears
@@ -3116,7 +3170,7 @@ async function watchBuildSweep() {
     // polling, exporting stale data over the live export, or touching tabs.
     try { await checkBuild(); } catch (e) {}
     if (!await assignedLane()) return;
-    const jobs = [pollRoomsFile, roomSchedule, syncFills,
+    const jobs = [pollRoomsFile, roomSchedule, weekendReopen, syncFills,
       ensureReaders, oneTabPerChannel, closeNonRoomTabs, evictOtherLane,
       refreshBridgeChannels, checkBridgeHealth, memoryShed, keepRoomsLoaded,
       honourOpenRoomsRequest, whopSelfHeal, publishDepartmentHealth];

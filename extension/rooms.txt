@@ -22,9 +22,13 @@
 #    that can actually take it. See parser.js indexGuard.)
 #   bare      an entry with no verb still counts ("SPY 650c 1.20")
 #   sym=SPX   the symbol to assume when a call names none
-#   always    tab open 24h — the FUTURES rooms. Every other `on` room opens at
-#             9:15 and closes at 4:30 PM ET, weekdays, no holidays (G, 9/9:
-#             "we can't follow any alert then — don't bomb Discord with pings")
+#   always    tab open 24h on days the market is open — the FUTURES rooms. Every
+#             other `on` room opens at 9:15 and closes at 4:30 PM ET, weekdays,
+#             no holidays (G, 9/9: "we can't follow any alert then — don't
+#             bomb Discord with pings"). `always` ALSO closes Fri 4:30pm ET
+#             through Sun 6:00pm ET (G, 9/20: "no tabs open" that window,
+#             standing) and is the one case that reopens itself right at
+#             Sun 6pm — background.js inWeekendPause() / weekendReopen()
 # Lines starting with # are comments. Blank lines are ignored.
 # Whop rooms use their canonical "whop:xxx" id in the first field — that's
 # what background.js's whopRoomOf() matches on.
